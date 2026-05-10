@@ -1177,7 +1177,11 @@
     },
     "error": {
         "something_wrong": "Something Wrong.",
-        "printer_unreachable": "The printer could not be reached."
+        "printer_unreachable": "The printer could not be reached.",
+        "rate_limited": "Too many requests — wait 30s before retrying.",
+        "service_unavailable": "Service unavailable — please retry shortly.",
+        "network_issue": "Network issue — please retry.",
+        "kds_connection_lost": "⚠️ Kitchen connection unavailable — display frozen. Retrying."
     },
     "message": {
         "permission_required": "Permission required to access this page: {permission}",

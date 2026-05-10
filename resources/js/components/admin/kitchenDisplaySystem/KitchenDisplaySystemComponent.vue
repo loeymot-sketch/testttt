@@ -23,6 +23,29 @@
   <div v-if="!wsConnected && !kdsHideFallbackBannerInLocalDev" class="ws-reconnect-banner" data-testid="kds-sync-mode-banner">
     {{ $t('label.kds_fallback_banner') }}
   </div>
+  <!--
+    [test-e2e round-2 cluster-1 C-001 2026-05-10] Persistent error banner.
+    Replaces (and augments) the previous ephemeral toast in
+    _refreshWithCurrentFilter / list() error paths. Visible until the next
+    successful /api/admin/kds-order poll resets it, or the operator dismisses
+    it manually with the ✕ button. data-testid lets E2E specs assert
+    visibility deterministically (no race with toast fade-out).
+  -->
+  <div
+    v-if="kdsErrorBanner.visible"
+    class="kds-hint-banner kds-hint-banner--danger kds-hint-banner--action"
+    role="alert"
+    aria-live="assertive"
+    data-testid="kds-error-banner"
+  >
+    <span>{{ kdsErrorBanner.message }}</span>
+    <button
+      type="button"
+      class="kds-hint-link"
+      :aria-label="$t('label.kds_dismiss_hint')"
+      @click="dismissKdsErrorBanner"
+    >✕</button>
+  </div>
   <div
     v-if="kdsIsCentralAdmin"
     class="kds-hint-banner kds-hint-banner--info"
@@ -983,6 +1006,18 @@ export default {
       // Updated by `kdsAnnounceTransition`; rendered in the dedicated
       // `<div role="status" aria-live="polite">` outside the cards.
       kdsAriaLiveMessage: '',
+      // [test-e2e round-2 cluster-1 C-001 2026-05-10] Persistent error banner
+      // shown when /api/admin/kds-order returns 5xx (or any failure that
+      // would otherwise have raised an ephemeral toast). The previous
+      // alertService.error() Vue-Toastification toast faded within ~500ms
+      // bounce-leave animation; a kitchen operator at 1m+ glance never
+      // saw it. The banner stays visible until the next successful poll
+      // OR until the operator dismisses it manually.
+      kdsErrorBanner: {
+        visible: false,
+        message: '',
+        lastRetryAt: null,
+      },
     };
   },
   computed: {
@@ -1539,10 +1574,15 @@ export default {
           this.kdsOverflowDetected = res?.data?.meta?.overflow === true;
           this.loading.isActive = false;
 	          this._kdsOrdersHydrated = true;
+          // [test-e2e round-2 C-001] Successful poll → dismiss the persistent
+          // error banner (kitchen connection restored).
+          this._clearKdsErrorBanner();
 	        })
         .catch((err) => {
           this.loading.isActive = false;
-          alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
+          // [test-e2e round-2 C-001] Persistent banner instead of ephemeral
+          // toast — kitchen operator at 1m+ glance must NOT miss this.
+          this._raiseKdsErrorBanner(err);
         });
     },
     openFilterSlide(event) {
@@ -1573,11 +1613,45 @@ export default {
 
           this.loading.isActive = false;
           this._kdsOrdersHydrated = true;
+          // [test-e2e round-2 C-001] Auto-dismiss the persistent banner
+          // on next successful /api/admin/kds-order response.
+          this._clearKdsErrorBanner();
         })
         .catch((err) => {
           this.loading.isActive = false;
-          alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
+          // [test-e2e round-2 C-001] Persistent banner instead of ephemeral
+          // toast — see _raiseKdsErrorBanner / kdsErrorBanner data prop.
+          this._raiseKdsErrorBanner(err);
         });
+    },
+    _raiseKdsErrorBanner(err) {
+      // Build a copy that flags the kind of failure (network/5xx vs 4xx).
+      const status = Number(err?.response?.status || 0);
+      const fallback = this.$t('error.kds_connection_lost');
+      // For server-side messages (e.g. 422 validation), prefer the message
+      // payload — but for 5xx / network drops, the standardized banner copy
+      // is far clearer to a kitchen operator than a stack trace.
+      let message;
+      if (!status || status >= 500 || status === 408 || status === 425 || status === 429) {
+        message = fallback;
+      } else {
+        message = err?.response?.data?.message || fallback;
+      }
+      this.kdsErrorBanner = {
+        visible: true,
+        message,
+        lastRetryAt: Date.now(),
+      };
+    },
+    _clearKdsErrorBanner() {
+      if (this.kdsErrorBanner.visible) {
+        this.kdsErrorBanner = { visible: false, message: '', lastRetryAt: null };
+      }
+    },
+    dismissKdsErrorBanner() {
+      // Manual ✕ dismiss. Next successful poll will keep it hidden anyway,
+      // and the next failure will re-raise it.
+      this._clearKdsErrorBanner();
     },
     items: function () {
       this.loading.isActive = true;

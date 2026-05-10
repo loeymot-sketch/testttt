@@ -1009,7 +1009,11 @@
         "menu": "Menu"
     },
     "error": {
-        "printer_unreachable": "Impossible de joindre l'imprimante."
+        "printer_unreachable": "Impossible de joindre l'imprimante.",
+        "rate_limited": "Trop de requêtes — patientez 30s avant de réessayer.",
+        "service_unavailable": "Service indisponible — réessayez dans quelques instants.",
+        "network_issue": "Problème réseau — réessayez.",
+        "kds_connection_lost": "⚠️ Connexion cuisine indisponible — affichage figé. Re-tentative en cours."
     },
     "message": {
         "permission_required": "Permission requise pour accéder à cette page : {permission}",

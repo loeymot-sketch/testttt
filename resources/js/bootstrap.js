@@ -10,6 +10,7 @@ import 'bootstrap';
  */
 
 import axios from 'axios';
+import { useToast as _useToast } from 'vue-toastification';
 window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
@@ -36,6 +37,142 @@ try {
 } catch (_) {
     // Axios not installed / interceptors unavailable — telemetry just falls
     // back to null correlation_id. Non-fatal.
+}
+
+// [test-e2e round-2 cluster-1 A-001/D-001 2026-05-10] Global axios response
+// error interceptor — surface silent 4xx/5xx as cashier/operator-visible
+// toasts. Background:
+//   - A-001 (P0): POS shell silently swallowed 7+ HTTP 429 from
+//     /api/admin/pos/walk-in-customer, /api/admin/users/address/*,
+//     /api/admin/pos/parked-orders, /api/admin/pos/counter-collect/pending,
+//     /api/admin/oss-order. Cashier had no signal at all.
+//   - D-001 (P0): POS double-tap on pay produced POST /api/admin/pos 429
+//     with no DOM alert; pay modal stayed open silently.
+// We intentionally do NOT touch 401 (handled by app.js / pos-app.js with
+// router redirect to /login — already gives strong visible feedback) and
+// do NOT touch 422 (form validations render inline error states).
+// We toast statuses {408, 425, 429, 502, 503, 504} only.
+//
+// Debounce by status bucket (429, 5xx, other) with a 3s minimum gap, because
+// the A-001 evidence captured 7 concurrent 429s within 800ms on cold-boot;
+// a per-error toast would replace silence with a wall of red. Bucketing by
+// family — not URL — also de-spams subsequent bursts of the same kind.
+//
+// `useToast` is loaded lazily inside the callback because vue-toastification
+// is registered later in app.js / pos-app.js (`app.use(Toast, ...)`). At the
+// time an HTTP error fires, the app is already mounted.
+try {
+    let _toastInstance = null;
+    const _lastToastAt = { rl: 0, srv: 0, oth: 0 };
+    const _BUCKET_MIN_GAP_MS = 3000;
+
+    function _resolveToast() {
+        if (_toastInstance) return _toastInstance;
+        try {
+            // useToast() returns the global plugin singleton once
+            // `app.use(Toast, options)` has run (in app.js / pos-app.js).
+            // Calling it before that returns a no-op proxy — safe.
+            if (typeof _useToast === 'function') {
+                _toastInstance = _useToast();
+                return _toastInstance;
+            }
+        } catch (_) { /* fallback to console */ }
+        return null;
+    }
+
+    function _i18nMessage(key, fallback) {
+        try {
+            const i18n = window.__appI18n
+                || window.app?.__VUE_DEVTOOLS_APP_RECORD__?.app?.config?.globalProperties?.$i18n;
+            const t = i18n?.global?.t || i18n?.t;
+            if (typeof t === 'function') {
+                const out = t(key);
+                if (out && out !== key) return out;
+            }
+        } catch (_) { /* noop */ }
+        return fallback;
+    }
+
+    // Suppress toast for these path patterns (auth flows + form validations).
+    const _ALLOWLIST_PATTERNS = [
+        '/api/auth/logout',
+        '/api/auth/login',
+        '/login',
+        '/logout',
+        '/csp-report',
+        '/api/broadcasting/auth',
+    ];
+
+    function _shouldAllowlist(error) {
+        const url = String(error?.config?.url || '');
+        return _ALLOWLIST_PATTERNS.some((p) => url.includes(p));
+    }
+
+    window.axios.interceptors.response.use(
+        (response) => response,
+        (error) => {
+            try {
+                if (axios.isCancel?.(error)
+                    || error?.code === 'ERR_CANCELED'
+                    || error?.message === 'canceled') {
+                    return Promise.reject(error);
+                }
+
+                const status = Number(error?.response?.status || 0);
+                // 401 is handled by surface-specific handlers (app.js / pos-app.js
+                // — router push to /login). 422 is form-level validation. 304 / 204
+                // are not errors.
+                const TOAST_STATUSES = new Set([408, 425, 429, 502, 503, 504]);
+                if (!TOAST_STATUSES.has(status)) {
+                    return Promise.reject(error);
+                }
+
+                if (_shouldAllowlist(error)) {
+                    return Promise.reject(error);
+                }
+
+                const now = Date.now();
+                let bucket = 'oth';
+                let message;
+                if (status === 429) {
+                    bucket = 'rl';
+                    message = _i18nMessage(
+                        'error.rate_limited',
+                        'Trop de requêtes — patientez 30s avant de réessayer.'
+                    );
+                } else if (status >= 500) {
+                    bucket = 'srv';
+                    message = _i18nMessage(
+                        'error.service_unavailable',
+                        'Service indisponible — réessayez dans quelques instants.'
+                    );
+                } else {
+                    message = _i18nMessage(
+                        'error.network_issue',
+                        'Problème réseau — réessayez.'
+                    );
+                }
+
+                if (now - (_lastToastAt[bucket] || 0) < _BUCKET_MIN_GAP_MS) {
+                    return Promise.reject(error);
+                }
+                _lastToastAt[bucket] = now;
+
+                const toast = _resolveToast();
+                if (toast && typeof toast.error === 'function') {
+                    toast.error(message, { timeout: 6000 });
+                } else if (typeof window !== 'undefined' && window.console?.warn) {
+                    // Last-resort visibility — never silent.
+                    window.console.warn('[axios-error-toast]', status, message);
+                }
+            } catch (_) {
+                // Interceptor must never break the response chain.
+            }
+            return Promise.reject(error);
+        }
+    );
+} catch (_) {
+    // Defensive — interceptors not available, surface silently rejected.
 }
 
 /**

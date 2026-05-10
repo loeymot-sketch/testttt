@@ -1013,7 +1013,11 @@
     },
     "error": {
         "something_wrong": "هل هناك خطب ما",
-        "printer_unreachable": "تعذر الوصول إلى الطابعة."
+        "printer_unreachable": "تعذر الوصول إلى الطابعة.",
+        "rate_limited": "طلبات كثيرة جدًا — انتظر 30 ثانية قبل المحاولة مجددًا.",
+        "service_unavailable": "الخدمة غير متاحة — أعد المحاولة بعد قليل.",
+        "network_issue": "مشكلة في الشبكة — أعد المحاولة.",
+        "kds_connection_lost": "⚠️ اتصال المطبخ غير متاح — العرض متوقف. جارٍ إعادة المحاولة."
     },
     "message": {
         "permission_required": "الإذن المطلوب للوصول إلى هذه الصفحة: {permission}",
