@@ -136,6 +136,28 @@ function fetchOrdersSince(baselineId) {
   }
 }
 
+// [test-e2e fix D-010 round-4 2026-05-10] Scope SYNC-6 assertion to Wave D's
+// own order(s) by filtering on the captured idempotency_key. Without this,
+// concurrent waves (E, F) running against the shared DB pollute the
+// `WHERE id > baselineId` window and falsely trigger the IDEMPOTENCY BROKEN
+// branch. The idempotency_key is generated client-side per checkout in
+// proceedToCheckout() and is unique per Wave D test run.
+function fetchOrdersByIdempotencyKey(key, baselineId) {
+  if (!key) return [];
+  try {
+    // Escape single quotes defensively — keys are alnum + underscore in
+    // practice but be safe for the tinker --execute path.
+    const safeKey = String(key).replace(/'/g, "\\'");
+    const out = artisan(`
+      $rows = DB::table('orders')->where('idempotency_key', '${safeKey}')->where('id', '>', ${Number(baselineId)})->orderBy('id')->get(['id','status','total','order_serial_no','queue_number','source','token','created_at','idempotency_key']);
+      echo json_encode($rows);
+    `);
+    return parseLastJsonLine(out);
+  } catch (_e) {
+    return [];
+  }
+}
+
 function fetchOrderById(orderId) {
   try {
     const out = artisan(`
@@ -1021,8 +1043,47 @@ test.describe('POS · KDS · OSS sync audit Wave D — cross-surface lifecycle',
           // even if the assertion fails.
           await posRec.snap('17-d-pos-double-tap-idempotency');
 
-          // Assert : count orders created since baseline. Expect EXACTLY 1.
-          const postDoubleTapOrders = fetchOrdersSince(preDoubleTapMaxId);
+          // [test-e2e fix D-010 round-4 2026-05-10] Scope to Wave D's own
+          // order(s) via the captured idempotency_key. The previous
+          // `WHERE id > baselineId` query was vulnerable to parallel-agent
+          // contamination (Wave E/F orders created concurrently against the
+          // shared DB inflated newOrdersCount and triggered a false positive
+          // IDEMPOTENCY BROKEN). The key is generated client-side per
+          // proceedToCheckout() and is globally unique per Wave D run.
+          const uniqueKeys = Array.from(
+            new Set(collectedKeys.map((k) => k.key).filter(Boolean))
+          );
+          // Prefer key-scoped query when at least one key was captured.
+          // Fall back to id-scoped query only as a last resort (no key seen
+          // → can't scope; spec will note this in observations).
+          let postDoubleTapOrders;
+          let scopeMode;
+          if (uniqueKeys.length >= 1) {
+            // If multiple keys (the bad case the soft-assert flags), union
+            // the results from each. The strict "EXACTLY 1 order" assertion
+            // below catches the multi-order outcome regardless.
+            const seen = new Map();
+            for (const k of uniqueKeys) {
+              const rows = fetchOrdersByIdempotencyKey(k, preDoubleTapMaxId);
+              if (Array.isArray(rows)) {
+                for (const row of rows) {
+                  if (row && row.id != null && !seen.has(row.id)) {
+                    seen.set(row.id, row);
+                  }
+                }
+              }
+            }
+            postDoubleTapOrders = Array.from(seen.values());
+            scopeMode = `idempotency_key (n=${uniqueKeys.length})`;
+          } else {
+            // No key captured (button click never reached middleware) →
+            // fall back to id-scoped query. This branch should be rare and
+            // is only reached when the double-tap produced 0 POSTs; in
+            // that case both queries return [] equivalently for Wave D's
+            // intent.
+            postDoubleTapOrders = fetchOrdersSince(preDoubleTapMaxId);
+            scopeMode = 'baselineId (no key captured)';
+          }
           const newOrdersCount = Array.isArray(postDoubleTapOrders)
             ? postDoubleTapOrders.length
             : 0;
@@ -1033,11 +1094,8 @@ test.describe('POS · KDS · OSS sync audit Wave D — cross-surface lifecycle',
             if (!capturedOrderIds.includes(id)) capturedOrderIds.push(id);
           }
 
-          const uniqueKeys = Array.from(
-            new Set(collectedKeys.map((k) => k.key).filter(Boolean))
-          );
           observations.push(
-            `state17: SYNC-6 collected_pos_keys=${JSON.stringify(collectedKeys)} collected_responses=${JSON.stringify(collectedResponses)} unique_keys=${uniqueKeys.length} new_orders_count=${newOrdersCount} new_order_ids=${JSON.stringify(newOrderIds)} preDoubleTapMaxId=${preDoubleTapMaxId}`
+            `state17: SYNC-6 collected_pos_keys=${JSON.stringify(collectedKeys)} collected_responses=${JSON.stringify(collectedResponses)} unique_keys=${uniqueKeys.length} new_orders_count=${newOrdersCount} new_order_ids=${JSON.stringify(newOrderIds)} preDoubleTapMaxId=${preDoubleTapMaxId} scope=${scopeMode}`
           );
 
           // P0 — must NEVER create more than 1 order from a double-tap.

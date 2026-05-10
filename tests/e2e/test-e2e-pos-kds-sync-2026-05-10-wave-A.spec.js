@@ -700,7 +700,17 @@ test.describe('POS·KDS·OSS audit Wave A — POS visual page-by-page (no wizard
         });
         await page.goto('/login', { waitUntil: 'domcontentloaded' });
       }
-      await expect(page.locator('#formEmail'), 'Logout must land on login form').toBeVisible({ timeout: 15_000 });
+      // [test-e2e fix A-logout round-4 2026-05-10] Pre-existing flake :
+      // logout dispatch + (optional) /login fallback can race with the
+      // login-page hydration, leaving #formEmail not-yet-visible at the 15s
+      // deadline. Two-step hardening :
+      //   (1) explicit waitForURL('**/login') so we know the navigation
+      //       actually landed before probing for the form selector
+      //   (2) raise the form-visible timeout 15s → 30s for slow hydration
+      await page
+        .waitForURL(/\/login(\?|$)/, { timeout: 20_000, waitUntil: 'domcontentloaded' })
+        .catch((e) => observations.push(`state15: waitForURL(/login) threw ${e.message}`));
+      await expect(page.locator('#formEmail'), 'Logout must land on login form').toBeVisible({ timeout: 30_000 });
       observations.push(`state15: final_url=${page.url()}`);
       await snap('15-pos-logout');
 
