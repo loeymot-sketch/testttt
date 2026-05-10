@@ -588,9 +588,15 @@ export default {
     },
 
     hasOptions(detail) {
+      // V3.5 (2026-05-10) Owner gate : `addons` (3 default seeded sur TOUS les
+      // items pour menu full/frites/boisson) ne devrait PAS déclencher le wizard
+      // pour des produits simples (boissons, desserts) sans variations ni extras.
+      // → on retire `addons.length > 0` du check. Le menu choice reste exposé via
+      //   has_menu OU via la présence réelle de variations/extras à customiser.
+      // Boissons + Desserts : vars=0, extras=0, has_menu=false → addItem direct.
+      // Tacos/Sandwichs/Burgers : vars>0 + extras>0 → wizard ouvert (inchangé).
       return (detail.itemAttributes?.length > 0) ||
              (detail.extras?.length > 0) ||
-             (detail.addons?.length > 0) ||
              (detail.variations && Object.keys(detail.variations).length > 0) ||
              !!detail.has_menu;
     },
