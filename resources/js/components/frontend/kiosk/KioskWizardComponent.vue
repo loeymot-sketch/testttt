@@ -886,10 +886,20 @@ export default {
       if (name.includes('burger') || category.includes('burger')) return 'burger';
       if (name.includes('assiette') || category.includes('assiette')) return 'assiette';
       // [P5] Alignement heuristique ↔ wizard_template catalogue (snacking / omelette / salade)
-      // V3.7 (2026-05-10) Owner gate : Ojja → template omelette (même flow simple
-      // : sauce + menu + frites_style + supplements + recap).
+      // V3.7 (2026-05-10) Owner gate : Ojja → template omelette (même flow simple).
+      // V3.8.1 (2026-05-10) : Menus Enfants (cat 314, items "Menu Cheese Burger
+      // Enfant" + "Menu Nuggets Enfant") sont déjà des formules complètes avec
+      // frites incluses ("[FRITES]" dans description audit). Wizard simple sans
+      // menu choice ni frites_style → mapper sur 'omelette' template.
       if (name.includes('omelette') || name.includes('omelet') || category.includes('omelette')) return 'omelette';
       if (name.includes('ojja') || category.includes('ojja')) return 'omelette';
+      if (
+        category.includes('menu enfant') ||
+        category.includes('menus enfants') ||
+        (name.includes('menu') && (name.includes('enfant') || name.includes('nugget') || name.includes('cheese burger')))
+      ) {
+        return 'omelette';
+      }
       if (name.includes('salade') || category.includes('salade')) return 'salade';
       if (
         name.includes('nugget') ||
@@ -977,20 +987,25 @@ export default {
       // V3.6 (2026-05-10) Owner gate : frites_style step affiche 3 cards
       // (Nature/Cheddar/Cheddar+Oignons) si l'item a au moins une row
       // item_extras avec group_label='frites_style'.
-      // V3.7 (2026-05-10) : si item.has_menu, le step frites_style ne doit
-      // apparaître QUE si user a pris menuChoice='frites' ou 'full' (sinon
-      // on affiche un Cheddar pour quelqu'un qui ne prend même pas frites).
+      // V3.7 : si item.has_menu, le step frites_style apparaît seulement si
+      //        menuChoice='frites'||'full'.
+      // V3.8.2 (2026-05-10) : exclure les items dans catégories frites-incluses
+      //        (309 Assiettes, 310 Ojja, 311 Omelettes, 314 Menus Enfants).
+      //        Ces items ont leurs frites par défaut, le upgrade frites_style
+      //        n'a pas de sens (sauf cat 315 = Frites items eux-mêmes).
       if (type === 'frites_style') {
         const extras = Array.isArray(item.extras) ? item.extras : [];
         const hasFritesStyleExtras = extras.some((e) => e?.group_label === 'frites_style');
         if (!hasFritesStyleExtras) return false;
+        const FRITES_INCLUDED_CATS = new Set([309, 310, 311, 314]);
+        const catId = parseInt(item.item_category_id, 10);
+        if (FRITES_INCLUDED_CATS.has(catId)) return false;
         // Si l'item a un menu choice : conditionner sur la sélection actuelle.
         if (item.has_menu === true) {
           const mc = this.selections?.menuChoice;
           return mc === 'frites' || mc === 'full';
         }
-        // Items qui sont des frites eux-mêmes (Frites Moyenne/Grande/Seules/Menu) :
-        // afficher toujours.
+        // Items qui sont des frites eux-mêmes (cat 315 Frites items) → toujours.
         return true;
       }
       return true;
