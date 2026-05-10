@@ -641,11 +641,15 @@ export default {
 </script>
 
 <style scoped>
-/* FoodKing brand V2 (2026-05-10) — Loyalty page light mode (was navy gradient).
-   Owner gate : palette uniforme black + Cayenne + yellow + white. */
+/* FoodKing brand V3.3 (2026-05-10) — Loyalty page warmth + ergonomie 32".
+   Owner gate : "trop blanc-sur-blanc bancaire, faut chaleur restaurant".
+   Subtle warm gradient + yellow loyalty icon prominent + card centered. */
 .kiosk-loyalty-screen {
   min-height: 100vh;
-  background: #FFFFFF;
+  background:
+    radial-gradient(ellipse at top, #FFF7ED 0%, #FFFFFF 45%),
+    radial-gradient(ellipse at bottom, #FFF7E0 0%, #FFFFFF 50%),
+    #FFFFFF;
   display: flex;
   flex-direction: column;
   color: #0F0F0F;
@@ -656,8 +660,8 @@ export default {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.5rem 2rem 1rem;
-  border-bottom: 1px solid #E5E5E5;
+  padding: 1.25rem 2rem;
+  border-bottom: none;
 }
 
 .kiosk-back-btn {
@@ -685,22 +689,38 @@ export default {
 .kiosk-loyalty-step {
   flex: 1;
   display: flex;
-  align-items: flex-start;
+  align-items: center; /* V3.3: vertical center pour ergo 32" portrait */
   justify-content: center;
-  padding: 2rem 1.5rem;
+  padding: 1rem 1.5rem;
 }
 
+/* Card warmth V3.3 — yellow ribbon top + Cayenne shadow + plus accueillant */
 .kiosk-loyalty-card {
+  position: relative;
   width: 100%;
-  max-width: 540px;
+  max-width: 600px;
   background: #FFFFFF;
-  border-radius: 24px;
-  padding: 2rem;
-  border: 1.5px solid #E5E5E5;
-  box-shadow: 0 4px 16px rgba(15, 15, 15, 0.06);
+  border-radius: 28px;
+  padding: 2.5rem 2rem 2rem;
+  border: 1.5px solid #FFE8DD;
+  box-shadow:
+    0 12px 40px rgba(244, 80, 30, 0.12),
+    0 4px 12px rgba(15, 15, 15, 0.04);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+}
+
+/* Decorative yellow accent banner top of card (warm restaurant feel) */
+.kiosk-loyalty-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 24px;
+  right: 24px;
+  height: 6px;
+  background: linear-gradient(90deg, #F5C518 0%, #F4501E 100%);
+  border-radius: 0 0 6px 6px;
 }
 
 .kiosk-loyalty-subtitle {

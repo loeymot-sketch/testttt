@@ -1,37 +1,40 @@
 <template>
   <section class="kiosk-cash">
-    <header class="kiosk-cash__header">
-      <div class="kiosk-cash__badge" aria-hidden="true">💶</div>
-      <h1 class="kiosk-cash__title" data-testid="kiosk-cash-title">
-        {{ $t('kiosk.cash_instruction.title') }}
-      </h1>
-      <p class="kiosk-cash__subtitle">
-        {{ $t('kiosk.cash_instruction.subtitle') }}
-      </p>
-    </header>
+    <!-- V3.3 (2026-05-10) — Wrapper __main centre vertical (32" portrait ergo) -->
+    <div class="kiosk-cash__main">
+      <header class="kiosk-cash__header">
+        <div class="kiosk-cash__badge" aria-hidden="true">💶</div>
+        <h1 class="kiosk-cash__title" data-testid="kiosk-cash-title">
+          {{ $t('kiosk.cash_instruction.title') }}
+        </h1>
+        <p class="kiosk-cash__subtitle">
+          {{ $t('kiosk.cash_instruction.subtitle') }}
+        </p>
+      </header>
 
-    <div class="kiosk-cash__board" role="group" :aria-label="$t('kiosk.cash_instruction.title')">
-      <KsCard elevation="lift" padding="lg" class="kiosk-cash__card">
-        <div class="kiosk-cash__row">
-          <span class="kiosk-cash__label">{{ $t('kiosk.cash_instruction.order_label') }}</span>
-          <strong class="kiosk-cash__number" data-testid="kiosk-cash-order-number">
-            #{{ orderNumber || '—' }}
-          </strong>
-        </div>
-        <div class="kiosk-cash__divider" aria-hidden="true" />
-        <div class="kiosk-cash__row">
-          <span class="kiosk-cash__label">{{ $t('kiosk.cash_instruction.amount_label') }}</span>
-          <KsPriceLine
-            size="lg"
-            emphasis
-            :price="typeof orderTotal === 'number' ? orderTotal : null"
-            :label="''"
-            data-testid="kiosk-cash-amount"
-          />
-        </div>
-      </KsCard>
+      <div class="kiosk-cash__board" role="group" :aria-label="$t('kiosk.cash_instruction.title')">
+        <KsCard elevation="lift" padding="lg" class="kiosk-cash__card">
+          <div class="kiosk-cash__row">
+            <span class="kiosk-cash__label">{{ $t('kiosk.cash_instruction.order_label') }}</span>
+            <strong class="kiosk-cash__number" data-testid="kiosk-cash-order-number">
+              #{{ orderNumber || '—' }}
+            </strong>
+          </div>
+          <div class="kiosk-cash__divider" aria-hidden="true" />
+          <div class="kiosk-cash__row">
+            <span class="kiosk-cash__label">{{ $t('kiosk.cash_instruction.amount_label') }}</span>
+            <KsPriceLine
+              size="lg"
+              emphasis
+              :price="typeof orderTotal === 'number' ? orderTotal : null"
+              :label="''"
+              data-testid="kiosk-cash-amount"
+            />
+          </div>
+        </KsCard>
 
-      <p class="kiosk-cash__help">{{ $t('kiosk.cash_instruction.help') }}</p>
+        <p class="kiosk-cash__help">{{ $t('kiosk.cash_instruction.help') }}</p>
+      </div>
     </div>
 
     <footer class="kiosk-cash__footer">
@@ -131,25 +134,38 @@ export default {
 </script>
 
 <style scoped>
+/* FoodKing brand V3.3 (2026-05-10) — Center vertically for 32" portrait kiosk
+   ergonomics. Owner gate: contenu confort visuel mid-screen, pas top-heavy.
+   Footer anchored bottom via grid template. */
 .kiosk-cash {
     position: relative;
     width: 100%;
     min-height: 100vh;
     background: var(--kiosk-page-bg, var(--kiosk-bg));
+    display: grid;
+    grid-template-rows: 1fr auto;
+    padding: var(--kiosk-space-8) var(--kiosk-space-8) var(--kiosk-space-6);
+    box-sizing: border-box;
+}
+
+.kiosk-cash__main {
     display: flex;
     flex-direction: column;
-    padding: var(--kiosk-space-12) var(--kiosk-space-8) var(--kiosk-space-10);
+    align-items: center;
+    justify-content: center;
+    gap: var(--kiosk-space-6);
+    padding: var(--kiosk-space-8) 0;
 }
 
 .kiosk-cash__header {
     text-align: center;
-    margin-bottom: var(--kiosk-space-10);
+    margin-bottom: var(--kiosk-space-4);
 }
 
 .kiosk-cash__badge {
-    width: 120px;
-    height: 120px;
-    margin: 0 auto var(--kiosk-space-5);
+    width: 140px;
+    height: 140px;
+    margin: 0 auto var(--kiosk-space-6);
     border-radius: 50%;
     background: var(--kiosk-primary);
     color: var(--kiosk-text-on-red);
@@ -157,7 +173,7 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 72px;
+    font-size: 80px;
 }
 
 .kiosk-cash__title {
@@ -177,13 +193,12 @@ export default {
 }
 
 .kiosk-cash__board {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: var(--kiosk-space-6);
-    padding: var(--kiosk-space-6) 0;
+    width: 100%;
 }
 
 .kiosk-cash__card {
