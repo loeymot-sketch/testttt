@@ -1027,14 +1027,13 @@ export default {
   scrollbar-width: none;
 }
 
-/* FoodKing brand V2 (2026-05-10) — quand le bottom-sheet est visible
-   (cart > 0), augmente le padding bottom pour que le dernier produit ne
-   passe pas sous la sheet (sheet: ~280px + bar: 118px ≈ 400px). */
+/* FoodKing brand V3 (2026-05-10) — sheet horizontal compact ~150px.
+   Padding total = 150 (sheet) + 118 (bar) + 32 (clearance) ≈ 300px. */
 .kiosk-catalogue:has([data-testid="kiosk-cart-bottom-sheet"]) .kiosk-product-zone {
-  padding-bottom: 420px;
+  padding-bottom: 300px;
 }
 .kiosk-catalogue:has([data-testid="kiosk-cart-bottom-sheet"]) .kiosk-sidebar {
-  padding-bottom: 420px;
+  padding-bottom: 300px;
 }
 
 .kiosk-product-zone::-webkit-scrollbar { display: none; }

@@ -862,7 +862,7 @@ export default {
 .kiosk-cart-edit-btn:hover {
   background: var(--kiosk-primary-soft);
   color: var(--kiosk-primary);
-  border-color: rgba(232,0,28,0.2);
+  border-color: rgba(244, 80, 30, 0.24);
 }
 
 .kiosk-cart-item-name {

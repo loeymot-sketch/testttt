@@ -12,17 +12,18 @@
    ============================================================================= */
 
 :root {
-  /* -- Brand ----------------------------------------------------------------- */
-  --kiosk-primary:       #E8001C; /* fk.red           */
-  --kiosk-primary-dark:  #B8000F; /* fk.redDark       */
-  --kiosk-primary-soft:  #FFF0F2; /* fk.redSoft (états actifs tintés) */
+  /* -- Brand — FoodKing V2 2026-05-10 Cayenne (mobile app aligned) -----------
+     Owner gate (2026-05-10) : "plus de rouge legacy, Cayenne #F4501E partout". */
+  --kiosk-primary:       #F4501E; /* Cayenne brand */
+  --kiosk-primary-dark:  #DC4517;
+  --kiosk-primary-soft:  #FFE8DD;
 
-  /* -- Surfaces -------------------------------------------------------------- */
-  --kiosk-bg:            #FFFBF5; /* fk.bg — warm appétissant */
-  --kiosk-surface:       #FFFFFF; /* fk.surface       */
-  --kiosk-surface-alt:   #F7F3EC; /* fk.surfaceAlt    */
-  --kiosk-border:        #EEE6D9; /* fk.border        */
-  --kiosk-border-strong: #D9C9B8;
+  /* -- Surfaces — V2 white pur (était #FFFBF5 warm) -------------------------- */
+  --kiosk-bg:            #FFFFFF;
+  --kiosk-surface:       #FFFFFF;
+  --kiosk-surface-alt:   #F7F7F7;
+  --kiosk-border:        #E5E5E5;
+  --kiosk-border-strong: #C4C4C4;
 
   /* -- Texte ----------------------------------------------------------------- */
   --kiosk-text:          #1A1A1A; /* fk.text   — ratio 15.8:1 sur bg  AAA */
@@ -40,7 +41,7 @@
   --kiosk-badge-veg:       #1B8A3A;
   --kiosk-badge-halal:     #0D7A33;
   --kiosk-badge-spicy:     #C21E2F;
-  --kiosk-badge-new:       #E8001C;
+  --kiosk-badge-new:       #F4501E;
   --kiosk-badge-chef-pick: #B8730B; /* is_chef_pick (admin static — §1.5 invariants) */
 
   /* -- Focus (WCAG 2.4.7) ---------------------------------------------------- */
@@ -55,7 +56,7 @@
   /* -- Ombres ---------------------------------------------------------------- */
   --kiosk-shadow-card:     0 4px 18px rgba(20, 20, 20, 0.06);
   --kiosk-shadow-lift:     0 12px 32px rgba(20, 20, 20, 0.12);
-  --kiosk-shadow-cta:      0 10px 24px rgba(232, 0, 28, 0.28);
+  --kiosk-shadow-cta:      0 10px 24px rgba(244, 80, 30, 0.28);
   --kiosk-shadow-modal:    0 24px 48px rgba(26, 26, 26, 0.24);
   --kiosk-shadow-sticky:   0 -8px 24px rgba(0, 0, 0, 0.06);
 

@@ -29,10 +29,9 @@
           role="listitem"
           :data-testid="`kiosk-cart-bottom-sheet-item-${idx}`"
         >
-          <!-- Card layout vertical (V2 redesign per owner 2026-05-10):
-               1. Image grande au top
-               2. Nom + prix sous l'image
-               3. Boutons +/− en bas (large, touchable) -->
+          <!-- V3 layout horizontal compact (owner request 2026-05-10) :
+               [IMG 64×64] Nom + prix          [- N +]
+               Card height ~80px, sheet total ~150px (-60% vs v2). -->
           <div class="kiosk-cart-strip-thumb">
             <img
               v-if="item.image"
@@ -42,11 +41,10 @@
               loading="lazy"
             />
             <div v-else class="kiosk-cart-strip-img-fallback" aria-hidden="true">🍔</div>
-            <span class="kiosk-cart-strip-qty-badge" aria-hidden="true">×{{ item.quantity }}</span>
           </div>
 
           <div class="kiosk-cart-strip-info">
-            <div class="kiosk-cart-strip-name">{{ truncate(item.name, 28) }}</div>
+            <div class="kiosk-cart-strip-name">{{ truncate(item.name, 22) }}</div>
             <div class="kiosk-cart-strip-price">{{ formatPrice(item.total) }}</div>
           </div>
 
@@ -58,10 +56,10 @@
               :data-testid="`kiosk-cart-bottom-sheet-decrement-${idx}`"
               @click="$emit('decrement', idx)"
             >
-              <svg v-if="item.quantity > 1" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <svg v-if="item.quantity > 1" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M5 10h10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
               </svg>
-              <svg v-else width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <svg v-else width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M3 6h14M8 6V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2m1 0v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h10Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
@@ -76,7 +74,7 @@
               :data-testid="`kiosk-cart-bottom-sheet-increment-${idx}`"
               @click="$emit('increment', idx)"
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M10 5v10M5 10h10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
               </svg>
             </button>
@@ -165,10 +163,10 @@ export default {
 </script>
 
 <style scoped>
-/* FoodKing brand V2 (2026-05-10) — Cart bottom-sheet refactor:
-   Vertical card layout (image top → name → price → +/− stepper bottom).
-   Solid opaque white, z-index 30 (au-dessus de tous les product cards),
-   isolation: isolate pour stacking context propre. */
+/* FoodKing brand V3 (2026-05-10) — Cart bottom-sheet HORIZONTAL compact.
+   Owner v3 feedback : "30-40% plus petit, image réelle, design smart".
+   Layout par card : [IMG 64] Nom + prix [-N+] horizontal, ~80px tall.
+   Total sheet ~150-160px (vs 364px v2). */
 .kiosk-cart-strip {
     position: absolute;
     left: 0;
@@ -177,25 +175,24 @@ export default {
     z-index: 30;
     background: #FFFFFF;
     border-top: 2px solid #0F0F0F;
-    box-shadow: 0 -10px 24px rgba(15, 15, 15, 0.10);
-    padding: 14px 18px 16px;
+    box-shadow: 0 -8px 20px rgba(15, 15, 15, 0.08);
+    padding: 10px 16px 12px;
     isolation: isolate;
-    /* Force opaque painting context — pas de transparency / no see-through. */
     transform: translateZ(0);
     backdrop-filter: none;
 }
 
 .kiosk-cart-strip-header {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
-    padding: 0 4px;
+    margin-bottom: 8px;
+    padding: 0 2px;
 }
 
 .kiosk-cart-strip-title {
     font-family: var(--kiosk-font-display, var(--kiosk-font-latin, sans-serif));
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 800;
     color: #0F0F0F;
     letter-spacing: 0.3px;
@@ -203,21 +200,21 @@ export default {
 }
 
 .kiosk-cart-strip-count {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
     color: #FFFFFF;
     background: #F4501E;
-    padding: 4px 12px;
+    padding: 3px 10px;
     border-radius: 999px;
     letter-spacing: 0.2px;
 }
 
 .kiosk-cart-strip-list {
     display: flex;
-    gap: 14px;
+    gap: 10px;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 4px 4px 6px;
+    padding: 2px 2px 4px;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
@@ -225,46 +222,48 @@ export default {
 }
 
 .kiosk-cart-strip-list::-webkit-scrollbar {
-    height: 4px;
+    height: 3px;
 }
 .kiosk-cart-strip-list::-webkit-scrollbar-thumb {
     background: #E5E5E5;
-    border-radius: 4px;
+    border-radius: 3px;
 }
 
-/* Vertical card — owner spec :
-   1. Image (96×96) carrée arrondie au top
-   2. Nom + prix au milieu
-   3. Stepper +/− en bas */
+/* Horizontal compact card V3 (owner spec) :
+   [thumb 64] [info: name+price] [stepper +/-]
+   Width ~280px, height ~80px (3 cards rentrent largement) */
 .kiosk-cart-strip-item {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
     flex: 0 0 auto;
-    width: 168px;
-    padding: 12px;
+    width: 280px;
+    padding: 8px 10px 8px 8px;
     background: #FFFFFF;
     border: 1.5px solid #E5E5E5;
-    border-radius: 16px;
+    border-radius: 14px;
     scroll-snap-align: start;
-    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    gap: 10px;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .kiosk-cart-strip-item:hover {
     border-color: #F4501E;
-    box-shadow: 0 4px 14px rgba(244, 80, 30, 0.16);
+    box-shadow: 0 3px 10px rgba(244, 80, 30, 0.14);
 }
 
 .kiosk-cart-strip-thumb {
     position: relative;
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    border-radius: 12px;
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
     overflow: hidden;
     background: #FAFAFA;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 10px;
+    border: 1px solid #EFEFEF;
 }
 
 .kiosk-cart-strip-img {
@@ -275,72 +274,57 @@ export default {
 }
 
 .kiosk-cart-strip-img-fallback {
-    font-size: 48px;
+    font-size: 32px;
     line-height: 1;
 }
 
-/* Quantity badge top-right (owner reference image 1 + 2 Gur Kebab style) */
-.kiosk-cart-strip-qty-badge {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    background: #0F0F0F;
-    color: #F5C518;
-    font-weight: 800;
-    font-size: 12px;
-    padding: 3px 8px;
-    border-radius: 999px;
-    letter-spacing: 0.3px;
-}
-
 .kiosk-cart-strip-info {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    margin-bottom: 10px;
-    min-height: 44px;
+    gap: 2px;
+    justify-content: center;
 }
 
 .kiosk-cart-strip-name {
     font-size: 13px;
     font-weight: 700;
     color: #0F0F0F;
-    line-height: 1.3;
+    line-height: 1.25;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    white-space: nowrap;
 }
 
 .kiosk-cart-strip-price {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 900;
     color: #F4501E;
     line-height: 1;
-    margin-top: 2px;
+    letter-spacing: -0.2px;
 }
 
-/* Stepper +/− bottom row */
+/* Stepper compact +/− horizontal */
 .kiosk-cart-strip-qty {
-    display: flex;
-    align-items: stretch;
-    justify-content: space-between;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
     background: #F7F7F7;
-    border-radius: 12px;
-    padding: 4px;
-    gap: 4px;
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
 }
 
 .kiosk-cart-strip-btn {
-    flex: 1;
-    height: 40px;
-    min-width: 40px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
     border: 0;
-    border-radius: 8px;
+    border-radius: 50%;
     background: #FFFFFF;
     color: #0F0F0F;
-    font-size: 18px;
+    font-size: 14px;
     font-weight: 700;
     line-height: 1;
     cursor: pointer;
@@ -357,7 +341,7 @@ export default {
 }
 
 .kiosk-cart-strip-btn:active {
-    transform: scale(0.92);
+    transform: scale(0.9);
 }
 
 .kiosk-cart-strip-btn--plus {
@@ -371,18 +355,18 @@ export default {
 }
 
 .kiosk-cart-strip-btn:focus-visible {
-    outline: 3px solid #2563EB;
+    outline: 2px solid #2563EB;
     outline-offset: 2px;
 }
 
 .kiosk-cart-strip-quantity {
     flex: 0 0 auto;
-    min-width: 28px;
+    min-width: 22px;
+    padding: 0 4px;
     text-align: center;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 800;
     color: #0F0F0F;
-    align-self: center;
 }
 
 /* Slide-up enter / exit transition */
