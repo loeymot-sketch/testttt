@@ -1,0 +1,159 @@
+// shared.jsx — Shared UI atoms for Le Cayenne
+
+const { useState, useEffect, useRef, Fragment } = React;
+
+// Wordmark logo
+function Logo({ size = 22, color = '#0A0A0A', accent = '#FF5A1F' }) {
+  return (
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '0.02em', lineHeight: 1, fontSize: size, fontWeight: 400 }}>
+      <span style={{ color }}>LE</span>
+      <span style={{ color: accent }}>CAYENNE</span>
+    </div>
+  );
+}
+
+// Stamp/seal mark used as small flourish
+function Stamp({ size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28">
+      <circle cx="14" cy="14" r="13" fill="none" stroke="currentColor" strokeWidth="1"/>
+      <text x="14" y="17" textAnchor="middle" fontFamily="var(--font-display)" fontSize="11" fontWeight="700" fill="currentColor">LC</text>
+    </svg>
+  );
+}
+
+// Bottom tab bar
+function TabBar({ active, onChange }) {
+  const tabs = [
+    { id: 'home', label: 'Accueil', icon: I.Home },
+    { id: 'menu', label: 'Menu', icon: I.Menu },
+    { id: 'orders', label: 'Commandes', icon: I.Receipt },
+    { id: 'profile', label: 'Profil', icon: I.User },
+  ];
+  return (
+    <div className="lc-tabs">
+      {tabs.map(t => {
+        const isActive = active === t.id;
+        return (
+          <div key={t.id} className={`lc-tab ${isActive ? 'lc-tab--active' : ''}`} onClick={() => onChange(t.id)}>
+            <t.icon size={22} sw={isActive ? 2.2 : 1.7} />
+            <span>{t.label}</span>
+            <span className="lc-tab-dot" />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Image-slot wrapper that respects React
+function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {} }) {
+  return (
+    <image-slot
+      slot-id={id}
+      placeholder={placeholder}
+      shape={shape}
+      style={{ display: 'block', width: w === undefined ? '100%' : w, height: h, borderRadius: radius, overflow: 'hidden', ...style }}
+    />
+  );
+}
+
+// Generic floating sticky CTA at bottom
+function StickyCTA({ children, bg = 'var(--ink)', color = '#fff', extraBottom = 84 }) {
+  return (
+    <div style={{ position: 'absolute', left: 16, right: 16, bottom: extraBottom, zIndex: 9 }}>
+      <button className="lc-btn" style={{ background: bg, color, width: '100%', height: 60, fontSize: 14 }}>{children}</button>
+    </div>
+  );
+}
+
+// Header bar at top of content screens
+function ScreenHeader({ left, center, right, style = {}, safeTop = true }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${safeTop ? 14 : 14}px 16px 12px`, position: 'relative', zIndex: 5, ...style }}>
+      <div style={{ width: 40, display: 'flex' }}>{left}</div>
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>{center}</div>
+      <div style={{ width: 40, display: 'flex', justifyContent: 'flex-end' }}>{right}</div>
+    </div>
+  );
+}
+
+// Round icon button
+function IconBtn({ children, onClick, size = 40, bg = 'var(--gray-1)', color = 'var(--ink)', style = {} }) {
+  return (
+    <button onClick={onClick} style={{ width: size, height: size, borderRadius: 999, border: 0, background: bg, color, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', ...style }}>
+      {children}
+    </button>
+  );
+}
+
+// Marquee category banner
+function Marquee({ items, bg = 'var(--orange)', color = '#fff' }) {
+  const set = (
+    <div className="lc-marquee-track">
+      {[...items, ...items].map((it, i) => (
+        <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 18px', fontFamily: 'var(--font-display)', fontSize: 18, textTransform: 'uppercase', whiteSpace: 'nowrap', color }}>
+          {it}
+          <span style={{ width: 6, height: 6, borderRadius: 999, background: color, opacity: 0.7, marginLeft: 12 }}/>
+        </div>
+      ))}
+    </div>
+  );
+  return (
+    <div className="lc-marquee" style={{ background: bg, padding: '12px 0' }}>
+      {set}
+    </div>
+  );
+}
+
+// Onboarding pagination dots
+function Dots({ count, active, color = '#0A0A0A' }) {
+  return (
+    <div style={{ display: 'flex', gap: 6 }}>
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} style={{ width: i === active ? 22 : 6, height: 6, borderRadius: 999, background: i === active ? color : 'rgba(0,0,0,0.2)', transition: 'all 0.2s' }}/>
+      ))}
+    </div>
+  );
+}
+
+// QR Code SVG (simple deterministic mock)
+function QRMock({ size = 200, value = 'LECAY-LOYALTY' }) {
+  // Generate pseudo-random pattern from value
+  const cells = 25;
+  const cellSize = size / cells;
+  const grid = [];
+  let seed = 0;
+  for (let c of value) seed = (seed * 31 + c.charCodeAt(0)) % 100000;
+  const rand = (i, j) => {
+    const v = Math.sin((i + 1) * (j + 1) * (seed + 1)) * 10000;
+    return (v - Math.floor(v)) > 0.55;
+  };
+  for (let i = 0; i < cells; i++) {
+    for (let j = 0; j < cells; j++) {
+      if (rand(i, j)) grid.push({ i, j });
+    }
+  }
+  // Corner finder pattern
+  const finder = (x, y) => (
+    <g key={`f${x}-${y}`}>
+      <rect x={x*cellSize} y={y*cellSize} width={cellSize*7} height={cellSize*7} fill="#0A0A0A"/>
+      <rect x={(x+1)*cellSize} y={(y+1)*cellSize} width={cellSize*5} height={cellSize*5} fill="#fff"/>
+      <rect x={(x+2)*cellSize} y={(y+2)*cellSize} width={cellSize*3} height={cellSize*3} fill="#0A0A0A"/>
+    </g>
+  );
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ background: '#fff' }}>
+      {grid.map((c, k) => {
+        // Skip finder areas
+        if ((c.i < 7 && c.j < 7) || (c.i < 7 && c.j > 17) || (c.i > 17 && c.j < 7)) return null;
+        return <rect key={k} x={c.j*cellSize} y={c.i*cellSize} width={cellSize} height={cellSize} fill="#0A0A0A"/>;
+      })}
+      {finder(0, 0)}
+      {finder(0, 18)}
+      {finder(18, 0)}
+    </svg>
+  );
+}
+
+Object.assign(window, { Logo, Stamp, TabBar, Slot, StickyCTA, ScreenHeader, IconBtn, Marquee, Dots, QRMock });

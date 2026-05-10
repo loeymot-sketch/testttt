@@ -1,0 +1,184 @@
+/* Le Cayenne — Mobile App Design System */
+
+:root {
+  --ink: #0A0A0A;
+  --ink-2: #1A1A1A;
+  --ink-3: #2A2A2A;
+  --orange: #FF5A1F;
+  --orange-dark: #E54A12;
+  --orange-soft: #FFE6D6;
+  --yellow: #FFD93D;
+  --yellow-soft: #FFF4C2;
+  --paper: #FFFFFF;
+  --cream: #FAF7F2;
+  --gray-1: #F2EFEA;
+  --gray-2: #D9D5CC;
+  --gray-3: #8A857B;
+  --gray-4: #4A4640;
+  --red: #E5341A;
+  --green: #1FA653;
+
+  /* Typography — overridden by Tweaks */
+  --font-display: 'Anton', 'Bebas Neue', 'Archivo Black', sans-serif;
+  --font-body: 'Inter', -apple-system, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+body { margin: 0; font-family: var(--font-body); color: var(--ink); }
+button { color: var(--ink); font-family: inherit; }
+button:disabled { opacity: 1; }
+
+/* Contrast safety net — text inside any light-bg screen defaults to ink.
+   Dark surfaces explicitly opt out by setting color on the wrapper. */
+[data-screen-label] { color: var(--ink); }
+[data-screen-label] h1, [data-screen-label] h2, [data-screen-label] h3,
+[data-screen-label] h4, [data-screen-label] p, [data-screen-label] span,
+[data-screen-label] div, [data-screen-label] label, [data-screen-label] li {
+  color: inherit;
+}
+/* Anything sitting on var(--ink) explicitly uses light text */
+[style*="background: var(--ink)"], [style*="background:var(--ink)"],
+[style*="background: #0A0A0A"], [style*="background:#0A0A0A"],
+[style*="background: #000"], [style*="background:#000"] {
+  color: #fff;
+}
+
+.lc-display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.01em; line-height: 0.92; text-transform: uppercase; }
+.lc-eyebrow { font-family: var(--font-body); font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
+
+/* iOS status bar safe area — 11px island top + 22px island + ~30px clearance */
+:root { --ios-safe-top: 68px; }
+
+/* Phone-screen scroll */
+.lc-screen { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-top: var(--ios-safe-top); }
+.lc-screen::-webkit-scrollbar { display: none; }
+
+/* Pills + buttons */
+.lc-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; height: 56px; padding: 0 28px; border-radius: 999px;
+  font-family: var(--font-body); font-weight: 700; font-size: 15px;
+  letter-spacing: 0.06em; text-transform: uppercase; border: 0; cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+.lc-btn:active { transform: scale(0.97); }
+.lc-btn--ink { background: var(--ink); color: var(--paper); }
+.lc-btn--orange { background: var(--orange); color: var(--paper); }
+.lc-btn--yellow { background: var(--yellow); color: var(--ink); }
+.lc-btn--ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
+
+.lc-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px; font-size: 11px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+}
+.lc-pill--orange { background: var(--orange); color: #fff; }
+.lc-pill--yellow { background: var(--yellow); color: var(--ink); }
+.lc-pill--ink { background: var(--ink); color: var(--paper); }
+.lc-pill--red { background: var(--red); color: #fff; }
+.lc-pill--green { background: var(--green); color: #fff; }
+.lc-pill--ghost { background: var(--gray-1); color: var(--ink); }
+
+/* Image slot styling override */
+image-slot {
+  --slot-bg: #1a1a1a;
+  --slot-fg: rgba(255,255,255,0.5);
+}
+
+/* Tab bar */
+.lc-tabs {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: var(--paper);
+  border-top: 1px solid var(--gray-1);
+  padding: 10px 4px 28px;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  z-index: 10;
+}
+.lc-tab {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 6px 0; cursor: pointer; color: var(--gray-3);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.lc-tab--active { color: var(--ink); }
+.lc-tab--active .lc-tab-dot { background: var(--orange); }
+.lc-tab-dot { width: 4px; height: 4px; border-radius: 999px; background: transparent; margin-top: 2px; }
+
+/* Decorative pattern (yellow bg with food doodles) */
+.lc-doodle-bg {
+  background-image:
+    radial-gradient(circle at 12% 20%, rgba(0,0,0,0.06) 0 1.5px, transparent 1.5px),
+    radial-gradient(circle at 78% 35%, rgba(0,0,0,0.06) 0 1.5px, transparent 1.5px),
+    radial-gradient(circle at 30% 70%, rgba(0,0,0,0.06) 0 1.5px, transparent 1.5px),
+    radial-gradient(circle at 88% 88%, rgba(0,0,0,0.06) 0 1.5px, transparent 1.5px);
+  background-size: 240px 240px, 240px 240px, 240px 240px, 240px 240px;
+}
+
+/* Marquee category strip — bold rotating banner like Pop's */
+@keyframes lc-scroll-x { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.lc-marquee { display: flex; overflow: hidden; }
+.lc-marquee-track { display: flex; gap: 0; animation: lc-scroll-x 28s linear infinite; flex-shrink: 0; }
+
+/* Stepper */
+.lc-stepper {
+  display: inline-flex; align-items: center; background: var(--gray-1);
+  border-radius: 999px; padding: 2px; gap: 0;
+}
+.lc-stepper button {
+  width: 32px; height: 32px; border-radius: 999px; border: 0; background: transparent;
+  font-size: 18px; font-weight: 700; color: var(--ink); cursor: pointer;
+}
+.lc-stepper button:hover { background: var(--paper); }
+.lc-stepper-val { min-width: 24px; text-align: center; font-weight: 700; }
+
+/* Section title */
+.lc-sec-title {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 0 20px; margin-bottom: 12px;
+}
+.lc-sec-title h3 {
+  margin: 0; font-family: var(--font-display); font-weight: 400;
+  font-size: 22px; letter-spacing: 0.01em; text-transform: uppercase; line-height: 1;
+}
+.lc-sec-title .more { font-size: 12px; color: var(--gray-3); font-weight: 600; }
+
+/* Card */
+.lc-card { background: var(--paper); border-radius: 18px; overflow: hidden; }
+.lc-card--cream { background: var(--cream); }
+
+/* Subtle decorative grain */
+.lc-noise::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image: radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px);
+  background-size: 4px 4px; mix-blend-mode: multiply; opacity: 0.5;
+}
+
+/* Confetti for celebrations */
+@keyframes lc-confetti { 0% { transform: translateY(-100%) rotate(0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(1000%) rotate(720deg); opacity: 0; } }
+@keyframes lc-slide-down { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* Pulse for QR */
+@keyframes lc-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,90,31,0.4); } 50% { box-shadow: 0 0 0 16px rgba(255,90,31,0); } }
+.lc-pulse { animation: lc-pulse 2.4s ease-in-out infinite; }
+
+/* SVG icon helpers */
+.lc-icon { display: inline-flex; align-items: center; justify-content: center; }
+
+/* Toggle row */
+.lc-toggle-row {
+  display: flex; align-items: center; padding: 14px 16px;
+  border-bottom: 1px solid var(--gray-1); cursor: pointer; user-select: none;
+}
+.lc-toggle-row:last-child { border-bottom: 0; }
+.lc-checkbox {
+  width: 22px; height: 22px; border-radius: 7px; border: 1.5px solid var(--gray-2);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  margin-left: auto; transition: all 0.15s;
+}
+.lc-checkbox--on { background: var(--orange); border-color: var(--orange); }
+
+/* Status indicator */
+.lc-status-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+
+/* Yellow + Orange dramatic gradient option */
+.lc-grad-fire { background: linear-gradient(135deg, #FFD93D 0%, #FF9500 50%, #FF5A1F 100%); }
