@@ -1,0 +1,8 @@
+{
+  "cart_displayed_total": 23.7,
+  "backend_quote_total_ttc": 22.5,
+  "backend_quote_subtotal": 22.5,
+  "backend_quote_total_tax": 3.75,
+  "absolute_delta": 1.1999999999999993,
+  "verdict": "P0_NUMERIC_INTEGRITY_DELTA"
+}

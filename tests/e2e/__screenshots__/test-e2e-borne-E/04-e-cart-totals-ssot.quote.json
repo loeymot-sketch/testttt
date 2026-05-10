@@ -1,0 +1,16 @@
+{
+  "status": true,
+  "data": {
+    "quote_token": "98717429-de48-4c91-8e8a-56807e66427d",
+    "signature": "447015e26300614bf16019fc0999fba9f2ee2597f394ff68998e79b4ff5d9950",
+    "expires_at": "2026-05-10T20:14:18+02:00",
+    "ttl_seconds": 169,
+    "subtotal": 22.5,
+    "discount": 0,
+    "total_tax": 3.75,
+    "delivery_charge": 0,
+    "total_ttc": 22.5,
+    "currency": "EUR",
+    "consumed_at": null
+  }
+}

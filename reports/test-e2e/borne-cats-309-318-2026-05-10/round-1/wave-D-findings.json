@@ -1,0 +1,64 @@
+{
+  "wave": "D",
+  "round": 1,
+  "states_reviewed": 10,
+  "findings": [
+    {
+      "id": "D-001",
+      "state_artifact": "test-e2e-borne-D/09-d-bottom-sheet-after-mixed-cart.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "Two distinct counts displayed simultaneously to the user, both labeled 'articles': top bandeau '[data-testid=kiosk-categories-cart-indicator]' shows '7 articles' (sum of quantities = 3 desserts + 3 Coca + 1 Fromage), while the bottom-sheet header '[data-testid=kiosk-cart-bottom-sheet-count]' shows '5 articles' (distinct line count). Verified in 09-d-bottom-sheet-after-mixed-cart.dom.html and 10-d-cart-totals-mixed.dom.html. State 06 also exhibits the divergence (indicator '6 articles' vs sheet '4 articles'). The two counters use the same noun 'articles' with no qualifier — a customer scanning the screen sees conflicting product totals (which is the truth — 5 lines or 7 items?). The footer also displays €16,90 next to '7 articles' which works arithmetically only if articles==quantities, while the sheet bookmark '5 articles' works only if articles==lines. Same word, different semantics, same screen.",
+      "fix_hint": "Either align both counters on the same metric (recommended: both show line count, since the stepper qty is already visible per line; or both show quantity sum). If keeping both, add a qualifier — top: 'X articles' (=qty); sheet header: 'X produits' or 'X lignes'. File: resources/js/components/frontend/kiosk/ds/KsCartBottomSheet.vue line ~19 (sheet count) and resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue cart-indicator binding (compute from items.length not Σ qty, or vice versa). Cross-check Vuex getters store/modules/kioskCart.js — the count() getter and the items.length should converge on a single user-facing semantic.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-002",
+      "state_artifact": "test-e2e-borne-D/09-d-bottom-sheet-after-mixed-cart.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "State 09 PNG renders only items 2/3/4 (Tiramisu, Coca-Cola 33cl ×3, Fromage supplémentaire) inside the bottom-sheet horizontal strip. Items 0 (Glace) and 1 (Tarte Daim) ARE present in DOM (kiosk-cart-bottom-sheet-item-0 and -1 confirmed) but are scrolled off the left edge of the viewport — agent's logged boundingBox for first card shows x=-378 (off-screen). The bottom-sheet uses CSS 'overflow-x: auto; scroll-snap-type: x mandatory' with each card flex: 0 0 280px. There is NO visible scroll affordance: no left/right chevrons, no scroll-progress dots, no fade-mask on edges, no count-of-hidden indicator. On a 1080-wide kiosk borne portrait screen the strip area is ~ 880px (after thumb + paddings) which fits ~3 cards; with 5 cards in cart the user must guess to swipe. KsCartBottomSheet.vue line 215 (overflow-x auto) and lines 234-248 confirm the horizontal-only layout with no affordance. role='listitem' present but aria-live missing on the strip — screen-reader users will not hear that 2 lines are hidden. Borderline P1 if the audit considers 'cannot see all paid lines' a primary-task block; documented as P2 because the data is reachable via swipe (not lost, just hidden).",
+      "fix_hint": "Add visible scroll affordance: (a) gradient-fade mask on left/right edges of .kiosk-cart-strip-list when scroll-position permits scrolling, (b) small chevron indicator OR (c) display 'X autres' badge near sheet title when items.length > visibleSlots. Aria: add 'aria-live=polite' on the count and aria-label on the strip explaining it scrolls horizontally. Files: resources/js/components/frontend/kiosk/ds/KsCartBottomSheet.vue line ~12 (strip wrapper) + line ~212 (.kiosk-cart-strip-list CSS).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-003",
+      "state_artifact": "test-e2e-borne-D/07-d-cat-318-baseline.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "State 07 PNG (cat 318 baseline) shows 6 visible product cards each rendering an empty grey '+' placeholder instead of a real product photograph. DOM dump confirms ALL 8 supplément items reference '/storage/<id>/item-default.svg' as their image source: items 415 (Sauce Suppl.), 416 (Fromage Suppl.), 417, 418 (Boursin), 419 (Fromage à raclette), 420 (Galette Pommes de Terre), 421 (Jambon de dinde), 422 — 8/8 default placeholders. State 01 (cat 316 desserts) also has 2/3 placeholders: only item 404 (Glace) shows a real /storage/59/glace.png; items 405 (Tarte Daim) and 406 (Tiramisu) reference /storage/<id>/item-default.svg. State 03 PNG visually confirms Tarte Daim and Tiramisu render as empty grey '+' tiles. The empty placeholder satisfies neither of the empty-state acceptance criteria (no illustration with copy, no CTA): it is a generic '+' icon that visually reads as 'image upload missing', which is what it is.",
+      "fix_hint": "DB seed for branch KIOSK-LC-001: upload product photos (or branded color tiles) for items 405 (Tarte Daim), 406 (Tiramisu) and the 8 cat-318 supplément items 415-422. Until photos exist, replace '/images/storage/.../item-default.svg' with a category-themed fallback that includes the product name typography (Cayenne palette tile + name centered) — file resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue or the upstream item.image_full_url fallback chain in app/Http/Resources/<frontend item resource>.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-004",
+      "state_artifact": "test-e2e-borne-D/10-d-cart-totals-mixed.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "States 08, 09, and 10 are byte-identical (md5 PNG = 711b60de268ab669148d109437aa2449 for all three; md5 DOM = 46d8b54772b5071bf9f3560a5e00db43 for all three). State 10 was specified by the audit plan as 'final mixed cart total === Σ(line × qty)' with verification snap. The spec at lines 291-298 DOES re-read the cart total and count via DOM (readCartTotal + readCartCount) and asserts the values, so the test logic is correct, BUT no UI mutation occurs between state 09 (sheet bbox check) and state 10 (totals check), so the state-10 PNG/DOM snap captures zero new visual evidence beyond state 09. The artifact is technically wasteful: 1.4 MB of duplicated bytes, no incremental visual signal. NOT a product defect — this is an audit-discipline issue. Future rounds should either (a) drop state 10 entirely and assert totals at end of state 09, or (b) introduce a visual mutation between 09 and 10 (e.g., scroll the bottom-sheet horizontally to show items 0-1 that are currently scrolled off, OR open a cart-detail modal if such exists, OR navigate to /kiosk/cart full-page).",
+      "fix_hint": "tests/e2e/test-e2e-borne-2026-05-10-wave-D.spec.js: either (a) merge state 10 totals assertions into state 09 and remove the redundant snap call at line 300, or (b) before state 10 snap insert a horizontal scroll on the bottom-sheet (page.locator(SHEET_OUTER_TESTID).evaluate(el => el.scrollLeft = 0)) to capture items 0-1 visible (Glace + Tarte Daim) — would also produce evidence for the D-002 affordance gap.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 2,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 1,
+    "open_P2": 2,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER",
+  "notes": "Phase A direct-add behaviour VERIFIED across states 02 (cat 316 dessert), 05 (cat 317 boisson), 08 (cat 318 supplément): no .kiosk-wizard-overlay element rendered in DOM at any tap-state (only CSS-scoped definition in <style> blocks, count constant 17 across baseline + post-tap states). hasOptions() in KioskCategoriesComponent.vue line 594-618 short-circuits cat 318 explicitly (catId===318 OR catName.startsWith('supplement')) and cats 316/317 fall through cleanly because their items expose no itemAttributes / extras / variations / has_menu. Cart count and total verified at every numeric-integrity state: 11.40€ (3×3.80) state 03; 15.90€ (=11.40+4.50 with Coca×3) state 06; 16.90€ (=15.90+1.00 Fromage) state 10 — matches expected and matches DOM kiosk-categories-cart-total. Network sidecars empty across 10 states (no 4xx/5xx). Console errors limited to vendor.js Pusher WS noise (allowlisted). Cat 315 absent from sidebar (verified via grep). NOT verified by Wave D (out of scope, flagged for Wave A reviewer): cats 306/307/308 still appearing in sidebar at every state (kiosk-categories-sidebar-item-306, -307, -308 present in DOM) — this is a Wave A acceptance criterion, not Wave D. Coca line displays €4,50 line-total without showing unit price (1.50) — by design, not flagged. Fix-wave focus: D-001 (count semantic divergence) is the only loop-blocker for AMBER→GREEN; D-002 / D-003 are quality issues (P2 — not loop-blocking per FINDINGS_SCHEMA verdict semantics); D-003 may need branch-data seeding rather than code fix."
+}

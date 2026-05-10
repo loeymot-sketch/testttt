@@ -1,0 +1,86 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-borne-B/15-cart-after-add-309-310-311-314.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "All four cart lines render the auto-generated text 'Taille : 1 viande' inside the customer-facing note slot (data-testid=\"kiosk-cart-item-note-0\" through kiosk-cart-item-note-3 — DOM grep on 15-cart-after-add-309-310-311-314.dom.html confirms 4 occurrences). The wizard never showed a 'taille' or 'viande' step for any of these items (verified on screenshots 309/310/311/314-01 through -03 — pipeline collapses to sauce + supplements + recap, no kiosk-step-taille / kiosk-step-viande mounts in any of the 12 wizard DOMs). Trace: KioskWizardComponent.vue mounted() L2060–L2068 calls inferTacosPresetMeta() unconditionally; L1030–L1044 returns a non-null preset whenever shouldAskTacosTaille()===false (i.e., for ALL non-tacos items). It builds `label = '1 viande'` via the fallback `${viandeCount} viande${viandeCount > 1 ? 's' : ''}` (L1037) when no taille name is detected in item.name. That label is then propagated to selections._tailleMeta.label and consumed by buildInstruction() at L1945–L1947 with NO `shouldShowCompositionStep('taille')` guard — unlike compositionSummaryChips() at L653 which DOES guard. The text is then assigned to cart line `instruction` at L1930 and serialized to the backend via kioskCart.js sanitizeKioskOrderItem() L98-L112 which preserves `instruction`. Customer-facing impact: shows on cart (verified), printed on kitchen ticket, included in NF525 receipt note, prepended to any actual customer note. False-positive 'taille' info contradicts the actual order (these items have no taille step / no viande step).",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue line 1945 — wrap the `if (this.selections._tailleMeta?.label)` in `&& this.shouldShowCompositionStep('taille')` to mirror the recap-chip guard at L653. Alternatively, fix the root cause at L1030–L1044: inferTacosPresetMeta() should ONLY run for tacos templates (rename appropriately) — gate via `if (effectiveWizardTemplate() !== 'tacos') return null;`. Add Vitest regression: assert buildInstruction() returns '' for an Assiette/Omelette/Ojja item with no taille step active (only sauce selected).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-borne-B/16-cart-thumbnails-quartet.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "States 15 (15-cart-after-add-309-310-311-314.png) and 16 (16-cart-thumbnails-quartet.png) are byte-identical — both PNGs share md5 11d47fb7b470fd0345b3398461824b85, both DOMs share md5 3e591b73f9bcf162c013b6028a441809. The Wave-B spec L333 emits `await snap('15-cart-after-add-309-310-311-314')` then immediately L365 `await snap('16-cart-thumbnails-quartet')` with NO interaction between them (only assertion code in between). The plan (AUDIT_PLAN.md L82-L83) explicitly distinguished state 15 = 'add to cart from recap, navigate to cart, verify single line' and state 16 = 'verify recap thumbnails (pain/viande/sauce/garniture/supplement) render in cart' — but state 16 was supposed to verify thumbnails specifically (zoom/scroll into thumbnail rows), not duplicate state 15. Effectively only 13 unique states were captured; one budgeted state was burned on a duplicate. Audit coverage of the 'cart thumbnails quartet' acceptance criterion (AUDIT_PLAN.md L221: 'Récap thumbnails (pain/viande/sauce/garniture/supplement/menu/boisson)') is therefore not independently verified.",
+      "fix_hint": "tests/e2e/test-e2e-borne-2026-05-10-wave-B.spec.js L364 — replace the redundant snap with a meaningful interaction: scroll to the first cart line, expand its options/composition area (click the edit button or hover-zoom), or capture a per-line composition tooltip. Alternatively split state 16 into a focused close-up screenshot of the line composition cards — page.locator('[data-testid=\"kiosk-cart-item-options-0\"]').screenshot() — and attach it as a per-line PNG sidecar. Mark state 16 as 'thumbnail close-up' in the plan and update the screenshot dir accordingly.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "test-e2e-borne-B/309-01-step-sauce.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "AUDIT_PLAN.md L62-L65 explicitly mandated the cat 309 (Assiette) pipeline as `viande + sauce + garnitures + supplements + recap` and called out state 01 = '01-309-wizard-step-viande — viande selection visible; pick Poulet'. The captured pipeline for cat 309 is `sauce + supplements + recap` only — verified by screenshot 309-01-step-sauce.png + 309-02-step-supplements.png + 309-03-step-recap.png and DOM grep showing zero `.kiosk-step-viande` and zero `.kiosk-step-garnitures` mounts in any 309 DOM. The GStack agent's defense ('items lack viande/garnitures extras seeded → shouldShowStep filters them out') is product-correct — DB query `SELECT id, name FROM items WHERE id IN (381,382,383,384)` returns 'Assiette Poulet / Kefta / Merguez / Mixte', i.e. each meat is a SEPARATE SKU with the meat encoded in item.name; they share zero 'Viande' attribute (only attr 311 = 'Sauce') and the 6 extras for item 381 all have price=1€ → partitionKioskExtras() routes them to `supplements` (no garnitures). However, the audit plan was therefore mis-specified, and the spec (test-e2e-borne-2026-05-10-wave-B.spec.js L287 `allowedTypes`) was relaxed silently to accept any subset — the intended verification of an 'assiette template viande+garnitures pipeline' is NOT performed. The spec should have either (a) rejected the AUDIT_PLAN expectation as catalog-mismatch and emitted a planning gap ticket, or (b) seeded a parent-SKU with viande variations to actually exercise the assiette template's viande step.",
+      "fix_hint": "Two-fork resolution. Fork A (recommended product-correct): reconcile AUDIT_PLAN.md to reflect 4 separate Assiette SKUs and remove the viande-step + garnitures-step expectation for cat 309. Document this in a planning addendum and update Wave B states 1-3 to be cat-309 = sauce + supplements + recap. Fork B (catalog audit): IF the owner intends Assiettes to be one parent SKU with a Viande variation attribute (Poulet/Kefta/Merguez/Mixte) AND price=0 garnitures (Tomates/Salade/Oignons), the seeder + admin migration must add those attributes/extras and the assiette template's viande step would then render. Confirm with owner which fork is intended before any code change. Until then, this is an audit-integrity blocker on the validity of Wave B (Phase D 'frites incluses' pipeline only proves NO-MENU/NO-FRITES_STYLE; it does NOT prove the assiette template renders viande+garnitures).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "test-e2e-borne-B/15-cart-after-add-309-310-311-314.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Cart line 'Menu Cheese Burger (Enfant)' (4th line, item 400, 6.00€) renders a placeholder thumbnail (gray plus-icon avatar) instead of an actual item photo. Wizard step indicator on screenshots 314-01-step-sauce.png + 314-02-step-supplements.png + 314-03-step-recap.png also shows the same placeholder for the RÉCAP circle and the recap line itself. DOM grep on 314-03-step-recap.dom.html: `grep -oE 'item-default\\.svg' 314-03-step-recap.dom.html | wc -l` returns 4 (vs 1 for cats 309/310/311). Item 400 (Menu Cheese Burger Enfant) and item 401 (Menu Nuggets Enfant) have no item-level photo set in the catalog — kioskResolveImageSrc() falls back to /images/menu/item-default.svg.",
+      "fix_hint": "Catalog data: upload an item photo for items 400 + 401 (cat 314 'Menus Enfants') via admin panel. No code change required; this is a catalog completeness gap. Optionally, KioskCartComponent.vue could render a category-themed emoji fallback ('🍔' for kid menus) instead of a generic plus-icon avatar to soften the visual gap until photos are uploaded. Verify other cats 316/317/318 items also have photos to avoid the same pattern in Wave D.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "test-e2e-borne-B/310-02-step-supplements.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "Supplements step for cats 310 + 311 renders 7 cards including 'FROMAGE SUPPLÉMENTAIRE' and 'SALADE VERTE' that show placeholder avatars (gray plus-icon) instead of real item photos. Visible in 310-02-step-supplements.png and 311-02-step-supplements.png. DB row inspection: item_extras id=826 (Fromage supplémentaire, item 385, group_label='supplement_clone') and id=832 (Salade verte, item 385, 2€, supplement_clone) have no associated photo records — extras with `group_label='supplement_clone'` were seeded without thumbnails, while extras with `group_label=NULL` (cat 309 + 314 — Jambon de dinde, Boursin, Fromage à raclette, Œuf, Fromage, Galette pommes de terre) DO have photos rendering correctly.",
+      "fix_hint": "Catalog data: upload thumbnails for the 2 supplement_clone-group extras shared across items 385-391 (Fromage supplémentaire + Salade verte). Alternatively, KioskStepSupplementsComponent could fall back to the same emoji palette as kioskViandeCatalog (pickEmojiForViande pattern). P3 because the supplement names are still readable and prices are clear — not a blocker, but a polish defect.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "test-e2e-borne-B/310-03-step-recap.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "Wizard step-indicator's middle circle (kiosk-step-visual for the supplements step) for cats 310/311/314 displays /images/menu/item-default.svg instead of the supplement category emoji or first-supplement thumbnail. Cat 309 step-indicator correctly shows /images/menu/supplement_jambon_dinde.png. DOM grep on 310-03-step-recap.dom.html: `grep -oE 'kiosk-step-visual-icon[^<]*<[^>]*' 310-03-step-recap.dom.html` shows the SUPPLÉMENT circle fallback to item-default.svg. Cosmetic inconsistency between cats but no functional impact — the step is still reachable and the cards inside render correctly (B-005 is a separate finding for the cards themselves).",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue — the step-indicator icon resolver (likely getStepIconSrc or similar) should pick a deterministic fallback for the supplements step (e.g., a static '/images/menu/supplement_default.png') across all items in cats 310/311/314. Investigate whether the resolver is using `partitionKioskExtras(item).supplements[0].photo` and whether that field is populated for supplement_clone-group extras (likely correlates with B-005).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 3,
+    "P3": 2,
+    "open_P0": 0,
+    "open_P1": 1,
+    "open_P2": 3,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER",
+  "notes": "Forbidden-step assertions PASS: zero `.kiosk-step-menu` and zero `[data-testid=\"kiosk-step-frites-style\"]` mounts across all 14 Wave-B states (DOM grep verified — 0 occurrences for both selectors in 14/14 .dom.html files). Numeric integrity PASSES: recap totals 12.50 + 13.50 + 8.50 + 6.00 = 40.50€ confirmed in DOM (kiosk-order-summary-total-price spans) AND in the cart screen (kiosk-cart-grand-total / kiosk-cart-subtotal / kiosk-cart-item-total-{0..3}). Console errors are vendor.js Pusher WS connection failures only — allowlisted per REVIEWER_PROTOCOL. Network sidecars all empty (no 4xx/5xx/slow). i18n leak regex on visible text in recap + cart DOMs returned zero `\\b[a-z]+(\\.[a-z_]+){2,4}\\b` tokens. Pipelines collapsed to sauce/supplements/recap because the catalog encodes meat in item.name (Assiette Poulet/Kefta/Merguez/Mixte) and has no price=0 garnitures — see B-003 audit_integrity finding for the planning mismatch. The single P1 (B-001) is the most concerning: the customer's note field is auto-overwritten with 'Taille : 1 viande' for items that never had a Taille step — this leaks to backend, kitchen ticket, and receipts. The P2/P3 findings (B-002 duplicate state, B-004/B-005/B-006 catalog photo gaps) are quality polish, not blockers. Verdict AMBER (open_P0=0 AND open_P1=1) — fix B-001 wraps Wave B to GREEN. Fix-wave focus: round-2 must (1) ship the buildInstruction() guard for B-001, (2) reconcile AUDIT_PLAN with the 4-separate-SKU Assiette catalog or seed parent-SKU viande variations, (3) split state 16 into a real thumbnail close-up."
+}

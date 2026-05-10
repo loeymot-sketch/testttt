@@ -1,0 +1,242 @@
+{
+  "pre_addToCart": {
+    "ts": 1778434968167,
+    "wizardFound": true,
+    "storeFound": true,
+    "selections": {
+      "pain": null,
+      "taille": "1 viande",
+      "_painMeta": null,
+      "_tailleMeta": {
+        "viandeCount": 1,
+        "label": "1 viande",
+        "size": null,
+        "attrId": null,
+        "realId": null
+      },
+      "_boissonMeta": null,
+      "_viandeMeta": [],
+      "_fritesSauceMeta": null,
+      "viandes": {},
+      "totalViandes": 0,
+      "sauces": {
+        "929": true
+      },
+      "sauceOrder": [
+        929
+      ],
+      "garnitures": {},
+      "supplements": {
+        "923": false,
+        "924": false
+      },
+      "menuChoice": "none",
+      "boissonChoice": null,
+      "fritesSauce": null,
+      "fritesSauceOrder": [],
+      "composerChoices": {},
+      "quantity": 1,
+      "instruction": "",
+      "fritesStyleExtraId": null
+    },
+    "fritesStyleExtraId": null,
+    "menuChoice": "none",
+    "activeStepTypes": [
+      "sauce",
+      "menu",
+      "supplements",
+      "recap"
+    ],
+    "cartItems": [
+      {
+        "item_id": 393,
+        "item_category_id": null,
+        "name": "Salade Royale",
+        "image": "/storage/48/salade_royale.png",
+        "quantity": 1,
+        "convert_price": 7.5,
+        "currency_price": "7.50€",
+        "discount": 0,
+        "item_variations": [
+          {
+            "id": 899,
+            "variation_name": "Sauce (1ère Gratuite)",
+            "name": "Ketchup"
+          }
+        ],
+        "item_extras": [
+          {
+            "id": 906,
+            "name": "Cheddar + Oignons croustillants"
+          }
+        ],
+        "item_variation_total": 1.8,
+        "item_extra_total": 2,
+        "total": 11.3,
+        "instruction": "Taille : 1 viande. Formule : Avec frites. Sauce frites : Ketchup",
+        "_wizardSelections": {
+          "pain": null,
+          "taille": "1 viande",
+          "_painMeta": null,
+          "_tailleMeta": {
+            "viandeCount": 1,
+            "label": "1 viande",
+            "size": null,
+            "attrId": null,
+            "realId": null
+          },
+          "_boissonMeta": null,
+          "_viandeMeta": [],
+          "_fritesSauceMeta": null,
+          "viandes": {},
+          "totalViandes": 0,
+          "sauces": {
+            "899": true
+          },
+          "sauceOrder": [
+            899
+          ],
+          "garnitures": {},
+          "supplements": {},
+          "menuChoice": "frites",
+          "boissonChoice": null,
+          "fritesSauce": "sauce-var-899",
+          "fritesSauceOrder": [
+            "sauce-var-899"
+          ],
+          "composerChoices": {},
+          "quantity": 1,
+          "instruction": "",
+          "fritesStyleExtraId": 906
+        }
+      }
+    ]
+  },
+  "post_addToCart": {
+    "ts": 1778434970558,
+    "wizardFound": false,
+    "storeFound": true,
+    "cartItems": [
+      {
+        "item_id": 393,
+        "item_category_id": null,
+        "name": "Salade Royale",
+        "image": "/storage/48/salade_royale.png",
+        "quantity": 1,
+        "convert_price": 7.5,
+        "currency_price": "7.50€",
+        "discount": 0,
+        "item_variations": [
+          {
+            "id": 899,
+            "variation_name": "Sauce (1ère Gratuite)",
+            "name": "Ketchup"
+          }
+        ],
+        "item_extras": [
+          {
+            "id": 906,
+            "name": "Cheddar + Oignons croustillants"
+          }
+        ],
+        "item_variation_total": 1.8,
+        "item_extra_total": 2,
+        "total": 11.3,
+        "instruction": "Taille : 1 viande. Formule : Avec frites. Sauce frites : Ketchup",
+        "_wizardSelections": {
+          "pain": null,
+          "taille": "1 viande",
+          "_painMeta": null,
+          "_tailleMeta": {
+            "viandeCount": 1,
+            "label": "1 viande",
+            "size": null,
+            "attrId": null,
+            "realId": null
+          },
+          "_boissonMeta": null,
+          "_viandeMeta": [],
+          "_fritesSauceMeta": null,
+          "viandes": {},
+          "totalViandes": 0,
+          "sauces": {
+            "899": true
+          },
+          "sauceOrder": [
+            899
+          ],
+          "garnitures": {},
+          "supplements": {},
+          "menuChoice": "frites",
+          "boissonChoice": null,
+          "fritesSauce": "sauce-var-899",
+          "fritesSauceOrder": [
+            "sauce-var-899"
+          ],
+          "composerChoices": {},
+          "quantity": 1,
+          "instruction": "",
+          "fritesStyleExtraId": 906
+        }
+      },
+      {
+        "item_id": 395,
+        "item_category_id": null,
+        "name": "Salade Tunisienne",
+        "image": "/storage/50/salade_tunisienne.png",
+        "quantity": 1,
+        "convert_price": 7.5,
+        "currency_price": "7.50€",
+        "discount": 0,
+        "item_variations": [
+          {
+            "id": 929,
+            "variation_name": "Sauce (1ère Gratuite)",
+            "name": "Ketchup"
+          }
+        ],
+        "item_extras": [],
+        "item_variation_total": 0,
+        "item_extra_total": 0,
+        "total": 7.5,
+        "instruction": "Taille : 1 viande",
+        "_wizardSelections": {
+          "pain": null,
+          "taille": "1 viande",
+          "_painMeta": null,
+          "_tailleMeta": {
+            "viandeCount": 1,
+            "label": "1 viande",
+            "size": null,
+            "attrId": null,
+            "realId": null
+          },
+          "_boissonMeta": null,
+          "_viandeMeta": [],
+          "_fritesSauceMeta": null,
+          "viandes": {},
+          "totalViandes": 0,
+          "sauces": {
+            "929": true
+          },
+          "sauceOrder": [
+            929
+          ],
+          "garnitures": {},
+          "supplements": {
+            "923": false,
+            "924": false
+          },
+          "menuChoice": "none",
+          "boissonChoice": null,
+          "fritesSauce": null,
+          "fritesSauceOrder": [],
+          "composerChoices": {},
+          "quantity": 1,
+          "instruction": "",
+          "fritesStyleExtraId": null
+        }
+      }
+    ]
+  }
+}
