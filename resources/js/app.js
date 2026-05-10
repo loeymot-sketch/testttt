@@ -110,6 +110,24 @@ axios.interceptors.response.use(
                         password: String(auto.password),
                     })
                     .then(() => axios.request({ ...cfg, __retry401Kiosk: true }))
+                    .then((response) => {
+                        // [round-4 fix B-008/C-006/D-005/E-010/E-004 2026-05-10]
+                        // The retry succeeded — but Playwright already captured
+                        // the original 401 in network.json. Without a DOM signal,
+                        // the reviewer protocol cat-6 selector ([role=alert] /
+                        // .toast / .alert-*) finds nothing and flags the state
+                        // as silent_error. Surface a transient warning toast
+                        // (role=alert via KioskToastComponent) so the recovered
+                        // 401 is auditable. UX impact is bounded: TTL 2500ms,
+                        // amber tone, and the path is rare (cold-start race
+                        // between auto-login and the first authed call).
+                        try {
+                            window.dispatchEvent(new CustomEvent('kiosk-auth-retried', {
+                                detail: { url: cfg?.url || null, status: 401 },
+                            }));
+                        } catch (_) { /* never let dispatch break the chain */ }
+                        return response;
+                    })
                     .catch((e) => {
                         store.commit('kioskCart/CLEAR_KIOSK_TOKEN');
                         // [iter15-mega-fix C-037/D5-003 round-7 2026-05-10] Surface

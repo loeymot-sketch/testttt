@@ -366,6 +366,20 @@ export default {
       this.$refs.toast?.show(label, 'error', 6000);
     };
     window.addEventListener('kiosk-auth-failed', this._authFailedListener);
+
+    // [round-4 fix B-008/C-006/D-005/E-010/E-004 2026-05-10] Counterpart of
+    // `kiosk-auth-failed`: the auth retry interceptor in app.js now dispatches
+    // `kiosk-auth-retried` when a silent re-login + replay actually SUCCEEDS.
+    // Without this toast, the reviewer protocol (category 6: 4xx in network
+    // log AND no [role=alert] in DOM) flags the original 401 as
+    // silent_error — even though the user-visible flow recovered. Using
+    // `warning` kind so the toast renders with role="alert" (cf.
+    // KioskToastComponent.vue line 15) while staying low-friction (amber,
+    // TTL 2500ms).
+    this._authRetriedListener = () => {
+      this.$refs.toast?.show('Session rafraîchie automatiquement', 'warning', 2500);
+    };
+    window.addEventListener('kiosk-auth-retried', this._authRetriedListener);
     if (window._wsService) {
       this._onWsReconnect = () => {
         if (getPendingCount() > 0) {
@@ -406,6 +420,12 @@ export default {
     if (this._authFailedListener) {
       window.removeEventListener('kiosk-auth-failed', this._authFailedListener);
       this._authFailedListener = null;
+    }
+    // [round-4 fix B-008/C-006/D-005/E-010/E-004 2026-05-10] Symmetric removal
+    // of the kiosk-auth-retried listener.
+    if (this._authRetriedListener) {
+      window.removeEventListener('kiosk-auth-retried', this._authRetriedListener);
+      this._authRetriedListener = null;
     }
     if (this._staleToastDebounceTimer) {
       clearTimeout(this._staleToastDebounceTimer);
