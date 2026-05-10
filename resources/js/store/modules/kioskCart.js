@@ -599,6 +599,23 @@ export const kioskCart = {
             commit('SET_ORDER_TYPE', orderType);
         },
         async quoteOrder({ commit, state }, { orderType, paymentMethod } = {}) {
+            // [test-e2e/pos-kds-sync round-3 E-002 P0] silent-error visibility:
+            // /frontend/order/quote requires the kiosk:order Sanctum bearer. Pre-fix,
+            // any caller (KioskCartComponent.proceedToUpsell, payment refresh, an
+            // offline-queue replay racing pre-hydration) that fired this action before
+            // the kiosk login had populated state.kioskToken would emit a 401 with
+            // empty Authorization header — captured in audit Wave E state 04 with
+            // zero DOM signal. We now gate on token presence and abort with a typed
+            // error BEFORE issuing the network call. The audit-friendly console.debug
+            // keeps the trail visible to engineers without leaking to operators.
+            if (!state.kioskToken) {
+                if (typeof console !== 'undefined' && typeof console.debug === 'function') {
+                    console.debug('[kioskCart] quoteOrder skipped — kioskToken absent (auth not yet hydrated)');
+                }
+                const error = new Error('KIOSK_QUOTE_NO_TOKEN');
+                error.code = 'KIOSK_QUOTE_NO_TOKEN';
+                throw error;
+            }
             const explicitOrderType = assertExplicitKioskOrderType(orderType ?? state.orderType);
             const payload = buildKioskQuotePayload(state, {
                 orderType: explicitOrderType,

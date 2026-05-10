@@ -483,6 +483,18 @@ export default {
     },
 
     async refreshQuote() {
+      // [test-e2e/pos-kds-sync round-3 E-002 P0] silent-error visibility:
+      // mirrors the kioskCart.quoteOrder gate — never POST to /frontend/order/quote
+      // without a kiosk:order Sanctum bearer. Audit Wave E state 04 captured a 401
+      // here during a hydration race; gating early prevents the silent failure.
+      if (!this.$store.state.kioskCart?.kioskToken) {
+        if (typeof console !== 'undefined' && typeof console.debug === 'function') {
+          console.debug('[KioskPayment] refreshQuote skipped — kioskToken absent');
+        }
+        const error = new Error('KIOSK_QUOTE_NO_TOKEN');
+        error.code = 'KIOSK_QUOTE_NO_TOKEN';
+        throw error;
+      }
       const payload = buildKioskOrderPayload(this.$store.state.kioskCart, {
         orderType: this.orderType,
         paymentMethod: this.method,

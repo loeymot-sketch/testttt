@@ -690,11 +690,30 @@ export default {
                 alertService.success(this.$t('pos.cancel_order_done'));
                 await this.fetchOrders();
             } catch (e) {
+                // [test-e2e/pos-kds-sync round-3 E-001 P0] silent-error visibility:
+                // backend 422/4xx on /pos-order/change-status was previously written
+                // only into cancelDialog.error inside the modal. Audit Wave E state 14
+                // showed zero [role=alert] / .toast in DOM → operator had no signal
+                // when the cancel was rejected (e.g. status already advanced past
+                // CANCELED-eligible). Now we ALSO fire alertService.error (vue-toastification
+                // toast with role="alert") so the rejection is visible at the page level,
+                // and we use a dedicated friendly message for HTTP 422 (rule violation).
                 this.cancelDialog.busy = false;
-                const msg = e?.response?.data?.message
-                    || e?.response?.data?.errors?.reason?.[0]
-                    || this.$t('pos.cancel_order_error');
+                const status = Number(e?.response?.status) || 0;
+                const backendMsg = e?.response?.data?.message
+                    || e?.response?.data?.errors?.reason?.[0];
+                let msg;
+                if (status === 422) {
+                    msg = backendMsg || this.$t('error.order_cancel_rejected');
+                } else if (status === 401 || status === 403) {
+                    msg = backendMsg || this.$t('error.order_cancel_unauthorized');
+                } else if (status >= 400 && status < 500) {
+                    msg = backendMsg || this.$t('pos.cancel_order_error');
+                } else {
+                    msg = backendMsg || this.$t('pos.cancel_order_error');
+                }
                 this.cancelDialog.error = msg;
+                try { alertService.error(msg); } catch (_) { /* defensive — never block dialog */ }
             }
         },
         sourceOf(o) {

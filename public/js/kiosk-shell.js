@@ -2095,26 +2095,37 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     refreshQuote: function refreshQuote() {
       var _this3 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
-        var _res$data8;
-        var payload, res, quote;
+        var _this3$$store$state$k, _res$data8;
+        var error, payload, res, quote;
         return _regenerator().w(function (_context2) {
           while (1) switch (_context2.n) {
             case 0:
+              if ((_this3$$store$state$k = _this3.$store.state.kioskCart) !== null && _this3$$store$state$k !== void 0 && _this3$$store$state$k.kioskToken) {
+                _context2.n = 1;
+                break;
+              }
+              if (typeof console !== 'undefined' && typeof console.debug === 'function') {
+                console.debug('[KioskPayment] refreshQuote skipped — kioskToken absent');
+              }
+              error = new Error('KIOSK_QUOTE_NO_TOKEN');
+              error.code = 'KIOSK_QUOTE_NO_TOKEN';
+              throw error;
+            case 1:
               payload = (0,_store_modules_kioskCart__WEBPACK_IMPORTED_MODULE_7__.buildKioskOrderPayload)(_this3.$store.state.kioskCart, {
                 orderType: _this3.orderType,
                 paymentMethod: _this3.method
               });
-              _context2.n = 1;
+              _context2.n = 2;
               return axios__WEBPACK_IMPORTED_MODULE_1__["default"].post('frontend/order/quote', payload);
-            case 1:
+            case 2:
               res = _context2.v;
               quote = res === null || res === void 0 || (_res$data8 = res.data) === null || _res$data8 === void 0 ? void 0 : _res$data8.data;
               if (!(!quote || quote.total_ttc === undefined || !quote.quote_token || !quote.signature)) {
-                _context2.n = 2;
+                _context2.n = 3;
                 break;
               }
               throw new Error(_this3.$t('kiosk.pay_screen.invalid_order_response'));
-            case 2:
+            case 3:
               _this3._lastQuote = quote;
               return _context2.a(2, quote);
           }

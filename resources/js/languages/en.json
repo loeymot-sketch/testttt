@@ -1181,7 +1181,9 @@
         "rate_limited": "Too many requests — wait 30s before retrying.",
         "service_unavailable": "Service unavailable — please retry shortly.",
         "network_issue": "Network issue — please retry.",
-        "kds_connection_lost": "⚠️ Kitchen connection unavailable — display frozen. Retrying."
+        "kds_connection_lost": "⚠️ Kitchen connection unavailable — display frozen. Retrying.",
+        "order_cancel_rejected": "This order can no longer be cancelled (status advanced).",
+        "order_cancel_unauthorized": "Cancel refused — insufficient permissions. Ask a manager."
     },
     "message": {
         "permission_required": "Permission required to access this page: {permission}",

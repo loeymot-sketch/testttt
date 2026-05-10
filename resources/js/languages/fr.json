@@ -1013,7 +1013,9 @@
         "rate_limited": "Trop de requêtes — patientez 30s avant de réessayer.",
         "service_unavailable": "Service indisponible — réessayez dans quelques instants.",
         "network_issue": "Problème réseau — réessayez.",
-        "kds_connection_lost": "⚠️ Connexion cuisine indisponible — affichage figé. Re-tentative en cours."
+        "kds_connection_lost": "⚠️ Connexion cuisine indisponible — affichage figé. Re-tentative en cours.",
+        "order_cancel_rejected": "Cette commande ne peut plus être annulée (statut avancé).",
+        "order_cancel_unauthorized": "Annulation refusée — droits insuffisants. Demande à un manager."
     },
     "message": {
         "permission_required": "Permission requise pour accéder à cette page : {permission}",
