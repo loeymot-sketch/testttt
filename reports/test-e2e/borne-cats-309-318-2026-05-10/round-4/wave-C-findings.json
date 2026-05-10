@@ -1,0 +1,96 @@
+{
+  "wave": "C",
+  "round": 4,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "test-e2e-borne-C/09-313-wizard-step-sauce.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "STILL CLOSED (anti-regression PASS). Round-4 verification: Python scan of all 14 *.network.json files in tests/e2e/__screenshots__/test-e2e-borne-C/ returns ZERO entries matching url contains '/pricing/preview' (round-2 had 1×401 at state 09; round-3 closed; round-4 still 0). State 09 network.json total entries = 0. The mount-time $nextTick refreshServerPreviewTotal() removal at commit efd9896a0 holds firm across the round-4 re-capture.",
+      "fix_hint": "No further action required.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 0,
+      "closed_in_round": 3
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "test-e2e-borne-C/11-313-wizard-step-frites-style-cheddar-oignons.png",
+      "category": "visual_hash_drift",
+      "severity": "P1",
+      "evidence": "STILL CLOSED (anti-regression PASS). Round-4 multimodal vision inspection of state 04 (Salade Royale) and state 11 (Filets de Poulet 6 pièces) PNGs reconfirms 3 visually distinct frites_style cards: card 1 'Frites nature' = yellow fries-cone emoji on pale-yellow gradient, card 2 'Cheddar fondu' = cheese-wedge emoji + small fries-cone with +€1,00 chip on pale yellow gradient, card 3 'Cheddar + Oignons croustillants' = onion emoji + small fries-cone with +€2,00 chip on warm orange gradient. NO parent item image (tenders.png / salade_royale.png) bleeds into any of the 3 cards. Cards remain coherent with Cayenne palette (orange/red selected border, white card background, neutral text). Phase C marketing intent ('20% larger image for upgrade cards to drive +1/+2€ pickup') achievable since each variant is distinguishable at a glance.",
+      "fix_hint": "No further action required.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 0,
+      "closed_in_round": 3
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "test-e2e-borne-C/13-313-j2-step-menu-flip-to-none.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "CLOSED in round 4. Strict REVIEWER_PROTOCOL category 6 verification: state 13 round-4 network.json contains EXACTLY 0 entries (round-3 had 3× 401 — 2× GET /api/frontend/menu + 1× POST /api/frontend/kiosk-event). Per-state 4xx + role=alert correlation across all 14 states shows ZERO states with 4xx > 0 in round 4 (vs 1 state with 4xx>0 + role=alert=0 in round 3) — the silent-error precondition (4xx in network.json) is gone, so category-6 cannot trigger. Root cause was eliminated as documented in commit b59ce40d8 (round-4 cluster fix, builds on prior 4e124857e which landed kiosk-auth-retried event + listener in app.js + KioskAppComponent.vue): auth pre-warm removed the cold-start 401 burst, and the kiosk-auth-retried event now routes through KioskToastComponent.kind=warning (role=alert) on retry-success so any future 401-recovered call still surfaces UI feedback. The b59ce40d8 commit message explicitly verified 'Wave C: 0 4xx (re-run; auth pre-warmed, was 5 toasts)' which matches the round-4 capture exactly. C-006 was the SAME defect class as C-001 reborn on different endpoints — both root causes are now neutralized at source. State 13 visual PNG renders cleanly: 'AILES DE POULET (6 PIÈCES)' wizard at QUEL MENU? step, SANS MENU selected, total €6,00, no error UI needed because no error occurred.",
+      "fix_hint": "No further action required. Belt-and-suspenders kiosk-auth-retried toast machinery remains in place as defense-in-depth.",
+      "status": "closed",
+      "first_seen_round": 3,
+      "rounds_open": 1,
+      "closed_in_round": 4
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-borne-C/04-312-wizard-step-frites-style.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "STILL OPEN (round 4 unchanged). State 04 + state 11 dom.html — `class=\"kiosk-frites-style-price\"` returns exactly 2 spans on each (price = '+€1,00' and '+€2,00'). Frites nature card has NO kiosk-frites-style-price span (no 'Incluses', no 'Standard', no '€0,00'). Round-4 fix scope was limited to C-006 silent_error closure; this P2 marketing-clarity defect was not in cluster scope. Customer may still misread 'Frites nature' as unknown/unavailable instead of 'incluses dans le menu'.",
+      "fix_hint": "Same as rounds 1-3: add a positive-affirmation chip on the Nature card. resources/js/components/frontend/kiosk/KioskStepFritesStyleComponent.vue (or the steps composable rendering frites_style cards) — for the extra with delta_price === 0, render `<span class='kiosk-frites-style-price kiosk-frites-style-price--free'>Incluses</span>` styled with green accent (#C6F6D5 background / #047857 text recommended for accessibility AA contrast on the white card background).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-borne-C/01-312-wizard-step-garnitures.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "STILL OPEN (round 4 unchanged). State 01 filename is `01-312-wizard-step-garnitures` but the rendered first step is actually `sauce` (kiosk-step-title='QUELLE SAUCE ?'). Same misnomer applies to state 06 (`06-312-j2-step-menu-frites-cheddar` — rendered step is actually 'QUEL MENU ?'). Cosmetic / audit-plan attribution only.",
+      "fix_hint": "Same as rounds 1-3: rename state 01 → `01-312-wizard-step-sauce` and state 06 → `06-312-j2-step-menu` in tests/e2e/test-e2e-borne-C.spec.ts (or AUDIT_PLAN.md), OR update the audit-plan acceptance descriptions to match the actual rendered first step (partitionKioskExtras filters out garnitures for cat 312 so 'sauce' is the legitimate first step).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "test-e2e-borne-C/12-313-wizard-recap-with-upgrade.png",
+      "category": "color_contrast",
+      "severity": "P3",
+      "evidence": "STILL OPEN (round 4 unchanged). State 12 (recap with Cheddar+Oignons upsell, total €12,50 confirming upsell active) shows composition strip with ONLY 'SAUCES Ketchup' + 'MENU Avec frites · Ketchup' chips. NO 'FRITES STYLE Cheddar + Oignons croustillants' chip despite the customer having selected that +€2,00 upgrade. DOM grep `data-testid=\"chip-frites-style\"` returns 0 in state 12. Phase C marketing principle 'live confirmation reinforces the upgrade' remains violated — the very screen where the upsell is presented for final confirmation does not visually mirror the upgrade in the running composition strip.",
+      "fix_hint": "Same as rounds 1-3: KioskWizardComponent.vue composition chip block — when `selections.fritesStyleExtraId != null AND menuChoice === 'with-fries'`, append a chip with `data-testid='chip-frites-style'` rendering the selected extra name (extras.find(e => e.id === selections.fritesStyleExtraId).name) AND its delta_price suffix (e.g. 'FRITES STYLE Cheddar + Oignons +€2,00'). Reuse the existing kiosk-live-composition-chip styling so it matches the other chips visually.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 1,
+    "P3": 2,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 1,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {
+    "C-001": "PASS",
+    "C-002": "PASS",
+    "C-003": "FAIL",
+    "C-004": "FAIL",
+    "C-005": "FAIL",
+    "C-006": "PASS"
+  },
+  "verdict": "GREEN",
+  "notes": "Wave C round 4 — 14 states reviewed against HEAD b59ce40d8. ALL P0 + P1 CLOSED. C-006 closure verified via strict REVIEWER_PROTOCOL category-6 evidence: zero 4xx across all 14 *.network.json files (round-3 had 1 state with 4xx>0 + role=alert=0 — strict P0). Per-state 4xx + role=alert correlation script returned no offending lines. Root-cause neutralization documented in commit b59ce40d8 (auth pre-warm + kiosk-auth-retried event surfacing role=alert toast on retry-success — same defense-in-depth pattern that closed C-001). C-001 anti-regression PASS: zero /pricing/preview hits across all 14 states (round-2 had 1×401 at state 09, round-3 closed, round-4 still 0). C-002 anti-regression PASS: multimodal vision of state 04 + state 11 PNGs reconfirms 3 visually distinct frites_style cards (yellow fries / cheese / onion gradients with +€1,00 / +€2,00 chips) with NO parent item image bleeding into cards. P0-1 anti-regression PASS: state 08 sidecar `pre_addToCart.selections.fritesStyleExtraId === None` (null), state 14 sidecar `pre_addToCart.selections.fritesStyleExtraId === None` (null) — both flip-to-none recap states confirm zero overcharge from j1 carry-over. Pink residue: 0 (`grep -E '#[Ee]8001[Cc]|rgba?\\(232,0,28' returns 0 across all 14 dom.html). Console errors: only allowlisted Pusher wss noise on idle states. Carryover P2/P3 (C-003 Nature card no 'Incluses' chip, C-004 state 01/06 filename misnomer, C-005 no chip-frites-style in composition strip at state 12 €12,50 upsell recap) remain open per protocol — non-loop-blocking severity, recommended marketing-clarity follow-up cluster but does not block GREEN. VERDICT GREEN: zero open P0, zero open P1; loop-blocking severities cleared."
+}
