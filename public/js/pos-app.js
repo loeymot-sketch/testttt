@@ -62102,7 +62102,13 @@ var HEALTHCHECK_INTERVAL_MS = 90000; // brief §5.2 — 90s
       return "".concat(this.$t('kiosk.app.cart_bar_label'), ", ").concat(n, " ").concat(articles, ", ").concat(this.$t('kiosk.total'), " ").concat(this.formatPrice(this.cartTotal));
     },
     showCartBar: function showCartBar() {
-      var hiddenRoutes = ['kiosk.idle', 'kiosk.categories', 'kiosk.cart', 'kiosk.payment', 'kiosk.waiting', 'kiosk.confirmation', 'kiosk.upsell'];
+      // [cluster-3 E-002/E-003 fix 2026-05-10] Cart-bar is hidden on routes
+      // that already provide their own primary CTA / total. Adding
+      // `kiosk.cash-instruction` closes E-002 P0 (the floating "Mon panier
+      // 23,70€" no longer overlaps the "Montant à régler 22,50€" CTA on the
+      // cash-instruction screen) and `kiosk.loyalty` closes E-003 P1 (the
+      // cart-bar no longer overlaps the loyalty form input).
+      var hiddenRoutes = ['kiosk.idle', 'kiosk.categories', 'kiosk.cart', 'kiosk.payment', 'kiosk.waiting', 'kiosk.confirmation', 'kiosk.upsell', 'kiosk.loyalty', 'kiosk.cash-instruction'];
       return !hiddenRoutes.includes(this.$route.name);
     },
     rippleStyle: function rippleStyle() {
@@ -64995,22 +65001,19 @@ function resolveExplicitStepType(step) {
             return _this2.shouldShowStep(s.type);
           });
         case 'omelette':
-          // V3.7 — Omelettes : owner gate "wizard simple : Page 1 menu + Page 2
-          // suppléments". Garde sauce car items ont vars=15. Step menu activé
-          // si has_menu=true (migration v3.7). Step frites_style apparaît si
-          // user choisi 'frites' ou 'full' menu choice.
+          // V3.8 (2026-05-10) Owner audit : Omelettes + Ojja contiennent DÉJÀ
+          // des frites dans le prix base ("+ Frites + Pain" en description DB).
+          // Phase D's menu+frites_style étaient FAUX (offre redondante).
+          // → revert : sauce + garnitures + supplements + recap (no menu).
+          // L'upsell boisson est géré post-cart via KioskUpsellComponent.
           return [{
             type: 'sauce',
             label: 'Sauce',
             component: 'KioskStepSauce'
           }, {
-            type: 'menu',
-            label: 'Menu',
-            component: 'KioskStepMenu'
-          }, {
-            type: 'frites_style',
-            label: 'Style frites',
-            component: 'KioskStepFritesStyle'
+            type: 'garnitures',
+            label: 'Garnitures',
+            component: 'KioskStepGarnitures'
           }, {
             type: 'supplements',
             label: 'Suppléments',
@@ -65355,10 +65358,16 @@ function resolveExplicitStepType(step) {
       if (name.includes('burger') || category.includes('burger')) return 'burger';
       if (name.includes('assiette') || category.includes('assiette')) return 'assiette';
       // [P5] Alignement heuristique ↔ wizard_template catalogue (snacking / omelette / salade)
-      // V3.7 (2026-05-10) Owner gate : Ojja → template omelette (même flow simple
-      // : sauce + menu + frites_style + supplements + recap).
+      // V3.7 (2026-05-10) Owner gate : Ojja → template omelette (même flow simple).
+      // V3.8.1 (2026-05-10) : Menus Enfants (cat 314, items "Menu Cheese Burger
+      // Enfant" + "Menu Nuggets Enfant") sont déjà des formules complètes avec
+      // frites incluses ("[FRITES]" dans description audit). Wizard simple sans
+      // menu choice ni frites_style → mapper sur 'omelette' template.
       if (name.includes('omelette') || name.includes('omelet') || category.includes('omelette')) return 'omelette';
       if (name.includes('ojja') || category.includes('ojja')) return 'omelette';
+      if (category.includes('menu enfant') || category.includes('menus enfants') || name.includes('menu') && (name.includes('enfant') || name.includes('nugget') || name.includes('cheese burger'))) {
+        return 'omelette';
+      }
       if (name.includes('salade') || category.includes('salade')) return 'salade';
       if (name.includes('nugget') || name.includes('tenders') || name.includes('tender') || name.includes('goujon') || name.includes('goujons') || name.includes('crousti') || name.includes('strip') || category.includes('snack')) {
         return 'snacking';
@@ -65436,23 +65445,28 @@ function resolveExplicitStepType(step) {
       // V3.6 (2026-05-10) Owner gate : frites_style step affiche 3 cards
       // (Nature/Cheddar/Cheddar+Oignons) si l'item a au moins une row
       // item_extras avec group_label='frites_style'.
-      // V3.7 (2026-05-10) : si item.has_menu, le step frites_style ne doit
-      // apparaître QUE si user a pris menuChoice='frites' ou 'full' (sinon
-      // on affiche un Cheddar pour quelqu'un qui ne prend même pas frites).
+      // V3.7 : si item.has_menu, le step frites_style apparaît seulement si
+      //        menuChoice='frites'||'full'.
+      // V3.8.2 (2026-05-10) : exclure les items dans catégories frites-incluses
+      //        (309 Assiettes, 310 Ojja, 311 Omelettes, 314 Menus Enfants).
+      //        Ces items ont leurs frites par défaut, le upgrade frites_style
+      //        n'a pas de sens (sauf cat 315 = Frites items eux-mêmes).
       if (type === 'frites_style') {
         var extras = Array.isArray(item.extras) ? item.extras : [];
         var hasFritesStyleExtras = extras.some(function (e) {
           return (e === null || e === void 0 ? void 0 : e.group_label) === 'frites_style';
         });
         if (!hasFritesStyleExtras) return false;
+        var FRITES_INCLUDED_CATS = new Set([309, 310, 311, 314]);
+        var catId = parseInt(item.item_category_id, 10);
+        if (FRITES_INCLUDED_CATS.has(catId)) return false;
         // Si l'item a un menu choice : conditionner sur la sélection actuelle.
         if (item.has_menu === true) {
           var _this$selections;
           var mc = (_this$selections = this.selections) === null || _this$selections === void 0 ? void 0 : _this$selections.menuChoice;
           return mc === 'frites' || mc === 'full';
         }
-        // Items qui sont des frites eux-mêmes (Frites Moyenne/Grande/Seules/Menu) :
-        // afficher toujours.
+        // Items qui sont des frites eux-mêmes (cat 315 Frites items) → toujours.
         return true;
       }
       return true;
@@ -66530,7 +66544,13 @@ function resolveExplicitStepType(step) {
       var ti = function ti(key, values) {
         return _this14.$t("kiosk.wizard.instruction.".concat(key), values);
       };
-      if ((_this$selections$_tai3 = this.selections._tailleMeta) !== null && _this$selections$_tai3 !== void 0 && _this$selections$_tai3.label) {
+
+      // [B-001 round-2] guard taille emission per shouldShowCompositionStep
+      // (mirrors compositionSummaryChips() at line ~653). Évite que le fallback
+      // de `inferTacosPresetMeta()` ("1 viande") fuite dans l'instruction des
+      // items qui n'exposent pas l'étape taille (Assiette, Ojja, Omelette,
+      // Menu Enfant, etc.) vers le ticket cuisine + reçu NF525.
+      if (this.shouldShowCompositionStep('taille') && (_this$selections$_tai3 = this.selections._tailleMeta) !== null && _this$selections$_tai3 !== void 0 && _this$selections$_tai3.label) {
         parts.push(ti('taille', {
           label: this.selections._tailleMeta.label
         }));
@@ -67438,6 +67458,19 @@ __webpack_require__.r(__webpack_exports__);
   },
   emits: ['increment', 'decrement'],
   computed: {
+    // [cluster-3 D-001 fix 2026-05-10] Σqty (total items across lines) —
+    // aligns the bottom-sheet count with the top "kiosk-categories-cart-
+    // indicator" which also uses Σqty via the `kioskCart/count` getter.
+    // Owner-friendly Option B : a single "articles" metric everywhere
+    // (basket-style count). Customers think "7 articles in my basket",
+    // not "5 distinct SKUs". The aria label and string label stay the
+    // same — we just flip the source of truth from items.length (distinct
+    // lines) to Σqty. No new prop : items already carry .quantity.
+    totalCount: function totalCount() {
+      return this.items.reduce(function (sum, i) {
+        return sum + (Number(i.quantity) || 0);
+      }, 0);
+    },
     ariaLabel: function ariaLabel() {
       return this.labels.ariaRegion || 'Aperçu de votre panier';
     },
@@ -78727,7 +78760,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         role: "region",
         "aria-label": $options.ariaLabel,
         "data-testid": "kiosk-cart-bottom-sheet"
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.headerLabel), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.items.length) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.items.length > 1 ? $options.itemPluralLabel : $options.itemSingularLabel), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($props.items, function (item, idx) {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.headerLabel), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.totalCount) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.totalCount > 1 ? $options.itemPluralLabel : $options.itemSingularLabel), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($props.items, function (item, idx) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
           key: idx + '-' + item.item_id,
           "class": "kiosk-cart-strip-item",
@@ -130507,7 +130540,21 @@ var kioskMenu = {
     sidebarCategories: function sidebarCategories(s) {
       var split = getKioskSandwichSplitConfig();
       var coldSlugs = (split === null || split === void 0 ? void 0 : split.cold_item_slugs) || [];
-      return (0,_helpers_kioskSandwichSplit__WEBPACK_IMPORTED_MODULE_4__.expandKioskSidebarCategories)(s.categories, {
+      // V3.8 (2026-05-10) Owner gate : exclure cat "Frites & Accompagnements"
+      // (id 315) de la sidebar kiosk. Owner : "tout accompagnement vient
+      // avec le produit lui-même ; cette catégorie crée confusion (un
+      // supplément cliqué standalone ne sait à quel produit il s'attache).
+      // On la cache du welcome screen mais les items restent au catalog
+      // pour POS staff + addons backend (360-403)."
+      // [A-001 round-2] Owner gate étendu : cats 306 (Tacos), 307 (Sandwichs),
+      // 308 (Burgers) doivent être masquées de la borne (audit owner
+      // 2026-05-10 — "scape les sandwich, burger et tacos"). Items restent
+      // au catalog pour POS staff + addons backend.
+      var KIOSK_HIDDEN_CATEGORY_IDS = new Set([306, 307, 308, 315]);
+      var filtered = (s.categories || []).filter(function (c) {
+        return !KIOSK_HIDDEN_CATEGORY_IDS.has(parseInt(c.id, 10));
+      });
+      return (0,_helpers_kioskSandwichSplit__WEBPACK_IMPORTED_MODULE_4__.expandKioskSidebarCategories)(filtered, {
         parentSlug: (split === null || split === void 0 ? void 0 : split.parent_category_slug) || 'nos-sandwichs',
         coldSlugs: coldSlugs,
         coldLabel: (split === null || split === void 0 ? void 0 : split.cold_sidebar_label) || 'Sandwich froid'

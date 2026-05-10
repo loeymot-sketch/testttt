@@ -7,16 +7,6 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778436693557
-  },
-  {
-    "level": "error",
-    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
-    "location": {
-      "url": "http://127.0.0.1:8000/api/frontend/order/309/payment-confirm",
-      "lineNumber": 0,
-      "columnNumber": 0
-    },
-    "ts": 1778436693584
+    "ts": 1778438195407
   }
 ]

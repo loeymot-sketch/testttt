@@ -252,7 +252,23 @@ export default {
       return `${this.$t('kiosk.app.cart_bar_label')}, ${n} ${articles}, ${this.$t('kiosk.total')} ${this.formatPrice(this.cartTotal)}`;
     },
     showCartBar() {
-      const hiddenRoutes = ['kiosk.idle', 'kiosk.categories', 'kiosk.cart', 'kiosk.payment', 'kiosk.waiting', 'kiosk.confirmation', 'kiosk.upsell'];
+      // [cluster-3 E-002/E-003 fix 2026-05-10] Cart-bar is hidden on routes
+      // that already provide their own primary CTA / total. Adding
+      // `kiosk.cash-instruction` closes E-002 P0 (the floating "Mon panier
+      // 23,70€" no longer overlaps the "Montant à régler 22,50€" CTA on the
+      // cash-instruction screen) and `kiosk.loyalty` closes E-003 P1 (the
+      // cart-bar no longer overlaps the loyalty form input).
+      const hiddenRoutes = [
+        'kiosk.idle',
+        'kiosk.categories',
+        'kiosk.cart',
+        'kiosk.payment',
+        'kiosk.waiting',
+        'kiosk.confirmation',
+        'kiosk.upsell',
+        'kiosk.loyalty',
+        'kiosk.cash-instruction',
+      ];
       return !hiddenRoutes.includes(this.$route.name);
     },
     rippleStyle() {

@@ -1,10 +1,10 @@
 {
   "status": true,
   "data": {
-    "quote_token": "98717429-de48-4c91-8e8a-56807e66427d",
-    "signature": "447015e26300614bf16019fc0999fba9f2ee2597f394ff68998e79b4ff5d9950",
-    "expires_at": "2026-05-10T20:14:18+02:00",
-    "ttl_seconds": 169,
+    "quote_token": "7f8bad68-8e74-48f2-a379-e0587031c726",
+    "signature": "4bf4d9bc3cd2fa7c44d4489ca73c51ae078ab4bd49ff0c0ffbe61f691701b0af",
+    "expires_at": "2026-05-10T20:41:30+02:00",
+    "ttl_seconds": 299,
     "subtotal": 22.5,
     "discount": 0,
     "total_tax": 3.75,

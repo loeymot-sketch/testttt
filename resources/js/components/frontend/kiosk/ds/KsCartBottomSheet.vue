@@ -17,7 +17,7 @@
       <div class="kiosk-cart-strip-header">
         <span class="kiosk-cart-strip-title">{{ headerLabel }}</span>
         <span class="kiosk-cart-strip-count" data-testid="kiosk-cart-bottom-sheet-count">
-          {{ items.length }} {{ items.length > 1 ? itemPluralLabel : itemSingularLabel }}
+          {{ totalCount }} {{ totalCount > 1 ? itemPluralLabel : itemSingularLabel }}
         </span>
       </div>
 
@@ -128,6 +128,17 @@ export default {
     },
     emits: ['increment', 'decrement'],
     computed: {
+        // [cluster-3 D-001 fix 2026-05-10] Σqty (total items across lines) —
+        // aligns the bottom-sheet count with the top "kiosk-categories-cart-
+        // indicator" which also uses Σqty via the `kioskCart/count` getter.
+        // Owner-friendly Option B : a single "articles" metric everywhere
+        // (basket-style count). Customers think "7 articles in my basket",
+        // not "5 distinct SKUs". The aria label and string label stay the
+        // same — we just flip the source of truth from items.length (distinct
+        // lines) to Σqty. No new prop : items already carry .quantity.
+        totalCount() {
+            return this.items.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0);
+        },
         ariaLabel() {
             return this.labels.ariaRegion || 'Aperçu de votre panier';
         },
