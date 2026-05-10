@@ -1,0 +1,108 @@
+{
+  "wave": "D",
+  "round": 1,
+  "states_reviewed": 20,
+  "findings": [
+    {
+      "id": "D-001",
+      "state_artifact": "test-e2e-pos-kds-sync-D/17-d-pos-double-tap-idempotency.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "17-d-pos-double-tap-idempotency.network.json contains POST 429 http://127.0.0.1:8000/api/admin/pos (the double-tap pay click). The corresponding 17-d-pos-double-tap-idempotency.dom.html has zero visible role=alert / .toast / .alert-* / SweetAlert popup acknowledging the rate-limit. Screenshot evidence: Paiement De Commande modal is still open showing 'Espèces 5 / Monnaie à rendre 3,00 €' with the Confirmer & Imprimer ticket button still present — receipt modal NEVER opened, meaning order creation did not succeed. Consoles show the matching 'Failed to load resource: the server responded with a status of 429' but the cashier sees no visible feedback. Per REVIEWER_PROTOCOL §6 silent_error rule, network 4xx without paired DOM alert = P0.",
+      "fix_hint": "resources/js/components/admin/pos/PosComponent.vue checkout submit handler — wrap the axios.post('/api/admin/pos') call in try/catch and on err.response.status === 429 surface a SweetAlert/toast: 'Trop de tentatives, veuillez patienter' (i18n key e.g. message.rate_limited). Backend already returns 429; the frontend must not swallow it.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-002",
+      "state_artifact": "test-e2e-pos-kds-sync-D/07-d-oss-after-pay-DEBUG-no-order.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "SYNC-2 (POS pay → OSS within 8s) FAILED. Spec timing: latency_ms=14400 against 8000ms budget. Capture renamed snap 07-d-oss-after-pay-DEBUG-no-order.png — confirming order N°A0071 was NOT visible in either OSS column within the 8s window. Visual evidence: state 07 OSS En préparation column shows {A0004,A0015,A0017,A0019,A0020,A0022,A0023,A0024,A0026,A0030} + Prêt {A0028}; N°A0071 absent. Order DID exist in DB at this point (state 06 KDS at same timestamp shows N°A0071 in À emporter col). Root cause: OSS realtime path is broken in dev — BROADCAST_DRIVER=pusher + WS port 6001 ERR_CONNECTION_REFUSED (vendor.js console errors confirm) + QUEUE_CONNECTION=database with no worker running means OrderCreated broadcast NEVER fires (per app/Listeners/PersistOrderCreatedToOutbox.php which queues DispatchDomainEventsJob). OSS falls back to OssSyncService polling (resources/js/services/OssSyncService.js DEFAULTS.intervalMsWhenDisconnected=5000ms) but the 8s budget barely covers one poll tick + jitter. By AUDIT_PLAN.md SYNC-2 = P0; budget violated; flag P0.",
+      "fix_hint": "Two-pronged: (a) Run a queue worker in the dev/CI harness — `php artisan queue:work --once` after each POS pay, or set QUEUE_CONNECTION=sync for E2E. (b) For prod, ensure Reverb/Pusher is reachable; OSS will then receive Echo OrderCreated and never wait for the 5s poll. (c) Optionally tighten OssSyncService disconnected interval below 5s if Echo unreachable is the dominant prod scenario. The capture itself flagged this as P1 candidate; per AUDIT_PLAN.md SYNC-2 cell it is P0.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-003",
+      "state_artifact": "test-e2e-pos-kds-sync-D/17-d-pos-double-tap-idempotency.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "SYNC-6 idempotency assertion is VACUOUS. Spec Wave-D test-e2e-pos-kds-sync-2026-05-10-wave-D.spec.js calls clearFoodKingRateLimits() at lines 222, 551, 570, 632, 650 — but NOT before PHASE 16 (the double-tap test starting line 852). By the time the spec reaches line 945+ (the two confirmBtn.click calls), the rate-limit bucket is loaded with the previous PHASE 3 pay request + 4 KDS change-status retries. Outcome captured by 17.network.json: only ONE POST /api/admin/pos entry, status=429. Screenshot confirms: payment modal still open, no receipt modal — neither click reached order creation. Spec falls into the 'acceptable outcome (c) 0 orders + 0 keys' branch (line 1013). The X-Idempotency-Key middleware in app/Http/Middleware/IdempotencyKeyMiddleware.php is NEVER exercised by this test. SYNC-6 P0 assertion in AUDIT_PLAN.md (idempotency dedup must produce exactly 1 order) is therefore unproven; the test passes vacuously.",
+      "fix_hint": "tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-D.spec.js line ~852 (start of PHASE 16) — add `clearFoodKingRateLimits()` immediately after `await posPage.goto('/admin/pos', ...)`. Also recommend bumping the rate-limit cap for the POS user in tests, OR using a separate 'stress' route alias that bypasses throttle, so the idempotency middleware is the gate that fires first.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-004",
+      "state_artifact": "test-e2e-pos-kds-sync-D/09-d-pos-suivi-reflects-in-progress-within-5s.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "SYNC-3 measurement is INVALID — measures page-load fetch latency, not realtime sync. Spec lines 588-589 and 668-669 call `posPage.goto('/admin/pos-orders-tracker', { waitUntil: 'domcontentloaded' })` BEFORE starting timer t3/t4 (lines 590, 670). The 18-25ms 'latency' is local DOM hydration of a freshly fetched data set. POS suivi has NO realtime mechanism in dev: console JSON shows '[PosSyncService] fallback polling disabled.' (config catalog_v15.pos_fallback_polling.enabled defaults to false per config/catalog_v15.php FK_CATALOG_POS_FALLBACK_POLLING_ENABLED env). Echo is unreachable (WS 6001 refused). A real cashier sitting on the suivi tab WITHOUT navigating away would NEVER see the KDS status badge update. The test as written cannot detect this regression.",
+      "fix_hint": "Two changes needed: (1) tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-D.spec.js — remove the page.goto() inside PHASE 8 / PHASE 11; navigate to /admin/pos-orders-tracker ONCE at the start of PHASE 5 (before SYNC-1) and assert in-place updates afterwards. (2) resources/js/services/PosSyncService.js — when Echo is disconnected, POS suivi should run a fallback poll like OssSyncService does (configurable, e.g. 5-10s). Currently it self-disables and gives no realtime safety net.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-005",
+      "state_artifact": "test-e2e-pos-kds-sync-D/16-d-oss-status-after-served.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "OSS En préparation list mutates non-deterministically between consecutive snapshots without explicit user action. State 03 baseline: {A0019,A0020,A0023,A0026,A0036,A0039,A0040,A0049,A0052,A0054} + Prêt:{A0028}. State 13 (post-READY): same En prep list + Prêt:{A0071,A0028}. State 16 (post-SERVED): COMPLETELY DIFFERENT list {A0004,A0015,A0017,A0019,A0020,A0022,A0023,A0024,A0026,A0030} + Prêt:{A0028}. The reload triggered by spec line 837 (`ossPage.reload(...)` in catch block) happens to land on a different paginated/filtered slice. While orderly removal of N°A0071 is correct (SYNC-4 OSS leg works), the appearance of OLDER orders (A0004, A0015, A0017) suggests OSS PreparingAndReadyComponent.list() ordering is non-stable OR the backend endpoint returns inconsistent slices. Customer-facing surface — confusing for waiting customers if list reshuffles randomly.",
+      "fix_hint": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue _hydrateFromRows() uses rows as-is. Add explicit ORDER BY id ASC (or queue_number ASC) on the backend orderStatusScreenOrder/lists action's response, AND filter rows server-side to 'today's not-yet-served' to prevent reshuffle. Verify config/route for /api/admin/order-status-screen returns deterministic order.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-006",
+      "state_artifact": "test-e2e-pos-kds-sync-D/06-d-kds-after-pay-within-8s.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "SYNC-1 12-23ms reported latency is misleadingly low. Between order POST (line 369) and t1 measurement start (line 474), the spec performs ~3-4 seconds of cleanup work: receipt modal wait, receipt close click, fetchLatestOrder() artisan tinker probe (~500ms each call). KDS high-activity polling cadence (catalog_v15.kds_fallback_polling.high_activity_base_ms=3000 + jitter 1000) almost certainly fired ONCE during that window, picking up N°A0071 BEFORE waitForFunction starts ticking. The reported latency_ms therefore measures DOM render of an already-fetched dataset, not realtime broadcast. Realtime KDS pickup latency in dev is functionally bounded by 3-4s polling, not 12ms.",
+      "fix_hint": "tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-D.spec.js line ~365 — measure t_pay = Date.now() at the moment confirmBtn.click() resolves, and use the same t_pay reference for SYNC-1/SYNC-2 latency calculations. Also add a console.log after each KDS poll response so reviewer can correlate poll-tick to pickup.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-007",
+      "state_artifact": "test-e2e-pos-kds-sync-D/05-d-pos-payment-cash-confirm.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "SYNC-5 cross-surface numeric integrity is asserted only via DB tinker probe and POS DOM. Spec comment lines 31-38 explicitly states KDS card and OSS surface DO NOT render order TOTAL — so cross-surface parity falls back to order_serial_no / queue_number identity (string equality on N°A0071). This means: if backend silently created an order with a corrupt total but a correct queue_number, neither KDS nor OSS would surface the discrepancy. The audit cannot prove T_kds === T_receipt from the 3-surface artifact set alone — only T_cart === T_receipt (POS DOM) === orders.total (DB). The KDS pile (state 06) does NOT display 2.00€ on N°A0071's card; it shows the line breakdown. Acceptable per AUDIT_PLAN.md risk register row 'T_oss === T_receipt may fail if OSS does not display amount → downgrade to order # parity'. Logging here so reviewer is aware: SYNC-5 is partially asserted (POS+DB) not fully (POS+DB+KDS+OSS).",
+      "fix_hint": "Either (a) accept current scope (single-source-of-truth = DB orders.total + POS receipt grand-total) and document in SYNC-5 acceptance criteria that KDS/OSS parity is asserted on identity not value, OR (b) extend KDS card template (resources/js/components/admin/kitchenDisplaySystem/...) to render order total subtly so it can be visually cross-checked.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "D-008",
+      "state_artifact": "test-e2e-pos-kds-sync-D/04-d-pos-wizard-validate.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Cleanup verification gap. Spec captures `capturedOrderIds = [N°A0071_id, possibly_doubletap_id]` and runs `safeCancelOrder(oid)` in finally{}. safeCancelOrder is a no-op for status === DELIVERED(13) or CANCELED(16). After PHASE 13 (POS mark served → DELIVERED), the lifecycle order is in DELIVERED state — safeCancelOrder cannot CANCEL it. Net effect: the test order remains DELIVERED in DB (correct end state for a paid + served + delivered order), no orphan. However, between PHASE 13 and finally{}, if intermediate steps left the order in PREPARING or PREPARED status (e.g. SYNC-4 catch branch ran a reload but POS markDelivered click didn't actually fire), the order would be stuck in PREPARING and counted as 'active' on tomorrow's KDS pile. Spec observation `posMarkServed=${posMarkServed}` is logged but not asserted — should hard-assert posMarkServed===true to prevent silent zombie.",
+      "fix_hint": "tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-D.spec.js line 771 — change `observations.push(`state14: posMarkServed=${posMarkServed}`);` to `expect.soft(posMarkServed, 'POS deliver button must be clickable in PHASE 13').toBe(true);` so a missed delivery surfaces. Also in finally{}, DB-verify each capturedOrderId reached status DELIVERED or CANCELED — otherwise call safeCancelOrder for cleanup.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 2,
+    "P2": 3,
+    "P3": 1,
+    "open_P0": 2,
+    "open_P1": 2,
+    "open_P2": 3,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": "Wave D round 1 — 8 findings (2 P0 / 2 P1 / 3 P2 / 1 P3). Verdict RED due to D-001 (silent 429 on POS double-tap, no toast/alert) and D-002 (SYNC-2 OSS lag 14400ms vs 8s budget — broadcast pipeline broken in dev: BROADCAST_DRIVER=pusher + WS refused + QUEUE_CONNECTION=database + no worker running). Cross-surface integrity verification: KDS pickup of N°A0071 visually confirmed in state 06; POS suivi reflects IN_PROGRESS + READY transitions in states 09/12 but ONLY because spec navigates to fresh page (D-004 audit_integrity gap — PosSyncService is disabled in dev per console log '[PosSyncService] fallback polling disabled.', so a stationary cashier would never see updates). SYNC-4 (POS SERVED → KDS removes) verified visually state 15 — N°A0071 absent from KDS columns. SYNC-5 numeric integrity is partial (POS+DB only; KDS/OSS don't render total). SYNC-6 idempotency is vacuous — D-003 (rate-limiter caught both clicks before idempotency middleware exercised). Capture self-flagged SYNC-2 + SYNC-6 gaps; reviewer agrees on classification + adds D-001, D-004, D-005 (OSS list reshuffle), D-006 (SYNC-1 timing optimism), D-008 (zombie cleanup risk). All 4 surfaces clean of i18n leaks (no Label.X / kiosk.X visible in DOM scans). No console errors outside vendor.js/WS-refused noise (allowlisted). Branch isolation respected (pos+chef+admin all on Le Cayenne)."
+}

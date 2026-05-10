@@ -1,0 +1,151 @@
+{
+  "wave": "A",
+  "round": 4,
+  "states_reviewed": 15,
+  "spec_runtime_seconds": 78,
+  "spec_status": "passed",
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-pos-kds-sync-A/14-pos-parked-orders.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Round 4: 0 unallowlisted 4xx/5xx across all 15 network.json files (verified per-state). Cluster-1 fix (commit 95c2fd799) holds.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-pos-kds-sync-A/01-login-form.png",
+      "category": "color_contrast",
+      "severity": "P1",
+      "evidence": "Round 4: visual confirmed on 01-login-form.png — FoodKing logo orange, Connexion CTA top-right orange, 'Mot De Passe Oublié' link orange, primary button orange. State 02-pos-landing.png chrome 100% orange. CSS token sweep + logo recolor (58d47ed2e) + inline Tailwind hex sweep (59669f735) all hold.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 3
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "test-e2e-pos-kds-sync-A/15-pos-logout.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Round 4: state 15 reached /login, form mounted, French labels present ('Bon Retour', 'Email', 'Mot De Passe', 'Se Souvenir De Moi', 'Connexion'). No English flash. isAuthPath() FR-lock holds.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-pos-kds-sync-A/13-pos-receipt-baseline.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round 4 unchanged: state 13 captures /admin/pos-orders table, NOT PosOrderReceiptComponent. Spec design issue, NOT a product defect. Defer to next audit cycle (rename slug or seed-then-open).",
+      "fix_hint": "Spec slug rename to '13-pos-orders-history' OR seed an order then drive PosOrderReceiptComponent open.",
+      "status": "open_deferred",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-A.spec.js",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Round 4 unchanged from R2: 3 silent .catch() callsites remain (down from 10). Non-blocking.",
+      "fix_hint": "Audit remaining 3 .catch() sites for silent failure risk.",
+      "status": "open_deferred",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "test-e2e-pos-kds-sync-A/10-pos-orders-tracker-baseline.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Round 4: tracker shows card_count=90 (R2: 74, R1: 19/37). Pre-existing AUDIT-/E2E- orders accumulating. Pure DB-pollution noise; no UX defect. Cleanup hook still not wired into beforeAll.",
+      "fix_hint": "Run `php artisan iter15:cleanup-test-orders --apply` in beforeAll.",
+      "status": "open_deferred",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "test-e2e-pos-kds-sync-A/14-pos-parked-orders.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "Round 4 unchanged: parked-orders empty state still 'Chargement…' text only. Polish item, not a defect.",
+      "fix_hint": "Add empty-state illustration + CTA in ParkedOrdersComponent.vue.",
+      "status": "open_deferred",
+      "first_seen_round": 1,
+      "rounds_open": 4
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "test-e2e-pos-kds-sync-A/01-login-form.png",
+      "category": "color_contrast",
+      "severity": "P1",
+      "evidence": "Round 4: raster logo PNG recolored (commit 58d47ed2e). Visually verified orange in 01-login-form.png and 15-pos-logout.png. CLOSED.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "test-e2e-pos-kds-sync-A/01-login-form.png",
+      "category": "color_contrast",
+      "severity": "P1",
+      "evidence": "Round 4: inline Tailwind hex sweep landed (commit 59669f735). bg-[#B0004D]/text-[#B0004D] no longer present in admin chrome. Connexion CTA orange across all 15 states.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 2,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-LOGOUT",
+      "state_artifact": "test-e2e-pos-kds-sync-A/15-pos-logout.png",
+      "category": "spec_stability",
+      "severity": "P1",
+      "evidence": "Round 4: spec passed in 78s without retries. waitForURL(/\\/login(\\?|$)/) (20s) + form-visible 30s timeout (commit 995b71ce) verified — final_url=http://127.0.0.1:8000/login, form mounted. logoutResult.reason='no_store' (cosmetic — store ref unavailable in helper), final_url assertion is the load-bearing one and it fired green.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 3,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1, "P1": 5, "P2": 1, "P3": 3,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2_deferred": 1,
+    "open_P3_deferred": 3
+  },
+  "round_to_round_closures": {
+    "A-001": "STILL_PASS",
+    "A-002": "PASS",
+    "A-003": "STILL_PASS",
+    "A-004": "DEFER (spec design, no product defect)",
+    "A-005": "DEFER (P3 polish)",
+    "A-006": "DEFER (DB pollution noise, P3)",
+    "A-007": "DEFER (P3 polish)",
+    "A-008": "PASS (logo recolor 58d47ed2e)",
+    "A-009": "PASS (inline Tailwind hex sweep 59669f735)",
+    "A-LOGOUT": "PASS (spec selector hardening 995b71ce)"
+  },
+  "convergence_check": {
+    "open_P0_actionable": 0,
+    "open_P1_actionable": 0,
+    "round_set_equality_vs_R3": "MATCH (R3 fix scope was A-002+A-008+A-009+A-LOGOUT; all closed in R4. R4 produced no new findings vs R3 expected set. Deferred P2/P3 unchanged.)",
+    "new_observation_avatar_gradient": {
+      "hex": "#FF016C",
+      "location": "header dropdown profile menu — figure.before:bg-gradient-to-t from-[#FF7A00] to-[#FF016C]",
+      "visibility": "NOT visible — parent dropdown is scale-y-0 (collapsed) by default in all 15 captures",
+      "verdict": "NOT a finding for this audit cycle. Latent: would surface if cashier opens user menu. Suggest defer to a future polish sweep with clear OWNER call (the gradient may be intentional brand decoration on the avatar ring)."
+    }
+  },
+  "verdict": "GREEN_CONVERGENCE_ELIGIBLE",
+  "notes": "Round 4 verifies all R3 fixes hold. open_P0=0, open_P1=0 (after deferring spec-design A-004 P2 and three P3 polish items unchanged across rounds). Spec runtime 78s, 0 network errors, 0 console errors across 15 states, zero pink in actual rendered DOM (only inert hex inside collapsed dropdown — non-rendered)."
+}

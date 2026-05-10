@@ -1,0 +1,114 @@
+{
+  "wave": "B",
+  "round": 2,
+  "states_reviewed": 17,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-pos-kds-sync-B/02-b-wizard-open-item-1.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "Round 2: still observable — Tacos M wizard shows Viande badge '0/1' with no row ticked, validate proceeds, sidecar confirms Merguez auto-injected. State 12 same pattern for Le Méga 'Viandes 0/2'. Cashier never sees substitution. FROZEN-ZONE.",
+      "fix_hint": "FROZEN-ZONE (public/js/pos-wizard.js syncAndSubmit ~3708 + viande sync block) — owner gate required. See FROZEN_ZONE_DEFERRALS.md.",
+      "status": "open",
+      "deferred_reason": "FROZEN-ZONE owner gate required (see FROZEN_ZONE_DEFERRALS.md)",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-pos-kds-sync-B/17-b-cancel-button.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "Round 2: spec output explicitly logs 'wizard_still_visible_after_esc=true (expected false for proper a11y; pos-wizard.js binds only Ctrl+Enter, no ESC handler)'. WCAG 2.1.2 / 2.4.3 violation. FROZEN-ZONE.",
+      "fix_hint": "FROZEN-ZONE (public/js/pos-wizard.js line ~5871) — owner gate required. See FROZEN_ZONE_DEFERRALS.md.",
+      "status": "open",
+      "deferred_reason": "FROZEN-ZONE owner gate required (see FROZEN_ZONE_DEFERRALS.md)",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "test-e2e-pos-kds-sync-B/06-b-cart-after-validate-item-1.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "Round 2: toast 'Article ajouté au panier' now renders dark green text on light/mint green background with clear contrast. Close X in its own padded slot, no overlap on title. Verified visually across states 06/07/08/09/12/13. Cluster-5 fix (commit d8ddabef8) effective.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "test-e2e-pos-kds-sync-B/16-b-cart-three-lines-aggregate.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round 2: largest dom.html now 618866 bytes (state 13/14, item-3 wizard menu/recap). State 16 dom.html 537156 bytes (was 501062 capped in R1). grep pos-grand-total in state 16 dom.html = 1 (was 0 in R1). grep pos-v5-cart-item = 2 (was 0). DOM truncation cap raised 500KB → 2MB (mega-audit-snap.js, commit 10456234c) effective.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "AUDIT_PLAN.md",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Plan-vs-code multi-step vs single-page wizard mismatch. Doc-only.",
+      "fix_hint": "Update AUDIT_PLAN.md Wave B section to describe single-page wizard with sub-states.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "test-e2e-pos-kds-sync-B/16-b-cart-three-lines-aggregate.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "[data-testid='pos-grand-total'] textContent 'Total26.50€' (no separator). Cosmetic.",
+      "fix_hint": "Add space or separator in PosCartGrandTotal.vue template.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "AUDIT_PLAN.md",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "No 'true composite' item with addon-driven menu wizard and 0 variations found in catalog. Doc-only.",
+      "fix_hint": "Document in AUDIT_PLAN.md Wave B that item triplet is best available.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "test-e2e-pos-kds-sync-B/16-b-cart-three-lines-aggregate.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Cart panel shows only 1 of 3 cart lines (overflow with no scroll affordance). Wave-A territory.",
+      "fix_hint": "PosCartList.vue — add overflow-y: auto + scrollbar styling on cart-lines container.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 3, "P2": 3, "P3": 2,
+    "open_P0": 0, "open_P1": 2, "open_P2": 3, "open_P3": 2
+  },
+  "round_to_round_closures": {
+    "B-001": "FROZEN_ZONE_DEFERRED",
+    "B-002": "FROZEN_ZONE_DEFERRED",
+    "B-003": "PASS",
+    "B-004": "PASS",
+    "B-005": "FAIL",
+    "B-006": "FAIL",
+    "B-007": "FAIL",
+    "B-008": "FAIL"
+  },
+  "verdict": "AMBER",
+  "convergence_eligible_verdict": "GREEN",
+  "notes": "Raw verdict AMBER (open_P1=2: B-001+B-002 frozen-zone). Convergence-eligible verdict GREEN after subtracting frozen-zone deferrals per FROZEN_ZONE_DEFERRALS.md. No P0. Frozen-zone diff verified empty (git status -- public/js/pos-wizard.js public/css/pos-wizard.css resources/views/admin-pos-v4.blade.php returns empty)."
+}

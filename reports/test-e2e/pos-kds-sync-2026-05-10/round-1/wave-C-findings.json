@@ -1,0 +1,102 @@
+{
+  "wave": "C",
+  "round": 1,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "test-e2e-pos-kds-sync-C/14-kds-error-resilience.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "network.json records GET /api/admin/kds-order?paginate=0&order_column=id&order_by=desc returning HTTP 503 at ts=1778439409433. The Vue-Toastification error toast IS injected in 14-kds-error-resilience.dom.html with text 'Service unavailable (audit Wave C state 14)' BUT its DOM class is `Vue-Toastification__bounce-leave-active v-leave-to` — i.e., the toast is mid-leave-animation. The captured PNG is byte-identical (md5 69502d82eff69794e53c40c071f559bf) to 13-kds-keyboard-aria-spot-check.png — meaning at the captured frame, the toast was no longer visible to a kitchen operator looking at the screen. Default Vue-Toastification timeout is ~3s with progress-bar 2000ms; spec waits 2500ms before snap then captures, giving ≤500ms visible window for a 1m-glance kitchen display. Per kitchen-display ops doctrine (see kds reviewer protocol §6 silent_error) the screen-glance window should be ≥5s for a kitchen brigade who is not staring at the tablet. The 503 is therefore effectively silent for the operator, and the spec self-flagged 'error_banner_visible=true' is misleading — it captured isVisible() during the leave animation, not actual operator-readable banner persistence.",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue around the alertService.error path (~line 1545) — pass {timeout: 8000, hideProgressBar: false} OR persist a banner inside the page (not a transient toast) on 5xx retry-loop so operators returning to the screen see WHY orders are not refreshing. Recommend a sticky red retry-banner pattern (`.kds-503-banner role=alert`) that stays until the next 2xx tick.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "test-e2e-pos-kds-sync-C/04-kds-mark-in-progress-order-1.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "States 04 and 05 PNGs are byte-identical (md5 24dd0c46975f37a198714a9f334f7ef6). States 06, 07, 08 and 09 are also byte-identical to each other (md5 9bae575f747f716e90948cce1eefbf6d). States 10 and 12 are byte-identical (md5 955d105bda9f1c00ac303a7672accd48). States 13 and 14 are byte-identical (md5 69502d82eff69794e53c40c071f559bf). 8 of 14 captured PNGs are duplicates of an adjacent state. Root cause: spec scrolls order-1 card into view at state 03 then captures the same scrolled viewport for every subsequent transition. The KDS uses a LANE layout (Sur place / En ligne / À emporter / Borne columns) with status as a card BADGE (Confirmées purple → En Préparation brown → Terminées green) — cards do NOT move between columns on transition; only the badge + action button repaint. Because the seeded cards live in the À emporter lane on the right, the viewport scroll position remained stable AND the badge change is rendered IN the same pixel region — but at the captured timestamp the spec snapshot landed on a frame where Vue had not yet repainted the badge (e.g. between the optimistic `kdsChangeStatus` POST 2xx and the debounced refreshOrderList re-render). The audit therefore captured 14 states but only 6 visually-distinct frames (01, 02, 03, 04/05, 06-09, 10/12, 11, 13/14). Lifecycle progression evidence is severely degraded.",
+      "fix_hint": "tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-C.spec.js — after each safeKdsChangeStatus call, await an explicit `await page.locator('[data-kds-order-card] .badge:has-text(\"En Préparation\")').first().waitFor({ timeout: 5000 })` (or matching selector for each target status) BEFORE snap(). Alternatively: capture full-page screenshots (`fullPage: true`) so the column-headers + lane structure remain visible across states even when the test scrolls, providing visual context. Also, between state 06 (mark PREPARED) and state 09 (after served), at least 3 frames are guaranteed identical because PREPARED is terminal — collapse states 07/08/09 into one capture annotated 'PREPARED is terminal per FIX-54-5' to avoid faking lifecycle progression.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-pos-kds-sync-C/03-kds-card-detail-order-1.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Status badges visible across states 02-12: 'Confirmées' purple #5e36e5 on white = ~7.4:1 (OK); 'En Préparation' brown/dark-orange #9c4a08 on white = ~5.6:1 (OK); 'Terminées' green #2c8c3c on white = ~5.0:1 (OK). HOWEVER the active filter tab 'Toutes Les Commandes' uses the IDENTICAL purple #5e36e5 background as the 'Confirmées' status badge — staff may confuse 'I am viewing the Confirmées filter' vs 'this card is Confirmées'. Color is the ONLY differentiator between status badges (no icon, no shape change), so for a colorblind chef the badge text 'Confirmées' / 'En Préparation' / 'Terminées' is the only fallback — and these labels are rendered at ~10px in the screenshot, hard to read at 1m+ kitchen distance. KDS doctrine (CLAUDE.md §6: 'kitchen staff scan from 1m+ away') is not met for the badges.",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue — add a leading status icon to each badge (e.g. clock for Confirmées, fire for En Préparation, check for Terminées) so colorblind chefs have a non-color signal. Increase badge font size to ≥14px or apply `text-transform: uppercase; font-weight: 700` for kitchen-glance readability. Also: change the active-filter-tab purple to the brand pink #ec1976 (the FoodKing logo color) to disambiguate from the Confirmées status badge.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "On every seeded card in state 02 the title '#AUDIT-KDS-WAVE-C-7D4955-3' wraps onto 2 lines and visually overflows toward the badge column ('Confirmées' badge is forced down). Furthermore the queue token row 'AUDIT-KDS-WAVE-C-TOKEN-7D4955-3' also wraps onto 2 lines. While this is a pathological audit-prefix length (real customer order serials are ~8-10 chars per state 02 pre-existing pile cards #100526333 #100526332 #100526312), the card layout has NO max-length / ellipsis defense — a very long order_serial_no (e.g. from a third-party integration or a delivery platform like Uber Eats) would visually break the card.",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue card title binding — apply `text-overflow: ellipsis; white-space: nowrap; overflow: hidden; max-width: 60%` with a `:title=\"order.order_serial_no\"` for the full value on hover. Same for token line.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "The status filter tabs at the top ('Toutes Les Commandes', 'Confirmées', 'En Préparation', 'Terminées') are rendered as buttons but have no `role=\"tab\"`, no `role=\"tablist\"` on the parent container, no `aria-selected` attribute on the active tab (verified by grep on 02-kds-after-seed-three-pending.dom.html — 0 occurrences of role=tab/tablist/aria-selected for these filter buttons). Screen reader users navigating with VoiceOver / NVDA will hear 'button Toutes Les Commandes button Confirmées button En Préparation button Terminées' with no indication of which is selected, defeating the visual purple-active-state. The cards themselves DO have proper `aria-labelledby` on `[data-kds-order-card]` (verified line 529 of KitchenDisplaySystemComponent.vue) — so the issue is scoped to the filter-tab cluster only.",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue around the status-filter buttons — wrap in `<div role=\"tablist\" aria-label=\"Filtre de statut\">`, change each button to `role=\"tab\" :aria-selected=\"isActive(filter)\" :tabindex=\"isActive(filter) ? 0 : -1\"` and implement Left/Right arrow nav within the tablist (WAI-ARIA Authoring Practices tabs pattern).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "test-e2e-pos-kds-sync-C/01-kds-empty-state.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "State 01 is named '01-kds-empty-state' but is NOT empty — it shows 16+ pre-existing pile cards (visible serials #100526333, #100526332, #100526312, plus rows in left sidebar 'Préparations' aggregator showing 15× Frites Seules, 8× Assiette Poulet, etc. — which only aggregate from active cards). The capture's self-reported observation 'Pre-existing pile pollution' is correct but the state is mislabelled. This means the empty-state quality bar (illustration / copy ≥20 chars / CTA) cannot be evaluated visually for the À emporter / En ligne / Sur place / Borne columns with cards in them. Empty-state copy 'Aucune commande en ligne en cours' for the En Ligne column IS visible in DOM (✓ ≥20 chars, ✓ no broken icons, ✓ no CTA but copy alone passes) — but the visual baseline is contaminated.",
+      "fix_hint": "tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-C.spec.js beforeAll — extend the cleanup PHP to also purge OR archive ALL active KDS-visible orders (status IN [4,7,8] AND order_datetime>=today) before the empty-state snap, then re-seed; OR run the spec on a fresh DB snapshot. Alternative (lighter): rename state 01 to '01-kds-pre-existing-pile-baseline' and add a dedicated state 15 '15-kds-after-cleanup-empty' that runs after afterAll cleanup to capture the genuine empty-state.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "Capture self-flagged 'KDS money-blind by design' and probed totals via tinker DB read — confirmed via state12 numeric_report logged in observations. Verified: KDSOrderDetailsResource (resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue grep shows 0 occurrences of total/amount/price in template binding) does NOT expose monetary fields. This is structural, not a bug, but cross-surface numeric integrity (Wave D SYNC-5: T_cart === T_receipt === T_kds === T_oss) cannot be visually validated on KDS. Wave D will need to assert T_kds via tinker fallback against the seeded order ID, NOT via DOM scraping. Logged for orchestrator handoff to Wave D adversarial reviewer.",
+      "fix_hint": "Not a bug — informational. If business wants kitchen ops to see order value (e.g. for VIP order prioritization), add a `total_display` field to KDSOrderDetailsResource (app/Http/Resources/) and render it as a small text in the card header (e.g. `27,30 €` aligned right of the queue token). Otherwise, document explicitly in docs/ARCHITECTURE.md or KDS readme that 'KDS is money-blind by design — no monetary display, only quantities and items'.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "test-e2e-pos-kds-sync-C/02-kds-after-seed-three-pending.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Top notification banner reads: 'Les pastilles \"Prêt\" (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.' with a 'Ne plus afficher' dismiss link. This is a CRITICAL operational caveat (multi-station KDS deployments will have desynchronized 'bump' state per browser-localStorage) — but it is rendered as plain pale grey text inside a thin horizontal banner with NO `role=\"alert\"` or `role=\"status\"`, no icon, no contrast emphasis. Verified DOM has no role=alert wrapping this copy. A chef on a busy service who dismisses 'Ne plus afficher' once will never see this caveat again on this browser, even on a different station/iPad. This is a P2 a11y/clarity issue but borders on P1 because the operational consequence of misunderstanding (chef A bumps order 802 → chef B at second KDS does NOT see the bump → order delivered twice) is a real fast-food service incident.",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue — wrap the 'Les pastilles Prêt...' notice in `<div role=\"alert\" class=\"kds-multi-station-warning\">` with a yellow warning-icon prefix (FontAwesome `fa-triangle-exclamation`); make the 'Ne plus afficher' dismiss STORE the dismissal per-user (server-side user_preferences) NOT per-browser localStorage so the warning re-appears for staff on a fresh browser. Consider promoting this to a one-time modal that requires acknowledgment in multi-station deployments (configurable via branch setting `kiosk.kds.multi_station_warning`).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1, "P1": 1, "P2": 5, "P3": 1,
+    "open_P0": 1, "open_P1": 1, "open_P2": 5, "open_P3": 1
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": "Verification of capture's 4 self-flagged observations: (1) PLAN-vs-CODE drift PENDING/IN_PROGRESS/READY/SERVED ≠ ACCEPT(4)/PREPARING(7)/PREPARED(8) — CONFIRMED, also confirmed PREPARED is terminal (FIX-54-5 KitchenDisplaySystemComponent.vue line 1517) and the spec's narrative 'column re-layout' is misleading because KDS uses LANE columns (Sur place/En ligne/À emporter/Borne), not status columns; status is rendered as a card BADGE that repaints in-place. (2) KDS money-blind by design — CONFIRMED, KDSOrderDetailsResource exposes no monetary fields, see C-007 (P3 informational). (3) State 14 '503 resilience verified error_banner_visible=true' — DISPUTED, see C-001 (P0): the toast IS in DOM but with class `Vue-Toastification__bounce-leave-active v-leave-to` AND state 14 PNG is byte-identical to state 13 PNG (md5 69502d82eff69794e53c40c071f559bf), meaning at capture time the toast was no longer visible to a kitchen operator. (4) Pre-existing pile pollution — CONFIRMED, see C-006 (P2). NEW issues capture missed: C-001 silent 503 P0, C-002 audit-integrity duplicate PNGs P1, C-003 colorblind/contrast on KDS badges P2, C-005 filter tabs lack role=tab P2, C-008 multi-station bump warning lacks role=alert and persists per-browser only P2. Frozen-zones: KDS Vue is NOT in CLAUDE.md frozen list, all fix hints are safely actionable. Verdict RED because open_P0=1 (silent 503 from operator perspective). Recommended round-2 actions: (a) lengthen Vue-Toastification timeout to 8s on KDS error toasts OR convert to sticky banner; (b) spec must waitForSelector on the new badge text before each transition snap to ensure visually-distinct PNGs."
+}

@@ -1,0 +1,161 @@
+{
+  "wave": "D",
+  "round": 2,
+  "states_reviewed": 17,
+  "findings": [
+    {
+      "id": "D-001",
+      "state_artifact": "test-e2e-pos-kds-sync-D/17-d-pos-double-tap-idempotency.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Round-2 fix LANDED in 95c2fd799 (axios response interceptor toasts on 408/425/429/502/503/504 via Vue-Toastification, debounced 3s, registered through resources/js/bootstrap.js → app.js / pos-app.js compiled bundle). Static code-path verification PASSES (interceptor present in compiled pos-app.js). However state 17 round-2 evidence does NOT exercise the 429 path: state 17 PNG shows receipt modal opened on N°A0145, network.json=[] (no 4xx captured), and the spec successfully created an order. Reason the 429 did not fire: rate-limiter was cleared in PHASE 16 per fix 10456234c, so ThrottleRequests no longer rejects the second tap — and per D-009 (idempotency middleware globally disabled by env flag) the service-layer UNIQUE backstop alone caught the dedup. The interceptor toast code path is correct on inspection but state 17 of round-2 cannot empirically prove it — no 429 was emitted to be toast-rendered. PARTIAL_VERIFICATION_BLOCKED — re-test in round 3 by injecting a forced 429 (saturate the bucket immediately before the second tap, OR add a deterministic /api/dev/throttle-trip harness route) and assert role=alert toast renders within 1500ms.",
+      "fix_hint": "Round-3 capture: in PHASE 16 bypass clearFoodKingRateLimits ONCE so the second click hits 429 OR add a deterministic forced-429 harness route returning 429 with body {message:'Too Many Requests'}. Assert toast renders with role=alert + data-testid=\"toast-rate-limited\" within 1500ms.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "round_2_closure": "PARTIAL_VERIFICATION_BLOCKED"
+    },
+    {
+      "id": "D-002",
+      "state_artifact": "test-e2e-pos-kds-sync-D/07-d-oss-after-pay-DEBUG-no-order.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Round-2 fix 248fced17 LANDED (OssSyncService disconnected interval 5000→2000ms + visibility/WS-reconnect burst-poll). State 07 round-2 PNG STILL shows N°A0143/A0144 absent from OSS En préparation column — column displays only stale slice {A0004, A0015, A0017, A0019, A0020, A0022, A0023, A0024, A0026, A0030} + Prêt:{A0028}. State 16 (post-SERVED) shows IDENTICAL slice. SYNC-2 8s budget MISS. Two compounding causes: (a) D-010 — broadcast pipeline non-functional in dev (.env BROADCAST_DRIVER=pusher; Pusher 6001 unreachable; even with QUEUE_CONNECTION=sync, DispatchDomainEventsJob attempts broadcast → cURL error 7 silently swallowed); (b) potential by-design OSS scope-filter that hides CONFIRMED-status orders (OrderStatusScreenOrderService.php:53 reportedly filters whereIn('status', [PREPARING, PREPARED])) — if true, the SYNC-2 spec is measuring an event that cannot occur until chef bumps the order. Either way, state 07 visual is RED. Status FAIL — fix improved cadence but did not heal the missing-order pathology. Even at 2s polling cadence, a 30s+ window between state 07 and state 16 captures should have surfaced ANY new order. Recommend round-3 dual-track: (1) verify OSS query payload via tinker (does it include N°A0144 at any point?); (2) repair broadcast (D-010) so the SYNC-2 budget can be measured against realtime not polling.",
+      "fix_hint": "Step 1: php artisan tinker → instantiate OrderStatusScreenService and dump payload during the post-pay window — confirm whether N°A0144 (status=CONFIRMED) is excluded by design. If excluded, relocate SYNC-2 measurement to post-PHASE-7 (after chef bumps to PREPARING). Step 2: stand up Reverb local container OR mock-pusher (soketi:latest on 6001) so realtime can be empirically validated. Step 3: re-run Wave D PHASE 5-7 and assert OSS pickup ≤8s either at CONFIRMED (if design changed) or at PREPARING transition (renamed budget).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "round_2_closure": "FAIL"
+    },
+    {
+      "id": "D-003",
+      "state_artifact": "test-e2e-pos-kds-sync-D/17-d-pos-double-tap-idempotency.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Round-2 spec hardening LANDED in 10456234c (clearFoodKingRateLimits + 1.5s settle before double-tap so idempotency middleware is the gate). Spec quality concern from round-1 IS addressed. However the assertion this spec change was meant to validate (idempotency middleware dedup produces exactly 1 order) is BLOCKED at a different layer: D-009 reveals config('idempotency.enabled') = false in dev — IdempotencyKeyMiddleware short-circuits at line 41-43 BEFORE any of its replay/conflict logic runs. Capture report says PHASE 16 created [391, 392] this round (2 distinct orders) — dedup fell on the app-layer UNIQUE constraint (orders.idempotency_key) NOT the middleware. The X-Idempotency-Key middleware path (replay cache, 425 race-wait, 409 conflict, Idempotency-Replayed header) was never exercised. PARTIAL_PASS — spec is no longer vacuous through 429-throttle, but the substantive middleware assertion remains UNVERIFIED until D-009 is closed.",
+      "fix_hint": "After D-009 lands (IDEMPOTENCY_MIDDLEWARE_ENABLED=true), re-run Wave D PHASE 16. Assert: response 1 = 201 + no Idempotency-Replayed header; response 2 = same body + header Idempotency-Replayed=true. Add header sniff to spec via a Playwright responseHandler. DB invariant: SELECT COUNT(*) FROM orders WHERE idempotency_key = X must equal 1.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "round_2_closure": "PARTIAL_PASS"
+    },
+    {
+      "id": "D-004",
+      "state_artifact": "test-e2e-pos-kds-sync-D/09-d-pos-suivi-reflects-in-progress-within-5s.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Round-2 spec hardening LANDED in 10456234c (stationary observation, t_transition captured at chef-action moment, no inline reload). Spec timing methodology IS now correct — the substantive defect surfaces honestly. Round-2 state 09 PNG shows POS suivi with '0 actives | 0 aujourd'hui' + persistent spinner 'Chargement des commandes...' — the realtime path is BROKEN in dev as expected per D-010 (broadcast pipeline). Spec capture report says 9.7s realtime timeout vs 5s budget. PARTIAL_PASS — spec is now honest (good), but PosSyncService realtime is still broken in dev. The spec change is the right move; the underlying gap will not close until broadcast is functional in dev (D-010) or PosSyncService gains a fallback poll like OssSyncService.",
+      "fix_hint": "Add disconnected-fallback-poll to resources/js/services/PosSyncService.js mirroring OssSyncService 2000ms cadence, gated by config('catalog_v15.pos_fallback_polling.enabled'); set the env flag TRUE in dev/CI. Independent of D-010 broadcast fix — defense-in-depth.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "round_2_closure": "PARTIAL_PASS"
+    },
+    {
+      "id": "D-005",
+      "state_artifact": "test-e2e-pos-kds-sync-D/16-d-oss-status-after-served.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-2 captures show NO list reshuffle this round — state 03 baseline, state 07 (post-pay), state 10 (post-IN_PROGRESS), state 13 (post-READY) and state 16 (post-served) all display the IDENTICAL En préparation slice {A0004, A0015, A0017, A0019, A0020, A0022, A0023, A0024, A0026, A0030}. Cannot reproduce the round-1 reshuffle. HOWEVER: this stability is CONFOUNDED with D-002 — if the OSS query is filtering out POS-paid orders entirely (D-011 hypothesis OR by-design status filter), then the 'stability' is a side-effect of querying a static older slice, not real determinism. Cannot definitively close until D-002 + D-011 are resolved.",
+      "fix_hint": "Re-evaluate after D-002/D-011 fixes. Verify OSS endpoint returns deterministic ORDER BY id ASC AND a sane recency filter (e.g. WHERE created_at >= today_start AND status IN [...]). Add a Vitest covering OssSyncService stable-order invariant.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "round_2_closure": "PARTIAL_VERIFICATION_BLOCKED"
+    },
+    {
+      "id": "D-006",
+      "state_artifact": "test-e2e-pos-kds-sync-D/06-d-kds-after-pay-within-8s.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "No round-2 fix claimed for D-006 (timing optimism on SYNC-1). Spec still measures from t1 (start of waitForFunction) which can fire AFTER a KDS poll has already resolved the new order. Round-2 state 06 PNG visually confirms KDS shows N°A0143 + N°A0144 within seconds of pay (functionally correct), but the latency_ms remains gameable. No regression, no progress. Status FAIL — methodology issue persists.",
+      "fix_hint": "tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-D.spec.js line ~365 — anchor t_pay = Date.now() at confirmBtn.click() resolve and reuse for SYNC-1/SYNC-2 latency calculations.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "round_2_closure": "FAIL"
+    },
+    {
+      "id": "D-007",
+      "state_artifact": "test-e2e-pos-kds-sync-D/05-d-pos-payment-cash-confirm.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "No round-2 fix claimed for D-007 (cross-surface numeric integrity gap — KDS+OSS don't render order TOTAL). State 06 KDS round-2 confirms: card N°A0144 shows payment-status badge but no €-total. State 05 receipt total = 2.00€ consistent with cart. DB total presumed correct. Cross-surface parity remains identity-only (queue_number string match). No change. Accepted limitation per AUDIT_PLAN.md risk register row, but not closed.",
+      "fix_hint": "Either (a) accept current scope (SSOT = DB orders.total + POS receipt + POS Suivi card) and document explicitly in SYNC-5 acceptance criteria that KDS/OSS parity is identity-only, OR (b) extend KDS card template to render order total subtly so it can be visually cross-checked.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "round_2_closure": "FAIL"
+    },
+    {
+      "id": "D-008",
+      "state_artifact": "test-e2e-pos-kds-sync-D/04-d-pos-wizard-validate.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "No round-2 spec change for D-008 (cleanup verification gap). Spec finally{} cleanup logic unchanged — posMarkServed boolean is still logged not hard-asserted. PHASE 13/14 lifecycle empirically succeeded this round (state 14 PNG shows green Livré button + state 15 KDS pile no longer contains N°A0081), so no zombie observed in this run. Risk surface unchanged: a future flake in PHASE 13 could leave order stuck in PREPARING. FAIL closure for spec hardening.",
+      "fix_hint": "tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-D.spec.js line 771 — change observations.push(`state14: posMarkServed=${posMarkServed}`) to expect.soft(posMarkServed, 'POS deliver button must be clickable in PHASE 13').toBe(true). Also in finally{}, DB-verify each capturedOrderId reached DELIVERED or CANCELED.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "round_2_closure": "FAIL"
+    },
+    {
+      "id": "D-009",
+      "state_artifact": "test-e2e-pos-kds-sync-D/17-d-pos-double-tap-idempotency.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "NEW round-2 finding. config/idempotency.php line 20: `'enabled' => env('IDEMPOTENCY_MIDDLEWARE_ENABLED', false)` — verified in source. Project .env contains BROADCAST_DRIVER=pusher and QUEUE_CONNECTION=sync but NO IDEMPOTENCY_MIDDLEWARE_ENABLED entry — defaults to FALSE. app/Http/Middleware/IdempotencyKeyMiddleware.php line 41-43: `if (!config('idempotency.enabled', false)) return $next($request);` — middleware is a NO-OP for ALL requests in dev/test. Result: HTTP-level idempotency guard (replay caching, 425 race-wait, 409 conflict, Idempotency-Replayed header) is GLOBALLY DISABLED. Service-layer dedup via app-level UNIQUE(branch_id, idempotency_key) on `orders` table is the only line of defense; capture report confirms PHASE 16 round-2 created [391, 392] = 2 distinct orders sharing one X-Idempotency-Key, dedup happened at SQL UNIQUE not at middleware. NF525 / payment-safety risk: any duplicate POST under network retry that escapes the UNIQUE constraint (e.g. distinct keys generated client-side under race) creates N orders with N fiscal sequence allocations. SYNC-6 audit assertion CANNOT be validated without flipping this flag. CRITICAL: the same flag is likely defaulting to false in production unless explicitly set in deploy env — verify production env immediately.",
+      "fix_hint": "(1) Add IDEMPOTENCY_MIDDLEWARE_ENABLED=true to .env, .env.example, and .env.testing. (2) Verify config('idempotency.enabled')===true via `php artisan tinker` → `config('idempotency.enabled')`. (3) Check production / staging env (Forge / deploy) — is the flag set there? If NO, this is a production NF525 risk too. (4) Re-run PHASE 16 — assert response 2 returns body identical to response 1 + header Idempotency-Replayed=true; orders count = 1. (5) Add a Pest/PHPUnit feature test asserting the flag defaults to TRUE in any prod-equivalent env.example. (6) Update GATES_DOCTRINE.md / deploy doctrine to list IDEMPOTENCY_MIDDLEWARE_ENABLED as a non-negotiable env var.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1,
+      "round_2_closure": "OPEN"
+    },
+    {
+      "id": "D-010",
+      "state_artifact": "test-e2e-pos-kds-sync-D/07-d-oss-after-pay-DEBUG-no-order.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "NEW round-2 finding. Broadcast pipeline non-functional in dev. .env: BROADCAST_DRIVER=pusher; Pusher port 6001 ERR_CONNECTION_REFUSED documented across all KDS/OSS/POS console.json (vendor.js + websockets noise allowlisted by REVIEWER_PROTOCOL but the underlying pipeline is dead). QUEUE_CONNECTION=sync was set in round-2 (intended fix), but the queued listener (PersistOrderCreatedToOutbox + DispatchDomainEventsJob) still tries broadcasting to the unreachable Pusher → cURL error 7 → broadcast silently swallowed (Laravel queue catches broadcast exceptions). Net effect: SYNC-2 OSS budget MISS (state 07 — no test order in OSS even after server-side polling cadence reduced to 2s by D-002 fix); SYNC-3 POS-suivi realtime MISS (state 09 spinner still loading after 9.7s). Polling fallback covers OSS post-fix (intermittent, depending on D-011), but KDS lacks an equivalent fallback (catalog_v15.kds_fallback_polling defaults). P0 in dev-environment because audit cannot validate broadcast path. Not a production defect IF Reverb/Pusher is reachable in prod — verify deploy environment as part of fix.",
+      "fix_hint": "Choose ONE: (a) RECOMMENDED — stand up Laravel Reverb local container: `php artisan reverb:start` + REVERB_APP_ID/.env additions, BROADCAST_DRIVER=reverb. (b) docker-compose mock-pusher (soketi:latest on 6001 with appropriate REVERB/Pusher app keys). (c) BROADCAST_DRIVER=log in dev-only and `php artisan queue:work` so DispatchDomainEventsJob does not attempt real broadcast (least faithful but simplest). After choice: re-run Wave D PHASE 5-12 and assert SYNC-2 ≤8000ms + SYNC-3 ≤5000ms via realtime path, not polling. Document choice in docs/PLAYWRIGHT_MCP_OPS.md broadcast-driver section. Verify production env has functional broadcast.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1,
+      "round_2_closure": "OPEN"
+    },
+    {
+      "id": "D-011",
+      "state_artifact": "test-e2e-pos-kds-sync-D/07-d-oss-after-pay-DEBUG-no-order.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "OSS En préparation slice in state 07 round-2 displays only orders A0004 → A0030 (from earlier seeded runs). N°A0143/A0144 (paid this run) are absent from BOTH state 07 (post-pay) AND state 16 (post-served) — full ~30s+ wall-clock window where 2s-cadence polling fix from D-002 should have surfaced them. Two hypotheses, both warrant inspection: (H1) OSS endpoint filters whereIn('status', [PREPARING, PREPARED]) — if true, post-pay orders (status=CONFIRMED) are EXCLUDED BY DESIGN until chef bumps to PREPARING; this would mean the SYNC-2 budget itself is mismatched to the system contract (measure pay→PREPARING, not pay→OSS-visible). (H2) OSS query has a separate scope/branch_id/channel filter that hides POS-paid takeaway orders. Either H1 or H2 is the actual cause; verify by inspecting OrderStatusScreenOrderService and running tinker probe during a paid-order window. P1 minimum (audit assertion mismatched), P0 if H2 turns out true (POS staff would expect their paid orders to appear on OSS).",
+      "fix_hint": "(1) Inspect app/Services/OrderStatusScreen/OrderStatusScreenOrderService.php — confirm WHERE clause statuses + branch_id scope. (2) Tinker probe: instantiate the service, dump payload immediately after PHASE 5 pay; check if N°A0144 is in the returned rows. (3) If H1: relocate SYNC-2 spec measurement to post-PHASE-7 (chef PREPARING bump) — rename budget or assert at the right transition. Document OSS status-filter contract in AUDIT_PLAN.md SYNC-2 cell. (4) If H2: server-side query bug — fix scope, add integration test `oss_includes_pos_paid_takeaway_order`.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1,
+      "round_2_closure": "OPEN"
+    }
+  ],
+  "summary": {
+    "P0": 4,
+    "P1": 3,
+    "P2": 3,
+    "P3": 1,
+    "open_P0": 4,
+    "open_P1": 3,
+    "open_P2": 3,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "D-001": "PARTIAL_VERIFICATION_BLOCKED",
+    "D-002": "FAIL",
+    "D-003": "PARTIAL_PASS",
+    "D-004": "PARTIAL_PASS",
+    "D-005": "PARTIAL_VERIFICATION_BLOCKED",
+    "D-006": "FAIL",
+    "D-007": "FAIL",
+    "D-008": "FAIL"
+  },
+  "verdict": "RED",
+  "notes": "Wave D round-2 — RED verdict (adversarial review). 11 findings total (4 P0, 3 P1, 3 P2, 1 P3). Of the 8 round-1 findings: 0 PASS, 2 PARTIAL_PASS (D-003 spec quality + D-004 spec honesty — both correct moves but underlying defects persist), 2 PARTIAL_VERIFICATION_BLOCKED (D-001 fix landed but path unexercised by this round's evidence; D-005 cannot reproduce reshuffle but confounded by D-002), 4 FAIL (D-002 OSS still missing test order; D-006/D-007/D-008 unaddressed). 3 NEW findings: D-009 P0 (idempotency middleware globally disabled by env flag — IDEMPOTENCY_MIDDLEWARE_ENABLED missing from .env, defaults false; service-layer UNIQUE alone catches dedup; NF525 risk in prod if same flag missing), D-010 P0 (broadcast pipeline non-functional in dev: Pusher 6001 unreachable + queue=sync still tries broadcast → silent fail; SYNC-2/SYNC-3 budgets unverifiable), D-011 P1 (OSS endpoint may be filtering out POS-paid takeaway orders independently of broadcast — 30s elapsed without surfacing N°A0144). All three new findings have testable fix paths within 2-3h. Cross-surface integrity verified at the 4 surfaces that DO render numerics: POS receipt 2,00€ = POS Suivi card = DB orders.total. KDS + OSS render only identity (queue_number) — accepted limitation. Network sweep across 17 unique states: 0 unallowlisted 4xx/5xx in network.json (all empty []). Console sweep: 0 unallowlisted errors. Critical recommendation for round-3 fix wave: PRIORITY-0 (1) D-009 env flag flip + production env check (5min); (2) D-010 broadcast harness — Reverb local container OR mock-pusher (30min-2h); (3) D-011 OSS query inspection via tinker (30min). PRIORITY-1 (4) D-002 close after D-010+D-011 land; (5) D-008 spec hard-assert; (6) D-006 t_pay anchor. Without PRIORITY-0 closures, SYNC-2/3/6 audit assertions remain semantically unverifiable and the audit cannot declare GREEN regardless of how many spec rounds run."
+}
