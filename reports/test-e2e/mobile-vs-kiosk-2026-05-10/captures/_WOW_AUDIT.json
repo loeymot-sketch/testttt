@@ -1,0 +1,306 @@
+[
+  {
+    "cat": "01-tacos",
+    "png": "01-viandes.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1177440,
+    "pctWhite": "89.4%",
+    "offender": false
+  },
+  {
+    "cat": "01-tacos",
+    "png": "02-sauce.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1168043,
+    "pctWhite": "88.7%",
+    "offender": false
+  },
+  {
+    "cat": "01-tacos",
+    "png": "03-crudites.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1152506,
+    "pctWhite": "87.5%",
+    "offender": false
+  },
+  {
+    "cat": "01-tacos",
+    "png": "04-supplements.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1185688,
+    "pctWhite": "90.1%",
+    "offender": false
+  },
+  {
+    "cat": "01-tacos",
+    "png": "05-menu.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1173546,
+    "pctWhite": "89.1%",
+    "offender": false
+  },
+  {
+    "cat": "01-tacos",
+    "png": "06-recap.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1110744,
+    "pctWhite": "84.4%",
+    "offender": false
+  },
+  {
+    "cat": "02-sandwichs",
+    "png": "01-viandes.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1177498,
+    "pctWhite": "89.4%",
+    "offender": false
+  },
+  {
+    "cat": "02-sandwichs",
+    "png": "02-sauce.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1168043,
+    "pctWhite": "88.7%",
+    "offender": false
+  },
+  {
+    "cat": "02-sandwichs",
+    "png": "03-crudites.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1152506,
+    "pctWhite": "87.5%",
+    "offender": false
+  },
+  {
+    "cat": "02-sandwichs",
+    "png": "04-supplements.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1185688,
+    "pctWhite": "90.1%",
+    "offender": false
+  },
+  {
+    "cat": "02-sandwichs",
+    "png": "05-menu.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1173546,
+    "pctWhite": "89.1%",
+    "offender": false
+  },
+  {
+    "cat": "02-sandwichs",
+    "png": "06-recap.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1115200,
+    "pctWhite": "84.7%",
+    "offender": false
+  },
+  {
+    "cat": "03-burgers",
+    "png": "01-sauce.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1168196,
+    "pctWhite": "88.7%",
+    "offender": false
+  },
+  {
+    "cat": "03-burgers",
+    "png": "02-crudites.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1152635,
+    "pctWhite": "87.5%",
+    "offender": false
+  },
+  {
+    "cat": "03-burgers",
+    "png": "03-supplements.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1185809,
+    "pctWhite": "90.1%",
+    "offender": false
+  },
+  {
+    "cat": "03-burgers",
+    "png": "04-menu.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1173693,
+    "pctWhite": "89.1%",
+    "offender": false
+  },
+  {
+    "cat": "03-burgers",
+    "png": "05-recap.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1118789,
+    "pctWhite": "85.0%",
+    "offender": false
+  },
+  {
+    "cat": "04-assiettes",
+    "png": "01-sauce.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1168448,
+    "pctWhite": "88.7%",
+    "offender": false
+  },
+  {
+    "cat": "04-assiettes",
+    "png": "02-supplements.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1186060,
+    "pctWhite": "90.1%",
+    "offender": false
+  },
+  {
+    "cat": "04-assiettes",
+    "png": "03-recap.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1119436,
+    "pctWhite": "85.0%",
+    "offender": false
+  },
+  {
+    "cat": "05-ojja",
+    "png": "01-sauce.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1168448,
+    "pctWhite": "88.7%",
+    "offender": false
+  },
+  {
+    "cat": "05-ojja",
+    "png": "02-supplements.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1186060,
+    "pctWhite": "90.1%",
+    "offender": false
+  },
+  {
+    "cat": "05-ojja",
+    "png": "03-recap.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1120277,
+    "pctWhite": "85.1%",
+    "offender": false
+  },
+  {
+    "cat": "06-omelettes",
+    "png": "01-sauce.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1168448,
+    "pctWhite": "88.7%",
+    "offender": false
+  },
+  {
+    "cat": "06-omelettes",
+    "png": "02-supplements.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1186060,
+    "pctWhite": "90.1%",
+    "offender": false
+  },
+  {
+    "cat": "06-omelettes",
+    "png": "03-recap.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1118793,
+    "pctWhite": "85.0%",
+    "offender": false
+  },
+  {
+    "cat": "07-salades",
+    "png": "01-sauce.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1168448,
+    "pctWhite": "88.7%",
+    "offender": false
+  },
+  {
+    "cat": "07-salades",
+    "png": "02-supplements.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1186060,
+    "pctWhite": "90.1%",
+    "offender": false
+  },
+  {
+    "cat": "07-salades",
+    "png": "03-recap.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1119271,
+    "pctWhite": "85.0%",
+    "offender": false
+  },
+  {
+    "cat": "08-snacking",
+    "png": "01-sauce.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1168448,
+    "pctWhite": "88.7%",
+    "offender": false
+  },
+  {
+    "cat": "08-snacking",
+    "png": "02-supplements.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1186060,
+    "pctWhite": "90.1%",
+    "offender": false
+  },
+  {
+    "cat": "08-snacking",
+    "png": "03-recap.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1117665,
+    "pctWhite": "84.9%",
+    "offender": false
+  },
+  {
+    "cat": "09-menus-enfants",
+    "png": "01-sauce.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1168575,
+    "pctWhite": "88.8%",
+    "offender": false
+  },
+  {
+    "cat": "09-menus-enfants",
+    "png": "02-recap.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1115318,
+    "pctWhite": "84.7%",
+    "offender": false
+  },
+  {
+    "cat": "10-frites",
+    "png": "01-fritesStyle.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1183781,
+    "pctWhite": "89.9%",
+    "offender": false
+  },
+  {
+    "cat": "10-frites",
+    "png": "02-recap.png",
+    "totalPixels": 1316640,
+    "whitePixels": 1118971,
+    "pctWhite": "85.0%",
+    "offender": false
+  },
+  {
+    "cat": "11-desserts",
+    "png": "01-direct-add.png",
+    "totalPixels": 1316640,
+    "whitePixels": 709936,
+    "pctWhite": "53.9%",
+    "offender": false
+  },
+  {
+    "cat": "12-boissons",
+    "png": "01-direct-add.png",
+    "totalPixels": 1316640,
+    "whitePixels": 705090,
+    "pctWhite": "53.6%",
+    "offender": false
+  }
+]

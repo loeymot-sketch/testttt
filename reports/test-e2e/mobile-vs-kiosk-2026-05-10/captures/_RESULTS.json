@@ -1,0 +1,194 @@
+[
+  {
+    "cat": "01-tacos",
+    "slug": "tacos-xxl",
+    "expectedSteps": 6,
+    "capturedSteps": 6,
+    "expectedTotal": 12.5,
+    "displayedTotal": 12.5,
+    "rawLabelHits": [],
+    "pageErrors": [],
+    "consoleErrorsRelevant": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "verdict": "GO",
+    "failReason": null,
+    "comment": "Tacos XXL no menu"
+  },
+  {
+    "cat": "02-sandwichs",
+    "slug": "le-terminator",
+    "expectedSteps": 6,
+    "capturedSteps": 6,
+    "expectedTotal": 9,
+    "displayedTotal": 9,
+    "rawLabelHits": [],
+    "pageErrors": [],
+    "consoleErrorsRelevant": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "verdict": "GO",
+    "failReason": null,
+    "comment": "Le Terminator 2 viandes"
+  },
+  {
+    "cat": "03-burgers",
+    "slug": "cheese-burger",
+    "expectedSteps": 5,
+    "capturedSteps": 5,
+    "expectedTotal": 6,
+    "displayedTotal": 6,
+    "rawLabelHits": [],
+    "pageErrors": [],
+    "consoleErrorsRelevant": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "verdict": "GO",
+    "failReason": null,
+    "comment": "Cheese Burger no viandes"
+  },
+  {
+    "cat": "04-assiettes",
+    "slug": "assiette-poulet",
+    "expectedSteps": 3,
+    "capturedSteps": 3,
+    "expectedTotal": 12.5,
+    "displayedTotal": 12.5,
+    "rawLabelHits": [],
+    "pageErrors": [],
+    "consoleErrorsRelevant": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "verdict": "GO",
+    "failReason": null,
+    "comment": "Assiette poulet (style cuisson = description, U4)"
+  },
+  {
+    "cat": "05-ojja",
+    "slug": "ojja-merguez",
+    "expectedSteps": 3,
+    "capturedSteps": 3,
+    "expectedTotal": 13.5,
+    "displayedTotal": 13.5,
+    "rawLabelHits": [],
+    "pageErrors": [],
+    "consoleErrorsRelevant": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "verdict": "GO",
+    "failReason": null,
+    "comment": "Ojja Merguez omelette template"
+  },
+  {
+    "cat": "06-omelettes",
+    "slug": "omelette-fromage",
+    "expectedSteps": 3,
+    "capturedSteps": 3,
+    "expectedTotal": 8.5,
+    "displayedTotal": 8.5,
+    "rawLabelHits": [],
+    "pageErrors": [],
+    "consoleErrorsRelevant": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "verdict": "GO",
+    "failReason": null,
+    "comment": "Omelette Fromage"
+  },
+  {
+    "cat": "07-salades",
+    "slug": "salade-royale",
+    "expectedSteps": 3,
+    "capturedSteps": 3,
+    "expectedTotal": 7.5,
+    "displayedTotal": 7.5,
+    "rawLabelHits": [],
+    "pageErrors": [],
+    "consoleErrorsRelevant": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "verdict": "GO",
+    "failReason": null,
+    "comment": "D1 simplified scope"
+  },
+  {
+    "cat": "08-snacking",
+    "slug": "wings-12",
+    "expectedSteps": 3,
+    "capturedSteps": 3,
+    "expectedTotal": 10.5,
+    "displayedTotal": 10.5,
+    "rawLabelHits": [],
+    "pageErrors": [],
+    "consoleErrorsRelevant": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "verdict": "GO",
+    "failReason": null,
+    "comment": "Wings 15 sauces génériques (U2 confirmed)"
+  },
+  {
+    "cat": "09-menus-enfants",
+    "slug": "menu-cheese-enfant",
+    "expectedSteps": 2,
+    "capturedSteps": 2,
+    "expectedTotal": 6,
+    "displayedTotal": 6,
+    "rawLabelHits": [],
+    "pageErrors": [],
+    "consoleErrorsRelevant": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "verdict": "GO",
+    "failReason": null,
+    "comment": "D2 has_sauce flipped to true"
+  },
+  {
+    "cat": "10-frites",
+    "slug": "frites-grande",
+    "expectedSteps": 2,
+    "capturedSteps": 2,
+    "expectedTotal": 4,
+    "displayedTotal": 4,
+    "rawLabelHits": [],
+    "pageErrors": [],
+    "consoleErrorsRelevant": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "verdict": "GO",
+    "failReason": null,
+    "comment": "F-03 frites_style step"
+  },
+  {
+    "cat": "11-desserts",
+    "slug": "tiramisu",
+    "expectedSteps": 1,
+    "capturedSteps": 1,
+    "expectedTotal": 3.8,
+    "displayedTotal": 3.8,
+    "rawLabelHits": [],
+    "pageErrors": [],
+    "consoleErrorsRelevant": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "verdict": "GO",
+    "failReason": null,
+    "comment": "Direct add"
+  },
+  {
+    "cat": "12-boissons",
+    "slug": "coca",
+    "expectedSteps": 1,
+    "capturedSteps": 1,
+    "expectedTotal": 1.5,
+    "displayedTotal": 1.5,
+    "rawLabelHits": [],
+    "pageErrors": [],
+    "consoleErrorsRelevant": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "verdict": "GO",
+    "failReason": null,
+    "comment": "Direct add"
+  }
+]
