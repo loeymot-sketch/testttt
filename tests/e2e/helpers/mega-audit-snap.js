@@ -66,7 +66,11 @@ function attachMegaAuditRecorder(page, screenshotDir) {
     await page.screenshot({ path: `${base}.png`, fullPage: false });
     try {
       const html = await page.content();
-      fs.writeFileSync(`${base}.dom.html`, html.substring(0, 500_000));
+      // [test-e2e fix B-004 round-1 2026-05-10] Raise DOM truncation cap from
+      // 500KB to 2MB; large POS shells exceeded the lower limit causing late-DOM
+      // elements (e.g. data-testid="pos-grand-total", cart lines) to fall past
+      // the cut, defeating adversarial reviewer audit of the captured artifact.
+      fs.writeFileSync(`${base}.dom.html`, html.substring(0, 2_000_000));
     } catch (_e) { /* ignore */ }
     fs.writeFileSync(`${base}.console.json`, JSON.stringify(consoleBuffer, null, 2));
     fs.writeFileSync(`${base}.network.json`, JSON.stringify(networkBuffer, null, 2));
