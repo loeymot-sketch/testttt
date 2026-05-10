@@ -212,3 +212,33 @@
     --kiosk-duration-step:       1ms;
     --kiosk-duration-ceremony:   1ms;
 }
+
+/* =============================================================================
+   FoodKing brand V2 (2026-05-10) — Cayenne globalization
+   -----------------------------------------------------------------------------
+   Override les tokens legacy `--kiosk-*` (red #E8001C) vers Cayenne #F4501E
+   pour cohérence avec mobile app. KioskAppComponent.vue est FROZEN et
+   définit ces tokens avec scoped-CSS (specificity [data-v-XXX]) — on utilise
+   !important pour battre cette specificity sans toucher le frozen file.
+
+   Owner gate (2026-05-10) : "tu n'as pas corrigé les couleurs, il faut
+   noir + orange + jaune + blanc partout".
+   ============================================================================= */
+
+.kiosk-app.kiosk-theme--light,
+.kiosk-app:not(.kiosk-theme--dark) {
+    --kiosk-primary:        #F4501E !important;
+    --kiosk-primary-dark:   #DC4517 !important;
+    --kiosk-primary-soft:   #FFE8DD !important;
+    --kiosk-primary-light:  rgba(244, 80, 30, 0.08) !important;
+    --kiosk-text-on-red:    #FFFFFF !important;
+    --kiosk-shadow-cta:     0 10px 24px rgba(244, 80, 30, 0.28) !important;
+    --kiosk-bg:             #FFFFFF !important;
+    --kiosk-bg-2:           #FFFFFF !important;
+    --kiosk-surface:        #FFFFFF !important;
+    --kiosk-surface-alt:    #F7F7F7 !important;
+    --kiosk-surface-strong: #FFFFFF !important;
+    --kiosk-border:         #E5E5E5 !important;
+    --kiosk-text:           #0F0F0F !important;
+    --kiosk-text-muted:     #5A5A5A !important;
+}

@@ -797,27 +797,38 @@ export default {
   gap: 16px;
 }
 
+/* FoodKing brand V2 (2026-05-10) — modernisation cart recap (owner :
+   "année 2000, c'est weird, trop basique"). Card plus aérée, image carrée
+   arrondie style modern app, accents Cayenne, hierarchy typo plus marquée. */
 .kiosk-cart-item {
-  background: var(--kiosk-surface);
-  border-radius: 26px;
-  border: 1.5px solid var(--kiosk-border);
-  padding: 18px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 1.5px solid #E5E5E5;
+  padding: 16px 18px;
   display: flex;
   align-items: center;
   gap: 18px;
-  box-shadow: var(--kiosk-shadow-card);
+  box-shadow: 0 4px 14px rgba(15, 15, 15, 0.04);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.kiosk-cart-item:hover {
+  border-color: #F4501E;
+  box-shadow: 0 6px 18px rgba(244, 80, 30, 0.12);
 }
 
 .kiosk-cart-item-img {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
+  width: 104px;
+  height: 104px;
+  border-radius: 18px;
   overflow: hidden;
   flex-shrink: 0;
-  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));
+  background: #FAFAFA;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  border: 1px solid #EFEFEF;
 }
 
 .kiosk-cart-item-img img {
@@ -826,7 +837,7 @@ export default {
   object-fit: cover;
 }
 
-.kiosk-cart-item-emoji { font-size: 48px; }
+.kiosk-cart-item-emoji { font-size: 56px; line-height: 1; }
 
 .kiosk-cart-item-info { flex: 1; min-width: 0; }
 
@@ -855,10 +866,11 @@ export default {
 }
 
 .kiosk-cart-item-name {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 900;
-  color: var(--kiosk-text);
-  margin: 0 0 2px;
+  color: #0F0F0F;
+  margin: 0 0 4px;
+  letter-spacing: -0.2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -962,9 +974,10 @@ export default {
 }
 
 .kiosk-cart-item-total {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 900;
-  color: var(--kiosk-primary);
+  color: #F4501E;
+  letter-spacing: -0.4px;
 }
 
 .kiosk-cart-summary {
