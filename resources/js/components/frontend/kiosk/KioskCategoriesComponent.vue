@@ -223,6 +223,16 @@
         </main>
       </div>
 
+      <!-- FoodKing brand V2 (2026-05-10) — Cart bottom-sheet visible direct
+           sur la welcome page dès qu'un item est ajouté. Remplace le toast
+           d'ajout (owner refuse les notifications). -->
+      <KsCartBottomSheet
+        :items="cartItems"
+        :format-price="formatPrice"
+        @increment="incrementCartItem"
+        @decrement="decrementCartItem"
+      />
+
       <div
         class="kiosk-bottom-bar"
         role="region"
@@ -296,6 +306,7 @@ import kioskAnalytics from '../../../helpers/kioskAnalytics';
 import { extractAllergenCodes } from '../../../helpers/kioskFilters';
 import KsAllergenBadge from './ds/KsAllergenBadge.vue';
 import KsBadge from './ds/KsBadge.vue';
+import KsCartBottomSheet from './ds/KsCartBottomSheet.vue';
 import KioskPromoCarouselComponent from './KioskPromoCarouselComponent.vue';
 
 const EMOJI_MAP = {
@@ -311,6 +322,7 @@ export default {
     KioskWizardComponent,
     KsAllergenBadge,
     KsBadge,
+    KsCartBottomSheet,
     KioskPromoCarouselComponent,
   },
   mixins: [kioskPriceMixin],
@@ -337,6 +349,7 @@ export default {
       'kioskCatalogItems',
     ]),
     ...mapGetters('kioskCart', { cartCount: 'count', cartTotal: 'total' }),
+    ...mapState('kioskCart', { cartItems: 'items' }),
     selectedSidebarRow() {
       const sid = parseInt(this.selectedCategoryId, 10);
       const sub = this.kioskSandwichSubcolumn;
@@ -412,7 +425,7 @@ export default {
   },
   methods: {
     ...mapActions('kioskMenu', ['fetchMenu', 'selectKioskCategory']),
-    ...mapActions('kioskCart', ['addItem', 'reset']),
+    ...mapActions('kioskCart', ['addItem', 'reset', 'updateQuantity', 'removeItem']),
 
     hasExplicitOrderType() {
       const getter = this.$store?.getters?.['kioskCart/hasExplicitOrderType'];
@@ -563,11 +576,12 @@ export default {
           this.activeItem = detail;
         } else {
           this.addItem(this.buildSimpleCartItem(detail));
-          this.showToast(this.$t('kiosk.item_added', { name: this.sanitizeItemName(detail.name) }), 'success', 1800);
+          // FoodKing brand V2 (2026-05-10) — owner request : pas de toast sur
+          // add-to-cart, le KsCartBottomSheet rend l'ajout visible directement.
         }
       } catch (_) {
         this.addItem(this.buildSimpleCartItem(product));
-        this.showToast(this.$t('kiosk.item_added', { name: this.sanitizeItemName(product.name) }), 'success', 1800);
+        // FoodKing brand V2 — toast retiré (cf. KsCartBottomSheet ci-dessous).
       } finally {
         this.loadingItemId = null;
       }
@@ -610,7 +624,28 @@ export default {
     addToCartAndClose(cartItem) {
       this.addItem(cartItem);
       this.closeWizard();
-      this.showToast(this.$t('kiosk.item_added', { name: this.sanitizeItemName(cartItem.name) }), 'success', 1800);
+      // FoodKing brand V2 (2026-05-10) — owner request : pas de toast sur
+      // add-to-cart depuis le wizard. L'item apparaît dans KsCartBottomSheet.
+    },
+
+    incrementCartItem(index) {
+      const item = this.cartItems[index];
+      if (!item) return;
+      const next = (item.quantity || 0) + 1;
+      const max = window.foodkingConfig?.maxItemQty ?? 20;
+      if (next > max) return;
+      this.updateQuantity({ index, quantity: next });
+    },
+
+    decrementCartItem(index) {
+      const item = this.cartItems[index];
+      if (!item) return;
+      const next = (item.quantity || 0) - 1;
+      if (next <= 0) {
+        this.removeItem(index);
+      } else {
+        this.updateQuantity({ index, quantity: next });
+      }
     },
 
     closeWizard() {
