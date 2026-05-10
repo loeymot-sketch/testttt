@@ -633,6 +633,24 @@ export default {
       this.$store.commit('kioskMenu/UPDATE_ITEM', payload);
       this.$store.dispatch('kioskCart/pruneUnavailableLines');
 
+      // [iter15-mega-fix D-003 2026-05-10] Toast on every availability flip so
+      // the customer (and accessibility tools) get immediate feedback when an
+      // item disappears mid-browse. KioskToastComponent renders an aria-live
+      // chip — same affordance the brief asks for on the POS surface, kept in
+      // parity here per owner mandate.
+      try {
+        const flipUnavailable =
+          payload.is_available === false || payload.is_available === 0;
+        if (flipUnavailable) {
+          const itemName = payload.name || payload.item_name || null;
+          const reason = payload.reason || null;
+          const label = itemName
+            ? (reason ? `${itemName} indisponible — ${reason}` : `${itemName} indisponible`)
+            : 'Un article vient de devenir indisponible';
+          this._showToast(label, 'warning', 4500);
+        }
+      } catch (_e) { /* defensive — never block menu update */ }
+
       const scopedBranchId = activeBranchId ?? eventBranchId;
 
       return this.pruneOfflineQueueOnAvailabilityChanged({

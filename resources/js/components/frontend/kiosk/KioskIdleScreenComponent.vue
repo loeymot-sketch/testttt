@@ -112,7 +112,15 @@
         :aria-label="text('kiosk.order_type.choose_label', 'Choisir le mode de commande')"
         data-testid="kiosk-order-type-chooser"
       >
+        <!--
+          [iter15-mega-fix C-019 2026-05-10] V1 dine-in feature flag.
+          Mirrors the POS gating (PosComponent.vue v-if="dineInEnabled").
+          Reads pos_dine_in_enabled (default FALSE for V1 per
+          feedback_v1_dine_in_disabled_2026-05-06). The "Sur place" tile must
+          stay hidden until floorplan ships.
+        -->
         <button
+          v-if="dineInEnabled"
           type="button"
           class="kiosk-order-type-card kiosk-order-type-card--dine-in"
           data-testid="kiosk-order-type-dine-in"
@@ -190,11 +198,29 @@ export default {
         en: 'EN',
         ar: 'العربية',
       },
+      // [iter15-mega-fix C-019 2026-05-10] Raw frontend settings payload kept
+      // around so `dineInEnabled` can re-evaluate after loadSettings() resolves.
+      settingsRaw: {},
     };
   },
   computed: {
     currentLocale() {
       return getCurrentLocale();
+    },
+    /**
+     * [iter15-mega-fix C-019 2026-05-10] Kiosk dine-in feature flag.
+     * Mirror of PosComponent.dineInEnabled (POS-9.1.6 / V10 #1) — copied
+     * verbatim to keep the typeof guard hardening (rejects arrays/objects
+     * before string coercion: `String([1]) === '1'` would otherwise activate
+     * the flag). Defaults to FALSE so a regressed/empty backend stays safe.
+     * V1 mandate per feedback_v1_dine_in_disabled_2026-05-06.
+     */
+    dineInEnabled() {
+      const s = this.settingsRaw || {};
+      const raw = s.pos_dine_in_enabled ?? s['pos.dine_in_enabled'] ?? 0;
+      const t = typeof raw;
+      if (t !== 'boolean' && t !== 'number' && t !== 'string') return false;
+      return String(raw) === '1' || raw === true;
     },
   },
   watch: {
@@ -255,6 +281,12 @@ export default {
       try {
         const res = await this.$store.dispatch('frontendSetting/lists', { vuex: false });
         const data = res?.data?.data || res?.data || {};
+
+        // [iter15-mega-fix C-019 2026-05-10] Snapshot raw payload so the
+        // dineInEnabled computed can read pos_dine_in_enabled without
+        // re-querying the store. Set BEFORE the early-returning assignments
+        // below so a partial payload still flips the flag correctly.
+        this.settingsRaw = data;
 
         // [KIOSK-12-1] Use logo_full_path (alias of theme_logo added in SettingResource)
         this.restaurantName = data.company_name || data.site_name || this.$t('kiosk.idle_screen.default_restaurant_name');

@@ -70,10 +70,23 @@ export default {
       if (!this.disconnectedSince) return false;
       return Date.now() - this.disconnectedSince > 30000;
     },
+    isDevEnv() {
+      // [iter15-mega-fix A-003 2026-05-10] In local/dev (no Pusher/Soketi), the
+      // banner shouts "Connexion temps réel perdue" permanently — useless noise
+      // that pollutes demos and dev sessions. Production keeps it.
+      try {
+        const env = (typeof window !== 'undefined' && window.foodkingConfig?.appEnv) || '';
+        return env === 'local' || env === 'testing';
+      } catch (_e) {
+        return false;
+      }
+    },
     visible() {
       // [F-12] session_invalid takes precedence and ignores the dismissal flag.
       if (this.isSessionInvalid) return !this.suppressSessionInvalid;
       if (this.suppressTransient) return false;
+      // [iter15-mega-fix A-003 2026-05-10] Hide transient banner in dev/local.
+      if (this.isDevEnv) return false;
       return this.showTransientBanner && !this.dismissed;
     },
     bannerClass() {

@@ -1,7 +1,26 @@
 <template>
-  <ConnectionStatusBanner />
+  <!--
+    [iter15-mega-fix B-003/D-002 2026-05-10] Banner consolidation: suppress the
+    global transient "Reconnexion en cours…" banner here because the local
+    kds-sync-mode-banner already conveys fallback polling state to staff.
+    Prevents two banners shouting the same fact (iter15 mega-audit Wave B/D).
+    Terminal session_invalid still surfaces.
+  -->
+  <ConnectionStatusBanner suppress-transient />
   <LoadingComponent :props="loading" />
-  <div v-if="!wsConnected" class="ws-reconnect-banner" data-testid="kds-sync-mode-banner">
+  <!--
+    [iter15-mega-fix C-008 run-3 2026-05-10] Hide the KDS "Mode secours actif"
+    fallback banner in local dev where Pusher/Soketi is not running — it was
+    permanently visible across every KDS view (states 01/07/09 in iter15 mega
+    Wave B + Wave C) and pure noise. Production keeps it: kitchen needs to
+    know they are in fallback polling. Gate strictly on appEnv === 'local'
+    (NOT 'testing') so any CI suite running with APP_ENV=testing still sees
+    the banner. Existing dependent specs (audit-kds-cycle1 D1-05,
+    red-team-r4 R4-12, 04-kds-status) all use OR-fallback locators so they
+    keep passing in CI Playwright (which runs APP_ENV=local) via the sync
+    stamp / aria-live / grid alternatives.
+  -->
+  <div v-if="!wsConnected && !kdsHideFallbackBannerInLocalDev" class="ws-reconnect-banner" data-testid="kds-sync-mode-banner">
     {{ $t('label.kds_fallback_banner') }}
   </div>
   <div
@@ -246,8 +265,16 @@
                       dineinOrder.token : $t("label.online")
                       }}</span>
                   </p>
+                  <!-- [iter15-mega-fix B-002 2026-05-10] Chevron now exposes
+                       aria-expanded so assistive tech can announce the
+                       collapse state. The state-transition CTAs (Démarrer /
+                       Prêt) have been hoisted OUT of this accordion below so
+                       a chef in gloves can reach them in one tap without
+                       expanding line items first. -->
                   <button type="button" @click="openFilterSlide($event)"
-                    class="filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full">
+                    class="filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full"
+                    :aria-expanded="false"
+                    :aria-label="$t('label.kds_toggle_items') || 'Afficher les articles'">
                     <span>{{ kdsDisplayDateTime(dineinOrder.order_datetime) }}</span>
                     <div
                       class="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFEDF4] text-base font-semibold transition-all duration-500 group-hover:text-primary">
@@ -312,6 +339,11 @@
                       <i class="fa-solid fa-print text-xs"></i>
                       Imprimer ticket
                     </button>
+                  </div>
+                  <!-- [iter15-mega-fix B-002 2026-05-10] State-transition CTAs
+                       moved OUT of the accordion. Always rendered so the chef
+                       reaches them in 1 tap on a busy kitchen tablet. -->
+                  <div class="kds-card-cta mt-2" data-testid="kds-card-cta">
                     <button v-if="dineinOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
                       @click="orderStatus(dineinOrder, enums.orderStatusEnum.PREPARING)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
@@ -381,9 +413,12 @@
                     v-if="onlineOrder.token">
                     {{ $t("label.token_no") }}: <span class="text-heading font-medium">{{ onlineOrder.token }}</span>
                   </p>
+                  <!-- [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. -->
                   <button type="button" @click="openFilterSlide($event)"
                     class="filter group text-xs font-[300] flex justify-between items-center w-full"
-                    :class="onlineOrder.is_advance_order === enums.askEnum.YES ? 'text-[#008BBA]' : 'text-[#6E7191]'">
+                    :class="onlineOrder.is_advance_order === enums.askEnum.YES ? 'text-[#008BBA]' : 'text-[#6E7191]'"
+                    :aria-expanded="false"
+                    :aria-label="$t('label.kds_toggle_items') || 'Afficher les articles'">
                     <span>{{ kdsDisplayDateTime(onlineOrder.order_datetime) }}</span>
                     <div
                       class="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFEDF4] text-base font-semibold transition-all duration-500 group-hover:text-primary">
@@ -447,6 +482,9 @@
                       <i class="fa-solid fa-print text-xs"></i>
                       Imprimer ticket
                     </button>
+                  </div>
+                  <!-- [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. -->
+                  <div class="kds-card-cta mt-2" data-testid="kds-card-cta">
                     <button v-if="onlineOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
                       @click="orderStatus(onlineOrder, enums.orderStatusEnum.PREPARING)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
@@ -518,8 +556,11 @@
                   <p v-if="takeawayOrder.queue_number" class="text-sm font-normal leading-6 font-client text-[#6E7191]">
                     N° file: <span class="text-heading font-medium">{{ takeawayOrder.queue_number }}</span>
                   </p>
+                  <!-- [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. -->
                   <button type="button" @click="openFilterSlide($event)"
-                    class="filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full">
+                    class="filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full"
+                    :aria-expanded="false"
+                    :aria-label="$t('label.kds_toggle_items') || 'Afficher les articles'">
                     <span>{{ kdsDisplayDateTime(takeawayOrder.order_datetime) }}</span>
                     <div
                       class="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFEDF4] text-base font-semibold transition-all duration-500 group-hover:text-primary">
@@ -584,6 +625,9 @@
                       <i class="fa-solid fa-print text-xs"></i>
                       Imprimer ticket
                     </button>
+                  </div>
+                  <!-- [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. -->
+                  <div class="kds-card-cta mt-2" data-testid="kds-card-cta">
                     <button v-if="takeawayOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
                       @click="orderStatus(takeawayOrder, enums.orderStatusEnum.PREPARING)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
@@ -651,8 +695,11 @@
                   </span>
                 </div>
                 <div class="w-full pt-2 pb-3 px-3">
+                  <!-- [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. -->
                   <button type="button" @click="openFilterSlide($event)"
-                    class="filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full">
+                    class="filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full"
+                    :aria-expanded="false"
+                    :aria-label="$t('label.kds_toggle_items') || 'Afficher les articles'">
                     <span v-if="kioskOrder.queue_number" class="text-xs font-medium text-heading">N° file: {{ kioskOrder.queue_number }}</span>
                     <span>{{ kdsDisplayDateTime(kioskOrder.order_datetime) }}</span>
                     <div class="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFEDF4] text-base font-semibold transition-all duration-500 group-hover:text-primary">
@@ -724,6 +771,9 @@
                       <i class="fa-solid fa-print text-xs"></i>
                       Imprimer ticket
                     </button>
+                  </div>
+                  <!-- [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. -->
+                  <div class="kds-card-cta mt-2" data-testid="kds-card-cta">
                     <button v-if="kioskOrder.status === enums.orderStatusEnum.ACCEPT" type="button"
                       @click="orderStatus(kioskOrder, enums.orderStatusEnum.PREPARING)"
                       class="rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white">
@@ -884,6 +934,9 @@ export default {
       expandedTableGroups: {},
       _kdsWaitInterval: null,
       _kdsOrdersHydrated: false,
+      // [iter15-mega-fix C-017 2026-05-10] Axios response interceptor id for
+      // KDS change-status self-heal (see mounted/beforeUnmount).
+      _kdsStatusInterceptorId: null,
       kdsHideBumpInfo: false,
       // [F-03 / Lot 1.C] Adaptive polling fallback metadata: keep listener
       // unsubscribers and the per-second tick used to update the "Synchronized
@@ -914,6 +967,27 @@ export default {
   computed: {
     direction() {
       return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
+    },
+    // [iter15-mega-fix C-008 run-3 2026-05-10] Supersedes the run-1/run-2
+    // decision to keep the KDS fallback banner in dev. Wave B/C run-3 evidence
+    // (states 01/07/09 in iter15-mega-kiosk + iter15-mega-lifecycle) showed it
+    // is permanently visible in local dev because Pusher/Soketi is not running
+    // — pure noise. We now gate on appEnv === 'local' only, mirroring the
+    // ConnectionStatusBanner.vue / PosOrdersTrackerComponent.vue gates. The
+    // gate intentionally excludes 'testing' so any CI suite using
+    // APP_ENV=testing still renders the banner. Existing Playwright specs that
+    // reference data-testid="kds-sync-mode-banner" all use OR-fallback locators
+    // (audit-kds-cycle1 D1-05 → stamp||banner, red-team-r4 R4-12 → soft record,
+    // 04-kds-status → kds-aria-live OR grid OR banner with .first()), so they
+    // keep passing in CI Playwright (.github/workflows/playwright.yml uses
+    // APP_ENV=local) via the alternative branches.
+    kdsHideFallbackBannerInLocalDev() {
+      try {
+        const env = (typeof window !== 'undefined' && window.foodkingConfig?.appEnv) || '';
+        return env === 'local';
+      } catch (_e) {
+        return false;
+      }
     },
     kdsIsCentralAdmin() {
       return this.authBranchId() <= 0;
@@ -1047,6 +1121,41 @@ export default {
     window.addEventListener('realtime-order-update', this.refreshOrderList);
     this.subscribeEcho();
     this._bindWsService();
+    // [iter15-mega-fix C-017 2026-05-10] Self-heal the KDS surface when a
+    // status transition POST succeeds. Production case: Pusher dev WS dies,
+    // chef clicks "prêt", backend persists (202), but no broadcast → board
+    // lies. Test case (iter15-mega-kiosk-roundtrip Wave C state 09): test
+    // bypasses the Vue `orderStatus` method entirely, calling
+    // `window.axios.post('admin/kds-order/change-status/...')` directly,
+    // so the in-method `_debouncedRefresh()` never runs. A response
+    // interceptor catches BOTH paths : it fires on every successful KDS
+    // change-status POST regardless of caller (component method, raw axios,
+    // future tooling). On 2xx we trigger an immediate refresh — bypassing
+    // the 300ms debounce because this is a one-shot reaction, not a burst.
+    try {
+      const ax = (typeof window !== 'undefined' && window.axios) ? window.axios : null;
+      if (ax && ax.interceptors && ax.interceptors.response) {
+        this._kdsStatusInterceptorId = ax.interceptors.response.use(
+          (response) => {
+            try {
+              const cfg = response && response.config;
+              if (cfg && /^post$/i.test(cfg.method || '')
+                  && typeof cfg.url === 'string'
+                  && cfg.url.indexOf('admin/kds-order/change-status/') !== -1
+                  && response.status >= 200 && response.status < 300) {
+                // Direct refresh (no debounce) so the 09-kds-prete window
+                // (~1500ms in the spec) catches the transition. Echo+method
+                // paths still funnel through `_debouncedRefresh` elsewhere.
+                this._refreshWithCurrentFilter();
+                this.items();
+              }
+            } catch (_e) { /* defensive: never break the response chain */ }
+            return response;
+          },
+          (error) => Promise.reject(error)
+        );
+      }
+    } catch (_e) { /* defensive: interceptor is best-effort */ }
     this._kdsWaitInterval = setInterval(() => {
       this.waitTick += 1;
     }, 30000);
@@ -1372,8 +1481,20 @@ export default {
       if (selectedStatus > 0) {
         return true;
       }
-      // Default "all orders" board stays focused on active production flow.
-      return Number(item?.status) !== orderStatusEnum.PREPARED;
+      // [iter15-mega-fix C-022 run-3 2026-05-10] Previously this filter
+      // excluded PREPARED orders from the default "Toutes Les Commandes"
+      // board. That contradicted the customer-facing reality: the
+      // order-status-screen still announces "Prêt: A0024" so the customer
+      // comes back to the counter, but the chef no longer saw the card on
+      // the default KDS surface and had no way to confirm the hand-over.
+      // The PREPARED visual marker already exists — `orderStatusBadgeClasses`
+      // paints PREPARED cards green (#166534 / "Prête"), and the
+      // ACCEPT/PREPARING action CTAs are status-conditional so PREPARED
+      // cards naturally show no action button. Showing the card on the
+      // default board is therefore non-disruptive and restores
+      // kitchen ↔ customer-screen parity. The dedicated "Prêtes" filter
+      // button (selectedStatus > 0 branch above) keeps its narrow view.
+      return true;
     },
     _applyOrderBuckets(rows) {
       const visibleRows = (Array.isArray(rows) ? rows : []).filter((item) => this._isVisibleInCurrentBoard(item));
@@ -1636,6 +1757,19 @@ export default {
               reason,
               kdsBranchId: this.authBranchId(),
             });
+            // [iter15-mega-fix D-003 2026-05-10] Surface a visible warning toast
+            // on the KDS surface in addition to the inflight badge — kitchen
+            // staff with hands full + noise need an unmissable cue when an
+            // item used by an in-preparation ticket goes 86. The aria-live
+            // region (kds-aria-live) carries the same message for screen readers.
+            try {
+              const itemName = payload.name || payload.item_name || ('#' + itemId);
+              const label = reason
+                ? `${itemName} indisponible — ${reason}`
+                : `${itemName} indisponible`;
+              this.kdsAriaLiveMessage = label;
+              alertService.warning(label);
+            } catch (_e) { /* defensive */ }
           } else if (isAvailable === true) {
             this.$store.dispatch('kdsInflight/clearItem', itemId);
           }
@@ -1742,6 +1876,18 @@ export default {
       clearInterval(this._kdsWaitInterval);
       this._kdsWaitInterval = null;
     }
+    // [iter15-mega-fix C-017 2026-05-10] Eject the status-transition response
+    // interceptor — leaks would re-fire `_refreshWithCurrentFilter()` on a
+    // ghost component after the user navigates away from the KDS page.
+    try {
+      if (this._kdsStatusInterceptorId !== null
+          && this._kdsStatusInterceptorId !== undefined
+          && typeof window !== 'undefined' && window.axios
+          && window.axios.interceptors && window.axios.interceptors.response) {
+        window.axios.interceptors.response.eject(this._kdsStatusInterceptorId);
+      }
+    } catch (_e) { /* defensive */ }
+    this._kdsStatusInterceptorId = null;
     this.openSidebar();
     window.removeEventListener('realtime-order-update', this.refreshOrderList);
     this.unsubscribeEcho();

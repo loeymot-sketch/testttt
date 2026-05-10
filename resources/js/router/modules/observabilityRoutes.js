@@ -6,6 +6,16 @@ const OutboxOverviewComponent = () =>
     import(/* webpackChunkName: "admin-shell" */ "../../components/admin/observability/OutboxOverviewComponent");
 
 export default [
+    // [iter15-mega-fix A-001 2026-05-10] /admin/observability was a dead URL:
+    // Laravel SPA fallback returned 200 HTML, but Vue Router fell through to
+    // route.notFound and rendered the generic 404 illustration. The bare URL
+    // is what links/external dashboards/tooling are most likely to point at,
+    // so register a redirect to the real outbox sub-route. The canonical
+    // /admin/observability/outbox entry stays intact below.
+    {
+        path: "/admin/observability",
+        redirect: { name: "admin.observability.outbox" },
+    },
     {
         path: "/admin/observability/outbox",
         name: "admin.observability.outbox",

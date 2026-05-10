@@ -116,6 +116,16 @@ axios.interceptors.response.use(
             return Promise.reject(error);
         }
 
+        // [iter15-mega-fix C-003 2026-05-10] Public-friendly surfaces (e.g. the
+        // customer-facing order-status wall display) must NEVER bounce to
+        // /login on a 401. The screen renders an empty state instead — that's
+        // far better UX than leaking the admin login form to a customer.
+        const publicFriendlyPaths = ['/admin/order-status-screen', '/order-status'];
+        const onPublicFriendly = publicFriendlyPaths.some((p) => path === p || path.startsWith(p + '/'));
+        if (onPublicFriendly) {
+            return Promise.reject(error);
+        }
+
         if (!_401Handling) {
             _401Handling = true;
             setTimeout(() => { _401Handling = false; }, 3000);

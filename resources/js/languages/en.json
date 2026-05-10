@@ -214,7 +214,7 @@
             "empty_preparing": "Aucune commande en cuisine.",
             "empty_prepared": "Aucune commande prête.",
             "empty_delivered": "Aucune commande servie pour le moment.",
-            "col_accept": "À envoyer",
+            "col_accept": "Confirmées",
             "col_preparing": "En préparation",
             "col_prepared": "Prêtes",
             "col_delivered": "Servies",
@@ -1056,7 +1056,8 @@
             "usage_drawer_close": "Close",
             "usage_empty": "No product or category uses this ingredient.",
             "view_details": "View details"
-        }
+        },
+        "kds_toggle_items": "Show/Hide items"
     },
     "button": {
         "add": "Add",
@@ -1162,7 +1163,8 @@
         "composer": {
             "choose_template_v2": "Choose a template",
             "add_page_manual": "Add a page manually"
-        }
+        },
+        "menu": "Menu"
     },
     "number": {
         "10": "10",
@@ -1289,7 +1291,14 @@
     "kiosk": {
         "welcome": "Welcome!",
         "tap_to_order": "Touch the screen to order",
-        "order_type": "Order type",
+        "order_type": {
+            "choose_label": "Choose your order type",
+            "required_hint": "Pick an option to start",
+            "takeaway": "Takeaway",
+            "takeaway_hint": "I'll pick up my order",
+            "dine_in": "Dine in",
+            "dine_in_hint": "I'm eating here"
+        },
         "dine_in": "Dine in",
         "takeaway": "Takeaway",
         "categories": "Categories",
@@ -1550,7 +1559,8 @@
             "footer": "Configure this kiosk in the admin area under Kiosks.",
             "err_maintenance": "Maintenance mode is on. Exit maintenance mode to restart the kiosk.",
             "err_no_credentials": "Automatic sign-in is unavailable. For local dev: copy .env.example KIOSK_MACHINE_* lines into .env, run php artisan migrate --seed (or php artisan foodking:ensure-kiosk-machine), then php artisan config:clear. Production: set machine credentials in .env to match Admin → Kiosks.",
-            "err_login_failed": "Sign-in failed for now. Another attempt will happen shortly."
+            "err_login_failed": "Sign-in failed for now. Another attempt will happen shortly.",
+            "err_rate_limited": "Too many sign-in attempts. The kiosk will resume automatically in a moment."
         },
         "admin_screen": {
             "pin_title": "Staff access",
@@ -1947,7 +1957,8 @@
         },
         "waiting": {
             "ready_visual_fallback": "Your order is ready!"
-        }
+        },
+        "remove_item": "Remove"
     },
     "catalog": {
         "menu_refreshed_toast": "The menu has been updated",

@@ -110,11 +110,24 @@ export default {
         this.retryAttempts = 0;
         this.$router.replace({ name: 'kiosk.idle' });
       } catch (err) {
-        const msg = err?.response?.data?.errors?.validation
-          || err?.response?.data?.errors?.username?.[0]
-          || err?.response?.data?.errors?.password?.[0]
-          || err?.message
-          || this.$t('kiosk.login_screen.err_login_failed');
+        // [iter15-mega-fix D-007 2026-05-10] 429 must surface a localized
+        // user-facing message — not the raw axios `Request failed with
+        // status code 429`. The Laravel response body carries `{message,
+        // retry_after}`, but the UI prefers the i18n key when available so
+        // the wording matches the locale of the borne and never leaks
+        // internal axios strings (D-007 i18n leak observed on iter15
+        // mega-audit Wave D state 05).
+        const status = err?.response?.status;
+        let msg;
+        if (status === 429) {
+          msg = this.$t('kiosk.login_screen.err_rate_limited');
+        } else {
+          msg = err?.response?.data?.errors?.validation
+            || err?.response?.data?.errors?.username?.[0]
+            || err?.response?.data?.errors?.password?.[0]
+            || err?.response?.data?.message
+            || this.$t('kiosk.login_screen.err_login_failed');
+        }
         this.error = msg;
         this.retryAttempts += 1;
         this.scheduleRetry();

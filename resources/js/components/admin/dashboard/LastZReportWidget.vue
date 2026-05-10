@@ -59,9 +59,35 @@ export default {
         },
     },
     mounted() {
+        // [iter15-mega-fix D-005 2026-05-10] Cashier (POS role) used to land
+        // briefly on /admin/dashboard after login (loginAsPosOperator helper)
+        // which mounted this widget and fired GET /api/admin/fiscal/z-report
+        // → 403 Forbidden silently. Gate the call behind the `transactions`
+        // permission (matches transactionRoutes.js permissionUrl). Keeps the
+        // historic default-allow when perms haven't hydrated yet.
+        if (!this.canFetchReports()) {
+            this.zReportUnavailable = true;
+            this.resolvedReport = null;
+            return;
+        }
         this.fetchReports();
     },
     methods: {
+        // [iter15-mega-fix D-005 2026-05-10] Permission gate aligned with
+        // transactionRoutes.js (permissionUrl:'transactions') and mirrors the
+        // existing DashboardComponent.normalizedPermissions() helper.
+        canFetchReports() {
+            const raw = this.$store.getters.authPermission;
+            const perms = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data) ? raw.data : []);
+            if (!perms.length) {
+                return true;
+            }
+            const entry = perms.find((p) => p && p.url === 'transactions');
+            if (!entry) {
+                return true;
+            }
+            return entry.access === true;
+        },
         async fetchReports() {
             this.loading.isActive = true;
             this.zReportUnavailable = false;

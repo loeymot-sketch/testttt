@@ -88,6 +88,48 @@ class OrderStatusScreenOrderService
         }
     }
 
+    /**
+     * [iter15-mega-fix C-016 2026-05-10] Branch-scoped OSS list without the
+     * auth-aware branch resolver. Used by the public customer-wall endpoint
+     * (`OrderStatusScreenController::publicIndex`) where there is no
+     * `auth()->user()` to consult — branch comes from the caller (query
+     * param or first-active-branch fallback). The query body MUST stay
+     * byte-identical to `list()` above so the customer wall and the admin
+     * dashboard show the same set of orders for the same branch.
+     */
+    public function listForBranch(int $branchId)
+    {
+        try {
+            $query = Order::where(function ($q) {
+                    $q->whereNotNull('token')
+                      ->orWhere('order_type', \App\Enums\OrderType::KIOSK)
+                      ->orWhere(function ($sub) {
+                          $sub->where('order_type', \App\Enums\OrderType::TAKEAWAY)
+                              ->whereNotNull('queue_number');
+                      });
+                })
+                ->whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED])
+                ->where(function ($q) {
+                    $q->where(function ($sub) {
+                        $sub->whereDate('order_datetime', Carbon::today())->where('is_advance_order', Ask::NO);
+                    })->orWhere(function ($sub) {
+                        $sub->where('is_advance_order', Ask::YES)
+                            ->whereDate('order_datetime', '<=', Carbon::today())
+                            ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
+                    });
+                });
+
+            if ($branchId > 0) {
+                $query->where('branch_id', $branchId);
+            }
+
+            return $query->get();
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
     private function resolveBranchScope($requestedBranchId, ?User $user): ?int
     {
         if ($this->isGlobalAdmin($user)) {

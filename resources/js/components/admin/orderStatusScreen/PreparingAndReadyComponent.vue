@@ -1,8 +1,13 @@
 <template>
   <LoadingContentComponent :props="loading" />
-  <div v-if="!wsConnected" class="ws-reconnect-banner">
-    {{ $t('label.oss_fallback_banner') }}
-  </div>
+  <!--
+    [iter15-mega-fix B-003/D-002 2026-05-10] Local ws-reconnect-banner removed —
+    duplicate of the global ConnectionStatusBanner mounted by the parent
+    OrderStatusScreenComponent. Showing two banners simultaneously
+    ("Reconnexion en cours…" + "Mode secours actif") was UX clutter flagged
+    in iter15 mega-audit Wave B/D. The global banner debounces 5s and is
+    hidden in dev via foodkingConfig.appEnv.
+  -->
 
   <!-- Colonne EN PRÉPARATION -->
   <div
@@ -266,14 +271,9 @@ export default {
 </script>
 
 <style scoped>
-.ws-reconnect-banner {
-  background: #fef3c7;
-  color: #92400e;
-  text-align: center;
-  padding: 6px 12px;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
+/* [iter15-mega-fix B-003/D-002 2026-05-10] .ws-reconnect-banner CSS removed:
+   the only consumer of this class was the duplicate banner deleted from the
+   template above. Connection status is owned by ConnectionStatusBanner.vue. */
 /* Slide-in for preparing column */
 .oss-slide-enter-active { transition: all 0.4s ease; }
 .oss-slide-leave-active { transition: all 0.3s ease; }

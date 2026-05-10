@@ -17,7 +17,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.ws-reconnect-banner[data-v-3aa5d0ca] {\n  background: #fef3c7;\n  color: #92400e;\n  text-align: center;\n  padding: 6px 12px;\n  font-size: 0.85rem;\n  font-weight: 600;\n}\n/* Slide-in for preparing column */\n.oss-slide-enter-active[data-v-3aa5d0ca] { transition: all 0.4s ease;\n}\n.oss-slide-leave-active[data-v-3aa5d0ca] { transition: all 0.3s ease;\n}\n.oss-slide-enter-from[data-v-3aa5d0ca]   { opacity: 0; transform: translateX(-20px);\n}\n.oss-slide-leave-to[data-v-3aa5d0ca]     { opacity: 0; transform: translateX(20px);\n}\n\n/* Pop-in for ready column */\n.oss-pop-enter-active[data-v-3aa5d0ca] { transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);\n}\n.oss-pop-leave-active[data-v-3aa5d0ca] { transition: all 0.3s ease;\n}\n.oss-pop-enter-from[data-v-3aa5d0ca]   { opacity: 0; transform: scale(0.6);\n}\n.oss-pop-leave-to[data-v-3aa5d0ca]     { opacity: 0; transform: scale(0.8);\n}\n\n/* Highlight for newly-ready orders */\n.oss-new-ready[data-v-3aa5d0ca] {\n  animation: oss-bounce-3aa5d0ca 0.6s ease 2;\n}\n@keyframes oss-bounce-3aa5d0ca {\n0%, 100% { transform: scale(1);\n}\n50%       { transform: scale(1.12);\n}\n}\n\n/* Flash the entire ready column green when a new order is ready */\n.oss-ready-flash[data-v-3aa5d0ca] {\n  animation: oss-flash-3aa5d0ca 0.8s ease 2;\n}\n@keyframes oss-flash-3aa5d0ca {\n0%, 100% { background-color: transparent;\n}\n50%       { background-color: rgba(26, 183, 89, 0.15);\n}\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n/* [iter15-mega-fix B-003/D-002 2026-05-10] .ws-reconnect-banner CSS removed:\n   the only consumer of this class was the duplicate banner deleted from the\n   template above. Connection status is owned by ConnectionStatusBanner.vue. */\n/* Slide-in for preparing column */\n.oss-slide-enter-active[data-v-3aa5d0ca] { transition: all 0.4s ease;\n}\n.oss-slide-leave-active[data-v-3aa5d0ca] { transition: all 0.3s ease;\n}\n.oss-slide-enter-from[data-v-3aa5d0ca]   { opacity: 0; transform: translateX(-20px);\n}\n.oss-slide-leave-to[data-v-3aa5d0ca]     { opacity: 0; transform: translateX(20px);\n}\n\n/* Pop-in for ready column */\n.oss-pop-enter-active[data-v-3aa5d0ca] { transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);\n}\n.oss-pop-leave-active[data-v-3aa5d0ca] { transition: all 0.3s ease;\n}\n.oss-pop-enter-from[data-v-3aa5d0ca]   { opacity: 0; transform: scale(0.6);\n}\n.oss-pop-leave-to[data-v-3aa5d0ca]     { opacity: 0; transform: scale(0.8);\n}\n\n/* Highlight for newly-ready orders */\n.oss-new-ready[data-v-3aa5d0ca] {\n  animation: oss-bounce-3aa5d0ca 0.6s ease 2;\n}\n@keyframes oss-bounce-3aa5d0ca {\n0%, 100% { transform: scale(1);\n}\n50%       { transform: scale(1.12);\n}\n}\n\n/* Flash the entire ready column green when a new order is ready */\n.oss-ready-flash[data-v-3aa5d0ca] {\n  animation: oss-flash-3aa5d0ca 0.8s ease 2;\n}\n@keyframes oss-flash-3aa5d0ca {\n0%, 100% { background-color: transparent;\n}\n50%       { background-color: rgba(26, 183, 89, 0.15);\n}\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -396,7 +396,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_ConnectionStatusBanner = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("ConnectionStatusBanner");
   var _component_PopularItemComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PopularItemComponent");
   var _component_PreparingAndReadyComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PreparingAndReadyComponent");
-  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ConnectionStatusBanner), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [iter15-mega-fix B-003/D-002 2026-05-10] suppress-transient: the global\n    \"Reconnexion en cours…\" banner is suppressed on the OSS surface because\n    the customer-facing screen already conveys the connection state via the\n    fallback polling — no need to show a permanent yellow bar in addition.\n    session_invalid (terminal) still surfaces via this component.\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ConnectionStatusBanner, {
+    "suppress-transient": ""
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "grid grid-cols-2 md:grid-cols-4 md:grid-flow-row gap-4",
     role: "main",
     "aria-label": _ctx.$t('label.oss_main_aria')
@@ -474,29 +476,25 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
 
-var _hoisted_1 = {
-  key: 0,
-  "class": "ws-reconnect-banner"
-};
-var _hoisted_2 = ["aria-label"];
-var _hoisted_3 = {
+var _hoisted_1 = ["aria-label"];
+var _hoisted_2 = {
   "class": "text-lg font-semibold text-white p-3 pb-2 bg-[#B0004D] mb-2 rounded-t-[10px] text-center"
 };
-var _hoisted_4 = {
+var _hoisted_3 = {
   "class": "content-wrapper p-3 overflow-auto thin-scrolling h-full"
 };
-var _hoisted_5 = {
+var _hoisted_4 = {
   key: 0,
   "class": "text-center text-[#A0A3BD] text-base mt-8"
 };
-var _hoisted_6 = ["aria-label"];
-var _hoisted_7 = {
+var _hoisted_5 = ["aria-label"];
+var _hoisted_6 = {
   "class": "text-lg font-semibold text-[#1F1F39] p-3 pb-2 bg-[#1AB759] mb-2 rounded-t-[10px] text-center"
 };
-var _hoisted_8 = {
+var _hoisted_7 = {
   "class": "content-wrapper p-3 overflow-auto thin-scrolling h-full"
 };
-var _hoisted_9 = {
+var _hoisted_8 = {
   key: 0,
   "class": "text-center text-[#A0A3BD] text-base mt-8"
 };
@@ -504,11 +502,11 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingContentComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingContentComponent");
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingContentComponent, {
     props: $data.loading
-  }, null, 8 /* PROPS */, ["props"]), !$data.wsConnected ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.oss_fallback_banner')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Colonne EN PRÉPARATION "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [iter15-mega-fix B-003/D-002 2026-05-10] Local ws-reconnect-banner removed —\n    duplicate of the global ConnectionStatusBanner mounted by the parent\n    OrderStatusScreenComponent. Showing two banners simultaneously\n    (\"Reconnexion en cours…\" + \"Mode secours actif\") was UX clutter flagged\n    in iter15 mega-audit Wave B/D. The global banner debounces 5s and is\n    hidden in dev via foodkingConfig.appEnv.\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Colonne EN PRÉPARATION "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden",
     role: "region",
     "aria-label": _ctx.$t('label.preparing')
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.preparing")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.TransitionGroup, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_2, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.preparing")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.TransitionGroup, {
     name: "oss-slide",
     tag: "ul",
     "class": "[&_li]:mb-6 [&_li]:text-[40px] [&_li]:font-semibold [&_li]:leading-10 w-full text-center text-[#1F1F39] mb-20"
@@ -522,11 +520,11 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }), 128 /* KEYED_FRAGMENT */))];
     }),
     _: 1 /* STABLE */
-  }), $data.preparingItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_5, "—")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 8 /* PROPS */, _hoisted_2), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Colonne PRÊT "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }), $data.preparingItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_4, "—")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 8 /* PROPS */, _hoisted_1), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Colonne PRÊT "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden", $data.newReadyFlash ? 'oss-ready-flash' : '']),
     role: "region",
     "aria-label": _ctx.$t('label.ready')
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.ready")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.TransitionGroup, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.ready")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.TransitionGroup, {
     name: "oss-pop",
     tag: "ul",
     "class": "[&_li]:mb-6 [&_li]:text-[40px] [&_li]:font-semibold [&_li]:leading-10 w-full text-center text-[#1F1F39] mb-20"
@@ -540,7 +538,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }), 128 /* KEYED_FRAGMENT */))];
     }),
     _: 1 /* STABLE */
-  }), $data.preparedItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_9, "—")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 10 /* CLASS, PROPS */, _hoisted_6)], 64 /* STABLE_FRAGMENT */);
+  }), $data.preparedItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_8, "—")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 10 /* CLASS, PROPS */, _hoisted_5)], 64 /* STABLE_FRAGMENT */);
 }
 
 /***/ }),

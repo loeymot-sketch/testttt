@@ -39,7 +39,15 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL') . '/storage',
+            // [iter15-mega-fix C-004 2026-05-10] Storage URLs were absolute via APP_URL
+            // (e.g. http://localhost:8000/storage/...). When the kiosk surface is served
+            // from http://127.0.0.1:8000 the resulting cross-origin <img src> triggered
+            // CSP `img-src` violations (report-only today, but blocking once enforce
+            // mode flips on) and a host mismatch that left product tiles visually blank.
+            // Default is now relative (/storage) so images inherit the page origin
+            // unconditionally. STORAGE_URL env override is preserved for setups that
+            // serve assets from a CDN / dedicated absolute host.
+            'url' => env('STORAGE_URL', '/storage'),
             'visibility' => 'public',
             'throw' => false,
         ],

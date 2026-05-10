@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 
 use App\Models\ThemeSetting;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Smartisan\Settings\Facades\Settings;
 
 class SettingResource extends JsonResource
 {
@@ -113,6 +114,14 @@ class SettingResource extends JsonResource
             // Customer kiosk is a locked client surface. Staff/admin intervention
             // happens from caisse/admin only, so the kiosk never receives a PIN.
             'kiosk_admin_pin'                      => null,
+
+            // [iter15-mega-fix C-019 2026-05-10] Expose pos.pos_dine_in_enabled
+            // to the kiosk frontend so the idle screen can hide the "Sur place"
+            // tile when V1 dine-in is disabled. Reads directly from the `pos`
+            // settings group (not merged into SettingService::list()) and
+            // defaults to FALSE to keep V1 deployments safe per
+            // feedback_v1_dine_in_disabled_2026-05-06.
+            'pos_dine_in_enabled'                  => (int) (bool) Settings::group('pos')->get('pos_dine_in_enabled', 0),
         ];
     }
 

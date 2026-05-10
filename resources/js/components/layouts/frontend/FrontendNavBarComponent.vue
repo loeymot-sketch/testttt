@@ -114,8 +114,14 @@
                             </figure>
                         </div>
                         <nav class="px-4">
+                            <!-- [iter15-mega-fix A-002 2026-05-10] Don't render the staff-landing
+                                 link when defaultMenu is missing url/language — that produced
+                                 href="/admin/undefined" + "menu.undefined" raw i18n key in the
+                                 admin account dropdown. authDefaultPermission can be populated
+                                 with permissions that don't carry a menu entry; require both
+                                 url + language on defaultMenu so we never emit an undefined link. -->
                             <router-link
-                                v-if="profile.role_id !== enums.roleEnum.CUSTOMER && Object.keys(authDefaultPermission).length > 0"
+                                v-if="profile.role_id !== enums.roleEnum.CUSTOMER && Object.keys(authDefaultPermission).length > 0 && defaultMenu?.url && defaultMenu?.language"
                                 :to="{ path: '/admin/' + defaultMenu?.url }"
                                 class="paper-link transition w-full flex items-center gap-3.5 py-2.5 border-b last:border-none border-[#EFF0F6]">
                                 <i class="lab-font-size-17" :class="defaultMenu?.icon"></i>

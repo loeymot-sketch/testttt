@@ -7,41 +7,15 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    {{-- [C13 / K-6.7] Kiosk-only Content-Security-Policy in Report-Only mode.
-         FALLBACK ONLY — la CSP applicable est désormais délivrée via le header
-         HTTP par App\Http\Middleware\ContentSecurityPolicyHeader (config :
-         config/security.php, env: CSP_ENFORCE_MODE). Cf. RED-R2 §1 P2 :
-         le <meta http-equiv> est ignoré par les navigateurs modernes pour
-         plusieurs directives critiques (frame-ancestors, sandbox, report-uri).
-         Ce <meta> reste en place le temps de la transition (rollback safety) —
-         voir docs/runbooks/CSP_HEADER_MIGRATION.md.
-
-         Deliberately NOT enforced yet : the master layout still uses inline
-         scripts (window.foodkingConfig, pos-wizard shim) and inline styles
-         (Dine-In hide). K-9 will migrate these to nonced scripts then switch
-         to enforcing `Content-Security-Policy`. For now we collect violations
-         so ops can audit the real surface before flipping the switch.
-
-         The `/api/frontend/csp-report` endpoint (ported in C2) ingests
-         violations into the `observability` log channel — anonymous,
-         throttled, log-only. `report-uri` is the legacy directive (compat
-         Safari/Firefox/Chrome) ; `report-to` requires a separate HTTP
-         `Report-To` header (future K-10). --}}
-    @if (request()->is('kiosk*'))
-        <meta http-equiv="Content-Security-Policy-Report-Only" content="
-            default-src 'self';
-            script-src 'self' 'unsafe-inline' 'unsafe-eval';
-            style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-            font-src 'self' data: https://fonts.gstatic.com;
-            img-src 'self' data: blob: https:;
-            connect-src 'self' ws: wss: https:;
-            frame-ancestors 'none';
-            base-uri 'self';
-            form-action 'self';
-            object-src 'none';
-            report-uri /api/frontend/csp-report;
-        ">
-    @endif
+    {{-- [iter15-mega-fix C-007 2026-05-10] removed meta-CSP — middleware emits HTTP header
+         The previous kiosk-only <meta http-equiv="Content-Security-Policy-Report-Only">
+         was a transition-period fallback (RED-R2 §1 P2). Browsers IGNORE meta-tag
+         report-only directives, so violations were silently dropped on kiosk. The
+         authoritative CSP is now emitted as an HTTP response header by
+         App\Http\Middleware\ContentSecurityPolicyHeader (registered in the `web`
+         middleware group, applies to kiosk routes). Mode pilotable via
+         CSP_ENFORCE_MODE (config/security.php). Violations are still ingested via
+         /api/frontend/csp-report. See docs/runbooks/CSP_HEADER_MIGRATION.md. --}}
 
     <!-- FONTS — Inter pour le kiosk (Splash DNA) + existing fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -160,6 +134,11 @@
             // [STAFF-ONLY-V1] Feature flags for surface restructuring
             staffOnlyMode: @json((bool) env('STAFF_ONLY_MODE', false)),
             kioskUsePosWizard: @json((bool) env('KIOSK_USE_POS_WIZARD', false)),
+            // [iter15-mega-fix C-003/A-003 2026-05-10] Expose APP_ENV so the SPA
+            // can suppress the "Connexion temps réel perdue" banner in dev/local
+            // environments where Pusher/Soketi is not running. Production keeps
+            // the banner — it's still useful messaging during real outages.
+            appEnv: @json((string) app()->environment()),
             features: {
                 wizard_per_item_demo: @json(\App\Support\WizardPerItemDemo::enabled(request())),
             },

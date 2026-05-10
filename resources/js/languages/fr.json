@@ -214,7 +214,7 @@
             "empty_preparing": "Aucune commande en cuisine.",
             "empty_prepared": "Aucune commande prête.",
             "empty_delivered": "Aucune commande livrée pour l'instant.",
-            "col_accept": "À envoyer",
+            "col_accept": "Confirmées",
             "col_preparing": "En préparation",
             "col_prepared": "Prêts à servir",
             "col_delivered": "Livrés",
@@ -898,7 +898,8 @@
             "usage_drawer_close": "Fermer",
             "usage_empty": "Aucun produit ni catégorie n'utilise cet ingrédient.",
             "view_details": "Voir les détails"
-        }
+        },
+        "kds_toggle_items": "Afficher/Masquer les articles"
     },
     "button": {
         "add": "Ajouter",
@@ -1003,7 +1004,8 @@
         "composer": {
             "choose_template_v2": "Choisir un template",
             "add_page_manual": "Ajouter une page manuellement"
-        }
+        },
+        "menu": "Menu"
     },
     "error": {
         "printer_unreachable": "Impossible de joindre l'imprimante."
@@ -1109,7 +1111,7 @@
         "not_authorize": "Vous n’avez pas l’autorisation d’accéder à cette page.",
         "order_process_stage": "Étape de traitement de votre commande.",
         "order_ready_for_delivery": "Votre commande est prête pour la livraison.",
-        "pagination_label": "Affichering {from} to {to} of {total} entries",
+        "pagination_label": "Affichage de {from} à {to} sur {total} entrées",
         "payment_method": "Le mode de paiement est obligatoire.",
         "photo_update": "Photo Mettre à jourd Successfully.",
         "please_check_your_order_list": "Veuillez consulter votre liste de commandes.",
@@ -1127,7 +1129,14 @@
     "kiosk": {
         "welcome": "Bienvenue !",
         "tap_to_order": "Touchez l'écran pour commander",
-        "order_type": "Type de commande",
+        "order_type": {
+            "choose_label": "Choisir le mode de commande",
+            "required_hint": "Choisissez une option pour commencer",
+            "takeaway": "À emporter",
+            "takeaway_hint": "Je récupère ma commande",
+            "dine_in": "Sur place",
+            "dine_in_hint": "Je mange ici"
+        },
         "dine_in": "Sur place",
         "takeaway": "À emporter",
         "categories": "Catégories",
@@ -1394,7 +1403,8 @@
             "footer": "Configurez cette borne dans l'espace administration, rubrique Bornes.",
             "err_maintenance": "Mode maintenance actif. Quittez le mode maintenance pour relancer la borne.",
             "err_no_credentials": "Connexion automatique indisponible. En local : copiez les lignes KIOSK_MACHINE_* de .env.example dans .env, exécutez php artisan migrate --seed (ou php artisan foodking:ensure-kiosk-machine), puis php artisan config:clear. En production : renseignez les identifiants machine dans .env (identiques à Admin → Bornes).",
-            "err_login_failed": "Connexion impossible pour le moment. Nouvelle tentative automatique sous peu."
+            "err_login_failed": "Connexion impossible pour le moment. Nouvelle tentative automatique sous peu.",
+            "err_rate_limited": "Trop de tentatives de connexion. La borne reprendra automatiquement dans un instant."
         },
         "admin_screen": {
             "pin_title": "Accès administration",
@@ -1793,7 +1803,8 @@
         "waiting": {
             "ready_visual_fallback": "Votre commande est prête !"
         },
-        "max_quantity_reached": "Quantité maximale atteinte"
+        "max_quantity_reached": "Quantité maximale atteinte",
+        "remove_item": "Retirer"
     },
     "catalog": {
         "menu_refreshed_toast": "Le menu a été mis à jour",

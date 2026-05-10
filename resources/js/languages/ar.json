@@ -893,7 +893,8 @@
             "usage_drawer_close": "إغلاق",
             "usage_empty": "لا يستخدم أي منتج أو فئة هذه المادة.",
             "view_details": "عرض التفاصيل"
-        }
+        },
+        "kds_toggle_items": "إظهار/إخفاء العناصر"
     },
     "button": {
         "add": "إضافة",
@@ -998,7 +999,8 @@
         "composer": {
             "choose_template_v2": "اختيار قالب",
             "add_page_manual": "إضافة صفحة يدويًا"
-        }
+        },
+        "menu": "القائمة"
     },
     "number": {
         "10": "10",
@@ -1123,7 +1125,14 @@
     "kiosk": {
         "welcome": "مرحباً!",
         "tap_to_order": "المس الشاشة للطلب",
-        "order_type": "نوع الطلب",
+        "order_type": {
+            "choose_label": "اختر نوع الطلب",
+            "required_hint": "اختر خيارًا للبدء",
+            "takeaway": "طلب خارجي",
+            "takeaway_hint": "سأستلم طلبي",
+            "dine_in": "تناول في المطعم",
+            "dine_in_hint": "سآكل هنا"
+        },
         "dine_in": "تناول في المطعم",
         "takeaway": "طلب خارجي",
         "categories": "الفئات",
@@ -1384,7 +1393,8 @@
             "footer": "اضبط هذا الجهاز من لوحة الإدارة قسم الأكشاك.",
             "err_maintenance": "وضع الصيانة مفعّل. اخرج منه لإعادة تشغيل الجهاز.",
             "err_no_credentials": "التسجيل التلقائي غير متاح. للتطوير المحلي: انسخ KIOSK_MACHINE_* من .env.example إلى .env، ثم migrate --seed أو foodking:ensure-kiosk-machine، ثم config:clear. للإنتاج: اضبط بيانات الجهاز في .env لتطابق الإدارة → الأكشاك.",
-            "err_login_failed": "تعذّر تسجيل الدخول الآن. ستُعاد المحاولة قريباً."
+            "err_login_failed": "تعذّر تسجيل الدخول الآن. ستُعاد المحاولة قريباً.",
+            "err_rate_limited": "محاولات تسجيل دخول كثيرة جداً. سيستأنف الجهاز تلقائياً بعد لحظة."
         },
         "admin_screen": {
             "pin_title": "دخول الإدارة",
@@ -1777,7 +1787,8 @@
         },
         "waiting": {
             "ready_visual_fallback": "طلبك جاهز!"
-        }
+        },
+        "remove_item": "إزالة"
     },
     "catalog": {
         "menu_refreshed_toast": "تم تحديث القائمة",

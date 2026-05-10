@@ -102,6 +102,31 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
         });
 
+        // [iter15-mega-fix D-001 2026-05-10] Kiosk-machine login uses a dedicated
+        // limiter instead of the human-oriented `login-lockout` (10 attempts /
+        // 10 min). KioskLoginComponent.vue retries up to 10× with backoff on
+        // failure → a single misconfigured credential or a back-to-back test
+        // run was burning the human-budget and triggering 429 "Too Many
+        // Attempts" on the legitimate borne. The kiosk username is a hardware
+        // credential, not a brute-force target; keying by `kiosk:<username>|<ip>`
+        // and allowing 30/min preserves anti-abuse guardrails (still blocks
+        // password-spray) while absorbing legitimate machine-retry behaviour
+        // and CI test rerun cadence. Uses `username` field (not `email`).
+        RateLimiter::for('kiosk-login', function (Request $request) {
+            $username = $request->input('username');
+            $rawIdentifier = is_string($username) && $username !== '' ? $username : 'anon';
+            $identifier = Str::lower(trim($rawIdentifier));
+            $key = 'kiosk:'.$identifier.'|'.$request->ip();
+            $maxAttempts = max(1, (int) config('kiosk.login_rate_limit', 30));
+
+            return Limit::perMinute($maxAttempts)->by($key)->response(function () {
+                return response()->json([
+                    'message' => 'Too many kiosk login attempts. Please try again shortly.',
+                    'retry_after' => 60,
+                ], 429);
+            });
+        });
+
         RateLimiter::for('login-lockout', function (Request $request) {
             // [W8.B REM B3] Fuzz protection : si client malveillant envoie email[]=foo,
             // is_string() empêche TypeError sur cast (string) array.

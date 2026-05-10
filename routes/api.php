@@ -151,8 +151,12 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
     Route::post('/login', [LoginController::class, 'login'])
         ->middleware('throttle:login-lockout');
 
+    // [iter15-mega-fix D-001 2026-05-10] Dedicated kiosk-login limiter (30/min by
+    // username|ip) replaces the human `login-lockout` (10/10min) — kiosk machines
+    // self-retry on boot and during component lifecycle, the human cap was
+    // self-DoSing legitimate bornes. See RouteServiceProvider::configureRateLimiting.
     Route::post('/kiosk-login', [KioskMachineLoginController::class, 'login'])
-        ->middleware('throttle:login-lockout');
+        ->middleware('throttle:kiosk-login');
 
     Route::prefix('forgot-password')->name('forgot-password.')->group(function () {
         // [SEC-02] Rate limiting — 3 tentatives par heure (anti-spam SMS)
@@ -1074,6 +1078,22 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/lat-long', [FrontendBranchController::class, 'showByLatLong']);
     });
 
+    // [iter15-mega-fix C-016 2026-05-10] Public OSS read for customer wall
+    // display. The customer screen at `/admin/order-status-screen` is
+    // mounted on a public TV — landing on a 401 (because the SPA fired
+    // GET /api/admin/oss-order without a session) made the columns silently
+    // empty. This sibling endpoint returns the same `CDSOrderDetailsResource`
+    // payload (id / order_serial_no / token / queue_number / order_type /
+    // status — no PII) scoped to a branch resolved from `?branch_id=` or
+    // the first active branch. Throttle 120/min/IP: customer screens poll
+    // every 5–60s and a fleet of walls behind one NAT must not 429.
+    Route::get('/oss-order', [\App\Http\Controllers\Admin\OrderStatusScreenController::class, 'publicIndex'])
+        ->middleware('throttle:120,1')
+        ->name('oss-order.public');
+    Route::get('/oss-order/popular-items', [\App\Http\Controllers\Admin\OrderStatusScreenController::class, 'publicMostPopularItems'])
+        ->middleware('throttle:60,1')
+        ->name('oss-order.popular-items.public');
+
     Route::prefix('language')->name('language.')->group(function () {
         Route::get('/', [FrontendLanguageController::class, 'index']);
         Route::get('/show/{language}', [FrontendLanguageController::class, 'show']);
@@ -1246,15 +1266,24 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
 
     // [C2 / K-9 ADR-5] POST /api/frontend/csp-report : endpoint anonyme pour
     // les rapports CSP envoyés par le navigateur (report-uri du meta
-    // `Content-Security-Policy[-Report-Only]`). Throttle 20/min/IP. Route
-    // anonyme par design (CSP natif du navigateur envoie sans auth).
-    // Log-only vers canal `observability` (catégorie `csp_violation`) —
-    // aucune persistance DB (volume imprévisible). Aligné sur le worktree
-    // testttt-kiosk-p93 (référence canary).
-    Route::post('/csp-report', [\App\Http\Controllers\Frontend\CspReportController::class, 'store'])
-        ->middleware(['throttle:20,1'])
-        ->name('frontend.csp.report');
+    // `Content-Security-Policy[-Report-Only]`). Définition déplacée hors
+    // du groupe `frontend` (voir bloc juste après ce `})`) car ce groupe
+    // applique `apiKey` qui rejette en 400 immédiatement les requêtes sans
+    // header `x-api-key` — or le navigateur ne peut pas attacher d'header
+    // applicatif sur un CSP report (invariant W3C).
 });
+
+// [iter15-mega-fix CSP-report 400→204 2026-05-10] Route déplacée hors du
+// groupe `frontend` parce que `apiKey` middleware retournait 400 sans header
+// `x-api-key` (impossible côté navigateur sur un CSP report). Throttle remonté
+// à 1000/min/IP : un chargement de page peut déclencher 14-17 reports d'un
+// coup, et l'ancien 20/min/IP saturait → 429. Reports passifs, pas actions
+// user. Conserve `installed` pour cohérence app-wide, supprime `apiKey` +
+// `localization`. Path et name historiques préservés pour les tests existants
+// (CspReportEndpointTest, CorrelationIdEndToEndTest, ContentSecurityPolicyHeaderTest).
+Route::post('/frontend/csp-report', [\App\Http\Controllers\Frontend\CspReportController::class, 'store'])
+    ->middleware(['installed', 'throttle:1000,1'])
+    ->name('frontend.csp.report');
 
 Route::prefix('table')->name('table.')->middleware(['installed', 'apiKey', 'localization'])->group(function () {
 

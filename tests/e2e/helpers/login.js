@@ -79,6 +79,10 @@ async function loginAsChefOperator(
 }
 
 async function loginAsKiosk(page, username = 'kiosk-lecayenne', password = 'kiosk123') {
+  // [iter15-mega-fix D-001 2026-05-10] Wipe kiosk-login bucket before each test.
+  // The kiosk surface auto-retries on mount (KioskLoginComponent.startAutoLogin)
+  // and prior Wave-C aborts leave the limiter primed → Wave-D inherits 429.
+  clearFoodKingRateLimits();
   await page.goto('/kiosk/login');
   // Kiosk may auto-login via server config or require manual login
   // Check if already on kiosk surface
@@ -102,4 +106,22 @@ async function loginAsKiosk(page, username = 'kiosk-lecayenne', password = 'kios
   }
 }
 
-module.exports = { login, loginAsKiosk, loginAsPosOperator, loginAsChefOperator };
+/**
+ * Admin login — used by the iter15 mega-audit waves (A admin visual + D rupture cascade).
+ * Default landing /admin/dashboard; specs may navigate further once auth completes.
+ */
+async function loginAsAdmin(
+  page,
+  email = process.env.E2E_ADMIN_USER || 'admin@lecayenne.fr',
+  password = process.env.E2E_ADMIN_PASS || '123456',
+) {
+  clearFoodKingRateLimits();
+  await login(page, email, password);
+  await page.waitForTimeout(1200);
+  if (!/\/admin(\/|$|\?)/.test(page.url())) {
+    await page.goto('/admin/dashboard', { waitUntil: 'domcontentloaded' });
+  }
+  await expect(page).toHaveURL(/\/admin/, { timeout: 25_000 });
+}
+
+module.exports = { login, loginAsKiosk, loginAsPosOperator, loginAsChefOperator, loginAsAdmin };

@@ -85,7 +85,16 @@
             </div>
         </header>
 
-        <div v-if="!realtimeConnected" class="pos-tracker-rt-warn" role="status">
+        <!--
+          [iter15-mega-fix B-003/C-008 2026-05-10] Local realtime banner was
+          missed by run-1 fix that gated only the global ConnectionStatusBanner.
+          In local/dev (no Pusher/Soketi), `realtimeConnected` is permanently
+          false → banner shouts "Connexion temps réel perdue" forever, polluting
+          dev/demo screenshots and visual audits. Production keeps the banner
+          (genuinely useful when WS is down for staff). Same env gate pattern
+          as ConnectionStatusBanner.vue isDevEnv computed.
+        -->
+        <div v-if="!realtimeConnected && !isDevEnv" class="pos-tracker-rt-warn" role="status">
             {{ $t('pos.tracker.realtime_lost') }}
         </div>
 
@@ -142,7 +151,17 @@
                                 </li>
                             </ul>
                             <footer class="pos-tracker-card-foot">
-                                <span class="pos-tracker-card-total">{{ formatPrice(order.total ?? order.order_amount) }}</span>
+                                <!--
+                                  [iter15-mega-fix B-001/C-002 2026-05-10] Tracker cards used to read
+                                  `order.total` / `order.order_amount`, but `SimpleOrderResource`
+                                  (the projection feeding `admin/pos-order`) only exposes the
+                                  formatted strings `total_amount_price` (numeric "2.00") and
+                                  `total_currency_price` ("2.00€"). Both raw fields were undefined,
+                                  so `Number(undefined) || 0` → `0,00 €` on every card. We now
+                                  prefer `total_amount_price` (Number-parseable) and fall back to
+                                  the legacy raw fields if a future projection re-adds them.
+                                -->
+                                <span class="pos-tracker-card-total">{{ formatPrice(order.total_amount_price ?? order.total ?? order.order_amount) }}</span>
                                 <div class="pos-tracker-card-actions">
                                     <router-link
                                         :to="{ name: 'admin.pos-orders.show', params: { id: order.id } }"
@@ -241,7 +260,8 @@
                     <p class="pos-tracker-cancel-target" v-if="cancelDialog.order">
                         <strong>{{ cancelDialog.order.queue_number ? 'N°' + cancelDialog.order.queue_number : '#' + (cancelDialog.order.order_serial_no || cancelDialog.order.id) }}</strong>
                         <span v-if="customerLabel(cancelDialog.order)"> — {{ customerLabel(cancelDialog.order) }}</span>
-                        <span> — {{ formatPrice(cancelDialog.order.total ?? cancelDialog.order.order_amount) }}</span>
+                        <!-- [iter15-mega-fix B-001/C-002 2026-05-10] Same field-projection mismatch as the card total. -->
+                        <span> — {{ formatPrice(cancelDialog.order.total_amount_price ?? cancelDialog.order.total ?? cancelDialog.order.order_amount) }}</span>
                     </p>
                     <label for="pos-tracker-cancel-reason" class="pos-tracker-cancel-label">
                         {{ $t('pos.cancel_order_reason_label') }}
@@ -347,6 +367,17 @@ export default {
         };
     },
     computed: {
+        // [iter15-mega-fix B-003/C-008 2026-05-10] Hide the local
+        // `pos-tracker-rt-warn` realtime banner in dev/local where Pusher/Soketi
+        // is not running. Mirrors ConnectionStatusBanner.vue isDevEnv gate.
+        isDevEnv() {
+            try {
+                const env = (typeof window !== 'undefined' && window.foodkingConfig?.appEnv) || '';
+                return env === 'local' || env === 'testing';
+            } catch (_e) {
+                return false;
+            }
+        },
         sourceTabs() {
             return [
                 { id: 'all', icon: '🧾', label: this.$t('pos.tracker.source_all') },
@@ -385,6 +416,13 @@ export default {
         },
         columns() {
             const b = this.ordersByStatus;
+            // [iter15-mega-fix C-024 run-3 2026-05-10] The 'accept' lane maps
+            // to OrderStatus::ACCEPT (4) — exactly what the KDS surface labels
+            // "Confirmées" via `label.confirmed`. Previously the POS tracker
+            // labeled the same lane "À envoyer" so the same order looked like
+            // it lived in two different columns across surfaces. The column
+            // semantic is unchanged (still ACCEPT=4); only the display label
+            // is harmonised in `pos.tracker.col_accept` (fr.json + en.json).
             return [
                 {
                     id: 'accept',

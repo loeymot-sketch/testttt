@@ -10,7 +10,38 @@
     -->
     <section class="pos-v5-shell fk-pos-v4 pos-v4-shell" data-pos-v4-shell data-pos-v5-shell>
     <a href="#pos-cart" class="pos-v5-skip-link sr-only focus:not-sr-only">{{ $t('a11y.skip_to_cart') }}</a>
-    <div id="pos-a11y-live" class="sr-only pos-v5-sr-only" aria-live="polite" aria-atomic="true"></div>
+    <!-- [iter15-mega-fix D-003 2026-05-10] aria-live region now reflects the
+         latest availability change so screen readers announce rupture broadcasts
+         without depending on the item being in cart. data-testid lets E2E specs
+         identify it unambiguously in dom.html. -->
+    <div
+      id="pos-a11y-live"
+      class="sr-only pos-v5-sr-only"
+      aria-live="polite"
+      aria-atomic="true"
+      data-testid="pos-availability-live"
+    >{{ availabilityAnnouncement }}</div>
+    <!-- [iter15-mega-fix D-003 2026-05-10] Persistent visible chip listing
+         currently ruptured items in the active branch. Driven by itemsRaw so
+         it survives a page reload (the broadcast-only toast does not). -->
+    <div
+      v-if="availabilityBannerVisible"
+      role="alert"
+      aria-live="polite"
+      class="pos-availability-banner"
+      data-testid="pos-availability-banner"
+      style="margin: 8px 12px; padding: 10px 14px; border-radius: 10px; background: #FFF4F4; border: 1px solid #F5BFBF; color: #991B1B; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; line-height: 1.3;"
+    >
+      <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+      <span class="pos-availability-banner__label">{{ availabilityBannerLabel }}</span>
+      <button
+        type="button"
+        class="pos-availability-banner__dismiss"
+        :aria-label="$t('button.close') || 'Fermer'"
+        @click="dismissAvailabilityBanner"
+        style="margin-left: auto; background: transparent; border: 0; color: #991B1B; font-size: 16px; line-height: 1; cursor: pointer;"
+      >&times;</button>
+    </div>
     <ConnectionStatusBanner suppress-transient suppress-session-invalid />
     <LoadingComponent :props="loading" />
 
@@ -1061,6 +1092,12 @@ export default {
             _walkInCustomerPromise: null,
             /** [T11] Debounce map itemId → timer id — max one toast / item / second */
             _availabilityToastTimers: null,
+            // [iter15-mega-fix D-003 2026-05-10] Persistent availability indicator
+            // for cashier — survives page reload (data-driven from itemsRaw) and
+            // updates the aria-live region on every broadcast so screen readers
+            // announce rupture changes without requiring item-in-cart match.
+            availabilityAnnouncement: '',
+            availabilityBannerDismissed: false,
             checkoutProps: {
                 form: {
                     branch_id: null,
@@ -1189,6 +1226,35 @@ export default {
     computed: {
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
+        },
+        // [iter15-mega-fix D-003 2026-05-10] Reactive list of currently
+        // unavailable catalog items used by the persistent rupture banner.
+        // Reads from itemsRaw (the canonical POS catalog cache); survives
+        // navigation because it's recomputed from /admin/items endpoint payload.
+        unavailableCatalogItems: function () {
+            const list = Array.isArray(this.itemsRaw) ? this.itemsRaw
+                       : (Array.isArray(this.items) ? this.items : []);
+            const out = [];
+            for (let i = 0; i < list.length; i++) {
+                const it = list[i];
+                if (!it) continue;
+                const flag = it.is_available;
+                if (flag === false || flag === 0 || flag === '0') {
+                    out.push({ id: it.id, name: it.name, reason: it.availability_reason || null });
+                }
+            }
+            return out;
+        },
+        availabilityBannerVisible: function () {
+            return !this.availabilityBannerDismissed && this.unavailableCatalogItems.length > 0;
+        },
+        availabilityBannerLabel: function () {
+            const list = this.unavailableCatalogItems;
+            if (!list.length) return '';
+            const names = list.slice(0, 3).map(i => i.name).filter(Boolean).join(', ');
+            const more = list.length > 3 ? ` (+${list.length - 3})` : '';
+            const head = list.length === 1 ? 'Article indisponible' : `${list.length} articles indisponibles`;
+            return names ? `${head} : ${names}${more}` : head;
         },
         // [POS-V4-CASHIER-OPS 2026-05-02] Discount-with-reason UX guards.
         // Backend rule: any positive POS discount requires a reason ≥3 chars
@@ -1924,15 +1990,29 @@ export default {
                     // remove cart lines for this item_id when it becomes unavailable.
                     if (!isAvailable) {
                         try { this.$store.dispatch('posCart/pruneUnavailable', itemId); } catch (e) { /* defensive */ }
-                        this._maybeToastItemUnavailableLost(itemId, prevName);
                     }
+                    // [iter15-mega-fix D-003 2026-05-10] Always toast + announce
+                    // on availability flip — not only when the item is in the
+                    // cart. A cashier mid-conversation needs the news regardless
+                    // of whether the customer happened to add the item already.
+                    this._announceAvailabilityChange(itemId, prevName, isAvailable, payload.reason || null);
                     try {
                         const child = this.$refs.posItemComponent;
                         if (child && typeof child.syncItemAvailabilityFromBroadcast === 'function') {
                             child.syncItemAvailabilityFromBroadcast(itemId, isAvailable, payload.reason || null);
                         }
                     } catch (e) { /* defensive */ }
+                } else {
+                    // [iter15-mega-fix D-003 2026-05-10] Item not in cached list
+                    // (catalog paginates) — still announce so the cashier hears it.
+                    const isAvailable = payload.is_available === true || payload.is_available === 1 || payload.is_available === '1';
+                    this._announceAvailabilityChange(itemId, payload.name || null, isAvailable, payload.reason || null);
                 }
+            } else {
+                // [iter15-mega-fix D-003 2026-05-10] Defensive: even with no
+                // cached list yet, surface the broadcast.
+                const isAvailable = payload.is_available === true || payload.is_available === 1 || payload.is_available === '1';
+                this._announceAvailabilityChange(itemId, payload.name || null, isAvailable, payload.reason || null);
             }
 
             // If the broadcast signals a structural change (price / variation /
@@ -1940,6 +2020,56 @@ export default {
             if (payload.type === 'full') {
                 try { this.itemList(1, { overlay: false }); } catch (e) { /* defensive */ }
             }
+        },
+        /**
+         * [iter15-mega-fix D-003 2026-05-10] Always-fire availability
+         * announcement for the cashier surface. Three layers, in order:
+         *  - alertService toast (vue-toastification — visible chip);
+         *  - aria-live polite region update (screen reader);
+         *  - re-show the persistent banner if previously dismissed.
+         * Throttled per item id to ~1s to absorb rapid duplicate broadcasts.
+         */
+        _announceAvailabilityChange(itemId, itemName, isAvailable, reason) {
+            const idKey = String(itemId || '');
+            if (!this._availabilityToastTimers) {
+                this._availabilityToastTimers = Object.create(null);
+            }
+            const debounced = idKey && this._availabilityToastTimers[idKey];
+            const safeName = itemName || ('#' + itemId);
+            let label;
+            if (isAvailable) {
+                label = `${safeName} de nouveau disponible`;
+            } else {
+                label = reason
+                    ? `${safeName} indisponible — ${reason}`
+                    : `${safeName} indisponible`;
+            }
+            // Update the aria-live region every time (no debounce) so screen
+            // readers always reflect the latest state.
+            this.availabilityAnnouncement = label;
+            // Re-show banner if cashier had dismissed it: a fresh rupture is
+            // a new event worth resurfacing.
+            if (!isAvailable) {
+                this.availabilityBannerDismissed = false;
+            }
+            if (!debounced) {
+                if (idKey) {
+                    this._availabilityToastTimers[idKey] = true;
+                    setTimeout(() => { delete this._availabilityToastTimers[idKey]; }, 1000);
+                }
+                try {
+                    if (isAvailable) {
+                        alertService.success(label);
+                    } else {
+                        alertService.warning(label);
+                    }
+                } catch (e) { /* defensive */ }
+            }
+        },
+        // [iter15-mega-fix D-003 2026-05-10] Cashier dismiss for the persistent
+        // banner. Re-armed on next rupture broadcast (see _announceAvailabilityChange).
+        dismissAvailabilityBanner() {
+            this.availabilityBannerDismissed = true;
         },
         /**
          * [T11] One toast per item per ~1s (rapid duplicate broadcasts).

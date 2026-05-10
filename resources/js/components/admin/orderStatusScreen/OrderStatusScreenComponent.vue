@@ -1,5 +1,12 @@
 <template>
-  <ConnectionStatusBanner />
+  <!--
+    [iter15-mega-fix B-003/D-002 2026-05-10] suppress-transient: the global
+    "Reconnexion en cours…" banner is suppressed on the OSS surface because
+    the customer-facing screen already conveys the connection state via the
+    fallback polling — no need to show a permanent yellow bar in addition.
+    session_invalid (terminal) still surfaces via this component.
+  -->
+  <ConnectionStatusBanner suppress-transient />
   <div
     class="grid grid-cols-2 md:grid-cols-4 md:grid-flow-row gap-4 "
     role="main"

@@ -4279,6 +4279,14 @@ body {
 .db-btn-fill.primary:hover {
   background-color: rgb(255 0 107 / 0.2);
 }
+.db-btn-fill.yellow {
+  background-color: rgb(246 166 9 / 0.1);
+  --tw-text-opacity: 1;
+  color: rgb(246 166 9 / var(--tw-text-opacity, 1));
+}
+.db-btn-fill.yellow:hover {
+  background-color: rgb(246 166 9 / 0.2);
+}
 .db-btn-fill.green {
   --tw-bg-opacity: 1;
   background-color: rgb(209 250 229 / var(--tw-bg-opacity, 1));
@@ -5944,6 +5952,9 @@ input:checked + div svg {
 }
 .top-\[75px\] {
   top: 75px;
+}
+.isolate {
+  isolation: isolate;
 }
 .-z-10 {
   z-index: -10;

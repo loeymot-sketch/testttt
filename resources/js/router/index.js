@@ -199,6 +199,19 @@ const router = createRouter({
     }
 });
 
+// [iter15-mega-fix C-003 2026-05-10] Public-friendly surfaces: routes that
+// MUST render even when the user is not authenticated, instead of bouncing
+// to /login. The OSS (customer order-status screen) is mounted on a public
+// wall display — landing on a login form is a P0 UX defect.
+const PUBLIC_FRIENDLY_AUTH_ROUTES = new Set([
+    "admin.order-status-screen",
+]);
+const isPublicFriendlyAuthRoute = (to) => {
+    if (to && to.name && PUBLIC_FRIENDLY_AUTH_ROUTES.has(to.name)) return true;
+    const path = (to && to.path) || "";
+    return path === "/admin/order-status-screen" || path === "/order-status";
+};
+
 router.beforeEach((to, from, next) => {
     const isKioskRoute =
         (to.path || '').startsWith('/kiosk') ||
@@ -217,6 +230,13 @@ router.beforeEach((to, from, next) => {
 
     if (to.meta.auth === true) {
         if (!store.getters.authStatus) {
+            // [iter15-mega-fix C-003 2026-05-10] OSS / customer screens render
+            // even unauthenticated — backend still 401s on /admin/oss-order
+            // and the screen shows an empty list, but at least no login form
+            // ever leaks to the customer wall display.
+            if (isPublicFriendlyAuthRoute(to)) {
+                return next();
+            }
             next({ name: "auth.login" });
         } else {
             if (to.meta.isFrontend === false) {

@@ -18,8 +18,14 @@ function clearFoodKingRateLimits() {
       'pos@lecayenne.fr|127.0.0.1',
       'chef@lecayenne.fr|127.0.0.1',
       'admin@lecayenne.fr|127.0.0.1',
+      // [iter15-mega-fix D-001 2026-05-10] Kiosk login limiter is keyed by
+      // 'kiosk:<lower(username)>|<ip>' (RouteServiceProvider::kiosk-login).
+      // Without these keys an aborted Wave-C run leaves the kiosk-machine
+      // bucket full and Wave-D inherits the 429 — defeating the suite reset.
+      'kiosk:kiosk-lecayenne|127.0.0.1',
+      'kiosk:kiosk-lecayenne|::1',
     ]));
-    foreach (['api', 'admin-mutation', 'pos-quote', 'pos-order-create', 'pos-order-update', 'login-lockout'] as $name) {
+    foreach (['api', 'admin-mutation', 'pos-quote', 'pos-order-create', 'pos-order-update', 'login-lockout', 'kiosk-login', 'kiosk-orders', 'kiosk-menu'] as $name) {
       foreach ($keys as $key) {
         $limiter->clear(md5($name.$key));
       }
