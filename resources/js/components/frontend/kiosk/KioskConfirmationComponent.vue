@@ -617,13 +617,13 @@ export default {
   font-size: 1.25rem;
   font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(232,0,28,0.18);
+  box-shadow: 0 8px 24px rgba(244, 80, 30, 0.22);
   transition: transform 0.1s, box-shadow 0.1s;
   animation: fadeUp 0.5s ease-out 1.3s both;
 }
 .kiosk-btn-home:active {
   transform: scale(0.96);
-  box-shadow: 0 4px 14px rgba(232,0,28,0.3);
+  box-shadow: 0 4px 14px rgba(244, 80, 30, 0.34);
 }
 
 @keyframes fadeUp {
@@ -645,7 +645,7 @@ export default {
 .kiosk-btn-print:hover:not(:disabled) { background: var(--kiosk-surface-alt); color: var(--kiosk-text); }
 .kiosk-btn-print:disabled { opacity: 0.6; cursor: default; }
 .kiosk-btn-print.is-done { border-color: rgba(46,204,113,0.5); color: var(--kiosk-success); }
-.kiosk-btn-print.is-error { border-color: rgba(232,0,28,0.5); color: var(--kiosk-error); }
+.kiosk-btn-print.is-error { border-color: rgba(194, 30, 47, 0.5); color: var(--kiosk-error); }
 
 /* Receipt zone — visible when printing or fallback after print failure */
 .kiosk-receipt-zone { display: none; }

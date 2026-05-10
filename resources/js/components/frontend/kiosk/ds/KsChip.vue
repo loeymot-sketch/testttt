@@ -144,7 +144,7 @@ export default {
     background: var(--kiosk-primary);
     border-color: var(--kiosk-primary);
     color: var(--kiosk-text-on-red);
-    box-shadow: 0 4px 12px rgba(232, 0, 28, 0.24);
+    box-shadow: 0 4px 12px rgba(244, 80, 30, 0.24);
 }
 
 .ks-chip--disabled {

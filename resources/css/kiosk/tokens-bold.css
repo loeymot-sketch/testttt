@@ -241,4 +241,13 @@
     --kiosk-border:         #E5E5E5 !important;
     --kiosk-text:           #0F0F0F !important;
     --kiosk-text-muted:     #5A5A5A !important;
+
+    /* V3.1 (2026-05-10) : override les gradients legacy --kiosk-page-bg /
+       --kiosk-idle-bg / --kiosk-idle-card-text définis dans le frozen
+       KioskAppComponent (lignes 1088-1095) qui contiennent encore
+       #FFF0F2 (pink) et #E8001C (red legacy) — owner gate : 0 rouge legacy. */
+    --kiosk-page-bg:        #FFFFFF !important;
+    --kiosk-idle-bg:        linear-gradient(180deg, #FFFFFF 0%, #FFE8DD 55%, #F4501E 100%) !important;
+    --kiosk-idle-card-text: #FFFFFF !important;
+    --kiosk-product-media-bg: #FAFAFA !important;
 }

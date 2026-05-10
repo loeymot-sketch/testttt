@@ -344,7 +344,7 @@ export default {
 .kiosk-order-summary {
   padding: 14px 18px 26px;
   background:
-    linear-gradient(180deg, rgba(232, 0, 28, 0.08), transparent 130px),
+    linear-gradient(180deg, rgba(244, 80, 30, 0.08), transparent 130px),
     var(--kiosk-surface);
   min-height: 100%;
 }
@@ -363,7 +363,7 @@ export default {
 .kiosk-summary-item.main {
   border: 2px solid var(--kiosk-primary);
   background:
-    linear-gradient(135deg, rgba(232, 0, 28, 0.24), rgba(232, 0, 28, 0.07)),
+    linear-gradient(135deg, rgba(244, 80, 30, 0.24), rgba(244, 80, 30, 0.07)),
     var(--kiosk-surface-alt);
   box-shadow: var(--kiosk-shadow-card);
 }
