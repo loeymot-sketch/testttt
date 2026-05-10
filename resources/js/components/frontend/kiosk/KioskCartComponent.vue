@@ -206,6 +206,21 @@
                 </svg>
               </button>
             </div>
+            <!-- FoodKing brand V2 (2026-05-10) — bouton delete explicite (owner
+                 demande "really see + add/delete correctement"). Decrement à
+                 qty=1 supprime aussi via changeQty, ce bouton donne une voie
+                 directe sans nécessiter de tap répété. -->
+            <button type="button"
+              class="kiosk-cart-item-trash"
+              @click="removeItemDirectly(idx)"
+              :aria-label="$t('kiosk.remove_item') || 'Supprimer cet article'"
+              :data-testid="`kiosk-cart-item-remove-${idx}`"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M3 6h14M8 6V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2m1 0v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h10Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M9 10v4M11 10v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </button>
             <!-- [KIOSK-17] item.total is always present (computed by ADD_ITEM / UPDATE_QUANTITY) -->
             <span
               class="kiosk-cart-item-total"
@@ -514,6 +529,22 @@ export default {
       } else {
         this.updateQuantity({ index, quantity: qty });
       }
+    },
+
+    /**
+     * FoodKing brand V2 (2026-05-10) — direct remove from explicit trash button
+     * (owner demand : voir + ajouter + supprimer "correctement"). Le toast info
+     * confirme l'action puisqu'elle est explicite (vs add-to-cart où owner ne
+     * veut pas de toast).
+     */
+    removeItemDirectly(index) {
+      const item = this.cartItems?.[index];
+      this.removeItem(index);
+      this.showToast(
+        this.$t('kiosk.item_removed') || `${item?.name || 'Article'} supprimé`,
+        'info',
+        1500
+      );
     },
 
     /**
@@ -853,6 +884,41 @@ export default {
   align-items: end;
   gap: 8px;
   flex-shrink: 0;
+  position: relative;
+}
+
+/* FoodKing brand V2 (2026-05-10) — bouton trash explicite à côté du qty stepper */
+.kiosk-cart-item-trash {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--kiosk-border, #E5E5E5);
+  border-radius: 50%;
+  background: var(--kiosk-surface, #FFFFFF);
+  color: var(--kiosk-text-muted, #5A5A5A);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, color 120ms ease, transform 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 6px rgba(15, 15, 15, 0.06);
+}
+
+.kiosk-cart-item-trash:hover {
+  background: var(--kiosk-bold-primary-soft, #FFE8DD);
+  color: var(--kiosk-bold-primary, #F4501E);
+}
+
+.kiosk-cart-item-trash:active {
+  transform: scale(0.92);
+}
+
+.kiosk-cart-item-trash:focus-visible {
+  outline: 3px solid var(--kiosk-focus-ring, #2563EB);
+  outline-offset: 2px;
 }
 
 .kiosk-qty-ctrl {
