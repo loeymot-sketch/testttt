@@ -87,6 +87,7 @@
 <script type="text/babel" src="hooks/useLoyaltyQR.js"></script>
 <script type="text/babel" src="components/BarcodeMock.jsx"></script>
 <script type="text/babel" src="components/LoyaltyQR.jsx"></script>
+<script type="text/babel" src="components/WizardRedeem.jsx"></script>
 
 <!-- Screens -->
 <script type="text/babel" src="screens-onboarding.jsx"></script>
@@ -117,6 +118,7 @@ function App() {
   const [itemId, setItemId] = useState(null);
   const [cart, setCart] = useState(storage.getCart() || []);
   const [modal, setModal] = useState(null);
+  const [modalCtx, setModalCtx] = useState(null);
   const [toast, setToast] = useState(null);
 
   // Persist cart on change
@@ -131,10 +133,11 @@ function App() {
     }
     if (s === 'pay')    { setModal('pay');    return; }
     if (s === 'gain')   { setModal('gain');   return; }
-    if (s === 'redeem') { setModal('redeem'); return; }
+    if (s === 'redeem') { setModal('redeem'); setModalCtx(ext || null); return; }
     if (s === 'link')   { setModal('link');   return; }
     if (s === 'walletApple')  { setModal('walletApple');  return; }
     if (s === 'walletGoogle') { setModal('walletGoogle'); return; }
+    if (s === 'optOut') { setModal('optOut'); return; }
     if (s === 'toast')  { setToast({ m: ext?.msg || 'OK', k: ext?.kind || 'info' }); return; }
     if (s === 'logout') {
       storage.clearAuth();
@@ -194,7 +197,8 @@ function App() {
       {showTab && <TabBar active={activeTab} onChange={(t) => go(t)}/>}
       {modal === 'pay' && <ModalPayChoice total={total} onClose={()=>setModal(null)} onPickCounter={()=>{ setModal(null); setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
       {modal === 'gain' && <ModalPointsGain onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
-      {modal === 'redeem' && <ModalRedeem onClose={()=>setModal(null)} onConfirm={()=>{ setModal(null); setToast({m:'Récompense activée — appliquée à ta prochaine commande', k:'success'}); }}/>}
+      {modal === 'redeem' && <WizardRedeem ctx={modalCtx} onClose={()=>{ setModal(null); setModalCtx(null); }} onSuccess={(r)=>{ /* WizardRedeem handles toast internally via step3 success state */ }}/>}
+      {modal === 'optOut' && <ModalOptOutConfirm onClose={()=>setModal(null)} onConfirm={()=>{ setModal(null); window.LC.dev && window.LC.dev.setConsent('opted_out'); setToast({m:'Programme désactivé. Tu peux le réactiver à tout moment.', k:'info'}); }}/>}
       {modal === 'link' && <ModalCardLink onClose={()=>setModal(null)} onScan={()=>{ setModal(null); storage.setPlasticCardLinked && storage.setPlasticCardLinked(true); setToast({m:'Carte plastique liée à ton compte', k:'success'}); }}/>}
       {modal === 'walletApple' && <ModalWalletV0Notice kind="apple" onClose={()=>setModal(null)} onSeeQR={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
       {modal === 'walletGoogle' && <ModalWalletV0Notice kind="google" onClose={()=>setModal(null)} onSeeQR={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}

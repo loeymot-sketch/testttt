@@ -275,4 +275,27 @@ function ModalWalletV0Notice({ onClose, onSeeQR, kind = 'apple' }) {
   );
 }
 
-Object.assign(window, { ModalPayChoice, ScreenStripe, ModalPointsGain, ModalRedeem, ModalCardLink, ModalWalletV0Notice, ScreenOrderDetail, Toast });
+// ---------- Opt-out RGPD confirm modal (commit-5 — DEC-15) ----------
+function ModalOptOutConfirm({ onClose, onConfirm }) {
+  return (
+    <div data-testid="modal" data-modal-kind="opt-out-confirm" role="dialog" aria-modal="true" aria-labelledby="modal-opt-out-title">
+      <ModalShell onClose={onClose}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--red)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>⚠ RGPD</div>
+        <h2 id="modal-opt-out-title" className="lc-display" style={{ margin: '12px 0 4px', fontSize: 30, lineHeight: 0.92, color: 'var(--ink)' }}>Désactiver mon<br/>compte fidélité ?</h2>
+        <p style={{ margin: '0 0 14px', color: 'var(--gray-4)', fontSize: 13, lineHeight: 1.5 }}>
+          Tes points ne seront plus crédités lors de tes achats. Tes points existants restent valides pendant 365 jours mais ne seront pas affichés.
+        </p>
+        <div style={{ background: 'var(--yellow-soft)', borderRadius: 12, padding: 12, marginBottom: 16, fontSize: 12, color: 'var(--ink)', display: 'flex', gap: 8 }}>
+          <span style={{ flexShrink: 0 }}>ℹ︎</span>
+          <span>Tu peux réactiver ton compte à tout moment depuis la page Carte fidélité. Tes données sont conservées conformément RGPD article 17.</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 10 }}>
+          <button onClick={onClose} className="lc-btn" style={{ background: 'var(--cream)', color: 'var(--ink)', height: 50 }}>Annuler</button>
+          <button data-testid="opt-out-confirm-btn" onClick={onConfirm} className="lc-btn" style={{ background: 'var(--red)', color: '#fff', height: 50 }}>Désactiver</button>
+        </div>
+      </ModalShell>
+    </div>
+  );
+}
+
+Object.assign(window, { ModalPayChoice, ScreenStripe, ModalPointsGain, ModalRedeem, ModalCardLink, ModalWalletV0Notice, ModalOptOutConfirm, ModalShell, ScreenOrderDetail, Toast });
