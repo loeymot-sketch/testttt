@@ -79,9 +79,11 @@ class RouteServiceProvider extends ServiceProvider
                 return Limit::perMinute(300)->by($request->user()?->id ?: $request->ip());
             }
 
-            // POS quote + counter-collect = high-frequency cashier ops (SSOT preview / encaissement borne).
-            // Same 30/min bucket as CRUD caused 429 in E2E and under real peak load.
-            if ($request->is('api/admin/pos/quote', 'api/admin/pos/counter-collect/*')) {
+            // POS = high-frequency cashier ops (SSOT preview / encaissement / payment / split / tip).
+            // Admin-mutation 30/min CRUD bucket caused 429 "Too Many Attempts" on entire POS payment
+            // flow when applied via nested route group. Whole pos/* namespace lifted to 120/min.
+            // iter15-BUG-RATE-LIMIT 2026-05-10
+            if ($request->is('api/admin/pos/*')) {
                 return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
             }
 
