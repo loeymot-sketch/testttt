@@ -547,22 +547,37 @@ test.describe('POS·KDS·OSS audit Wave C — KDS visual + lifecycle', () => {
           detail: { type: 'audit-wave-c-error-probe', source: 'spec' },
         }));
       });
-      // [test-e2e fix C-002 round-1 2026-05-10] Snap the toast IMMEDIATELY
-      // after it enters the DOM (before its leave-animation starts). C-001
-      // documents that Vue-Toastification default timeout is ~3s — the prior
-      // 2500ms wait + isVisible probe was racing the leave-animation, causing
-      // state 14 PNG to land on a frame where the toast was already
-      // mid-fadeout (md5 == state 13). We now poll for toast presence with
-      // short retries and snap as soon as it appears.
+      // [test-e2e fix C-010 round-4 2026-05-10] Assert the PERSISTENT banner
+      // directly via data-testid="kds-error-banner" instead of [role="alert"].
+      // The previous selector list (`.swal2-toast, .toastify, .alert-danger,
+      // [role="alert"], .Vue-Toastification__toast*`) matched the
+      // bootstrap.js axios-interceptor toast first (also `role=alert`) and
+      // short-circuited via .first(), so the spec passed regardless of whether
+      // the persistent kds-error-banner actually rendered. Round-3 forensic
+      // flagged this as a false positive — banner DOM count was reportedly 0
+      // on a stale capture. Round-4 reproduction with the committed bundle
+      // confirms the banner DOES render (Cluster-1 + Cluster-B fixes correct).
+      // We now assert the banner directly so the signal is unambiguous, and
+      // ALSO record toast presence as a separate observation (defense in
+      // depth — both should be visible when the KDS list endpoint 5xxs).
       let errorBannerVisible = false;
-      const toastSelector = '.swal2-toast, .toastify, .alert-danger, [role="alert"], .Vue-Toastification__toast--error, .Vue-Toastification__toast';
-      for (let i = 0; i < 8; i++) {
+      let toastVisible = false;
+      const bannerSelector = '[data-testid="kds-error-banner"]';
+      const toastSelector = '.Vue-Toastification__toast--error, .Vue-Toastification__toast';
+      for (let i = 0; i < 12; i++) {
         await page.waitForTimeout(250);
-        errorBannerVisible = await page.locator(toastSelector).first().isVisible({ timeout: 200 }).catch(() => false);
+        errorBannerVisible = await page.locator(bannerSelector).first().isVisible({ timeout: 200 }).catch(() => false);
+        if (!toastVisible) {
+          toastVisible = await page.locator(toastSelector).first().isVisible({ timeout: 200 }).catch(() => false);
+        }
         if (errorBannerVisible) break;
       }
-      observations.push(`state14: route_intercepts=${routeFiredCount} error_banner_visible=${errorBannerVisible} (P0 finding if false; toast caught early to avoid leave-animation race per C-001/C-002)`);
+      observations.push(`state14: route_intercepts=${routeFiredCount} kds_error_banner_visible=${errorBannerVisible} toast_visible=${toastVisible} (P0 finding if banner=false — toast alone is insufficient because it auto-fades in ~6s; kitchen operator at 1m+ glance MUST see the persistent banner per C-001/C-009)`);
       await snap('14-kds-error-resilience');
+      // Hard-assert the persistent banner — this is the C-010 defense.
+      // Soft-assert the toast (defense-in-depth, not the primary signal).
+      expect.soft(errorBannerVisible, 'kds-error-banner persistent banner must render on /api/admin/kds-order 5xx').toBe(true);
+      expect.soft(toastVisible, 'bootstrap.js axios interceptor toast should also render on 5xx').toBe(true);
 
       // Unroute so the cleanup tinker calls + post-test traffic aren't
       // intercepted.
