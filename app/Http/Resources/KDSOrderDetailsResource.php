@@ -22,6 +22,10 @@ class KDSOrderDetailsResource extends JsonResource
             'order_serial_no'                     => $this->order_serial_no,
             'token'                               => $this->token,
             'order_type'                          => $this->order_type,
+            // [test-e2e fix E-003 round-3] V1 dine-in disabled — kiosk orders are TAKEAWAY;
+            // KDS lane bucketing must use source_surface ('kiosk' | 'pos' | 'web' | 'mobile' | 'admin')
+            // not order_type, otherwise the "🖥️ Borne" KDS column stays permanently empty.
+            'source_surface'                      => $this->source_surface,
             'order_datetime'                      => AppLibrary::datetime($this->order_datetime),
             'order_date'                          => AppLibrary::date($this->order_datetime),
             'order_time'                          => AppLibrary::time($this->order_datetime),

@@ -144,6 +144,12 @@ return [
         'open_full_page' => 'Open full page',
     ],
     'message' => [
+        // [test-e2e fix E-004 round-3] Translated exception messages — replaces
+        // raw English strings previously hardcoded in app/Exceptions/Handler.php.
+        'order_not_found'      => 'Order not found.',
+        'unauthorized'         => 'User does not have the right permissions.',
+        'method_not_supported' => 'Method not supported for the route.',
+        'url_not_found'        => 'The specified URL cannot be found.',
         'validation_error' => 'Validation Error.',
         'credentials_error' => 'Credentials errors.',
         'credentials_invalid' => 'Invalid credentials or you are blocked',

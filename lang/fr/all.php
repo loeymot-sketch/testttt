@@ -130,6 +130,12 @@ return [
         'open_full_page' => 'Ouvrir en page complète',
     ],
     'message' => [
+        // [test-e2e fix E-004 round-3] Translated exception messages — replaces
+        // raw English strings previously hardcoded in app/Exceptions/Handler.php.
+        'order_not_found'     => 'Commande introuvable.',
+        'unauthorized'        => "Vous n'avez pas les permissions nécessaires.",
+        'method_not_supported' => "Méthode non prise en charge pour cette route.",
+        'url_not_found'       => "L'URL spécifiée est introuvable.",
         'validation_error' => 'Erreur de validation.',
         'credentials_error' => 'Erreur de connexion.',
         'credentials_invalid' => 'Identifiants invalides ou compte bloqué',

@@ -771,18 +771,34 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       var visibleRows = (Array.isArray(rows) ? rows : []).filter(function (item) {
         return _this8._isVisibleInCurrentBoard(item);
       });
-      this.dineinOrders = visibleRows.filter(function (item) {
+      // [test-e2e fix E-003 round-3] V1 dine-in disabled — kiosk orders are TAKEAWAY
+      // (OrderRequest:200 enforces order_type=TAKEAWAY for ALL kiosk orders since
+      // dine-in is gated off via feature flag pos.dine_in_enabled=false). Therefore
+      // bucket by source_surface ('kiosk') first, falling back to order_type for
+      // historical rows that pre-date the source_surface column. Without this fix
+      // the "🖥️ Borne" KDS column is permanently empty in V1.
+      var isKioskSource = function isKioskSource(item) {
+        var surface = typeof item.source_surface === 'string' ? item.source_surface.toLowerCase() : '';
+        if (surface === 'kiosk') return true;
+        // Legacy fallback: orders created before source_surface column existed and
+        // marked as KIOSK type still bucket as kiosk.
+        if (!surface && item.order_type === _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_1__["default"].KIOSK) return true;
+        return false;
+      };
+      this.kioskOrders = visibleRows.filter(isKioskSource);
+      // Non-kiosk rows fan out across the POS / online / dine-in lanes by order_type.
+      var nonKioskRows = visibleRows.filter(function (item) {
+        return !isKioskSource(item);
+      });
+      this.dineinOrders = nonKioskRows.filter(function (item) {
         return item.order_type === _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_1__["default"].DINING_TABLE;
       });
-      this.onlineOrders = visibleRows.filter(function (item) {
+      this.onlineOrders = nonKioskRows.filter(function (item) {
         return item.order_type === _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_1__["default"].DELIVERY;
       });
       // POS (caisse) orders follow the same kitchen lane as takeaway.
-      this.takeawayOrders = visibleRows.filter(function (item) {
+      this.takeawayOrders = nonKioskRows.filter(function (item) {
         return item.order_type === _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_1__["default"].TAKEAWAY || item.order_type === _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_1__["default"].POS;
-      });
-      this.kioskOrders = visibleRows.filter(function (item) {
-        return item.order_type === _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_1__["default"].KIOSK;
       });
     },
     _refreshWithCurrentFilter: function _refreshWithCurrentFilter() {

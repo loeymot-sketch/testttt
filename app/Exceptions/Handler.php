@@ -61,17 +61,22 @@ class Handler extends ExceptionHandler
             return new JsonResponse(
                 [
                     'success' => false,
-                    'message' => 'User does not have the right permissions.'
+                    'message' => __('all.message.unauthorized'),
                 ],
                 403
             );
         }
 
+        // [test-e2e fix E-004 round-3] i18n leak — Laravel ModelNotFoundException
+        // surfaced raw English ("No query results for model.") into French POS
+        // toasts. Translate via lang/{fr,en,ar}.all.message.order_not_found and
+        // expose a stable error code for frontend mapping.
         if ($e instanceof ModelNotFoundException) {
             return new JsonResponse(
                 [
                     'success' => false,
-                    'message' => 'No query results for model.'
+                    'code'    => 'ORDER_NOT_FOUND',
+                    'message' => __('all.message.order_not_found'),
                 ],
                 404
             );
@@ -81,7 +86,7 @@ class Handler extends ExceptionHandler
             return new JsonResponse(
                 [
                     'success' => false,
-                    'message' => 'Method not support for the route.'
+                    'message' => __('all.message.method_not_supported'),
                 ],
                 405
             );
@@ -91,7 +96,7 @@ class Handler extends ExceptionHandler
             return new JsonResponse(
                 [
                     'success' => false,
-                    'message' => 'The specified URL cannot be found.'
+                    'message' => __('all.message.url_not_found'),
                 ],
                 404
             );

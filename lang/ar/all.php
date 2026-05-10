@@ -123,6 +123,12 @@ return [
         'open_full_page' => 'فتح كصفحة كاملة',
     ],
     'message' => [
+        // [test-e2e fix E-004 round-3] Translated exception messages — replaces
+        // raw English strings previously hardcoded in app/Exceptions/Handler.php.
+        'order_not_found'             => 'الطلب غير موجود.',
+        'unauthorized'                => 'ليس لديك الصلاحيات اللازمة.',
+        'method_not_supported'        => 'الطريقة غير مدعومة لهذا المسار.',
+        'url_not_found'               => 'لم يتم العثور على عنوان URL المحدد.',
         'validation_error'            => 'خطأ في التحقق.',
         'credentials_error'           => 'أخطاء في المصادقة.',
         'credentials_invalid'         => 'بيانات الاعتماد غير صالحة أو تم حظرك',

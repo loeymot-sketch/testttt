@@ -1554,13 +1554,29 @@ export default {
     },
     _applyOrderBuckets(rows) {
       const visibleRows = (Array.isArray(rows) ? rows : []).filter((item) => this._isVisibleInCurrentBoard(item));
-      this.dineinOrders = visibleRows.filter((item) => item.order_type === orderTypeEnum.DINING_TABLE);
-      this.onlineOrders = visibleRows.filter((item) => item.order_type === orderTypeEnum.DELIVERY);
+      // [test-e2e fix E-003 round-3] V1 dine-in disabled — kiosk orders are TAKEAWAY
+      // (OrderRequest:200 enforces order_type=TAKEAWAY for ALL kiosk orders since
+      // dine-in is gated off via feature flag pos.dine_in_enabled=false). Therefore
+      // bucket by source_surface ('kiosk') first, falling back to order_type for
+      // historical rows that pre-date the source_surface column. Without this fix
+      // the "🖥️ Borne" KDS column is permanently empty in V1.
+      const isKioskSource = (item) => {
+        const surface = typeof item.source_surface === 'string' ? item.source_surface.toLowerCase() : '';
+        if (surface === 'kiosk') return true;
+        // Legacy fallback: orders created before source_surface column existed and
+        // marked as KIOSK type still bucket as kiosk.
+        if (!surface && item.order_type === orderTypeEnum.KIOSK) return true;
+        return false;
+      };
+      this.kioskOrders = visibleRows.filter(isKioskSource);
+      // Non-kiosk rows fan out across the POS / online / dine-in lanes by order_type.
+      const nonKioskRows = visibleRows.filter((item) => !isKioskSource(item));
+      this.dineinOrders = nonKioskRows.filter((item) => item.order_type === orderTypeEnum.DINING_TABLE);
+      this.onlineOrders = nonKioskRows.filter((item) => item.order_type === orderTypeEnum.DELIVERY);
       // POS (caisse) orders follow the same kitchen lane as takeaway.
-      this.takeawayOrders = visibleRows.filter((item) =>
+      this.takeawayOrders = nonKioskRows.filter((item) =>
         item.order_type === orderTypeEnum.TAKEAWAY || item.order_type === orderTypeEnum.POS
       );
-      this.kioskOrders = visibleRows.filter((item) => item.order_type === orderTypeEnum.KIOSK);
     },
     _refreshWithCurrentFilter() {
       // [FIX-54-5] Re-fetch orders without modifying props.search.status
