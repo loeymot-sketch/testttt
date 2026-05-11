@@ -1,19 +1,24 @@
 {
   "findings": [
     {
-      "id": "TOGGLE-PUSHER-500",
-      "severity": "P1",
-      "surface": "admin-api",
-      "desc": "admin/menu/availability/extra/toggle returned 500 due to Pusher dispatch failure (port 6001 unreachable). Toggle PERSISTS to DB but client receives 500 — confusing UX + breaks idempotent retries.",
+      "id": "RUPTURE-E3",
+      "severity": "P0",
+      "surface": "pos-wizard",
+      "desc": "POS wizard does NOT show extra 175 as disabled after rupture — supplement remains clickable (no disabled attr, no unavailable class, no overlay, opacity >= 0.6).",
       "state": {
-        "ok": false,
-        "status": 500,
-        "body": {
-          "message": "Server Error"
-        }
+        "found": true,
+        "wizard_mounted": true,
+        "text": "🥓Jambon de dinde+1.00€🧀Boursin+1.00€🧀Fromage a raclette+1.00€🥚Œuf+1.00€🧀Fromage+1.00€🥔Galette pommes de terre+1.00€",
+        "classes": "wizard-options supplement-grid",
+        "disabled": false,
+        "ariaDisabled": null,
+        "pointerEvents": "auto",
+        "opacity": "1",
+        "hasUnavailableClass": false,
+        "hasUnavailableText": false
       }
     }
   ],
-  "count_p0": 0,
-  "count_p1": 1
+  "count_p0": 1,
+  "count_p1": 0
 }

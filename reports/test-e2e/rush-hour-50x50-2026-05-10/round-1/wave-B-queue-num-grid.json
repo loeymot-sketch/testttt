@@ -1,0 +1,305 @@
+{
+  "rows": [
+    {
+      "id": 1090,
+      "queue_number": "A0115",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458812568-791889",
+      "created_at": "2026-05-11 02:20:12",
+      "queue_int": 115,
+      "delta_from_prev": null
+    },
+    {
+      "id": 1091,
+      "queue_number": "A0116",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458812889-257603",
+      "created_at": "2026-05-11 02:20:12",
+      "queue_int": 116,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1092,
+      "queue_number": "A0117",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458813533-162231",
+      "created_at": "2026-05-11 02:20:13",
+      "queue_int": 117,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1093,
+      "queue_number": "A0118",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458813696-573578",
+      "created_at": "2026-05-11 02:20:13",
+      "queue_int": 118,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1094,
+      "queue_number": "A0119",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458814372-144948",
+      "created_at": "2026-05-11 02:20:14",
+      "queue_int": 119,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1095,
+      "queue_number": "A0120",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458816556-859704",
+      "created_at": "2026-05-11 02:20:16",
+      "queue_int": 120,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1096,
+      "queue_number": "A0121",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458817196-181376",
+      "created_at": "2026-05-11 02:20:17",
+      "queue_int": 121,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1097,
+      "queue_number": "A0122",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458817347-334345",
+      "created_at": "2026-05-11 02:20:17",
+      "queue_int": 122,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1098,
+      "queue_number": "A0123",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458817979-254735",
+      "created_at": "2026-05-11 02:20:18",
+      "queue_int": 123,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1099,
+      "queue_number": "A0124",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458818131-56977",
+      "created_at": "2026-05-11 02:20:18",
+      "queue_int": 124,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1100,
+      "queue_number": "A0125",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458821841-373978",
+      "created_at": "2026-05-11 02:20:21",
+      "queue_int": 125,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1101,
+      "queue_number": "A0126",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458822000-975374",
+      "created_at": "2026-05-11 02:20:22",
+      "queue_int": 126,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1102,
+      "queue_number": "A0127",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458822642-521393",
+      "created_at": "2026-05-11 02:20:22",
+      "queue_int": 127,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1103,
+      "queue_number": "A0128",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458823801-641298",
+      "created_at": "2026-05-11 02:20:23",
+      "queue_int": 128,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1104,
+      "queue_number": "A0129",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458824432-440131",
+      "created_at": "2026-05-11 02:20:24",
+      "queue_int": 129,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1105,
+      "queue_number": "A0130",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458825585-510506",
+      "created_at": "2026-05-11 02:20:25",
+      "queue_int": 130,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1106,
+      "queue_number": "A0131",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458826206-360281",
+      "created_at": "2026-05-11 02:20:26",
+      "queue_int": 131,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1107,
+      "queue_number": "A0132",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458826369-908531",
+      "created_at": "2026-05-11 02:20:26",
+      "queue_int": 132,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1108,
+      "queue_number": "A0133",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458826976-266544",
+      "created_at": "2026-05-11 02:20:27",
+      "queue_int": 133,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1109,
+      "queue_number": "A0134",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458827113-575432",
+      "created_at": "2026-05-11 02:20:27",
+      "queue_int": 134,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1110,
+      "queue_number": "A0135",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458828237-930176",
+      "created_at": "2026-05-11 02:20:28",
+      "queue_int": 135,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1111,
+      "queue_number": "A0136",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458828367-620367",
+      "created_at": "2026-05-11 02:20:28",
+      "queue_int": 136,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1112,
+      "queue_number": "A0137",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458828983-39102",
+      "created_at": "2026-05-11 02:20:29",
+      "queue_int": 137,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1113,
+      "queue_number": "A0138",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458829134-63860",
+      "created_at": "2026-05-11 02:20:29",
+      "queue_int": 138,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1114,
+      "queue_number": "A0139",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458829717-14610",
+      "created_at": "2026-05-11 02:20:29",
+      "queue_int": 139,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1115,
+      "queue_number": "A0140",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458832598-513462",
+      "created_at": "2026-05-11 02:20:32",
+      "queue_int": 140,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1116,
+      "queue_number": "A0141",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458833305-875189",
+      "created_at": "2026-05-11 02:20:33",
+      "queue_int": 141,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1117,
+      "queue_number": "A0142",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458833466-593426",
+      "created_at": "2026-05-11 02:20:33",
+      "queue_int": 142,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1118,
+      "queue_number": "A0143",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458834104-723943",
+      "created_at": "2026-05-11 02:20:34",
+      "queue_int": 143,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1119,
+      "queue_number": "A0144",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458860991-307978",
+      "created_at": "2026-05-11 02:21:01",
+      "queue_int": 144,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1120,
+      "queue_number": "A0145",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458861202-798075",
+      "created_at": "2026-05-11 02:21:01",
+      "queue_int": 145,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1121,
+      "queue_number": "A0146",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458862004-678040",
+      "created_at": "2026-05-11 02:21:02",
+      "queue_int": 146,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1122,
+      "queue_number": "A0147",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458862165-295549",
+      "created_at": "2026-05-11 02:21:02",
+      "queue_int": 147,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1123,
+      "queue_number": "A0148",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458862790-50123",
+      "created_at": "2026-05-11 02:21:02",
+      "queue_int": 148,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1124,
+      "queue_number": "A0149",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458863476-702100",
+      "created_at": "2026-05-11 02:21:03",
+      "queue_int": 149,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1125,
+      "queue_number": "A0150",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458864108-255465",
+      "created_at": "2026-05-11 02:21:04",
+      "queue_int": 150,
+      "delta_from_prev": 1
+    },
+    {
+      "id": 1126,
+      "queue_number": "A0151",
+      "token": "AUDIT-KIOSK-WAVE-E-1778458864267-803487",
+      "created_at": "2026-05-11 02:21:04",
+      "queue_int": 151,
+      "delta_from_prev": 1
+    }
+  ],
+  "rows_count": 37,
+  "api_successful_count": 37,
+  "non_plus_1_deltas": 0,
+  "queue_gap_free_strict": true,
+  "note": "queue_number is per-branch shared between POS+Kiosk surfaces. Non-+1 deltas reflect interleaving with other surfaces, not kiosk gaps."
+}

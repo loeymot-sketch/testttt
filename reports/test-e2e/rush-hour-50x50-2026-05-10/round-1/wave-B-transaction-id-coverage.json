@@ -1,0 +1,9 @@
+{
+  "total_attempted": 38,
+  "total_successful_store": 37,
+  "api_payment_confirm_ok": 37,
+  "api_payment_confirm_failures": [],
+  "db_with_transaction_id": 37,
+  "db_without_transaction_id_ids": [],
+  "db_missing_at_query_ids": []
+}

@@ -1,0 +1,22 @@
+{
+  "incidents": [
+    {
+      "seq": 30,
+      "item_id": 375,
+      "ts": 1778458834304,
+      "stage": "store",
+      "retried": true,
+      "bucket": "kiosk-orders"
+    },
+    {
+      "seq": 31,
+      "item_id": 375,
+      "ts": 1778458847988,
+      "stage": "quote",
+      "retried": true,
+      "bucket": "kiosk-orders"
+    }
+  ],
+  "count": 2,
+  "all_recovered": true
+}

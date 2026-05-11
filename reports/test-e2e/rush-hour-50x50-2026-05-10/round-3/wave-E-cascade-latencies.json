@@ -2,24 +2,24 @@
   "samples": [
     {
       "label": "pos-item-362",
-      "ms": 4,
+      "ms": 5,
       "ok": true
     },
     {
       "label": "kiosk-item-362",
-      "ms": 2,
+      "ms": 4,
       "ok": true
     },
     {
       "label": "restore-pos-item-362",
-      "ms": 3,
+      "ms": 2,
       "ok": true
     },
     {
       "label": "restore-kiosk-item-362",
-      "ms": 12,
+      "ms": 3,
       "ok": true
     }
   ],
-  "p95_ms": 12
+  "p95_ms": 5
 }

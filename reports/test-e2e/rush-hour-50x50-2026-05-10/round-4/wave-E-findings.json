@@ -1,0 +1,27 @@
+{
+  "findings": [
+    {
+      "id": "E-003-extras-no-is-available-render",
+      "severity": "P2",
+      "surface": "pos-wizard",
+      "category": "audit_integrity",
+      "owner_gated": true,
+      "ref": "OWNER_GATE_DECISIONS.md#E-003-deeper",
+      "desc": "POS wizard renders supplement 175 identically to available extras after rupture (no disabled attr, no unavailable class, no overlay, opacity >= 0.6). pos-wizard.js (FROZEN §7) has no extra.is_available rendering branch — owner LOCK required to fix. Spec instrumentation is correct: wizard mounted, supplements panel expanded, Jambon button captured. Product gap surfaced, not blocking V1 per owner gate.",
+      "state": {
+        "found": true,
+        "wizard_mounted": true,
+        "text": "🥓Jambon de dinde+1.00€🧀Boursin+1.00€🧀Fromage a raclette+1.00€🥚Œuf+1.00€🧀Fromage+1.00€🥔Galette pommes de terre+1.00€",
+        "classes": "wizard-options supplement-grid",
+        "disabled": false,
+        "ariaDisabled": null,
+        "pointerEvents": "auto",
+        "opacity": "1",
+        "hasUnavailableClass": false,
+        "hasUnavailableText": false
+      }
+    }
+  ],
+  "count_p0": 0,
+  "count_p1": 0
+}

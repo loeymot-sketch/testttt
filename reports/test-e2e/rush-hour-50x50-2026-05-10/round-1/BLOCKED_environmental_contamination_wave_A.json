@@ -1,0 +1,19 @@
+{
+  "ts": 1778443816889,
+  "wave": "A",
+  "reason": "environmental_contamination_pos_user_collision",
+  "evidence": {
+    "pgrep_pos_kds_sync": [
+      "39745 /bin/zsh -c source /Users/1millnonstop/.claude/shell-snapshots/snapshot-zsh-1778441452303-e06x9v.sh 2>/dev/null || true && setopt NO_EXTENDED_GLOB 2>/dev/null || true && eval 'PLAYWRIGHT_NO_WEB_SERVER=1 PLAYWRIGHT_BASE_URL=http://127.0.0.1:8000 npx playwright test tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-E.spec.js --project=chromium --workers=1 --retries=0 --reporter=list 2>&1 | tail -45' < /dev/null && pwd -P >| /tmp/claude-7eca-cwd",
+      "39747 npm exec playwright test tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-E.spec.js --project=chromium --workers=1 --retries=0 --reporter=list TERM_PROGRAM=Apple_Terminal SHELL=/bin/zsh TERM=xterm-256color TMPDIR=/var/folders/34/wymhn3455q36mn9tdrymlc680000gn/T/ TERM_PROGRAM_VERSION=470 TERM_SESSION_ID=C1E31C33-92FA-461A-8556-3574F721063C USER=1millnonstop SSH_AUTH_SOCK=/var/run/com.apple.launchd.MSzSun7L7P/Listeners",
+      "39824 node /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/node_modules/.bin/playwright test tests/e2e/test-e2e-pos-kds-sync-2026-05-10-wave-E.spec.js --project=chromium --workers=1 --retries=0 --reporter=list"
+    ],
+    "hypothesis": "pos@lecayenne.fr (user_id=16) shared rate-limit bucket pos-order-create (60/min) + Sanctum revoke-on-relogin asymmetric thrash",
+    "claude_md_ref": "§9 Sanctum kiosk:order — \"Old tokens revoked à chaque relogin\""
+  },
+  "remedy_suggestions": [
+    "Kill the zombie pos-kds-sync-* playwright runs",
+    "OR serialize Wave A after they exit",
+    "OR provision a second POS user pos2@lecayenne.fr for Wave A"
+  ]
+}

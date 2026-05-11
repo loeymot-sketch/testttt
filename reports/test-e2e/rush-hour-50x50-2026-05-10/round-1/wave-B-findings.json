@@ -1,0 +1,102 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 16,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/12-B-kiosk-mid-rush-after-25.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "wave-B-transaction-id-coverage.json: api_payment_confirm_ok=0 (35/35 orders 422'd) with body 'FCM send failed — will retry'; YET db_with_transaction_id=35 (every order's payment_status=PAID + transaction_id persisted). 12-B-kiosk-mid-rush-after-25.network.json shows 25 POSTs to /api/frontend/order/{id}/payment-confirm all status=422 (orders 629-653); state 12 DOM contains exactly one toast surface '<div data-v-60fd5967 data-v-6ffab5ed class=\"kiosk-toast-container\" role=\"status\" aria-live=\"polite\" aria-relevant=\"additions text\"></div>' which is EMPTY despite the 25 silent failures. State 13 (5× 429 + 5× 422) and state 14 (4× 422) reproduce the same empty kiosk-toast-container. The kiosk client receives 422 'payment failed' for transactions that were ACTUALLY committed in the DB to PAID — a paying customer would see no error AND no confirmation, while the receipt + fiscal sequence are persisted server-side. This conflates payment success with notification dispatch and is production-breaking for kiosk UX + customer trust.",
+      "fix_hint": "app/Http/Controllers/Frontend/OrderController.php:253-273 — the outer try/catch (Exception) at line 271 swallows the SendFcmNotificationJob RuntimeException ('FCM send failed — will retry' from app/Jobs/SendFcmNotificationJob.php:98) into a generic 422. Wrap the FCM-dispatching call inside finalizePaidKioskOrder() (and any downstream notification side-effects) in a dedicated try/catch that LOGS but DOES NOT bubble — payment-confirm must return 200 once payment_status=PAID + transaction_id are committed (lines 215-220). Note: QUEUE_CONNECTION=sync in this env makes the bubble visible; production async queue would hide the symptom but the SAME defect exists if any synchronous side-effect (audit log, broadcast, observer) throws — the contract that payment-confirm 200 == DB committed must not be coupled to notification health.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/06-B-kiosk-wizard-viande-step.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "States 06, 07, 08, 09, 10, 11 are visually IDENTICAL — all show the kiosk wizard frozen at step 1 'QUELLE VIANDE ?' with viande counter '0/1', SUIVANT button disabled. Spec test-e2e-rush-hour-50x50-2026-05-10-wave-B.spec.js:546 selects '.kiosk-wizard [role=\"radio\"], .kiosk-wizard [role=\"button\"]' to advance the wizard, but the viande cards in the actual DOM use 'role=\"group\"' (08-B dom.html: '<div ... class=\"kiosk-viande-card is-selectable\" role=\"group\" tabindex=\"0\" aria-label=\"Merguez, 0\">'). The selector matches nothing → click silently no-ops → counter stays at 0/1 → SUIVANT stays disabled → wizard never advances. Cascading audit-integrity consequences: state 11 'kiosk-confirmation' PNG shows the SAME viande step (no confirmation ever rendered); state 14 'kiosk-final-confirmation' shows 'BURGER POULET' wizard frozen at QUELLE SAUCE step 1 (same selector defect on burger flow). Mislabeled artifacts mislead future reviewers into thinking the kiosk UI flow was exercised when it never advanced past step 1.",
+      "fix_hint": "tests/e2e/test-e2e-rush-hour-50x50-2026-05-10-wave-B.spec.js:546, 566, 583 — replace selector with '.kiosk-wizard .kiosk-viande-card.is-selectable, .kiosk-wizard .kiosk-sauce-card, .kiosk-wizard [data-testid^=\"kiosk-viande-card-\"]' or directly target by role=group + aria-label. Verify by re-running and asserting '.kiosk-counter-badge' text changes to '1/1' before clicking '.kiosk-btn-next'. Round-2 spec rev should ALSO rename PNGs that don't match their content (states 11/14) or insert assertions that fail loudly when the wizard didn't advance.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/16-B-kds-pile-from-B.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "wave-B-timing-kds-arrival.json is empty: {\"samples\":[], \"p95_ms\":null, \"count\":0}. The agent reported 'TIMING-B4: chefPage.request.get(/api/admin/kds-order) returned non-ok... 0 samples' and concluded '0 of this run's orders cross-surface'. CONTRADICTED by direct visual inspection: 16-B-kds-pile-from-B.dom.html contains all 35 Wave B orders (grep 'AUDIT-KIOSK-WAVE-E' = 35 matches; queue numbers A0142–A0176 enumerated; PNG visibly shows orders #100526666/A0176 + #100526665/A0175 in 'À emporter' column with 'Confirmées' badge). Cross-surface integrity is in fact INTACT, but the agent's API-probe assertion was vacuous AND the agent then drew the wrong conclusion that orders never reached KDS — a P1 audit_integrity defect that, if uncorrected, would have generated a false P0 cross-surface alarm in their report.",
+      "fix_hint": "tests/e2e/test-e2e-rush-hour-50x50-2026-05-10-wave-B.spec.js:773 — chefPage.request.get('/api/admin/kds-order') likely fails because Playwright APIRequestContext doesn't share session cookies with the browser context by default for this Spatie permission-gated endpoint. Either (a) re-mint via chefPage.context().request and pass storageState, OR (b) replace the API probe with a DOM probe: chefPage.locator('[data-testid^=\"kds-card-\"]').filter({ hasText: 'AUDIT-KIOSK-WAVE-E' }).count() and timestamp the first appearance via MutationObserver. Either approach gets real timing samples instead of an empty grid.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/12-B-kiosk-mid-rush-after-25.png",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "State 12 console.json contains 25 application-source 'Failed to load resource: status of 422 (Unprocessable Content)' errors NOT covered by allowlist (the allowlist permits 422 on form validation; these are POST /api/frontend/order/{id}/payment-confirm responses for committed payments — see B-001). State 13 contains 5× 429 (allowlisted as expected rate-limit-bucket behavior per spec docstring) BUT ALSO 7× 422 from the same payment-confirm bubble. State 14 contains 1× 422 from same source. Total non-allowlisted application errors across the rush: 33+ console errors all surfacing the same root cause (B-001). Filed separately because reviewer protocol §category 9 requires console_error report whenever non-vendor errors persist; closure is gated by B-001 fix.",
+      "fix_hint": "Closes when B-001 closes — same root cause. Add a vitest assertion that /payment-confirm returns 200 when payment_status=PAID is committed, regardless of FCM availability.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/16-B-kds-pile-from-B.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "16-B-kds-pile-from-B.dom.html includes a salmon-colored top banner: 'Liste pleine (50 affichée(s), max. serveur) : d'autres commandes actives existent peut-être — filtrez par statut ou cherchez un n° de ticket. Voir plus'. Visible in PNG. Behavior: KDS hard-caps the visible pile at 50 active orders. With 50 orders/wave and any ambient orders, chefs would silently miss orders past the cap. NOT P1 because (a) the warning IS shown (not a silent failure), (b) the cap of 50 is a known product setting and reviewer protocol cannot rule out test-environment artifact (ambient + Wave B = 50+), and (c) 'Voir plus' link offers escape. Conservative P2 — flag for product/UX consideration: at peak rush, 50 concurrent orders is plausible in real fast-food ops; chefs need confidence the banner is informational, not a defect.",
+      "fix_hint": "Either (a) raise the cap based on tenant size config, (b) make 'Voir plus' inline-expand instead of navigating, or (c) replace 'Liste pleine' wording with 'Plus de 50 commandes actives — Voir toutes' to remove 'max. serveur' confusion (chefs may interpret 'max. serveur' as a server crash). Investigate KDS query in app/Http/Controllers/Admin/KdsOrderController.php for the 50 limit.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "test-e2e-rush-hour-50x50-B/01-B-kiosk-idle.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "01-B-kiosk-idle.png subtitle 'Commandez en quelques touches' rendered as white text on light-orange/cream gradient background. Visual contrast appears < 3:1 (text is barely readable in the PNG). DOM confirms: '<...class=\"kiosk-idle-subtitle\">Commandez en quelques touches</...>'. Same defect on states 02, 03, 12, 15 (all idle re-snaps). WCAG AA failure for body copy.",
+      "fix_hint": "resources/css/kiosk/idle.css (or the SCSS module that owns .kiosk-idle-subtitle) — replace color: #ffffff with a darker tone such as #2a1a0d or #5a2c10 to clear 4.5:1 against the gradient stop. Verify with axe-core or webaim contrast checker against both gradient endpoints.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "tests/e2e/helpers/kiosk-order.js:384",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "placeKioskOrder helper at kiosk-order.js:384 hardcodes 'const orderToken = `${KIOSK_AUDIT_PREFIX}-${runStamp}`' (KIOSK_AUDIT_PREFIX='AUDIT-KIOSK-WAVE-E') with NO override path that reads options.orderToken passed by the caller. Wave B spec passes 'AUDIT-RUSH-B-{seq}-{ts}' in the items[*].instruction (preserved) AND in the helper-call orderToken option (silently ignored). Result: every Wave B order's DB token is 'AUDIT-KIOSK-WAVE-E-…' — visible in wave-B-numeric-grid.json: 'token': 'AUDIT-KIOSK-WAVE-E-1778444715918-100683'. Cleanup still works (TOKEN_PATTERNS includes 'AUDIT-%') but cross-wave attribution by token is impossible. Helper docstring (per agent's report) references override logic that doesn't exist in the function body. Test infra debt, not product.",
+      "fix_hint": "tests/e2e/helpers/kiosk-order.js:384 — replace with 'const orderToken = options.orderToken || `${KIOSK_AUDIT_PREFIX}-${runStamp}`' (assuming options is the existing params object). Update docstring to match. Add a unit assertion on the helper that confirms the override is honored.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "tests/e2e/helpers/kiosk-order.js (payment-confirm path)",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Per agent's report: 'Helper's payment-confirm omits amount_cents (post-AUDIT-F-002 required field) — worked around with my own confirmKioskPayment.' Wave B spec necessarily reimplemented payment-confirm to satisfy the F-002 contract. Future waves using placeKioskOrder.confirmPayment without override will silently regress. Test infra debt, no immediate product impact (Wave B used the workaround).",
+      "fix_hint": "tests/e2e/helpers/kiosk-order.js — locate the confirmPayment helper and add 'amount_cents: Math.round(totalAmount * 100)' to the POST body. Verify against app/Http/Requests/Frontend/PaymentConfirmRequest.php which (per AUDIT-F-002) requires amount_cents.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1, "P1": 3, "P2": 4, "P3": 0,
+    "open_P0": 1, "open_P1": 3, "open_P2": 4, "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": "Round 1 baseline. AGENT TRIAD VERDICT: (1) FCM 422 silent_error — CONFIRMED P0 (B-001), evidence reproduced from wave-B-transaction-id-coverage.json + 12-B network.json + empty kiosk-toast-container DOM. (2) KDS pile empty — DOWNGRADED to P1 audit_integrity (B-003): cross-surface IS intact (35/35 Wave B orders visible in 16-B DOM, queue A0142-A0176), the agent's API-probe was vacuous and led to a false-alarm conclusion. (3) Wizard cart broken — REFRAMED as P1 audit_integrity (B-002), NOT user_flow_broken: kiosk Vue wizard markup uses role='group' on viande/sauce cards while the spec selector targets [role='radio']/[role='button'], so the SPEC fails to drive the wizard — the kiosk product itself is fine (35 API orders succeeded with full composition_snapshot). The misleading PNG names (states 11 'confirmation' + 14 'final-confirmation' show wizard step 1) are evidence quality risk for future rounds. Numeric integrity not flagged: wave-B-numeric-grid.json db.total_amount_price=0 is a SimpleOrderResource cast artifact (the field is computed from $this->total at serialization time — column doesn't exist in DB), api_total === db.total === 2 to centime for all 5 sampled. Frozen-zone deferrals: N/A for Wave B (kiosk Vue components are auditable for tests per memory feedback_kiosk_wizard_frozen_tests_allowed; POS pos-wizard.js untouched). NF525 fiscal sequence A0142–A0176 strictly +1 monotonic (queue-num-grid.json all_recovered=true, queue_gap_free_strict=true)."
+}
