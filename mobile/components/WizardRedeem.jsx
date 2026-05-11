@@ -72,9 +72,13 @@
       LC.dev.redeemReward(reward.id, { idempotency_key: idempotencyKeyRef.current })
         .then(r => {
           if (r.ok) {
+            // [test-e2e fix D-009 round-2 2026-05-11] replay → show "Déjà échangée"
+            // banner instead of "Échangé !" + zero balance change toast (balance
+            // already debited on the original call).
             setResult({
               code: 'LCY-' + (idempotencyKeyRef.current || '').slice(-6).toUpperCase(),
               balance_after: r.balance_after,
+              replayed: !!r.replayed,
             });
             setStep(3);
             if (onSuccess) onSuccess(r);
@@ -110,8 +114,9 @@
       onApply();
     };
 
-    // Confetti decorator (reused from ModalPointsGain) — only step 3
-    const confetti = step === 3 ? Array.from({ length: 18 }).map((_, i) => {
+    // Confetti decorator (reused from ModalPointsGain) — only step 3 on FIRST debit
+    // [test-e2e fix D-009 round-2 2026-05-11] no confetti on replay (nothing happened)
+    const confetti = (step === 3 && result && !result.replayed) ? Array.from({ length: 18 }).map((_, i) => {
       const colors = ['#FF5A1F', '#FFD93D', '#0A0A0A', '#1FA653'];
       const c = colors[i % colors.length];
       const left = (i * 5.6) % 100;
@@ -214,19 +219,33 @@
               </>
             )}
 
-            {/* STEP 3 — Success + share */}
+            {/* STEP 3 — Success + share (or replay banner — D-009) */}
             {step === 3 && result && (
-              <div data-testid="redeem-success">
+              <div data-testid="redeem-success" data-replayed={result.replayed ? 'true' : 'false'}>
                 <div style={{ textAlign: 'center', marginBottom: 10 }}>
                   <div style={{ fontSize: 48 }}>{reward.icon}</div>
                 </div>
-                <h2 className="lc-display" style={{ margin: 0, fontSize: 30, lineHeight: 0.92, color: 'var(--ink)', textAlign: 'center' }}>Échangé !</h2>
-                <p style={{ margin: '8px 0 18px', color: 'var(--gray-4)', fontSize: 13, textAlign: 'center' }}>{reward.name} t'attend à la caisse.</p>
+                {/* [test-e2e fix D-009 round-2 2026-05-11] distinct heading on replay */}
+                <h2 className="lc-display" style={{ margin: 0, fontSize: 30, lineHeight: 0.92, color: 'var(--ink)', textAlign: 'center' }}>
+                  {result.replayed ? 'Déjà échangée' : 'Échangé !'}
+                </h2>
+                <p style={{ margin: '8px 0 18px', color: 'var(--gray-4)', fontSize: 13, textAlign: 'center' }}>
+                  {result.replayed
+                    ? 'Cette récompense est déjà active — aucun point supplémentaire n\'a été débité.'
+                    : reward.name + ' t\'attend à la caisse.'}
+                </p>
+
+                {result.replayed && (
+                  <div role="status" data-testid="redeem-replay-banner" style={{ background: 'var(--yellow-soft, #FFF4D6)', color: 'var(--ink)', borderRadius: 12, padding: 12, marginBottom: 14, fontSize: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span aria-hidden="true">ℹ︎</span>
+                    <span>Tu as déjà confirmé l'échange. Présente le code ci-dessous à la caisse.</span>
+                  </div>
+                )}
 
                 <div style={{ background: 'var(--ink)', color: '#fff', borderRadius: 16, padding: 18, textAlign: 'center', marginBottom: 14 }}>
                   <div className="lc-eyebrow" style={{ color: 'var(--yellow)' }}>Code à présenter</div>
                   <div data-testid="redeem-success-code" style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700, letterSpacing: '0.12em', marginTop: 6 }}>{result.code}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>Nouveau solde : {result.balance_after} pts</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>Solde : {result.balance_after} pts</div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 10 }}>

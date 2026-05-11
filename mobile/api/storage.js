@@ -41,6 +41,7 @@
     remove('loyalty_consent');
     remove('loyalty_idempotency');
     remove('loyalty_pending_redemption');
+    remove('redeemed_keys'); // [test-e2e fix D-001 round-2 2026-05-11] redeem idempotency cache
     remove('wallet_apple_dismissed_at');
     remove('wallet_google_dismissed_at');
     // QR preference can persist (UI preference, not user-bound).

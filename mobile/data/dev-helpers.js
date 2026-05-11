@@ -87,11 +87,39 @@
   }
 
   // ───────────────────────────────────────────────────────────────────────
-  // redeemReward(rewardId) — atomic balance check + debit
+  // redeemReward(rewardId, opts) — atomic balance check + debit with idempotency
   //
-  // Returns Promise<{ok: bool, error?: string, balance_after?: number}>.
+  // opts.idempotency_key (optional) — if supplied, the response is cached and
+  // replays within the 10-min TTL window return the SAME response with
+  // `replayed: true`. This prevents the double-debit bug (D-001 in
+  // test-e2e/mobile round-1) where two consecutive clicks on the same reward
+  // would each debit the balance.
+  //
+  // [test-e2e fix D-001 round-2 2026-05-11] idempotency check
+  //
+  // Returns Promise<{ok: bool, error?: string, balance_after?: number, replayed?: bool}>.
   // Promise shape for test scenario 9 (race condition Promise.allSettled).
   // ───────────────────────────────────────────────────────────────────────
+  const REDEEM_KEYS_STORE = 'redeemed_keys';
+  const REDEEM_KEY_TTL_MS = 10 * 60 * 1000; // 10-min window matches loyaltyRewardState
+
+  function _redeemPruneAndRead() {
+    const LC = window.LC;
+    if (!LC || !LC.storage) return {};
+    const raw = LC.storage.get(REDEEM_KEYS_STORE, {}) || {};
+    const now = Date.now();
+    let dirty = false;
+    Object.keys(raw).forEach(k => {
+      const entry = raw[k];
+      if (!entry || typeof entry.ts !== 'number' || (now - entry.ts) > REDEEM_KEY_TTL_MS) {
+        delete raw[k];
+        dirty = true;
+      }
+    });
+    if (dirty) LC.storage.set(REDEEM_KEYS_STORE, raw);
+    return raw;
+  }
+
   function redeemReward(rewardId, opts) {
     opts = opts || {};
     return new Promise((resolve) => {
@@ -105,6 +133,18 @@
         resolve({ ok: false, error: 'REWARD_NOT_FOUND' });
         return;
       }
+
+      // [test-e2e fix D-001 round-2 2026-05-11] idempotency check — replay returns cached response
+      const idempotencyKey = opts.idempotency_key;
+      if (idempotencyKey && LC.storage && LC.storage.get) {
+        const seen = _redeemPruneAndRead();
+        if (seen[idempotencyKey]) {
+          const cached = seen[idempotencyKey].response;
+          resolve(Object.assign({}, cached, { replayed: true }));
+          return;
+        }
+      }
+
       const account = LC.loyalty.account;
       if (account.balance < reward.points_cost) {
         resolve({ ok: false, error: 'INSUFFICIENT_POINTS', missing: reward.points_cost - account.balance });
@@ -130,8 +170,17 @@
         lifetime_redeemed: account.lifetime_redeemed + reward.points_cost,
       });
 
+      const response = { ok: true, balance_after: newBalance, reward_id: rewardId };
+
+      // [test-e2e fix D-001 round-2 2026-05-11] persist response under idempotency key
+      if (idempotencyKey && LC.storage && LC.storage.set) {
+        const seen = _redeemPruneAndRead();
+        seen[idempotencyKey] = { ts: Date.now(), response };
+        LC.storage.set(REDEEM_KEYS_STORE, seen);
+      }
+
       _emit('lc:loyalty-changed', { type: 'redeem', amount: -reward.points_cost, reward_id: rewardId });
-      resolve({ ok: true, balance_after: newBalance, reward_id: rewardId });
+      resolve(response);
     });
   }
 
@@ -247,6 +296,7 @@
     LC.storage.remove('loyalty_consent');
     LC.storage.remove('loyalty_pending_redemption');
     LC.storage.remove('qr_preference');
+    LC.storage.remove('redeemed_keys'); // [test-e2e fix D-001 round-2 2026-05-11]
     LC.storage.idempotency.reset();
     LC.storage.remove('wallet_apple_dismissed_at');
     LC.storage.remove('wallet_google_dismissed_at');
