@@ -595,6 +595,7 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
   const cruditeIds = selections.cruditeIds || lcMenu.defaultCruditeIds();
   const cruditeAll = lcMenu.crudites.map(c => c.id);
   const cruditeRemoved = cruditeAll.filter(id => !cruditeIds.includes(id)).map(id => (lcMenu.crudites.find(c => c.id === id) || {}).name).filter(Boolean);
+  const cruditeKept = lcMenu.crudites.filter(c => cruditeIds.includes(c.id)).map(c => c.name);
   const supLabels = (selections.supplementIds || []).map(id => (lcMenu.supplements.find(s => s.id === id) || {}).name).filter(Boolean);
   const drinkLabel = selections.drinkId ? (lcMenu.formuleDrinks.find(d => d.id === selections.drinkId) || {}).name : null;
   const styleLabel = selections.fritesStyleId !== undefined
@@ -602,14 +603,25 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
     : null;
   const fritesSauceLabels = (selections.fritesSauceIds || []).map(id => (lcMenu.sauces.find(s => s.id === id) || {}).name).filter(Boolean);
   const menuLabel = (() => {
-    if (!selections.menuChoice || selections.menuChoice === 'none') return null;
     if (selections.menuChoice === 'full') return 'Menu (Frites + Boisson) +3€';
     if (selections.menuChoice === 'frites') return 'Ajouter Frites +2€';
     if (selections.menuChoice === 'boisson') return 'Ajouter Boisson +2€';
+    // [test-e2e fix B-002/B-003 round-2 2026-05-11] surface "Sans formule" explicitly so
+    // the user can confirm the no-formule choice on the recap.
+    if (selections.menuChoice === 'none') return 'Sans formule';
     return null;
   })();
   const qty = selections.qty || 1;
   const setQty = (q) => setSelections(s => ({ ...s, qty: Math.max(1, q) }));
+
+  // [test-e2e fix B-002/B-003 round-2 2026-05-11] derive active steps from the template
+  // state machine so the recap surfaces a row for EVERY step the user traversed, with a
+  // sentinel value ("Toutes", "Aucun", "Sans formule") when the selection equals the
+  // default. Previous render dropped rows whose value was empty/default, which made
+  // Le Terminator and Cheese Burger recaps omit CRUDITÉS / SUPPLÉMENTS / FORMULE rows
+  // even though the user had explicitly walked those steps.
+  const activeSteps = computeActiveSteps(item, selections);
+  const has = (k) => activeSteps.includes(k);
 
   const Row = ({ label, value }) => value ? (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--gray-1)' }}>
@@ -628,14 +640,18 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
             <div style={{ fontSize: 11, color: 'var(--gray-4)' }}>Récapitulatif de ta commande</div>
           </div>
         </div>
-        <Row label="Viandes" value={meatLabels.join(' · ')}/>
-        <Row label="Sauce" value={sauceLabels.join(' / ')}/>
-        <Row label="Crudités retirées" value={cruditeRemoved.length > 0 ? cruditeRemoved.join(' / ') : null}/>
-        <Row label="Suppléments" value={supLabels.length ? supLabels.join(' + ') : null}/>
-        <Row label="Formule" value={menuLabel}/>
-        <Row label="Boisson" value={drinkLabel}/>
-        <Row label="Style frites" value={styleLabel}/>
-        <Row label="Sauce frites" value={fritesSauceLabels.join(' / ')}/>
+        {has(STEP.VIANDES) && <Row label="Viandes" value={meatLabels.length ? meatLabels.join(' · ') : '—'}/>}
+        {has(STEP.SAUCE) && <Row label="Sauce" value={sauceLabels.length ? sauceLabels.join(' / ') : '—'}/>}
+        {has(STEP.CRUDITES) && (
+          cruditeRemoved.length > 0
+            ? <Row label="Crudités retirées" value={cruditeRemoved.join(' / ')}/>
+            : <Row label="Crudités" value={cruditeKept.length ? 'Toutes (' + cruditeKept.join(' · ') + ')' : 'Toutes'}/>
+        )}
+        {has(STEP.SUPPLEMENTS) && <Row label="Suppléments" value={supLabels.length ? supLabels.join(' + ') : 'Aucun'}/>}
+        {has(STEP.MENU) && <Row label="Formule" value={menuLabel || 'Sans formule'}/>}
+        {has(STEP.DRINK) && <Row label="Boisson" value={drinkLabel || '—'}/>}
+        {has(STEP.FRITES_STYLE) && <Row label="Style frites" value={styleLabel || '—'}/>}
+        {has(STEP.FRITES_SAUCE) && <Row label="Sauce frites" value={fritesSauceLabels.length ? fritesSauceLabels.join(' / ') : '—'}/>}
       </div>
 
       <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'var(--ink)', borderRadius: 16 }}>
