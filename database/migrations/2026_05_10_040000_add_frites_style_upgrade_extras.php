@@ -39,8 +39,20 @@ return new class extends Migration {
         //  - Wrap in transaction + use insertOrIgnore for idempotence under
         //    parallel deployment (no double-insert race condition).
         DB::transaction(function () use ($now) {
+            // V3.6.2 (2026-05-11) WAVE6 SYNC fix:
+            //   Guard against missing parent items. On a fresh install (or sqlite
+            //   test seed lacking these specific items) the unguarded
+            //   insertOrIgnore previously raised SQLSTATE[23000] FK violation,
+            //   poisoning ~245 sentinels/fiscal tests upstream. Item-existence
+            //   pre-check restores idempotence on partial seeds while keeping
+            //   prod behaviour unchanged when all 4 items are present.
+            $existingIds = DB::table('items')
+                ->whereIn('id', self::TARGET_ITEM_IDS)
+                ->pluck('id')
+                ->all();
+
             $rows = [];
-            foreach (self::TARGET_ITEM_IDS as $itemId) {
+            foreach ($existingIds as $itemId) {
                 foreach (self::UPGRADES as $upgrade) {
                     $exists = DB::table('item_extras')
                         ->where('item_id', $itemId)

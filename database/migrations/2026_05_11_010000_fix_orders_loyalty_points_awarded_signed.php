@@ -33,6 +33,13 @@ return new class extends Migration {
         // MySQL ALTER COLUMN with explicit nullability + default preservation.
         // Schema::table() can't drop the UNSIGNED modifier in one shot via
         // Doctrine; raw DDL is cleaner.
+        //
+        // [WAVE6-KIOSK-A] SQLite test guard : sqlite has no UNSIGNED concept and
+        // does not support `MODIFY`. Skip the no-op DDL on sqlite so test
+        // suites can boot. Production (MySQL) path unchanged.
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return;
+        }
         DB::statement(
             'ALTER TABLE `orders` MODIFY `loyalty_points_awarded` INT NULL DEFAULT NULL'
         );
@@ -46,6 +53,10 @@ return new class extends Migration {
             ->where('loyalty_points_awarded', '<', 0)
             ->update(['loyalty_points_awarded' => null]);
 
+        // [WAVE6-KIOSK-A] SQLite guard symmetric to up().
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return;
+        }
         DB::statement(
             'ALTER TABLE `orders` MODIFY `loyalty_points_awarded` INT UNSIGNED NULL DEFAULT NULL'
         );

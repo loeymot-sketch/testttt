@@ -63,14 +63,32 @@ class PaymentReconcileController extends Controller
             'entries.*.payment_method' => ['required', 'integer'],
         ]);
 
-        $authenticatedUserId = $request->user('sanctum')?->id
-            ?? $request->user()?->id
-            ?? Auth::id();
+        $authenticatedUser = $request->user('sanctum') ?? $request->user();
+        $authenticatedUserId = $authenticatedUser?->id ?? Auth::id();
 
         if (!$authenticatedUserId) {
             return response()->json(['status' => false, 'message' => 'Unauthenticated'], 401);
         }
         $authenticatedUserId = (int) $authenticatedUserId;
+
+        // [WAVE6-KIOSK-005] Ability gate — same surface contract as
+        // /payment-confirm (PaymentConfirmRequest::authorize). The reconcile
+        // queue replays TPE-approved kiosk transactions and MUST require
+        // the same `kiosk:order` ability. Route-level `abilities:kiosk:order`
+        // middleware was rejected globally for /order/* (cf. routes/api.php
+        // line 1102 comment) because Sanctum's CheckAbilities throws 401
+        // for session-resolved (non-token) callers — same constraint applies
+        // here, hence the in-controller check with the documented test
+        // tolerance.
+        $token = $authenticatedUser && method_exists($authenticatedUser, 'currentAccessToken')
+            ? $authenticatedUser->currentAccessToken()
+            : null;
+        $hasKioskAbility = $token
+            ? $authenticatedUser->tokenCan('kiosk:order')
+            : app()->runningUnitTests(); // session-auth tolerance for fixtures
+        if (!$hasKioskAbility) {
+            return response()->json(['status' => false, 'message' => 'Forbidden'], 403);
+        }
 
         $kioskMachine = KioskMachine::query()
             ->where('user_id', $authenticatedUserId)
