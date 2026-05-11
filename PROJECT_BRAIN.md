@@ -47,8 +47,8 @@ Plateforme restaurant fast-food complète :
 ## §2 CURRENT STATE — Auto-managed
 
 - **Branche** : `feature/mobile-app-le-cayenne-2026-05-10`
-- **HEAD** : `552ce2ead` (mobile design-perfect cycle B GREEN converged + FINAL_REPORT)
-- **Last update** : 2026-05-11 (audit mobile design perfection cycle B — 4 rounds, 5 commits, 2 P0 + 7 P1 closed, axe critical=0 serious=0, 0 frozen-zone)
+- **HEAD** : `245e8ab57` (mobile cluster-7 round-2 adversarial fixes — allergens honest + promo real + kiosk live)
+- **Last update** : 2026-05-11 (cluster-7 owner re-cadrage : 6 drifts D1-D6 mobile + LOCK plan kiosk salade simplifié + adversarial RED→GREEN 3 fixes : P0 allergens fabrication purgée + P1 promo discount wired -10% + P1 kiosk build rebuilt)
 - **Branche release antérieure** : `cycle/PHASE2-TRAIN-A-V1-RELEASE-PREP-2026-04-27`
   (HEAD `9d9dddae1`, NO-GO V1 par audit POS adversarial 2026-05-09 — état préservé)
 - **Domaines production-ready** : ~7-8 / 16 (revu après ultra audit POS 2026-05-09 ;
@@ -67,6 +67,71 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**Mobile cluster-7 owner re-cadrage 2026-05-11** (HEAD `245e8ab57`,
+branche `feature/mobile-app-le-cayenne-2026-05-10`) :
+- **Mission** : owner carte blanche post-Phase 6.A. Tout faire bien penser →
+  orchestrer → planifier → exécuter → vérifier → adversarial → E2E massive →
+  livrer perfection. Aucune validation step-by-step.
+- **Cycle 2 rounds** : R1 fixes D1-D6 + Sprint B kiosk LOCK ; R2 adversarial
+  Red-Team catch 3 issues (P0 + 2 P1) puis fix.
+- **Catalogue raisonné** publié `reports/planning/CATALOGUE_RAISONNE_MOBILE_2026-05-11.md`
+  (572 lignes) — raisonnement humain par catégorie + per-produit, pas copy-kiosk
+  aveugle. 13 cats × 47 produits SSOT + 5 bêtises kiosk identifiées.
+- **Sprint A round-1 (6 drifts D1-D6 mobile)** commit `b349d5aa1` :
+  - D1 Le Suprême viandes 0→2 (mobile/data/menu.js + config/menu.php). Owner :
+    "2 viandes au choix (steak + cordon bleu par exemple)". Config commentaire
+    contradictoire retiré.
+  - D2 Salade menu addon — salade template ajoute STEP.MENU optionnel + cascade.
+    4 SALADES has_menu_addon false→true, CAT 7 has_menu false→true. Wizard
+    salade 3→4 steps (sauce + suppléments + menu + recap).
+  - D3 Quick-add bypass — bouton "+" sur menu cards ouvre wizard pour items
+    configurables (viandes/sauce/sup/menu/frites_style), garde quick-add
+    direct pour desserts/boissons.
+  - D4 AllergenBadge component (EU FIC 1169/2011) — wiré menu cards (sm chip),
+    wizard recap (lg), item detail (lg). ALLERGEN_META 14 allergènes majeurs.
+  - D5 Special instructions textarea Recap step — 190 char max counter live,
+    instruction propagée à cart line composition_summary (📝 prefix).
+  - D6 Promo code input ScreenCart — PromoCodeRow component mock V0
+    (WELCOME10/CAYENNE valides), 3 états avec aria-live alerts.
+- **Sprint B (kiosk frozen-zone owner-gate cleared)** :
+  - `plans/LOCK_KIOSK_SALADE_2026-05-11.md` — scope + justification + rollback
+    + acceptance criteria + sub-agent rules.
+  - `resources/js/components/frontend/kiosk/KioskWizardComponent.vue:619-633`
+    salade template 6 steps → 5 steps (filter par shouldShowStep → ≤4 visibles).
+    Step "garnitures" retiré (bêtise V3.7 pour salade composée par nom).
+- **Adversarial Red-Team verdict RED** (cluster-7 R1) :
+  1. P0 — `mkItem` default `['gluten','lactose']` hardcodé → 60/60 items
+     fabriquaient allergens (Eau Plate avec gluten+lactose !). Violation EU
+     FIC inverse (fausse disclosure pire que pas de disclosure).
+  2. P1 — promo banner cosmetic-only (UI seul, total restait full price).
+  3. P1 — kiosk bundle stale (KioskWizardComponent.vue modifié 09:42 mais
+     kiosk-shell.js bundle dernière build 06:06 → fix salade non live :8000).
+- **Sprint A round-2 adversarial fix** commit `245e8ab57` :
+  - P0 — `defaultAllergensFor(cat, opts)` helper smart-default par cat +
+    per-item override opts.allergens. Boissons/Frites → []. Per-item explicit
+    pour 14 items (salades/desserts/omelettes/suppléments/sandwich froid/fish
+    burger/menus enfants).
+  - P1 — PromoCodeRow accepte prop `onApply` callback. ScreenCart owns
+    promoCode state + computed discount = subtotal × 0.10. UI : strike-through
+    subtotal + green "Économie X,XX €" aria-live + new total reduced.
+    Verified visuellement : 1,50 € → 1,35 € (-0,15 € WELCOME10).
+  - P1 — `npm run production` 24.29s build → kiosk-shell.js 243 KiB rebuilt,
+    salade fix maintenant live sur :8000.
+- **E2E** : 4 waves Playwright 4/4 PASS × 2 rounds (1m30 wall-clock).
+  Visual sweep PNG : Boissons 0/8 chip ✓ ; Desserts allergens honnêtes
+  (Glace=lactose seul, Tiramisu=gluten+lactose+œuf) ; salade ÉTAPE 3/4
+  "Faire un menu" ✓ ; cart promo 1,35 € + Économie 0,15 € ✓ ; quick-add
+  arrow vs plus icon différenciation ✓ ; Tacos XXL recap allergens lg
+  chip + instructions textarea 0/190 ✓.
+- **Branch drift recovery** : commit `2db46b1a3` initialement landed sur
+  `feature/kds-redesign-2026-05-11` (background agent avait switched branch).
+  Cherry-pick onto mobile branch (`245e8ab57`) + git revert sur kds-redesign
+  (`70030471e`) pour laisser les 2 branches propres.
+- **Frozen-zones autres** : 0 diff (KioskApp / KioskUpsell / pos-wizard.js /
+  FiscalSequence / BranchScope / PricingService / OrderState).
+- **Verdict final** : 🟢 GO V0 unconditional. 0 P0 + 0 P1 résiduel. 6 drifts
+  mobile + 1 P0 + 2 P1 adversarial + 1 LOCK plan honoré, tous closed.
 
 **Mobile design-perfect cycle B 2026-05-11** (HEAD `552ce2ead`,
 branche `feature/mobile-app-le-cayenne-2026-05-10`) :
