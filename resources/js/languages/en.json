@@ -1455,6 +1455,14 @@
             "menu_refreshed_recheck_selection": "Please check your choices.",
             "review_cart": "Review my cart"
         },
+        "cart": {
+            "bottom_sheet": {
+                "qty_named": "Quantity of {item}",
+                "add_one_named": "Add one {item}",
+                "remove_one_named": "Remove one {item}",
+                "delete_line_named": "Remove {item} from cart"
+            }
+        },
         "filters": {
             "halal": "Halal",
             "vegetarian": "Vegetarian",

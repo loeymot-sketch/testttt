@@ -48,11 +48,11 @@
             <div class="kiosk-cart-strip-price">{{ formatPrice(item.total) }}</div>
           </div>
 
-          <div class="kiosk-cart-strip-qty" role="group" :aria-label="qtyLabel">
+          <div class="kiosk-cart-strip-qty" role="group" :aria-label="qtyLabelFor(item)">
             <button
               type="button"
               class="kiosk-cart-strip-btn kiosk-cart-strip-btn--minus"
-              :aria-label="item.quantity > 1 ? decrementLabel : removeLabel"
+              :aria-label="item.quantity > 1 ? decrementLabelFor(item) : removeLabelFor(item)"
               :data-testid="`kiosk-cart-bottom-sheet-decrement-${idx}`"
               @click="$emit('decrement', idx)"
             >
@@ -70,7 +70,7 @@
             <button
               type="button"
               class="kiosk-cart-strip-btn kiosk-cart-strip-btn--plus"
-              :aria-label="incrementLabel"
+              :aria-label="incrementLabelFor(item)"
               :data-testid="`kiosk-cart-bottom-sheet-increment-${idx}`"
               @click="$emit('increment', idx)"
             >
@@ -168,6 +168,67 @@ export default {
         truncate(str, max) {
             if (!str || typeof str !== 'string') return '';
             return str.length > max ? str.slice(0, Math.max(0, max - 1)) + '…' : str;
+        },
+        // [Round 2 D-001 P1 a11y 2026-05-11] Per-item aria-label helpers — must
+        // include item.name so screen-reader users can distinguish multiple cart
+        // lines (Round 1 saw 7 truncated "Ajouter un" labels on a 7-line cart).
+        // Resolution order : explicit override via `labels` prop > i18n key with
+        // {item} placeholder > inline FR fallback ("Ajouter un Coca-Cola 33cl").
+        // Defensive : works in unit tests where $t is unavailable.
+        itemNameFor(item) {
+            return (item && item.name) ? item.name : '';
+        },
+        translateOrFallback(key, params, fallback) {
+            if (typeof this.$t === 'function') {
+                const out = this.$t(key, params);
+                // vue-i18n returns the key itself when missing — fall back when so.
+                if (out && out !== key) return out;
+            }
+            return fallback;
+        },
+        qtyLabelFor(item) {
+            const name = this.itemNameFor(item);
+            const fallback = name
+                ? `Quantité de ${name}`
+                : 'Quantité';
+            return this.translateOrFallback(
+                'kiosk.cart.bottom_sheet.qty_named',
+                { item: name },
+                this.labels.qty || fallback,
+            );
+        },
+        incrementLabelFor(item) {
+            const name = this.itemNameFor(item);
+            const fallback = name
+                ? `Ajouter un ${name}`
+                : 'Ajouter un';
+            return this.translateOrFallback(
+                'kiosk.cart.bottom_sheet.add_one_named',
+                { item: name },
+                this.labels.increment || fallback,
+            );
+        },
+        decrementLabelFor(item) {
+            const name = this.itemNameFor(item);
+            const fallback = name
+                ? `Retirer un ${name}`
+                : 'Retirer un';
+            return this.translateOrFallback(
+                'kiosk.cart.bottom_sheet.remove_one_named',
+                { item: name },
+                this.labels.decrement || fallback,
+            );
+        },
+        removeLabelFor(item) {
+            const name = this.itemNameFor(item);
+            const fallback = name
+                ? `Supprimer ${name} du panier`
+                : 'Supprimer du panier';
+            return this.translateOrFallback(
+                'kiosk.cart.bottom_sheet.delete_line_named',
+                { item: name },
+                this.labels.remove || fallback,
+            );
         },
     },
 };

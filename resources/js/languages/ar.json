@@ -1289,6 +1289,14 @@
             "menu_refreshed_recheck_selection": "يرجى التحقق من اختياراتك.",
             "review_cart": "مراجعة سلتي"
         },
+        "cart": {
+            "bottom_sheet": {
+                "qty_named": "كمية {item}",
+                "add_one_named": "إضافة {item}",
+                "remove_one_named": "إزالة واحد من {item}",
+                "delete_line_named": "حذف {item} من السلة"
+            }
+        },
         "filters": {
             "halal": "حلال",
             "vegetarian": "نباتي",
