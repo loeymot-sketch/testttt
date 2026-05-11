@@ -176,37 +176,41 @@ function computeTotal(item, selections) {
 }
 
 // ============================================================================
-// Common shell — header + dots + sticky CTA
+// Common shell — header + dots + sticky CTA (Claude Design rdw-* refactor cycle C 2026-05-11)
+// Preserves all a11y (aria-live, role, tabIndex, aria-disabled, focus mgmt) +
+// FSM (back/onClose handlers + stepIndex/stepTotal/title/headingRef).
 // ============================================================================
-function WizardHeader({ stepIndex, stepTotal, title, onBack, onClose, headingRef }) {
+function WizardHeader({ stepIndex, stepTotal, title, onBack, onClose, headingRef, scrolled = false }) {
   return (
-    <div style={{ position: 'sticky', top: 0, zIndex: 5, background: 'var(--paper)', borderBottom: '1px solid var(--gray-1)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'calc(var(--ios-safe-top) - 28px) 16px 12px' }}>
+    <div className={'rdw-header' + (scrolled ? ' is-scrolled' : '')} style={{ position: 'sticky', top: 0, zIndex: 5, paddingTop: 'calc(var(--ios-safe-top) - 28px)' }}>
+      <div className="rdw-header-row">
         <button
+          className="rdw-back"
           onClick={onBack}
           aria-label={stepIndex === 0 ? 'Fermer le wizard' : 'Étape précédente'}
-          style={{ width: 40, height: 40, borderRadius: 999, border: 0, background: 'var(--gray-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
         >
           <I.Back size={20}/>
         </button>
-        <div style={{ flex: 1, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span role="status" aria-live="polite" style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            Étape {stepIndex + 1} / {stepTotal}
-          </span>
-          <h1 ref={headingRef} tabIndex={-1} className="lc-display" style={{ margin: 0, fontSize: 18, lineHeight: 1, outline: 'none' }}>
-            {title}
-          </h1>
-        </div>
+        <span className="rdw-stepcount" role="status" aria-live="polite">
+          <b>{stepIndex + 1}</b> / {stepTotal}
+        </span>
         <button
+          className="rdw-back"
           onClick={onClose}
           aria-label="Fermer"
-          style={{ width: 40, height: 40, borderRadius: 999, border: 0, background: 'var(--gray-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
         >
           <I.Close size={18}/>
         </button>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 10 }} aria-hidden="true">
-        <Dots count={stepTotal} active={stepIndex} color="var(--orange)"/>
+      <div className="rdw-title">
+        <h1 ref={headingRef} tabIndex={-1} style={{ margin: 0, outline: 'none' }}>
+          {title}
+        </h1>
+      </div>
+      <div className="rdw-progress" role="progressbar" aria-valuenow={stepIndex + 1} aria-valuemin={1} aria-valuemax={stepTotal} aria-valuetext={`Étape ${stepIndex + 1} sur ${stepTotal}`}>
+        {Array.from({ length: stepTotal }, (_, i) => (
+          <span key={i} className={i < stepIndex ? 'done' : i === stepIndex ? 'current' : ''}/>
+        ))}
       </div>
     </div>
   );
@@ -214,28 +218,27 @@ function WizardHeader({ stepIndex, stepTotal, title, onBack, onClose, headingRef
 
 function WizardCTA({ label, total, disabled, hint, onClick }) {
   return (
-    <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '12px 16px 24px', background: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, var(--paper) 30%)', zIndex: 9 }}>
+    <div className="rdw-cta-wrap">
       {hint && (
-        <div id="wizard-cta-hint" role="status" aria-live="polite" style={{ textAlign: 'center', fontSize: 11, color: 'var(--gray-4)', fontWeight: 600, marginBottom: 8 }}>
+        <div id="wizard-cta-hint" role="status" aria-live="polite" style={{ textAlign: 'center', fontSize: 'var(--fs-caption)', color: 'var(--gray-4)', fontWeight: 600, marginBottom: 8 }}>
           {hint}
         </div>
       )}
       <button
+        className="rdw-cta"
         onClick={disabled ? undefined : onClick}
         aria-disabled={disabled ? 'true' : 'false'}
         aria-describedby={disabled && hint ? 'wizard-cta-hint' : undefined}
-        className="lc-btn"
+        disabled={disabled}
         style={{
           background: disabled ? 'var(--gray-2)' : 'var(--ink)',
           color: disabled ? 'var(--gray-4)' : '#fff',
-          width: '100%', height: 60,
-          justifyContent: 'space-between', padding: '0 24px',
           cursor: disabled ? 'not-allowed' : 'pointer',
         }}
       >
-        <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>{label}</span>
+        <span className="rdw-cta-label">{label}</span>
         {total !== undefined && (
-          <span style={{ color: disabled ? 'var(--gray-4)' : 'var(--yellow)', fontFamily: 'var(--font-mono)' }}>
+          <span className="rdw-cta-chip" style={{ background: disabled ? 'transparent' : 'rgba(255,255,255,0.14)' }}>
             {total.toFixed(2).replace('.', ',')} €
           </span>
         )}
@@ -246,6 +249,7 @@ function WizardCTA({ label, total, disabled, hint, onClick }) {
 
 // ============================================================================
 // Reusable interactive primitives — A11y-correct (role + tabindex + keydown)
+// Claude Design rdw-choice classes (cycle C 2026-05-11) — preserve aria + role.
 // ============================================================================
 function ChoiceCard({ on, onPick, ariaRole = 'radio', children, accent = 'orange', disabled = false }) {
   const handleKey = (e) => {
@@ -255,8 +259,10 @@ function ChoiceCard({ on, onPick, ariaRole = 'radio', children, accent = 'orange
       onPick();
     }
   };
-  const borderOn = accent === 'green' ? 'var(--green)' : 'var(--orange)';
-  const bgOn = accent === 'green' ? '#E8F8ED' : 'var(--orange-soft)';
+  // Note: accent='green' for crudites step (Type 3 visual contract). The
+  // rdw-choice.is-on uses --orange shadow by default ; accent override only
+  // applies via inline overrides below (preserve cycle B contract).
+  const isGreen = accent === 'green';
   return (
     <div
       role={ariaRole}
@@ -265,18 +271,13 @@ function ChoiceCard({ on, onPick, ariaRole = 'radio', children, accent = 'orange
       tabIndex={disabled ? -1 : 0}
       onClick={disabled ? undefined : onPick}
       onKeyDown={handleKey}
+      className={'rdw-choice' + (on ? ' is-on' : '')}
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '14px 14px',
-        borderRadius: 14,
-        border: on ? `2px solid ${borderOn}` : '1.5px solid var(--gray-2)',
-        background: on ? bgOn : 'var(--cream)',
-        cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.4 : 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
         outline: 'none',
-        transition: 'all 0.12s',
+        // Override is-on shadow for green accent (crudites)
+        ...(on && isGreen ? { boxShadow: '0 0 0 2px var(--green), 0 8px 20px -8px rgba(31,166,83,0.35)', background: '#FFFEFB' } : {}),
       }}
     >
       {children}
@@ -897,7 +898,10 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
           onClose={() => go('back')}
           headingRef={headingRef}
         />
-        {body}
+        {/* rdw-step keyed wrapper triggers slide-x entry animation on step change */}
+        <div key={currentKey} className="rdw-step">
+          {body}
+        </div>
       </div>
       <WizardCTA
         label={isRecap ? `Ajouter au panier · ${selections.qty || 1}` : 'Suivant'}
