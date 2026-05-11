@@ -1,5 +1,26 @@
 <template>
   <!--
+    [kds/sprint-2 V-5] Feature-flagged V2 layout. When useV2Layout is true
+    (URL ?v2=1, localStorage 'kds.v2_enabled', or future settings flag), the
+    new single-FIFO 4×2 grid renders. Otherwise the legacy 4-column layout
+    (Dine-in / Online / Takeaway / Kiosk) stays — instant rollback by URL
+    param removal.
+  -->
+  <KdsV2Grid
+    v-if="useV2Layout"
+    :orders="orders"
+    :dir="direction"
+    :offline-since="v2OfflineSince"
+    :list-at-cap="kdsOrderListAtCap"
+    :fallback-mode="!wsConnected && !kdsHideFallbackBannerInLocalDev"
+    :admin-polling-hint="kdsIsCentralAdmin"
+    :bump-local-only-notice="!kdsHideBumpInfo"
+    :auto-transition-enabled="v2AutoTransitionEnabled"
+    @change-status="onV2ChangeStatus"
+    @auto-promote="onV2AutoPromote"
+  />
+  <template v-else>
+  <!--
     [iter15-mega-fix B-003/D-002 2026-05-10] Banner consolidation: suppress the
     global transient "Reconnexion en cours…" banner here because the local
     kds-sync-mode-banner already conveys fallback polling state to staff.
@@ -898,6 +919,7 @@
       </div>
     </div>
   </div>
+  </template>
 </template>
 <script>
 import LoadingComponent from "../components/LoadingComponent.vue";
@@ -923,6 +945,9 @@ import {
 } from "../../../helpers/kdsDisplay";
 import { kdsInstructionVisualClass } from "../../../helpers/kdsLineSemantics";
 import { orderHasAllergens as kdsOrderHasAllergens, sortedAllergens as kdsSortedAllergens } from "../../../helpers/kdsAllergens";
+import { ORDER_STATUS } from "../../../helpers/kdsState";
+// [kds/sprint-2 V-5] V2 layout components — feature-flagged single FIFO 4×2 grid.
+import KdsV2Grid from "./KdsV2Grid.vue";
 
 // [Phase-7 / T13–T14] Fil cuisine : stations, filtre, bump / statut, timers
 // d’attente (kdsDisplay), son — ne pas mélanger avec de la logique de caisse
@@ -934,7 +959,8 @@ export default {
     ConnectionStatusBanner,
     LoadingComponent,
     Swiper,
-    SwiperSlide
+    SwiperSlide,
+    KdsV2Grid,
   },
   data() {
     return {
@@ -1018,11 +1044,39 @@ export default {
         message: '',
         lastRetryAt: null,
       },
+      // [kds/sprint-2 V-5] Feature-flag scaffolding for the V2 single-FIFO grid.
+      // Owner GO confirmed 2026-05-11. Activation:
+      //   - URL `?v2=1` (per-session preview)
+      //   - localStorage `kds.v2_enabled` = '1' (per-device opt-in)
+      // Auto-transition is on by default per RESEARCH §4.3 (V1 single-chef).
+      v2OfflineSince: null,
+      v2AutoTransitionEnabled: true,
     };
   },
   computed: {
     direction() {
       return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
+    },
+    // [kds/sprint-2 V-5] Feature flag for the new V2 layout. Order of precedence:
+    //   1. URL param ?v2=1 (preview without touching localStorage)
+    //   2. localStorage 'kds.v2_enabled' === '1' (per-device opt-in)
+    //   3. Default false → legacy 4-column layout stays
+    useV2Layout() {
+      try {
+        if (typeof window === 'undefined') {
+          return false;
+        }
+        const params = new URLSearchParams(window.location.search || '');
+        if (params.get('v2') === '1') {
+          return true;
+        }
+        if (params.get('v2') === '0') {
+          return false;
+        }
+        return window.localStorage?.getItem('kds.v2_enabled') === '1';
+      } catch (_e) {
+        return false;
+      }
     },
     // [iter15-mega-fix C-008 run-3 2026-05-10] Supersedes the run-1/run-2
     // decision to keep the KDS fallback banner in dev. Wave B/C run-3 evidence
@@ -1237,6 +1291,46 @@ export default {
     this._kdsSyncStampTimer = setInterval(() => { this.syncNowTick = Date.now(); }, 1000);
   },
   methods: {
+    // [kds/sprint-2 V-5] V2 grid event handlers — both delegate to the same
+    // store action `kitchenDisplaySystemOrder/changeStatus` used by the
+    // legacy 4-column layout. KDSOrderStateMachine on the server stays the
+    // single source of truth (apply() lockForUpdate + idempotent early-return).
+    onV2ChangeStatus(event) {
+      // event: { orderId, status }
+      const order = (this.orders || []).find((o) => o.id === event.orderId);
+      if (!order) {
+        return;
+      }
+      const payload = kdsStatusPayload(order, event.status);
+      this.$store.dispatch('kitchenDisplaySystemOrder/changeStatus', { ...payload })
+        .then(() => {
+          this.kdsAnnounceTransition(order, event.status);
+          this._debouncedRefresh();
+          window.dispatchEvent(new CustomEvent('realtime-order-update', {
+            detail: { type: 'status-change', order_id: payload.id, status: event.status }
+          }));
+        })
+        .catch((err) => {
+          // Conflict (409) → silent refresh; other errors surface to existing
+          // error-banner flow.
+          if (err?.response?.status === 409) {
+            this._debouncedRefresh();
+            return;
+          }
+          if (this.kdsErrorBanner) {
+            this.kdsErrorBanner.visible = true;
+            this.kdsErrorBanner.message = this.$t('label.kds_status_conflict');
+          }
+        });
+    },
+    onV2AutoPromote(orderId) {
+      // Auto-transition ACCEPT → PREPARING — same path as a manual chef bump.
+      const order = (this.orders || []).find((o) => o.id === orderId);
+      if (!order) {
+        return;
+      }
+      this.onV2ChangeStatus({ orderId, status: ORDER_STATUS.PREPARING });
+    },
     authBranchId() {
       const candidates = [
         this.$store.getters['auth/authBranchId'],
