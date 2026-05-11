@@ -91,7 +91,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
           </div>
           <div style={{ padding: '0 20px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
             {CATS.slice(0, 6).map(c => (
-              <div key={c.id} role="button" tabIndex={0} aria-label={`Catégorie ${c.l}`} className="lc-tap" onClick={() => go('menu')} onKeyDown={window.lcTapKey(() => go('menu'))} style={{ background: 'var(--cream)', borderRadius: 14, padding: '14px 8px', textAlign: 'center', cursor: 'pointer' }}>
+              <div key={c.id} role="button" tabIndex={0} aria-label={`Catégorie ${c.label}`} className="lc-tap" onClick={() => go('menu')} onKeyDown={window.lcTapKey(() => go('menu'))} style={{ background: 'var(--cream)', borderRadius: 14, padding: '14px 8px', textAlign: 'center', cursor: 'pointer' }}>
                 <div style={{ fontSize: 26 }}>{c.icon}</div>
                 <div style={{ marginTop: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{c.label}</div>
               </div>
