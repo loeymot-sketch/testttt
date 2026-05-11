@@ -647,7 +647,12 @@ function ScreenCart({ go, cart, setCart }) {
 }
 
 // CONFIRMATION
-function ScreenConfirm({ go }) {
+// [test-e2e fix C-001 round-2 2026-05-11] bind to cart order — receives { id, total, eta } from App
+function ScreenConfirm({ go, order }) {
+  // Fallback safe values if order missing (e.g. direct nav without prior pay step)
+  const orderId = (order && order.id) || 'C-0000';
+  const orderTotal = (order && typeof order.total === 'number') ? order.total : 0;
+  const orderEta = (order && order.eta) || '—';
   return (
     <div data-screen-label="11 Confirmation" style={{ position: 'absolute', inset: 0, background: '#FFD93D', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
       <ScreenHeader left={<IconBtn bg="var(--ink)" color="#fff" onClick={() => go('home')}><I.Close size={18}/></IconBtn>} center={<Logo size={12}/>}/>
@@ -657,7 +662,7 @@ function ScreenConfirm({ go }) {
             <I.Check size={28} sw={3}/>
           </div>
           <h1 className="lc-display" style={{ margin: '8px 0 0', fontSize: 36, lineHeight: 0.9 }}>C'est parti !</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink)' }}>Commande <b>#C-1234</b> envoyée</p>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink)' }}>Commande <b>#{orderId}</b> envoyée</p>
         </div>
         {/* QR ticket card */}
         <div style={{ marginTop: 12, background: '#fff', borderRadius: 18, padding: 14, position: 'relative' }}>
@@ -668,17 +673,17 @@ function ScreenConfirm({ go }) {
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--gray-3)' }}>HÉNIN-BEAUMONT · 62210</div>
           </div>
           <div style={{ borderTop: '1.2px dashed var(--gray-2)', paddingTop: 10, display: 'flex', justifyContent: 'center' }}>
-            <QRMock size={150} value="LECAY-ORDER-1234"/>
+            <QRMock size={150} value={`LECAY-ORDER-${orderId.replace(/^C-/, '')}`}/>
           </div>
-          <div style={{ textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: 24, letterSpacing: '0.1em', marginTop: 6 }}>C-1234</div>
+          <div style={{ textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: 24, letterSpacing: '0.1em', marginTop: 6 }}>{orderId}</div>
           <div style={{ borderTop: '1.2px dashed var(--gray-2)', marginTop: 10, paddingTop: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             <div>
               <div style={{ fontSize: 9, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Prêt à</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18 }}>19h45</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18 }}>{orderEta}</div>
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 9, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Total</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--orange)' }}>33,00 €</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--orange)' }}>{orderTotal.toFixed(2).replace('.', ',')} €</div>
             </div>
           </div>
         </div>
@@ -727,7 +732,8 @@ function ScreenOrders({ go }) {
         {tab === 'current' ? (
           <div style={{ padding: '20px 20px 0' }}>
             {/* Active card */}
-            <div onClick={() => go('confirm')} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: 'pointer' }}>
+            {/* [test-e2e fix D-004 round-2 2026-05-11] active order routes to detail, not confirm */}
+            <div onClick={() => go('orderDetail', 'C-1234')} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: 'pointer' }}>
               <div style={{ position: 'absolute', top: -20, right: -20, width: 140, height: 140, opacity: 0.06 }}><I.Pepper size={140} stroke="#FF5A1F"/></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="lc-pill" style={{ background: 'var(--orange)', color: '#fff' }}><span className="lc-status-dot" style={{ background: '#fff' }}/> EN PRÉPARATION</span>

@@ -120,9 +120,21 @@ function App() {
   const [modal, setModal] = useState(null);
   const [modalCtx, setModalCtx] = useState(null);
   const [toast, setToast] = useState(null);
+  // [test-e2e fix C-001 round-2 2026-05-11] bind to cart order — last placed order snapshot
+  const [lastOrder, setLastOrder] = useState(null);
 
   // Persist cart on change
   useEffect(() => { storage.setCart(cart); }, [cart]);
+
+  // [test-e2e fix C-001 round-2 2026-05-11] bind to cart order — snapshot cart at pay time
+  const snapshotOrder = () => {
+    const id = 'C-' + Math.floor(1000 + Math.random() * 9000);
+    const total = cart.reduce((s, i) => s + (i.lineTotal || i.price * i.qty), 0);
+    const eta = new Date(Date.now() + 12 * 60 * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
+    const order = { id, total, eta, items: cart };
+    setLastOrder(order);
+    return order;
+  };
 
   const go = (s, ext) => {
     if (s === 'back') {
@@ -131,7 +143,7 @@ function App() {
       setHistory(h); setScreen(prev);
       return;
     }
-    if (s === 'pay')    { setModal('pay');    return; }
+    if (s === 'pay')    { snapshotOrder(); setModal('pay'); return; }
     if (s === 'gain')   { setModal('gain');   return; }
     if (s === 'redeem') { setModal('redeem'); setModalCtx(ext || null); return; }
     if (s === 'link')   { setModal('link');   return; }
@@ -181,7 +193,7 @@ function App() {
     case 'item':    body = <ScreenItem go={go} itemId={itemId} addToCart={addToCart}/>; break;
     case 'cart':    body = <ScreenCart go={(s)=> s==='confirm' ? go('pay') : go(s)} cart={cart} setCart={setCart}/>; break;
     case 'stripe':  body = <ScreenStripe go={go} total={cart.reduce((s,i)=>s+i.price*i.qty,0)}/>; break;
-    case 'confirm': body = <ScreenConfirm go={go}/>; break;
+    case 'confirm': body = <ScreenConfirm go={go} order={lastOrder}/>; break;
     case 'orders':  body = <ScreenOrders go={go}/>; break;
     case 'orderDetail': body = <ScreenOrderDetail go={go} orderId={itemId || 'C-1234'}/>; break;
     case 'profile': body = <ScreenProfile go={go}/>; break;
@@ -196,9 +208,27 @@ function App() {
       {body}
       {showTab && <TabBar active={activeTab} onChange={(t) => go(t)}/>}
       {modal === 'pay' && <ModalPayChoice total={total} onClose={()=>setModal(null)} onPickCounter={()=>{ setModal(null); setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
-      {modal === 'gain' && <ModalPointsGain onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+      {/* [test-e2e fix C-003 round-2 2026-05-11] derive pointsEarned from the snapshotted
+          order total (1 pt / €, Math.round to match ScreenCart loyalty preview line 586
+          "+{Math.round(total)} pts gagnés sur cette commande"). Replaces the previous
+          hardcoded "+25 pts" literal. Falls back to 25 only if no order was snapshotted
+          (defensive — should never happen in the pay flow but keeps the welcome bonus
+          default for the modal's standalone story rendering). */}
+      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? Math.round(lastOrder.total) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
       {modal === 'redeem' && <WizardRedeem ctx={modalCtx} onClose={()=>{ setModal(null); setModalCtx(null); }} onSuccess={(r)=>{ /* WizardRedeem handles toast internally via step3 success state */ }}/>}
-      {modal === 'optOut' && <ModalOptOutConfirm onClose={()=>setModal(null)} onConfirm={()=>{ setModal(null); window.LC.dev && window.LC.dev.setConsent('opted_out'); setToast({m:'Programme désactivé. Tu peux le réactiver à tout moment.', k:'info'}); }}/>}
+      {modal === 'optOut' && <ModalOptOutConfirm onClose={()=>setModal(null)} onConfirm={()=>{
+        setModal(null);
+        // [test-e2e fix D-002 round-2 2026-05-11] RGPD opt-out clears balance
+        // (article 17 right-to-erasure) — matches updated modal copy.
+        if (window.LC && window.LC.loyalty && window.LC.loyalty._replaceAccount) {
+          window.LC.loyalty._replaceAccount({ balance: 0, lifetime_earned: 0, lifetime_redeemed: 0 });
+        }
+        if (window.LC && window.LC.loyalty && window.LC.loyalty._replaceHistory) {
+          window.LC.loyalty._replaceHistory([]);
+        }
+        if (window.LC && window.LC.dev) window.LC.dev.setConsent('opted_out');
+        setToast({m:'Programme désactivé et points effacés. Tu peux te réinscrire à tout moment.', k:'info'});
+      }}/>}
       {modal === 'link' && <ModalCardLink onClose={()=>setModal(null)} onScan={()=>{ setModal(null); storage.setPlasticCardLinked && storage.setPlasticCardLinked(true); setToast({m:'Carte plastique liée à ton compte', k:'success'}); }}/>}
       {modal === 'walletApple' && <ModalWalletV0Notice kind="apple" onClose={()=>setModal(null)} onSeeQR={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
       {modal === 'walletGoogle' && <ModalWalletV0Notice kind="google" onClose={()=>setModal(null)} onSeeQR={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
