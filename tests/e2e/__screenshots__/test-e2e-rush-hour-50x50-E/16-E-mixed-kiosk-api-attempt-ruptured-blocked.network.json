@@ -1,0 +1,16 @@
+[
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+    "method": "POST",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1778460430938
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+    "method": "POST",
+    "status": 422,
+    "duration_ms": null,
+    "ts": 1778460431053
+  }
+]

@@ -1,0 +1,9 @@
+[
+  {
+    "url": "http://127.0.0.1:8000/api/admin/menu/availability/toggle",
+    "method": "POST",
+    "status": 500,
+    "duration_ms": null,
+    "ts": 1778460392637
+  }
+]

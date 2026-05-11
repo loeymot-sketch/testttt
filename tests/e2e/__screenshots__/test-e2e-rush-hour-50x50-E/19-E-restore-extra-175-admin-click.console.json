@@ -1,0 +1,12 @@
+[
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/admin/menu/availability/extra/toggle",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778460470893
+  }
+]
