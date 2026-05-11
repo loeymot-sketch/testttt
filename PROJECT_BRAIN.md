@@ -47,8 +47,8 @@ Plateforme restaurant fast-food complète :
 ## §2 CURRENT STATE — Auto-managed
 
 - **Branche** : `feature/mobile-app-le-cayenne-2026-05-10`
-- **HEAD** : `245e8ab57` (mobile cluster-7 round-2 adversarial fixes — allergens honest + promo real + kiosk live)
-- **Last update** : 2026-05-11 (cluster-7 owner re-cadrage : 6 drifts D1-D6 mobile + LOCK plan kiosk salade simplifié + adversarial RED→GREEN 3 fixes : P0 allergens fabrication purgée + P1 promo discount wired -10% + P1 kiosk build rebuilt)
+- **HEAD** : `4937d08b2` (mobile design-perfect cycle C wave 4+5 — Loyalty rdl-* + Onboarding V2 hero designs livrés)
+- **Last update** : 2026-05-11 (cycle C intégration Claude Design redesigns reçus — 4 waves complétées : CSS tokens rdw/rdl/rdo-* + Wizard rdw-* + Loyalty rdl-* + Onboarding V2 hero. Smoke loyalty 6/6 PASS stable.)
 - **Branche release antérieure** : `cycle/PHASE2-TRAIN-A-V1-RELEASE-PREP-2026-04-27`
   (HEAD `9d9dddae1`, NO-GO V1 par audit POS adversarial 2026-05-09 — état préservé)
 - **Domaines production-ready** : ~7-8 / 16 (revu après ultra audit POS 2026-05-09 ;
@@ -67,6 +67,81 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**Mobile design-perfect cycle C — Claude Design redesigns integration 2026-05-11**
+(HEAD `4937d08b2`, branche `feature/mobile-app-le-cayenne-2026-05-10`) :
+- **Mission** : intégrer les 5 fichiers redesigns reçus du Claude Design pass
+  (/Users/1millnonstop/Downloads/redesigns/ : wizard.jsx + loyalty.jsx +
+  onboarding-v2.jsx + styles.css + README.md) dans l'app mobile, focus
+  VISUEL uniquement (user revert Wave 1 FSM 4-types → preserve FSM/data).
+- **Commits** :
+  * `88a527f8c` (Wave 2+3 cherry-picked depuis feature/kds-redesign-
+    2026-05-11) : CSS tokens redesigns intégrés + Wizard JSX refactor
+    (WizardHeader/CTA/ChoiceCard → rdw-* + step entry animation).
+  * `4937d08b2` (Wave 4+5) : Loyalty ScreenLoyalty rdl-* (Actions grid
+    3-col + Tabs bottom-indicator + Rewards horizontal cards + History
+    earn/spend dots) + Onboarding V2 hero designs (Onb1 EST.2024
+    medallion + Onb3 check medallion + Onb4 starburst rays).
+- **Wave 2 CSS** : mobile/redesigns-styles.css (1037 lignes) avec :root
+  conflictuel STRIPÉ (--gray-3 #8A857A 3.05:1 fail / --orange-text
+  #C73E18 4.16:1 — mobile/styles.css garde l'autorité a11y cycle B
+  #6F6A60 4.7:1 + #C2410C 4.86:1). 174 classes .rdw-*/.rdl-*/.rdo-*
+  preserved. mobile/index.html wire link rel="stylesheet" après styles.css.
+- **Wave 3 Wizard** : WizardHeader → rdw-header (sticky + scrolled
+  backdrop-blur) + rdw-back + rdw-stepcount + rdw-title + rdw-progress
+  (dots done/current animés). WizardCTA → rdw-cta-wrap (glassmorphism
+  backdrop-filter blur 18px saturate 180%) + rdw-cta + rdw-cta-chip.
+  ChoiceCard → rdw-choice + rdw-choice.is-on (shadow-selected 2px ring).
+  Step entry : div key={currentKey} className="rdw-step" wrapper triggers
+  rdw-enter 220ms cubic-bezier(0.22,1,0.36,1) opacity + translateX(14→0)
+  (respects prefers-reduced-motion).
+- **Wave 4 Loyalty** : ACTIONS RAPIDES → rdl-actions grid 3-col +
+  rdl-action button + rdl-action-icon + rdl-action-label (Apple/Google
+  badges brand-compliant preserved). TABS → rdl-tabs + rdl-tab.is-on
+  (CSS bottom 3px orange indicator). REWARDS → rdl-rewards + rdl-reward
+  horizontal (thumb 44px + body + cta pill). HISTORY → rdl-hist rows +
+  rdl-hist-dot--earn/spend + rdl-hist-pts.earn/spend (green/red).
+- **Wave 5 Onboarding** : Onb1 V2 EST.2024 medallion (60×60 ink-bg
+  yellow text 2 lignes Anton). Onb3 V2 check medallion top-right
+  (56×56 ink + yellow SVG check). Onb4 V2 starburst rays bg (16 rays
+  22.5° rotation yellow opacity 0.12) + loyalty card tier pill +
+  linear-gradient progress orange→ink. ScreenSplash + Onb2 + Login +
+  OTP non touchés (cycle B a11y closures preserved).
+- **A11y + FSM 100% PRESERVED** (0 régression cycle B closures) :
+  role/aria-* sur tablists+dialogs+progressbars+radiogroups intacts ;
+  computeActiveSteps/canAdvance/computeTotal/buildLineItem FSM kiosk-
+  aligned intacte ; data-screen-label + data-testid e2e selectors
+  préservés ; headingRef.focus() management conservé ; S-001 RGPD
+  POINTS card !isOptedOut gate intact (cycle B P0 closure).
+- **Smoke loyalty 6/6 PASS** post-cycle (19.0s) : loyalty-01 earn +
+  loyalty-04 redeem-wizard + loyalty-05 reward-locked + loyalty-11
+  opt-out + loyalty-13 history-filter + loyalty-adv-A1 clipboard-replay.
+- **Verrouillé text contract** : préservé après refactor rdl-reward-cta
+  (S05 spec assertion text "Verrouillé" fix immédiat post regression
+  detected).
+- **Frozen-zones intactes** : 0 ligne modifiée kiosk Vue / NF525
+  backend / pos-wizard / admin-pos-v4.blade.php.
+- **PIVOT** : Wave 1 FSM 4-types changes (PAIN step sandwich + assiette
+  has_menu + cascade isAssietteWithFrites + frites Cheddar+Oignons +2€)
+  REVERTED par user — non re-appliqués. Cycle C focus design visuel
+  uniquement par signal owner.
+- **DEFERRED hors scope** : ScreenLoyalty wallet-card merge HERO+POINTS
+  (invasive — LoyaltyQR memoized component à unwire), Onb2 V2 clock SVG
+  (real photo Phase 6.A preserved par choix).
+
+---
+
+**POS Parallel Ultra Audit 2026-05-11** (HEAD `a220b9bd8`, branche `feature/mobile-app-le-cayenne-2026-05-10`) :
+- **Mission** : owner instruction "lance 20 agents en parallèle, audit + review + E2E POS par fonctionnalité, perfection sur rapidité, max 20 agents simultanés".
+- **Pattern** : `feedback_adversarial_audit_pattern.md` scalé à 20 agents read-only avec scopes feature-strict (A01 Auth, A02 Architecture, A03 Pricing, A04 Order Creation, A05 State Machine, A06 Fiscal Sequence, A07 Hash Chain, A08 Z/X Report, A09 Cash Drawer, A10 Cash Payment, A11 Card/TPE, A12 Refund, A13 Branch Isolation, A14 RBAC, A15 Webhook, A16 Vanilla Wizard FROZEN, A17 Admin Vue, A18 Discount, A19 Parked-Print, A20 Sync-Tests).
+- **Livraison** : 13/20 rapports disque (`reports/review/pos-parallel-2026-05-11/A0{1..11},A13,A15.md`) + ULTRA_PLAN + 99_VERDICT consolidé. 7 agents rate-limited avant écriture (A12/A14/A16/A17/A18/A19/A20) — reset 11:20am, relance prévue.
+- **VERDICT NO-GO V1 maintenu** : 12 P0 ouverts = 4 historiques confirmés fresh (P0-04 cascadeOnDelete cross-validated A07+A09, P0-06 PosOrderController:108 confirmed verbatim contre corrigendum 2026-05-09 wrong, P0-13 partial, P0-03 partial CI matrix TODO) + 8 NEW (A05×2 legacy state machine callers no lockForUpdate, A09×3 cascadeOnDelete cash_movements + silent cash-no-session + no variance gate closeSession, A10×3 collectKioskCash hard-coded received + change_amount not persisted + order_payments row missing V1 single-tender).
+- **7 P0 historiques CLOSED** : P0-01/02 (ZReport withTrashed wired), P0-05 (idempotency middleware réellement wired — past retraction wrong both ways), P0-07 (RefreshToken regression pin), P0-08 (downgraded P1 FormRequest gate fires), P0-09 (CashDrawer triple-defense Cache::lock+lockForUpdate+UNIQUE), P0-11 (SenangPay 501 stub), P0-12 (apply() lock-correct iter15 mais legacy callers still race → NEW P0-A05), P0-14 (sentinel parity REAL helpers asserted).
+- **NEW P1 critiques** : A03-1 POS wizard FROZEN n'émet pas `role=menu_*` sur menu addons → POS-path menu formulas silently overcharge 1.20-1.80€/order (mirror E-001 fix landed kiosk only, NOT pos-wizard.js — **owner gate + LOCK required** sur frozen file) ; A01-1 ForgotPassword auto-mints ['*'] token ; A07-4 FiscalChainValidator first-row anchor missing ; A11-B TransientToken session-auth bypass ; A13-1..4 4 POS models still missing BranchScope.
+- **Cross-validated multi-agents** : cascadeOnDelete cash_movements (A07+A09).
+- **Frozen-zones** : PaymentService et FrontendOrderService différents du master plan path (mentioned `app/Services/Payments/PaymentService.php` n'existe pas — fichier réel `app/Services/PaymentService.php`). 0 diff frozen files (audit read-only respecté).
+- **Méta-leçon** : pattern adversarial 20-agent scale jusqu'à rate-limit hit (35% non-livré). Rate-limit n'est pas un échec qualité mais une contrainte volume. Past corrigendum spot-check 2026-05-09 wrong sur P0-06 (cherché Admin/Pos/ au lieu de Admin/) — soulignement importance re-verify fresh chaque cycle.
+- **Estimation remediation** : ~5-7j-agent P0 + ~3-4j P1 = sprint V1.0.1 élargi 8-11j-agent conditional sur close 7 agents post-reset.
 
 **Mobile cluster-7 owner re-cadrage 2026-05-11** (HEAD `245e8ab57`,
 branche `feature/mobile-app-le-cayenne-2026-05-10`) :
@@ -628,6 +703,74 @@ y est enregistrée pour éviter la dérive et le re-questioning.
 
 > Si Claude détecte une dérive de direction (15-20° du NORTH STAR),
 > il append ici avec timestamp + cause + recommandation.
+
+### 2026-05-11 — POS Parallel 20-agent Ultra Audit (HEAD a220b9bd8) — **VERDICT NO-GO V1 maintenu, état mixte**
+
+**Audit run** : 20 sub-agents adversarial parallel feature-scoped. 13 livrés disque, 7 rate-limited avant écriture (A12/A14/A16/A17/A18/A19/A20). Reset 11:20am pour relance.
+
+**Score** : 12 P0 ouverts (4 historiques confirmed fresh + 8 NEW), ~30+ P1, ~25+ P2.
+
+**P0 historiques CLOSED depuis 2026-05-09** (7) :
+- P0-01/02 ZReport `withTrashed()` wired @ `ZReportService.php:337-341`
+- P0-05 idempotency middleware réellement wired (past audit wrong BOTH directions : original claim hallucinated, retraction also wrong — `config/idempotency.php` exists, middleware @ `routes/api.php:728`, `.env:92` enabled)
+- P0-07 RefreshToken regression test pin
+- P0-08 downgraded P1, FormRequest gate fires @ `PaymentConfirmRequest:19-25`
+- P0-09 CashDrawer triple-defense Cache::lock+lockForUpdate+UNIQUE partial across SQLite/PgSQL/MySQL
+- P0-11 SenangPay 501 stub @ `Senangpay.php:31-46` (WebhookEvent model still orphan reclassed P1)
+- P0-12 OrderStateMachine `apply()` lock-correct iter15 (legacy callers still race — NEW P0)
+- P0-14 sentinel parity invokes REAL helpers across 7 scenarios
+
+**P0 historiques OPEN at HEAD** (4) :
+- P0-04 cascadeOnDelete `cash_movements` + `order_payments` — **cross-validated A07+A09**
+- P0-06 `PosOrderController.php:108` `withoutGlobalScope(BranchScope::class)` — **CONFIRMED FRESH** (past corrigendum spot-check searched wrong dir)
+- P0-13 4 fake E2E specs **PARTIAL** : `02-pos-cash.spec.js:118-127` + `05-pos-card.spec.js:99-107` rewritten but `test.fixme(true)` escape hatch + OR-coupled assertions remain
+- P0-03 z_reports DELETE trigger **PARTIAL** : test exists 2026-05-10 but CI MySQL matrix proof TODO
+
+**P0 NEW surfaced** (8) :
+- A05-1 `OrderService::changeStatus:1608-1722` non-auth branch reads + mutates status without `lockForUpdate` → concurrent double-cancel/double-cashBack/double-refundPoints/double-AuditLog
+- A05-2 `OrderService::changePaymentStatus:1817-1909` non-auth branch reads `payment_status` outside lock → UNPAID→PAID concurrent = 2 ActionLog + 2 fiscal AuditLog (PAID terminal contract violated)
+- A09-1 `cash_movements:47-50` cascadeOnDelete (cross-validates P0-04)
+- A09-2 `PaymentService::recordCashOrderMovement:243-281` silent cash-without-session by design — Z variance silently diverges from physical cash (escalates P1-06)
+- A09-3 `CashDrawerService::closeSession:101-133` no variance gate — cashier déclare 50€ et empoche 100€ surplus, aucune approbation manager
+- A10-1 `OrderService::collectKioskCash:1954-1962` hard-codes `received = (float) $order->total` — cashier ne saisit JAMAIS montant réel encaissé (NF525 reconciliation impossible, F-003 Option-A violated)
+- A10-2 `PaymentService::confirmCounterPayment:130-237` never persists `change_amount` (column exists, no writer)
+- A10-3 `OrderService::posOrderStore:888-895` cash branch never INSERT `order_payments` row in V1 single-tender mode (`config('split_payment.enabled', false)` default → table empty for V1 cash sales)
+
+**BRAIN.md drift table 2026-05-11** :
+
+| BRAIN claim | Reality | Severity |
+|-------------|---------|----------|
+| §7 row 1 "Architecture event-driven ✅" | WebhookEvent production-orphan | MEDIUM |
+| §7 row 2 "BranchScope 11 models ✅" | 4 POS-surface still missing + PosOrderController:108 leak | **HIGH** |
+| §7 row 6 "Order state machine + lockForUpdate ✅" | apply() ✅ but legacy callers race | **HIGH** |
+| §7 row 7 "Sanctum kiosk:order strict ✅" | ✅ for now but TransientToken bypass latent | LOW |
+| §7 row 10 "Cash audit F-003 chain-signed ✅" | 6 different invariants violated | **CRITICAL** |
+| §7 row 16 "Fiscal orphan retry GATE-FZH-ALLOC ✅" | GATE warn-only + POS path bare `next()` | MEDIUM |
+
+**Domaines réellement production-ready post-audit** : ~6-7 / 16 (decline depuis 7-8 du 2026-05-09).
+
+**NEW P1 critiques** :
+- **A03-1 POS wizard menu_role addon overcharge** — `public/js/pos-wizard.js` (FROZEN) does NOT emit `role=menu_*` on menu addons → `PricingService::menuRoleAdjustedAddonPrice` returns full catalog price → POS-path menu formulas silently overcharge 1.20-1.80€ per order. Mirror E-001 fix landed kiosk only, NOT pos-wizard.js. **Owner gate + LOCK required on frozen file.**
+- A01-1 ForgotPassword auto-mint `['*']` token (privilege escalation if reset_token leaks)
+- A07-4 FiscalChainValidator 500-row tail EXEMPTS first row of window from chain-break check → forge possible
+- A11-B TransientToken session-auth bypass on PaymentConfirmRequest (mirror missing of OrderRequest:247-250 rejection pattern)
+- A13-1..4 4 POS models still missing BranchScope (OrderStatusTransition, PosParkedOrder, OrderQuote, OrderCoupon)
+- A15-1 WebhookEvent production-orphan (model + table + UNIQUE exist, 0 callers in app/)
+
+**Méta-leçons** :
+1. **Past corrigendum spot-check can also be wrong** — 2026-05-09 corrigendum claimed P0-06 not reproducible (searched `Admin/Pos/` subdir), but the controller actually lives in `Admin/` (`PosOrderController.php`). Re-verify fresh each cycle.
+2. **Pattern adversarial 20-agent scales** — rate-limit hit on 7/20 = volume constraint, not quality failure. Confidence pattern reliability.
+3. **Iter15 fixes only cover new entry points, NOT legacy callers** — `OrderStateMachine::apply()` is lock-correct, but `OrderService::changeStatus` (non-auth path) and `changePaymentStatus` (non-auth path) still race. This is "fix-by-rewrite-pattern, not fix-by-migrate-callers" antipattern.
+4. **F-003 cash audit chain-signed est l'invariant le plus dégradé** — 6 P0 / P1 sur ce domaine. Decision Option-A "cashier-supervised + reconciliation schema" était theoretical, code reality is 6 different gaps.
+
+**Recommandation actions immédiates owner** :
+- Lire `reports/review/pos-parallel-2026-05-11/99_VERDICT_POS_PARALLEL.md` + 13 rapports détaillés A01..A15.md
+- Owner gate sur :
+  - 8 NEW P0 (A05×2, A09×3, A10×3) — décisions architecture-level
+  - LOCK plan sur frozen `pos-wizard.js` pour P1-A03-1 menu_role addon overcharge
+  - Relance 7 agents (A12/A14/A16/A17/A18/A19/A20) après reset 11:20am pour compléter coverage
+- Bloquer merge `feature/mobile-app-le-cayenne-2026-05-10` → `main` jusqu'à fermeture P0 cash + state machine legacy + branch isolation `PosOrderController:108`
+- Réorganiser sprint V1.0.1 autour des 12 P0 (~5-7j-agent + ~3-4j P1 = 8-11j-agent élargi)
 
 ### 2026-05-09 — Ultra audit POS adversarial (HEAD 9d9dddae1) — **VERDICT NO-GO V1**
 
