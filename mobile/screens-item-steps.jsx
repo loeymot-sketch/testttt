@@ -311,8 +311,12 @@ function ScreenStepViandes({ item, selections, setSelections, headingRef }) {
           const on = meatIds.includes(m.id);
           return (
             <ChoiceCard key={m.id} on={on} onPick={() => togglePush(m.id)} ariaRole="checkbox">
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span aria-hidden="true">{m.emoji}</span>{m.name}
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                {/* Phase 6.A real-asset thumb (kiosk viande_*.png) */}
+                {m.image
+                  ? <img src={m.image} alt="" aria-hidden="true" style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}/>
+                  : <span aria-hidden="true">{m.emoji}</span>}
+                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</span>
               </span>
               <span aria-hidden="true" style={{ width: 18, height: 18, borderRadius: 4, border: on ? '0' : '2px solid var(--gray-2)', background: on ? 'var(--orange)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {on && <I.Check size={12} stroke="#fff" sw={3}/>}
@@ -353,11 +357,15 @@ function ScreenStepSauce({ item, selections, setSelections, headingRef, sauceFie
           const free = idx === 0;
           return (
             <ChoiceCard key={s.id} on={on} onPick={() => toggle(s.id)} ariaRole="checkbox">
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                {s.is_spicy && <span aria-hidden="true">🌶️</span>}{s.name}
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                {/* Phase 6.A real-asset color swatch (kiosk generated sauce_*.svg) */}
+                {s.image
+                  ? <img src={s.image} alt="" aria-hidden="true" style={{ width: 18, height: 18, objectFit: 'cover', borderRadius: 999, flexShrink: 0, border: '1px solid var(--gray-2)' }}/>
+                  : (s.is_spicy && <span aria-hidden="true">🌶️</span>)}
+                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}{s.is_spicy && s.image ? ' 🌶️' : ''}</span>
               </span>
               {on && !free && (
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink)', fontWeight: 700 }}>+0,50€</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink)', fontWeight: 700, flexShrink: 0 }}>+0,50€</span>
               )}
             </ChoiceCard>
           );
@@ -391,6 +399,10 @@ function ScreenStepCrudites({ item, selections, setSelections, headingRef }) {
             <ChoiceCard key={c.id} on={on} onPick={() => toggle(c.id)} ariaRole="checkbox" accent="green">
               { /* [test-e2e fix B-005 round-2 2026-05-11] longhand to avoid React warning */ }
               <div style={{ width: '100%', textAlign: 'center', textDecorationLine: on ? 'none' : 'line-through', textDecorationColor: 'var(--gray-3)' }}>
+                {/* Phase 6.A real-asset thumb (kiosk crudite_*.png) */}
+                {c.image && (
+                  <img src={c.image} alt="" aria-hidden="true" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, margin: '0 auto 6px', opacity: on ? 1 : 0.35, display: 'block' }}/>
+                )}
                 <div style={{ fontSize: 13, fontWeight: 700, color: on ? 'var(--green)' : 'var(--gray-3)' }}>
                   <span aria-hidden="true">{on ? '✓' : '✕'}</span> {c.name}
                 </div>
@@ -435,7 +447,11 @@ function ScreenStepSupplements({ item, selections, setSelections, headingRef }) 
               className="lc-toggle-row"
               style={{ outline: 'none' }}
             >
-              <div style={{ flex: 1 }}>
+              {/* Phase 6.A real-asset thumb (kiosk supplement_*.png) */}
+              {s.image && (
+                <img src={s.image} alt="" aria-hidden="true" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 8, flexShrink: 0, marginRight: 10 }}/>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{s.name}</div>
                 <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 700, marginTop: 2 }}>+ {s.price.toFixed(2).replace('.', ',')} €</div>
               </div>
@@ -529,7 +545,10 @@ function ScreenStepDrink({ item, selections, setSelections, headingRef }) {
           return (
             <ChoiceCard key={d.id} on={on} onPick={() => pick(d.id)} ariaRole="radio">
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: '100%', padding: '4px 0' }}>
-                <span aria-hidden="true" style={{ fontSize: 28 }}>{d.emoji}</span>
+                {/* Phase 6.A real-asset thumb (kiosk drink png) */}
+                {d.image
+                  ? <img src={d.image} alt="" aria-hidden="true" style={{ width: 56, height: 56, objectFit: 'contain', flexShrink: 0 }}/>
+                  : <span aria-hidden="true" style={{ fontSize: 28 }}>{d.emoji}</span>}
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{d.name}</span>
               </div>
             </ChoiceCard>
@@ -558,7 +577,10 @@ function ScreenStepFritesStyle({ item, selections, setSelections, headingRef }) 
           return (
             <ChoiceCard key={fs.id || 'nature'} on={on} onPick={() => pick(fs.id)} ariaRole="radio">
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-                <span aria-hidden="true" style={{ fontSize: 24 }}>{fs.emoji}</span>
+                {/* Phase 6.A real-asset thumb (kiosk frites/cheddar png) */}
+                {fs.image
+                  ? <img src={fs.image} alt="" aria-hidden="true" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }}/>
+                  : <span aria-hidden="true" style={{ fontSize: 24 }}>{fs.emoji}</span>}
                 <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{fs.name}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -870,7 +892,7 @@ function ScreenItemDirectAdd({ item, selections, setSelections, go, addToCart })
     <div data-screen-label="09 Item Direct" style={{ position: 'absolute', inset: 0, background: 'var(--paper)' }}>
       <div className="lc-screen" style={{ paddingBottom: 130 }}>
         <div style={{ position: 'relative', height: 280, background: 'var(--ink)' }}>
-          <Slot id={item.thumb} h="100%" radius={0} placeholder={item.name}/>
+          <Slot id={item.thumb} h="100%" radius={0} placeholder={item.name} src={item.image} alt={item.name}/>
           <div style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) - 14px)', left: 14, right: 14, display: 'flex', justifyContent: 'space-between', zIndex: 2 }}>
             <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)"><I.Back size={20}/></IconBtn>
             <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)"><I.Close size={18}/></IconBtn>

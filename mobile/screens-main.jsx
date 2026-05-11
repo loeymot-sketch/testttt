@@ -47,7 +47,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
               <span style={{ width: 5, height: 5, borderRadius: 999, background: '#22c55e', boxShadow: '0 0 6px #22c55e' }}/> Ouvert
             </span>
           </div>
-          <IconBtn bg="var(--cream)"><I.Bell size={18}/></IconBtn>
+          <IconBtn bg="var(--cream)" ariaLabel="Notifications" onClick={() => go('toast', { msg: 'Notifications — bientôt disponibles', kind: 'info' })}><I.Bell size={18}/></IconBtn>
         </div>
 
         {/* greeting */}
@@ -75,7 +75,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
                   <button className="lc-btn lc-btn--ink" style={{ height: 40, padding: '0 16px', fontSize: 11, alignSelf: 'flex-start' }}>Commander <I.Arrow size={14} stroke="var(--orange)"/></button>
                 </div>
                 <div style={{ width: 150, position: 'relative' }}>
-                  <Slot id={featured.thumb} h="100%" radius={0} placeholder={featured.name}/>
+                  <Slot id={featured.thumb} h="100%" radius={0} placeholder={featured.name} src={featured.hero} alt={featured.name}/>
                   <div style={{ position: 'absolute', bottom: 14, right: 14, background: '#0A0A0A', color: '#FFD93D', fontFamily: 'var(--font-display)', fontSize: 22, padding: '6px 12px', borderRadius: 8 }}>{featured.price.toFixed(2).replace('.', ',')} €</div>
                 </div>
               </div>
@@ -110,7 +110,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
             {ITEMS.filter(i => i.is_featured).slice(0, 4).map(it => (
               <div key={it.id} onClick={() => go('item', it.id)} style={{ flex: '0 0 160px', cursor: 'pointer' }}>
                 <div style={{ position: 'relative', height: 160, borderRadius: 16, overflow: 'hidden', background: 'var(--cream)' }}>
-                  <Slot id={it.slot} h="100%" radius={0} placeholder={it.name}/>
+                  <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
                   <button style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 999, background: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <I.Heart size={16}/>
                   </button>
@@ -133,7 +133,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
             {ITEMS.filter(i => (i.tags || []).includes('TOP')).slice(0, 4).map(it => (
               <div key={it.id} onClick={() => go('item', it.id)} style={{ cursor: 'pointer' }}>
                 <div style={{ position: 'relative', aspectRatio: '1/1', borderRadius: 14, overflow: 'hidden', background: 'var(--ink)' }}>
-                  <Slot id={it.slot} h="100%" radius={0} placeholder={it.name}/>
+                  <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
                   <div style={{ position: 'absolute', bottom: 8, left: 8 }}><Tag t="TOP"/></div>
                 </div>
                 <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700 }}>{it.name}</div>
@@ -173,7 +173,7 @@ function ScreenMenu({ go, cart, addToCart }) {
             <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>Menu</h1>
             <div style={{ fontSize: 12, color: 'var(--gray-3)', marginTop: 4 }}>{CATS.length} catégories · {ITEMS.length} produits</div>
           </div>
-          <IconBtn bg="var(--cream)"><I.Search size={18}/></IconBtn>
+          <IconBtn bg="var(--cream)" ariaLabel="Rechercher dans le menu" onClick={() => go('toast', { msg: 'Recherche — bientôt disponible', kind: 'info' })}><I.Search size={18}/></IconBtn>
         </div>
         {/* filter chips */}
         <div style={{ display: 'flex', gap: 8, padding: '12px 20px', overflowX: 'auto' }}>
@@ -200,7 +200,7 @@ function ScreenMenu({ go, cart, addToCart }) {
                 {items.map(it => (
                   <div key={it.id} onClick={() => go('item', it.id)} style={{ display: 'flex', gap: 14, padding: 12, background: 'var(--cream)', borderRadius: 16, cursor: 'pointer', alignItems: 'center' }}>
                     <div style={{ width: 84, height: 84, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: '#0A0A0A' }}>
-                      <Slot id={it.slot} h="100%" radius={0} placeholder={it.name}/>
+                      <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>{it.tags.slice(0,2).map(t => <Tag key={t} t={t}/>)}</div>
@@ -307,7 +307,7 @@ function ScreenItem({ go, itemId, addToCart }) {
       <div className="lc-screen" style={{ paddingBottom: 110, paddingTop: 0 }}>
         {/* hero photo */}
         <div style={{ position: 'relative', height: 280, background: 'var(--ink)' }}>
-          <Slot id={item.thumb} h="100%" radius={0} placeholder={item.name}/>
+          <Slot id={item.thumb} h="100%" radius={0} placeholder={item.name} src={item.image} alt={item.name}/>
           <div style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) - 14px)', left: 14, right: 14, display: 'flex', justifyContent: 'space-between', zIndex: 2 }}>
             <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)"><I.Back size={20}/></IconBtn>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -563,7 +563,7 @@ function ScreenCart({ go, cart, setCart }) {
           ) : cart.map((it, idx) => (
             <div key={idx} style={{ display: 'flex', gap: 12, padding: 12, background: 'var(--cream)', borderRadius: 16 }}>
               <div style={{ width: 80, height: 80, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: 'var(--ink)' }}>
-                <Slot id={it.slot} h="100%" radius={0} placeholder={it.name}/>
+                <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{it.name}</div>
@@ -615,7 +615,7 @@ function ScreenCart({ go, cart, setCart }) {
             {ITEMS.filter(i => i.cat === 'sides' || i.cat === 'drinks' || i.cat === 'desserts').slice(0, 5).map(it => (
               <div key={it.id} onClick={() => go('item', it.id)} style={{ flex: '0 0 130px', background: 'var(--cream)', borderRadius: 12, padding: 8, cursor: 'pointer' }}>
                 <div style={{ height: 80, borderRadius: 8, overflow: 'hidden', background: 'var(--ink)' }}>
-                  <Slot id={it.slot} h="100%" radius={0} placeholder={it.name}/>
+                  <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
                 </div>
                 <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>{it.name}</div>
                 <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1017,36 +1017,39 @@ function ScreenLoyalty({ go }) {
           )}
         </div>
 
-        {/* POINTS — black card with balance + progress */}
-        <div style={{ margin: '-20px 20px 0', background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 22, position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: 999, background: 'var(--orange)', opacity: 0.2 }}/>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <div className="lc-display" data-testid="loyalty-balance" style={{ fontSize: 64, lineHeight: 1 }}>{balance}</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--orange)' }}>POINTS</div>
-          </div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
-            Soit {discountValue.toFixed(2).replace('.', ',')} € de réduction disponible
-          </div>
-          {progress.target && progress.remaining > 0 && (
-            <div style={{ marginTop: 16 }}>
-              <div data-testid="loyalty-progress-text" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>
-                <span>{balance} / {progress.target.points_cost} pts</span>
-                <span style={{ color: 'var(--yellow)' }}>{progress.target.name.toUpperCase()}</span>
-              </div>
-              <div role="progressbar" aria-valuenow={balance} aria-valuemax={progress.target.points_cost} aria-valuetext={balance + ' sur ' + progress.target.points_cost + ' points'} style={{ height: 8, background: 'rgba(255,255,255,0.12)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
-                <div style={{ width: progress.pct + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
-              </div>
-              <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600 }}>
-                Plus que <span style={{ color: 'var(--orange)', fontWeight: 800 }}>{progress.remaining} pts</span> pour <b style={{ color: 'var(--yellow)' }}>{progress.target.name}</b> {progress.target.icon}
-              </div>
+        {/* POINTS — gated by consent (S-001 P0 RGPD). When opted-out, modal
+            copy promises balance erasure ; UI must reflect by hiding the card. */}
+        {!isOptedOut && (
+          <div style={{ margin: '-20px 20px 0', background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 22, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: 999, background: 'var(--orange)', opacity: 0.2 }}/>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <div className="lc-display" data-testid="loyalty-balance" style={{ fontSize: 64, lineHeight: 1 }}>{balance}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--orange)' }}>POINTS</div>
             </div>
-          )}
-          {progress.remaining === 0 && progress.target && (
-            <div style={{ marginTop: 16, padding: 10, background: 'rgba(31,166,83,0.15)', borderRadius: 10, fontSize: 12, fontWeight: 700, color: 'var(--yellow)', textAlign: 'center' }}>
-              🎉 Tu as débloqué toutes les récompenses
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
+              Soit {discountValue.toFixed(2).replace('.', ',')} € de réduction disponible
             </div>
-          )}
-        </div>
+            {progress.target && progress.remaining > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <div data-testid="loyalty-progress-text" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>
+                  <span>{balance} / {progress.target.points_cost} pts</span>
+                  <span style={{ color: 'var(--yellow)' }}>{progress.target.name.toUpperCase()}</span>
+                </div>
+                <div role="progressbar" aria-valuenow={balance} aria-valuemax={progress.target.points_cost} aria-valuetext={balance + ' sur ' + progress.target.points_cost + ' points'} style={{ height: 8, background: 'rgba(255,255,255,0.12)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
+                  <div style={{ width: progress.pct + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
+                </div>
+                <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600 }}>
+                  Plus que <span style={{ color: 'var(--orange)', fontWeight: 800 }}>{progress.remaining} pts</span> pour <b style={{ color: 'var(--yellow)' }}>{progress.target.name}</b> {progress.target.icon}
+                </div>
+              </div>
+            )}
+            {progress.remaining === 0 && progress.target && (
+              <div style={{ marginTop: 16, padding: 10, background: 'rgba(31,166,83,0.15)', borderRadius: 10, fontSize: 12, fontWeight: 700, color: 'var(--yellow)', textAlign: 'center' }}>
+                🎉 Tu as débloqué toutes les récompenses
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ACTIONS RAPIDES — Apple Wallet + Google Wallet + plastic card (DEC-10) */}
         {!isOptedOut && (

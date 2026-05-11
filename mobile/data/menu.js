@@ -33,57 +33,162 @@
   };
 
   // -------------------------------------------------------------------------
-  // SHARED OPTIONS (cf. config/menu.php)
+  // IMAGE ASSET PATHS (Phase 6.A 2026-05-11 — réel-assets owner-provided)
+  // Sources :
+  //   1. public/images/menu/ (kiosk) → mobile/assets/menu/*.png + *.svg
+  //   2. /Users/1millnonstop/Downloads/image produit → mobile/assets/menu/signature/*.png
+  //      (bg-removed hi-quality signature heroes pour featured card)
+  // Tous les chemins relatifs à mobile/ (servis par php -S à :8081).
+  // -------------------------------------------------------------------------
+  const ASSET_BASE = 'assets/menu/';
+  const ASSET_FALLBACK = ASSET_BASE + 'item-default.svg';
+
+  // 60 items → kiosk generated_*.png file (per item slug)
+  const ITEM_IMG = {
+    // Tacos
+    'tacos-m': 'generated_tacos-m-1-viande.png',
+    'tacos-l': 'generated_tacos-l-2-viandes.png',
+    'tacos-xl': 'generated_tacos-xl-3-viandes.png',
+    'tacos-xxl': 'generated_tacos-xxl-4-viandes.png',
+    // Sandwichs
+    'le-mega': 'generated_le-mega.png',
+    'le-terminator': 'generated_le-terminator.png',
+    'le-supreme': 'generated_le-supreme.png',
+    'le-cayenne': 'generated_le-cayenne.png',
+    'sandwich-froid': 'generated_sandwich-froid.png',
+    'panini': 'generated_panini.png',
+    'sandwich-pain': 'generated_sandwich-classique-pain.png',
+    'sandwich-galette': 'generated_sandwich-classique-galette.png',
+    // Burgers
+    'burger-poulet': 'generated_chicken-burger.png',
+    'cheese-burger': 'generated_cheese-burger.png',
+    'fish-burger': 'generated_fish-burger.png',
+    'double-cheese': 'generated_double-cheese.png',
+    'big-burger': 'generated_big-burger.png',
+    'grill-burger': 'generated_grill-burger.png',
+    // Assiettes
+    'assiette-poulet': 'generated_assiette-poulet.png',
+    'assiette-kefta': 'generated_assiette-kefta.png',
+    'assiette-merguez': 'generated_assiette-merguez.png',
+    'assiette-mixte': 'generated_assiette-mixte.png',
+    // Ojja
+    'ojja-boeuf': 'generated_ojja-boeuf.png',
+    'ojja-poulet': 'generated_ojja-poulet.png',
+    'ojja-hachee': 'generated_ojja-viande-hachee.png',
+    'ojja-merguez': 'generated_ojja-merguez.png',
+    // Omelettes
+    'omelette-nature': 'generated_omelette-nature.png',
+    'omelette-fromage': 'generated_omelette-fromage.png',
+    'omelette-champi': 'generated_omelette-champignons-fromage.png',
+    // Salades
+    'salade-chevre': 'generated_salade-chevre.png',
+    'salade-royale': 'generated_salade-royale.png',
+    'salade-saumon': 'generated_salade-saumon.png',
+    'salade-tunisienne': 'generated_salade-tunisienne.png',
+    // Snacking
+    'wings-6': 'generated_chicken-wings-6-pieces.png',
+    'wings-12': 'generated_chicken-wings-12-pieces.png',
+    'tenders-6': 'generated_tenders-6-pieces.png',
+    'tenders-12': 'generated_tenders-12-pieces.png',
+    // Menus enfants
+    'menu-cheese-enfant': 'generated_menu-cheese-burger-enfant.png',
+    'menu-nuggets-enfant': 'generated_menu-nuggets-enfant.png',
+    // Sides
+    'frites-moyenne': 'generated_frites-moyenne.png',
+    'frites-grande': 'generated_frites-grande.png',
+    // Desserts
+    'glace': 'generated_glace.png',
+    'tarte-daim': 'generated_tarte-daim.png',
+    'tiramisu': 'generated_tiramisu.png',
+    // Drinks
+    'coca': 'generated_coca-cola-33cl.png',
+    'coca-zero': 'generated_coca-cola-zero-33cl.png',
+    'fanta': 'generated_fanta-orange-33cl.png',
+    'sprite': 'generated_sprite-33cl.png',
+    'oasis': 'generated_oasis-tropical-33cl.png',
+    'orangina': 'generated_orangina-33cl.png',
+    'eau-plate': 'generated_eau-plate-50cl.png',
+    'capri-sun': 'generated_capri-sun.png',
+    // Suppléments (cat 13 standalone items)
+    'item-sauce-sup': 'generated_sauce-supplementaire.png',
+    'item-fromage': 'generated_fromage-supplementaire.png',
+    'item-jambon': 'generated_jambon-de-dinde.png',
+    'item-boursin': 'generated_boursin.png',
+    'item-raclette': 'generated_fromage-a-raclette.png',
+    'item-oeuf': 'generated_oeuf.png',
+    'item-galette': 'generated_galette-pommes-de-terre.png',
+    'item-salade': 'generated_salade-verte.png',
+  };
+
+  // Signature bg-removed heroes (high-quality featured card displays only)
+  // Source : dossier owner /Users/1millnonstop/Downloads/image produit
+  const HERO_IMG = {
+    'le-cayenne': 'signature/cayenne-hero.png',
+    'le-mega': 'signature/mega-hero.png',
+    'le-supreme': 'signature/supreme-hero.png',
+    'le-terminator': 'signature/terminator-hero.png',
+    'tacos-xxl': 'signature/tacos-hero.png',  // generic tacos hero from user folder
+  };
+
+  function imgFor(slug) {
+    return ASSET_BASE + (ITEM_IMG[slug] || 'item-default.svg');
+  }
+  function heroFor(slug) {
+    return HERO_IMG[slug] ? (ASSET_BASE + HERO_IMG[slug]) : imgFor(slug);
+  }
+
+  // -------------------------------------------------------------------------
+  // SHARED OPTIONS (cf. config/menu.php) — image paths Phase 6.A wired
   // -------------------------------------------------------------------------
 
-  // 9 viandes au choix (config/menu.php meats)
+  // 9 viandes au choix (config/menu.php meats) — images viande_*.png (kiosk)
   const MEATS = [
-    { id: 'm-merguez',   name: 'Merguez',           price: 0, is_spicy: true,  emoji: '🌶️' },
-    { id: 'm-kefta',     name: 'Kefta',             price: 0, emoji: '🥩' },
-    { id: 'm-mexicain',  name: 'Mexicain',          price: 0, is_spicy: true,  emoji: '🌶️' },
-    { id: 'm-cordon',    name: 'Cordon Bleu',       price: 0, emoji: '🍗' },
-    { id: 'm-hachee',    name: 'Viande Hachée',     price: 0, emoji: '🥩' },
-    { id: 'm-nuggets',   name: 'Nuggets',           price: 0, emoji: '🍗' },
-    { id: 'm-escalope',  name: 'Escalope de poulet', price: 0, emoji: '🍗' },
-    { id: 'm-tenders',   name: 'Tenders',           price: 0, emoji: '🍗' },
-    { id: 'm-fricand',   name: 'Fricandelle',       price: 0, emoji: '🥩' },
+    { id: 'm-merguez',   name: 'Merguez',           price: 0, is_spicy: true, emoji: '🌶️', image: ASSET_BASE + 'viande_merguez.png' },
+    { id: 'm-kefta',     name: 'Kefta',             price: 0, emoji: '🥩',                  image: ASSET_BASE + 'viande_kefta.png' },
+    { id: 'm-mexicain',  name: 'Mexicain',          price: 0, is_spicy: true, emoji: '🌶️', image: ASSET_BASE + 'viande_mexicain.png' },
+    { id: 'm-cordon',    name: 'Cordon Bleu',       price: 0, emoji: '🍗',                  image: ASSET_BASE + 'viande_cordon.png' },
+    { id: 'm-hachee',    name: 'Viande Hachée',     price: 0, emoji: '🥩',                  image: ASSET_BASE + 'viande_hachee.png' },
+    { id: 'm-nuggets',   name: 'Nuggets',           price: 0, emoji: '🍗',                  image: ASSET_BASE + 'viande_nuggets.png' },
+    { id: 'm-escalope',  name: 'Escalope de poulet', price: 0, emoji: '🍗',                 image: ASSET_BASE + 'viande_escalope_poulet.png' },
+    { id: 'm-tenders',   name: 'Tenders',           price: 0, emoji: '🍗',                  image: ASSET_BASE + 'viande_tenders.png' },
+    { id: 'm-fricand',   name: 'Fricandelle',       price: 0, emoji: '🥩',                  image: ASSET_BASE + 'viande_fricandelle.png' },
   ];
 
-  // 15 sauces (1 gratuite, sup 0.50€)
+  // 15 sauces (1 gratuite, sup 0.50€) — SVG generated (kiosk scripts/generate-menu-sauce-svgs.php)
   const SAUCES = [
-    { id: 's-ketchup',    name: 'Ketchup',          price: 0 },
-    { id: 's-mayo',       name: 'Mayonnaise',       price: 0 },
-    { id: 's-algerien',   name: 'Algérienne',       price: 0 },
-    { id: 's-curry',      name: 'Curry',            price: 0 },
-    { id: 's-andalouse',  name: 'Andalouse',        price: 0 },
-    { id: 's-burger',     name: 'Burger',           price: 0 },
-    { id: 's-samurai',    name: 'Samouraï',         price: 0 },
-    { id: 's-bbq',        name: 'Barbecue',         price: 0 },
-    { id: 's-cocktail',   name: 'Cocktail',         price: 0 },
-    { id: 's-americaine', name: 'Américaine',       price: 0 },
-    { id: 's-hannibal',   name: 'Hannibal',         price: 0, is_spicy: true },
-    { id: 's-harissa',    name: 'Harissa',          price: 0, is_spicy: true },
-    { id: 's-blanche',    name: 'Blanche',          price: 0 },
-    { id: 's-poivre',     name: 'Poivre',           price: 0 },
-    { id: 's-sans',       name: 'Sans Sauce',       price: 0, is_no_sauce: true },
+    { id: 's-ketchup',    name: 'Ketchup',          price: 0, image: ASSET_BASE + 'sauce_ketchup.svg' },
+    { id: 's-mayo',       name: 'Mayonnaise',       price: 0, image: ASSET_BASE + 'sauce_mayo.svg' },
+    { id: 's-algerien',   name: 'Algérienne',       price: 0, image: ASSET_BASE + 'sauce_algerienne.svg' },
+    { id: 's-curry',      name: 'Curry',            price: 0, image: ASSET_BASE + 'sauce_curry.svg' },
+    { id: 's-andalouse',  name: 'Andalouse',        price: 0, image: ASSET_BASE + 'sauce_andalouse.svg' },
+    { id: 's-burger',     name: 'Burger',           price: 0, image: ASSET_BASE + 'sauce_burger.svg' },
+    { id: 's-samurai',    name: 'Samouraï',         price: 0, image: ASSET_BASE + 'sauce_samourai.svg' },
+    { id: 's-bbq',        name: 'Barbecue',         price: 0, image: ASSET_BASE + 'sauce_barbecue.svg' },
+    { id: 's-cocktail',   name: 'Cocktail',         price: 0, image: ASSET_BASE + 'sauce_cocktail.svg' },
+    { id: 's-americaine', name: 'Américaine',       price: 0, image: ASSET_BASE + 'sauce_americaine.svg' },
+    { id: 's-hannibal',   name: 'Hannibal',         price: 0, is_spicy: true, image: ASSET_BASE + 'sauce_hannibal.svg' },
+    { id: 's-harissa',    name: 'Harissa',          price: 0, is_spicy: true, image: ASSET_BASE + 'sauce_harissa.svg' },
+    { id: 's-blanche',    name: 'Blanche',          price: 0, image: ASSET_BASE + 'sauce_blanche.svg' },
+    { id: 's-poivre',     name: 'Poivre',           price: 0, image: ASSET_BASE + 'sauce_poivre.svg' },
+    { id: 's-sans',       name: 'Sans Sauce',       price: 0, is_no_sauce: true, image: ASSET_BASE + 'sauce_sans.svg' },
   ];
 
-  // Crudités (toggle, default ON)
+  // Crudités (toggle, default ON) — Pexels-sourced PNG (kiosk)
   const CRUDITES = [
-    { id: 'c-salade', name: 'Salade',  default: true },
-    { id: 'c-tomate', name: 'Tomate',  default: true },
-    { id: 'c-oignon', name: 'Oignon',  default: true },
+    { id: 'c-salade', name: 'Salade', default: true, image: ASSET_BASE + 'crudite_salade.png' },
+    { id: 'c-tomate', name: 'Tomate', default: true, image: ASSET_BASE + 'crudite_tomate.png' },
+    { id: 'c-oignon', name: 'Oignon', default: true, image: ASSET_BASE + 'crudite_oignon.png' },
   ];
 
-  // Suppléments payants (cf. config/menu.php supplements)
+  // Suppléments payants (cf. config/menu.php supplements) — Pexels-sourced PNG (kiosk)
   const SUPPLEMENTS = [
-    { id: 'sup-jambon',   name: 'Jambon de dinde',         price: 1.00, group: 'Suppléments' },
-    { id: 'sup-boursin',  name: 'Boursin',                 price: 1.00, group: 'Fromages' },
-    { id: 'sup-raclette', name: 'Fromage à raclette',      price: 1.00, group: 'Fromages' },
-    { id: 'sup-fromage',  name: 'Fromage',                 price: 1.00, group: 'Fromages' },
-    { id: 'sup-oeuf',     name: 'Œuf',                     price: 1.00, group: 'Suppléments' },
-    { id: 'sup-galette',  name: 'Galette pommes de terre', price: 1.00, group: 'Suppléments' },
-    { id: 'sup-sauce',    name: 'Sauce supplémentaire',    price: 0.50, group: 'Sauces' },
+    { id: 'sup-jambon',   name: 'Jambon de dinde',         price: 1.00, group: 'Suppléments', image: ASSET_BASE + 'supplement_jambon_dinde.png' },
+    { id: 'sup-boursin',  name: 'Boursin',                 price: 1.00, group: 'Fromages',    image: ASSET_BASE + 'supplement_boursin.png' },
+    { id: 'sup-raclette', name: 'Fromage à raclette',      price: 1.00, group: 'Fromages',    image: ASSET_BASE + 'supplement_raclette.png' },
+    { id: 'sup-fromage',  name: 'Fromage',                 price: 1.00, group: 'Fromages',    image: ASSET_BASE + 'supplement_fromage.png' },
+    { id: 'sup-oeuf',     name: 'Œuf',                     price: 1.00, group: 'Suppléments', image: ASSET_BASE + 'supplement_oeuf.png' },
+    { id: 'sup-galette',  name: 'Galette pommes de terre', price: 1.00, group: 'Suppléments', image: ASSET_BASE + 'supplement_galette.png' },
+    { id: 'sup-sauce',    name: 'Sauce supplémentaire',    price: 0.50, group: 'Sauces',      image: ASSET_BASE + 'generated_sauce-supplementaire.png' },
   ];
 
   // Formules menu (cf. config/menu.php addons)
@@ -99,41 +204,41 @@
   // Cheddar fondu = +1.00€ (DB row group_label='frites_style')
   // Cheddar + Oignons croustillants = +1.50€ (DB row group_label='frites_style')
   const FRITES_STYLES = [
-    { id: null,               name: 'Nature',                       price: 0,    is_default: true,  emoji: '🍟' },
-    { id: 'fs-cheddar',        name: 'Cheddar fondu',                price: 1.00, emoji: '🧀' },
-    { id: 'fs-cheddar-oignon', name: 'Cheddar + Oignons croustillants', price: 1.50, emoji: '🧅' },
+    { id: null,                name: 'Nature',                          price: 0,    is_default: true, emoji: '🍟', image: ASSET_BASE + 'frites.png' },
+    { id: 'fs-cheddar',        name: 'Cheddar fondu',                   price: 1.00, emoji: '🧀',                  image: ASSET_BASE + 'supplement_cheddar.png' },
+    { id: 'fs-cheddar-oignon', name: 'Cheddar + Oignons croustillants', price: 1.50, emoji: '🧅',                  image: ASSET_BASE + 'generated_frites-grande.png' },
   ];
 
   // Boissons formule menu (subset = boissons en cat 12 vendues solo également)
   // Référence kiosk : KioskStepMenuComponent.vue boissonList
   const FORMULE_DRINKS = [
-    { id: 'd-coca',      name: 'Coca-Cola 33cl',     emoji: '🥤' },
-    { id: 'd-coca-zero', name: 'Coca-Cola Zero 33cl', emoji: '🥤' },
-    { id: 'd-fanta',     name: 'Fanta Orange 33cl',   emoji: '🍊' },
-    { id: 'd-sprite',    name: 'Sprite 33cl',         emoji: '🍋' },
-    { id: 'd-oasis',     name: 'Oasis Tropical 33cl', emoji: '🌴' },
-    { id: 'd-orangina',  name: 'Orangina 33cl',       emoji: '🍊' },
-    { id: 'd-eau',       name: 'Eau Plate 50cl',      emoji: '💧' },
-    { id: 'd-capri',     name: 'Capri-Sun',           emoji: '🧃' },
+    { id: 'd-coca',      name: 'Coca-Cola 33cl',      emoji: '🥤', image: ASSET_BASE + 'coca_cola.png' },
+    { id: 'd-coca-zero', name: 'Coca-Cola Zero 33cl', emoji: '🥤', image: ASSET_BASE + 'coca_zero.png' },
+    { id: 'd-fanta',     name: 'Fanta Orange 33cl',   emoji: '🍊', image: ASSET_BASE + 'fanta.png' },
+    { id: 'd-sprite',    name: 'Sprite 33cl',         emoji: '🍋', image: ASSET_BASE + 'sprite.png' },
+    { id: 'd-oasis',     name: 'Oasis Tropical 33cl', emoji: '🌴', image: ASSET_BASE + 'oasis_tropical.png' },
+    { id: 'd-orangina',  name: 'Orangina 33cl',       emoji: '🍊', image: ASSET_BASE + 'orangina.png' },
+    { id: 'd-eau',       name: 'Eau Plate 50cl',      emoji: '💧', image: ASSET_BASE + 'eau.png' },
+    { id: 'd-capri',     name: 'Capri-Sun',           emoji: '🧃', image: ASSET_BASE + 'capri_sun.png' },
   ];
 
   // -------------------------------------------------------------------------
   // CATEGORIES (cf. config/menu.php categories — 13 catégories)
   // -------------------------------------------------------------------------
   const CATEGORIES = [
-    { id: 1,  slug: 'nos-tacos',              name: 'Nos Tacos',              icon: '🌮', sort: 1,  wizard_template: 'tacos',    has_menu: true,  description: 'Nos délicieux tacos avec viandes au choix' },
-    { id: 2,  slug: 'nos-sandwichs',          name: 'Nos Sandwichs',          icon: '🥖', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Sandwichs gourmands et généreux' },
-    { id: 3,  slug: 'nos-burgers',            name: 'Nos Burgers',            icon: '🍔', sort: 3,  wizard_template: 'burger',   has_menu: true,  description: 'Burgers maison 100% frais' },
-    { id: 4,  slug: 'nos-assiettes',          name: 'Nos Assiettes',          icon: '🍽️', sort: 4,  wizard_template: 'assiette', has_menu: false, description: 'Assiettes complètes avec garnitures' },
-    { id: 5,  slug: 'ojja',                   name: 'Ojja',                   icon: '🍳', sort: 5,  wizard_template: 'omelette', has_menu: false, description: 'Ojja traditionnelle' },
-    { id: 6,  slug: 'omelettes',              name: 'Omelettes',              icon: '🥚', sort: 6,  wizard_template: 'omelette', has_menu: false, description: 'Omelettes faites maison' },
-    { id: 7,  slug: 'nos-salades',            name: 'Nos Salades',            icon: '🥗', sort: 7,  wizard_template: 'salade',   has_menu: false, description: 'Salades fraîches et légères' },
-    { id: 8,  slug: 'chicken-tenders',        name: 'Poulet croustillant',    icon: '🍗', sort: 8,  wizard_template: 'snacking', has_menu: false, description: 'Ailes et filets de poulet croustillants' },
-    { id: 9,  slug: 'nos-menus-enfants',      name: 'Nos Menus Enfants',      icon: '🧒', sort: 9,  wizard_template: 'omelette', has_menu: false, description: 'Pour les petits gourmands' },
-    { id: 10, slug: 'frites-accompagnements', name: 'Frites & Accompagnements', icon: '🍟', sort: 10, wizard_template: 'simple', has_menu: false, description: 'Frites et accompagnements' },
-    { id: 11, slug: 'nos-desserts',           name: 'Nos Desserts',           icon: '🍰', sort: 11, wizard_template: 'simple',   has_menu: false, description: 'Desserts gourmands' },
-    { id: 12, slug: 'nos-boissons',           name: 'Nos Boissons',           icon: '🥤', sort: 12, wizard_template: 'simple',   has_menu: false, description: 'Boissons fraîches' },
-    { id: 13, slug: 'supplements',            name: 'Suppléments',            icon: '➕', sort: 13, wizard_template: 'simple',   has_menu: false, description: 'Suppléments commandables séparément' },
+    { id: 1,  slug: 'nos-tacos',              name: 'Nos Tacos',              icon: '🌮', sort: 1,  wizard_template: 'tacos',    has_menu: true,  description: 'Nos délicieux tacos avec viandes au choix',          image: ASSET_BASE + 'generated_category_nos-tacos.png' },
+    { id: 2,  slug: 'nos-sandwichs',          name: 'Nos Sandwichs',          icon: '🥖', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Sandwichs gourmands et généreux',                    image: ASSET_BASE + 'generated_category_nos-sandwichs.png' },
+    { id: 3,  slug: 'nos-burgers',            name: 'Nos Burgers',            icon: '🍔', sort: 3,  wizard_template: 'burger',   has_menu: true,  description: 'Burgers maison 100% frais',                          image: ASSET_BASE + 'generated_category_nos-burgers.png' },
+    { id: 4,  slug: 'nos-assiettes',          name: 'Nos Assiettes',          icon: '🍽️', sort: 4,  wizard_template: 'assiette', has_menu: false, description: 'Assiettes complètes avec garnitures',                 image: ASSET_BASE + 'generated_category_nos-assiettes.png' },
+    { id: 5,  slug: 'ojja',                   name: 'Ojja',                   icon: '🍳', sort: 5,  wizard_template: 'omelette', has_menu: false, description: 'Ojja traditionnelle',                                image: ASSET_BASE + 'generated_category_ojja.png' },
+    { id: 6,  slug: 'omelettes',              name: 'Omelettes',              icon: '🥚', sort: 6,  wizard_template: 'omelette', has_menu: false, description: 'Omelettes faites maison',                            image: ASSET_BASE + 'generated_category_omelettes.png' },
+    { id: 7,  slug: 'nos-salades',            name: 'Nos Salades',            icon: '🥗', sort: 7,  wizard_template: 'salade',   has_menu: false, description: 'Salades fraîches et légères',                        image: ASSET_BASE + 'generated_category_nos-salades.png' },
+    { id: 8,  slug: 'chicken-tenders',        name: 'Poulet croustillant',    icon: '🍗', sort: 8,  wizard_template: 'snacking', has_menu: false, description: 'Ailes et filets de poulet croustillants',            image: ASSET_BASE + 'generated_category_chicken-tenders.png' },
+    { id: 9,  slug: 'nos-menus-enfants',      name: 'Nos Menus Enfants',      icon: '🧒', sort: 9,  wizard_template: 'omelette', has_menu: false, description: 'Pour les petits gourmands',                          image: ASSET_BASE + 'generated_category_nos-menus-enfants.png' },
+    { id: 10, slug: 'frites-accompagnements', name: 'Frites & Accompagnements', icon: '🍟', sort: 10, wizard_template: 'simple', has_menu: false, description: 'Frites et accompagnements',                          image: ASSET_BASE + 'generated_category_frites-accompagnements.png' },
+    { id: 11, slug: 'nos-desserts',           name: 'Nos Desserts',           icon: '🍰', sort: 11, wizard_template: 'simple',   has_menu: false, description: 'Desserts gourmands',                                 image: ASSET_BASE + 'generated_category_nos-desserts.png' },
+    { id: 12, slug: 'nos-boissons',           name: 'Nos Boissons',           icon: '🥤', sort: 12, wizard_template: 'simple',   has_menu: false, description: 'Boissons fraîches',                                  image: ASSET_BASE + 'generated_category_nos-boissons.png' },
+    { id: 13, slug: 'supplements',            name: 'Suppléments',            icon: '➕', sort: 13, wizard_template: 'simple',   has_menu: false, description: 'Suppléments commandables séparément',                image: ASSET_BASE + 'generated_category_supplements.png' },
   ];
 
   // -------------------------------------------------------------------------
@@ -147,6 +252,9 @@
     return {
       id, slug, category_id, name, price, description,
       thumb: 'item-' + slug,
+      // Phase 6.A 2026-05-11 — real assets wired (kiosk public/images/menu/ + owner signature/)
+      image: imgFor(slug),                         // small thumb (mobile-optimized generated_*.png)
+      hero: heroFor(slug),                          // hi-quality bg-removed for featured cards
       kiosk_emoji: opts.emoji || '',
       time: opts.time !== undefined ? opts.time : 8,
       tags: opts.tags || [],
@@ -378,5 +486,6 @@
     backendId: c.id,
     wizard_template: c.wizard_template,
     has_menu: c.has_menu,
+    image: c.image,
   }));
 })();

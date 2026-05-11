@@ -36,7 +36,10 @@ function Stamp({ size = 28 }) {
   );
 }
 
-// Bottom tab bar
+// Bottom tab bar — A11-001/F-004/S-004/A-007 P1 closed round-2 2026-05-11.
+// <div onClick> → <button aria-pressed aria-label> + role="tablist" wrapper.
+// axe button-name CRITICAL violation resolved ; keyboard nav now works (button
+// is natively focusable + Enter/Space activatable).
 function TabBar({ active, onChange }) {
   const tabs = [
     { id: 'home', label: 'Accueil', icon: I.Home },
@@ -45,29 +48,75 @@ function TabBar({ active, onChange }) {
     { id: 'profile', label: 'Profil', icon: I.User },
   ];
   return (
-    <div className="lc-tabs">
+    <div className="lc-tabs" role="tablist" aria-label="Navigation principale">
       {tabs.map(t => {
         const isActive = active === t.id;
         return (
-          <div key={t.id} className={`lc-tab ${isActive ? 'lc-tab--active' : ''}`} onClick={() => onChange(t.id)}>
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-pressed={isActive}
+            aria-label={t.label}
+            className={`lc-tab ${isActive ? 'lc-tab--active' : ''}`}
+            onClick={() => onChange(t.id)}
+          >
             <t.icon size={22} sw={isActive ? 2.2 : 1.7} />
             <span>{t.label}</span>
             <span className="lc-tab-dot" />
-          </div>
+          </button>
         );
       })}
     </div>
   );
 }
 
-// Image-slot wrapper that respects React
-function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {} }) {
+// Image-slot wrapper that respects React.
+// Phase 6.A 2026-05-11 (real assets) — if `src` is provided, render a real <img>
+// with object-fit:cover + emoji fallback on error. Falls back to the legacy
+// <image-slot> drag-and-drop placeholder only when no src is provided.
+function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {}, src, alt, fallbackEmoji }) {
+  const sharedBoxStyle = {
+    display: 'block',
+    width: w === undefined ? '100%' : w,
+    height: h,
+    borderRadius: radius,
+    overflow: 'hidden',
+    ...style,
+  };
+  if (src) {
+    return (
+      <div style={{ ...sharedBoxStyle, background: 'var(--gray-1)', position: 'relative' }} aria-label={alt || placeholder}>
+        <img
+          src={src}
+          alt={alt || placeholder}
+          loading="lazy"
+          decoding="async"
+          onError={(e) => {
+            // Strict fallback chain: hide the broken img and let the emoji span (rendered below) take its place
+            e.currentTarget.style.display = 'none';
+          }}
+          style={{
+            display: 'block',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: '50% 50%',
+          }}
+        />
+        {fallbackEmoji && (
+          <span aria-hidden="true" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, pointerEvents: 'none', opacity: 0.001 }}>{fallbackEmoji}</span>
+        )}
+      </div>
+    );
+  }
+  // Legacy image-slot drag-drop fallback (no src wired — used by dev tooling only)
   return (
     <image-slot
       slot-id={id}
       placeholder={placeholder}
       shape={shape}
-      style={{ display: 'block', width: w === undefined ? '100%' : w, height: h, borderRadius: radius, overflow: 'hidden', ...style }}
+      style={sharedBoxStyle}
     />
   );
 }
@@ -92,10 +141,18 @@ function ScreenHeader({ left, center, right, style = {}, safeTop = true }) {
   );
 }
 
-// Round icon button
-function IconBtn({ children, onClick, size = 40, bg = 'var(--gray-1)', color = 'var(--ink)', style = {} }) {
+// Round icon button — A11-002/A11-010/S-003 P1 closed round-2 2026-05-11.
+// Accepts ariaLabel (camelCase) AND `aria-label` (string-key passthrough via
+// rest-spread) so callsites already using `aria-label="..."` work too.
+// Default size bumped 40→44 to meet WCAG 2.5.5 minimum touch target (A11-012).
+function IconBtn({ children, onClick, size = 44, bg = 'var(--gray-1)', color = 'var(--ink)', style = {}, ariaLabel, ...rest }) {
   return (
-    <button onClick={onClick} style={{ width: size, height: size, borderRadius: 999, border: 0, background: bg, color, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', ...style }}>
+    <button
+      onClick={onClick}
+      aria-label={ariaLabel}
+      {...rest}
+      style={{ width: size, height: size, borderRadius: 999, border: 0, background: bg, color, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', ...style }}
+    >
       {children}
     </button>
   );
