@@ -592,7 +592,13 @@ function ScreenItem({ go, itemId, addToCart }) {
 
 // CART
 function ScreenCart({ go, cart, setCart }) {
-  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  // [Adversarial cluster-7 P1 fix] Promo discount wired — banner appliqué applique vraiment
+  // une réduction (V0 mock : WELCOME10/CAYENNE = -10%). Avant : banner cosmetic-only,
+  // user pensait avoir -10% mais payait full price → mauvaise UX + risque légal.
+  const [promoCode, setPromoCode] = uS(null); // null | 'WELCOME10' | 'CAYENNE'
+  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const discount = promoCode ? Math.round(subtotal * 10) / 100 : 0; // -10%, arrondi 2 décimales
+  const total = Math.max(0, subtotal - discount);
   const updateQty = (idx, d) => setCart(c => c.map((it, i) => i === idx ? { ...it, qty: Math.max(1, it.qty + d) } : it));
   const remove = (idx) => setCart(c => c.filter((_, i) => i !== idx));
   return (
@@ -681,16 +687,25 @@ function ScreenCart({ go, cart, setCart }) {
       {/* sticky checkout */}
       {cart.length > 0 && (
         <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', padding: '14px 20px 36px', borderTop: '1px solid var(--gray-1)' }}>
-          {/* [D6 Owner re-cadrage 2026-05-11] Promo code input — mock V0, backend wireup Phase 6.C */}
-          <PromoCodeRow/>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 10, marginBottom: 12 }}>
+          {/* [D6 + Adversarial cluster-7 P1 fix] Promo code input + REAL discount mock V0 */}
+          <PromoCodeRow onApply={setPromoCode}/>
+          {/* Total breakdown : sous-total / réduction / TOTAL */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 10, marginBottom: 4 }}>
             <div>
               <div style={{ fontSize: 11, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Total</div>
+              {discount > 0 && (
+                <div data-testid="cart-subtotal-strike" style={{ fontSize: 14, color: 'var(--gray-3)', textDecoration: 'line-through', fontFamily: 'var(--font-mono)' }}>{subtotal.toFixed(2).replace('.', ',')} €</div>
+              )}
               <div className="lc-display" style={{ fontSize: 36, lineHeight: 1 }}>{total.toFixed(2).replace('.', ',')} €</div>
+              {discount > 0 && (
+                <div data-testid="cart-discount-line" aria-live="polite" style={{ fontSize: 11, color: 'var(--green, #1FA653)', fontWeight: 700, marginTop: 2 }}>
+                  Économie <span data-testid="cart-discount-amount">{discount.toFixed(2).replace('.', ',')} €</span> (code {promoCode})
+                </div>
+              )}
             </div>
             <span style={{ fontSize: 11, color: 'var(--gray-3)' }}>TVA incluse</span>
           </div>
-          <button onClick={() => go('confirm')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 60, justifyContent: 'space-between', padding: '0 24px' }}>
+          <button onClick={() => go('confirm')} className="lc-btn" style={{ marginTop: 10, background: 'var(--orange)', color: '#fff', width: '100%', height: 60, justifyContent: 'space-between', padding: '0 24px' }}>
             Valider ma commande <I.Arrow size={18}/>
           </button>
         </div>
@@ -1312,25 +1327,30 @@ function ScreenLoyalty({ go }) {
   );
 }
 
-// [D6 Owner re-cadrage 2026-05-11] PromoCodeRow — input promo + mock validation (V0).
+// [D6 + Adversarial cluster-7 P1 fix 2026-05-11] PromoCodeRow — input promo + mock V0.
+// Adversarial caught : success banner was cosmetic-only, total stayed full price.
+// Fix : onApply callback lifts the applied code to ScreenCart which computes -10% discount.
 // Backend wireup Phase 6.C : POST /api/v1/frontend/cart/promo with code → returns discount or 422.
-function PromoCodeRow() {
+function PromoCodeRow({ onApply }) {
   const [code, setCode] = uS('');
   const [status, setStatus] = uS('idle'); // idle | applied | invalid
   const [appliedCode, setAppliedCode] = uS('');
   const apply = () => {
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) return;
-    // V0 mock : "WELCOME10" valide, autres invalides
     if (trimmed === 'WELCOME10' || trimmed === 'CAYENNE') {
       setStatus('applied');
       setAppliedCode(trimmed);
+      if (typeof onApply === 'function') onApply(trimmed);
     } else {
       setStatus('invalid');
       setTimeout(() => setStatus('idle'), 2200);
     }
   };
-  const clear = () => { setCode(''); setStatus('idle'); setAppliedCode(''); };
+  const clear = () => {
+    setCode(''); setStatus('idle'); setAppliedCode('');
+    if (typeof onApply === 'function') onApply(null);
+  };
   if (status === 'applied') {
     return (
       <div data-testid="cart-promo-applied" role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--green-light, #ECFDF5)', border: '1px solid var(--green, #1FA653)', borderRadius: 10, marginBottom: 4 }}>

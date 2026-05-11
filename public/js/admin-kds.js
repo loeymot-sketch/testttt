@@ -1,6 +1,121 @@
 "use strict";
 (self["webpackChunk"] = self["webpackChunk"] || []).push([["admin-kds"],{
 
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css":
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-card[data-v-151558cb] {\n    position: relative;\n    display: flex;\n    flex-direction: column;\n    background: #FFFFFF;\n    border-radius: 12px;\n    overflow: hidden;\n    transition: transform 250ms ease-out, box-shadow 150ms ease, opacity 200ms ease;\n    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);\n}\n.kds-card[data-v-151558cb]:hover {\n    transform: translateY(-1px);\n    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);\n}\n.kds-card[data-v-151558cb]:focus-visible {\n    outline: 4px solid #EA580C;\n    outline-offset: 4px;\n}\n.kds-card__stripe[data-v-151558cb] {\n    height: 6px;\n    flex-shrink: 0;\n}\n.kds-card__header[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    border-bottom: 1px solid #F3F4F6;\n}\n.kds-card__meta[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    height: 26px;\n    padding: 6px 12px 0;\n}\n.kds-card__shortcut[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    color: #6B7280;\n    background: rgba(0, 0, 0, 0.04);\n    min-width: 22px;\n    height: 18px;\n    border-radius: 4px;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.04em;\n}\n.kds-card__shortcut-spacer[data-v-151558cb],\n.kds-card__allergen-spacer[data-v-151558cb] {\n    width: 22px;\n}\n.kds-card__state-source[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n}\n.kds-card__state-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 8px;\n    height: 24px;\n    border-radius: 9999px;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n}\n.kds-card__state-dot[data-v-151558cb] {\n    display: inline-block;\n    width: 6px;\n    height: 6px;\n    border-radius: 9999px;\n}\n.kds-card__source-chip[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 10px;\n    height: 28px;\n    border-radius: 6px;\n    font-size: 13px;\n    font-weight: 700;\n    letter-spacing: 0.1em;\n    text-transform: uppercase;\n}\n.kds-card__allergen-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 4px;\n    padding: 0 8px;\n    height: 20px;\n    border-radius: 4px;\n    background: #EA580C;\n    color: #FFFFFF;\n    font-size: 10px;\n    font-weight: 800;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.30);\n}\n.kds-card__main[data-v-151558cb] {\n    display: flex;\n    align-items: flex-end;\n    justify-content: space-between;\n    padding: 2px 16px 10px;\n}\n.kds-card__queue[data-v-151558cb] {\n    color: #111827;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 52px;\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.03em;\n    font-variant-numeric: tabular-nums;\n}\n.kds-card__queue-prefix[data-v-151558cb] {\n    font-size: 26px;\n    font-weight: 700;\n    opacity: 0.55;\n    margin-inline-end: 2px;\n}\n.kds-card__elapsed-wrap[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    align-items: flex-end;\n    gap: 2px;\n}\n.kds-card__elapsed-label[data-v-151558cb] {\n    font-size: 10px;\n    font-weight: 700;\n    letter-spacing: 0.15em;\n    text-transform: uppercase;\n    opacity: 0.75;\n}\n.kds-card__elapsed[data-v-151558cb] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 34px;\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.02em;\n    font-variant-numeric: tabular-nums;\n}\n.kds-card__body[data-v-151558cb] {\n    flex: 1;\n    overflow-y: auto;\n    padding: 4px 16px;\n    position: relative;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar {\n    width: 4px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-thumb {\n    background: #D1D5DB;\n    border-radius: 2px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-track {\n    background: transparent;\n}\n.kds-card__item-block[data-v-151558cb] {\n    border-top: 1px solid #F3F4F6;\n}\n.kds-card__item-block[data-v-151558cb]:first-child {\n    border-top: none;\n}\n.kds-card__body-fade[data-v-151558cb] {\n    position: sticky;\n    bottom: 0;\n    height: 0;\n    pointer-events: none;\n}\n.kds-card__body-fade[data-v-151558cb]::before {\n    content: '';\n    position: absolute;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    height: 16px;\n    background: linear-gradient(to top, #FFFFFF, rgba(255, 255, 255, 0));\n}\n.kds-card__cta[data-v-151558cb] {\n    margin: 4px 8px 8px;\n    height: 52px;\n    background: #1F2937;\n    color: #FFFFFF;\n    border: 0;\n    border-radius: 12px;\n    font-size: 22px;\n    font-weight: 700;\n    letter-spacing: 0.01em;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    gap: 14px;\n    transition: transform 100ms ease;\n}\n.kds-card__cta[data-v-151558cb]:active {\n    transform: translateY(1px);\n}\n.kds-card__cta[data-v-151558cb]:focus-visible {\n    outline: 4px solid #4B5563;\n    outline-offset: 2px;\n}\n\n/* age critical pulse on time digit (1Hz) */\n@keyframes kds-card-pulse-digit-151558cb {\n0%, 100% { opacity: 1;\n}\n50%      { opacity: 0.55;\n}\n}\n.kds-pulse-digit[data-v-151558cb] {\n    animation: kds-card-pulse-digit-151558cb 1s ease-in-out infinite;\n}\n.kds-card--ready[data-v-151558cb] {\n    opacity: 0.7;\n}\n.kds-card--cancelled[data-v-151558cb] {\n    background: rgba(254, 226, 226, 0.5);\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-card[data-v-151558cb],\n    .kds-pulse-digit[data-v-151558cb],\n    .kds-card__cta[data-v-151558cb] {\n        transition: none !important;\n        animation: none !important;\n}\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css":
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-line[data-v-5c6c7baf] {\n  font-family: 'Inter', system-ui, sans-serif;\n}\n\n/* HEADER — qty + allergen icon + name */\n.kds-line--header[data-v-5c6c7baf] {\n  padding: 0.625rem 0;\n}\n.kds-line__header[data-v-5c6c7baf] {\n  display: flex;\n  align-items: baseline;\n  gap: 10px;\n}\n.kds-line__qty[data-v-5c6c7baf] {\n  display: inline-block;\n  min-width: 42px;\n  text-align: end;\n  color: #111827;\n  font-size: 26px;\n  font-weight: 800;\n  font-variant-numeric: tabular-nums;\n  line-height: 1;\n}\n.kds-line__qty-x[data-v-5c6c7baf] {\n  font-size: 18px;\n  opacity: 0.55;\n  margin-inline-start: 2px;\n}\n.kds-line__allergen-icon[data-v-5c6c7baf] {\n  color: #F97316;\n  font-size: 20px;\n  line-height: 1;\n  margin-top: -2px;\n}\n.kds-line__name[data-v-5c6c7baf] {\n  flex: 1;\n  color: #111827;\n  font-size: 22px;\n  font-weight: 500;\n  line-height: 1.15;\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n\n/* VARIATION — \"Pain : Baguette\" */\n.kds-line__variation[data-v-5c6c7baf],\n.kds-line__variation--flat[data-v-5c6c7baf] {\n  color: #4B5563;\n  font-size: 16px;\n  line-height: 1.3;\n  padding-inline-start: 56px;\n  margin-top: 4px;\n  display: flex;\n  flex-wrap: wrap;\n}\n.kds-line__group[data-v-5c6c7baf] {\n  font-weight: 600;\n  color: #374151;\n  text-transform: capitalize;\n}\n.kds-line__sep[data-v-5c6c7baf] {\n  color: #6B7280;\n}\n.kds-line__value[data-v-5c6c7baf] {\n  color: #4B5563;\n}\n\n/* SUPPLEMENT — yellow italic */\n.kds-line__supplement[data-v-5c6c7baf] {\n  color: #CA8A04;\n  font-size: 16px;\n  font-style: italic;\n  font-weight: 600;\n  padding-inline-start: 56px;\n  margin-top: 4px;\n  line-height: 1.3;\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n\n/* MENU CHILD — formule member */\n.kds-line__menu-child[data-v-5c6c7baf],\n.kds-line__addon[data-v-5c6c7baf] {\n  display: flex;\n  align-items: baseline;\n  gap: 6px;\n  color: #1F2937;\n  font-size: 16px;\n  font-weight: 500;\n  padding-inline-start: 56px;\n  margin-top: 4px;\n  line-height: 1.3;\n}\n.kds-line__menu-arrow[data-v-5c6c7baf] {\n  color: #6B7280;\n  font-weight: 700;\n  flex-shrink: 0;\n}\n\n/* INSTRUCTION — italic note with class-based emphasis */\n.kds-line__instruction[data-v-5c6c7baf] {\n  display: flex;\n  align-items: baseline;\n  gap: 6px;\n  font-size: 16px;\n  font-style: italic;\n  padding-inline-start: 56px;\n  margin-top: 4px;\n  line-height: 1.3;\n}\n.kds-line__instruction-prefix[data-v-5c6c7baf] {\n  opacity: 0.55;\n  font-style: normal;\n}\n.kds-instruction--note[data-v-5c6c7baf] {\n  color: #4B5563;\n}\n.kds-instruction--exclusion[data-v-5c6c7baf] {\n  color: #92400E;\n  font-weight: 600;\n}\n.kds-instruction--allergen[data-v-5c6c7baf] {\n  color: #C2410C;\n  font-weight: 700;\n}\n\n/* ALLERGEN BLOCK — \"⚠ Allergènes : gluten · lait\" */\n.kds-line__allergen-block[data-v-5c6c7baf] {\n  display: flex;\n  align-items: baseline;\n  gap: 6px;\n  flex-wrap: wrap;\n  color: #C2410C;\n  font-size: 16px;\n  font-style: italic;\n  font-weight: 700;\n  padding-inline-start: 40px;\n  margin-top: 6px;\n  margin-bottom: 4px;\n  line-height: 1.3;\n  background: rgba(249, 115, 22, 0.06);\n  border-inline-start: 4px solid #F97316;\n  border-radius: 6px;\n  padding-top: 4px;\n  padding-bottom: 4px;\n  padding-inline-end: 10px;\n}\n.kds-line__allergen-label[data-v-5c6c7baf] {\n  font-weight: 800;\n}\n.kds-line__allergen-codes[data-v-5c6c7baf] {\n  font-weight: 600;\n}\n[dir=\"rtl\"] .kds-line__qty[data-v-5c6c7baf] {\n  text-align: end;\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css":
+/*!*************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css ***!
+  \*************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-banner[data-v-665158fe] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    padding: 0 24px;\n    height: 32px;\n    border-bottom: 1px solid;\n    font-family: 'Inter', system-ui, sans-serif;\n}\n.kds-banner--error[data-v-665158fe] {\n    height: 40px;\n    background: #DC2626;\n    color: #FFFFFF;\n    border-color: #B91C1C;\n}\n.kds-banner--warning[data-v-665158fe] {\n    background: #FFFBEB;\n    color: #92400E;\n    border-color: #FDE68A;\n}\n.kds-banner--info[data-v-665158fe] {\n    background: #EFF6FF;\n    color: #1E40AF;\n    border-color: #BFDBFE;\n}\n.kds-banner--neutral[data-v-665158fe] {\n    background: #F9FAFB;\n    color: #4B5563;\n    border-color: #E5E7EB;\n}\n.kds-banner__main[data-v-665158fe] {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n}\n.kds-banner__icon[data-v-665158fe] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    color: #FFFFFF;\n    width: 18px;\n    height: 18px;\n    border-radius: 9999px;\n}\n.kds-banner--error .kds-banner__icon[data-v-665158fe] {\n    background: rgba(255, 255, 255, 0.18);\n}\n.kds-banner__spinner[data-v-665158fe] {\n    animation: kds-banner-spin-665158fe 1s linear infinite;\n}\n@keyframes kds-banner-spin-665158fe {\nfrom { transform: rotate(0deg);\n}\nto   { transform: rotate(360deg);\n}\n}\n.kds-banner__text[data-v-665158fe] {\n    font-size: 13px;\n    font-weight: 600;\n}\n.kds-banner--error .kds-banner__text[data-v-665158fe] {\n    font-size: 14px;\n    font-weight: 700;\n}\n.kds-banner__tag[data-v-665158fe] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.15em;\n    opacity: 0.85;\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-banner__spinner[data-v-665158fe] {\n        animation: none !important;\n}\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css":
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-toast[data-v-d4f74b20] {\n    position: absolute;\n    top: 110px;\n    left: 50%;\n    transform: translate(-50%, 0);\n    min-width: 620px;\n    z-index: 30;\n    animation: kds-toast-in-d4f74b20 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;\n}\n.kds-toast__inner[data-v-d4f74b20] {\n    border-radius: 12px;\n    overflow: hidden;\n    background: #0F172A;\n    color: #FFFFFF;\n    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.4);\n    border: 1px solid rgba(255, 255, 255, 0.06);\n}\n.kds-toast__row[data-v-d4f74b20] {\n    display: flex;\n    align-items: center;\n    gap: 16px;\n    padding: 16px 20px;\n}\n.kds-toast__check[data-v-d4f74b20] {\n    width: 48px;\n    height: 48px;\n    border-radius: 9999px;\n    background: #16A34A;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    flex-shrink: 0;\n}\n.kds-toast__content[data-v-d4f74b20] {\n    flex: 1;\n}\n.kds-toast__title[data-v-d4f74b20] {\n    font-size: 18px;\n    font-weight: 700;\n    line-height: 1.2;\n    color: #FFFFFF;\n}\n.kds-toast__sub[data-v-d4f74b20] {\n    margin-top: 4px;\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    font-size: 13px;\n    color: #94A3B8;\n}\n.kds-toast__undo[data-v-d4f74b20] {\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    padding: 0 24px;\n    height: 48px;\n    border: 0;\n    border-radius: 8px;\n    background: #FFFFFF;\n    color: #0F172A;\n    font-size: 16px;\n    font-weight: 800;\n    cursor: pointer;\n    box-shadow: 0 2px 0 0 #CBD5E1;\n    transition: transform 100ms ease;\n}\n.kds-toast__undo[data-v-d4f74b20]:active {\n    transform: translateY(1px);\n}\n.kds-toast__undo[data-v-d4f74b20]:focus-visible {\n    outline: 4px solid #EA580C;\n    outline-offset: 2px;\n}\n.kds-toast__progress[data-v-d4f74b20] {\n    height: 4px;\n    background: rgba(255, 255, 255, 0.1);\n}\n.kds-toast__progress-bar[data-v-d4f74b20] {\n    height: 100%;\n    background: #16A34A;\n    width: 100%;\n    transform-origin: left center;\n    animation: kds-toast-shrink-d4f74b20 3s linear forwards;\n}\n[dir=\"rtl\"] .kds-toast__progress-bar[data-v-d4f74b20] {\n    transform-origin: right center;\n}\n@keyframes kds-toast-in-d4f74b20 {\nfrom { transform: translate(-50%, -120%); opacity: 0;\n}\nto   { transform: translate(-50%, 0);     opacity: 1;\n}\n}\n@keyframes kds-toast-shrink-d4f74b20 {\nfrom { transform: scaleX(1);\n}\nto   { transform: scaleX(0);\n}\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-toast[data-v-d4f74b20],\n    .kds-toast__progress-bar[data-v-d4f74b20],\n    .kds-toast__undo[data-v-d4f74b20] {\n        animation: none !important;\n        transition: none !important;\n}\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css":
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-v2[data-v-3992cfe5] {\n    flex: 1;\n    display: flex;\n    flex-direction: column;\n    background: #F9FAFB;\n    position: relative;\n    font-family: 'Inter', system-ui, sans-serif;\n    min-height: 0;\n}\n[dir=\"rtl\"] .kds-v2[data-v-3992cfe5] {\n    font-family: 'Noto Naskh Arabic', 'Inter', system-ui, sans-serif;\n}\n.kds-v2__grid[data-v-3992cfe5] {\n    flex: 1;\n    display: grid;\n    grid-template-columns: repeat(4, minmax(0, 1fr));\n    grid-template-rows: repeat(2, minmax(0, 1fr));\n    gap: 16px;\n    padding: 16px;\n    min-height: 0;\n}\n\n/* 4K: 5 cols × 2 rows, more breathing room */\n@media (min-width: 2560px) {\n.kds-v2__grid[data-v-3992cfe5] {\n        grid-template-columns: repeat(5, minmax(0, 1fr));\n        grid-template-rows: repeat(2, minmax(0, 1fr));\n}\n}\n.kds-v2__placeholder[data-v-3992cfe5] {\n    border: 2px dashed #E5E7EB;\n    border-radius: 12px;\n    min-height: 200px;\n}\n.kds-v2__empty[data-v-3992cfe5] {\n    flex: 1;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    color: #9CA3AF;\n    padding: 32px;\n}\n.kds-v2__empty-illustration[data-v-3992cfe5] {\n    position: relative;\n    width: 200px;\n    height: 200px;\n    margin-bottom: 32px;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n.kds-v2__empty-glow[data-v-3992cfe5] {\n    position: absolute;\n    inset: 0;\n    border-radius: 9999px;\n    background: radial-gradient(closest-side, #F3F4F6, transparent 70%);\n}\n.kds-v2__empty-title[data-v-3992cfe5] {\n    font-size: 32px;\n    font-weight: 700;\n    color: #374151;\n}\n.kds-v2__empty-sub[data-v-3992cfe5] {\n    margin-top: 8px;\n    font-size: 16px;\n    color: #9CA3AF;\n}\n.sr-only[data-v-3992cfe5] {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
 /***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css":
 /*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue?vue&type=style&index=0&id=66aac04e&scoped=true&lang=css ***!
@@ -17,10 +132,569 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-instruction[data-v-66aac04e] {\n  line-height: 1.5;\n  border-left: 3px solid #e0e0e0;\n  padding-left: 0.4rem;\n}\n.kds-instruction--note[data-v-66aac04e] {\n  color: #4e4b66;\n  border-left-color: #a0a3bd;\n  background: rgba(160, 163, 189, 0.08);\n  border-radius: 0 4px 4px 0;\n  padding: 0.2rem 0.35rem 0.2rem 0.4rem;\n}\n.kds-instruction--exclusion[data-v-66aac04e] {\n  color: #7c2d12;\n  border-left-color: #f97316;\n  background: #fff7ed;\n  font-weight: 600;\n  border-radius: 0 4px 4px 0;\n  padding: 0.2rem 0.35rem 0.2rem 0.4rem;\n  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2);\n}\n.kds-instruction--allergen[data-v-66aac04e] {\n  color: #7f1d1d;\n  border-left-color: #dc2626;\n  background: #fef2f2;\n  font-weight: 700;\n  border-radius: 0 4px 4px 0;\n  padding: 0.2rem 0.35rem 0.2rem 0.4rem;\n  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.35);\n}\n.kds-hint-banner[data-v-66aac04e] {\n  text-align: center;\n  padding: 8px 12px;\n  font-size: 0.8rem;\n  line-height: 1.35;\n  font-weight: 500;\n}\n.kds-hint-banner--info[data-v-66aac04e] {\n  background: #e0f2fe;\n  color: #0c4a6e;\n  border-bottom: 1px solid #bae6fd;\n}\n.kds-hint-banner--warning[data-v-66aac04e] {\n  background: #fffbeb;\n  color: #78350f;\n  border-bottom: 1px solid #fde68a;\n}\n.kds-hint-banner--neutral[data-v-66aac04e] {\n  background: #f4f4f5;\n  color: #3f3f46;\n  border-bottom: 1px solid #e4e4e7;\n}\n.kds-hint-banner--danger[data-v-66aac04e] {\n  background: #fee2e2;\n  color: #7f1d1d;\n  border-bottom: 1px solid #fecaca;\n  font-weight: 600;\n}\n/* [test-e2e fix C-009 round-3 2026-05-10] Persistent KDS error banner sticky\n   to viewport top so a kitchen operator scrolled into the order list still\n   sees the 503-degraded signal after toast fade. Scoped to --danger to avoid\n   affecting bump-info neutral banner (which is allowed to scroll naturally).\n   The KDS view's scroll container is `<main class=\"db-main\">` with\n   `h-screen overflow-auto` and top-padding accounting for the fixed navbar,\n   so `position: sticky; top: 0` pins at the scrollport's padding edge —\n   right below the fixed `.db-header` (z-30). z-index: 50 keeps it above\n   internal grid panels. */\n.kds-hint-banner--danger[data-v-66aac04e] {\n  position: sticky;\n  top: 0;\n  z-index: 50;\n}\n.kds-hint-banner--action[data-v-66aac04e] {\n  align-items: center;\n  display: flex;\n  gap: 0.75rem;\n  justify-content: center;\n}\n.kds-hint-link[data-v-66aac04e] {\n  background: transparent;\n  border: 0;\n  color: inherit;\n  cursor: pointer;\n  font-size: 0.78rem;\n  font-weight: 800;\n  text-decoration: underline;\n}\n/* [F-03 / Lot 1.C] Sync stamp footer — discrete, never blocks the grid. */\n.kds-sync-footer[data-v-66aac04e] {\n  display: flex;\n  justify-content: flex-end;\n  padding: 4px 12px 6px 12px;\n  background: transparent;\n  pointer-events: none;\n}\n.kds-sync-stamp[data-v-66aac04e] {\n  font-size: 0.72rem;\n  color: #374151;\n  font-weight: 500;\n  letter-spacing: 0.01em;\n}\n.kds-sync-stamp--stale[data-v-66aac04e] {\n  color: #92400e;\n  font-weight: 600;\n}\n.ws-reconnect-banner[data-v-66aac04e] {\n  background: #ecfeff;\n  color: #155e75;\n  border-bottom: 1px solid #a5f3fc;\n  text-align: center;\n  padding: 6px 12px;\n  font-size: 0.85rem;\n  font-weight: 600;\n}\n.kds-card-header-meta[data-v-66aac04e] {\n  align-items: center;\n  display: flex;\n  flex: 1 1 auto;\n  flex-wrap: wrap;\n  gap: 0.35rem;\n  min-width: 0;\n}\n.kds-card-header-meta > span[data-v-66aac04e]:first-of-type {\n  min-width: 0;\n  overflow-wrap: anywhere;\n}\n.kds-source-pill[data-v-66aac04e] {\n  align-items: center;\n  border-radius: 9999px;\n  display: inline-flex;\n  flex: 0 0 auto;\n  font-size: 0.68rem;\n  font-weight: 900;\n  letter-spacing: 0.01em;\n  line-height: 1.1;\n  min-height: 1.4rem;\n  padding: 0.22rem 0.55rem;\n  white-space: nowrap;\n}\n.kds-source-pill--kiosk[data-v-66aac04e] {\n  background: #4C1A96;\n  color: #FFFFFF;\n}\n.kds-source-pill--queue[data-v-66aac04e] {\n  background: #991B1B;\n  color: #FFFFFF;\n}\n.kds-wait-green[data-v-66aac04e] {\n  border-color: rgba(34, 197, 94, 0.55) !important;\n}\n.kds-wait-orange[data-v-66aac04e] {\n  border-color: rgba(245, 158, 11, 0.7) !important;\n}\n.kds-wait-red[data-v-66aac04e] {\n  border-color: rgba(239, 68, 68, 0.85) !important;\n}\n.kds-wait-red.animate-pulse[data-v-66aac04e] {\n  animation: none !important;\n}\n.kds-counter-payment-badge[data-v-66aac04e] {\n  display: inline-flex;\n  align-items: center;\n  border-radius: 9999px;\n  background: #B91C1C;\n  color: #FFFFFF;\n  font-size: 0.58rem;\n  font-weight: 900;\n  letter-spacing: 0.02em;\n  line-height: 1;\n  padding: 0.28rem 0.45rem;\n  text-transform: uppercase;\n}\n\n/* [F-02] Visual cue for in-place table reassignment.\n * Per orchestrator gate G-2 (in_place_with_css_flash):\n *   - 2 second cyan pulse — non-blocking, no sound, no re-print.\n *   - High enough contrast to be noticed mid-rush, low enough not to alarm.\n * The class is removed automatically by _handleTableChanged() after 2 s.\n */\n@keyframes kds-table-flash-pulse-66aac04e {\n0%, 100% {\n    box-shadow: 0 0 0 0 rgba(0, 132, 255, 0.0);\n    background-color: transparent;\n}\n20% {\n    box-shadow: 0 0 0 6px rgba(0, 132, 255, 0.45);\n    background-color: rgba(0, 132, 255, 0.08);\n}\n60% {\n    box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.25);\n    background-color: rgba(0, 132, 255, 0.04);\n}\n}\n.kds-table-flash[data-v-66aac04e] {\n  animation: kds-table-flash-pulse-66aac04e 2s ease-out 1;\n  border-color: rgba(0, 132, 255, 0.7) !important;\n}\n/* [Lot 2.I / G-4] Non-blocking allergens badge + modal. Visual emphasis only;\n   does NOT gate any kitchen action. Designed for visibility at ~2m distance. */\n.kds-allergens-badge[data-v-66aac04e] {\n  position: absolute;\n  top: 0.5rem;\n  right: 0.5rem;\n  z-index: 5;\n  border: 0;\n  border-radius: 9999px;\n  background: #B91C1C;\n  color: #FFFFFF;\n  cursor: pointer;\n  font-size: 0.75rem;\n  font-weight: 800;\n  letter-spacing: 0.08em;\n  line-height: 1;\n  padding: 0.5rem 0.75rem;\n  text-transform: uppercase;\n}\n.kds-allergens-badge[data-v-66aac04e]:hover,\n.kds-allergens-badge[data-v-66aac04e]:focus-visible {\n  background: #991B1B;\n  outline: 3px solid #FCA5A5;\n  outline-offset: 2px;\n}\n.kds-allergens-modal-overlay[data-v-66aac04e] {\n  align-items: center;\n  background: rgba(17, 24, 39, 0.72);\n  bottom: 0;\n  display: flex;\n  justify-content: center;\n  left: 0;\n  padding: 1rem;\n  position: fixed;\n  right: 0;\n  top: 0;\n  z-index: 9999;\n}\n.kds-allergens-modal-content[data-v-66aac04e] {\n  background: #FFFFFF;\n  border-radius: 1rem;\n  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);\n  color: #111827;\n  max-height: min(80vh, 42rem);\n  max-width: 42rem;\n  overflow-y: auto;\n  padding: 1.5rem;\n  width: 100%;\n}\n.kds-allergens-modal-header[data-v-66aac04e] {\n  align-items: flex-start;\n  display: flex;\n  gap: 1rem;\n  justify-content: space-between;\n}\n.kds-allergens-modal-header h2[data-v-66aac04e] {\n  font-size: 1.25rem;\n  font-weight: 800;\n  margin: 0;\n}\n.kds-allergens-modal-close[data-v-66aac04e] {\n  border: 1px solid #D1D5DB;\n  border-radius: 0.5rem;\n  background: #F9FAFB;\n  color: #111827;\n  cursor: pointer;\n  font-weight: 700;\n  padding: 0.5rem 0.75rem;\n}\n.kds-allergens-modal-close[data-v-66aac04e]:hover,\n.kds-allergens-modal-close[data-v-66aac04e]:focus-visible {\n  background: #F3F4F6;\n  outline: 3px solid #93C5FD;\n  outline-offset: 2px;\n}\n.kds-allergens-modal-intro[data-v-66aac04e] {\n  color: #374151;\n  margin: 1rem 0;\n}\n.kds-allergens-modal-list[data-v-66aac04e] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.75rem;\n  list-style: none;\n  margin: 0;\n  padding: 0;\n}\n.kds-allergens-modal-list-item[data-v-66aac04e] {\n  border: 1px solid #FCA5A5;\n  border-radius: 0.75rem;\n  display: flex;\n  flex-direction: column;\n  gap: 0.25rem;\n  padding: 0.75rem;\n}\n.kds-allergens-modal-list-item span[data-v-66aac04e] {\n  color: #B91C1C;\n  font-weight: 800;\n}\n/* [CV1-KDS-A11Y-RICH-001] WCAG 2.4.7 / 4.1.3 — visually hidden but available\n   to assistive technology. Used by the polite aria-live region. */\n.sr-only[data-v-66aac04e] {\n  position: absolute !important;\n  width: 1px !important;\n  height: 1px !important;\n  padding: 0 !important;\n  margin: -1px !important;\n  overflow: hidden !important;\n  clip: rect(0, 0, 0, 0) !important;\n  white-space: nowrap !important;\n  border: 0 !important;\n}\n/* [CV1-KDS-INFLIGHT-OOS-MARKER-001] In-flight OOS warning badge. Sits next\n   to (not on top of) the allergens badge so both can coexist on tickets\n   that have allergens AND a freshly 86'd item. */\n.kds-oos-warning-badge[data-v-66aac04e] {\n  position: absolute;\n  top: 0.5rem;\n  right: 5.5rem;\n  z-index: 5;\n  border: 0;\n  border-radius: 9999px;\n  background: #DC2626;\n  color: #FFFFFF;\n  cursor: help;\n  font-size: 0.7rem;\n  font-weight: 800;\n  letter-spacing: 0.05em;\n  line-height: 1;\n  padding: 0.5rem 0.65rem;\n  text-transform: uppercase;\n  display: inline-flex;\n  align-items: center;\n  gap: 0.25rem;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-instruction[data-v-66aac04e] {\n  line-height: 1.5;\n  border-left: 3px solid #e0e0e0;\n  padding-left: 0.4rem;\n}\n.kds-instruction--note[data-v-66aac04e] {\n  color: #4e4b66;\n  border-left-color: #a0a3bd;\n  background: rgba(160, 163, 189, 0.08);\n  border-radius: 0 4px 4px 0;\n  padding: 0.2rem 0.35rem 0.2rem 0.4rem;\n}\n.kds-instruction--exclusion[data-v-66aac04e] {\n  color: #7c2d12;\n  border-left-color: #f97316;\n  background: #fff7ed;\n  font-weight: 600;\n  border-radius: 0 4px 4px 0;\n  padding: 0.2rem 0.35rem 0.2rem 0.4rem;\n  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2);\n}\n.kds-instruction--allergen[data-v-66aac04e] {\n  color: #7f1d1d;\n  border-left-color: #dc2626;\n  background: #fef2f2;\n  font-weight: 700;\n  border-radius: 0 4px 4px 0;\n  padding: 0.2rem 0.35rem 0.2rem 0.4rem;\n  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.35);\n}\n.kds-hint-banner[data-v-66aac04e] {\n  text-align: center;\n  padding: 8px 12px;\n  font-size: 0.8rem;\n  line-height: 1.35;\n  font-weight: 500;\n}\n.kds-hint-banner--info[data-v-66aac04e] {\n  background: #e0f2fe;\n  color: #0c4a6e;\n  border-bottom: 1px solid #bae6fd;\n}\n.kds-hint-banner--warning[data-v-66aac04e] {\n  background: #fffbeb;\n  color: #78350f;\n  border-bottom: 1px solid #fde68a;\n}\n.kds-hint-banner--neutral[data-v-66aac04e] {\n  background: #f4f4f5;\n  color: #3f3f46;\n  border-bottom: 1px solid #e4e4e7;\n}\n.kds-hint-banner--danger[data-v-66aac04e] {\n  background: #fee2e2;\n  color: #7f1d1d;\n  border-bottom: 1px solid #fecaca;\n  font-weight: 600;\n}\n/* [test-e2e fix C-009 round-3 2026-05-10] Persistent KDS error banner sticky\n   to viewport top so a kitchen operator scrolled into the order list still\n   sees the 503-degraded signal after toast fade. Scoped to --danger to avoid\n   affecting bump-info neutral banner (which is allowed to scroll naturally).\n   The KDS view's scroll container is `<main class=\"db-main\">` with\n   `h-screen overflow-auto` and top-padding accounting for the fixed navbar,\n   so `position: sticky; top: 0` pins at the scrollport's padding edge —\n   right below the fixed `.db-header` (z-30). z-index: 50 keeps it above\n   internal grid panels. */\n.kds-hint-banner--danger[data-v-66aac04e] {\n  position: sticky;\n  top: 0;\n  z-index: 50;\n}\n.kds-hint-banner--action[data-v-66aac04e] {\n  align-items: center;\n  display: flex;\n  gap: 0.75rem;\n  justify-content: center;\n}\n.kds-hint-link[data-v-66aac04e] {\n  background: transparent;\n  border: 0;\n  color: inherit;\n  cursor: pointer;\n  font-size: 0.78rem;\n  font-weight: 800;\n  text-decoration: underline;\n}\n/* [F-03 / Lot 1.C] Sync stamp footer — discrete, never blocks the grid. */\n.kds-sync-footer[data-v-66aac04e] {\n  display: flex;\n  justify-content: flex-end;\n  padding: 4px 12px 6px 12px;\n  background: transparent;\n  pointer-events: none;\n}\n.kds-sync-stamp[data-v-66aac04e] {\n  font-size: 0.72rem;\n  color: #374151;\n  font-weight: 500;\n  letter-spacing: 0.01em;\n}\n.kds-sync-stamp--stale[data-v-66aac04e] {\n  color: #92400e;\n  font-weight: 600;\n}\n.ws-reconnect-banner[data-v-66aac04e] {\n  background: #ecfeff;\n  color: #155e75;\n  border-bottom: 1px solid #a5f3fc;\n  text-align: center;\n  padding: 6px 12px;\n  font-size: 0.85rem;\n  font-weight: 600;\n}\n.kds-card-header-meta[data-v-66aac04e] {\n  align-items: center;\n  display: flex;\n  flex: 1 1 auto;\n  flex-wrap: wrap;\n  gap: 0.35rem;\n  min-width: 0;\n}\n.kds-card-header-meta > span[data-v-66aac04e]:first-of-type {\n  min-width: 0;\n  overflow-wrap: anywhere;\n}\n.kds-source-pill[data-v-66aac04e] {\n  align-items: center;\n  border-radius: 9999px;\n  display: inline-flex;\n  flex: 0 0 auto;\n  font-size: 0.68rem;\n  font-weight: 900;\n  letter-spacing: 0.01em;\n  line-height: 1.1;\n  min-height: 1.4rem;\n  padding: 0.22rem 0.55rem;\n  white-space: nowrap;\n}\n.kds-source-pill--kiosk[data-v-66aac04e] {\n  background: #4C1A96;\n  color: #FFFFFF;\n}\n.kds-source-pill--queue[data-v-66aac04e] {\n  background: #991B1B;\n  color: #FFFFFF;\n}\n.kds-wait-green[data-v-66aac04e] {\n  border-color: rgba(34, 197, 94, 0.55) !important;\n}\n.kds-wait-orange[data-v-66aac04e] {\n  border-color: rgba(245, 158, 11, 0.7) !important;\n}\n.kds-wait-red[data-v-66aac04e] {\n  border-color: rgba(239, 68, 68, 0.85) !important;\n}\n.kds-wait-red.animate-pulse[data-v-66aac04e] {\n  animation: none !important;\n}\n.kds-counter-payment-badge[data-v-66aac04e] {\n  display: inline-flex;\n  align-items: center;\n  border-radius: 9999px;\n  background: #B91C1C;\n  color: #FFFFFF;\n  font-size: 0.58rem;\n  font-weight: 900;\n  letter-spacing: 0.02em;\n  line-height: 1;\n  padding: 0.28rem 0.45rem;\n  text-transform: uppercase;\n}\n\n/* [F-02] Visual cue for in-place table reassignment.\n * Per orchestrator gate G-2 (in_place_with_css_flash):\n *   - 2 second cyan pulse — non-blocking, no sound, no re-print.\n *   - High enough contrast to be noticed mid-rush, low enough not to alarm.\n * The class is removed automatically by _handleTableChanged() after 2 s.\n */\n@keyframes kds-table-flash-pulse-66aac04e {\n0%, 100% {\n    box-shadow: 0 0 0 0 rgba(0, 132, 255, 0.0);\n    background-color: transparent;\n}\n20% {\n    box-shadow: 0 0 0 6px rgba(0, 132, 255, 0.45);\n    background-color: rgba(0, 132, 255, 0.08);\n}\n60% {\n    box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.25);\n    background-color: rgba(0, 132, 255, 0.04);\n}\n}\n.kds-table-flash[data-v-66aac04e] {\n  animation: kds-table-flash-pulse-66aac04e 2s ease-out 1;\n  border-color: rgba(0, 132, 255, 0.7) !important;\n}\n/* [Lot 2.I / G-4] Non-blocking allergens badge + modal. Visual emphasis only;\n   does NOT gate any kitchen action. Designed for visibility at ~2m distance. */\n.kds-allergens-badge[data-v-66aac04e] {\n  position: absolute;\n  top: 0.5rem;\n  right: 0.5rem;\n  z-index: 5;\n  border: 0;\n  border-radius: 9999px;\n  background: #B91C1C;\n  color: #FFFFFF;\n  cursor: pointer;\n  font-size: 0.75rem;\n  font-weight: 800;\n  letter-spacing: 0.08em;\n  line-height: 1;\n  padding: 0.5rem 0.75rem;\n  text-transform: uppercase;\n}\n.kds-allergens-badge[data-v-66aac04e]:hover,\n.kds-allergens-badge[data-v-66aac04e]:focus-visible {\n  background: #991B1B;\n  outline: 3px solid #FCA5A5;\n  outline-offset: 2px;\n}\n.kds-allergens-modal-overlay[data-v-66aac04e] {\n  align-items: center;\n  background: rgba(17, 24, 39, 0.72);\n  bottom: 0;\n  display: flex;\n  justify-content: center;\n  left: 0;\n  padding: 1rem;\n  position: fixed;\n  right: 0;\n  top: 0;\n  z-index: 9999;\n}\n.kds-allergens-modal-content[data-v-66aac04e] {\n  background: #FFFFFF;\n  border-radius: 1rem;\n  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);\n  color: #111827;\n  max-height: min(80vh, 42rem);\n  max-width: 42rem;\n  overflow-y: auto;\n  padding: 1.5rem;\n  width: 100%;\n}\n.kds-allergens-modal-header[data-v-66aac04e] {\n  align-items: flex-start;\n  display: flex;\n  gap: 1rem;\n  justify-content: space-between;\n}\n.kds-allergens-modal-header h2[data-v-66aac04e] {\n  font-size: 1.25rem;\n  font-weight: 800;\n  margin: 0;\n}\n.kds-allergens-modal-close[data-v-66aac04e] {\n  border: 1px solid #D1D5DB;\n  border-radius: 0.5rem;\n  background: #F9FAFB;\n  color: #111827;\n  cursor: pointer;\n  font-weight: 700;\n  padding: 0.5rem 0.75rem;\n}\n.kds-allergens-modal-close[data-v-66aac04e]:hover,\n.kds-allergens-modal-close[data-v-66aac04e]:focus-visible {\n  background: #F3F4F6;\n  outline: 3px solid #93C5FD;\n  outline-offset: 2px;\n}\n.kds-allergens-modal-intro[data-v-66aac04e] {\n  color: #374151;\n  margin: 1rem 0;\n}\n.kds-allergens-modal-list[data-v-66aac04e] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.75rem;\n  list-style: none;\n  margin: 0;\n  padding: 0;\n}\n.kds-allergens-modal-list-item[data-v-66aac04e] {\n  border: 1px solid #FCA5A5;\n  border-radius: 0.75rem;\n  display: flex;\n  flex-direction: column;\n  gap: 0.25rem;\n  padding: 0.75rem;\n}\n.kds-allergens-modal-list-item span[data-v-66aac04e] {\n  color: #B91C1C;\n  font-weight: 800;\n}\n/* [CV1-KDS-A11Y-RICH-001] WCAG 2.4.7 / 4.1.3 — visually hidden but available\n   to assistive technology. Used by the polite aria-live region. */\n.sr-only[data-v-66aac04e] {\n  position: absolute !important;\n  width: 1px !important;\n  height: 1px !important;\n  padding: 0 !important;\n  margin: -1px !important;\n  overflow: hidden !important;\n  clip: rect(0, 0, 0, 0) !important;\n  white-space: nowrap !important;\n  border: 0 !important;\n}\n/* [CV1-KDS-INFLIGHT-OOS-MARKER-001] In-flight OOS warning badge. Sits next\n   to (not on top of) the allergens badge so both can coexist on tickets\n   that have allergens AND a freshly 86'd item. */\n.kds-oos-warning-badge[data-v-66aac04e] {\n  position: absolute;\n  top: 0.5rem;\n  right: 5.5rem;\n  z-index: 5;\n  border: 0;\n  border-radius: 9999px;\n  background: #DC2626;\n  color: #FFFFFF;\n  cursor: help;\n  font-size: 0.7rem;\n  font-weight: 800;\n  letter-spacing: 0.05em;\n  line-height: 1;\n  padding: 0.5rem 0.65rem;\n  text-transform: uppercase;\n  display: inline-flex;\n  align-items: center;\n  gap: 0.25rem;\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-table-flash[data-v-66aac04e],\n  .kds-wait-red.animate-pulse[data-v-66aac04e],\n  .animate-pulse[data-v-66aac04e],\n  .animate-spin[data-v-66aac04e],\n  .animate-bounce[data-v-66aac04e],\n  .animate-ping[data-v-66aac04e] {\n    animation: none !important;\n}\n.kds-table-flash[data-v-66aac04e] {\n    border-color: rgba(0, 132, 255, 0.7) !important;\n}\n.swiper-wrapper[data-v-66aac04e],\n  .swiper-slide[data-v-66aac04e],\n  .swiper-container[data-v-66aac04e],\n  [class*=\"swiper-\"][data-v-66aac04e] {\n    transition-duration: 0.001ms !important;\n}\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=script&lang=js":
+/*!**********************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=script&lang=js ***!
+  \**********************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KdsOrderLine_vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsOrderLine.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue");
+/* harmony import */ var _helpers_kdsCustomization_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../helpers/kdsCustomization.js */ "./resources/js/helpers/kdsCustomization.js");
+/* harmony import */ var _helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../helpers/kdsDisplay.js */ "./resources/js/helpers/kdsDisplay.js");
+/* harmony import */ var _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../helpers/kdsState.js */ "./resources/js/helpers/kdsState.js");
+/* harmony import */ var _helpers_kdsSource_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../helpers/kdsSource.js */ "./resources/js/helpers/kdsSource.js");
+
+
+
+
+
+var AGE_HEADER_BG = {
+  fresh: '#FFFFFF',
+  warning: '#FFEDD5',
+  critical: '#FEE2E2'
+};
+var AGE_ELAPSED_COLOR = {
+  fresh: '#111827',
+  warning: '#9A3412',
+  critical: '#991B1B'
+};
+var AGE_BORDER = {
+  fresh: '#E5E7EB',
+  warning: '#EA580C',
+  critical: '#DC2626'
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KdsOrderCard',
+  components: {
+    KdsOrderLine: _KdsOrderLine_vue__WEBPACK_IMPORTED_MODULE_0__["default"]
+  },
+  props: {
+    order: {
+      type: Object,
+      required: true
+    },
+    now: {
+      type: Number,
+      "default": function _default() {
+        return Date.now();
+      }
+    },
+    shortcut: {
+      type: String,
+      "default": null
+    }
+  },
+  emits: ['ready'],
+  computed: {
+    kdsState: function kdsState() {
+      return (0,_helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_3__.kdsStateFromStatus)(this.order.status) || 'NEW';
+    },
+    kdsSource: function kdsSource() {
+      return (0,_helpers_kdsSource_js__WEBPACK_IMPORTED_MODULE_4__.kdsSourceFromSurface)(this.order.source_surface);
+    },
+    stateTheme: function stateTheme() {
+      return _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_3__.KDS_STATE_THEME[this.kdsState] || _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_3__.KDS_STATE_THEME.NEW;
+    },
+    sourceTheme: function sourceTheme() {
+      return _helpers_kdsSource_js__WEBPACK_IMPORTED_MODULE_4__.KDS_SOURCE_THEME[this.kdsSource] || _helpers_kdsSource_js__WEBPACK_IMPORTED_MODULE_4__.KDS_SOURCE_THEME.POS;
+    },
+    stateLabel: function stateLabel() {
+      var k = _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_3__.KDS_STATE_I18N_KEYS[this.kdsState];
+      var t = this.$t(k);
+      return t === k ? this.kdsState : t;
+    },
+    sourceLabel: function sourceLabel() {
+      var k = _helpers_kdsSource_js__WEBPACK_IMPORTED_MODULE_4__.KDS_SOURCE_I18N_KEYS[this.kdsSource];
+      var t = this.$t(k);
+      return t === k ? this.kdsSource : t;
+    },
+    statePillStyle: function statePillStyle() {
+      return {
+        background: this.stateTheme.bg,
+        color: this.stateTheme.text,
+        border: this.kdsState === 'NEW' ? "1px solid ".concat(this.stateTheme.border) : 'none'
+      };
+    },
+    sourceChipStyle: function sourceChipStyle() {
+      return {
+        background: this.sourceTheme.bg,
+        color: this.sourceTheme.text
+      };
+    },
+    hasAllergen: function hasAllergen() {
+      return (0,_helpers_kdsCustomization_js__WEBPACK_IMPORTED_MODULE_1__.orderHasAnyAllergen)(this.order.order_items || []);
+    },
+    createdMs: function createdMs() {
+      return (0,_helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_2__.parseOrderCreatedMs)(this.order);
+    },
+    elapsedSeconds: function elapsedSeconds() {
+      return Math.max(0, Math.floor((this.now - this.createdMs) / 1000));
+    },
+    bucket: function bucket() {
+      return (0,_helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_2__.getKdsAgeBucket)(this.createdMs, this.now);
+    },
+    headerBg: function headerBg() {
+      return AGE_HEADER_BG[this.bucket] || AGE_HEADER_BG.fresh;
+    },
+    elapsedColor: function elapsedColor() {
+      return AGE_ELAPSED_COLOR[this.bucket] || AGE_ELAPSED_COLOR.fresh;
+    },
+    elapsedLabelColor: function elapsedLabelColor() {
+      return this.bucket === 'fresh' ? '#9CA3AF' : this.elapsedColor;
+    },
+    borderColor: function borderColor() {
+      // Allergen overrides age — orange regardless of how old.
+      if (this.hasAllergen) {
+        return '#F97316';
+      }
+      return AGE_BORDER[this.bucket] || AGE_BORDER.fresh;
+    },
+    stripeColor: function stripeColor() {
+      if (this.hasAllergen) {
+        return '#F97316';
+      }
+      if (this.bucket === 'fresh') {
+        return this.kdsState === 'PREPARING' ? '#111827' : '#E5E7EB';
+      }
+      return AGE_BORDER[this.bucket];
+    },
+    cardStyle: function cardStyle() {
+      return {
+        border: "3px solid ".concat(this.borderColor),
+        height: '462px'
+      };
+    },
+    cardClass: function cardClass() {
+      return {
+        'kds-card--critical': this.bucket === 'critical',
+        'kds-card--ready': this.kdsState === 'READY',
+        'kds-card--cancelled': this.kdsState === 'CANCELLED'
+      };
+    },
+    elapsedFormatted: function elapsedFormatted() {
+      var s = this.elapsedSeconds;
+      var m = Math.floor(s / 60);
+      var r = s % 60;
+      return "".concat(String(m).padStart(2, '0'), ":").concat(String(r).padStart(2, '0'));
+    },
+    ariaLabel: function ariaLabel() {
+      var m = Math.floor(this.elapsedSeconds / 60);
+      var r = this.elapsedSeconds % 60;
+      return "Commande ".concat(this.order.queue_number || this.order.id, ", source ").concat(this.sourceLabel, ", ").concat(this.stateLabel, ", attente ").concat(m, " minutes ").concat(r, " secondes");
+    }
+  },
+  methods: {
+    renderItemLines: function renderItemLines(item) {
+      return (0,_helpers_kdsCustomization_js__WEBPACK_IMPORTED_MODULE_1__.renderItem)(item).lines;
+    },
+    onCta: function onCta() {
+      this.$emit('ready', this.order.id);
+    }
+  }
+});
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=script&lang=js":
+/*!**********************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=script&lang=js ***!
+  \**********************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KdsOrderLine',
+  props: {
+    line: {
+      type: Object,
+      required: true
+    }
+  },
+  computed: {
+    groupLabel: function groupLabel() {
+      var key = "label.kds_group_".concat(this.line.group || 'other');
+      // Fallback to raw group key if i18n misses (defensive — i18n parity
+      // CI script enforces presence, but a freshly added category should
+      // not blank the line).
+      var translated = this.$t(key);
+      return translated === key ? this.line.group : translated;
+    },
+    allergenLabel: function allergenLabel() {
+      return this.$t('label.kds_allergen_warning_prefix') || 'Allergènes :';
+    },
+    joinedCodes: function joinedCodes() {
+      var _this = this;
+      var codes = Array.isArray(this.line.codes) ? this.line.codes : [];
+      // Translate each code via existing allergens.* keys; fallback to raw code.
+      return codes.map(function (c) {
+        var k = "allergens.".concat(c);
+        var t = _this.$t(k);
+        return t === k ? c : t;
+      }).join(' · ');
+    }
+  }
+});
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=script&lang=js":
+/*!*************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=script&lang=js ***!
+  \*************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KdsStatusBanner',
+  props: {
+    // explicit signals — orchestrator passes them in
+    offlineSince: {
+      type: Number,
+      "default": null
+    },
+    // ms timestamp or null
+    listAtCap: {
+      type: Boolean,
+      "default": false
+    },
+    nearCap: {
+      type: Number,
+      "default": 0
+    },
+    // n orders, 0 = hide
+    fallbackMode: {
+      type: Boolean,
+      "default": false
+    },
+    // WS down, polling
+    adminPollingHint: {
+      type: Boolean,
+      "default": false
+    },
+    // cross-branch view
+    bumpLocalOnlyNotice: {
+      type: Boolean,
+      "default": false
+    }
+  },
+  computed: {
+    bannerData: function bannerData() {
+      // Priority: error > cap-full > cap-warning > fallback > sync > bump-notice
+      if (this.offlineSince && Date.now() - this.offlineSince > 60000) {
+        var ms = Date.now() - this.offlineSince;
+        var m = Math.floor(ms / 60000);
+        var s = Math.floor(ms % 60000 / 1000);
+        return {
+          level: 'error',
+          text: this.$t('label.kds_connection_lost_long', {
+            m: m,
+            s: s
+          }),
+          iconBg: '#FFFFFF',
+          tag: 'OFFLINE'
+        };
+      }
+      if (this.listAtCap) {
+        return {
+          level: 'warning',
+          text: this.$t('label.kds_order_list_full_warning', {
+            n: this.nearCap
+          }),
+          iconBg: '#F59E0B',
+          tag: 'CAP · MAX'
+        };
+      }
+      if (this.nearCap >= 200) {
+        return {
+          level: 'warning',
+          text: this.$t('label.kds_order_cap_warning', {
+            n: this.nearCap
+          }),
+          iconBg: '#F59E0B',
+          tag: 'CAP · WARN'
+        };
+      }
+      if (this.fallbackMode) {
+        return {
+          level: 'warning',
+          text: this.$t('label.kds_fallback_banner'),
+          iconBg: '#F59E0B',
+          tag: 'SYNC · LOCAL'
+        };
+      }
+      if (this.adminPollingHint) {
+        return {
+          level: 'info',
+          text: this.$t('label.kds_admin_polling_hint'),
+          iconBg: '#3B82F6',
+          tag: 'SYNC · ADMIN'
+        };
+      }
+      if (this.bumpLocalOnlyNotice) {
+        return {
+          level: 'neutral',
+          text: this.$t('label.kds_bump_local_only_notice'),
+          iconBg: '#9CA3AF',
+          tag: 'LOCAL'
+        };
+      }
+      return null;
+    }
+  }
+});
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=script&lang=js":
+/*!**********************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=script&lang=js ***!
+  \**********************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KdsUndoToast',
+  props: {
+    toast: {
+      type: Object,
+      "default": null
+      // expected shape: { id, queueNo, expiresAt }
+    }
+  },
+  emits: ['undo'],
+  computed: {
+    titleText: function titleText() {
+      if (!this.toast) {
+        return '';
+      }
+      return this.$t('label.kds_toast_bumped', {
+        n: this.toast.queueNo
+      });
+    }
+  },
+  methods: {
+    onUndo: function onUndo() {
+      if (this.toast) {
+        this.$emit('undo', this.toast.id);
+      }
+    }
+  }
+});
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js":
+/*!*******************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js ***!
+  \*******************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KdsOrderCard_vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsOrderCard.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue");
+/* harmony import */ var _KdsStatusBanner_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsStatusBanner.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue");
+/* harmony import */ var _KdsUndoToast_vue__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KdsUndoToast.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue");
+/* harmony import */ var _helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../helpers/kdsDisplay.js */ "./resources/js/helpers/kdsDisplay.js");
+/* harmony import */ var _helpers_kdsAutoTransition_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../helpers/kdsAutoTransition.js */ "./resources/js/helpers/kdsAutoTransition.js");
+/* harmony import */ var _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../helpers/kdsState.js */ "./resources/js/helpers/kdsState.js");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
+
+
+
+
+
+var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KdsV2Grid',
+  components: {
+    KdsOrderCard: _KdsOrderCard_vue__WEBPACK_IMPORTED_MODULE_0__["default"],
+    KdsStatusBanner: _KdsStatusBanner_vue__WEBPACK_IMPORTED_MODULE_1__["default"],
+    KdsUndoToast: _KdsUndoToast_vue__WEBPACK_IMPORTED_MODULE_2__["default"]
+  },
+  props: {
+    orders: {
+      type: Array,
+      "default": function _default() {
+        return [];
+      }
+    },
+    dir: {
+      type: String,
+      "default": 'ltr'
+    },
+    offlineSince: {
+      type: Number,
+      "default": null
+    },
+    listAtCap: {
+      type: Boolean,
+      "default": false
+    },
+    fallbackMode: {
+      type: Boolean,
+      "default": false
+    },
+    adminPollingHint: {
+      type: Boolean,
+      "default": false
+    },
+    bumpLocalOnlyNotice: {
+      type: Boolean,
+      "default": false
+    },
+    autoTransitionEnabled: {
+      type: Boolean,
+      "default": true
+    }
+  },
+  emits: ['change-status', 'auto-promote'],
+  data: function data() {
+    return {
+      now: Date.now(),
+      tickerId: null,
+      activeToast: null,
+      pendingTimeoutId: null,
+      liveMessage: ''
+    };
+  },
+  computed: {
+    SHORTCUTS: function SHORTCUTS() {
+      return _SHORTCUTS;
+    },
+    // FIFO: oldest first, then by id for stable ties.
+    visibleOrders: function visibleOrders() {
+      var arr = Array.isArray(this.orders) ? _toConsumableArray(this.orders) : [];
+      arr.sort(function (a, b) {
+        var ta = (0,_helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_3__.parseOrderCreatedMs)(a);
+        var tb = (0,_helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_3__.parseOrderCreatedMs)(b);
+        if (ta !== tb) {
+          return ta - tb;
+        }
+        return (parseInt(a === null || a === void 0 ? void 0 : a.id, 10) || 0) - (parseInt(b === null || b === void 0 ? void 0 : b.id, 10) || 0);
+      });
+      return arr;
+    }
+  },
+  watch: {
+    // Auto-transition watcher: when the queue updates AND no order is in
+    // PREPARING AND there's a NEW order at the head, promote it.
+    visibleOrders: {
+      handler: function handler(newQ) {
+        if (!this.autoTransitionEnabled) {
+          return;
+        }
+        var candidate = (0,_helpers_kdsAutoTransition_js__WEBPACK_IMPORTED_MODULE_4__.pickOldestAutoPromoteCandidate)(newQ);
+        if (candidate && (0,_helpers_kdsAutoTransition_js__WEBPACK_IMPORTED_MODULE_4__.shouldAutoTransition)(candidate, newQ, true)) {
+          // Emit so the orchestrator can dispatch the PATCH through
+          // the existing store action — no duplicate axios pathway.
+          this.$emit('auto-promote', candidate.id);
+          this.liveMessage = this.$t('label.kds_aria_live_preparing', {
+            id: candidate.queue_number || candidate.id
+          });
+        }
+      },
+      deep: false
+    }
+  },
+  mounted: function mounted() {
+    var _this = this;
+    // Single global ticker — all cards read `this.now` reactively, no
+    // per-card setInterval.
+    this.tickerId = window.setInterval(function () {
+      _this.now = Date.now();
+    }, 1000);
+    window.addEventListener('keydown', this.onKey);
+  },
+  beforeUnmount: function beforeUnmount() {
+    if (this.tickerId) {
+      window.clearInterval(this.tickerId);
+      this.tickerId = null;
+    }
+    if (this.pendingTimeoutId) {
+      window.clearTimeout(this.pendingTimeoutId);
+      this.pendingTimeoutId = null;
+    }
+    window.removeEventListener('keydown', this.onKey);
+  },
+  methods: {
+    onKey: function onKey(e) {
+      // [A]–[H] bumps the nth slot. Enter/Esc handled by KdsOrderCard.
+      var idx = _SHORTCUTS.indexOf(String(e.key || '').toUpperCase());
+      if (idx >= 0 && idx < this.visibleOrders.length) {
+        var o = this.visibleOrders[idx];
+        if (o) {
+          e.preventDefault();
+          this.onCtaTap(o.id, o.queue_number);
+        }
+      }
+    },
+    // Chef taps Prêt → optimistic toast 3s → PATCH PREPARING→READY.
+    onCtaTap: function onCtaTap(orderId, queueNo) {
+      var _this2 = this;
+      // Cancel any previous pending bump (single-slot toast)
+      if (this.pendingTimeoutId) {
+        window.clearTimeout(this.pendingTimeoutId);
+      }
+      var toastId = "bump-".concat(orderId, "-").concat(Date.now());
+      this.activeToast = {
+        id: toastId,
+        orderId: orderId,
+        queueNo: queueNo,
+        expiresAt: Date.now() + 3000
+      };
+      this.pendingTimeoutId = window.setTimeout(function () {
+        // Window expired — fire the PATCH for real.
+        _this2.$emit('change-status', {
+          orderId: orderId,
+          status: _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_5__.ORDER_STATUS.PREPARED
+        });
+        _this2.activeToast = null;
+        _this2.pendingTimeoutId = null;
+        _this2.liveMessage = _this2.$t('label.kds_aria_live_ready', {
+          id: queueNo || orderId
+        });
+      }, 3000);
+    },
+    onUndo: function onUndo(toastId) {
+      if (this.activeToast && this.activeToast.id === toastId) {
+        if (this.pendingTimeoutId) {
+          window.clearTimeout(this.pendingTimeoutId);
+          this.pendingTimeoutId = null;
+        }
+        this.activeToast = null;
+        this.liveMessage = this.$t('label.kds_undo_done');
+      }
+    }
+  }
+});
 
 /***/ }),
 
@@ -51,6 +725,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _helpers_kdsDisplay__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ../../../helpers/kdsDisplay */ "./resources/js/helpers/kdsDisplay.js");
 /* harmony import */ var _helpers_kdsLineSemantics__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../../../helpers/kdsLineSemantics */ "./resources/js/helpers/kdsLineSemantics.js");
 /* harmony import */ var _helpers_kdsAllergens__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! ../../../helpers/kdsAllergens */ "./resources/js/helpers/kdsAllergens.js");
+/* harmony import */ var _helpers_kdsState__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! ../../../helpers/kdsState */ "./resources/js/helpers/kdsState.js");
+/* harmony import */ var _KdsV2Grid_vue__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! ./KdsV2Grid.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
 function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
@@ -85,6 +761,9 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
 
 
 
+// [kds/sprint-2 V-5] V2 layout components — feature-flagged single FIFO 4×2 grid.
+
+
 // [Phase-7 / T13–T14] Fil cuisine : stations, filtre, bump / statut, timers
 // d’attente (kdsDisplay), son — ne pas mélanger avec de la logique de caisse
 // OrderService ici (GATE plan). Polling 5s si WS down.
@@ -95,7 +774,8 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     ConnectionStatusBanner: _common_ConnectionStatusBanner_vue__WEBPACK_IMPORTED_MODULE_12__["default"],
     LoadingComponent: _components_LoadingComponent_vue__WEBPACK_IMPORTED_MODULE_0__["default"],
     Swiper: swiper_vue__WEBPACK_IMPORTED_MODULE_11__.Swiper,
-    SwiperSlide: swiper_vue__WEBPACK_IMPORTED_MODULE_11__.SwiperSlide
+    SwiperSlide: swiper_vue__WEBPACK_IMPORTED_MODULE_11__.SwiperSlide,
+    KdsV2Grid: _KdsV2Grid_vue__WEBPACK_IMPORTED_MODULE_18__["default"]
   },
   data: function data() {
     var _window$_wsService;
@@ -179,12 +859,41 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         visible: false,
         message: '',
         lastRetryAt: null
-      }
+      },
+      // [kds/sprint-2 V-5] Feature-flag scaffolding for the V2 single-FIFO grid.
+      // Owner GO confirmed 2026-05-11. Activation:
+      //   - URL `?v2=1` (per-session preview)
+      //   - localStorage `kds.v2_enabled` = '1' (per-device opt-in)
+      // Auto-transition is on by default per RESEARCH §4.3 (V1 single-chef).
+      v2OfflineSince: null,
+      v2AutoTransitionEnabled: true
     };
   },
   computed: {
     direction: function direction() {
       return this.$store.getters['frontendLanguage/show'].display_mode === _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_6__["default"].RTL ? 'rtl' : 'ltr';
+    },
+    // [kds/sprint-2 V-5] Feature flag for the new V2 layout. Order of precedence:
+    //   1. URL param ?v2=1 (preview without touching localStorage)
+    //   2. localStorage 'kds.v2_enabled' === '1' (per-device opt-in)
+    //   3. Default false → legacy 4-column layout stays
+    useV2Layout: function useV2Layout() {
+      try {
+        var _window$localStorage;
+        if (typeof window === 'undefined') {
+          return false;
+        }
+        var params = new URLSearchParams(window.location.search || '');
+        if (params.get('v2') === '1') {
+          return true;
+        }
+        if (params.get('v2') === '0') {
+          return false;
+        }
+        return ((_window$localStorage = window.localStorage) === null || _window$localStorage === void 0 ? void 0 : _window$localStorage.getItem('kds.v2_enabled')) === '1';
+      } catch (_e) {
+        return false;
+      }
     },
     // [iter15-mega-fix C-008 run-3 2026-05-10] Supersedes the run-1/run-2
     // decision to keep the KDS fallback banner in dev. Wave B/C run-3 evidence
@@ -415,6 +1124,57 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     }, 1000);
   },
   methods: {
+    // [kds/sprint-2 V-5] V2 grid event handlers — both delegate to the same
+    // store action `kitchenDisplaySystemOrder/changeStatus` used by the
+    // legacy 4-column layout. KDSOrderStateMachine on the server stays the
+    // single source of truth (apply() lockForUpdate + idempotent early-return).
+    onV2ChangeStatus: function onV2ChangeStatus(event) {
+      var _this2 = this;
+      // event: { orderId, status }
+      var order = (this.orders || []).find(function (o) {
+        return o.id === event.orderId;
+      });
+      if (!order) {
+        return;
+      }
+      var payload = (0,_store_modules_kds__WEBPACK_IMPORTED_MODULE_13__.kdsStatusPayload)(order, event.status);
+      this.$store.dispatch('kitchenDisplaySystemOrder/changeStatus', _objectSpread({}, payload)).then(function () {
+        _this2.kdsAnnounceTransition(order, event.status);
+        _this2._debouncedRefresh();
+        window.dispatchEvent(new CustomEvent('realtime-order-update', {
+          detail: {
+            type: 'status-change',
+            order_id: payload.id,
+            status: event.status
+          }
+        }));
+      })["catch"](function (err) {
+        var _err$response;
+        // Conflict (409) → silent refresh; other errors surface to existing
+        // error-banner flow.
+        if ((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 ? void 0 : _err$response.status) === 409) {
+          _this2._debouncedRefresh();
+          return;
+        }
+        if (_this2.kdsErrorBanner) {
+          _this2.kdsErrorBanner.visible = true;
+          _this2.kdsErrorBanner.message = _this2.$t('label.kds_status_conflict');
+        }
+      });
+    },
+    onV2AutoPromote: function onV2AutoPromote(orderId) {
+      // Auto-transition ACCEPT → PREPARING — same path as a manual chef bump.
+      var order = (this.orders || []).find(function (o) {
+        return o.id === orderId;
+      });
+      if (!order) {
+        return;
+      }
+      this.onV2ChangeStatus({
+        orderId: orderId,
+        status: _helpers_kdsState__WEBPACK_IMPORTED_MODULE_17__.ORDER_STATUS.PREPARING
+      });
+    },
     authBranchId: function authBranchId() {
       var _this$$store$state;
       var candidates = [this.$store.getters['auth/authBranchId'], this.$store.getters.authBranchId, (_this$$store$state = this.$store.state) === null || _this$$store$state === void 0 || (_this$$store$state = _this$$store$state.auth) === null || _this$$store$state === void 0 ? void 0 : _this$$store$state.authBranchId];
@@ -445,14 +1205,14 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       return (0,_helpers_kdsAllergens__WEBPACK_IMPORTED_MODULE_16__.sortedAllergens)(snapshot);
     },
     openAllergensModal: function openAllergensModal(order) {
-      var _this2 = this;
+      var _this3 = this;
       this.allergenModalReturnFocus = typeof document !== "undefined" && document.activeElement ? document.activeElement : null;
       this.allergensModal = {
         open: true,
         order: order
       };
       this.$nextTick(function () {
-        var el = _this2.$refs.allergensModalCloseButton;
+        var el = _this3.$refs.allergensModalCloseButton;
         if (el && typeof el.focus === "function") {
           try {
             el.focus();
@@ -462,7 +1222,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     },
     closeAllergensModal: function closeAllergensModal() {
       var returnTo = this.allergenModalReturnFocus;
-      this.allergenModal = {
+      this.allergensModal = {
         open: false,
         order: null
       };
@@ -602,36 +1362,36 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       return Date.now() - ts < 60000;
     },
     kdsBump: function kdsBump(order, item) {
-      var _this3 = this;
+      var _this4 = this;
       this.$store.dispatch("kds/bumpItem", {
         orderId: order.id,
         itemId: item.id
       });
       this.$nextTick(function () {
-        if (_this3.$store.getters["kds/isReadyOrder"](order)) {
-          if (order.status !== _this3.enums.orderStatusEnum.PREPARED) {
-            var nextStatus = order.status === _this3.enums.orderStatusEnum.ACCEPT ? _this3.enums.orderStatusEnum.PREPARING : _this3.enums.orderStatusEnum.PREPARED;
-            _this3.orderStatus(order, nextStatus);
+        if (_this4.$store.getters["kds/isReadyOrder"](order)) {
+          if (order.status !== _this4.enums.orderStatusEnum.PREPARED) {
+            var nextStatus = order.status === _this4.enums.orderStatusEnum.ACCEPT ? _this4.enums.orderStatusEnum.PREPARING : _this4.enums.orderStatusEnum.PREPARED;
+            _this4.orderStatus(order, nextStatus);
           }
         }
       });
     },
     kdsRecall: function kdsRecall(order, item) {
-      var _this4 = this;
+      var _this5 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
         var r;
         return _regenerator().w(function (_context) {
           while (1) switch (_context.n) {
             case 0:
               _context.n = 1;
-              return _this4.$store.dispatch("kds/recallItem", {
+              return _this5.$store.dispatch("kds/recallItem", {
                 orderId: order.id,
                 itemId: item.id
               });
             case 1:
               r = _context.v;
               if (r && r.ok === false && r.reason === "grace_expired") {
-                _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(_this4.$t("message.kds_recall_grace_expired"));
+                _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(_this5.$t("message.kds_recall_grace_expired"));
               }
             case 2:
               return _context.a(2);
@@ -640,17 +1400,17 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       }))();
     },
     _bindWsService: function _bindWsService() {
-      var _this5 = this;
+      var _this6 = this;
       var ws = window._wsService;
       if (!ws) return;
       this._onWsConnected = function () {
-        _this5.wsConnected = true;
-        _this5.refreshOrderList();
-        _this5._restartPolling();
+        _this6.wsConnected = true;
+        _this6.refreshOrderList();
+        _this6._restartPolling();
       };
       this._onWsDisconnected = function () {
-        _this5.wsConnected = false;
-        _this5._restartPolling();
+        _this6.wsConnected = false;
+        _this6._restartPolling();
       };
       ws.on('connected', this._onWsConnected);
       ws.on('disconnected', this._onWsDisconnected);
@@ -669,17 +1429,17 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       this.startAutoRefresh();
     },
     startAutoRefresh: function startAutoRefresh() {
-      var _this6 = this;
+      var _this7 = this;
       if (this.$route.path.includes('kitchen-display-system')) {
         this.autoRefreshInterval = setInterval(function () {
-          _this6.refreshOrderList();
+          _this7.refreshOrderList();
         }, this._pollingInterval());
       }
     },
     // [P4-1] Subscribe to branch Echo channel for real-time order updates.
     // Admin users (branch_id=0) rely on polling; branch staff get sub-second push.
     subscribeEcho: function subscribeEcho() {
-      var _this7 = this;
+      var _this8 = this;
       if (!window.Echo) return;
       var branchId = this.authBranchId();
       if (branchId <= 0) return; // Admin: polling fallback is sufficient
@@ -689,17 +1449,17 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         this._eventSub = (0,_services_eventContract__WEBPACK_IMPORTED_MODULE_9__.onEvents)(branchId, [{
           broadcastAs: 'OrderStatusChanged',
           handler: function handler() {
-            _this7._debouncedRefresh();
+            _this8._debouncedRefresh();
           }
         }, {
           broadcastAs: 'OrderCreated',
           handler: function handler() {
-            _this7._debouncedRefresh();
+            _this8._debouncedRefresh();
           }
         }, {
           broadcastAs: 'OrderPaidAtCounter',
           handler: function handler() {
-            _this7._debouncedRefresh();
+            _this8._debouncedRefresh();
           }
         },
         // [SYNC-001 + CV1-KDS-INFLIGHT-OOS-MARKER-001] KDS now also receives
@@ -710,7 +1470,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         {
           broadcastAs: 'ItemAvailabilityChanged',
           handler: function handler(parsed) {
-            _this7._onItemAvailabilityChanged(parsed);
+            _this8._onItemAvailabilityChanged(parsed);
           }
         },
         // [F-02] Floor-plan transfer / occupy → update the table label in place
@@ -719,7 +1479,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         {
           broadcastAs: 'OrderTableChanged',
           handler: function handler(payload) {
-            _this7._handleTableChanged(payload);
+            _this8._handleTableChanged(payload);
           }
         }]);
         // [P13_LOG_HYGIENE] console.log(`[KDS] Echo subscribed to branch.${branchId}`);
@@ -767,9 +1527,9 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       return true;
     },
     _applyOrderBuckets: function _applyOrderBuckets(rows) {
-      var _this8 = this;
+      var _this9 = this;
       var visibleRows = (Array.isArray(rows) ? rows : []).filter(function (item) {
-        return _this8._isVisibleInCurrentBoard(item);
+        return _this9._isVisibleInCurrentBoard(item);
       });
       // [test-e2e fix E-003 round-3] V1 dine-in disabled — kiosk orders are TAKEAWAY
       // (OrderRequest:200 enforces order_type=TAKEAWAY for ALL kiosk orders since
@@ -802,25 +1562,25 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       });
     },
     _refreshWithCurrentFilter: function _refreshWithCurrentFilter() {
-      var _this9 = this;
+      var _this0 = this;
       // [FIX-54-5] Re-fetch orders without modifying props.search.status
       // This ensures the current filter (e.g., status=7 PREPARING) is preserved
       // even when the value is 0 (ACCEPT) which is falsy in JavaScript
       this.loading.isActive = true;
       this.$store.dispatch("kitchenDisplaySystemOrder/lists", this.props.search).then(function (res) {
         var _res$data, _res$data2;
-        _this9._applyOrderBuckets((res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || []);
-        _this9.kdsOverflowDetected = (res === null || res === void 0 || (_res$data2 = res.data) === null || _res$data2 === void 0 || (_res$data2 = _res$data2.meta) === null || _res$data2 === void 0 ? void 0 : _res$data2.overflow) === true;
-        _this9.loading.isActive = false;
-        _this9._kdsOrdersHydrated = true;
+        _this0._applyOrderBuckets((res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || []);
+        _this0.kdsOverflowDetected = (res === null || res === void 0 || (_res$data2 = res.data) === null || _res$data2 === void 0 || (_res$data2 = _res$data2.meta) === null || _res$data2 === void 0 ? void 0 : _res$data2.overflow) === true;
+        _this0.loading.isActive = false;
+        _this0._kdsOrdersHydrated = true;
         // [test-e2e round-2 C-001] Successful poll → dismiss the persistent
         // error banner (kitchen connection restored).
-        _this9._clearKdsErrorBanner();
+        _this0._clearKdsErrorBanner();
       })["catch"](function (err) {
-        _this9.loading.isActive = false;
+        _this0.loading.isActive = false;
         // [test-e2e round-2 C-001] Persistent banner instead of ephemeral
         // toast — kitchen operator at 1m+ glance must NOT miss this.
-        _this9._raiseKdsErrorBanner(err);
+        _this0._raiseKdsErrorBanner(err);
       });
     },
     openFilterSlide: function openFilterSlide(event) {
@@ -836,7 +1596,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       }
     },
     list: function list() {
-      var _this0 = this;
+      var _this1 = this;
       var status = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "";
       if (status) {
         this.props.search.status = status;
@@ -846,24 +1606,24 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       this.loading.isActive = true;
       this.$store.dispatch("kitchenDisplaySystemOrder/lists", this.props.search).then(function (res) {
         var _res$data3, _res$data4;
-        _this0._applyOrderBuckets((res === null || res === void 0 || (_res$data3 = res.data) === null || _res$data3 === void 0 ? void 0 : _res$data3.data) || []);
-        _this0.kdsOverflowDetected = (res === null || res === void 0 || (_res$data4 = res.data) === null || _res$data4 === void 0 || (_res$data4 = _res$data4.meta) === null || _res$data4 === void 0 ? void 0 : _res$data4.overflow) === true;
-        _this0.loading.isActive = false;
-        _this0._kdsOrdersHydrated = true;
+        _this1._applyOrderBuckets((res === null || res === void 0 || (_res$data3 = res.data) === null || _res$data3 === void 0 ? void 0 : _res$data3.data) || []);
+        _this1.kdsOverflowDetected = (res === null || res === void 0 || (_res$data4 = res.data) === null || _res$data4 === void 0 || (_res$data4 = _res$data4.meta) === null || _res$data4 === void 0 ? void 0 : _res$data4.overflow) === true;
+        _this1.loading.isActive = false;
+        _this1._kdsOrdersHydrated = true;
         // [test-e2e round-2 C-001] Auto-dismiss the persistent banner
         // on next successful /api/admin/kds-order response.
-        _this0._clearKdsErrorBanner();
+        _this1._clearKdsErrorBanner();
       })["catch"](function (err) {
-        _this0.loading.isActive = false;
+        _this1.loading.isActive = false;
         // [test-e2e round-2 C-001] Persistent banner instead of ephemeral
         // toast — see _raiseKdsErrorBanner / kdsErrorBanner data prop.
-        _this0._raiseKdsErrorBanner(err);
+        _this1._raiseKdsErrorBanner(err);
       });
     },
     _raiseKdsErrorBanner: function _raiseKdsErrorBanner(err) {
-      var _err$response;
+      var _err$response2;
       // Build a copy that flags the kind of failure (network/5xx vs 4xx).
-      var status = Number((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 ? void 0 : _err$response.status) || 0);
+      var status = Number((err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 ? void 0 : _err$response2.status) || 0);
       var fallback = this.$t('error.kds_connection_lost');
       // For server-side messages (e.g. 422 validation), prefer the message
       // payload — but for 5xx / network drops, the standardized banner copy
@@ -872,8 +1632,8 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       if (!status || status >= 500 || status === 408 || status === 425 || status === 429) {
         message = fallback;
       } else {
-        var _err$response2;
-        message = (err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || fallback;
+        var _err$response3;
+        message = (err === null || err === void 0 || (_err$response3 = err.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || fallback;
       }
       this.kdsErrorBanner = {
         visible: true,
@@ -896,14 +1656,14 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       this._clearKdsErrorBanner();
     },
     items: function items() {
-      var _this1 = this;
+      var _this10 = this;
       this.loading.isActive = true;
       this.$store.dispatch("kitchenDisplaySystemOrder/orderItems").then(function (res) {
-        _this1.loading.isActive = false;
+        _this10.loading.isActive = false;
       })["catch"](function (err) {
-        var _err$response3;
-        _this1.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error((err === null || err === void 0 || (_err$response3 = err.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || _this1.$t('message.something_wrong'));
+        var _err$response4;
+        _this10.loading.isActive = false;
+        _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error((err === null || err === void 0 || (_err$response4 = err.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || _this10.$t('message.something_wrong'));
       });
     },
     openSidebar: function openSidebar() {
@@ -952,12 +1712,12 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     // No external library needed — uses native window.print() on an isolated document.
     // [AUDIT-P47-BUG4] All dynamic values escaped to prevent stored XSS.
     printKitchenTicket: function printKitchenTicket(order) {
-      var _this10 = this;
+      var _this11 = this;
       var e = this.escapeHtml.bind(this);
       var lines = [];
       var orderLabel = e(order.order_serial_no) || '#' + e(order.id);
       var queueLabel = order.queue_number ? " \u2014 N\xB0".concat(e(order.queue_number)) : '';
-      var typeLabel = _defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty({}, this.enums.orderTypeEnum.DINING_TABLE, 'Sur place'), this.enums.orderTypeEnum.DELIVERY, 'Livraison'), this.enums.orderTypeEnum.TAKEAWAY, 'À emporter'), this.enums.orderTypeEnum.POS, 'Caisse'), this.enums.orderTypeEnum.KIOSK, 'Borne')[order.order_type] || '';
+      var typeLabel = _defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty({}, this.enums.orderTypeEnum.DINING_TABLE, this.$t('label.kds_type_dinein')), this.enums.orderTypeEnum.DELIVERY, this.$t('label.kds_type_delivery')), this.enums.orderTypeEnum.TAKEAWAY, this.$t('label.kds_type_takeaway')), this.enums.orderTypeEnum.POS, this.$t('label.kds_type_pos')), this.enums.orderTypeEnum.KIOSK, this.$t('label.kds_type_kiosk'))[order.order_type] || '';
       lines.push("<h2 style=\"margin:0 0 6px;font-size:18px;\">".concat(orderLabel).concat(queueLabel, "</h2>"));
       if (typeLabel) lines.push("<p style=\"margin:0 0 4px;font-size:13px;color:#555;\">".concat(typeLabel, "</p>"));
       if (order.order_datetime) lines.push("<p style=\"margin:0 0 10px;font-size:12px;color:#888;\">".concat(e(order.order_datetime), "</p>"));
@@ -980,7 +1740,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         if (Array.isArray(item.item_addons) && item.item_addons.length > 0) {
           var addons = item.item_addons.map(function (addon) {
             var qty = Number(addon.quantity || 1);
-            var name = e(_this10.kdsAddonDisplayName(addon));
+            var name = e(_this11.kdsAddonDisplayName(addon));
             return qty > 1 ? "".concat(name, " \xD7").concat(qty) : name;
           }).join(', ');
           lines.push("<div style=\"font-size:12px;color:#444;margin-top:2px;\">+ ".concat(addons, "</div>"));
@@ -1009,19 +1769,19 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       win.close();
     },
     orderStatus: function orderStatus(order, status) {
-      var _this11 = this;
+      var _this12 = this;
       try {
         this.loading.isActive = true;
         var payload = (0,_store_modules_kds__WEBPACK_IMPORTED_MODULE_13__.kdsStatusPayload)(order, status);
         this.$store.dispatch("kitchenDisplaySystemOrder/changeStatus", _objectSpread({}, payload)).then(function (res) {
-          _this11.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].successFlip(1, _this11.$t("label.status"));
+          _this12.loading.isActive = false;
+          _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].successFlip(1, _this12.$t("label.status"));
           // [CV1-KDS-A11Y-RICH-001] Announce the transition to screen readers
           // via the aria-live region (does NOT steal focus, polite politeness).
-          _this11.kdsAnnounceTransition(order, status);
+          _this12.kdsAnnounceTransition(order, status);
           // [AUDIT-P49-BUG7] Debounce refresh: list() triggers items update via store,
           // and Echo broadcast also triggers refresh. Use debounce to prevent triple API calls.
-          _this11._debouncedRefresh();
+          _this12._debouncedRefresh();
           // Propager le changement de statut à tous les composants qui écoutent (OSS, autres KDS)
           window.dispatchEvent(new CustomEvent('realtime-order-update', {
             detail: {
@@ -1031,22 +1791,22 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
             }
           }));
         })["catch"](function (err) {
-          var _err$response4, _err$response5;
-          _this11.loading.isActive = false;
-          if ((err === null || err === void 0 || (_err$response4 = err.response) === null || _err$response4 === void 0 ? void 0 : _err$response4.status) === 409) {
-            _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(_this11.$t("message.kds_status_conflict"));
-            _this11._debouncedRefresh();
+          var _err$response5, _err$response6;
+          _this12.loading.isActive = false;
+          if ((err === null || err === void 0 || (_err$response5 = err.response) === null || _err$response5 === void 0 ? void 0 : _err$response5.status) === 409) {
+            _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(_this12.$t("message.kds_status_conflict"));
+            _this12._debouncedRefresh();
             return;
           }
           // [AUDIT-P47-BUG7] Null-safe guard — err.response is undefined on network timeout
-          var msg = (err === null || err === void 0 || (_err$response5 = err.response) === null || _err$response5 === void 0 || (_err$response5 = _err$response5.data) === null || _err$response5 === void 0 ? void 0 : _err$response5.message) || (err === null || err === void 0 ? void 0 : err.message) || 'Erreur réseau';
+          var msg = (err === null || err === void 0 || (_err$response6 = err.response) === null || _err$response6 === void 0 || (_err$response6 = _err$response6.data) === null || _err$response6 === void 0 ? void 0 : _err$response6.message) || (err === null || err === void 0 ? void 0 : err.message) || 'Erreur réseau';
           _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(msg);
         });
       } catch (err) {
-        var _err$response6;
+        var _err$response7;
         this.loading.isActive = false;
         // [AUDIT-P47-BUG7] Null-safe guard — err.response is undefined on network timeout
-        var msg = (err === null || err === void 0 || (_err$response6 = err.response) === null || _err$response6 === void 0 || (_err$response6 = _err$response6.data) === null || _err$response6 === void 0 ? void 0 : _err$response6.message) || (err === null || err === void 0 ? void 0 : err.message) || 'Erreur réseau';
+        var msg = (err === null || err === void 0 || (_err$response7 = err.response) === null || _err$response7 === void 0 || (_err$response7 = _err$response7.data) === null || _err$response7 === void 0 ? void 0 : _err$response7.message) || (err === null || err === void 0 ? void 0 : err.message) || 'Erreur réseau';
         _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(msg);
       }
     },
@@ -1126,7 +1886,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     kdsAnnounceTransition: function kdsAnnounceTransition(order, status) {
       var _ref5,
         _order$order_serial_n,
-        _this12 = this;
+        _this13 = this;
       if (!order) return;
       var serial = (_ref5 = (_order$order_serial_n = order.order_serial_no) !== null && _order$order_serial_n !== void 0 ? _order$order_serial_n : order.id) !== null && _ref5 !== void 0 ? _ref5 : '';
       if (serial === '' || serial === null || serial === undefined) return;
@@ -1150,7 +1910,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       // transitions still trigger an aria-live announcement.
       this.kdsAriaLiveMessage = '';
       this.$nextTick(function () {
-        _this12.kdsAriaLiveMessage = label;
+        _this13.kdsAriaLiveMessage = label;
       });
     },
     /**
@@ -1165,7 +1925,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
      * Idempotent: receiving the same payload twice resets the 2s timer.
      */
     _handleTableChanged: function _handleTableChanged(payload) {
-      var _this13 = this;
+      var _this14 = this;
       var orderId = parseInt((payload === null || payload === void 0 ? void 0 : payload.order_id) || 0);
       if (orderId <= 0) {
         this._debouncedRefresh();
@@ -1176,22 +1936,22 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         clearTimeout(this._tableFlashTimers[orderId]);
       }
       this._tableFlashTimers[orderId] = setTimeout(function () {
-        var next = _objectSpread({}, _this13.flashTableChangeIds);
+        var next = _objectSpread({}, _this14.flashTableChangeIds);
         delete next[orderId];
-        _this13.flashTableChangeIds = next;
-        delete _this13._tableFlashTimers[orderId];
+        _this14.flashTableChangeIds = next;
+        delete _this14._tableFlashTimers[orderId];
       }, 2000);
       this._debouncedRefresh();
     },
     // [AUDIT-P49-BUG7] Debounced refresh: prevents simultaneous list()+items()+Echo refresh.
     _debouncedRefresh: function _debouncedRefresh() {
-      var _this14 = this;
+      var _this15 = this;
       if (this._refreshTimeout) {
         clearTimeout(this._refreshTimeout);
       }
       this._refreshTimeout = setTimeout(function () {
-        _this14._refreshWithCurrentFilter();
-        _this14.items();
+        _this15._refreshWithCurrentFilter();
+        _this15.items();
       }, 300); // 300ms debounce — sufficient to absorb Echo broadcast + manual call
     },
     toggleFilter: function toggleFilter(index) {
@@ -1243,6 +2003,463 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     }
   }
 });
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true":
+/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true ***!
+  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = ["aria-label", "data-order-id"];
+var _hoisted_2 = {
+  "class": "kds-card__meta"
+};
+var _hoisted_3 = ["title"];
+var _hoisted_4 = {
+  key: 1,
+  "class": "kds-card__shortcut-spacer"
+};
+var _hoisted_5 = {
+  "class": "kds-card__state-source"
+};
+var _hoisted_6 = {
+  "class": "kds-card__source-label"
+};
+var _hoisted_7 = {
+  key: 2,
+  "class": "kds-card__allergen-pill",
+  role: "alert",
+  "aria-live": "assertive"
+};
+var _hoisted_8 = {
+  key: 3,
+  "class": "kds-card__allergen-spacer"
+};
+var _hoisted_9 = {
+  "class": "kds-card__main"
+};
+var _hoisted_10 = {
+  "class": "kds-card__queue keep-latin"
+};
+var _hoisted_11 = {
+  "class": "kds-card__elapsed-wrap"
+};
+var _hoisted_12 = {
+  "class": "kds-card__body"
+};
+var _hoisted_13 = ["aria-label"];
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_KdsOrderLine = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsOrderLine");
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kds-card", $options.cardClass]),
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)($options.cardStyle),
+    tabindex: "0",
+    role: "region",
+    "aria-label": $options.ariaLabel,
+    "data-order-id": $props.order.id,
+    onKeydown: _cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)(function () {
+      return $options.onCta && $options.onCta.apply($options, arguments);
+    }, ["enter"]))
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" TOP ACCENT STRIPE — dominant 2m signal "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-card__stripe",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      background: $options.stripeColor
+    })
+  }, null, 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" HEADER "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-card__header",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      background: $options.headerBg
+    })
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" meta row: slot + state/source + allergen "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [$props.shortcut ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+    key: 0,
+    "class": "kds-card__shortcut",
+    title: _ctx.$t('label.kds_bump_local_only_notice')
+  }, "[" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.shortcut) + "]", 9 /* TEXT, PROPS */, _hoisted_3)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_4)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__state-pill",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)($options.statePillStyle)
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__state-dot",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      background: $options.stateTheme.dot
+    })
+  }, null, 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.stateLabel), 1 /* TEXT */)], 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__source-chip",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)($options.sourceChipStyle)
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sourceLabel), 1 /* TEXT */)], 4 /* STYLE */)]), $options.hasAllergen ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_7, " ⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergie')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_8))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" main row: queue number + elapsed "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_9, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [_cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__queue-prefix"
+  }, "N°", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.order.queue_number || $props.order.id), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__elapsed-label",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      color: $options.elapsedLabelColor
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_attente')), 5 /* TEXT, STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kds-card__elapsed keep-latin", $options.bucket === 'critical' ? 'kds-pulse-digit' : '']),
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      color: $options.elapsedColor
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.elapsedFormatted), 7 /* TEXT, CLASS, STYLE */)])])], 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" BODY "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($props.order.order_items, function (item, idx) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: item.id || idx,
+      "class": "kds-card__item-block"
+    }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.renderItemLines(item), function (line, li) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_KdsOrderLine, {
+        key: li,
+        line: line
+      }, null, 8 /* PROPS */, ["line"]);
+    }), 128 /* KEYED_FRAGMENT */))]);
+  }), 128 /* KEYED_FRAGMENT */)), _cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-card__body-fade"
+  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" FOOTER CTA "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kds-card__cta",
+    onClick: _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.onCta && $options.onCta.apply($options, arguments);
+    }, ["prevent"])),
+    "aria-label": _ctx.$t('label.kds_card_cta_ready')
+  }, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "22",
+    height: "22",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    "stroke-width": "3.5",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M5 12l5 5L20 7"
+  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_card_cta_ready')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_13)], 46 /* CLASS, STYLE, PROPS, NEED_HYDRATION */, _hoisted_1);
+}
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true":
+/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true ***!
+  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = {
+  key: 0,
+  "class": "kds-line__header"
+};
+var _hoisted_2 = {
+  "class": "kds-line__qty"
+};
+var _hoisted_3 = {
+  key: 0,
+  "class": "kds-line__allergen-icon",
+  "aria-label": "allergen"
+};
+var _hoisted_4 = {
+  "class": "kds-line__name"
+};
+var _hoisted_5 = {
+  "class": "kds-line__variation"
+};
+var _hoisted_6 = {
+  "class": "kds-line__group"
+};
+var _hoisted_7 = {
+  "class": "kds-line__value"
+};
+var _hoisted_8 = {
+  "class": "kds-line__variation kds-line__variation--flat"
+};
+var _hoisted_9 = {
+  "class": "kds-line__group"
+};
+var _hoisted_10 = {
+  "class": "kds-line__value"
+};
+var _hoisted_11 = {
+  "class": "kds-line__supplement"
+};
+var _hoisted_12 = {
+  "class": "kds-line__menu-child"
+};
+var _hoisted_13 = {
+  "class": "kds-line__addon"
+};
+var _hoisted_14 = {
+  "class": "kds-line__allergen-block",
+  role: "alert"
+};
+var _hoisted_15 = {
+  "class": "kds-line__allergen-label"
+};
+var _hoisted_16 = {
+  "class": "kds-line__allergen-codes"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kds-line", "kds-line--".concat($props.line.type)])
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" header — qty + name + allergen icon "), $props.line.type === 'header' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.qty), 1 /* TEXT */), _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__qty-x"
+  }, "×", -1 /* CACHED */))]), $props.line.hasAllergen ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_3, "⚠")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)])) : $props.line.type === 'variation' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 1
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" grouped variation: \"Pain : Baguette\" "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.groupLabel), 1 /* TEXT */), _cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__sep"
+  }, " : ", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)])], 64 /* STABLE_FRAGMENT */)) : $props.line.type === 'variation-flat' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 2
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" flat assiette: \"Avec : a, b, c\" "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_group_avec')), 1 /* TEXT */), _cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__sep"
+  }, " : ", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)])], 64 /* STABLE_FRAGMENT */)) : $props.line.type === 'supplement' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 3
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" supplement: \"+ Cheddar\" in yellow italic "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */)) : $props.line.type === 'menu_child' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 4
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" menu_child: \"▸ Frites Moyennes\" (formule child) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__menu-arrow"
+  }, "▸", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)])], 64 /* STABLE_FRAGMENT */)) : $props.line.type === 'addon' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 5
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" generic addon "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__menu-arrow"
+  }, "▸", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)])], 64 /* STABLE_FRAGMENT */)) : $props.line.type === 'instruction' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 6
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" free-text instruction "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['kds-line__instruction', $props.line.visualClass])
+  }, [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__instruction-prefix"
+  }, "·", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)], 2 /* CLASS */)], 64 /* STABLE_FRAGMENT */)) : $props.line.type === 'allergen' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 7
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" allergen codes block "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [_cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-line__allergen-icon"
+  }, "⚠", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.allergenLabel), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.joinedCodes), 1 /* TEXT */)])], 64 /* STABLE_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */);
+}
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true":
+/*!*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true ***!
+  \*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
+var _hoisted_1 = {
+  "class": "kds-banner__main"
+};
+var _hoisted_2 = {
+  key: 0,
+  "class": "kds-banner__spinner",
+  width: "14",
+  height: "14",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  "stroke-width": "3",
+  "stroke-linecap": "round",
+  "aria-hidden": "true"
+};
+var _hoisted_3 = {
+  key: 1,
+  width: "11",
+  height: "11",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  "stroke-width": "3",
+  "stroke-linecap": "round",
+  "stroke-linejoin": "round",
+  "aria-hidden": "true"
+};
+var _hoisted_4 = {
+  "class": "kds-banner__text"
+};
+var _hoisted_5 = {
+  "class": "kds-banner__tag keep-latin"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return $options.bannerData ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['kds-banner', "kds-banner--".concat($options.bannerData.level)]),
+    role: "status"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-banner__icon",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      background: $options.bannerData.iconBg
+    })
+  }, [$options.bannerData.level === 'error' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("svg", _hoisted_2, _toConsumableArray(_cache[0] || (_cache[0] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M21 12a9 9 0 1 1-6.219-8.56"
+  }, null, -1 /* CACHED */)])))) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("svg", _hoisted_3, _toConsumableArray(_cache[1] || (_cache[1] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M12 9v4M12 17h.01"
+  }, null, -1 /* CACHED */)]))))], 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.bannerData.text), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.bannerData.tag), 1 /* TEXT */)], 2 /* CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
+}
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true":
+/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true ***!
+  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = {
+  key: 0,
+  "class": "kds-toast"
+};
+var _hoisted_2 = {
+  "class": "kds-toast__inner"
+};
+var _hoisted_3 = {
+  "class": "kds-toast__row"
+};
+var _hoisted_4 = {
+  "class": "kds-toast__content"
+};
+var _hoisted_5 = {
+  "class": "kds-toast__title"
+};
+var _hoisted_6 = {
+  "class": "kds-toast__sub"
+};
+var _hoisted_7 = ["aria-label"];
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return $props.toast ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-toast__check",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "26",
+    height: "26",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "white",
+    "stroke-width": "3.5",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M5 12l5 5L20 7"
+  })])], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.titleText), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [_cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-toast__printer",
+    "aria-hidden": "true"
+  }, "🖨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_print_done')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kds-toast__undo",
+    onClick: _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.onUndo && $options.onUndo.apply($options, arguments);
+    }, ["prevent"])),
+    "aria-label": _ctx.$t('label.kds_undo_bump_aria')
+  }, [_cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "18",
+    height: "18",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    "stroke-width": "2.5",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M3 7v6h6"
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M3 13a9 9 0 1 0 3-7"
+  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_undo_bump')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_7)]), _cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-toast__progress"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-toast__progress-bar"
+  })], -1 /* CACHED */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
+}
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true":
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = ["dir"];
+var _hoisted_2 = {
+  key: 0,
+  "class": "kds-v2__empty"
+};
+var _hoisted_3 = {
+  "class": "kds-v2__empty-title"
+};
+var _hoisted_4 = {
+  "class": "kds-v2__empty-sub"
+};
+var _hoisted_5 = {
+  "class": "kds-v2__grid"
+};
+var _hoisted_6 = {
+  "class": "sr-only",
+  "aria-live": "polite",
+  "aria-atomic": "true"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_KdsStatusBanner = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsStatusBanner");
+  var _component_KdsOrderCard = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsOrderCard");
+  var _component_KdsUndoToast = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsUndoToast");
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    "class": "kds-v2",
+    dir: $props.dir
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Single banner zone "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_KdsStatusBanner, {
+    "offline-since": $props.offlineSince,
+    "list-at-cap": $props.listAtCap,
+    "near-cap": $options.visibleOrders.length,
+    "fallback-mode": $props.fallbackMode,
+    "admin-polling-hint": $props.adminPollingHint,
+    "bump-local-only-notice": $props.bumpLocalOnlyNotice
+  }, null, 8 /* PROPS */, ["offline-since", "list-at-cap", "near-cap", "fallback-mode", "admin-polling-hint", "bump-local-only-notice"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Empty state "), $options.visibleOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_2, [_cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"kds-v2__empty-illustration\" aria-hidden=\"true\" data-v-3992cfe5><div class=\"kds-v2__empty-glow\" data-v-3992cfe5></div><svg width=\"120\" height=\"120\" viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"#9CA3AF\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" data-v-3992cfe5><ellipse cx=\"32\" cy=\"42\" rx=\"22\" ry=\"6\" fill=\"#F3F4F6\" stroke=\"#D1D5DB\" data-v-3992cfe5></ellipse><path d=\"M10 38a22 8 0 0 1 44 0\" fill=\"white\" data-v-3992cfe5></path><path d=\"M14 30c0-4 6-8 18-8s18 4 18 8\" data-v-3992cfe5></path><circle cx=\"22\" cy=\"24\" r=\"1.5\" fill=\"#9CA3AF\" data-v-3992cfe5></circle><circle cx=\"32\" cy=\"22\" r=\"1.5\" fill=\"#9CA3AF\" data-v-3992cfe5></circle><circle cx=\"42\" cy=\"24\" r=\"1.5\" fill=\"#9CA3AF\" data-v-3992cfe5></circle></svg></div>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_empty_state')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_empty_state_sub')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 1
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" FIFO Grid 4×2 "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.visibleOrders.slice(0, 8), function (o, idx) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_KdsOrderCard, {
+      key: o.id,
+      order: o,
+      now: $data.now,
+      shortcut: $options.SHORTCUTS[idx],
+      onReady: function onReady($event) {
+        return $options.onCtaTap(o.id, o.queue_number);
+      }
+    }, null, 8 /* PROPS */, ["order", "now", "shortcut", "onReady"]);
+  }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" placeholders to keep grid stable when <8 "), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(Math.max(0, 8 - $options.visibleOrders.length), function (i) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: "ph-".concat(i),
+      "class": "kds-v2__placeholder"
+    });
+  }), 128 /* KEYED_FRAGMENT */))])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Undo Toast (single at a time) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_KdsUndoToast, {
+    toast: $data.activeToast,
+    onUndo: $options.onUndo
+  }, null, 8 /* PROPS */, ["toast", "onUndo"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" aria-live region for screen readers "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.liveMessage), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_1);
+}
 
 /***/ }),
 
@@ -1454,7 +2671,7 @@ var _hoisted_56 = {
 var _hoisted_57 = {
   "class": "whitespace-nowrap text-sm font-medium"
 };
-var _hoisted_58 = ["aria-label"];
+var _hoisted_58 = ["placeholder", "aria-label"];
 var _hoisted_59 = ["aria-label"];
 var _hoisted_60 = {
   "class": "db-card rounded-[10px] h-fit"
@@ -1906,11 +3123,26 @@ var _hoisted_221 = {
   "class": "kds-allergens-modal-list"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_KdsV2Grid = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsV2Grid");
   var _component_ConnectionStatusBanner = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("ConnectionStatusBanner");
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_SwiperSlide = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("SwiperSlide");
   var _component_Swiper = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("Swiper");
-  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [iter15-mega-fix B-003/D-002 2026-05-10] Banner consolidation: suppress the\n    global transient \"Reconnexion en cours…\" banner here because the local\n    kds-sync-mode-banner already conveys fallback polling state to staff.\n    Prevents two banners shouting the same fact (iter15 mega-audit Wave B/D).\n    Terminal session_invalid still surfaces.\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ConnectionStatusBanner, {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [kds/sprint-2 V-5] Feature-flagged V2 layout. When useV2Layout is true\n    (URL ?v2=1, localStorage 'kds.v2_enabled', or future settings flag), the\n    new single-FIFO 4×2 grid renders. Otherwise the legacy 4-column layout\n    (Dine-in / Online / Takeaway / Kiosk) stays — instant rollback by URL\n    param removal.\n  "), $options.useV2Layout ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_KdsV2Grid, {
+    key: 0,
+    orders: $options.orders,
+    dir: $options.direction,
+    "offline-since": $data.v2OfflineSince,
+    "list-at-cap": $options.kdsOrderListAtCap,
+    "fallback-mode": !$data.wsConnected && !$options.kdsHideFallbackBannerInLocalDev,
+    "admin-polling-hint": $options.kdsIsCentralAdmin,
+    "bump-local-only-notice": !$data.kdsHideBumpInfo,
+    "auto-transition-enabled": $data.v2AutoTransitionEnabled,
+    onChangeStatus: $options.onV2ChangeStatus,
+    onAutoPromote: $options.onV2AutoPromote
+  }, null, 8 /* PROPS */, ["orders", "dir", "offline-since", "list-at-cap", "fallback-mode", "admin-polling-hint", "bump-local-only-notice", "auto-transition-enabled", "onChangeStatus", "onAutoPromote"])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 1
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [iter15-mega-fix B-003/D-002 2026-05-10] Banner consolidation: suppress the\n    global transient \"Reconnexion en cours…\" banner here because the local\n    kds-sync-mode-banner already conveys fallback polling state to staff.\n    Prevents two banners shouting the same fact (iter15 mega-audit Wave B/D).\n    Terminal session_invalid still surfaces.\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ConnectionStatusBanner, {
     "suppress-transient": ""
   }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingComponent, {
     props: $data.loading
@@ -2081,7 +3313,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "onUpdate:modelValue": _cache[15] || (_cache[15] = function ($event) {
       return $data.props.search.order_serial_no = $event;
     }),
-    placeholder: "Rechercher une commande",
+    placeholder: _ctx.$t('label.kds_search_orders'),
     "aria-label": _ctx.$t('button.search'),
     "class": "header-search-field w-full h-full text-xs appearance-none placeholder:font-normal placeholder:text-paragraph text-heading"
   }, null, 8 /* PROPS */, _hoisted_58), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.props.search.order_serial_no]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
@@ -2607,8 +3839,153 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       key: (orderItem.id || orderItem.item_id || allergenIndex) + '-' + allergenIndex,
       "class": "kds-allergens-modal-list-item"
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(orderItem.item_name || orderItem.name || orderItem.item && orderItem.item.name || '-'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sortedAllergens(orderItem.allergens_snapshot).length ? $options.sortedAllergens(orderItem.allergens_snapshot).join(" \xB7 ") : _ctx.$t('label.kds_allergens_modal_none')), 1 /* TEXT */)]);
-  }), 128 /* KEYED_FRAGMENT */))])])], 40 /* PROPS, NEED_HYDRATION */, _hoisted_217)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 64 /* STABLE_FRAGMENT */);
+  }), 128 /* KEYED_FRAGMENT */))])])], 40 /* PROPS, NEED_HYDRATION */, _hoisted_217)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 64 /* STABLE_FRAGMENT */))], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);
 }
+
+/***/ }),
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css":
+/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css ***!
+  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_style_index_0_id_151558cb_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_style_index_0_id_151558cb_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_style_index_0_id_151558cb_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css":
+/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css ***!
+  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_style_index_0_id_5c6c7baf_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_style_index_0_id_5c6c7baf_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_style_index_0_id_5c6c7baf_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css":
+/*!*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css ***!
+  \*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_style_index_0_id_665158fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_style_index_0_id_665158fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_style_index_0_id_665158fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css":
+/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css ***!
+  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_style_index_0_id_d4f74b20_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_style_index_0_id_d4f74b20_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_style_index_0_id_d4f74b20_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css":
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_style_index_0_id_3992cfe5_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_style_index_0_id_3992cfe5_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_style_index_0_id_3992cfe5_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
 
 /***/ }),
 
@@ -2638,6 +4015,371 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KitchenDisplaySystemComponent_vue_vue_type_style_index_0_id_66aac04e_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue":
+/*!*****************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue ***!
+  \*****************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KdsOrderCard_vue_vue_type_template_id_151558cb_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true");
+/* harmony import */ var _KdsOrderCard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsOrderCard.vue?vue&type=script&lang=js */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=script&lang=js");
+/* harmony import */ var _KdsOrderCard_vue_vue_type_style_index_0_id_151558cb_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KdsOrderCard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KdsOrderCard_vue_vue_type_template_id_151558cb_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-151558cb"],['__file',"resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=script&lang=js":
+/*!*****************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=script&lang=js ***!
+  \*****************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderCard.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=script&lang=js");
+ 
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css":
+/*!*************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css ***!
+  \*************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_style_index_0_id_151558cb_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=style&index=0&id=151558cb&scoped=true&lang=css");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true":
+/*!***********************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true ***!
+  \***********************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_template_id_151558cb_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderCard_vue_vue_type_template_id_151558cb_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue?vue&type=template&id=151558cb&scoped=true");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue":
+/*!*****************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue ***!
+  \*****************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KdsOrderLine_vue_vue_type_template_id_5c6c7baf_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true");
+/* harmony import */ var _KdsOrderLine_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsOrderLine.vue?vue&type=script&lang=js */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=script&lang=js");
+/* harmony import */ var _KdsOrderLine_vue_vue_type_style_index_0_id_5c6c7baf_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KdsOrderLine_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KdsOrderLine_vue_vue_type_template_id_5c6c7baf_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-5c6c7baf"],['__file',"resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=script&lang=js":
+/*!*****************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=script&lang=js ***!
+  \*****************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderLine.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=script&lang=js");
+ 
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css":
+/*!*************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css ***!
+  \*************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_style_index_0_id_5c6c7baf_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=style&index=0&id=5c6c7baf&scoped=true&lang=css");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true":
+/*!***********************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true ***!
+  \***********************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_template_id_5c6c7baf_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsOrderLine_vue_vue_type_template_id_5c6c7baf_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue?vue&type=template&id=5c6c7baf&scoped=true");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue":
+/*!********************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue ***!
+  \********************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KdsStatusBanner_vue_vue_type_template_id_665158fe_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true */ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true");
+/* harmony import */ var _KdsStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsStatusBanner.vue?vue&type=script&lang=js */ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=script&lang=js");
+/* harmony import */ var _KdsStatusBanner_vue_vue_type_style_index_0_id_665158fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css */ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KdsStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KdsStatusBanner_vue_vue_type_template_id_665158fe_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-665158fe"],['__file',"resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=script&lang=js":
+/*!********************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=script&lang=js ***!
+  \********************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsStatusBanner.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=script&lang=js");
+ 
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css":
+/*!****************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css ***!
+  \****************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_style_index_0_id_665158fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true":
+/*!**************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true ***!
+  \**************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_template_id_665158fe_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_template_id_665158fe_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=template&id=665158fe&scoped=true");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue":
+/*!*****************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue ***!
+  \*****************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KdsUndoToast_vue_vue_type_template_id_d4f74b20_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true */ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true");
+/* harmony import */ var _KdsUndoToast_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsUndoToast.vue?vue&type=script&lang=js */ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=script&lang=js");
+/* harmony import */ var _KdsUndoToast_vue_vue_type_style_index_0_id_d4f74b20_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css */ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KdsUndoToast_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KdsUndoToast_vue_vue_type_template_id_d4f74b20_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-d4f74b20"],['__file',"resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=script&lang=js":
+/*!*****************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=script&lang=js ***!
+  \*****************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsUndoToast.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=script&lang=js");
+ 
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css":
+/*!*************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css ***!
+  \*************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_style_index_0_id_d4f74b20_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true":
+/*!***********************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true ***!
+  \***********************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_template_id_d4f74b20_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_template_id_d4f74b20_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue":
+/*!**************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue ***!
+  \**************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KdsV2Grid_vue_vue_type_template_id_3992cfe5_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true */ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true");
+/* harmony import */ var _KdsV2Grid_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsV2Grid.vue?vue&type=script&lang=js */ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js");
+/* harmony import */ var _KdsV2Grid_vue_vue_type_style_index_0_id_3992cfe5_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css */ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KdsV2Grid_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KdsV2Grid_vue_vue_type_template_id_3992cfe5_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-3992cfe5"],['__file',"resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js":
+/*!**************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js ***!
+  \**************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsV2Grid.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js");
+ 
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css":
+/*!**********************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css ***!
+  \**********************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_style_index_0_id_3992cfe5_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true":
+/*!********************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true ***!
+  \********************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_template_id_3992cfe5_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsV2Grid_vue_vue_type_template_id_3992cfe5_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true");
+
 
 /***/ }),
 
@@ -2784,6 +4526,459 @@ function normalizeAllergensForHash(snapshot) {
 
 /***/ }),
 
+/***/ "./resources/js/helpers/kdsAutoTransition.js":
+/*!***************************************************!*\
+  !*** ./resources/js/helpers/kdsAutoTransition.js ***!
+  \***************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   pickOldestAutoPromoteCandidate: () => (/* binding */ pickOldestAutoPromoteCandidate),
+/* harmony export */   shouldAutoTransition: () => (/* binding */ shouldAutoTransition)
+/* harmony export */ });
+/* harmony import */ var _kdsState_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./kdsState.js */ "./resources/js/helpers/kdsState.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+/**
+ * [kds/sprint-2 F-4] Conditional auto-transition rule NEW → PREPARING.
+ *
+ * Justification (RESEARCH_KDS_MODERN_2024_2026 §4.3): no documented modern
+ * KDS auto-promotes — every system (Toast, Lightspeed 2.0, Otter, Wingstop,
+ * Fresh) requires an explicit chef action. This is a deliberate departure
+ * for FoodKing V1 single-chef takeaway-only:
+ *   - only ONE order can physically be in prep at once
+ *   - the system can infer "started prep" with near-zero false-positive risk
+ *   - removes one tap per order (saves wet-glove touches)
+ *   - degrades cleanly to manual the moment a second chef / second station
+ *     arrives (the "zero PREPARING" condition becomes rarely satisfied)
+ *
+ * Feature flag: `window.kdsAutoTransitionEnabled` (default ON). Owner can
+ * disable from settings menu when multi-station ships.
+ *
+ * Server safety: the existing OrderStateMachine::apply lockForUpdate +
+ * idempotent early-return makes this safe under any race between client
+ * watchers and concurrent operator action.
+ */
+
+
+
+/**
+ * Decide whether `incoming` should be auto-promoted to PREPARING right now.
+ *
+ * @param {object} incoming         the order that just entered/refreshed
+ * @param {Array}  currentQueue     all KDS orders currently visible (incl. incoming)
+ * @param {boolean} [featureFlag]   default true
+ * @returns {boolean}
+ */
+function shouldAutoTransition(incoming, currentQueue) {
+  var _incoming$status;
+  var featureFlag = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+  if (!featureFlag) {
+    return false;
+  }
+  if (incoming == null || _typeof(incoming) !== 'object') {
+    return false;
+  }
+  var rawStatus = parseInt((_incoming$status = incoming.status) !== null && _incoming$status !== void 0 ? _incoming$status : incoming.rawStatus, 10);
+  if (rawStatus !== _kdsState_js__WEBPACK_IMPORTED_MODULE_0__.ORDER_STATUS.ACCEPT) {
+    return false;
+  }
+  var queue = Array.isArray(currentQueue) ? currentQueue : [];
+  var anyPreparing = queue.some(function (o) {
+    var _o$status;
+    var s = parseInt((_o$status = o === null || o === void 0 ? void 0 : o.status) !== null && _o$status !== void 0 ? _o$status : o === null || o === void 0 ? void 0 : o.rawStatus, 10);
+    return s === _kdsState_js__WEBPACK_IMPORTED_MODULE_0__.ORDER_STATUS.PREPARING;
+  });
+  return !anyPreparing;
+}
+
+/**
+ * Pick the single oldest NEW order to auto-promote when the queue refreshes.
+ * Used by the store watcher after a `lists` action returns. Stable tie-breaker:
+ * created_at then id.
+ *
+ * @param {Array} queue
+ * @returns {object|null}
+ */
+function pickOldestAutoPromoteCandidate(queue) {
+  if (!Array.isArray(queue) || queue.length === 0) {
+    return null;
+  }
+  var anyPreparing = queue.some(function (o) {
+    return parseInt(o === null || o === void 0 ? void 0 : o.status, 10) === _kdsState_js__WEBPACK_IMPORTED_MODULE_0__.ORDER_STATUS.PREPARING;
+  });
+  if (anyPreparing) {
+    return null;
+  }
+  var news = queue.filter(function (o) {
+    return parseInt(o === null || o === void 0 ? void 0 : o.status, 10) === _kdsState_js__WEBPACK_IMPORTED_MODULE_0__.ORDER_STATUS.ACCEPT;
+  });
+  if (news.length === 0) {
+    return null;
+  }
+  news.sort(function (a, b) {
+    var ta = (a === null || a === void 0 ? void 0 : a.created_at_iso) || (a === null || a === void 0 ? void 0 : a.created_at) || (a === null || a === void 0 ? void 0 : a.order_datetime) || '';
+    var tb = (b === null || b === void 0 ? void 0 : b.created_at_iso) || (b === null || b === void 0 ? void 0 : b.created_at) || (b === null || b === void 0 ? void 0 : b.order_datetime) || '';
+    if (ta !== tb) {
+      return ta < tb ? -1 : 1;
+    }
+    var ia = parseInt(a === null || a === void 0 ? void 0 : a.id, 10) || 0;
+    var ib = parseInt(b === null || b === void 0 ? void 0 : b.id, 10) || 0;
+    return ia - ib;
+  });
+  return news[0];
+}
+
+/***/ }),
+
+/***/ "./resources/js/helpers/kdsCustomization.js":
+/*!**************************************************!*\
+  !*** ./resources/js/helpers/kdsCustomization.js ***!
+  \**************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   categorize: () => (/* binding */ categorize),
+/* harmony export */   orderHasAnyAllergen: () => (/* binding */ orderHasAnyAllergen),
+/* harmony export */   renderItem: () => (/* binding */ renderItem)
+/* harmony export */ });
+/* harmony import */ var _kdsLineSemantics_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./kdsLineSemantics.js */ "./resources/js/helpers/kdsLineSemantics.js");
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+/**
+ * [kds/sprint-2 F-3] Adaptive customization renderer — the single source of
+ * truth that converts an OrderItem (post-T07 composition_snapshot or legacy
+ * item_variations/item_extras/item_addons) into a flat list of typed display
+ * nodes consumed by <KdsOrderLine>.
+ *
+ * Vue templates MUST NOT branch per-category — they iterate `renderItem().lines`.
+ * Adding a new category = one branch here + (optionally) one i18n group key.
+ *
+ * Per-category contract (DESIGN_SPEC_KDS_V2 §3.1):
+ *   SANDWICH    : header + grouped variations (Pain/Crudités/Sauce/Cuisson)
+ *                 + extras (yellow italic supplement)
+ *                 + addons (menu_full/menu_frites/menu_boisson → menu_child)
+ *   TACO/BURGER : same as sandwich, omit Pain group
+ *   ASSIETTE    : header + comma-joined variations on one "Avec :" line
+ *   MENU_FORMULE: header + addons indented as children
+ *   SIDE/DRINK/DESSERT/OTHER: header + extras only, no variations grouping
+ */
+
+
+
+// Group keys are surfaced to i18n via `label.kds_group_<key>`.
+// Heuristic-keyword regex per group. The first match wins.
+var GROUP_PATTERNS = [{
+  key: 'bread',
+  re: /\bpain\b|\bbread\b/i
+}, {
+  key: 'crudites',
+  re: /crudit|crudity|salade|legum|vegetab/i
+}, {
+  key: 'sauce',
+  re: /\bsauce\b/i
+}, {
+  key: 'cooking',
+  re: /cuisson|cook|temperature/i
+}, {
+  key: 'drink',
+  re: /boisson|drink|beverage/i
+}, {
+  key: 'size',
+  re: /\btaille\b|\bsize\b|\bportion\b/i
+}];
+function classifyGroup(variationName, attributeName) {
+  var name = "".concat(variationName || '', " ").concat(attributeName || '');
+  var _iterator = _createForOfIteratorHelper(GROUP_PATTERNS),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var g = _step.value;
+      if (g.re.test(name)) {
+        return g.key;
+      }
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  return 'other';
+}
+
+/**
+ * Classify an item into a category. Server can override this by populating
+ * a future `items.kds_category` column; until then, name-based fallback.
+ *
+ * @param {object} orderItem
+ * @returns {'sandwich'|'taco'|'burger'|'assiette'|'menu_formule'|'side'|'drink'|'dessert'|'other'}
+ */
+function categorize(orderItem) {
+  var declared = String((orderItem === null || orderItem === void 0 ? void 0 : orderItem.kds_category) || '').toLowerCase();
+  if (['sandwich', 'taco', 'burger', 'assiette', 'menu_formule', 'side', 'drink', 'dessert', 'other'].includes(declared)) {
+    return declared;
+  }
+  var name = String((orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_name) || '').toLowerCase();
+  if (/menu|formule/.test(name)) {
+    return 'menu_formule';
+  }
+  if (/sandwich|kafteji|brick/.test(name)) {
+    return 'sandwich';
+  }
+  if (/\btacos?\b/.test(name)) {
+    return 'taco';
+  }
+  if (/burger|cheeseburger/.test(name)) {
+    return 'burger';
+  }
+  if (/assiette|couscous|ojja|lablabi/.test(name)) {
+    return 'assiette';
+  }
+  if (/frite|onion ring/.test(name)) {
+    return 'side';
+  }
+  if (/coca|fanta|sprite|eau|coke|water|jus|the|thé|menthe|cafe|café/.test(name)) {
+    return 'drink';
+  }
+  if (/dessert|crepe|crêpe|gateau|gâteau|glace|tiramisu/.test(name)) {
+    return 'dessert';
+  }
+  return 'other';
+}
+function readVariations(orderItem) {
+  // Post-T07: composition_snapshot.lines wins (richer shape with attribute_name).
+  var snap = orderItem === null || orderItem === void 0 ? void 0 : orderItem.composition_snapshot;
+  if (snap && Array.isArray(snap.lines) && snap.lines.length > 0) {
+    return snap.lines;
+  }
+  return Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_variations) ? orderItem.item_variations : [];
+}
+function readExtras(orderItem) {
+  var snap = orderItem === null || orderItem === void 0 ? void 0 : orderItem.composition_snapshot;
+  if (snap && Array.isArray(snap.extras) && snap.extras.length > 0) {
+    return snap.extras;
+  }
+  return Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_extras) ? orderItem.item_extras : [];
+}
+function readAddons(orderItem) {
+  var snap = orderItem === null || orderItem === void 0 ? void 0 : orderItem.composition_snapshot;
+  if (snap && Array.isArray(snap.addons) && snap.addons.length > 0) {
+    return snap.addons;
+  }
+  return Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_addons) ? orderItem.item_addons : [];
+}
+function variationLabel(v) {
+  return (v === null || v === void 0 ? void 0 : v.name) || (v === null || v === void 0 ? void 0 : v.variation_name) || '';
+}
+function extraLabel(e) {
+  return (e === null || e === void 0 ? void 0 : e.name) || (e === null || e === void 0 ? void 0 : e.extra_name) || '';
+}
+function addonLabel(a) {
+  return (a === null || a === void 0 ? void 0 : a.addon_name) || (a === null || a === void 0 ? void 0 : a.name) || '';
+}
+
+/**
+ * Render an order item into a flat typed line list.
+ *
+ * Line types:
+ *   'header'        — the item itself (qty + name + allergen icon)
+ *   'variation'     — grouped or single variation row (Pain / Crudités / …)
+ *   'variation-flat'— the assiette "Avec : a, b, c" one-liner
+ *   'supplement'    — paid extra "+ Cheddar"
+ *   'addon'         — generic addon (rare)
+ *   'menu_child'    — addon with role startsWith 'menu_'
+ *   'instruction'   — free-text note (classified note/exclusion/allergen)
+ *   'allergen'      — explicit allergens_snapshot codes block
+ *
+ * @param {object} orderItem
+ * @returns {{ category: string, hasAllergen: boolean, lines: Array<object> }}
+ */
+function renderItem(orderItem) {
+  var _orderItem$quantity;
+  var category = categorize(orderItem);
+  var lines = [];
+  var allergenCodes = Array.isArray(orderItem === null || orderItem === void 0 ? void 0 : orderItem.allergens_snapshot) ? orderItem.allergens_snapshot.filter(function (c) {
+    return typeof c === 'string' && c.length > 0;
+  }) : [];
+  var itemAllergen = allergenCodes.length > 0;
+  lines.push({
+    type: 'header',
+    qty: (_orderItem$quantity = orderItem === null || orderItem === void 0 ? void 0 : orderItem.quantity) !== null && _orderItem$quantity !== void 0 ? _orderItem$quantity : 1,
+    label: (orderItem === null || orderItem === void 0 ? void 0 : orderItem.item_name) || '',
+    category: category,
+    hasAllergen: itemAllergen
+  });
+  var vars = readVariations(orderItem);
+  if (vars.length > 0) {
+    if (category === 'assiette') {
+      var joined = vars.map(function (v) {
+        var q = parseInt(v === null || v === void 0 ? void 0 : v.quantity, 10);
+        var prefix = Number.isFinite(q) && q > 1 ? "".concat(q, " ") : '';
+        return "".concat(prefix).concat(variationLabel(v));
+      }).filter(function (s) {
+        return s.trim().length > 0;
+      }).join(', ');
+      if (joined.length > 0) {
+        lines.push({
+          type: 'variation-flat',
+          group: 'avec',
+          label: joined
+        });
+      }
+    } else {
+      // Group by classified attribute name. SANDWICH renders Pain, others omit.
+      var byGroup = new Map();
+      var _iterator2 = _createForOfIteratorHelper(vars),
+        _step2;
+      try {
+        for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+          var v = _step2.value;
+          var g = classifyGroup(v === null || v === void 0 ? void 0 : v.variation_name, v === null || v === void 0 ? void 0 : v.attribute_name);
+          if (g === 'bread' && (category === 'taco' || category === 'burger')) {
+            // taco/burger: skip the Pain group (no bread choice)
+            continue;
+          }
+          if (!byGroup.has(g)) {
+            byGroup.set(g, []);
+          }
+          byGroup.get(g).push(variationLabel(v));
+        }
+      } catch (err) {
+        _iterator2.e(err);
+      } finally {
+        _iterator2.f();
+      }
+      var _iterator3 = _createForOfIteratorHelper(byGroup.entries()),
+        _step3;
+      try {
+        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+          var _step3$value = _slicedToArray(_step3.value, 2),
+            group = _step3$value[0],
+            labels = _step3$value[1];
+          lines.push({
+            type: 'variation',
+            group: group,
+            label: labels.filter(function (l) {
+              return l.length > 0;
+            }).join(', ')
+          });
+        }
+      } catch (err) {
+        _iterator3.e(err);
+      } finally {
+        _iterator3.f();
+      }
+    }
+  }
+
+  // Paid supplements — yellow italic, "+" prefix.
+  var _iterator4 = _createForOfIteratorHelper(readExtras(orderItem)),
+    _step4;
+  try {
+    for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+      var e = _step4.value;
+      var label = extraLabel(e);
+      if (!label) continue;
+      var q = parseInt(e === null || e === void 0 ? void 0 : e.quantity, 10);
+      var suffix = Number.isFinite(q) && q > 1 ? " \xD7".concat(q) : '';
+      lines.push({
+        type: 'supplement',
+        label: "+ ".concat(label).concat(suffix)
+      });
+    }
+
+    // Menu Formule children (composition_snapshot.addons[].role startsWith 'menu_').
+  } catch (err) {
+    _iterator4.e(err);
+  } finally {
+    _iterator4.f();
+  }
+  var _iterator5 = _createForOfIteratorHelper(readAddons(orderItem)),
+    _step5;
+  try {
+    for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
+      var a = _step5.value;
+      var _label = addonLabel(a);
+      if (!_label) continue;
+      var role = String((a === null || a === void 0 ? void 0 : a.role) || '').toLowerCase();
+      var isMenuChild = role.startsWith('menu_');
+      var _q = parseInt(a === null || a === void 0 ? void 0 : a.quantity, 10);
+      var qtyPrefix = Number.isFinite(_q) && _q > 1 ? "".concat(_q, "\xD7 ") : '';
+      lines.push({
+        type: isMenuChild ? 'menu_child' : 'addon',
+        label: "".concat(qtyPrefix).concat(_label),
+        role: role
+      });
+    }
+
+    // Free-text instruction — keyword-classified.
+  } catch (err) {
+    _iterator5.e(err);
+  } finally {
+    _iterator5.f();
+  }
+  var instruction = ((orderItem === null || orderItem === void 0 ? void 0 : orderItem.instruction) || '').trim();
+  if (instruction.length > 0) {
+    lines.push({
+      type: 'instruction',
+      label: instruction,
+      visualClass: (0,_kdsLineSemantics_js__WEBPACK_IMPORTED_MODULE_0__.kdsInstructionVisualClass)(instruction)
+    });
+  }
+
+  // Allergens_snapshot codes (separate from instruction-keyword detection).
+  if (itemAllergen) {
+    lines.push({
+      type: 'allergen',
+      codes: allergenCodes
+    });
+  }
+  return {
+    category: category,
+    hasAllergen: itemAllergen,
+    lines: lines
+  };
+}
+
+/**
+ * Aggregate `hasAllergen` across an entire order — used to flip the card-level
+ * orange border override regardless of age.
+ *
+ * @param {Array} orderItems
+ * @returns {boolean}
+ */
+function orderHasAnyAllergen(orderItems) {
+  if (!Array.isArray(orderItems)) {
+    return false;
+  }
+  var _iterator6 = _createForOfIteratorHelper(orderItems),
+    _step6;
+  try {
+    for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
+      var it = _step6.value;
+      var codes = Array.isArray(it === null || it === void 0 ? void 0 : it.allergens_snapshot) ? it.allergens_snapshot : [];
+      if (codes.some(function (c) {
+        return typeof c === 'string' && c.length > 0;
+      })) {
+        return true;
+      }
+    }
+  } catch (err) {
+    _iterator6.e(err);
+  } finally {
+    _iterator6.f();
+  }
+  return false;
+}
+
+/***/ }),
+
 /***/ "./resources/js/helpers/kdsDisplay.js":
 /*!********************************************!*\
   !*** ./resources/js/helpers/kdsDisplay.js ***!
@@ -2792,10 +4987,13 @@ function normalizeAllergensForHash(snapshot) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   KDS_AGE_CRITICAL_MS: () => (/* binding */ KDS_AGE_CRITICAL_MS),
+/* harmony export */   KDS_AGE_WARNING_MS: () => (/* binding */ KDS_AGE_WARNING_MS),
 /* harmony export */   KDS_NEW_ORDER_SOUND_MIN_INTERVAL_MS: () => (/* binding */ KDS_NEW_ORDER_SOUND_MIN_INTERVAL_MS),
 /* harmony export */   LS_GROUP_BY_TABLE: () => (/* binding */ LS_GROUP_BY_TABLE),
 /* harmony export */   LS_STATION_FILTER: () => (/* binding */ LS_STATION_FILTER),
 /* harmony export */   filterOrdersByStation: () => (/* binding */ filterOrdersByStation),
+/* harmony export */   getKdsAgeBucket: () => (/* binding */ getKdsAgeBucket),
 /* harmony export */   getKdsEscalationClass: () => (/* binding */ getKdsEscalationClass),
 /* harmony export */   kdsStationFilterStorageKey: () => (/* binding */ kdsStationFilterStorageKey),
 /* harmony export */   normalizeKdsStation: () => (/* binding */ normalizeKdsStation),
@@ -2859,24 +5057,50 @@ function filterOrdersByStation(orders, filter) {
     return orderMatchesStationFilter(o, filter);
   });
 }
-function getKdsEscalationClass(createdMs) {
+
+// [kds/sprint-2 F-5] Age thresholds tightened from 5/10 min to 3/6 min for V1
+// takeaway-only single-chef workflow (Innovorder publishes 3/10 for fast-food,
+// our V1 narrows the red-zone because takeaway prep target is < 5 min).
+// Returning the bucket name explicitly (in addition to the legacy CSS class)
+// lets the new card components decide their own visual treatment.
+var KDS_AGE_WARNING_MS = 3 * 60 * 1000;
+var KDS_AGE_CRITICAL_MS = 6 * 60 * 1000;
+function getKdsAgeBucket(createdMs) {
   var nowMs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : Date.now();
   var age = nowMs - createdMs;
-  var fiveMin = 5 * 60 * 1000;
-  var tenMin = 10 * 60 * 1000;
-  if (age < fiveMin) {
+  if (age < KDS_AGE_WARNING_MS) {
+    return 'fresh';
+  }
+  if (age < KDS_AGE_CRITICAL_MS) {
+    return 'warning';
+  }
+  return 'critical';
+}
+function getKdsEscalationClass(createdMs) {
+  var nowMs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : Date.now();
+  var bucket = getKdsAgeBucket(createdMs, nowMs);
+  if (bucket === 'fresh') {
     return 'kds-wait-green';
   }
-  if (age < tenMin) {
+  if (bucket === 'warning') {
     return 'kds-wait-orange';
   }
   return 'kds-wait-red animate-pulse';
 }
 function parseOrderCreatedMs(order) {
-  if (order.created_at) {
-    var t = Date.parse(order.created_at);
+  // [kds/sprint-2 F-5] Prefer created_at_iso (added to KDSOrderDetailsResource
+  // in B-1) over the locale-formatted order_datetime — stable wire format,
+  // no tz drift, no parsing ambiguity.
+  if (order.created_at_iso) {
+    var t = Date.parse(order.created_at_iso);
     if (!Number.isNaN(t)) {
       return t;
+    }
+  }
+  if (order.created_at) {
+    var _t = Date.parse(order.created_at);
+    if (!Number.isNaN(_t)) {
+      return _t;
     }
   }
   if (order.order_datetime) {
@@ -2914,8 +5138,11 @@ var EXCLUSION_RE = [/\b([s\u017F]an[s\u017F])[\t-\r \xA0\u1680\u2000-\u200A\u202
 // "no onion" in EN menus
 /\b(without|w\/o|w\/)[\t-\r \xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]+(?:[A-Za-z\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0345\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0560-\u0588\u05D0-\u05EA\u05EF-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u0860-\u086A\u0870-\u0887\u0889-\u088F\u08A0-\u08C9\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u09FC\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C5C\u0C5D\u0C60\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDC-\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D04-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E86-\u0E8A\u0E8C-\u0EA3\u0EA5\u0EA7-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16F1-\u16F8\u1700-\u1711\u171F-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1878\u1880-\u1884\u1887-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4C\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1C80-\u1C8A\u1C90-\u1CBA\u1CBD-\u1CBF\u1CE9-\u1CEC\u1CEE-\u1CF3\u1CF5\u1CF6\u1CFA\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2183\u2184\u2C00-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005\u3006\u3031-\u3035\u303B\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FC-\u30FF\u3105-\u312F\u3131-\u318E\u31A0-\u31BF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6E5\uA717-\uA71F\uA722-\uA788\uA78B-\uA7DC\uA7F1-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA8FE\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB69\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]|\uD800[\uDC00-\uDC0B\uDC0D-\uDC26\uDC28-\uDC3A\uDC3C\uDC3D\uDC3F-\uDC4D\uDC50-\uDC5D\uDC80-\uDCFA\uDE80-\uDE9C\uDEA0-\uDED0\uDF00-\uDF1F\uDF2D-\uDF40\uDF42-\uDF49\uDF50-\uDF75\uDF80-\uDF9D\uDFA0-\uDFC3\uDFC8-\uDFCF]|\uD801[\uDC00-\uDC9D\uDCB0-\uDCD3\uDCD8-\uDCFB\uDD00-\uDD27\uDD30-\uDD63\uDD70-\uDD7A\uDD7C-\uDD8A\uDD8C-\uDD92\uDD94\uDD95\uDD97-\uDDA1\uDDA3-\uDDB1\uDDB3-\uDDB9\uDDBB\uDDBC\uDDC0-\uDDF3\uDE00-\uDF36\uDF40-\uDF55\uDF60-\uDF67\uDF80-\uDF85\uDF87-\uDFB0\uDFB2-\uDFBA]|\uD802[\uDC00-\uDC05\uDC08\uDC0A-\uDC35\uDC37\uDC38\uDC3C\uDC3F-\uDC55\uDC60-\uDC76\uDC80-\uDC9E\uDCE0-\uDCF2\uDCF4\uDCF5\uDD00-\uDD15\uDD20-\uDD39\uDD40-\uDD59\uDD80-\uDDB7\uDDBE\uDDBF\uDE00\uDE10-\uDE13\uDE15-\uDE17\uDE19-\uDE35\uDE60-\uDE7C\uDE80-\uDE9C\uDEC0-\uDEC7\uDEC9-\uDEE4\uDF00-\uDF35\uDF40-\uDF55\uDF60-\uDF72\uDF80-\uDF91]|\uD803[\uDC00-\uDC48\uDC80-\uDCB2\uDCC0-\uDCF2\uDD00-\uDD23\uDD4A-\uDD65\uDD6F-\uDD85\uDE80-\uDEA9\uDEB0\uDEB1\uDEC2-\uDEC7\uDF00-\uDF1C\uDF27\uDF30-\uDF45\uDF70-\uDF81\uDFB0-\uDFC4\uDFE0-\uDFF6]|\uD804[\uDC03-\uDC37\uDC71\uDC72\uDC75\uDC83-\uDCAF\uDCD0-\uDCE8\uDD03-\uDD26\uDD44\uDD47\uDD50-\uDD72\uDD76\uDD83-\uDDB2\uDDC1-\uDDC4\uDDDA\uDDDC\uDE00-\uDE11\uDE13-\uDE2B\uDE3F\uDE40\uDE80-\uDE86\uDE88\uDE8A-\uDE8D\uDE8F-\uDE9D\uDE9F-\uDEA8\uDEB0-\uDEDE\uDF05-\uDF0C\uDF0F\uDF10\uDF13-\uDF28\uDF2A-\uDF30\uDF32\uDF33\uDF35-\uDF39\uDF3D\uDF50\uDF5D-\uDF61\uDF80-\uDF89\uDF8B\uDF8E\uDF90-\uDFB5\uDFB7\uDFD1\uDFD3]|\uD805[\uDC00-\uDC34\uDC47-\uDC4A\uDC5F-\uDC61\uDC80-\uDCAF\uDCC4\uDCC5\uDCC7\uDD80-\uDDAE\uDDD8-\uDDDB\uDE00-\uDE2F\uDE44\uDE80-\uDEAA\uDEB8\uDF00-\uDF1A\uDF40-\uDF46]|\uD806[\uDC00-\uDC2B\uDCA0-\uDCDF\uDCFF-\uDD06\uDD09\uDD0C-\uDD13\uDD15\uDD16\uDD18-\uDD2F\uDD3F\uDD41\uDDA0-\uDDA7\uDDAA-\uDDD0\uDDE1\uDDE3\uDE00\uDE0B-\uDE32\uDE3A\uDE50\uDE5C-\uDE89\uDE9D\uDEB0-\uDEF8\uDFC0-\uDFE0]|\uD807[\uDC00-\uDC08\uDC0A-\uDC2E\uDC40\uDC72-\uDC8F\uDD00-\uDD06\uDD08\uDD09\uDD0B-\uDD30\uDD46\uDD60-\uDD65\uDD67\uDD68\uDD6A-\uDD89\uDD98\uDDB0-\uDDDB\uDEE0-\uDEF2\uDF02\uDF04-\uDF10\uDF12-\uDF33\uDFB0]|\uD808[\uDC00-\uDF99]|\uD809[\uDC80-\uDD43]|\uD80B[\uDF90-\uDFF0]|[\uD80C\uD80E\uD80F\uD81C-\uD822\uD840-\uD868\uD86A-\uD86D\uD86F-\uD872\uD874-\uD879\uD880-\uD883\uD885-\uD88C][\uDC00-\uDFFF]|\uD80D[\uDC00-\uDC2F\uDC41-\uDC46\uDC60-\uDFFF]|\uD810[\uDC00-\uDFFA]|\uD811[\uDC00-\uDE46]|\uD818[\uDD00-\uDD1D]|\uD81A[\uDC00-\uDE38\uDE40-\uDE5E\uDE70-\uDEBE\uDED0-\uDEED\uDF00-\uDF2F\uDF40-\uDF43\uDF63-\uDF77\uDF7D-\uDF8F]|\uD81B[\uDD40-\uDD6C\uDE40-\uDE7F\uDEA0-\uDEB8\uDEBB-\uDED3\uDF00-\uDF4A\uDF50\uDF93-\uDF9F\uDFE0\uDFE1\uDFE3\uDFF2\uDFF3]|\uD823[\uDC00-\uDCD5\uDCFF-\uDD1E\uDD80-\uDDF2]|\uD82B[\uDFF0-\uDFF3\uDFF5-\uDFFB\uDFFD\uDFFE]|\uD82C[\uDC00-\uDD22\uDD32\uDD50-\uDD52\uDD55\uDD64-\uDD67\uDD70-\uDEFB]|\uD82F[\uDC00-\uDC6A\uDC70-\uDC7C\uDC80-\uDC88\uDC90-\uDC99]|\uD835[\uDC00-\uDC54\uDC56-\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDEA5\uDEA8-\uDEC0\uDEC2-\uDEDA\uDEDC-\uDEFA\uDEFC-\uDF14\uDF16-\uDF34\uDF36-\uDF4E\uDF50-\uDF6E\uDF70-\uDF88\uDF8A-\uDFA8\uDFAA-\uDFC2\uDFC4-\uDFCB]|\uD837[\uDF00-\uDF1E\uDF25-\uDF2A]|\uD838[\uDC30-\uDC6D\uDD00-\uDD2C\uDD37-\uDD3D\uDD4E\uDE90-\uDEAD\uDEC0-\uDEEB]|\uD839[\uDCD0-\uDCEB\uDDD0-\uDDED\uDDF0\uDEC0-\uDEDE\uDEE0-\uDEE2\uDEE4\uDEE5\uDEE7-\uDEED\uDEF0-\uDEF4\uDEFE\uDEFF\uDFE0-\uDFE6\uDFE8-\uDFEB\uDFED\uDFEE\uDFF0-\uDFFE]|\uD83A[\uDC00-\uDCC4\uDD00-\uDD43\uDD4B]|\uD83B[\uDE00-\uDE03\uDE05-\uDE1F\uDE21\uDE22\uDE24\uDE27\uDE29-\uDE32\uDE34-\uDE37\uDE39\uDE3B\uDE42\uDE47\uDE49\uDE4B\uDE4D-\uDE4F\uDE51\uDE52\uDE54\uDE57\uDE59\uDE5B\uDE5D\uDE5F\uDE61\uDE62\uDE64\uDE67-\uDE6A\uDE6C-\uDE72\uDE74-\uDE77\uDE79-\uDE7C\uDE7E\uDE80-\uDE89\uDE8B-\uDE9B\uDEA1-\uDEA3\uDEA5-\uDEA9\uDEAB-\uDEBB]|\uD869[\uDC00-\uDEDF\uDF00-\uDFFF]|\uD86E[\uDC00-\uDC1D\uDC20-\uDFFF]|\uD873[\uDC00-\uDEAD\uDEB0-\uDFFF]|\uD87A[\uDC00-\uDFE0\uDFF0-\uDFFF]|\uD87B[\uDC00-\uDE5D]|\uD87E[\uDC00-\uDE1D]|\uD884[\uDC00-\uDF4A\uDF50-\uDFFF]|\uD88D[\uDC00-\uDC79])+/i];
 
-/* Prefix-friendly (e.g. allergique, arachide) */
-var ALLERGEN_RE = [/\ballerg/i, /\bintol/i, /\bgluten/i, /\barach/i, /\bcacahu/i, /\blacto[s\u017F]/i, /\b[s\u017F]oja/i];
+/* Prefix-friendly (e.g. allergique, arachide). Arabic forms added for RTL kitchens. */
+var ALLERGEN_RE = [/\ballerg/i, /\bintol/i, /\bgluten/i, /\barach/i, /\bcacahu/i, /\blacto[s\u017F]/i, /\b[s\u017F]oja/i,
+// [kds/sprint-2 F-6] Arabic allergen prefixes — حساسية (allergy), غلوتين (gluten), لاكتوز (lactose),
+// فول (peanut/bean), مكسرات (nuts), صويا (soy). RTL marker-free for whole-word fallback.
+/\u062D\u0633\u0627\u0633\u064A/, /\u063A\u0644\u0648\u062A\u064A\u0646/, /\u0644\u0627\u0643\u062A\u0648\u0632/, /\b\u0641\u0648\u0644\b/, /\u0645\u0643\u0633\u0631\u0627\u062A/, /\u0635\u0648\u064A\u0627/];
 function matchesAllergen(text) {
   var _iterator = _createForOfIteratorHelper(ALLERGEN_RE),
     _step;
@@ -2987,6 +5214,255 @@ function kdsInstructionVisualClass(text) {
   }
   return 'kds-instruction--note';
 }
+
+/***/ }),
+
+/***/ "./resources/js/helpers/kdsSource.js":
+/*!*******************************************!*\
+  !*** ./resources/js/helpers/kdsSource.js ***!
+  \*******************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   KDS_SOURCE: () => (/* binding */ KDS_SOURCE),
+/* harmony export */   KDS_SOURCE_I18N_KEYS: () => (/* binding */ KDS_SOURCE_I18N_KEYS),
+/* harmony export */   KDS_SOURCE_THEME: () => (/* binding */ KDS_SOURCE_THEME),
+/* harmony export */   kdsSourceFromSurface: () => (/* binding */ kdsSourceFromSurface)
+/* harmony export */ });
+/**
+ * [kds/sprint-2 F-2] Single source of truth for source mapping between the
+ * `source_surface` string column (server) and the KDS UI chip enum.
+ *
+ * Adding a new source = one map entry + one i18n key + one theme entry.
+ * Vue templates MUST NOT branch on rawSource — they only read `KDS_SOURCE_THEME[source]`
+ * and `KDS_SOURCE_I18N_KEYS[source]`.
+ */
+
+// Canonical client-side enum.
+var KDS_SOURCE = Object.freeze({
+  POS: 'POS',
+  KIOSK: 'KIOSK',
+  DELIVERY: 'DELIVERY',
+  ONLINE: 'ONLINE',
+  APP: 'APP',
+  DINE_IN: 'DINE_IN'
+});
+
+// Reverse map: source_surface (DB lowercase) → KDS_SOURCE.
+// 'web' fallback in FrontendOrderService maps to ONLINE (web checkout).
+// 'admin' (loyalty controller, manual creation) collapses to POS visually —
+// the kitchen still treats it like a counter order.
+var SURFACE_TO_SOURCE = {
+  pos: KDS_SOURCE.POS,
+  admin: KDS_SOURCE.POS,
+  kiosk: KDS_SOURCE.KIOSK,
+  delivery: KDS_SOURCE.DELIVERY,
+  web: KDS_SOURCE.ONLINE,
+  online: KDS_SOURCE.ONLINE,
+  mobile: KDS_SOURCE.APP,
+  app: KDS_SOURCE.APP,
+  dinein: KDS_SOURCE.DINE_IN,
+  dine_in: KDS_SOURCE.DINE_IN
+};
+
+/**
+ * @param {string|null|undefined} rawSurface  the server column value
+ * @returns {'POS'|'KIOSK'|'DELIVERY'|'ONLINE'|'APP'|'DINE_IN'}
+ */
+function kdsSourceFromSurface(rawSurface) {
+  var _SURFACE_TO_SOURCE$ke;
+  if (rawSurface == null || rawSurface === '') {
+    return KDS_SOURCE.POS;
+  }
+  var key = String(rawSurface).toLowerCase();
+  return (_SURFACE_TO_SOURCE$ke = SURFACE_TO_SOURCE[key]) !== null && _SURFACE_TO_SOURCE$ke !== void 0 ? _SURFACE_TO_SOURCE$ke : KDS_SOURCE.POS;
+}
+
+// Design tokens per `plans/DESIGN_SPEC_KDS_V2_2026-05-11.md`. The reserved
+// futures (ONLINE/APP/DINE_IN) are wired now so they appear correctly when
+// the data starts flowing — no template edit when the flag flips.
+var KDS_SOURCE_THEME = Object.freeze({
+  POS: {
+    bg: '#F3F4F6',
+    text: '#374151',
+    icon: 'receipt'
+  },
+  KIOSK: {
+    bg: '#EFF6FF',
+    text: '#1E40AF',
+    icon: 'tablet'
+  },
+  DELIVERY: {
+    bg: '#F0FDFA',
+    text: '#0F766E',
+    icon: 'truck'
+  },
+  ONLINE: {
+    bg: '#ECFDF5',
+    text: '#047857',
+    icon: 'globe'
+  },
+  APP: {
+    bg: '#FDF2F8',
+    text: '#BE185D',
+    icon: 'phone'
+  },
+  DINE_IN: {
+    bg: '#FEF3C7',
+    text: '#B45309',
+    icon: 'chair'
+  }
+});
+var KDS_SOURCE_I18N_KEYS = Object.freeze({
+  POS: 'label.kds_type_pos',
+  KIOSK: 'label.kds_type_kiosk',
+  DELIVERY: 'label.kds_type_delivery',
+  ONLINE: 'label.kds_source_online',
+  APP: 'label.kds_source_app',
+  DINE_IN: 'label.kds_type_dinein'
+});
+
+/***/ }),
+
+/***/ "./resources/js/helpers/kdsState.js":
+/*!******************************************!*\
+  !*** ./resources/js/helpers/kdsState.js ***!
+  \******************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   KDS_STATE: () => (/* binding */ KDS_STATE),
+/* harmony export */   KDS_STATE_I18N_KEYS: () => (/* binding */ KDS_STATE_I18N_KEYS),
+/* harmony export */   KDS_STATE_THEME: () => (/* binding */ KDS_STATE_THEME),
+/* harmony export */   ORDER_STATUS: () => (/* binding */ ORDER_STATUS),
+/* harmony export */   kdsStateFromStatus: () => (/* binding */ kdsStateFromStatus),
+/* harmony export */   statusFromKdsState: () => (/* binding */ statusFromKdsState)
+/* harmony export */ });
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+/**
+ * [kds/sprint-2 F-1] Single source of truth for state ↔ status mapping
+ * between the numeric OrderStatus enum (server, app/Enums/OrderStatus.php)
+ * and the canonical KdsState used by the new card grid.
+ *
+ * Why client-side: OrderStateMachine.php is frozen; we do not extend the
+ * enum or its transitions. The UI just projects each numeric status into a
+ * narrower KdsState set ('NEW' | 'PREPARING' | 'READY' | 'DONE' | 'CANCELLED')
+ * with the labels the new Vue components render.
+ */
+
+// Numeric values mirror app/Enums/OrderStatus.php — DO NOT renumber.
+var ORDER_STATUS = Object.freeze({
+  PENDING: 1,
+  ACCEPT: 4,
+  PREPARING: 7,
+  PREPARED: 8,
+  OUT_FOR_DELIVERY: 10,
+  DELIVERED: 13,
+  CANCELED: 16,
+  REJECTED: 19,
+  RETURNED: 22
+});
+
+// KdsState — narrower set used by the new card visual layer.
+var KDS_STATE = Object.freeze({
+  NEW: 'NEW',
+  PREPARING: 'PREPARING',
+  READY: 'READY',
+  DONE: 'DONE',
+  CANCELLED: 'CANCELLED'
+});
+
+// Map numeric status → KdsState. Anything outside the table → null
+// (the card grid filters those out; they belong in history, not on the wall).
+var STATUS_TO_KDS = _defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty({}, ORDER_STATUS.PENDING, KDS_STATE.NEW), ORDER_STATUS.ACCEPT, KDS_STATE.NEW), ORDER_STATUS.PREPARING, KDS_STATE.PREPARING), ORDER_STATUS.PREPARED, KDS_STATE.READY), ORDER_STATUS.OUT_FOR_DELIVERY, KDS_STATE.DONE), ORDER_STATUS.DELIVERED, KDS_STATE.DONE), ORDER_STATUS.CANCELED, KDS_STATE.CANCELLED), ORDER_STATUS.REJECTED, KDS_STATE.CANCELLED), ORDER_STATUS.RETURNED, KDS_STATE.CANCELLED);
+
+/**
+ * @param {number|string} status
+ * @returns {'NEW'|'PREPARING'|'READY'|'DONE'|'CANCELLED'|null}
+ */
+function kdsStateFromStatus(status) {
+  var _STATUS_TO_KDS$n;
+  var n = parseInt(status, 10);
+  if (!Number.isFinite(n)) {
+    return null;
+  }
+  return (_STATUS_TO_KDS$n = STATUS_TO_KDS[n]) !== null && _STATUS_TO_KDS$n !== void 0 ? _STATUS_TO_KDS$n : null;
+}
+
+/**
+ * Reverse mapping for KDS PATCH actions. The card grid does only two
+ * transitions explicitly: NEW→PREPARING (auto-promote) and PREPARING→READY
+ * (chef taps Prêt). Any other state move stays the server's responsibility.
+ *
+ * @param {'NEW'|'PREPARING'|'READY'|'DONE'|'CANCELLED'} kdsState
+ * @returns {number|null}
+ */
+function statusFromKdsState(kdsState) {
+  switch (kdsState) {
+    case KDS_STATE.NEW:
+      return ORDER_STATUS.ACCEPT;
+    case KDS_STATE.PREPARING:
+      return ORDER_STATUS.PREPARING;
+    case KDS_STATE.READY:
+      return ORDER_STATUS.PREPARED;
+    case KDS_STATE.DONE:
+      return ORDER_STATUS.DELIVERED;
+    case KDS_STATE.CANCELLED:
+      return ORDER_STATUS.CANCELED;
+    default:
+      return null;
+  }
+}
+
+// Display-only metadata. Component code reads these to pick the pill / dot
+// colors that match the design tokens in plans/DESIGN_SPEC_KDS_V2_2026-05-11.md.
+var KDS_STATE_THEME = Object.freeze({
+  NEW: {
+    bg: '#FFFFFF',
+    border: '#D1D5DB',
+    dot: '#6B7280',
+    text: '#374151'
+  },
+  PREPARING: {
+    bg: '#DBEAFE',
+    border: '#BFDBFE',
+    dot: '#2563EB',
+    text: '#1E3A8A'
+  },
+  READY: {
+    bg: '#DCFCE7',
+    border: '#BBF7D0',
+    dot: '#16A34A',
+    text: '#14532D'
+  },
+  DONE: {
+    bg: '#F3F4F6',
+    border: '#E5E7EB',
+    dot: '#9CA3AF',
+    text: '#374151'
+  },
+  CANCELLED: {
+    bg: '#FEE2E2',
+    border: '#FCA5A5',
+    dot: '#DC2626',
+    text: '#7F1D1D'
+  }
+});
+
+// i18n key for each KdsState (extends label.kds_aria_live_*). The Vue card
+// component does `$t(KDS_STATE_I18N_KEYS[state])`.
+var KDS_STATE_I18N_KEYS = Object.freeze({
+  NEW: 'label.kds_state_new',
+  PREPARING: 'label.kds_state_preparing',
+  READY: 'label.kds_state_ready',
+  DONE: 'label.kds_state_done',
+  CANCELLED: 'label.kds_state_cancelled'
+});
 
 /***/ }),
 

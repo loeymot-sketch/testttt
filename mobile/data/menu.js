@@ -246,6 +246,24 @@
   // Schéma item : { viandes (0-4), has_sauce, has_crudites, has_supplements, has_menu_addon }
   // -------------------------------------------------------------------------
 
+  // [Adversarial cluster-7 P0 fix 2026-05-11] Allergens fabrication purgée.
+  // Avant : default `['gluten','lactose']` hardcodé → 60/60 items affichaient des
+  // allergènes fabriqués (Eau Plate avec gluten+lactose !) violant EU FIC 1169/2011
+  // dans le sens INVERSE (fausse disclosure = pire que pas de disclosure).
+  // Après : default vide [] sauf si la cat a un allergène évident structurel.
+  // Helper smart-default par catégorie ; chaque item peut override via opts.allergens.
+  function defaultAllergensFor(cat, opts) {
+    if (opts && opts.allergens !== undefined) return opts.allergens;
+    switch (cat) {
+      case 1: case 2: case 4: return ['gluten'];                        // Tacos / Sandwichs / Assiettes (galette/pain)
+      case 3: return ['gluten', 'lactose'];                              // Burgers (bun + cheddar)
+      case 5: case 6: return ['oeuf'];                                   // Ojja / Omelettes (œuf base)
+      case 8: case 9: return ['gluten'];                                 // Wings/Tenders pané + Menus enfants (pain bun)
+      case 11: return ['gluten', 'lactose'];                             // Desserts (la plupart contiennent gluten + lactose)
+      case 7: case 10: case 12: case 13: default: return [];             // Salades (per-item override) / Frites / Boissons / Suppléments
+    }
+  }
+
   // Helper to build kiosk-aligned item
   function mkItem(id, slug, category_id, name, price, description, opts) {
     opts = opts || {};
@@ -270,8 +288,8 @@
       has_supplements: opts.has_supplements !== false,
       has_menu_addon: !!opts.has_menu_addon,
       has_frites_style: !!opts.has_frites_style,   // cat 10 sides only — DB items 402/403 frites_style extras
-      // Allergens
-      allergens: opts.allergens || ['gluten', 'lactose'],
+      // [Adversarial cluster-7 P0 fix] Allergens : honest smart-defaults par cat + override opts.allergens.
+      allergens: defaultAllergensFor(category_id, opts),
     };
   }
 
@@ -290,7 +308,7 @@
     // [Owner re-cadrage 2026-05-11] Le Suprême = sandwich avec 2 viandes au choix (steak + cordon bleu par ex.) — drift fix viandes 0→2
     mkItem(203, 'le-supreme',       2, 'Le Suprême',          7.00, '2 viandes au choix + Cheddar (Steak + Cordon Bleu par exemple)',     { viandes: 2, has_crudites: true, has_menu_addon: true, time: 10, emoji: '🥖' }),
     mkItem(204, 'le-cayenne',       2, 'Le Cayenne',          7.00, 'Viande hachée ou chicken + mozzarella + cheddar + crème fraîche',     { viandes: 1, has_crudites: true, has_menu_addon: true, time: 10, tags: ['SIGNATURE'], emoji: '🥖' }),
-    mkItem(205, 'sandwich-froid',   2, 'Sandwich Froid',      4.50, 'Sandwich au Thon',                                                    { viandes: 0, has_crudites: true, has_menu_addon: true, time: 5,  emoji: '🥪' }),
+    mkItem(205, 'sandwich-froid',   2, 'Sandwich Froid',      4.50, 'Sandwich au Thon',                                                    { viandes: 0, has_crudites: true, has_menu_addon: true, time: 5,  emoji: '🥪', allergens: ['gluten', 'poisson'] }),
     mkItem(206, 'panini',           2, 'Panini',              5.00, 'Thon · Jambon · Viande hachée · Fromage de chèvre · Saumon · Escalope', { viandes: 1, has_crudites: true, has_menu_addon: true, time: 8,  emoji: '🥪' }),
     mkItem(207, 'sandwich-pain',    2, 'Sandwich Classique (Pain)',    6.50, '1 Viande au choix dans un pain classique', { viandes: 1, has_crudites: true, has_menu_addon: true, time: 8, emoji: '🥖' }),
     mkItem(208, 'sandwich-galette', 2, 'Sandwich Classique (Galette)', 6.50, '1 Viande au choix dans une galette',       { viandes: 1, has_crudites: true, has_menu_addon: true, time: 8, emoji: '🌯' }),
@@ -300,7 +318,7 @@
   const BURGERS = [
     mkItem(301, 'burger-poulet',   3, 'Burger Poulet',  6.00, 'Poulet pané + Cheddar',                                    { viandes: 0, has_crudites: true, has_menu_addon: true, time: 10, emoji: '🍔' }),
     mkItem(302, 'cheese-burger',   3, 'Cheese Burger',  6.00, '1 Steak + 1 Cheddar',                                      { viandes: 0, has_crudites: true, has_menu_addon: true, time: 10, tags: ['SIGNATURE'], emoji: '🍔' }),
-    mkItem(303, 'fish-burger',     3, 'Fish Burger',    6.00, 'Poisson pané + Cheddar',                                   { viandes: 0, has_crudites: true, has_menu_addon: true, time: 10, emoji: '🐟' }),
+    mkItem(303, 'fish-burger',     3, 'Fish Burger',    6.00, 'Poisson pané + Cheddar',                                   { viandes: 0, has_crudites: true, has_menu_addon: true, time: 10, emoji: '🐟', allergens: ['gluten', 'lactose', 'poisson'] }),
     mkItem(304, 'double-cheese',   3, 'Double Cheese',  7.00, '2 Steaks + 2 Cheddars',                                    { viandes: 0, has_crudites: true, has_menu_addon: true, time: 12, tags: ['TOP'], emoji: '🍔' }),
     mkItem(305, 'big-burger',      3, 'Big Burger',     9.00, '3 Steaks + 3 Cheddar + 2 Jambon de dinde',                 { viandes: 0, has_crudites: true, has_menu_addon: true, time: 14, tags: ['TOP'], emoji: '💪' }),
     mkItem(306, 'grill-burger',    3, 'Grill Burger',   8.00, '2 Steaks + 2 Cheddars + Jambon de dinde',                  { viandes: 0, has_crudites: true, has_menu_addon: true, time: 12, emoji: '🔥' }),
@@ -323,20 +341,22 @@
   ];
 
   // ====== OMELETTES (cat 6) ======
+  // [Adversarial cluster-7 P0 fix] Allergens : œuf (toutes) + lactose (fromage variants) + gluten (pain).
   const OMELETTES = [
-    mkItem(601, 'omelette-nature',   6, 'Omelette Nature',              7.50, 'Omelette classique + Frites + Pain',           { viandes: 0, has_crudites: false, has_menu_addon: false, time: 8,  emoji: '🥚' }),
-    mkItem(602, 'omelette-fromage',  6, 'Omelette Fromage',             8.50, 'Omelette avec Fromage + Frites + Pain',        { viandes: 0, has_crudites: false, has_menu_addon: false, time: 8,  emoji: '🧀' }),
-    mkItem(603, 'omelette-champi',   6, 'Omelette Champignons Fromage', 9.50, 'Omelette avec Champignons et Fromage + Frites + Pain', { viandes: 0, has_crudites: false, has_menu_addon: false, time: 10, emoji: '🍄' }),
+    mkItem(601, 'omelette-nature',   6, 'Omelette Nature',              7.50, 'Omelette classique + Frites + Pain',           { viandes: 0, has_crudites: false, has_menu_addon: false, time: 8,  emoji: '🥚', allergens: ['oeuf', 'gluten'] }),
+    mkItem(602, 'omelette-fromage',  6, 'Omelette Fromage',             8.50, 'Omelette avec Fromage + Frites + Pain',        { viandes: 0, has_crudites: false, has_menu_addon: false, time: 8,  emoji: '🧀', allergens: ['oeuf', 'lactose', 'gluten'] }),
+    mkItem(603, 'omelette-champi',   6, 'Omelette Champignons Fromage', 9.50, 'Omelette avec Champignons et Fromage + Frites + Pain', { viandes: 0, has_crudites: false, has_menu_addon: false, time: 10, emoji: '🍄', allergens: ['oeuf', 'lactose', 'gluten'] }),
   ];
 
   // ====== NOS SALADES (cat 7) ======
   // [Owner re-cadrage 2026-05-11] Salades : menu addon optionnel (Frites/Boisson) activé.
   // Kiosk-fix : 6 steps → 3 steps optionnels (sauce + suppléments + menu + cascade si menu).
+  // [Adversarial cluster-7 P0 fix] Allergens explicit per-item (cat default [] correct).
   const SALADES = [
-    mkItem(701, 'salade-chevre',    7, 'Salade Chèvre',    7.50, 'Laitue · Tomate · Chèvre · Croûtons · Vinaigrette · Maïs', { viandes: 0, has_crudites: false, has_menu_addon: true, time: 5, emoji: '🥗', is_vegetarian: true }),
-    mkItem(702, 'salade-royale',    7, 'Salade Royale',    7.50, 'Laitue · Tomate · Maïs · Poulet · Olives',                  { viandes: 0, has_crudites: false, has_menu_addon: true, time: 5, emoji: '🥗' }),
-    mkItem(703, 'salade-saumon',    7, 'Salade Saumon',    7.50, 'Laitue · Tomate · Maïs · Saumon · Olives',                  { viandes: 0, has_crudites: false, has_menu_addon: true, time: 5, emoji: '🥗' }),
-    mkItem(704, 'salade-tunisienne', 7, 'Salade Tunisienne', 7.50, 'Concombre · Tomate · Oignon · Poivrons · Thon · Olives · Huile d\'Olive', { viandes: 0, has_crudites: false, has_menu_addon: true, time: 5, emoji: '🥗' }),
+    mkItem(701, 'salade-chevre',    7, 'Salade Chèvre',    7.50, 'Laitue · Tomate · Chèvre · Croûtons · Vinaigrette · Maïs', { viandes: 0, has_crudites: false, has_menu_addon: true, time: 5, emoji: '🥗', is_vegetarian: true, allergens: ['gluten', 'lactose'] }),
+    mkItem(702, 'salade-royale',    7, 'Salade Royale',    7.50, 'Laitue · Tomate · Maïs · Poulet · Olives',                  { viandes: 0, has_crudites: false, has_menu_addon: true, time: 5, emoji: '🥗', allergens: [] }),
+    mkItem(703, 'salade-saumon',    7, 'Salade Saumon',    7.50, 'Laitue · Tomate · Maïs · Saumon · Olives',                  { viandes: 0, has_crudites: false, has_menu_addon: true, time: 5, emoji: '🥗', allergens: ['poisson'] }),
+    mkItem(704, 'salade-tunisienne', 7, 'Salade Tunisienne', 7.50, 'Concombre · Tomate · Oignon · Poivrons · Thon · Olives · Huile d\'Olive', { viandes: 0, has_crudites: false, has_menu_addon: true, time: 5, emoji: '🥗', allergens: ['poisson'] }),
   ];
 
   // ====== POULET CROUSTILLANT (cat 8) ======
@@ -350,9 +370,10 @@
   // ====== MENUS ENFANTS (cat 9) ======
   // [Audit 2026-05-10 D2 owner-gate] Mobile aligned to DB: has_sauce=true (sauce attr 311 attached
   // items 400/401 in DB; V3.8 migration 070000 aligned cat 314 to 'omelette' template which includes sauce step).
+  // [Adversarial cluster-7 P0 fix] Allergens : Cheese=gluten+lactose, Nuggets=gluten.
   const MENUS_ENFANTS = [
-    mkItem(901, 'menu-cheese-enfant',  9, 'Menu Cheese Burger (Enfant)', 6.00, '1 steak + 1 cheddar + frites + Capri sun', { viandes: 0, has_crudites: false, has_sauce: true, has_supplements: false, has_menu_addon: false, time: 10, emoji: '🧒' }),
-    mkItem(902, 'menu-nuggets-enfant', 9, 'Menu Nuggets (Enfant)',       6.00, '6 Nuggets de poulet + frites + Capri sun', { viandes: 0, has_crudites: false, has_sauce: true, has_supplements: false, has_menu_addon: false, time: 10, emoji: '🧒' }),
+    mkItem(901, 'menu-cheese-enfant',  9, 'Menu Cheese Burger (Enfant)', 6.00, '1 steak + 1 cheddar + frites + Capri sun', { viandes: 0, has_crudites: false, has_sauce: true, has_supplements: false, has_menu_addon: false, time: 10, emoji: '🧒', allergens: ['gluten', 'lactose'] }),
+    mkItem(902, 'menu-nuggets-enfant', 9, 'Menu Nuggets (Enfant)',       6.00, '6 Nuggets de poulet + frites + Capri sun', { viandes: 0, has_crudites: false, has_sauce: true, has_supplements: false, has_menu_addon: false, time: 10, emoji: '🧒', allergens: ['gluten'] }),
   ];
 
   // ====== FRITES & ACCOMPAGNEMENTS (cat 10) ======
@@ -365,10 +386,11 @@
   ];
 
   // ====== DESSERTS (cat 11) ======
+  // [Adversarial cluster-7 P0 fix] Allergens per-item (glace = lactose seul, tarte+tiramisu = gluten+lactose, tiramisu = +oeuf).
   const DESSERTS = [
-    mkItem(1101, 'glace',      11, 'Glace',      3.80, 'Glace artisanale', { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍦' }),
-    mkItem(1102, 'tarte-daim', 11, 'Tarte Daim', 3.80, 'Tarte au Daim',    { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍰' }),
-    mkItem(1103, 'tiramisu',   11, 'Tiramisu',   3.80, 'Tiramisu maison',  { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍰' }),
+    mkItem(1101, 'glace',      11, 'Glace',      3.80, 'Glace artisanale', { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍦', allergens: ['lactose'] }),
+    mkItem(1102, 'tarte-daim', 11, 'Tarte Daim', 3.80, 'Tarte au Daim',    { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍰', allergens: ['gluten', 'lactose'] }),
+    mkItem(1103, 'tiramisu',   11, 'Tiramisu',   3.80, 'Tiramisu maison',  { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🍰', allergens: ['gluten', 'lactose', 'oeuf'] }),
   ];
 
   // ====== BOISSONS (cat 12) — pas de wizard, ajout direct ======
@@ -384,15 +406,16 @@
   ];
 
   // ====== SUPPLÉMENTS (cat 13) — items commandables seuls ======
+  // [Adversarial cluster-7 P0 fix] Allergens per-item (cat default [] correct).
   const SUPPLEMENTS_ITEMS = [
-    mkItem(1301, 'item-sauce-sup', 13, 'Sauce supplémentaire',     0.50, 'Sauce au choix en supplément', { viandes: 0, has_crudites: false, has_sauce: true, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥫' }),
-    mkItem(1302, 'item-fromage',   13, 'Fromage supplémentaire',   1.00, 'Fromage en supplément',         { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🧀' }),
-    mkItem(1303, 'item-jambon',    13, 'Jambon de dinde',          1.00, 'Supplément jambon de dinde',    { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥓' }),
-    mkItem(1304, 'item-boursin',   13, 'Boursin',                  1.00, 'Supplément Boursin',            { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🧀' }),
-    mkItem(1305, 'item-raclette',  13, 'Fromage à raclette',       1.00, 'Supplément fromage à raclette', { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🧀' }),
-    mkItem(1306, 'item-oeuf',      13, 'Œuf',                       1.00, 'Supplément œuf',                { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥚' }),
-    mkItem(1307, 'item-galette',   13, 'Galette pommes de terre',   1.00, 'Supplément galette pommes de terre', { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥔' }),
-    mkItem(1308, 'item-salade',    13, 'Salade verte',              2.00, 'Salade verte en accompagnement',     { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥗', is_vegetarian: true }),
+    mkItem(1301, 'item-sauce-sup', 13, 'Sauce supplémentaire',     0.50, 'Sauce au choix en supplément', { viandes: 0, has_crudites: false, has_sauce: true, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥫', allergens: [] }),
+    mkItem(1302, 'item-fromage',   13, 'Fromage supplémentaire',   1.00, 'Fromage en supplément',         { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🧀', allergens: ['lactose'] }),
+    mkItem(1303, 'item-jambon',    13, 'Jambon de dinde',          1.00, 'Supplément jambon de dinde',    { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥓', allergens: [] }),
+    mkItem(1304, 'item-boursin',   13, 'Boursin',                  1.00, 'Supplément Boursin',            { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🧀', allergens: ['lactose'] }),
+    mkItem(1305, 'item-raclette',  13, 'Fromage à raclette',       1.00, 'Supplément fromage à raclette', { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🧀', allergens: ['lactose'] }),
+    mkItem(1306, 'item-oeuf',      13, 'Œuf',                       1.00, 'Supplément œuf',                { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥚', allergens: ['oeuf'] }),
+    mkItem(1307, 'item-galette',   13, 'Galette pommes de terre',   1.00, 'Supplément galette pommes de terre', { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥔', allergens: ['gluten'] }),
+    mkItem(1308, 'item-salade',    13, 'Salade verte',              2.00, 'Salade verte en accompagnement',     { viandes: 0, has_crudites: false, has_sauce: false, has_supplements: false, has_menu_addon: false, time: 0, emoji: '🥗', is_vegetarian: true, allergens: [] }),
   ];
 
   // -------------------------------------------------------------------------
