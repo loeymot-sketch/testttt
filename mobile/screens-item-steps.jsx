@@ -894,8 +894,8 @@ function ScreenItemDirectAdd({ item, selections, setSelections, go, addToCart })
         <div style={{ position: 'relative', height: 280, background: 'var(--ink)' }}>
           <Slot id={item.thumb} h="100%" radius={0} placeholder={item.name} src={item.image} alt={item.name}/>
           <div style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) - 14px)', left: 14, right: 14, display: 'flex', justifyContent: 'space-between', zIndex: 2 }}>
-            <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)"><I.Back size={20}/></IconBtn>
-            <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)"><I.Close size={18}/></IconBtn>
+            <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Retour"><I.Back size={20}/></IconBtn>
+            <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Fermer"><I.Close size={18}/></IconBtn>
           </div>
         </div>
         <div style={{ padding: '24px 20px' }}>

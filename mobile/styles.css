@@ -137,10 +137,16 @@ image-slot {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: 6px 0; cursor: pointer; color: var(--gray-3);
   font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  /* [round-2 a11y A11-001 fix] lc-tab now renders as <button> ; null out
+     default button background + border + font-family so visual stays identical. */
+  background: transparent; border: 0; font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 .lc-tab--active { color: var(--ink); }
 .lc-tab--active .lc-tab-dot { background: var(--orange); }
-.lc-tab-dot { width: 4px; height: 4px; border-radius: 999px; background: transparent; margin-top: 2px; }
+.lc-tab-dot { width: 4px; height: 4px; border-radius: 999px; background: transparent; margin-top: 2px; transition: background-color 200ms ease-out, transform 160ms ease-out; }
+/* Tactile feedback on tab tap (F-004 microinteraction) */
+.lc-tab:active .lc-tab-dot { transform: scale(1.6); }
 
 /* Decorative pattern (yellow bg with food doodles) */
 .lc-doodle-bg {

@@ -309,10 +309,10 @@ function ScreenItem({ go, itemId, addToCart }) {
         <div style={{ position: 'relative', height: 280, background: 'var(--ink)' }}>
           <Slot id={item.thumb} h="100%" radius={0} placeholder={item.name} src={item.image} alt={item.name}/>
           <div style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) - 14px)', left: 14, right: 14, display: 'flex', justifyContent: 'space-between', zIndex: 2 }}>
-            <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)"><I.Back size={20}/></IconBtn>
+            <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Retour"><I.Back size={20}/></IconBtn>
             <div style={{ display: 'flex', gap: 8 }}>
-              <IconBtn bg="rgba(255,255,255,0.95)"><I.Heart size={20}/></IconBtn>
-              <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)"><I.Close size={20}/></IconBtn>
+              <IconBtn bg="rgba(255,255,255,0.95)" ariaLabel="Ajouter aux favoris" onClick={() => go('toast', { msg: 'Favoris — bientôt disponibles', kind: 'info' })}><I.Heart size={20}/></IconBtn>
+              <IconBtn onClick={() => go('back')} bg="rgba(255,255,255,0.95)" ariaLabel="Fermer"><I.Close size={20}/></IconBtn>
             </div>
           </div>
           <div style={{ position: 'absolute', bottom: 14, left: 14, display: 'flex', gap: 8 }}>
@@ -547,7 +547,7 @@ function ScreenCart({ go, cart, setCart }) {
   return (
     <div data-screen-label="10 Cart" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 200 }}>
-        <ScreenHeader left={<IconBtn onClick={() => go('back')}><I.Back size={20}/></IconBtn>} center={<div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>PANIER</div>}/>
+        <ScreenHeader left={<IconBtn onClick={() => go('back')} ariaLabel="Retour"><I.Back size={20}/></IconBtn>} center={<div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>PANIER</div>}/>
         <div style={{ padding: '8px 20px 0' }}>
           <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>Ta<br/>commande</h1>
           <div style={{ marginTop: 8, fontSize: 13, color: 'var(--gray-3)' }}>{cart.length} article{cart.length>1?'s':''} · prêt dans ~12 min</div>
@@ -586,14 +586,14 @@ function ScreenCart({ go, cart, setCart }) {
                 }
                 <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div className="lc-stepper">
-                    <button onClick={() => updateQty(idx, -1)}>−</button>
-                    <span className="lc-stepper-val">{it.qty}</span>
-                    <button onClick={() => updateQty(idx, +1)}>+</button>
+                    <button onClick={() => updateQty(idx, -1)} aria-label={`Diminuer la quantité de ${it.name}`}>−</button>
+                    <span className="lc-stepper-val" aria-live="polite" aria-atomic="true">{it.qty}</span>
+                    <button onClick={() => updateQty(idx, +1)} aria-label={`Augmenter la quantité de ${it.name}`}>+</button>
                   </div>
                   <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--orange)' }}>{(it.price*it.qty).toFixed(2).replace('.', ',')} €</span>
                 </div>
               </div>
-              <button onClick={() => remove(idx)} style={{ background: 'transparent', border: 0, color: 'var(--gray-3)', cursor: 'pointer' }}><I.Trash size={16}/></button>
+              <button onClick={() => remove(idx)} aria-label={`Retirer ${it.name} du panier`} style={{ background: 'transparent', border: 0, color: 'var(--gray-3)', cursor: 'pointer' }}><I.Trash size={16}/></button>
             </div>
           ))}
         </div>
@@ -655,7 +655,7 @@ function ScreenConfirm({ go, order }) {
   const orderEta = (order && order.eta) || '—';
   return (
     <div data-screen-label="11 Confirmation" style={{ position: 'absolute', inset: 0, background: '#FFD93D', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
-      <ScreenHeader left={<IconBtn bg="var(--ink)" color="#fff" onClick={() => go('home')}><I.Close size={18}/></IconBtn>} center={<Logo size={12}/>}/>
+      <ScreenHeader left={<IconBtn bg="var(--ink)" color="#fff" onClick={() => go('home')} ariaLabel="Fermer la confirmation"><I.Close size={18}/></IconBtn>} center={<Logo size={12}/>}/>
       <div style={{ flex: 1, padding: '4px 20px 20px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--ink)', color: 'var(--orange)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '4px 4px 0 var(--paper)' }}>

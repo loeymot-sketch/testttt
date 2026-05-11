@@ -189,7 +189,7 @@ function ScreenLogin({ onNext, onBack }) {
   const valid = phone.replace(/\s/g, '').length >= 10;
   return (
     <div data-screen-label="05 Login" style={{ position: 'absolute', inset: 0, background: '#FFFFFF', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
-      <ScreenHeader left={<IconBtn onClick={onBack}><I.Back size={20}/></IconBtn>} center={<Logo size={14}/>}/>
+      <ScreenHeader left={<IconBtn onClick={onBack} ariaLabel="Retour"><I.Back size={20}/></IconBtn>} center={<Logo size={14}/>}/>
       <div style={{ flex: 1, padding: '12px 28px', position: 'relative' }}>
         <div className="lc-eyebrow" style={{ color: 'var(--orange)', marginBottom: 10 }}>// Étape 1 sur 2</div>
         <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.92, color: 'var(--ink)' }}>Ton<br/>numéro,<br/>chef.</h1>
@@ -201,7 +201,7 @@ function ScreenLogin({ onNext, onBack }) {
             <span style={{ color: '#fff', fontFamily: 'var(--font-mono)', fontSize: 14 }}>+33</span>
             <I.ChevronDown size={14} stroke="rgba(255,255,255,0.6)"/>
           </div>
-          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="6 12 34 56 78" style={{ flex: 1, background: 'transparent', border: 0, outline: 'none', color: '#fff', fontSize: 19, fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}/>
+          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="6 12 34 56 78" aria-label="Numéro de téléphone mobile français, commençant par 06 ou 07" inputMode="tel" autoComplete="tel-national" style={{ flex: 1, background: 'transparent', border: 0, outline: 'none', color: '#fff', fontSize: 19, fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}/>
         </div>
         {/* benefits */}
         <div style={{ marginTop: 32, display: 'grid', gap: 10 }}>
@@ -244,34 +244,41 @@ function ScreenOTP({ onNext, onBack }) {
   useEffect_o(() => { refs[0].current?.focus(); }, []);
   return (
     <div data-screen-label="06 OTP" style={{ position: 'absolute', inset: 0, background: '#FFFFFF', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
-      <ScreenHeader left={<IconBtn onClick={onBack}><I.Back size={20}/></IconBtn>} center={<Logo size={14}/>}/>
+      <ScreenHeader left={<IconBtn onClick={onBack} ariaLabel="Retour"><I.Back size={20}/></IconBtn>} center={<Logo size={14}/>}/>
       <div style={{ flex: 1, padding: '12px 28px' }}>
         <div className="lc-eyebrow" style={{ color: 'var(--orange)', marginBottom: 10 }}>// Étape 2 sur 2</div>
         <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.92 }}>Entre<br/>ton code.</h1>
         <p style={{ marginTop: 14, fontSize: 14, lineHeight: 1.55, color: 'var(--gray-4)' }}>Code envoyé au <b style={{ color: 'var(--ink)' }}>+33 6 12 34 56 78</b> · <span style={{ color: 'var(--orange)' }}>Modifier</span></p>
-        {/* code boxes */}
-        <div style={{ marginTop: 32, display: 'flex', gap: 12, justifyContent: 'space-between' }}>
-          {code.map((c, i) => (
-            <input
-              key={i}
-              ref={refs[i]}
-              value={c}
-              onChange={e => set(i, e.target.value)}
-              onKeyDown={e => { if (e.key === 'Backspace' && !c && i > 0) refs[i-1].current?.focus(); }}
-              maxLength={1}
-              inputMode="numeric"
-              style={{
-                width: 64, height: 76, borderRadius: 18,
-                background: c ? 'var(--ink)' : 'var(--cream)',
-                color: c ? 'var(--orange)' : 'var(--ink)',
-                border: c ? '0' : '2px solid transparent',
-                fontFamily: 'var(--font-display)', fontSize: 36, textAlign: 'center', outline: 'none',
-                boxShadow: c ? '4px 4px 0 var(--yellow)' : 'none',
-                transition: 'all 0.15s',
-              }}
-            />
-          ))}
-        </div>
+        {/* code boxes — A11-005 P1 round-2 2026-05-11 : fieldset+legend
+            group + per-input aria-label so screen-readers can identify
+            which digit position the user is on. */}
+        <fieldset style={{ marginTop: 32, padding: 0, border: 0 }}>
+          <legend className="lc-sr-only">Code de validation à 4 chiffres reçu par SMS</legend>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'space-between' }}>
+            {code.map((c, i) => (
+              <input
+                key={i}
+                ref={refs[i]}
+                value={c}
+                onChange={e => set(i, e.target.value)}
+                onKeyDown={e => { if (e.key === 'Backspace' && !c && i > 0) refs[i-1].current?.focus(); }}
+                maxLength={1}
+                inputMode="numeric"
+                autoComplete={i === 0 ? 'one-time-code' : 'off'}
+                aria-label={`Chiffre ${i + 1} sur 4 du code de validation`}
+                style={{
+                  width: 64, height: 76, borderRadius: 18,
+                  background: c ? 'var(--ink)' : 'var(--cream)',
+                  color: c ? 'var(--orange)' : 'var(--ink)',
+                  border: c ? '0' : '2px solid transparent',
+                  fontFamily: 'var(--font-display)', fontSize: 36, textAlign: 'center', outline: 'none',
+                  boxShadow: c ? '4px 4px 0 var(--yellow)' : 'none',
+                  transition: 'all 0.15s',
+                }}
+              />
+            ))}
+          </div>
+        </fieldset>
         <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {/* [test-e2e fix A-001 round-2 2026-05-11] gate dev affordance — hide demo code from prod-facing users */}
           {window.LC && window.LC.isDev
