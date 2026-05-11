@@ -569,11 +569,16 @@ export default {
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
         case 'assiette':
+          // [owner-feedback 2026-05-10 round-5] Assiettes contiennent DÉJÀ
+          // frites + salade + pain + sauce de base (cf. description DB).
+          // Owner: "on va pas proposer un menu, on va proposer que le boisson
+          // et la sauce pour les frites". Pipeline simplifié = sauce + recap.
+          // Boisson upsell est géré post-cart via KioskUpsellComponent.
+          // Supplements/garnitures retirés du wizard pour ne pas alourdir
+          // l'UX (customer peut tap sur cat 318 sidebar pour add direct).
           return [
             ...(hasViandes ? [{ type: 'viande', label: 'Viande(s)', component: 'KioskStepViande' }] : []),
             { type: 'sauce', label: 'Sauce', component: 'KioskStepSauce' },
-            { type: 'garnitures', label: 'Garnitures', component: 'KioskStepGarnitures' },
-            { type: 'supplements', label: 'Suppléments', component: 'KioskStepSupplements' },
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
         case 'snacking':
@@ -588,15 +593,13 @@ export default {
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
         case 'omelette':
-          // V3.8 (2026-05-10) Owner audit : Omelettes + Ojja contiennent DÉJÀ
-          // des frites dans le prix base ("+ Frites + Pain" en description DB).
-          // Phase D's menu+frites_style étaient FAUX (offre redondante).
-          // → revert : sauce + garnitures + supplements + recap (no menu).
-          // L'upsell boisson est géré post-cart via KioskUpsellComponent.
+          // [owner-feedback 2026-05-10 round-5] Omelettes + Ojja + Menus Enfants
+          // contiennent DÉJÀ frites + pain dans le prix base. Owner: "on va
+          // proposer que le boisson et la sauce pour les frites" — pipeline
+          // simplifié à sauce + recap. Boisson upsell géré post-cart via
+          // KioskUpsellComponent. Supplements/garnitures retirés du wizard.
           return [
             { type: 'sauce', label: 'Sauce', component: 'KioskStepSauce' },
-            { type: 'garnitures', label: 'Garnitures', component: 'KioskStepGarnitures' },
-            { type: 'supplements', label: 'Suppléments', component: 'KioskStepSupplements' },
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
         case 'salade':

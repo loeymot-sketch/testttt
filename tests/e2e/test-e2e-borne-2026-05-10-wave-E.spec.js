@@ -212,11 +212,23 @@ async function addItemViaWizardOrDirect(page, itemId, opts = {}) {
     // If at recap (addToCart button visible), click it.
     if (state.isAddMode && !state.nextDisabled) {
       await page.locator('.kiosk-wizard .kiosk-btn-next--cart').first().click({ timeout: 4000 }).catch(() => {});
+      // Wait for BOTH wizard root AND overlay to unmount — the .kiosk-wizard-overlay
+      // backdrop persists briefly after .kiosk-wizard closes and can intercept
+      // pointer events on the next product card.
       await page
-        .waitForFunction(() => !document.querySelector('.kiosk-wizard'), null, { timeout: 8000 })
+        .waitForFunction(
+          () =>
+            !document.querySelector('.kiosk-wizard') &&
+            !document.querySelector('.kiosk-wizard-overlay'),
+          null,
+          { timeout: 8000 }
+        )
         .catch(() => {});
-      const stillOpen = await page.locator('.kiosk-wizard').isVisible({ timeout: 200 }).catch(() => false);
-      if (!stillOpen) return;
+      const stillOpen = await page.locator('.kiosk-wizard, .kiosk-wizard-overlay').first().isVisible({ timeout: 200 }).catch(() => false);
+      if (!stillOpen) {
+        await page.waitForTimeout(250); // settle frame for next click
+        return;
+      }
       continue;
     }
 
@@ -609,7 +621,12 @@ test.describe('Wave E — kiosk cart + checkout + payment (round-1 capture)', ()
       await snap('09-e-payment-tpe-result-ok');
 
       // ---- 10 confirmation-success ----
-      await expect(page.getByTestId('kiosk-confirmation-root')).toBeVisible({ timeout: 30000 });
+      // Round-4 fix: payment-confirm now retries on transient 4xx (Sanctum
+      // cold-start race) and surfaces a role=alert toast. The retry cycle
+      // can take 20-30s depending on which retry succeeds — keep timeout
+      // generous (60s) so flaky cold-start races don't fail the spec when
+      // the actual flow is correct.
+      await expect(page.getByTestId('kiosk-confirmation-root')).toBeVisible({ timeout: 60000 });
       await page.waitForTimeout(500);
       await snap('10-e-confirmation-success');
 

@@ -75,11 +75,14 @@ export const kioskMenu = {
             // supplément cliqué standalone ne sait à quel produit il s'attache).
             // On la cache du welcome screen mais les items restent au catalog
             // pour POS staff + addons backend (360-403)."
-            // [A-001 round-2] Owner gate étendu : cats 306 (Tacos), 307 (Sandwichs),
-            // 308 (Burgers) doivent être masquées de la borne (audit owner
-            // 2026-05-10 — "scape les sandwich, burger et tacos"). Items restent
-            // au catalog pour POS staff + addons backend.
-            const KIOSK_HIDDEN_CATEGORY_IDS = new Set([306, 307, 308, 315]);
+            // [owner-feedback 2026-05-10 round-5] Cats 306/307/308 (sandwich/burger/
+            // tacos) restent VISIBLES sur la borne. Le précédent gating était une
+            // mis-interprétation de "scape les sandwich, burger et tacos" — l'intent
+            // owner était de SAUTER ces cats dans le scope de l'audit test E2E
+            // uniquement, pas de les retirer de l'UI.
+            // Cat 315 (Frites & Accompagnements) reste masquée — ses items sont
+            // des addons d'autres produits, accédés via les steps wizard.
+            const KIOSK_HIDDEN_CATEGORY_IDS = new Set([315]);
             const filtered = (s.categories || []).filter((c) =>
                 !KIOSK_HIDDEN_CATEGORY_IDS.has(parseInt(c.id, 10))
             );

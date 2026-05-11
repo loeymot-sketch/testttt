@@ -1,6 +1,6 @@
 {
   "pre_addToCart": {
-    "ts": 1778444943947,
+    "ts": 1778447887269,
     "wizardFound": true,
     "storeFound": true,
     "selections": {
@@ -26,10 +26,7 @@
         944
       ],
       "garnitures": {},
-      "supplements": {
-        "932": false,
-        "933": false
-      },
+      "supplements": {},
       "menuChoice": "none",
       "boissonChoice": null,
       "fritesSauce": null,
@@ -162,10 +159,7 @@
             929
           ],
           "garnitures": {},
-          "supplements": {
-            "923": false,
-            "924": false
-          },
+          "supplements": {},
           "menuChoice": "none",
           "boissonChoice": null,
           "fritesSauce": null,
@@ -249,7 +243,7 @@
     ]
   },
   "post_addToCart": {
-    "ts": 1778444945571,
+    "ts": 1778447888882,
     "wizardFound": false,
     "storeFound": true,
     "cartItems": [
@@ -367,10 +361,7 @@
             929
           ],
           "garnitures": {},
-          "supplements": {
-            "923": false,
-            "924": false
-          },
+          "supplements": {},
           "menuChoice": "none",
           "boissonChoice": null,
           "fritesSauce": null,
@@ -495,10 +486,7 @@
             944
           ],
           "garnitures": {},
-          "supplements": {
-            "932": false,
-            "933": false
-          },
+          "supplements": {},
           "menuChoice": "none",
           "boissonChoice": null,
           "fritesSauce": null,
