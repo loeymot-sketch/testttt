@@ -8,11 +8,11 @@
     "outgoing_keys": [],
     "unique_keys_count": 0,
     "responses": [],
-    "orders_delta": 0
+    "orders_delta": 1
   },
   "expected": {
     "orders_delta": 1
   },
-  "verdict": "DEFERRED",
+  "verdict": "FAIL",
   "evidence": "keys=[] responses=[]"
 }

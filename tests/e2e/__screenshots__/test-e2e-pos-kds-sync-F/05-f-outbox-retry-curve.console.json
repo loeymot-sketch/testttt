@@ -7,7 +7,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778447989294
+    "ts": 1778472402256
   },
   {
     "level": "error",
@@ -17,27 +17,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778447991351
-  },
-  {
-    "level": "error",
-    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
-    "location": {
-      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
-      "lineNumber": 11189,
-      "columnNumber": 0
-    },
-    "ts": 1778448019295
-  },
-  {
-    "level": "error",
-    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
-    "location": {
-      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
-      "lineNumber": 11189,
-      "columnNumber": 0
-    },
-    "ts": 1778448021355
+    "ts": 1778472404305
   },
   {
     "level": "error",
@@ -47,6 +27,36 @@
       "lineNumber": 0,
       "columnNumber": 0
     },
-    "ts": 1778448028996
+    "ts": 1778472428467
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778472432256
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778472434307
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472440676
   }
 ]

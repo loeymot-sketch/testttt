@@ -7,7 +7,27 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778447529780
+    "ts": 1778472171450
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/kiosk-event",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472171718
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/menu",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472171773
   },
   {
     "level": "error",
@@ -17,6 +37,6 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778447531736
+    "ts": 1778472173411
   }
 ]

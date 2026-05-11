@@ -7,17 +7,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778446986322
-  },
-  {
-    "level": "error",
-    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
-    "location": {
-      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
-      "lineNumber": 11189,
-      "columnNumber": 0
-    },
-    "ts": 1778446991058
+    "ts": 1778471584222
   },
   {
     "level": "error",
@@ -27,16 +17,36 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778446991062
+    "ts": 1778471586148
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778471589396
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778471589408
   },
   {
     "level": "info",
     "text": "[PosSyncService] fallback polling disabled.",
     "location": {
       "url": "http://127.0.0.1:8000/js/pos-shell.js",
-      "lineNumber": 15966,
+      "lineNumber": 15975,
       "columnNumber": 16
     },
-    "ts": 1778446991554
+    "ts": 1778471589956
   }
 ]

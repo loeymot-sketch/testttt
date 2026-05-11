@@ -4,17 +4,17 @@
   "when": "tinker fires 2x event(new OrderUpdated($order, 'status_change', ['version' => 1]))",
   "then": "second event should be gated (version <= previousVersion). Observable proxy: MutationObserver count bounded.",
   "observed": {
-    "seed_order_id": 851,
+    "seed_order_id": 1262,
     "dispatch_result": {
       "error": "Class \"App\\Events\\OrderUpdated\" not found",
       "class": "Error"
     },
-    "mutation_count": 52,
+    "mutation_count": 32,
     "note": "Version-gating is internal to KdsSyncService; MutationObserver count is a proxy. Both events route through poll/broadcast; if pipeline is silent, count stays 0. A deterministic gating assertion requires module instrumentation we will not patch in a frozen-zone audit. Flagged as DEFERRED unless gating is otherwise verifiable."
   },
   "expected": {
     "gating_verifiable": "partial — module-private state"
   },
   "verdict": "FAIL_DISPATCH",
-  "evidence": "dispatch={\"error\":\"Class \\\"App\\\\Events\\\\OrderUpdated\\\" not found\",\"class\":\"Error\"} mutations=52"
+  "evidence": "dispatch={\"error\":\"Class \\\"App\\\\Events\\\\OrderUpdated\\\" not found\",\"class\":\"Error\"} mutations=32"
 }

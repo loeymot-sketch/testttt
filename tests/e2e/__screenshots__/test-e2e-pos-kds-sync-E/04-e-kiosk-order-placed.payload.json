@@ -1,9 +1,9 @@
 {
-  "orderId": 797,
-  "orderSerialNo": "100526797",
+  "orderId": 1252,
+  "orderSerialNo": "1105261252",
   "queueNumber": null,
   "totalAmount": 2,
-  "idempotencyKey": "64e0f609-3696-425d-9f7f-4b13534d0c6d",
+  "idempotencyKey": "f1237672-4028-47cc-ac92-c1e15308997b",
   "replayed": false,
-  "t_kiosk_paid_ms": 912
+  "t_kiosk_paid_ms": 843
 }

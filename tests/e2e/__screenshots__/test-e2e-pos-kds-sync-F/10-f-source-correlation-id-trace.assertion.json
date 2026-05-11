@@ -4,14 +4,14 @@
   "when": "placeKioskOrder + tinker query on domain_events",
   "then": "domain_events.correlation_id === sent X-Correlation-ID (top-level column, not metadata JSON)",
   "observed": {
-    "correlation_id_sent": "AUDIT-CORR-F10-1778448063056",
-    "order_id": 854,
-    "domain_event_correlation_id": "AUDIT-CORR-F10-1778448063056",
-    "domain_event_id": 956
+    "correlation_id_sent": "AUDIT-CORR-F10-1778472473423",
+    "order_id": 1266,
+    "domain_event_correlation_id": "AUDIT-CORR-F10-1778472473423",
+    "domain_event_id": 1354
   },
   "expected": {
     "domain_event_correlation_id": "=== sent"
   },
   "verdict": "PASS",
-  "evidence": "sent=AUDIT-CORR-F10-1778448063056 got=AUDIT-CORR-F10-1778448063056"
+  "evidence": "sent=AUDIT-CORR-F10-1778472473423 got=AUDIT-CORR-F10-1778472473423"
 }

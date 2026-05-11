@@ -7,17 +7,17 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778447069643
+    "ts": 1778471667568
   },
   {
     "level": "info",
     "text": "[PosSyncService] fallback polling disabled.",
     "location": {
       "url": "http://127.0.0.1:8000/js/pos-shell.js",
-      "lineNumber": 15966,
+      "lineNumber": 15975,
       "columnNumber": 16
     },
-    "ts": 1778447070350
+    "ts": 1778471668244
   },
   {
     "level": "error",
@@ -27,27 +27,27 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778447070350
+    "ts": 1778471668488
   },
   {
     "level": "log",
     "text": "[POS-WIZARD] detectCategory (fallback): {apiCat: Frites & Accompagnements, domCat: frites & accompagnements, name: Frites Seules}",
     "location": {
-      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778447066",
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778471664",
       "lineNumber": 337,
       "columnNumber": 16
     },
-    "ts": 1778447074422
+    "ts": 1778471672330
   },
   {
     "level": "log",
     "text": "[POS-WIZARD] detectCategory (fallback): {apiCat: Frites & Accompagnements, domCat: frites & accompagnements, name: Frites Seules}",
     "location": {
-      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778447066",
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778471664",
       "lineNumber": 337,
       "columnNumber": 16
     },
-    "ts": 1778447074422
+    "ts": 1778471672331
   },
   {
     "level": "error",
@@ -57,6 +57,6 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778447083071
+    "ts": 1778471681493
   }
 ]

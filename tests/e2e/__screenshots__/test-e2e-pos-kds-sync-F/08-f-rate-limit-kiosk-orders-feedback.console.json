@@ -1,13 +1,33 @@
 [
   {
     "level": "error",
-    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
     "location": {
       "url": "http://127.0.0.1:8000/api/frontend/order/quote",
       "lineNumber": 0,
       "columnNumber": 0
     },
-    "ts": 1778448053985
+    "ts": 1778472461947
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472463793
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472464068
   },
   {
     "level": "error",
@@ -17,7 +37,7 @@
       "lineNumber": 0,
       "columnNumber": 0
     },
-    "ts": 1778448054020
+    "ts": 1778472464391
   },
   {
     "level": "error",
@@ -27,7 +47,7 @@
       "lineNumber": 0,
       "columnNumber": 0
     },
-    "ts": 1778448054041
+    "ts": 1778472464413
   },
   {
     "level": "error",
@@ -37,7 +57,7 @@
       "lineNumber": 0,
       "columnNumber": 0
     },
-    "ts": 1778448054061
+    "ts": 1778472464441
   },
   {
     "level": "error",
@@ -47,6 +67,136 @@
       "lineNumber": 0,
       "columnNumber": 0
     },
-    "ts": 1778448054081
+    "ts": 1778472464461
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472464479
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472464497
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472464519
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472464537
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472464554
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472464572
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472464597
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472464616
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472464632
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472464649
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472464673
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472464689
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778472464710
   }
 ]

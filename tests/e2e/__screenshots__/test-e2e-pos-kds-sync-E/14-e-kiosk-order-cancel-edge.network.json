@@ -1,9 +1,9 @@
 [
   {
-    "url": "http://127.0.0.1:8000/api/admin/pos-order/change-status/799",
+    "url": "http://127.0.0.1:8000/api/admin/pos-order/change-status/1253",
     "method": "POST",
     "status": 422,
     "duration_ms": null,
-    "ts": 1778447612295
+    "ts": 1778472261793
   }
 ]

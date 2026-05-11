@@ -6,17 +6,17 @@
   "observed": {
     "total_calls": 65,
     "status_counts": {
-      "ok": 60,
-      "s429": 5
+      "ok": 48,
+      "s429": 17
     },
-    "first_429_index": 60,
+    "first_429_index": 48,
     "sample_429_body": {
-      "i": 60,
+      "i": 48,
       "status": 429,
       "retry_after": 60,
       "message": "Trop de commandes. Veuillez patienter."
     },
-    "toast_visible_on_kiosk_surface": false
+    "toast_visible_on_kiosk_surface": true
   },
   "expected": {
     "status_counts": {
@@ -24,6 +24,6 @@
     },
     "toast_visible": true
   },
-  "verdict": "PARTIAL_429_SILENT_ON_KIOSK",
-  "evidence": "first429=60 counts={\"ok\":60,\"s429\":5}"
+  "verdict": "PASS",
+  "evidence": "first429=48 counts={\"ok\":48,\"s429\":17}"
 }

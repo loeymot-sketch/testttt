@@ -5,7 +5,7 @@
   "then": "second response HTTP 409 Conflict + only 1 DB row sharing the key",
   "observed": {
     "first": {
-      "orderId": 847,
+      "orderId": 1257,
       "total": 2,
       "replayed": false
     },
@@ -20,7 +20,7 @@
     },
     "db_rows_count": 1,
     "distinct_order_ids": [
-      847
+      1257
     ]
   },
   "expected": {
@@ -30,5 +30,5 @@
     "db_rows_count": 1
   },
   "verdict": "PASS",
-  "evidence": "idempotency_key=f58bc54a-e4e9-4ff8-9b32-12b09c97c7f0"
+  "evidence": "idempotency_key=7a12f580-7047-4805-a3b2-6af1d1c89983"
 }
