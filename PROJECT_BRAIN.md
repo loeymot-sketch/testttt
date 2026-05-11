@@ -47,8 +47,8 @@ Plateforme restaurant fast-food complète :
 ## §2 CURRENT STATE — Auto-managed
 
 - **Branche** : `feature/mobile-app-le-cayenne-2026-05-10`
-- **HEAD** : `d9ee89928` (round-2 cluster-3 loyalty idempotency + RGPD + count drift) — cluster-5 round-3 + verdict en attente de commit
-- **Last update** : 2026-05-11 (`/test-e2e` mobile wizard cycle COMPLET — round-1→2→3 GREEN, GO V0 conditionnel)
+- **HEAD** : `8d31a7f92` (Phase 6.A real-asset wiring — AD-N4 image-slot leak DEAD)
+- **Last update** : 2026-05-11 (Phase 6.A real assets — 60 items + 13 cats + sauces/viandes/etc. wired avec photos kiosk + signature heroes owner)
 - **Branche release antérieure** : `cycle/PHASE2-TRAIN-A-V1-RELEASE-PREP-2026-04-27`
   (HEAD `9d9dddae1`, NO-GO V1 par audit POS adversarial 2026-05-09 — état préservé)
 - **Domaines production-ready** : ~7-8 / 16 (revu après ultra audit POS 2026-05-09 ;
@@ -67,6 +67,50 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**Phase 6.A real-asset wiring 2026-05-11** (HEAD `8d31a7f92`,
+branche `feature/mobile-app-le-cayenne-2026-05-10`) :
+- **Mission** : remplacer tous les `<image-slot>` placeholders dashed-border par
+  les vraies photos produits (sources : `public/images/menu/` kiosk + dossier
+  owner `/Users/1millnonstop/Downloads/image produit`) → AD-N4 epic (image-slot
+  placeholder leak across customer-facing surfaces) CLOSED.
+- **189 fichiers assets** copiés vers `mobile/assets/menu/` (170 PNG kiosk +
+  19 SVG sauce + 5 signature bg-removed heroes Cayenne/Mega/Supreme/Terminator/
+  Tacos depuis dossier owner). 55MB total. Servi par `php -S :8081`.
+- **Data layer** (`mobile/data/menu.js`) :
+  - `ITEM_IMG` map : 60 slugs → `generated_*.png` (kiosk-generated mobile-optimized)
+  - `HERO_IMG` map : 5 signature slugs → `signature/*-hero.png` (owner bg-removed hi-quality)
+  - `imgFor(slug)` + `heroFor(slug)` helpers
+  - `mkItem` auto-injecte `image` + `hero` sur chaque item
+  - MEATS / SAUCES / CRUDITES / SUPPLEMENTS / FORMULE_DRINKS / FRITES_STYLES /
+    CATEGORIES tous reçoivent `image:` field (viande_*.png / sauce_*.svg /
+    crudite_*.png / supplement_*.png / generated_category_*.png)
+- **Render layer** :
+  - `mobile/shared.jsx` `Slot` helper accepte prop `src` → vraie `<img>` avec
+    `object-fit:cover` + `onError` fallback. Drag-drop image-slot uniquement
+    si pas de src.
+  - 11 Slot callers wired : home featured (hero), ScreenMenu cards × 4, cart
+    row, ScreenItemDirectAdd hero, onboarding × 2.
+  - Wizard step ChoiceCards montrent maintenant les vrais ingrédients :
+    Viandes (32px thumb), Sauce (18px color swatch), Crudités (44px opacity-gated),
+    Suppléments (36px row thumb), Drinks (56px contain), Frites style (40px).
+- **Vérification** : 4 waves Playwright re-capturées (1m30 wall-clock) → 4/4 PASS.
+  Lecture visuelle via Read tool confirme :
+  - 02-onb1.png : Le Cayenne signature sandwich (bg-removed) au lieu de "Hero burger"
+  - 11-home-featured-card.png : vraie Tacos XXL au lieu de placeholder
+  - 13-cat-desserts.png : Glace/Tarte Daim/Tiramisu illustrations
+  - 15-tacos-step-viandes-empty.png : 9 vraies photos d'ingrédients (Merguez,
+    Kefta, Mexicain, Cordon Bleu, Viande Hachée, Nuggets, Escalope, Tenders, Fricandelle)
+  - 17-tacos-step-sauce.png : 15 color swatches sauces (Ketchup rouge, Algérienne
+    orange, Hannibal/Harissa rouge sombre, Blanche blanc, Poivre noir, etc.)
+  - 17-cart-1-line.png : vraie Tacos XXL thumb au lieu de placeholder noir
+- **Verdict global** : 🟢 GO V0 **UNCONDITIONAL** (plus de "conditionnel" — AD-N4
+  était le seul caveat de Phase 5, maintenant fermé). 0 P0 + 0 P1 + 0 P2 epic ouvert.
+- **Backlog résiduel** : 23 P2 + 14 P3 (cosmétique : BarcodeMock density, currency
+  typography drift, chip rail edges, console 404 image-slots.state.json sentinel,
+  spec dev-only audit-integrity) — non bloquant V0.
+- Frozen-zones intactes : 0 diff KioskWizard / KioskApp / KioskUpsell /
+  pos-wizard.js / FiscalSequence / BranchScope / PricingService / OrderState.
 
 **`/test-e2e` mobile wizard cycle complet 2026-05-11** (HEAD `d9ee89928`+cluster-5 pending,
 branche `feature/mobile-app-le-cayenne-2026-05-10`) :
