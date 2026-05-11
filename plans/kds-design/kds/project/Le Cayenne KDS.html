@@ -1,0 +1,1334 @@
+<!--
+================================================================================
+LE CAYENNE — Kitchen Display System (FoodKing V1)
+Target: 27" / 1920×1080 wall-mounted touchscreen
+Spec compliance notes for the Vue/Tailwind developer:
+
+LAYOUT
+- Outer canvas 1920×1080, CSS transform: scale() to fit viewport (letterbox).
+- Header strip h-12 (48px), single status banner zone h-8 (32px, conditional).
+- Grid: 4 cols × 2 rows on 1080p (5×2 or 4×3 on 4K). gap-4 (16px), p-4 (16px).
+- All orders flow FIFO oldest→newest, no swimlanes, no per-source columns.
+
+COLOR TOKENS (kept from existing brand — do NOT change)
+- brand:        #111827  (primary actions, queue numbers)
+- text:         #111827
+- text-2:       #4B5563  (modifiers, secondary)
+- text-3:       #9CA3AF  (muted, NEW badge)
+- bg-soft:      #F9FAFB  (app bg)
+- white:        #FFFFFF
+- green:        #16A34A  (READY)
+- orange-700:   #EA580C  (warning border)
+- orange-100:   #FFEDD5  (warning header bg)
+- red-600:      #DC2626  (critical border + pulse)
+- red-100:      #FEE2E2  (critical header bg)
+- yellow:       #EAB308  (supplement +cheddar)
+- allergen:     #F97316  (4px left border + warning icon)
+- blue-500:     #3B82F6  (PREPARING badge — Lightspeed 2.0 convention)
+- chip-pos-bg:  #F3F4F6  / chip-pos-text: #374151
+- chip-kiosk-bg:#E5E7EB / chip-kiosk-text: #1F2937
+- chip-online-bg(reserved): #CFFAFE / text #0E7490
+- chip-dinein-bg(reserved): #FEF3C7 / text #B45309
+
+TYPE SCALE (must hit 2m readability)
+- queue number: 48px / 800
+- elapsed: 28px / 700 tabular-nums
+- item name: 22px / 500
+- qty: 26px / 800 brand violet
+- modifier: 16px / 400 italic #4B5563
+- CTA: 22px / 700 white on brand
+- chip: 14px / 700 uppercase tracking-wide
+
+CARD BORDERS — 4px solid, color by age threshold (NOT 1px)
+- 0–3min:  #E5E7EB
+- 3–6min:  #EA580C
+- >6min:   #DC2626 + 1Hz subtle pulse (animation: pulseBorder 1s infinite)
+
+ANIMATION TIMINGS
+- Prêt fade-out: 300ms ease-out → opacity 0, scale .98
+- Undo toast: slides down 200ms, dwells 3s with shrinking progress bar, then dismiss
+- Border pulse: 1s infinite, box-shadow 0 0 0 0 / 0 0 0 8px rgba(220,38,38,.0)
+- Elapsed-time digit pulse (>6min): opacity 1↔.6 over 1s
+- Card auto-promote: smooth 200ms badge swap NEW → PREPARING
+
+STATE MACHINE
+- NEW arrives → if zero PREPARING on screen, auto-promote to PREPARING.
+- Chef taps Prêt → state READY → fade 300ms → undo toast 3s → final remove.
+- Undo within 3s → restore as PREPARING.
+
+ACCESSIBILITY
+- All hit targets ≥60px (kitchen standard, exceeds WCAG 44).
+- All text ≥AAA contrast on its bg (no #6E7191 fail anymore).
+- AR locale flips dir="rtl" on root; flex/grid mirror automatically.
+
+i18n KEYS in window.i18n; AR fallback to FR for menu items (food names stay original).
+================================================================================
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Le Cayenne — KDS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Noto+Naskh+Arabic:wght@500;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: '#111827',
+          brandDark: '#000000',
+          ink: '#111827',
+          ink2: '#4B5563',
+          ink3: '#9CA3AF',
+          bgsoft: '#F9FAFB',
+          allergen: '#F97316',
+        },
+        fontFamily: {
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+          mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+          ar: ['"Noto Naskh Arabic"', 'system-ui', 'sans-serif'],
+        }
+      }
+    }
+  }
+</script>
+<style>
+  html, body { margin: 0; padding: 0; background: #0b0b10; overflow: hidden; height: 100%; }
+  body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  #stage-wrap { position: fixed; inset: 0; display: grid; place-items: center; }
+  #stage { width: 1920px; height: 1080px; transform-origin: center center; background: #F9FAFB; box-shadow: 0 30px 80px rgba(0,0,0,.5); position: relative; }
+  [dir="rtl"] .tabular-nums { font-feature-settings: "tnum"; }
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+
+  @keyframes pulseBorder {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.55); }
+    50%      { box-shadow: 0 0 0 10px rgba(220,38,38,0); }
+  }
+  /* Alert animations disabled — borders + color tints are the signals.
+     Keeping keyframes defined for reference but classes are neutralized. */
+  .pulse-critical { animation: none; }
+  .pulse-digit    { animation: none; }
+  .prep-dot       { animation: none; }
+  .new-ring       { animation: none; }
+  .prep-pulse     { animation: none; }
+  .state-cross    { animation: none; }
+  @keyframes pulseDigit {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: .55; }
+  }
+  .pulse-digit { animation: pulseDigit 1s ease-in-out infinite; }
+
+  @keyframes preparingDot {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%      { transform: scale(1.6); opacity: .35; }
+  }
+  /* Static state badge */
+
+  @keyframes newPulseRing {
+    0%   { box-shadow: 0 0 0 0 rgba(17,24,39,.45); }
+    100% { box-shadow: 0 0 0 6px rgba(17,24,39,0); }
+  }
+  /* static brand ring */
+
+  @keyframes liveDot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: .4; transform: scale(.85); }
+  }
+  .live-dot { animation: liveDot 1.6s ease-in-out infinite; }
+
+  @keyframes fadeBump {
+    0%   { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-12px) scale(.97); }
+  }
+  .fade-bump { animation: fadeBump 300ms ease-out forwards; }
+
+  /* grid reflow when a card is removed */
+  .order-card { transition: transform 250ms ease-out, box-shadow 150ms ease, opacity 200ms ease, outline-color 150ms ease; }
+
+  /* state badge crossfade NEW -> PREPARING */
+  @keyframes stateCrossfade {
+    0% { opacity: 0; transform: scale(.85); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .state-cross { animation: none; }
+  .prep-pulse  { animation: none; }
+
+  /* allergen pill: outer ring for extra emphasis */
+  .allergen-pill { box-shadow: 0 0 0 2px rgba(234,88,12,0.30); }
+
+  /* respect user motion prefs */
+  @media (prefers-reduced-motion: reduce) {
+    .pulse-critical, .pulse-digit, .prep-dot, .new-ring, .live-dot,
+    .printer-flash, .state-cross, .prep-pulse, .shrink-bar {
+      animation: none !important;
+    }
+    .order-card, .toast-in, .slide-in, .fade-bump { transition: none !important; animation-duration: 0.001ms !important; }
+  }
+
+  @keyframes toastIn {
+    from { transform: translate(-50%, -120%); opacity: 0; }
+    to   { transform: translate(-50%, 0);      opacity: 1; }
+  }
+  .toast-in { animation: toastIn 220ms cubic-bezier(.2,.8,.2,1) forwards; }
+
+  @keyframes shrinkBar {
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
+  }
+  .shrink-bar { animation: shrinkBar 3s linear forwards; transform-origin: left center; }
+  [dir="rtl"] .shrink-bar { transform-origin: right center; }
+
+  @keyframes printerFlash {
+    0%, 100% { opacity: 0; transform: scale(.8); }
+    20%, 80% { opacity: 1; transform: scale(1); }
+  }
+  .printer-flash { opacity: 1; }
+
+  /* Scrollbar tame for internal card scroll */
+  .card-body::-webkit-scrollbar { width: 4px; }
+  .card-body::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 2px; }
+  .card-body::-webkit-scrollbar-track { background: transparent; }
+
+  .clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* hover lift on cards */
+  .order-card { transition: transform 150ms ease, box-shadow 150ms ease; }
+  .order-card:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .order-card:focus-visible { outline: 4px solid #EA580C; outline-offset: 4px; }
+
+  /* new order arrival */
+  @keyframes slideInRight {
+    0%   { opacity: 0; transform: translateX(60px) scale(.96); }
+    70%  { opacity: 1; transform: translateX(0)   scale(1.02); }
+    100% { opacity: 1; transform: translateX(0)   scale(1); }
+  }
+  .slide-in { animation: slideInRight 500ms cubic-bezier(.2,.8,.2,1) both; }
+
+  /* Arabic typography lift */
+  [dir="rtl"], [dir="rtl"] * { font-family: 'Noto Naskh Arabic', 'Inter', system-ui, sans-serif; }
+  [dir="rtl"] .keep-latin, [dir="rtl"] .tabular-nums { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+</style>
+</head>
+<body>
+  <div id="stage-wrap">
+    <div id="stage">
+      <div id="root" class="w-full h-full"></div>
+    </div>
+  </div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script>
+  // Letterbox the 1920x1080 canvas to the viewport.
+  function fitStage() {
+    const stage = document.getElementById('stage');
+    const sx = window.innerWidth / 1920;
+    const sy = window.innerHeight / 1080;
+    const s = Math.min(sx, sy);
+    stage.style.transform = `scale(${s})`;
+  }
+  window.addEventListener('resize', fitStage);
+  window.addEventListener('load', fitStage);
+</script>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useRef, useMemo } = React;
+
+// ------------- i18n -------------
+const I18N = {
+  fr: {
+    branch: "Le Cayenne",
+    station: "Station Cuisine 1",
+    sound: "Son",
+    lang: "FR",
+    ready: "Prêt",
+    undo: "Annuler",
+    new: "NOUVEAU",
+    preparing: "EN COURS",
+    readyState: "PRÊT",
+    pos: "CAISSE",
+    kiosk: "BORNE",
+    online: "EN LIGNE",
+    dinein: "SUR PLACE",
+    emptyTitle: "Aucune commande en cours",
+    emptySub: "Les nouvelles commandes apparaîtront ici",
+    banner: "Mode synchronisation locale — les commandes seront poussées au serveur dès la reconnexion",
+    toastCanceled: (n) => `Commande N°${n} marquée prête`,
+    toggleEmpty: "Vider l'écran",
+    toggleFull: "Charger commandes",
+    allergen: "ALLERGIE",
+    print: "Bon imprimé",
+    activeOrders: "commandes actives",
+  },
+  en: {
+    branch: "Le Cayenne",
+    station: "Kitchen Station 1",
+    sound: "Sound",
+    lang: "EN",
+    ready: "Ready",
+    undo: "Undo",
+    new: "NEW",
+    preparing: "PREPARING",
+    readyState: "READY",
+    pos: "POS",
+    kiosk: "KIOSK",
+    online: "ONLINE",
+    dinein: "DINE-IN",
+    emptyTitle: "No orders pending",
+    emptySub: "Incoming orders will appear here",
+    banner: "Local sync mode — orders will push to server on reconnect",
+    toastCanceled: (n) => `Order #${n} marked ready`,
+    toggleEmpty: "Clear screen",
+    toggleFull: "Load orders",
+    allergen: "ALLERGY",
+    print: "Receipt printed",
+    activeOrders: "active orders",
+  },
+  ar: {
+    branch: "لو كايين",
+    station: "محطة المطبخ ١",
+    sound: "الصوت",
+    lang: "AR",
+    ready: "جاهز",
+    undo: "تراجع",
+    new: "جديد",
+    preparing: "قيد التحضير",
+    readyState: "جاهز",
+    pos: "الصندوق",
+    kiosk: "الكشك",
+    online: "إنترنت",
+    dinein: "في المحل",
+    emptyTitle: "لا توجد طلبات",
+    emptySub: "ستظهر الطلبات الجديدة هنا",
+    banner: "وضع المزامنة المحلية — سيتم إرسال الطلبات إلى الخادم عند إعادة الاتصال",
+    toastCanceled: (n) => `الطلب رقم ${n} تم تجهيزه`,
+    toggleEmpty: "إفراغ الشاشة",
+    toggleFull: "تحميل الطلبات",
+    allergen: "حساسية",
+    print: "تمت الطباعة",
+    activeOrders: "طلبات نشطة",
+  },
+};
+
+// ------------- Sample data (FIFO: N°42 oldest top-left → N°49 newest bottom-right) -------------
+const SAMPLE = [
+  // N°42 — oldest, currently PREPARING (auto-promoted from NEW). Critical age (>6 min).
+  { queueNo: 42, source: "POS",   state: "PREPARING", elapsedSeconds: 440,
+    items: [{ qty: 1, name: "Tacos XXL Mixte", modifiers: ["Sans oignon"], allergen: false }] },
+  // N°43 — critical (>6 min)
+  { queueNo: 43, source: "KIOSK", state: "NEW", elapsedSeconds: 380,
+    items: [
+      { qty: 2, name: "Sandwich Kafteji" },
+      { qty: 1, name: "Frites moyennes" },
+      { qty: 1, name: "Coca 33cl" },
+      { qty: 1, name: "Brick à l'œuf" },
+    ] },
+  // N°44 — warning age (3-6 min)
+  { queueNo: 44, source: "POS",   state: "NEW", elapsedSeconds: 270,
+    items: [
+      { qty: 1, name: "Ojja Merguez", modifiers: ["Bien cuit"] },
+      { qty: 2, name: "Pain" },
+      { qty: 1, name: "Salade méchouia" },
+    ] },
+  // N°45 — warning + supplement
+  { queueNo: 45, source: "KIOSK", state: "NEW", elapsedSeconds: 215,
+    items: [
+      { qty: 1, name: "Couscous Royal", modifiers: ["Sans piment", "+ Merguez supplémentaire"] },
+      { qty: 1, name: "Thé à la menthe" },
+    ] },
+  // N°46 — ALLERGEN (border overrides age)
+  { queueNo: 46, source: "POS",   state: "NEW", elapsedSeconds: 135,
+    items: [
+      { qty: 1, name: "Lablabi", modifiers: ["ALLERGIE GLUTEN — pain sans gluten obligatoire"], allergen: true },
+      { qty: 1, name: "Œuf dur" },
+    ] },
+  // N°47 — supplement cheddar
+  { queueNo: 47, source: "KIOSK", state: "NEW", elapsedSeconds: 80,
+    items: [
+      { qty: 1, name: "Burger Le Cayenne", modifiers: ["+ Cheddar supplément", "Cuisson saignante"] },
+      { qty: 1, name: "Onion rings" },
+    ] },
+  // N°48
+  { queueNo: 48, source: "POS",   state: "NEW", elapsedSeconds: 35,
+    items: [{ qty: 3, name: "Brick à l'œuf" }] },
+  // N°49 — newest, just arrived
+  { queueNo: 49, source: "KIOSK", state: "NEW", elapsedSeconds: 5,
+    items: [{ qty: 2, name: "Tacos XXL Poulet" }, { qty: 1, name: "Frites grandes" }] },
+];
+
+const LONG_ORDER = {
+  queueNo: 99, source: "KIOSK", state: "NEW", elapsedSeconds: 90,
+  items: [
+    { qty: 1, name: "Tacos XXL Mixte", modifiers: ["Sans oignon", "+ Double viande"] },
+    { qty: 2, name: "Sandwich Kafteji aux merguez et harissa douce" },
+    { qty: 1, name: "Couscous Royal" },
+    { qty: 3, name: "Brick à l'œuf" },
+    { qty: 1, name: "Ojja Merguez", modifiers: ["Bien cuit"] },
+    { qty: 1, name: "Burger Le Cayenne", modifiers: ["+ Cheddar supplément"] },
+    { qty: 2, name: "Frites grandes" },
+    { qty: 1, name: "Salade méchouia" },
+    { qty: 2, name: "Coca 33cl" },
+    { qty: 1, name: "Thé à la menthe" },
+    { qty: 1, name: "Lablabi", modifiers: ["ALLERGIE GLUTEN — pain sans gluten obligatoire"], allergen: true },
+  ]
+};
+
+// ------------- helpers -------------
+const ALLERGEN_RE = /(allergie|allergy|gluten|lactose|arachide|nuts|sans gluten|gluten free|peanut|noix|fruits à coque|fruits a coque)/i;
+const SUPPLEMENT_RE = /^\s*\+/; // modifier starts with '+'
+
+function mmss(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function ageBucket(sec) {
+  if (sec < 180) return 'fresh';
+  if (sec < 360) return 'warning';
+  return 'critical';
+}
+
+// ------------- sub components -------------
+function SourceIcon({ source }) {
+  // Compact inline svg, ~16px
+  if (source === 'POS') {
+    // receipt
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/><path d="M9 7h6M9 11h6M9 15h4"/>
+      </svg>
+    );
+  }
+  if (source === 'KIOSK') {
+    // tablet/screen
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="3" width="16" height="18" rx="2"/><path d="M11 17h2"/>
+      </svg>
+    );
+  }
+  if (source === 'ONLINE') return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+  );
+  return null;
+}
+
+function SourceChip({ source, t }) {
+  const map = {
+    POS:    { bg: '#F3F4F6', fg: '#374151', label: t.pos },
+    KIOSK:  { bg: '#EFF6FF', fg: '#1E40AF', label: t.kiosk },
+    ONLINE: { bg: '#ECFDF5', fg: '#047857', label: t.online },
+    DINEIN: { bg: '#FEF3C7', fg: '#B45309', label: t.dinein },
+  };
+  const c = map[source] || map.POS;
+  return (
+    <span
+      className="keep-latin inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md text-[13px] font-bold uppercase"
+      style={{ background: c.bg, color: c.fg, letterSpacing: '.1em' }}
+    >
+      <SourceIcon source={source} />
+      <span>{c.label}</span>
+    </span>
+  );
+}
+
+function StateBadge({ state, t }) {
+  if (state === 'NEW') return (
+    <span className="inline-flex items-center gap-1.5 px-2 h-6 rounded-full text-[11px] font-bold tracking-widest"
+          style={{ background: 'white', color: '#374151', border: '1px solid #D1D5DB' }}>
+      <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: '#6B7280' }}></span>
+      {t.new}
+    </span>
+  );
+  if (state === 'PREPARING') return (
+    <span className="inline-flex items-center gap-1.5 px-2 h-6 rounded-full text-[11px] font-bold tracking-widest"
+          style={{ background: '#DBEAFE', color: '#1E3A8A' }}>
+      <span className="prep-dot inline-block w-1.5 h-1.5 rounded-full" style={{ background: '#2563EB' }}></span>
+      {t.preparing}
+    </span>
+  );
+  if (state === 'READY') return (
+    <span className="inline-flex items-center gap-1.5 px-2 h-6 rounded-full text-[11px] font-bold tracking-widest"
+          style={{ background: '#DCFCE7', color: '#14532D' }}>
+      <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: '#16A34A' }}></span>
+      {t.readyState}
+    </span>
+  );
+  return null;
+}
+
+function ItemRow({ item, t, isFirst }) {
+  const itemAllergen = item.allergen || (item.modifiers || []).some(m => ALLERGEN_RE.test(m));
+  return (
+    <div
+      className="py-2.5"
+      style={{
+        borderInlineStart: itemAllergen ? '4px solid #F97316' : '4px solid transparent',
+        paddingInlineStart: itemAllergen ? '10px' : '0px',
+        marginInlineStart: itemAllergen ? '-2px' : '0px',
+        background: itemAllergen ? 'rgba(249,115,22,0.06)' : 'transparent',
+        borderRadius: itemAllergen ? '6px' : '0',
+        marginTop: itemAllergen ? '4px' : '0',
+        marginBottom: itemAllergen ? '4px' : '0',
+      }}
+    >
+      <div className="flex items-baseline" style={{ gap: '10px' }}>
+        <span
+          className="keep-latin text-[26px] font-extrabold tabular-nums leading-none"
+          style={{
+            color: '#111827',
+            minWidth: '42px',
+            display: 'inline-block',
+            textAlign: 'end',
+          }}
+        >
+          {item.qty}<span style={{ fontSize: '18px', opacity: .55, marginInlineStart: '2px' }}>×</span>
+        </span>
+        {itemAllergen && (
+          <span className="text-[20px] leading-none" style={{ color: '#F97316', marginTop: '-2px' }} aria-label="allergen">⚠</span>
+        )}
+        <span
+          className="text-[22px] font-medium flex-1 clamp-2"
+          style={{ color: '#111827', lineHeight: 1.15, textWrap: 'balance' }}
+        >{item.name}</span>
+      </div>
+      {(item.modifiers || []).map((m, i) => {
+        const isSupp = SUPPLEMENT_RE.test(m);
+        const isAllergen = ALLERGEN_RE.test(m);
+        let color = '#4B5563';
+        let prefix = '·';
+        if (isAllergen) { color = '#C2410C'; prefix = '⚠'; }
+        else if (isSupp) { color = '#CA8A04'; prefix = ''; }
+        return (
+          <div
+            key={i}
+            className="text-[16px] italic flex items-baseline clamp-2"
+            style={{
+              color,
+              paddingInlineStart: '56px',
+              marginTop: '4px',
+              fontWeight: isAllergen ? 700 : (isSupp ? 600 : 400),
+              lineHeight: 1.3,
+              gap: '6px',
+            }}
+          >
+            <span style={{ opacity: isAllergen ? 1 : .55, fontStyle: 'normal' }}>{prefix}</span>
+            <span>{m}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DemoPanel({ open, onClose, emptyMode, setEmptyMode, longMode, setLongMode, lang, setLang, onAddOrder, onTriggerBump, onShowToast, onStateChange, onLoading, onDisconnect, loading, disconnect, t }) {
+  if (!open) return null;
+  return (
+    <div className="absolute z-40" style={{ top: 72, insetInlineEnd: 24, width: 340 }}>
+      <div className="rounded-xl bg-white" style={{ boxShadow: '0 20px 60px rgba(15,23,42,0.3)', border: '1px solid #E5E7EB' }}>
+        <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: '#F3F4F6' }}>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-extrabold tracking-widest uppercase" style={{ color: '#9CA3AF' }}>DEMO</span>
+            <span className="text-[15px] font-bold" style={{ color: '#111827' }}>Contrôles</span>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded hover:bg-gray-100" style={{ color: '#6B7280' }} aria-label="Close">✕</button>
+        </div>
+        <div className="px-4 py-3 space-y-3">
+          <div>
+            <div className="text-[11px] font-bold tracking-wider uppercase mb-1.5" style={{ color: '#6B7280' }}>ÉTATS</div>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setEmptyMode(!emptyMode)} className="h-9 px-3 rounded-md border text-[12px] font-semibold" style={{ borderColor: emptyMode ? '#111827' : '#E5E7EB', background: emptyMode ? '#FEF3C7' : 'white', color: emptyMode ? '#111827' : '#374151' }}>État vide</button>
+              <button onClick={() => setLongMode(!longMode)} className="h-9 px-3 rounded-md border text-[12px] font-semibold" style={{ borderColor: longMode ? '#111827' : '#E5E7EB', background: longMode ? '#FEF3C7' : 'white', color: longMode ? '#111827' : '#374151' }}>Carte longue</button>
+            </div>
+          </div>
+          <div>
+            <div className="text-[11px] font-bold tracking-wider uppercase mb-1.5" style={{ color: '#6B7280' }}>ANIMATIONS</div>
+            <div className="grid grid-cols-1 gap-2">
+              <button onClick={onAddOrder} className="h-9 px-3 rounded-md border text-[12px] font-semibold text-left flex items-center gap-2" style={{ borderColor: '#E5E7EB', background: 'white', color: '#374151' }}>
+                <span style={{ color: '#16A34A' }}>→</span> Nouvelle commande (slide-in)
+              </button>
+              <button onClick={onTriggerBump} className="h-9 px-3 rounded-md border text-[12px] font-semibold text-left flex items-center gap-2" style={{ borderColor: '#E5E7EB', background: 'white', color: '#374151' }}>
+                <span style={{ color: '#111827' }}>✓</span> Bump la plus ancienne (Prêt)
+              </button>
+              <button onClick={onShowToast} className="h-9 px-3 rounded-md border text-[12px] font-semibold text-left flex items-center gap-2" style={{ borderColor: '#E5E7EB', background: 'white', color: '#374151' }}>
+                <span style={{ color: '#111827' }}>◉</span> Toast d'annulation (standalone)
+              </button>
+              <button onClick={onStateChange} className="h-9 px-3 rounded-md border text-[12px] font-semibold text-left flex items-center gap-2" style={{ borderColor: '#E5E7EB', background: 'white', color: '#374151' }}>
+                <span style={{ color: '#2563EB' }}>●</span> State change NEW → EN COURS
+              </button>
+            </div>
+          </div>
+          <div>
+            <div className="text-[11px] font-bold tracking-wider uppercase mb-1.5" style={{ color: '#6B7280' }}>SYSTÈME</div>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={onLoading} className="h-9 px-3 rounded-md border text-[12px] font-semibold" style={{ borderColor: loading ? '#111827' : '#E5E7EB', background: loading ? '#FEF3C7' : 'white', color: loading ? '#111827' : '#374151' }}>Chargement</button>
+              <button onClick={onDisconnect} className="h-9 px-3 rounded-md border text-[12px] font-semibold" style={{ borderColor: disconnect ? '#DC2626' : '#E5E7EB', background: disconnect ? '#FEF2F2' : 'white', color: disconnect ? '#DC2626' : '#374151' }}>Disconnect 60s+</button>
+            </div>
+          </div>
+          <div>
+            <div className="text-[11px] font-bold tracking-wider uppercase mb-1.5" style={{ color: '#6B7280' }}>LANGUE</div>
+            <div className="grid grid-cols-3 gap-2">
+              {['fr','en','ar'].map(l => (
+                <button key={l} onClick={() => setLang(l)} className="keep-latin h-9 rounded-md border text-[12px] font-extrabold uppercase" style={{ borderColor: lang === l ? '#111827' : '#E5E7EB', background: lang === l ? '#111827' : 'white', color: lang === l ? 'white' : '#374151' }}>{l === 'ar' ? 'AR (RTL)' : l}</button>
+              ))}
+            </div>
+          </div>
+          <div className="text-[11px]" style={{ color: '#9CA3AF' }}>Démo uniquement — absent en production. Le menu Paramètres réel contiendra Audio, Station, Affichage, Compte.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrderCard({ order, now, onReady, t, lang }) {
+  const elapsed = order.elapsedSeconds + Math.floor((now - order.startedAt) / 1000);
+  const bucket = ageBucket(elapsed);
+  const hasAllergen = order.items.some(i => i.allergen || (i.modifiers || []).some(m => ALLERGEN_RE.test(m)));
+  const isReady = order.state === 'READY';
+
+  const borderColor = hasAllergen
+    ? '#F97316'
+    : (bucket === 'fresh' ? '#E5E7EB' : bucket === 'warning' ? '#EA580C' : '#DC2626');
+  const headerBg    = bucket === 'fresh' ? '#FFFFFF' : bucket === 'warning' ? '#FFEDD5' : '#FEE2E2';
+  const elapsedColor= bucket === 'fresh' ? '#111827' : bucket === 'warning' ? '#9A3412' : '#991B1B';
+  const stripeColor = hasAllergen
+    ? '#F97316'
+    : (bucket === 'fresh' ? (order.state === 'PREPARING' ? '#111827' : '#E5E7EB') : (bucket === 'warning' ? '#EA580C' : '#DC2626'));
+
+  return (
+    <div
+      className={`order-card relative flex flex-col bg-white rounded-xl overflow-hidden ${order.bumping ? 'fade-bump' : ''} ${bucket === 'critical' ? 'pulse-critical' : ''} ${order.justArrived ? 'slide-in' : ''} ${order.justPromoted ? 'prep-pulse' : ''}`}
+      tabIndex={0}
+      data-order-id={order.queueNo}
+      role="region"
+      style={{
+        border: `3px solid ${borderColor}`,
+        height: '462px',
+        boxShadow: '0 1px 2px rgba(17,24,39,0.04)',
+      }}
+    >
+      {/* TOP ACCENT STRIPE — dominant glance signal */}
+      <div style={{ height: 6, background: stripeColor, flexShrink: 0 }}></div>
+
+      {/* HEADER — compact: top row [slot] + STATE + SOURCE + allergen ; main row Nº + elapsed */}
+      <div
+        className="flex flex-col"
+        style={{ background: headerBg, borderBottom: `1px solid ${bucket === 'fresh' ? '#F3F4F6' : borderColor + '33'}` }}
+      >
+        {/* meta row — slot left, state + source centered, allergen right */}
+        <div className="flex items-center justify-between px-3" style={{ height: 26, paddingTop: 6 }}>
+          {order.shortcut ? (
+            <span
+              className="keep-latin inline-flex items-center justify-center text-[11px] font-bold rounded"
+              style={{ color: '#6B7280', background: 'rgba(0,0,0,0.04)', minWidth: 22, height: 18, letterSpacing: '.04em' }}
+              title="Bump bar shortcut"
+            >[{order.shortcut}]</span>
+          ) : <span style={{ width: 22 }}></span>}
+          <div className="flex items-center gap-1.5">
+            <StateBadge state={order.state} t={t} />
+            <SourceChip source={order.source} t={t} />
+          </div>
+          {hasAllergen ? (
+            <span
+              className="inline-flex items-center gap-1 px-2 h-5 rounded text-[10px] font-extrabold tracking-widest relative"
+              style={{ background: '#EA580C', color: 'white' }}
+              aria-live="assertive"
+              role="alert"
+            ><span className="allergen-pill" style={{ position: 'absolute', inset: 0, borderRadius: 4 }}></span>⚠ {t.allergen}</span>
+          ) : <span style={{ width: 22 }}></span>}
+        </div>
+        {/* main row — queue number LEFT, elapsed RIGHT */}
+        <div className="flex items-end justify-between px-4" style={{ paddingTop: 2, paddingBottom: 10 }}>
+          <div
+            className="keep-latin font-extrabold leading-none tabular-nums"
+            style={{ color: '#111827', letterSpacing: '-.03em', fontSize: 52 }}
+          >
+            <span style={{ fontSize: 26, fontWeight: 700, opacity: .55, marginInlineEnd: 2 }}>N°</span>{order.queueNo}
+          </div>
+          <div className="flex flex-col items-end" style={{ gap: 2 }}>
+            <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: bucket === 'fresh' ? '#9CA3AF' : elapsedColor, opacity: .75 }}>
+              {lang === 'fr' ? 'ATTENTE' : (lang === 'en' ? 'WAITING' : 'الانتظار')}
+            </span>
+            <div
+              className={`keep-latin tabular-nums font-extrabold leading-none ${bucket === 'critical' ? 'pulse-digit' : ''}`}
+              style={{ color: elapsedColor, fontSize: 34, letterSpacing: '-.02em' }}
+            >
+              {mmss(elapsed)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* BODY */}
+      <div className="card-body flex-1 overflow-y-auto px-4 py-1 divide-y divide-gray-100" style={{ position: 'relative' }}>
+        {order.items.map((it, i) => <ItemRow key={i} item={it} t={t} isFirst={i === 0} />)}
+        {/* bottom fade hint for overflow */}
+        <div style={{ position: 'sticky', bottom: 0, height: 0, pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 16, background: 'linear-gradient(to top, white, rgba(255,255,255,0))' }}></div>
+        </div>
+      </div>
+
+      {/* READY overlay flash */}
+      {isReady && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10" style={{ background: 'rgba(22,163,74,0.12)' }}>
+          <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: '#16A34A', boxShadow: '0 8px 24px rgba(22,163,74,0.4)' }}>
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+        </div>
+      )}
+
+      {/* PRINT FLASH — transient swap when bumping */}
+      {order.bumping && (
+        <div className="absolute z-20 flex items-center justify-center" style={{ left: 8, right: 8, bottom: 8, height: 52, background: '#16A34A', borderRadius: 12, color: 'white' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        </div>
+      )}
+
+      {/* FOOTER CTA */}
+      <button
+        onClick={() => onReady(order.queueNo)}
+        className="select-none active:translate-y-px transition-transform group"
+        style={{
+          margin: '4px 8px 8px 8px',
+          height: '52px',
+          background: '#1F2937',
+          color: 'white',
+          borderRadius: '12px',
+          fontSize: '22px',
+          fontWeight: 700,
+          letterSpacing: '.01em',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '14px',
+          boxShadow: 'none',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+        <span>{t.ready}</span>
+      </button>
+    </div>
+  );
+}
+
+function Toast({ toast, t, onUndo }) {
+  if (!toast) return null;
+  return (
+    <div
+      className="toast-in absolute z-30"
+      style={{
+        top: 110,
+        left: '50%',
+        transform: 'translate(-50%, 0)',
+        minWidth: 620,
+      }}
+    >
+      <div className="rounded-xl overflow-hidden" style={{ background: '#0F172A', boxShadow: '0 20px 60px rgba(15,23,42,0.4)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="flex items-center gap-4 px-5 py-4">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center text-white shrink-0" style={{ background: '#16A34A' }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div className="flex-1">
+            <div className="text-[18px] font-bold leading-tight text-white">{t.toastCanceled(toast.queueNo)}</div>
+            <div className="text-[13px] mt-1 flex items-center gap-2" style={{ color: '#94A3B8' }}>
+              <span className="printer-flash inline-block">🖨</span>
+              <span>{t.print}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => onUndo(toast.id)}
+            className="px-6 h-12 rounded-lg font-extrabold text-[16px] flex items-center gap-2 active:translate-y-px"
+            style={{ background: 'white', color: '#0F172A', boxShadow: '0 2px 0 0 #CBD5E1' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7"/></svg>
+            {t.undo}
+          </button>
+        </div>
+        <div className="h-1" style={{ background: 'rgba(255,255,255,0.1)' }}>
+          <div className="shrink-bar h-full" style={{ background: '#16A34A', width: '100%' }}></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Header({ t, lang, setLang, sound, setSound, emptyMode, setEmptyMode, demoOpen, setDemoOpen, settingsOpen, setSettingsOpen, activeCount, now }) {
+  const time = new Date(now).toLocaleTimeString(lang === 'ar' ? 'fr-FR' : (lang === 'en' ? 'en-GB' : 'fr-FR'), { hour: '2-digit', minute: '2-digit' });
+  const kpi = { fr: ['Servies aujourd\'hui','Temps moyen'], en: ['Served today','Avg time'], ar: ['الخدمة اليوم','الوقت المتوسط'] }[lang] || ['Served','Avg'];
+  return (
+    <header
+      className="flex items-center justify-between px-6"
+      style={{ height: 64, background: 'white', borderBottom: '1px solid #E5E7EB' }}
+    >
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2.5">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: '#111827' }}>
+            <span className="text-white text-[15px] font-extrabold tracking-tight">LC</span>
+          </div>
+          <div className="leading-tight">
+            <div className="text-[17px] font-extrabold" style={{ color: '#111827', letterSpacing: '-.01em' }}>{t.branch}</div>
+            <div className="keep-latin text-[11px] font-semibold tracking-wider uppercase" style={{ color: '#9CA3AF' }}>FoodKing · KDS</div>
+          </div>
+        </div>
+        <div className="w-px h-9 bg-gray-200 mx-1"></div>
+        <button disabled className="flex items-center gap-2 px-3 h-10 rounded-md border border-gray-200 bg-gray-50 cursor-not-allowed whitespace-nowrap" style={{ minWidth: 190 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          <span className="text-[14px] font-semibold" style={{ color: '#4B5563' }}>{t.station}</span>
+          <span style={{ color: '#9CA3AF', marginInlineStart: 'auto' }}>▾</span>
+        </button>
+        <div className="ms-1 flex items-center gap-2 px-3 h-10 rounded-md" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+          <span className="live-dot inline-block w-2 h-2 rounded-full" style={{ background: '#16A34A' }}></span>
+          <span className="tabular-nums keep-latin text-[14px] font-extrabold" style={{ color: '#166534' }}>{activeCount}</span>
+          <span className="text-[13px] font-semibold" style={{ color: '#15803D' }}>{t.activeOrders}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="hidden xl:flex items-center gap-4 px-4 h-10 rounded-md" style={{ background: '#F9FAFB', border: '1px solid #E5E7EB' }}>
+          <div className="leading-tight">
+            <div className="text-[10px] uppercase tracking-wider font-bold" style={{ color: '#9CA3AF' }}>{kpi[0]}</div>
+            <div className="keep-latin text-[15px] font-extrabold tabular-nums" style={{ color: '#111827' }}>47</div>
+          </div>
+          <div className="w-px h-7" style={{ background: '#E5E7EB' }}></div>
+          <div className="leading-tight">
+            <div className="text-[10px] uppercase tracking-wider font-bold" style={{ color: '#9CA3AF' }}>{kpi[1]}</div>
+            <div className="keep-latin text-[15px] font-extrabold tabular-nums" style={{ color: '#111827' }}>4:32</div>
+          </div>
+        </div>
+        <div className="keep-latin tabular-nums text-[26px] font-extrabold leading-none" style={{ color: '#111827', letterSpacing: '-.02em' }}>{time}</div>
+        <div className="w-px h-7 bg-gray-200 mx-1"></div>
+        <button
+          onClick={() => setHistoryNotice(true)}
+          className="h-10 px-3 rounded-md border flex items-center gap-1.5"
+          style={{ borderColor: '#E5E7EB', color: '#4B5563', background: 'white' }}
+          aria-label="History" title="History"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+          <span className="text-[11px] font-extrabold tracking-widest uppercase">{lang==='fr'?'HISTO':lang==='en'?'HIST':'سجل'}</span>
+        </button>
+        <button
+          className="h-10 w-10 rounded-md border flex items-center justify-center"
+          style={{ borderColor: settingsOpen ? '#111827' : '#E5E7EB', color: settingsOpen ? '#111827' : '#4B5563', background: settingsOpen ? '#F3F4F6' : 'white' }}
+          aria-label="Settings" title="Settings"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
+        <button
+          onClick={() => { setDemoOpen(!demoOpen); setSettingsOpen(false); }}
+          className="h-10 px-3 rounded-md border flex items-center gap-1.5"
+          style={{ borderColor: demoOpen ? '#111827' : '#E5E7EB', color: demoOpen ? '#111827' : '#4B5563', background: demoOpen ? '#F3F4F6' : 'white' }}
+          aria-label="Demo controls" title="Demo controls"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span className="text-[11px] font-extrabold tracking-widest uppercase">DEMO</span>
+        </button>
+        <button
+          onClick={() => setSound(!sound)}
+          className="h-10 w-10 rounded-md border flex items-center justify-center"
+          style={{ borderColor: '#E5E7EB', background: sound ? '#111827' : 'white', color: sound ? 'white' : '#4B5563' }}
+          aria-label={t.sound}
+          title={t.sound}
+        >
+          {sound ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>
+          )}
+        </button>
+        <div className="flex items-center rounded-md border overflow-hidden" style={{ borderColor: '#E5E7EB', height: 40 }}>
+          {['fr','en','ar'].map(l => (
+            <button
+              key={l}
+              onClick={() => setLang(l)}
+              className="keep-latin h-full px-3 text-[13px] font-extrabold uppercase"
+              style={{
+                background: lang === l ? '#111827' : 'white',
+                color: lang === l ? 'white' : '#4B5563',
+                minWidth: 40,
+              }}
+            >{l}</button>
+          ))}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function Banner({ t }) {
+  return (
+    <div
+      className="flex items-center justify-between px-6"
+      style={{ height: 32, background: '#FFFBEB', borderBottom: '1px solid #FDE68A', color: '#92400E' }}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          className="inline-flex items-center justify-center rounded-full"
+          style={{ background: '#F59E0B', color: 'white', width: 18, height: 18 }}
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01"/></svg>
+        </span>
+        <span className="text-[13px] font-semibold">{t.banner}</span>
+      </div>
+      <span className="keep-latin text-[11px] font-bold tracking-widest" style={{ color: '#B45309' }}>SYNC · LOCAL</span>
+    </div>
+  );
+}
+
+function EmptyState({ t }) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center" style={{ color: '#9CA3AF' }}>
+      <div className="relative" style={{ width: 200, height: 200, marginBottom: 32 }}>
+        <div className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(closest-side, #F3F4F6, transparent 70%)' }}></div>
+        <svg className="absolute inset-0 m-auto" width="120" height="120" viewBox="0 0 64 64" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <ellipse cx="32" cy="42" rx="22" ry="6" fill="#F3F4F6" stroke="#D1D5DB"/>
+          <path d="M10 38a22 8 0 0 1 44 0" fill="white"/>
+          <path d="M14 30c0-4 6-8 18-8s18 4 18 8"/>
+          <circle cx="22" cy="24" r="1.5" fill="#9CA3AF"/>
+          <circle cx="32" cy="22" r="1.5" fill="#9CA3AF"/>
+          <circle cx="42" cy="24" r="1.5" fill="#9CA3AF"/>
+          <path d="M32 22V14" />
+          <path d="M28 14a4 3 0 0 1 8 0" fill="#F3F4F6"/>
+        </svg>
+      </div>
+      <div className="text-[32px] font-bold" style={{ color: '#374151' }}>{t.emptyTitle}</div>
+      <div className="text-[16px] mt-2" style={{ color: '#9CA3AF' }}>{t.emptySub}</div>
+      <div className="mt-6 flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: 'white', border: '1px solid #E5E7EB' }}>
+        <span className="live-dot inline-block w-2 h-2 rounded-full" style={{ background: '#16A34A' }}></span>
+        <span className="text-[12px] font-semibold" style={{ color: '#4B5563' }}>{t.station} · KDS</span>
+      </div>
+    </div>
+  );
+}
+
+// ------------- main app -------------
+function SettingsMenu({ open, onClose, sound, setSound, lang, t }) {
+  if (!open) return null;
+  const labels = { fr: { audio:'Audio', vol:'Volume son', new_chime:'Son nouvelle commande', allerg_chime:'Son alerte allergène', station:'Station', filter:'Filtre station', group:'Group by table', display:'Affichage', theme:'Thème', light:'Clair', dark:'Sombre (Sprint 3)', account:'Compte', signout:'Déconnexion', about:'À propos', user:'Chef Le Cayenne', version:'FoodKing v1.0.0', sync_ok:'Sync OK' }, en: { audio:'Audio', vol:'Sound volume', new_chime:'New order chime', allerg_chime:'Allergen alert chime', station:'Station', filter:'Station filter', group:'Group by table', display:'Display', theme:'Theme', light:'Light', dark:'Dark (Sprint 3)', account:'Account', signout:'Sign out', about:'About', user:'Chef Le Cayenne', version:'FoodKing v1.0.0', sync_ok:'Sync OK' }, ar: { audio:'الصوت', vol:'مستوى الصوت', new_chime:'صوت طلب جديد', allerg_chime:'تنبيه حساسية', station:'المحطة', filter:'فلتر المحطة', group:'تجميع حسب الطاولة', display:'العرض', theme:'السمة', light:'فاتح', dark:'داكن (Sprint 3)', account:'الحساب', signout:'تسجيل الخروج', about:'حول', user:'الشيف لو كايين', version:'FoodKing v1.0.0', sync_ok:'مزامنة سليمة' } }[lang] || {};
+  const [vol, setVol] = useState(70);
+  return (
+    <div className="absolute z-40" style={{ top: 72, insetInlineEnd: 152, width: 360 }}>
+      <div className="rounded-xl bg-white" style={{ boxShadow: '0 20px 60px rgba(15,23,42,0.3)', border: '1px solid #E5E7EB' }}>
+        <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: '#F3F4F6' }}>
+          <div className="text-[15px] font-bold" style={{ color: '#111827' }}>{lang==='fr'?'Paramètres':lang==='en'?'Settings':'إعدادات'}</div>
+          <button onClick={onClose} className="w-7 h-7 rounded hover:bg-gray-100" style={{ color: '#6B7280' }} aria-label="Close">✕</button>
+        </div>
+        <div className="px-4 py-3 space-y-4 max-h-[520px] overflow-auto">
+          <section>
+            <div className="text-[11px] font-bold tracking-wider uppercase mb-2" style={{ color: '#6B7280' }}>{labels.audio}</div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[13px]" style={{ color: '#374151' }}>{labels.vol}</span>
+              <span className="keep-latin text-[12px] tabular-nums font-bold" style={{ color: '#111827' }}>{vol}%</span>
+            </div>
+            <input type="range" min="0" max="100" value={vol} onChange={e=>setVol(+e.target.value)} className="w-full accent-[#111827]" />
+            <label className="flex items-center justify-between mt-3 cursor-pointer">
+              <span className="text-[13px]" style={{ color: '#374151' }}>{labels.new_chime}</span>
+              <input type="checkbox" defaultChecked className="accent-[#111827] w-4 h-4" />
+            </label>
+            <label className="flex items-center justify-between mt-2 cursor-pointer">
+              <span className="text-[13px]" style={{ color: '#374151' }}>{labels.allerg_chime}</span>
+              <input type="checkbox" defaultChecked className="accent-[#111827] w-4 h-4" />
+            </label>
+          </section>
+          <section className="pt-3 border-t" style={{ borderColor: '#F3F4F6' }}>
+            <div className="text-[11px] font-bold tracking-wider uppercase mb-2" style={{ color: '#6B7280' }}>{labels.station}</div>
+            <select disabled className="w-full h-9 rounded-md border px-2 text-[13px] bg-gray-50" style={{ borderColor: '#E5E7EB', color: '#6B7280' }}>
+              <option>{t.station}</option>
+            </select>
+            <label className="flex items-center gap-2 mt-2 text-[13px] opacity-50" style={{ color: '#374151' }}>
+              <input type="checkbox" disabled className="w-4 h-4" />
+              <span>{labels.group} <span className="text-[10px]" style={{color:'#9CA3AF'}}>· V1</span></span>
+            </label>
+          </section>
+          <section className="pt-3 border-t" style={{ borderColor: '#F3F4F6' }}>
+            <div className="text-[11px] font-bold tracking-wider uppercase mb-2" style={{ color: '#6B7280' }}>{labels.display}</div>
+            <div className="text-[12px] mb-1" style={{ color: '#6B7280' }}>{labels.theme}</div>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="h-8 rounded-md border text-[12px] font-semibold" style={{ borderColor: '#111827', background: '#FEF3C7', color: '#111827' }}>{labels.light}</button>
+              <button disabled className="h-8 rounded-md border text-[12px] font-semibold opacity-50" style={{ borderColor: '#E5E7EB', background: 'white', color: '#6B7280' }}>{labels.dark}</button>
+            </div>
+          </section>
+          <section className="pt-3 border-t" style={{ borderColor: '#F3F4F6' }}>
+            <div className="text-[11px] font-bold tracking-wider uppercase mb-2" style={{ color: '#6B7280' }}>{labels.account}</div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold" style={{ background: '#111827' }}>LC</div>
+              <div>
+                <div className="text-[13px] font-semibold" style={{ color: '#111827' }}>{labels.user}</div>
+                <div className="text-[11px]" style={{ color: '#9CA3AF' }}>{t.station}</div>
+              </div>
+            </div>
+            <button className="w-full h-8 rounded-md border text-[12px] font-semibold" style={{ borderColor: '#FECACA', background: '#FEF2F2', color: '#B91C1C' }}>{labels.signout}</button>
+          </section>
+          <section className="pt-3 border-t flex items-center justify-between" style={{ borderColor: '#F3F4F6' }}>
+            <span className="text-[11px] keep-latin" style={{ color: '#9CA3AF' }}>{labels.version}</span>
+            <span className="text-[11px] flex items-center gap-1" style={{ color: '#16A34A' }}><span className="w-1.5 h-1.5 rounded-full inline-block" style={{background:'#16A34A'}}></span>{labels.sync_ok}</span>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoadingSplash({ lang }) {
+  const txt = { fr: 'Synchronisation en cours', en: 'Loading', ar: 'جاري التحميل' }[lang] || 'Loading';
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center z-30" style={{ background: 'rgba(249,250,251,0.95)' }}>
+      <svg className="animate-spin" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="3" strokeLinecap="round">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+      </svg>
+      <div className="mt-4 text-[18px] font-semibold" style={{ color: '#111827' }}>{txt}…</div>
+    </div>
+  );
+}
+
+function App() {
+  const [lang, setLang] = useState('fr');
+  const [sound, setSound] = useState(true);
+  const [emptyMode, setEmptyMode] = useState(false);
+  const [longMode, setLongMode] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [historyNotice, setHistoryNotice] = useState(false);
+  useEffect(() => { if (!historyNotice) return; const t = setTimeout(() => setHistoryNotice(false), 2400); return () => clearTimeout(t); }, [historyNotice]);
+  const [loading, setLoading] = useState(false);
+  const [disconnect, setDisconnect] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  const startRef = useRef(Date.now());
+  const arrivalCounter = useRef(50);
+
+  // Initialize orders. Each order gets a startedAt = now - elapsedSeconds*1000.
+  // Shortcuts A..H map to grid slots (8 visible).
+  const [orders, setOrders] = useState(() => {
+    const startedAt = Date.now();
+    const shortcuts = ['A','B','C','D','E','F','G','H'];
+    return SAMPLE.map((o, i) => ({
+      ...o,
+      id: o.queueNo,
+      startedAt,
+      bumping: false,
+      shortcut: shortcuts[i],
+    }));
+  });
+
+  const [toasts, setToasts] = useState([]); // {id, queueNo, order, timeoutId}
+
+  // ticking clock
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const t = I18N[lang];
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = dir;
+  }, [lang, dir]);
+
+  // Enforce: exactly one PREPARING; promote oldest NEW if none.
+  useEffect(() => {
+    if (emptyMode) return;
+    const preparing = orders.find(o => o.state === 'PREPARING' && !o.bumping);
+    if (!preparing) {
+      // promote oldest NEW
+      const news = orders.filter(o => o.state === 'NEW' && !o.bumping);
+      if (news.length) {
+        const oldest = news.reduce((a, b) => {
+          const ea = a.elapsedSeconds + (now - a.startedAt) / 1000;
+          const eb = b.elapsedSeconds + (now - b.startedAt) / 1000;
+          return ea >= eb ? a : b;
+        });
+        setOrders(prev => prev.map(o => o.id === oldest.id ? { ...o, state: 'PREPARING' } : o));
+      }
+    }
+  }, [orders, now, emptyMode]);
+
+  function bump(queueNo) {
+    // start fade
+    setOrders(prev => prev.map(o => o.id === queueNo ? { ...o, bumping: true, state: 'READY' } : o));
+    const order = orders.find(o => o.id === queueNo);
+    const toastId = `t-${queueNo}-${Date.now()}`;
+    const timeoutId = setTimeout(() => {
+      setOrders(prev => prev.filter(o => o.id !== queueNo));
+      setToasts(prev => prev.filter(tt => tt.id !== toastId));
+    }, 3000);
+    setToasts(prev => [...prev, { id: toastId, queueNo, order, timeoutId }]);
+  }
+
+  function undoToast(toastId) {
+    setToasts(prev => {
+      const tt = prev.find(x => x.id === toastId);
+      if (tt) {
+        clearTimeout(tt.timeoutId);
+        setOrders(po => po.map(o => o.id === tt.queueNo ? { ...o, bumping: false, state: 'PREPARING' } : o));
+      }
+      return prev.filter(x => x.id !== toastId);
+    });
+  }
+
+  // visible orders sorted oldest-first
+  const visibleOrders = useMemo(() => {
+    if (emptyMode) return [];
+    if (longMode) {
+      return [{ ...LONG_ORDER, id: 99, startedAt: now - LONG_ORDER.elapsedSeconds * 1000, bumping: false, shortcut: 'A' }];
+    }
+    return [...orders].sort((a, b) => {
+      const ea = a.elapsedSeconds + (now - a.startedAt) / 1000;
+      const eb = b.elapsedSeconds + (now - b.startedAt) / 1000;
+      return eb - ea;
+    });
+  }, [orders, now, emptyMode, longMode]);
+
+  function addArrival() {
+    const n = arrivalCounter.current++;
+    const next = {
+      ...SAMPLE[7],
+      queueNo: n,
+      id: n,
+      state: 'NEW',
+      startedAt: Date.now(),
+      elapsedSeconds: 0,
+      bumping: false,
+      justArrived: true,
+      shortcut: 'H',
+    };
+    setOrders(prev => [...prev.slice(-7), next]);
+  }
+
+  function triggerBump() {
+    const oldest = [...orders].sort((a, b) => (b.elapsedSeconds + (now - b.startedAt)/1000) - (a.elapsedSeconds + (now - a.startedAt)/1000))[0];
+    if (oldest) bump(oldest.id);
+  }
+
+  // keyboard nav: Enter on focused card = bump; Esc = no-op (safe)
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); return; }
+      if (e.key === 'Enter' && document.activeElement && document.activeElement.classList.contains('order-card')) {
+        const id = +document.activeElement.dataset.orderId;
+        if (id) bump(id);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [orders, now]);
+
+  return (
+    <div className="w-full h-full flex flex-col" style={{ background: '#F9FAFB' }} dir={dir}>
+      <Header
+        t={t} lang={lang} setLang={setLang}
+        sound={sound} setSound={setSound}
+        emptyMode={emptyMode} setEmptyMode={setEmptyMode}
+        demoOpen={demoOpen} setDemoOpen={setDemoOpen}
+        settingsOpen={settingsOpen} setSettingsOpen={setSettingsOpen}
+        activeCount={visibleOrders.length} now={now}
+      />
+      {disconnect ? (
+        <div className="flex items-center justify-between px-6" style={{ height: 40, background: '#DC2626', color: 'white' }} role="status">
+          <div className="flex items-center gap-3">
+            <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+            <span className="text-[14px] font-bold">{lang==='fr'?'Connexion perdue depuis 1m 12s — Reconnexion automatique en cours':lang==='en'?'Connection lost for 1m 12s — Auto-reconnecting':'انقطع الاتصال منذ ١:١٢ — إعادة الاتصال تلقائياً'}</span>
+          </div>
+          <span className="keep-latin text-[11px] font-bold tracking-widest" style={{ opacity: .9 }}>OFFLINE</span>
+        </div>
+      ) : <Banner t={t} />}
+
+      {emptyMode ? (
+        <EmptyState t={t} />
+      ) : (
+        <div className="flex-1 p-4 relative">
+          <div className="grid grid-cols-4 gap-4 h-full" style={{ gridTemplateRows: 'repeat(2, minmax(0,1fr))' }}>
+            {visibleOrders.slice(0, 8).map(o => (
+              <OrderCard key={o.id} order={o} now={now} onReady={bump} t={t} lang={lang} />
+            ))}
+            {/* placeholders to keep grid stable when <8 */}
+            {Array.from({ length: Math.max(0, 8 - visibleOrders.length) }).map((_, i) => (
+              <div key={`ph-${i}`} className="rounded-xl border-2 border-dashed" style={{ borderColor: '#E5E7EB' }}></div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* toasts (stack — usually only 1) */}
+      {toasts.map((tt, i) => (
+        <div key={tt.id} style={{ position: 'absolute', top: 110 + i * 84, left: 0, right: 0, pointerEvents: 'none' }}>
+          <div style={{ pointerEvents: 'auto' }}>
+            <Toast toast={tt} t={t} onUndo={undoToast} />
+          </div>
+        </div>
+      ))}
+
+      {/* History notice — non-blocking inline banner (Sprint 2 stub) */}
+      {historyNotice && (
+        <div style={{ position: 'absolute', top: 110, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 50 }}>
+          <div style={{ background: '#111827', color: 'white', padding: '12px 20px', borderRadius: 10, fontSize: 14, fontWeight: 600, boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}>
+            {lang==='fr'?'Historique des commandes — Sprint 2':lang==='en'?'Order history — Sprint 2':'سجل الطلبات — Sprint 2'}
+          </div>
+        </div>
+      )}
+
+      <DemoPanel
+        open={demoOpen}
+        onClose={() => setDemoOpen(false)}
+        emptyMode={emptyMode} setEmptyMode={setEmptyMode}
+        longMode={longMode} setLongMode={setLongMode}
+        lang={lang} setLang={setLang}
+        onAddOrder={addArrival}
+        onTriggerBump={triggerBump}
+        onShowToast={() => setToasts(prev => [...prev, { id: `demo-${Date.now()}`, queueNo: 41, order: orders[0], timeoutId: setTimeout(()=>setToasts(p=>p.filter(x=>!x.id.startsWith('demo-'))), 3000) }])}
+        onStateChange={() => {
+          const target = orders.find(o => o.state === 'NEW');
+          if (target) setOrders(prev => prev.map(o => o.id === target.id ? { ...o, state: 'PREPARING', justPromoted: true } : o.state === 'PREPARING' ? { ...o, state: 'NEW' } : o));
+        }}
+        onLoading={() => { setLoading(true); setTimeout(()=>setLoading(false), 1800); }}
+        onDisconnect={() => setDisconnect(d => !d)}
+        loading={loading} disconnect={disconnect}
+        t={t}
+      />
+      <SettingsMenu open={settingsOpen} onClose={()=>setSettingsOpen(false)} sound={sound} setSound={setSound} lang={lang} t={t} />
+      {loading && <LoadingSplash lang={lang} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+<!--
+================================================================================
+DEV NOTES — Vue/Tailwind implementation handoff
+================================================================================
+
+AUTO-TRANSITION RULE (NEW → PREPARING)
+- Computed `unifiedQueue` merges dineInOrders + onlineOrders + takeawayOrders + kioskOrders
+- Sort by created_at ASC (oldest first)
+- `anyOrderInPreparing` = unifiedQueue.some(o => o.state === 'PREPARING')
+- Watcher: when a NEW order is present and !anyOrderInPreparing, promote oldest NEW → PREPARING
+- Race condition: if 2 orders arrive same instant, lowest created_at (then lowest id) wins
+
+STATE MACHINE
+- NEW       — entry state; waits for station
+- PREPARING — auto-promoted (V1) or manual (future multi-station)
+- READY     — ephemeral 3s undo window
+- DONE      — after 3s, removed from KDS (history already on backend)
+
+KPI HEADER DATA SOURCE
+- "Servies aujourd'hui" + "Temps moyen" → GET /api/admin/kds/stats/today
+- Poll every 60s OR push via WS channel kds.branch.{branch_id}.stats
+- Both values currently hardcoded (47 / 4:32) for demo
+
+DATA SHAPE
+{
+  id: number,
+  queueNo: number,                  // displayed as "N°42"
+  source: 'POS' | 'KIOSK' | 'ONLINE' | 'DINE_IN',
+  state: 'NEW' | 'PREPARING' | 'READY' | 'DONE',
+  createdAt: ISO8601,               // for elapsed + FIFO sort
+  items: [{
+    qty: number, name: string,
+    modifiers: [{ text: string, type: 'standard' | 'supplement' | 'allergen' }]
+  }],
+  hasAllergen: boolean              // derived
+}
+
+ALLERGEN KEYWORD DETECTION (FR/EN/AR, case-insensitive)
+['allergie','allergy','allergen','allergic',
+ 'gluten','sans gluten','gluten free','gluten-free',
+ 'lactose','lactose-free','sans lactose',
+ 'arachide','arachides','peanut','nuts','fruits à coque',
+ 'crustacé','crustacés','shellfish','crustacean',
+ 'حساسية','غلوتين','لاكتوز']
+
+DESIGN TOKENS (copy into Vue/CSS final)
+- Brand violet primary    #111827   hover #000000   pressed #000000
+- Text primary #111827 / secondary #4B5563 / muted #9CA3AF
+- Surfaces white #FFFFFF / light #F9FAFB / border neutral #E5E7EB
+- Age fresh   border #E5E7EB  bg #FFFFFF  time #111827
+- Age warning border #EA580C  bg #FFEDD5  time #9A3412
+- Age critical border #DC2626 bg #FEE2E2  time #991B1B  + 1Hz pulse
+- Allergen (override age)  border #F97316  pill bg #EA580C  modifier #C2410C
+- Supplement #CA8A04 italic
+- NOUVEAU pill  bg white, border #D1D5DB, dot #6B7280
+- EN COURS pill bg #DBEAFE, dot #2563EB, text #1E3A8A
+- READY pill    bg #DCFCE7, dot #16A34A, text #14532D
+- CAISSE  chip bg #F3F4F6  text #374151  icon receipt
+- BORNE   chip bg #EFF6FF  text #1E40AF  icon kiosk
+- ONLINE  chip bg #ECFDF5  text #047857  icon globe   (reserved)
+- DINE-IN chip bg #FEF3C7  text #B45309  icon chair   (reserved)
+
+TYPE
+- Queue "N°42"     56px / 800 / -.03em  #111827
+- Elapsed digit   36px / 800 / -.02em  age color
+- Item name       22px / 500           #111827
+- Qty prefix      26px / 800           #111827
+- Modifier        16px italic          #4B5563
+- Supplement      16px italic 600      #CA8A04
+- Allergen mod    16px italic 700      #C2410C
+- CTA Prêt        22px / 700           white on #111827
+- State pill      11px / 700           tracked
+- Slot [A]        11px mono            muted
+
+ANIMATIONS
+- New order arrival      500ms slide-in from right + scale 0.96→1.02→1.0 (.slide-in)
+- Bump fade              300ms ease-out opacity+scale (.fade-bump)
+- Crit border pulse      1.4s infinite (.pulse-critical)
+- Crit time digit pulse  1s   infinite (.pulse-digit)
+- PREPARING dot pulse    1.4s infinite (.prep-dot)
+- Toast slide-down       220ms; dwell 3s with shrinkBar; auto-dismiss
+- Card hover lift        150ms translateY(-2px) + shadow
+- Print icon flash       800ms (.printer-flash)
+- prefers-reduced-motion: DISABLE all pulse + shorten transitions to ≤100ms
+
+A11Y
+- All buttons ≥ 60×60 (kitchen std; exceeds WCAG 44)
+- Text contrast ≥ 4.5:1 on every bg
+- Focus ring: 4px solid #111827, offset 4px (.order-card:focus-visible)
+- aria-live="polite" on grid for new arrivals
+- aria-live="assertive" on allergen pill insertion
+- role="region" + aria-label per card: "Commande 42 source caisse, en cours, attente 7 minutes 20"
+- role="status" on sync banner
+
+i18n KEYS (FR/EN/AR — inventory)
+label.kds.attente / pret / nouveau / en_cours / pret_state / allergie
+label.kds.empty_state / station_cuisine / commandes_actives
+label.kds.mode_local / sync_status / toast_undo / disconnect_long / loading
+label.kds.settings / volume / theme / signout
+→ ~50 raw labels to extract from current Vue template + JS
+
+PERFORMANCE
+- Single setInterval(1000ms) at app level; props trickle to cards (no per-card timer)
+- Cards memoize derived state (age bucket, hasAllergen)
+- Max 8 cards mounted; overflow scrolls in/out
+- Grid reflow with CSS Grid + FLIP for smooth
+
+BREAKPOINTS
+- 1920×1080 (27")  4×2 = 8 cards, ~440×460
+- 3840×2160 (4K)   4×3 = 12 cards or 5×2 = 10
+- 1366×768 fallback 3×2 = 6 (degraded acceptable)
+- < 1366: "Écran non supporté pour usage cuisine"
+
+BACKEND HOOKS (FoodKing existing — do not touch chain)
+- GET    /api/admin/kds/orders
+- WS     Laravel Echo channel `kds.branch.{branch_id}`
+- POST   /api/admin/kds/orders/{id}/bump
+- POST   /api/admin/kds/orders/{id}/recall
+- Allergen detection lives in payload composition_snapshot
+- NF525 fiscal: KDS reads only, no HMAC chain writes
+- BranchScope inherited automatically
+================================================================================
+-->
+</body>
+</html>
