@@ -60,7 +60,24 @@ class PersistItemVariationAvailabilityChangedToOutbox
         );
 
         DB::afterCommit(function () use ($domainEvent): void {
-            DispatchDomainEventsJob::dispatch($domainEvent->id);
+            // [test-e2e fix E-001 round-2 2026-05-11] Same isolation as
+            // PersistItemAvailabilityChangedToOutbox: under sync queue any
+            // broadcaster failure (Pusher unreachable in dev) bubbles up to
+            // the controller as HTTP 500 even though the outbox row IS
+            // persisted. Outbox retry cron (foodking:outbox:retry-failed)
+            // picks up rows with dispatched_at=null when broadcaster recovers.
+            try {
+                DispatchDomainEventsJob::dispatch($domainEvent->id);
+            } catch (\Throwable $broadcastException) {
+                Log::warning('[Outbox] DispatchDomainEventsJob inline dispatch failed (non-blocking)', [
+                    'domain_event_id' => $domainEvent->id,
+                    'event_type'      => $domainEvent->event_type,
+                    'aggregate_id'    => $domainEvent->aggregate_id,
+                    'branch_id'       => $domainEvent->branch_id,
+                    'error'           => $broadcastException->getMessage(),
+                    'gate'            => 'test-e2e-fix-E-001-round-2',
+                ]);
+            }
         });
     }
 

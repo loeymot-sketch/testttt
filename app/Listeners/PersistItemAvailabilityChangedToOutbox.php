@@ -82,7 +82,29 @@ class PersistItemAvailabilityChangedToOutbox
 
         DB::afterCommit(function () use ($domainEvent): void {
             // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.
-            DispatchDomainEventsJob::dispatch($domainEvent->id);
+            // [test-e2e fix E-001 round-2 2026-05-11] Under QUEUE_CONNECTION=sync
+            // (dev / CI) the job runs INLINE here and any broadcaster failure
+            // (Pusher port 6001 unreachable, Soketi down, network blip) bubbles
+            // up through DB::afterCommit → DB::transaction → AvailabilityController
+            // and produces an HTTP 500. The outbox row IS already persisted
+            // (firstOrCreate above committed before this callback runs), so the
+            // dispatch handoff is best-effort: a re-dispatcher
+            // (foodking:outbox:retry-failed cron) picks up rows with
+            // dispatched_at=null. Same defect class as B-001 FCM bubble.
+            try {
+                DispatchDomainEventsJob::dispatch($domainEvent->id);
+            } catch (\Throwable $broadcastException) {
+                Log::warning('[Outbox] DispatchDomainEventsJob inline dispatch failed (non-blocking)', [
+                    'domain_event_id' => $domainEvent->id,
+                    'event_type'      => $domainEvent->event_type,
+                    'aggregate_id'    => $domainEvent->aggregate_id,
+                    'branch_id'       => $domainEvent->branch_id,
+                    'error'           => $broadcastException->getMessage(),
+                    'gate'            => 'test-e2e-fix-E-001-round-2',
+                ]);
+                // Do not bubble — outbox row is persisted; outbox-retry cron
+                // will re-attempt dispatch when broadcaster recovers.
+            }
         });
     }
 
