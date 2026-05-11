@@ -17,7 +17,11 @@ window.LC = window.LC || {};
 window.LC.isDev = LC_IS_DEV;
 
 // Wordmark logo
-function Logo({ size = 22, color = '#0A0A0A', accent = '#FF5A1F' }) {
+// ADV-A11-017 P1 round-3 — accent default switched to --orange-text (#C2410C
+// = 4.86:1 on white) since Logo is overwhelmingly rendered on white surfaces
+// in mobile (login/OTP/confirm). Callers on dark backgrounds explicitly pass
+// accent='var(--orange)' or accent='var(--yellow)' for visual emphasis.
+function Logo({ size = 22, color = '#0A0A0A', accent = '#C2410C' }) {
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '0.02em', lineHeight: 1, fontSize: size, fontWeight: 400 }}>
       <span style={{ color }}>LE</span>
@@ -141,6 +145,19 @@ function ScreenHeader({ left, center, right, style = {}, safeTop = true }) {
   );
 }
 
+// F-003 / A11-004 P1 closed round-3 — keyboard activation helper for div+onClick
+// surfaces. Wires Enter/Space → click. Apply with onKeyDown={lcTapKey(handler)}.
+// Pair with role="button" tabIndex={0} className="lc-tap" + aria-label on the
+// div. CSS press feedback + focus ring at styles.css `.lc-tap` rules.
+window.lcTapKey = function lcTapKey(handler) {
+  return function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handler(e);
+    }
+  };
+};
+
 // Round icon button — A11-002/A11-010/S-003 P1 closed round-2 2026-05-11.
 // Accepts ariaLabel (camelCase) AND `aria-label` (string-key passthrough via
 // rest-spread) so callsites already using `aria-label="..."` work too.
@@ -159,7 +176,10 @@ function IconBtn({ children, onClick, size = 44, bg = 'var(--gray-1)', color = '
 }
 
 // Marquee category banner
-function Marquee({ items, bg = 'var(--orange)', color = '#fff' }) {
+// ADV-A11-017 P1 round-3 — default `color` switched #fff → var(--ink) for
+// 7.4:1 contrast on --orange (was 3.11:1 fail). Callers wanting white text
+// on a darker bg pass color="#fff" explicitly.
+function Marquee({ items, bg = 'var(--orange)', color = 'var(--ink)' }) {
   const set = (
     <div className="lc-marquee-track">
       {[...items, ...items].map((it, i) => (

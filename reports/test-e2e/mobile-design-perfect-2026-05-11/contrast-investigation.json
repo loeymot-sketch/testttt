@@ -1,0 +1,43 @@
+[
+  {
+    "id": "color-contrast",
+    "impact": "serious",
+    "nodes": [
+      {
+        "target": [
+          "div:nth-child(1) > button:nth-child(1)"
+        ],
+        "html": "<button style=\"width: 40px; height: 40px; border-radius: 999px; background: var(--orange); border: 0px; color: rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 17px; cursor: pointer;\">IB</button>",
+        "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.11 (foreground color: #ffffff, background color: #ff5a1f, font size: 12.8pt (17px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".lc-screen > div:nth-child(1) > div > div > span:nth-child(2)"
+        ],
+        "html": "<span style=\"color: rgb(255, 90, 31);\">CAYENNE</span>",
+        "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.11 (foreground color: #ff5a1f, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".lc-marquee-track > div:nth-child(1)"
+        ],
+        "html": "<div style=\"display: inline-flex; align-items: center; gap: 8px; padding: 0px 18px; font-family: var(--font-display); font-size: 18px; text-transform: uppercase; white-space: nowrap; color: rgb(255, 255, 255);\">",
+        "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.11 (foreground color: #ffffff, background color: #ff5a1f, font size: 13.5pt (18px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".lc-marquee-track > div:nth-child(2)"
+        ],
+        "html": "<div style=\"display: inline-flex; align-items: center; gap: 8px; padding: 0px 18px; font-family: var(--font-display); font-size: 18px; text-transform: uppercase; white-space: nowrap; color: rgb(255, 255, 255);\">",
+        "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.11 (foreground color: #ffffff, background color: #ff5a1f, font size: 13.5pt (18px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "target": [
+          ".lc-marquee-track > div:nth-child(3)"
+        ],
+        "html": "<div style=\"display: inline-flex; align-items: center; gap: 8px; padding: 0px 18px; font-family: var(--font-display); font-size: 18px; text-transform: uppercase; white-space: nowrap; color: rgb(255, 255, 255);\">",
+        "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.11 (foreground color: #ffffff, background color: #ff5a1f, font size: 13.5pt (18px), font weight: normal). Expected contrast ratio of 4.5:1"
+      }
+    ]
+  }
+]

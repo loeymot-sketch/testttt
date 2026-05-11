@@ -40,7 +40,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
       <div className="lc-screen" style={{ paddingBottom: 96, paddingTop: 'calc(var(--ios-safe-top) + 8px)' }}>
         {/* header — centered logo, avatar L, bell R */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px 2px', minHeight: 40 }}>
-          <button onClick={() => go('profile')} style={{ width: 40, height: 40, borderRadius: 999, background: 'var(--orange)', border: 0, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 17, cursor: 'pointer' }}>IB</button>
+          <button onClick={() => go('profile')} aria-label="Profil — Ikyes B." style={{ width: 40, height: 40, borderRadius: 999, background: 'var(--orange)', border: 0, color: 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 800, cursor: 'pointer' }}>IB</button>
           <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             <Logo size={14}/>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 8.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gray-4)' }}>
@@ -91,7 +91,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
           </div>
           <div style={{ padding: '0 20px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
             {CATS.slice(0, 6).map(c => (
-              <div key={c.id} onClick={() => go('menu')} style={{ background: 'var(--cream)', borderRadius: 14, padding: '14px 8px', textAlign: 'center', cursor: 'pointer' }}>
+              <div key={c.id} role="button" tabIndex={0} aria-label={`Catégorie ${c.l}`} className="lc-tap" onClick={() => go('menu')} onKeyDown={window.lcTapKey(() => go('menu'))} style={{ background: 'var(--cream)', borderRadius: 14, padding: '14px 8px', textAlign: 'center', cursor: 'pointer' }}>
                 <div style={{ fontSize: 26 }}>{c.icon}</div>
                 <div style={{ marginTop: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{c.label}</div>
               </div>
@@ -198,7 +198,7 @@ function ScreenMenu({ go, cart, addToCart }) {
               </div>
               <div style={{ padding: '0 20px', display: 'grid', gap: 10 }}>
                 {items.map(it => (
-                  <div key={it.id} onClick={() => go('item', it.id)} style={{ display: 'flex', gap: 14, padding: 12, background: 'var(--cream)', borderRadius: 16, cursor: 'pointer', alignItems: 'center' }}>
+                  <div key={it.id} role="button" tabIndex={0} aria-label={`Voir ${it.name} — ${it.price.toFixed(2).replace('.', ',')} €`} className="lc-tap" onClick={() => go('item', it.id)} onKeyDown={window.lcTapKey(() => go('item', it.id))} style={{ display: 'flex', gap: 14, padding: 12, background: 'var(--cream)', borderRadius: 16, cursor: 'pointer', alignItems: 'center' }}>
                     <div style={{ width: 84, height: 84, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: '#0A0A0A' }}>
                       <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
                     </div>
@@ -763,7 +763,7 @@ function ScreenOrders({ go }) {
               const progressSteps = Math.max(1, Math.round((Number(o.progress_pct) || 50) / 25));
               return (
                 /* [test-e2e fix D-004 round-2 2026-05-11] active order routes to detail, not confirm */
-                <div key={o.id} onClick={() => go('orderDetail', o.id)} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: 'pointer', marginBottom: 12 }}>
+                <div key={o.id} role="button" tabIndex={0} aria-label={`Commande ${o.id} en cours — voir détails`} className="lc-tap" onClick={() => go('orderDetail', o.id)} onKeyDown={window.lcTapKey(() => go('orderDetail', o.id))} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: 'pointer', marginBottom: 12 }}>
                   <div style={{ position: 'absolute', top: -20, right: -20, width: 140, height: 140, opacity: 0.06 }}><I.Pepper size={140} stroke="#FF5A1F"/></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span className="lc-pill" style={{ background: 'var(--orange)', color: '#fff' }}><span className="lc-status-dot" style={{ background: '#fff' }}/> {statusLabel}</span>
@@ -870,7 +870,7 @@ function ScreenProfile({ go }) {
           const lProgPct = lProg.target ? lProg.pct : 100;
           return (
             <div style={{ padding: '14px 20px 0' }}>
-              <div onClick={() => go('loyalty')} style={{ position: 'relative', background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, overflow: 'hidden', cursor: 'pointer' }}>
+              <div role="button" tabIndex={0} aria-label={`Carte fidélité — ${lAcc.balance} points, voir détails`} className="lc-tap" onClick={() => go('loyalty')} onKeyDown={window.lcTapKey(() => go('loyalty'))} style={{ position: 'relative', background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, overflow: 'hidden', cursor: 'pointer' }}>
                 <div style={{ position: 'absolute', top: -30, right: -30, width: 180, height: 180, borderRadius: 999, background: 'var(--orange)', opacity: 0.18 }}/>
                 <div style={{ position: 'absolute', top: -10, right: -10, width: 100, height: 100, borderRadius: 999, background: 'var(--yellow)', opacity: 0.18 }}/>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -908,7 +908,7 @@ function ScreenProfile({ go }) {
               { i: I.Phone, t: 'Nous contacter', d: '06 51 30 XX XX' },
               { i: I.Shield, t: 'CGU & Confidentialité' },
             ].map((row, i) => (
-              <div key={i} className="lc-toggle-row" style={{ cursor: 'pointer' }} onClick={() => row.go ? go(row.go) : go('toast', { msg: row.t + ' — bientôt disponible', kind: 'info' })}>
+              <div key={i} role="button" tabIndex={0} aria-label={row.t + (row.d ? ' — ' + row.d : '')} className="lc-toggle-row lc-tap" style={{ cursor: 'pointer' }} onClick={() => row.go ? go(row.go) : go('toast', { msg: row.t + ' — bientôt disponible', kind: 'info' })} onKeyDown={window.lcTapKey(() => row.go ? go(row.go) : go('toast', { msg: row.t + ' — bientôt disponible', kind: 'info' }))}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: row.accent || 'var(--ink)', color: row.accent ? '#fff' : 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}><row.i size={16}/></div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{row.t}</div>

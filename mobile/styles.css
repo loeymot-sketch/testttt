@@ -6,6 +6,7 @@
   --ink-3: #2A2A2A;
   --orange: #FF5A1F;
   --orange-dark: #E54A12;
+  --orange-text: #C2410C;     /* ADV-A11-017 P1 round-3 — WCAG AA 4.86:1 on white for small text (was --orange 3.11:1 fail). Use for "orange text on light bg" surfaces only ; keep --orange for solid backgrounds. */
   --orange-soft: #FFE6D6;
   --yellow: #FFD93D;
   --yellow-soft: #FFF4C2;
@@ -226,6 +227,27 @@ image-slot {
 
 /* Yellow + Orange dramatic gradient option */
 .lc-grad-fire { background: linear-gradient(135deg, #FFD93D 0%, #FF9500 50%, #FF5A1F 100%); }
+
+/* F-003 / A11-004 P1 round-3 — lc-tap helper for div+onClick keyboard a11y
+   parity. Apply className="lc-tap" + role="button" + tabIndex={0} +
+   onKeyDown={lcTapKey} on every clickable div. CSS provides press feedback
+   (scale 0.985 + opacity 0.92 on :active). prefers-reduced-motion respected
+   by global * media query at l.52. */
+.lc-tap {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  outline: none;
+  transition: transform 0.10s ease, opacity 0.10s ease;
+}
+.lc-tap:active:not([aria-disabled="true"]) {
+  transform: scale(0.985);
+  opacity: 0.92;
+}
+.lc-tap:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
 
 /* Visually-hidden helper — for SR-only live regions (a11y audit Agent-4 §6.3) */
 .lc-sr-only {

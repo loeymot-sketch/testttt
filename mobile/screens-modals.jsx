@@ -1,14 +1,35 @@
 // Le Cayenne — Critical modals + extra screens (Payment choice, +25 confetti,
 // Redeem confirm, Card linking, Order detail, empty states, Toast)
-const { useState: useState_m, useEffect: useEffect_m } = React;
+const { useState: useState_m, useEffect: useEffect_m, useRef: useRef_m } = React;
 
 // ---------- generic modal shell ----------
-function ModalShell({ children, onClose, height = 'auto' }) {
+// A11-006 P1 round-3 2026-05-11 — accepts labelledBy + emits role="dialog" +
+// aria-modal="true" + ESC keydown close + initial focus on first focusable
+// element inside the sheet. Modal wrapper outer div has zero dimensions
+// (layout-less) ; the inner sheet has role+aria attributes for screen readers.
+function ModalShell({ children, onClose, height = 'auto', labelledBy, dataModalKind }) {
+  const sheetRef = useRef_m(null);
+  useEffect_m(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    // Move focus to first focusable inside sheet (a11y SR + keyboard nav).
+    const focusable = sheetRef.current?.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (focusable) {
+      try { focusable.focus({ preventScroll: true }); } catch (_e) { focusable.focus(); }
+    }
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
   return (
-    <div style={{ position: 'absolute', inset: 0, zIndex: 50 }}>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(10,10,10,0.55)' }}/>
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', borderRadius: '24px 24px 0 0', padding: '14px 20px 32px', maxHeight: '85%', height, overflowY: 'auto', boxShadow: '0 -12px 30px rgba(0,0,0,0.18)' }}>
-        <div style={{ width: 44, height: 4, borderRadius: 999, background: 'var(--gray-2)', margin: '0 auto 14px' }}/>
+    <div style={{ position: 'absolute', inset: 0, zIndex: 50 }} data-modal-kind={dataModalKind}>
+      <div onClick={onClose} aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'rgba(10,10,10,0.55)' }}/>
+      <div
+        ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labelledBy}
+        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', borderRadius: '24px 24px 0 0', padding: '14px 20px 32px', maxHeight: '85%', height, overflowY: 'auto', boxShadow: '0 -12px 30px rgba(0,0,0,0.18)' }}
+      >
+        <div style={{ width: 44, height: 4, borderRadius: 999, background: 'var(--gray-2)', margin: '0 auto 14px' }} aria-hidden="true"/>
         {children}
       </div>
     </div>
@@ -18,8 +39,8 @@ function ModalShell({ children, onClose, height = 'auto' }) {
 // ---------- F.2  Payment choice ----------
 function ModalPayChoice({ onClose, onPickCounter, onPickCard, total = 33 }) {
   return (
-    <ModalShell onClose={onClose}>
-      <h2 className="lc-display" style={{ margin: 0, fontSize: 36, lineHeight: 0.92, color: 'var(--ink)' }}>Comment<br/>tu paies ?</h2>
+    <ModalShell onClose={onClose} labelledBy="modal-pay-title" dataModalKind="pay">
+      <h2 id="modal-pay-title" className="lc-display" style={{ margin: 0, fontSize: 36, lineHeight: 0.92, color: 'var(--ink)' }}>Comment<br/>tu paies ?</h2>
       <p style={{ margin: '8px 0 18px', color: 'var(--gray-3)', fontSize: 13 }}>Total {total.toFixed(2).replace('.', ',')} € · TVA incluse</p>
 
       <button onClick={onPickCounter} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'var(--ink)', color: '#fff', borderRadius: 18, padding: 18, border: 0, marginBottom: 12, cursor: 'pointer' }}>
@@ -89,19 +110,28 @@ function ScreenStripe({ go, total = 33 }) {
 
 // ---------- I.2 +25 points confetti ----------
 function ModalPointsGain({ onClose, onSee, gain = 25 }) {
-  const pieces = Array.from({ length: 24 });
+  // A11-007 P2 closed round-3 : confetti spans aria-hidden + container
+  // role=dialog + ESC keydown. A11-014 : skip confetti DOM nodes entirely
+  // when prefers-reduced-motion (cosmetic, no visual loss).
+  const reducedMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const pieces = reducedMotion ? [] : Array.from({ length: 24 });
+  useEffect_m(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
   return (
-    <div style={{ position: 'absolute', inset: 0, zIndex: 60, background: 'rgba(10,10,10,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, overflow: 'hidden' }}>
+    <div role="dialog" aria-modal="true" aria-labelledby="modal-points-gain-title" data-modal-kind="points-gain" style={{ position: 'absolute', inset: 0, zIndex: 60, background: 'rgba(10,10,10,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, overflow: 'hidden' }}>
       {pieces.map((_, i) => {
         const colors = ['#FF5A1F', '#FFD93D', '#0A0A0A', '#1FA653'];
         const c = colors[i % colors.length];
         const left = (i * 4.2) % 100;
         const delay = (i % 8) * 0.12;
-        return <span key={i} style={{ position: 'absolute', top: -20, left: `${left}%`, width: 10, height: 14, background: c, animation: `lc-confetti 3.4s ${delay}s ease-in infinite`, transformOrigin: 'center' }}/>;
+        return <span key={i} aria-hidden="true" style={{ position: 'absolute', top: -20, left: `${left}%`, width: 10, height: 14, background: c, animation: `lc-confetti 3.4s ${delay}s ease-in infinite`, transformOrigin: 'center', willChange: 'transform, opacity' }}/>;
       })}
       <div style={{ position: 'relative', background: 'var(--yellow)', borderRadius: 28, padding: '32px 24px', textAlign: 'center', maxWidth: 320, boxShadow: '8px 8px 0 var(--ink)' }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink)' }}>// Bienvenue au club</div>
-        <div className="lc-display" style={{ fontSize: 88, lineHeight: 0.85, color: 'var(--ink)', margin: '6px 0 4px' }}>+{gain}</div>
+        <div id="modal-points-gain-title" className="lc-display" style={{ fontSize: 88, lineHeight: 0.85, color: 'var(--ink)', margin: '6px 0 4px' }}>+{gain}</div>
         <div className="lc-display" style={{ fontSize: 24, lineHeight: 0.9, color: 'var(--orange)' }}>points gagnés</div>
         <p style={{ fontSize: 12.5, color: 'var(--gray-4)', margin: '14px 0 18px', lineHeight: 1.45 }}>Tu fais partie du club Le Cayenne. Continue à commander pour débloquer des récompenses gratuites.</p>
         <button onClick={onSee} className="lc-btn" style={{ background: 'var(--ink)', color: '#fff', width: '100%', height: 50, marginBottom: 8 }}>Voir ma carte</button>
@@ -114,9 +144,9 @@ function ModalPointsGain({ onClose, onSee, gain = 25 }) {
 // ---------- I.3 Reward redeem confirm ----------
 function ModalRedeem({ onClose, onConfirm, reward = 'Burger gratuit', cost = 1000 }) {
   return (
-    <ModalShell onClose={onClose}>
+    <ModalShell onClose={onClose} labelledBy="modal-redeem-title" dataModalKind="redeem">
       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--orange)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>★ Récompense</div>
-      <h2 className="lc-display" style={{ margin: '12px 0 4px', fontSize: 36, lineHeight: 0.92, color: 'var(--ink)' }}>Confirmer<br/>l'échange ?</h2>
+      <h2 id="modal-redeem-title" className="lc-display" style={{ margin: '12px 0 4px', fontSize: 36, lineHeight: 0.92, color: 'var(--ink)' }}>Confirmer<br/>l'échange ?</h2>
       <p style={{ margin: '0 0 18px', color: 'var(--gray-3)', fontSize: 13 }}>Cette action est irréversible.</p>
 
       <div style={{ background: 'var(--cream)', borderRadius: 16, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -147,8 +177,8 @@ function ModalRedeem({ onClose, onConfirm, reward = 'Burger gratuit', cost = 100
 // ---------- I.4 Card linking ----------
 function ModalCardLink({ onClose, onScan }) {
   return (
-    <ModalShell onClose={onClose}>
-      <h2 className="lc-display" style={{ margin: 0, fontSize: 32, lineHeight: 0.92, color: 'var(--ink)' }}>Lier ta carte<br/>plastique</h2>
+    <ModalShell onClose={onClose} labelledBy="modal-cardlink-title" dataModalKind="card-link">
+      <h2 id="modal-cardlink-title" className="lc-display" style={{ margin: 0, fontSize: 32, lineHeight: 0.92, color: 'var(--ink)' }}>Lier ta carte<br/>plastique</h2>
       <p style={{ margin: '8px 0 18px', color: 'var(--gray-3)', fontSize: 13 }}>Scanne le QR au dos de ta carte pour fusionner les points.</p>
       <div style={{ position: 'relative', height: 220, background: 'var(--ink)', borderRadius: 18, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ position: 'absolute', inset: 24, border: '2px solid var(--orange)', borderRadius: 14 }}/>
