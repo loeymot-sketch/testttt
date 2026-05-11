@@ -622,7 +622,33 @@ export const kioskCart = {
                 paymentMethod,
                 requireExplicitOrderType: true,
             });
-            const res = await axios.post('frontend/order/quote', payload);
+            let res;
+            try {
+                res = await axios.post('frontend/order/quote', payload);
+            } catch (err) {
+                // [test-e2e/pos-kds-sync round-5 F-008 P1 2026-05-11] Kiosk 429 visibility on
+                // /frontend/order/quote — same throttle bucket as /frontend/order. Round-4
+                // patched submitOrder() only; quote calls were still silent at 429. Mirror
+                // the submitOrder pattern: lazy alertService toast with the kiosk-specific
+                // i18n copy, then re-throw so callers can react.
+                const status = Number(err?.response?.status) || 0;
+                if (status === 429) {
+                    try {
+                        const i18n = (typeof window !== 'undefined')
+                            ? (window.__appI18n
+                                || window.app?.__VUE_DEVTOOLS_APP_RECORD__?.app?.config?.globalProperties?.$i18n)
+                            : null;
+                        const t = i18n?.global?.t || i18n?.t;
+                        const msg = (typeof t === 'function')
+                            ? t('error.kiosk_rate_limited')
+                            : 'Trop de commandes envoyées rapidement. Veuillez patienter quelques secondes.';
+                        import('../../services/alertService').then((mod) => {
+                            try { mod?.default?.error?.(msg); } catch (_) { /* never break reject chain */ }
+                        }).catch(() => { /* defensive */ });
+                    } catch (_) { /* never break */ }
+                }
+                throw err;
+            }
             const quote = res?.data?.data;
             if (!quote || quote.total_ttc === undefined || !quote.quote_token || !quote.signature) {
                 const error = new Error('KIOSK_QUOTE_INVALID');
