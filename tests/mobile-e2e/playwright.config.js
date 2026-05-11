@@ -10,10 +10,19 @@
 //
 // Reference : Agent-6 §1.1 in reports/review/mobile-loyalty-audit-2026-05-10/06_tester.md
 const { defineConfig } = require('@playwright/test');
+const path = require('path');
 
 module.exports = defineConfig({
-  testDir: __dirname,
-  testMatch: '*.spec.js',
+  // [audit mobile-design-full-2026-05-11 round-1] Broaden discovery so the
+  // `tests/e2e/test-e2e-mobile-design-full-wave-*.spec.js` family — which lives
+  // outside this dir for capture-dir parity with the rest of the test-e2e skill
+  // — is reachable via this config (still :8081, still no globalSetup).
+  testDir: path.resolve(__dirname, '../..'),
+  testMatch: [
+    'tests/mobile-e2e/*.spec.js',
+    'tests/e2e/test-e2e-mobile-design-full-wave-*.spec.js',
+    'tests/e2e/test-e2e-mobile-design-perfect-wave-*.spec.js',
+  ],
   workers: 1,                     // localStorage shared state per worker
   timeout: 90_000,
   retries: 0,                     // V0 should be deterministic; retries hide flakiness
