@@ -26,6 +26,10 @@ class KDSOrderDetailsResource extends JsonResource
             // KDS lane bucketing must use source_surface ('kiosk' | 'pos' | 'web' | 'mobile' | 'admin')
             // not order_type, otherwise the "🖥️ Borne" KDS column stays permanently empty.
             'source_surface'                      => $this->source_surface,
+            // [kds/sprint-2 B-1] ISO8601 for FIFO sort + age math on the client.
+            // Eloquent already casts `created_at` to Carbon; we add a stable wire
+            // format that the new unified-queue grid sorts on without local-tz drift.
+            'created_at_iso'                      => $this->created_at?->toIso8601String(),
             'order_datetime'                      => AppLibrary::datetime($this->order_datetime),
             'order_date'                          => AppLibrary::date($this->order_datetime),
             'order_time'                          => AppLibrary::time($this->order_datetime),

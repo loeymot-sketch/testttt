@@ -21,6 +21,17 @@ class FrontendOrder extends Model implements BroadcastableOrder
     protected static function booted(): void
     {
         static::addGlobalScope(new BranchScope);
+
+        // [kds/sprint-2 B-4] Mirror of Order::creating hook. Both models target
+        // the `orders` table; whichever instance is used to create a row must
+        // resolve source_surface='delivery' for order_type=DELIVERY when no
+        // surface is explicitly set. Idempotent: skipped if any value is
+        // already present (kiosk + pos writers fill it explicitly upstream).
+        static::creating(function (self $order) {
+            if (empty($order->source_surface) && (int) $order->order_type === \App\Enums\OrderType::DELIVERY) {
+                $order->source_surface = 'delivery';
+            }
+        });
     }
     protected $fillable = [
         'order_serial_no',

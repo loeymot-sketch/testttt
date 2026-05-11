@@ -114,6 +114,19 @@ class Order extends Model implements BroadcastableOrder
                 . 'soft-deleted id in its notes.'
             );
         });
+
+        // [kds/sprint-2 B-4] Auto-derive source_surface='delivery' when the
+        // order is order_type=DELIVERY and no source_surface is set yet.
+        // V1 has no aggregator-webhook ingestion path — the column is filled
+        // by whichever future path creates the delivery order (admin
+        // dashboard, manual entry, direct platform integration). This hook
+        // guarantees the KDS sees source_surface='delivery' on those rows
+        // and renders the LIVRAISON chip without per-writer plumbing.
+        static::creating(function (self $order) {
+            if (empty($order->source_surface) && (int) $order->order_type === \App\Enums\OrderType::DELIVERY) {
+                $order->source_surface = 'delivery';
+            }
+        });
     }
 
     public function orderItems(): \Illuminate\Database\Eloquent\Relations\HasMany
