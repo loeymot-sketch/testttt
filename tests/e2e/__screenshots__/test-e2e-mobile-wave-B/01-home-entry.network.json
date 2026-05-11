@@ -1,0 +1,9 @@
+[
+  {
+    "url": "http://127.0.0.1:8081/.image-slots.state.json",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1778472533357
+  }
+]

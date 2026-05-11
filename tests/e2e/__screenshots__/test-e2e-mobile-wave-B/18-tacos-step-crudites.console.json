@@ -1,0 +1,12 @@
+[
+  {
+    "level": "error",
+    "text": "Warning: %s a style property during rerender (%s) when a conflicting property is set (%s) can lead to styling bugs. To avoid this, don't mix shorthand and non-shorthand properties for the same value; instead, replace the shorthand with separate values.%s Updating textDecoration textDecorationColor \n    at div\n    at div\n    at ChoiceCard (<anonymous>:353:18)\n    at div\n    at div\n    at ScreenStepCrudites (<anonymous>:578:20)\n    at div\n    at div\n    at ScreenItemWizard (<anonymous>:1331:19)\n    at ScreenItem (<anonymous>:816:18)\n    at div\n    at App (<anonymous>:42:19)",
+    "location": {
+      "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+      "lineNumber": 72,
+      "columnNumber": 31
+    },
+    "ts": 1778472540225
+  }
+]
