@@ -712,33 +712,85 @@ test.describe('rush-hour-50x50 wave E — Mixed-20 + rupture cascade (PHASE 2)',
       // ============================================================
       // STATE 07 — POS wizard : Tacos M (363) supplement 175 disabled
       // RUPTURE-E3 (P0)
+      // [test-e2e fix E-003 round-2 2026-05-11] re-open POS wizard to
+      // empirically capture supplement 175 disabled state. Round-1 spec
+      // accepted !found as PASS, conflating instrumentation gap with
+      // product correctness. Round-2 hardens: (1) defensive close any
+      // residue first (Escape + class-strip), (2) reload POS for clean
+      // canvas mirroring state-10 pattern, (3) hard-expect wizard mount,
+      // (4) scroll within modal to reach the extras section of the
+      // single-page wizard, (5) strict pass = wizard mounted AND extra
+      // found AND at least one disabled signal. !found is now a finding.
       // ============================================================
-      // Open the Tacos M wizard.
-      const tacosTilePos = posPage.locator(`button[data-pos-item-id="${ITEM_TACOS.id}"]`).first();
-      if (!(await tacosTilePos.isVisible({ timeout: 4000 }).catch(() => false))) {
-        // Navigate to Tacos category
-        const catTacos = posPage.locator(`[data-pos-category-id="${ITEM_TACOS.cat}"], button:has-text("Nos Tacos")`).first();
-        if (await catTacos.isVisible({ timeout: 4000 }).catch(() => false)) {
-          await catTacos.click({ timeout: 3000 }).catch(() => {});
-          await posPage.waitForTimeout(800);
-        }
+      // Defensive: force-close any modal residue from prior states
+      await posPage.keyboard.press('Escape').catch(() => {});
+      await posPage.waitForTimeout(300);
+      await posPage.evaluate(() => {
+        document.querySelectorAll('.modal.active').forEach((el) => el.classList.remove('active'));
+      }).catch(() => {});
+      // Reload POS for a clean canvas (mirrors state-10 hardening L902-905)
+      await posPage.goto('/admin/pos', { waitUntil: 'domcontentloaded' }).catch(() => {});
+      if (/\/login/.test(posPage.url())) {
+        await loginAsPosOperator(posPage);
       }
-      let posWizardExtraState = { found: false };
-      if (await tacosTilePos.isVisible({ timeout: 4000 }).catch(() => false)) {
-        await tacosTilePos.click({ timeout: 4000 }).catch(() => {});
+      await posPage.waitForTimeout(1500);
+      // Navigate to Tacos category to surface the tile (cat 306)
+      const catTacos = posPage.locator(`[data-pos-category-id="${ITEM_TACOS.cat}"], button:has-text("Nos Tacos")`).first();
+      if (await catTacos.isVisible({ timeout: 4000 }).catch(() => false)) {
+        await catTacos.click({ timeout: 3000 }).catch(() => {});
+        await posPage.waitForTimeout(800);
+      }
+      const tacosTilePos = posPage.locator(`button[data-pos-item-id="${ITEM_TACOS.id}"]`).first();
+      const tacosTileFallback = posPage.locator('.pos-v5-tile, .pos-item-tile').filter({ hasText: /Tacos M/i }).first();
+      const tacosTileTarget = (await tacosTilePos.count()) > 0 ? tacosTilePos : tacosTileFallback;
+      // Wait until tile is actually clickable (Wave A L832-839 pattern: visible+enabled)
+      const tacosTileReady = await tacosTileTarget.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && !el.hasAttribute('disabled');
+      }).catch(() => false);
+      observations.push(`state07-pre: tacos_tile_ready=${tacosTileReady}`);
+      let posWizardExtraState = { found: false, wizard_mounted: false };
+      let wizardMountSignal = false;
+      if (await tacosTileTarget.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await tacosTileTarget.click({ timeout: 5000 }).catch(() => {});
         const variationModal = posPage.locator('#item-variation-modal');
-        const wizOpen = await variationModal.isVisible({ timeout: 8000 }).catch(() => false);
-        if (wizOpen) {
-          await posPage.waitForTimeout(1500); // wizard render
+        // Hard wait for active class (Wave A L494 pattern) — wizard mount race.
+        // Use expect().toHaveClass with timeout to actually retry until mounted.
+        try {
+          await expect(variationModal).toHaveClass(/active/, { timeout: 10_000 });
+          wizardMountSignal = true;
+        } catch (_e) {
+          // Fallback: visible check
+          wizardMountSignal = await variationModal.isVisible({ timeout: 4000 }).catch(() => false);
+        }
+        if (wizardMountSignal) {
+          await posPage.waitForTimeout(1500); // wizard inject + render
+          // pos-wizard.js is a SCROLLABLE SINGLE PAGE (per pos-wizard.js header L8) —
+          // extras are usually below sauces/viande. Scroll the modal to the bottom
+          // so the supplement section enters the DOM render path.
+          await variationModal.evaluate((el) => {
+            el.scrollTo?.(0, el.scrollHeight);
+          }).catch(() => {});
+          await posPage.waitForTimeout(500);
           // Probe for "Jambon de dinde" button state
           posWizardExtraState = await posPage.evaluate(() => {
+            const modal = document.getElementById('item-variation-modal');
+            if (!modal) return { found: false, wizard_mounted: false };
             // Match by text since extras don't always carry data-extra-id
-            const all = Array.from(document.querySelectorAll('#item-variation-modal button, #item-variation-modal [class*="extra"], #item-variation-modal [class*="supplement"]'));
+            const all = Array.from(modal.querySelectorAll('button, [class*="extra"], [class*="supplement"], [class*="option"]'));
             const match = all.find((b) => /jambon de dinde/i.test(b.innerText || b.textContent || ''));
-            if (!match) return { found: false, total_buttons: all.length };
+            if (!match) {
+              return {
+                found: false,
+                wizard_mounted: true,
+                total_buttons: all.length,
+                modal_inner_text_sample: (modal.innerText || '').slice(0, 500),
+              };
+            }
             const cs = window.getComputedStyle(match);
             return {
               found: true,
+              wizard_mounted: true,
               text: (match.innerText || '').slice(0, 200),
               classes: match.className || '',
               disabled: match.hasAttribute('disabled'),
@@ -749,31 +801,67 @@ test.describe('rush-hour-50x50 wave E — Mixed-20 + rupture cascade (PHASE 2)',
               hasUnavailableText: /épuisé|epuise|rupture|indispo/i.test(match.innerText || ''),
             };
           });
+          // Scroll the matched supplement into view BEFORE snap so the screenshot
+          // empirically shows the disabled state (not just an empty-extras section).
+          await posPage.evaluate(() => {
+            const modal = document.getElementById('item-variation-modal');
+            if (!modal) return;
+            const all = Array.from(modal.querySelectorAll('button, [class*="extra"], [class*="supplement"], [class*="option"]'));
+            const match = all.find((b) => /jambon de dinde/i.test(b.innerText || b.textContent || ''));
+            match?.scrollIntoView({ block: 'center', behavior: 'instant' });
+          }).catch(() => {});
+          await posPage.waitForTimeout(400);
         }
       }
       observations.push(`state07: RUPTURE-E3 pos wizard supplement 175 = ${JSON.stringify(posWizardExtraState)}`);
       await posRec.snap('07-E-cascade-pos-wizard-tacos-extra-175-disabled');
-      const ruptureE3Pass = !posWizardExtraState.found
-        || posWizardExtraState.disabled
+      // STRICT acceptance — three discriminating finding scenarios:
+      //  (a) wizard never mounted        → instrumentation/UX bug (RUPTURE-E3-WIZARD-MOUNT)
+      //  (b) wizard mounted, extra absent → product policy/render bug (RUPTURE-E3-EXTRA-MISSING)
+      //  (c) extra present + clickable    → cascade did NOT propagate to wizard (RUPTURE-E3)
+      // PASS = wizard mounted AND extra found AND at least one disabled signal.
+      const hasDisabledSignal = posWizardExtraState.found && (
+        posWizardExtraState.disabled
         || posWizardExtraState.ariaDisabled === 'true'
         || posWizardExtraState.pointerEvents === 'none'
         || posWizardExtraState.hasUnavailableClass
         || posWizardExtraState.hasUnavailableText
-        || Number(posWizardExtraState.opacity) < 0.6;
-      if (!ruptureE3Pass) {
+        || Number(posWizardExtraState.opacity) < 0.6
+      );
+      const ruptureE3Pass = posWizardExtraState.wizard_mounted && posWizardExtraState.found && hasDisabledSignal;
+      if (!posWizardExtraState.wizard_mounted) {
+        findings.push({
+          id: 'RUPTURE-E3-WIZARD-MOUNT',
+          severity: 'P1',
+          surface: 'pos-wizard',
+          desc: 'POS wizard for Tacos M (363) failed to mount on tile click — cannot empirically verify supplement 175 cascade. Spec instrumentation must succeed before product correctness can be judged.',
+          state: { wizard_mounted: false, tile_ready: tacosTileReady, mount_signal: wizardMountSignal },
+        });
+      } else if (!posWizardExtraState.found) {
+        findings.push({
+          id: 'RUPTURE-E3-EXTRA-MISSING',
+          severity: 'P1',
+          surface: 'pos-wizard',
+          desc: 'POS wizard mounted for Tacos M (363) but supplement "Jambon de dinde" (175) NOT present in DOM — either rupture hides the row entirely (verify policy: hide-vs-disable) OR wizard extras step did not render. If hide-by-policy is intended, this PASSES the cascade goal but spec must assert hidden-by-design explicitly.',
+          state: posWizardExtraState,
+        });
+      } else if (!hasDisabledSignal) {
         findings.push({
           id: 'RUPTURE-E3',
           severity: 'P0',
           surface: 'pos-wizard',
-          desc: 'POS wizard does NOT show extra 175 as disabled after rupture — supplement remains clickable',
+          desc: 'POS wizard does NOT show extra 175 as disabled after rupture — supplement remains clickable (no disabled attr, no unavailable class, no overlay, opacity >= 0.6).',
           state: posWizardExtraState,
         });
       }
-      // Close wizard
+      observations.push(`state07: RUPTURE-E3 pass=${ruptureE3Pass} mounted=${posWizardExtraState.wizard_mounted} found=${posWizardExtraState.found} disabled_signal=${hasDisabledSignal}`);
+      // Close wizard cleanly so subsequent states aren't polluted
       await posPage.keyboard.press('Escape').catch(() => {});
       await posPage.waitForTimeout(500);
       await posPage.evaluate(() => {
         document.querySelectorAll('.modal.active').forEach((el) => el.classList.remove('active'));
+        const modal = document.getElementById('item-variation-modal');
+        if (modal) modal.classList.remove('active');
       }).catch(() => {});
 
       // ============================================================
