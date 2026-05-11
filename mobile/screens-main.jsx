@@ -180,7 +180,7 @@ function ScreenMenu({ go, cart, addToCart }) {
           {[{ id: 'all', label: 'Tout' }, ...CATS].map(c => {
             const active = filter === c.id;
             return (
-              <button key={c.id} onClick={() => setFilter(c.id)} style={{ flexShrink: 0, padding: '10px 16px', borderRadius: 999, border: active ? '0' : '1.5px solid var(--gray-2)', background: active ? 'var(--ink)' : '#fff', color: active ? 'var(--yellow)' : 'var(--ink)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer' }}>
+              <button key={c.id} onClick={() => setFilter(c.id)} aria-pressed={active} style={{ flexShrink: 0, padding: '10px 16px', borderRadius: 999, border: active ? '0' : '1.5px solid var(--gray-2)', background: active ? 'var(--ink)' : '#fff', color: active ? 'var(--yellow)' : 'var(--ink)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer' }}>
                 {c.icon ? `${c.icon} ` : ''}{c.label}
               </button>
             );
@@ -1199,6 +1199,7 @@ function ScreenLoyalty({ go }) {
                         data-testid={'history-filter-' + f.id}
                         data-active={active}
                         onClick={() => setFilterSource(f.id)}
+                        aria-pressed={active}
                         style={{ flexShrink: 0, padding: '6px 12px', borderRadius: 999, border: '1.5px solid ' + (active ? 'var(--ink)' : 'var(--gray-2)'), background: active ? 'var(--ink)' : 'transparent', color: active ? 'var(--yellow)' : 'var(--ink)', fontSize: 11, fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.06em' }}
                       >
                         {f.label}

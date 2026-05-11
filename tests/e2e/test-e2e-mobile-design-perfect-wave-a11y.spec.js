@@ -295,7 +295,8 @@ test.describe('Wave-A11y — axe-core + targeted ARIA', () => {
     await page.waitForSelector('[data-testid="loyalty-screen"]', { timeout: 5_000 });
     await page.locator('[data-testid="loyalty-opt-out-btn"]').scrollIntoViewIfNeeded();
     await page.locator('[data-testid="loyalty-opt-out-btn"]').click();
-    await page.waitForSelector('[data-modal-kind="opt-out-confirm"]', { timeout: 3_000 });
+    // [round-2 spec fix] Modal outer wrapper is layout-less ; use attached state.
+    await page.waitForSelector('[data-modal-kind="opt-out-confirm"]', { state: 'attached', timeout: 3_000 });
     await injectAxe(page);
     const results = await runAxe(page, '12-modal-opt-out-dialog');
     const modalInfo = await page.evaluate(() => {

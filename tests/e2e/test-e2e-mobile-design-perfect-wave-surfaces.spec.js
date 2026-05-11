@@ -194,7 +194,11 @@ test.describe('Wave-Surfaces — 16 surfaces hors-wizard', () => {
     const optOutBtn = page.locator('[data-testid="loyalty-opt-out-btn"]');
     await optOutBtn.scrollIntoViewIfNeeded();
     await optOutBtn.click();
-    await page.waitForSelector('[data-modal-kind="opt-out-confirm"]', { timeout: 3_000 });
+    // [round-2 spec fix] Modal wrapper div is layout-less (no width/height), so
+    // Playwright default `state: 'visible'` reports hidden. Use `attached` for the
+    // wrapper, then check the inner content is visible separately.
+    await page.waitForSelector('[data-modal-kind="opt-out-confirm"]', { state: 'attached', timeout: 3_000 });
+    await expect(page.getByText(/Désactiver|RGPD/i).first()).toBeVisible();
     await recorder.snap('14-loyalty-optout-modal');
   });
 

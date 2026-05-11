@@ -56,7 +56,7 @@ function TabBar({ active, onChange }) {
             key={t.id}
             type="button"
             role="tab"
-            aria-pressed={isActive}
+            aria-selected={isActive}
             aria-label={t.label}
             className={`lc-tab ${isActive ? 'lc-tab--active' : ''}`}
             onClick={() => onChange(t.id)}
