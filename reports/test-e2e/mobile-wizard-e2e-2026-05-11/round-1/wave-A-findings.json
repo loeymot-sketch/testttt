@@ -1,0 +1,151 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 15,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-mobile-wave-A/07-otp-empty.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "PNG 07 and PNG 08 both show the literal hint 'Code de démo : 1234' rendered between the four OTP inputs and the 'Renvoyer (29s)' resend timer. DOM grep confirms the literal 'Code de démo : 1234' string is in 07-otp-empty.dom.html and 08-otp-typed-1234.dom.html. This is a dev-affordance bleeding into a production-facing customer screen — a real user must NEVER be shown the demo code. Classified P1 (audit_integrity) because it changes the user-facing surface area in a way the team self-reported but did not block on.",
+      "fix_hint": "Gate the 'Code de démo : 1234' line behind a build-time DEV flag (e.g. window.LC?.env === 'dev') in the ScreenOTP component, or remove entirely before any external pilot. The OTP screen should only render the four inputs, phone confirmation, resend timer, and the SMS reassurance card.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-mobile-wave-A/02-onb1.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "PNG 02 (onb1) shows an <image-slot> placeholder rectangle (dashed border + image icon + raw caption 'Hero burger') instead of a real food photo. PNG 03 shows 'Tenders dipped in sauce' as raw placeholder text under the '30S' overlay. PNG 11 shows the featured Tacos XXL card with the same image-slot placeholder icon + raw caption 'Tacos XXL (4 Viandes)'. PNG 13 (Menu tab) shows every product card (Tacos M, Tacos L, Tacos XL, Tacos XXL) with a solid black square holding the raw item name. The placeholders persist across the entire authenticated experience — image-slot dev helper is leaking into customer-visible UI.",
+      "fix_hint": "Bundle real product photography (or branded illustration fallbacks) and wire the <image-slot> default 'src' for each slot-id so the placeholder is only seen by the in-app drag-and-drop editor. Alternatively render an emoji + brand color tile fallback (matches category tile style) when no asset is registered.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "test-e2e-mobile-wave-A/02-onb1.png",
+      "category": "text_truncation",
+      "severity": "P1",
+      "evidence": "PNG 02 hero word 'BIENVENUE' is clipped on the right edge of the orange panel — the final 'E' is partially cut and overlapped by the round black 'EST. 24' badge (badge sits over the last letter). The display font is the headline of the onboarding screen, so the cut is on a critical word, not body copy.",
+      "fix_hint": "Reduce 'BIENVENUE' font-size by ~10% on viewport width 390px, OR move the EST. 24 badge above the headline / right-align it below 'BIENVENUE' rather than overlapping. The current oversize tilt creates a clipped + overlapped hero word on stock iPhone width.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-mobile-wave-A/03-onb2.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "PNG 03 onb2 hero '30S' is rendered at a font size so large the digits visibly clip both edges of the viewport — left edge cuts the inner curve of '3', right edge clips '$/S'. The clip is intentional-looking on screen-shot aesthetic, but for a 390px iPhone it crosses into 'glyph cropped, brand-unclear' territory and the '3 TAPS' badge partially covers the lower-right 'S'. Borderline P2 because the intended branding may sacrifice legibility on purpose, but it is documented for owner review.",
+      "fix_hint": "Cap '30S' max-width via CSS clamp() so the digits sit fully inside the 390px viewport with at least 8px of inner padding. Owner decides if this is the desired editorial look.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "test-e2e-mobile-wave-A/09-home-authed.png",
+      "category": "color_contrast",
+      "severity": "P1",
+      "evidence": "PNG 09/10/11/12 all show the SIGNATURE pill on the featured Tacos XXL card as a solid black rounded pill with NO visible text. DOM confirms <span class=\"lc-pill lc-pill--ink\" style=\"font-size: 9px;\">SIGNATURE</span> is present. Other lc-pill instances (TOP, SPICY) are rendered yellow/orange on dark and stay legible. The 'lc-pill--ink' variant on the featured card is rendered with text that does NOT contrast against the ink background — the user sees an empty black pill. WCAG ratio is effectively 1:1 → far below AA. Treated as P1 because it sits on the primary featured promo and silently breaks the SIGNATURE call-out.",
+      "fix_hint": "Set lc-pill--ink text color to var(--yellow) or var(--orange) so the 'SIGNATURE' label is readable on the black pill. Inspect index.html / styles.css lc-pill--ink rule — likely uses 'color: var(--ink)' from a generic base. Verify other pill variants and confirm the SIGNATURE word appears in the wizard / kiosk surfaces too.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "test-e2e-mobile-wave-A/09-home-authed.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "DOM for 09-home-authed.dom.html contains <div class=\"lc-sec-title\"><h3>Les envies du moment</h3>...</div> followed by <div style=\"...overflow-x: auto;\"></div> — the inner content of the 'envies du moment' carousel is empty. The 'Voir tout' CTA + 'Notre sélection de la semaine' subtitle render, but the carousel itself has zero items. This is a half-rendered section: the header promises content, the body delivers nothing. Same DOM shape in 10/11/12.",
+      "fix_hint": "Either populate the 'envies du moment' carousel with real curated items at the data layer (window.LC.menu featured list) or hide the entire section when items.length === 0. A bare empty carousel reads as a broken render to the customer.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "test-e2e-mobile-wave-A/09-home-authed.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Home + every other authenticated screen renders the bottom tab bar using <div class=\"lc-tab\"> elements with onclick handlers — no <button>, no role=button, no tabindex, no aria-label. The notification bell button, the 'IB' avatar button, and the menu search 40x40 button are all <button> elements containing ONLY an SVG with NO aria-label. grep on 09-home-authed.dom.html for aria-label returns zero matches; the only role attribute is role=\"img\" on emojis. The four OTP digit inputs (07/08) also have no aria-label, so a screen-reader user hears four anonymous text fields.",
+      "fix_hint": "1) Convert .lc-tab divs to <button> with aria-label='Accueil/Menu/Commandes/Profil' and aria-pressed for the active tab. 2) Add aria-label to the bell, avatar, search, modify, back-chevron buttons. 3) Add aria-label='Chiffre 1 du code SMS' (etc.) to OTP inputs and group them in a fieldset with legend. 4) Add :focus-visible styles consistent with the lc-pill orange ring.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "test-e2e-mobile-wave-A/06-login-empty.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "PNG 06 (login-empty) shows the phone field pre-populated with '06 ' even on a fresh splash → onb1→onb4 → login flow. Source confirms the field hard-codes 'value=\"06 \"' (see DOM <input value=\"06 \" placeholder=\"6 12 34 56 78\">). This was self-reported by GStack as 'canonical empty state'. Recording as P3 documentation because it is not strictly empty — a screen-reader user hears the field already filled with '06' and may be confused. Owner decides whether to keep the pre-fill or move it into placeholder-only.",
+      "fix_hint": "Either keep the pre-fill but expose it via input[autocomplete='tel-national'] with the cursor caret positioned after '06 ', OR move '06 ' into placeholder and start the input empty. The capture brief should also be updated to call this 'phone-prefilled' not 'phone-empty' so the artifact name does not mislead future reviewers.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "test-e2e-mobile-wave-A/02-onb1.png",
+      "category": "element_overlap",
+      "severity": "P2",
+      "evidence": "PNG 02 onb1 — the round black 'EST. 24' badge (positioned top-right of the yellow hero panel) visually covers the rightmost glyphs of the 'BIENVENUE' headline. Bounding-box overlap >50% on the final 'E' character. Both elements are decorative (no onclick fires from BIENVENUE) so the overlap is cosmetic + brand-noise rather than a click-trap, hence P2 instead of P1.",
+      "fix_hint": "Shift EST. 24 badge up by ~28px or anchor it to the OnboardingShell header instead of the hero panel, so it sits in the white margin above the headline instead of on top of the last letter.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "test-e2e-mobile-wave-A/13-tab-menu-active.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Spec line 185 of tests/e2e/audit-mobile-wave-A-2026-05-11.spec.js wraps the Menu-tab waitForSelector in `.catch(async () => { ... await expect(tabBar.locator('.lc-tab--active')).toContainText(/Menu/i); })`. If the data-screen-label assertion times out, the catch swallows the error and the spec falls through to the next snap — the test passes even though the expected screen never mounted. The two follow-up tab transitions (Commandes, Profil) rely only on the .lc-tab--active class flip which the click handler triggers regardless of payload load. Spec is structurally able to mark a green pass on a half-loaded menu screen.",
+      "fix_hint": "Replace the catch block with a hard assertion — either wait for an explicit menu-screen content selector (e.g. 'MENU' h1 + 'Nos Tacos' subheader) OR throw if data-screen-label is missing after 5s. Audit-integrity matters more than convenience here.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-011",
+      "state_artifact": "test-e2e-mobile-wave-A/06-login-empty.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "The mega-audit-snap recorder resets console + network buffers after every snap(). State 03 onwards therefore captured an empty console.json/network.json even though page activity continued. This is documented inside mega-audit-snap.js line 78-79. Acceptable for the protocol BUT means the reviewer cannot retroactively check 'silent_error' on states 03-15 from the artifact alone — would require a re-run with cumulative buffers. Flagging here so future rounds know they have a blind spot on per-state silent network failure detection between snaps.",
+      "fix_hint": "Optionally add a second sibling file `<state>.network-cumulative.json` that NEVER resets, so reviewers retain the option to investigate cross-state 4xx/5xx clusters without re-running the whole wave. Or accept the trade-off and document this limitation in REVIEWER_PROTOCOL.md.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-012",
+      "state_artifact": "test-e2e-mobile-wave-A/02-onb1.console.json",
+      "category": "console_error",
+      "severity": "P3",
+      "evidence": "02-onb1.console.json holds two entries: (1) a warning that <image-slot> without an id will not persist its dropped image, and (2) a 404 error for /image-slot.state.json. Per the task brief this is 'bruit pré-existant, P3 only'. The corresponding network.json line confirms the 404 was on a non-functional dev-helper state file. No customer-facing impact, but listed for completeness so future rounds can verify it stays at this single state and doesn't cascade.",
+      "fix_hint": "Long-term: load image-slot.js only when a 'dev' query param is set, so production users never trigger the 404 on /image-slot.state.json. Short-term: silence by adding an empty .image-slots.state.json in the served root.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 4,
+    "P2": 5,
+    "P3": 3,
+    "open_P0": 0,
+    "open_P1": 4,
+    "open_P2": 5,
+    "open_P3": 3
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER"
+}

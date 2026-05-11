@@ -7,7 +7,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778447880838
+    "ts": 1778473400151
   },
   {
     "level": "error",
@@ -17,16 +17,6 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778447882799
-  },
-  {
-    "level": "error",
-    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
-    "location": {
-      "url": "http://127.0.0.1:8000/api/frontend/pricing/preview",
-      "lineNumber": 0,
-      "columnNumber": 0
-    },
-    "ts": 1778447883143
+    "ts": 1778473402199
   }
 ]

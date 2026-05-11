@@ -1,0 +1,115 @@
+{
+  "wave": "D",
+  "round": 1,
+  "states_reviewed": 22,
+  "findings": [
+    {
+      "id": "D-001",
+      "state_artifact": "test-e2e-mobile-wave-D/19-modal-redeem-idempotency-replay.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "Real double-debit. State 18 (success) shows balance 247 pts and code LCY-964121. State 19 (idempotency-replay click within the same 10-min window) re-runs the redeem: modal shows 'ÉCHANGÉ!' again, same code LCY-964121, but balance card now displays 147 pts (-100). Confirmed root cause in mobile/data/dev-helpers.js:95-136 — redeemReward(rewardId, opts) accepts opts (which receives opts.idempotency_key from WizardRedeem.jsx:72) but the function body never reads opts.idempotency_key; there is NO dedupe path. Only earn paths use storage.idempotency.hasEarned/recordEarn (storage.js:161-172). Redeem has zero client-side dedupe. The UI generates a stable key via LC.loyaltyRewardState.redemptionIdempotencyKey (WizardRedeem.jsx:39-43) and the SAME success code LCY-964121 is shown — proving the UI thinks dedupe is happening — but balance was actually debited twice (247 → 147 = -100). Compounding audit-trail damage: dev-helpers.js:127 unconditionally `_replaceHistory([entry, ...history])` so the user's Historique tab now carries TWO identical '-100 pts Frites M offertes' rows for a single intended redemption — Phase 6 backend reconciliation would either accept the duplicate (fraud cost) or reject and leave the client with two ghost entries. This is silent, user-invisible double-debit with a deceptive 'success' confirmation.",
+      "fix_hint": "mobile/data/dev-helpers.js — extend storage.idempotency with hasRedeemed/recordRedeem keyed by opts.idempotency_key; redeemReward must short-circuit BEFORE the balance check if key already recorded and return {ok:true, balance_after:<cached>, replayed:true, reward_id, code:<cached>}. Cache code+balance_after at first success so replay returns identical payload. Add unit test: 2x sequential redeemReward(1, {idempotency_key:'k1'}) → second resolves ok:true, replayed:true, balance unchanged after first debit."
+    },
+    {
+      "id": "D-002",
+      "state_artifact": "test-e2e-mobile-wave-D/22-loyalty-after-optout-cleared.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "RGPD scope drift: opt-out modal copy (state 21, mobile/screens-modals.jsx via state 21 image) explicitly promises 'Tes points existants restent valides pendant 365 jours mais ne seront pas affichés.' But state 22 (post-opt-out) shows the FULL balance card visible and rendered: '147 POINTS, Soit 1,47 € de réduction disponible, 147 / 250 pts, Plus que 103 pts pour −2,50 € sur ta commande'. The promise 'ne seront pas affichés' is broken — balance is fully on screen above 'PROGRAMME DÉSACTIVÉ' headline. Either the copy is misleading (legal exposure: app told user data hidden when it isn't) or the gate is wrong (should hide entire balance section behind !isOptedOut). The screen-capture file name '22-loyalty-after-optout-cleared' even implies expected behavior was 'cleared'.",
+      "fix_hint": "mobile/screens-main.jsx ScreenLoyalty — wrap the entire balance card + progress bar block behind `{!isOptedOut && (...)}` so opt-out fully hides points display per modal copy promise. Keep underlying account state intact (RGPD article 17 says data preserved 365j) but UI must respect the 'ne seront pas affichés' commitment. Alternative: change modal copy to 'tes points restent affichés et utilisables pendant 365 jours' if business decision is to keep balance visible."
+    },
+    {
+      "id": "D-003",
+      "state_artifact": "test-e2e-mobile-wave-D/02-orders-historique-tab.png",
+      "category": "numeric_integrity",
+      "severity": "P1",
+      "evidence": "Triple count/sum drift on Commandes › Historique. Data source mobile/data/orders.js ORDERS_HISTORY contains exactly 5 entries (C-1212, C-1208, C-1190, C-1142, C-1100) totaling 105 € (29+21+22+18+15). UI hardcodes 3 separate numbers ignoring the data source: screens-main.jsx:699 tab badge = `count: 8`, screens-main.jsx:737 stats card 'COMMANDES <8>', screens-main.jsx:741 stats card 'DÉPENSÉ <184€>'. Even worse, the rendered history list (screens-main.jsx:748-751) is itself hardcoded in JSX with only 4 entries (C-1212, C-1208, C-1190, C-1142) — C-1100 is silently dropped from rendering. So a single screen shows FOUR mutually-inconsistent numbers: badge says 8, summary says 8, sum says 184€, but cards render 4 entries totaling 90€ while data says 5 totaling 105€. Per protocol §11, same fact differs across N surfaces → P0 candidate, downgraded to P1 because the data source is V0 mock (Phase 6 will replace with API) and visible items have correct individual totals.",
+      "fix_hint": "mobile/screens-main.jsx:699,737,741,748-751 — replace all hardcoded values with LC.orders.history.length, LC.orders.totalSpent(), and a real map over LC.orders.history grouped by LC.orders.groupByDate(). Remove the hardcoded JSX array and pull from `window.LC.orders.history`. Add to LC.orders an aggregate helper if not present. Verification: tab badge, stats card, and visible list must all derive from the same source array."
+    },
+    {
+      "id": "D-004",
+      "state_artifact": "test-e2e-mobile-wave-D/03-order-detail-active.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "Routing drift: state file name 'order-detail-active' implies a proper Order Detail view for in-progress order C-1234. Actual screenshot shows the post-checkout Confirmation screen (ScreenConfirm): big checkmark, 'C'EST PARTI!', 'Commande #C-1234 envoyée', ACCUEIL/SUIVRE buttons. This is the screen shown immediately after placing an order, not a re-entered detail view from the orders list. Root cause confirmed in screens-main.jsx:712 — the active-order card has `onClick={() => go('confirm')}` instead of `go('orderDetail', 'C-1234')`. The 4 history items (line 757) correctly route to 'orderDetail' but the active card sends users to the post-checkout flow with ACCUEIL/SUIVRE CTAs, which is wrong: a user revisiting a placed order from the Commandes tab should see fresh status, items, timing — not the success splash.",
+      "fix_hint": "mobile/screens-main.jsx:712 — change `onClick={() => go('confirm')}` to `onClick={() => go('orderDetail', 'C-1234')}` (or pull id from the active order: `LC.orders.active[0].id`). Verify the resulting screen reads order from LC.orders.findById and shows refreshable status + items + branch + QR retrieval, not the post-checkout splash."
+    },
+    {
+      "id": "D-005",
+      "state_artifact": "test-e2e-mobile-wave-D/03-order-detail-active.dom.html",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Inconsistent QR prefix scheme between domains. Loyalty domain uses 'FK:*' (verified state 11 data-payload='FK:A1B2C3D4'). Order pickup ticket (mobile/data/orders.js:32) uses legacy 'LECAY-ORDER-1234-abc123'. The order domain may legitimately need its own namespace, but the inconsistency means a POS scanner needs two parsing paths and any future move to a unified 'FK:' prefix becomes a coordinated migration. Flagging because the difference is silent (no naming convention doc) and would surprise an integrator.",
+      "fix_hint": "mobile/data/orders.js:32 — change qr_value to 'FK:ORDER-1234-<random>' OR introduce two prefixes if scanner needs to distinguish ('FK:LOYALTY-' vs 'FK:ORDER-'). Add a generator helper in shared.jsx and reuse from both loyalty + orders to avoid future drift."
+    },
+    {
+      "id": "D-006",
+      "state_artifact": "test-e2e-mobile-wave-D/12-loyalty-qr-countdown-tick.png",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "evidence": "State 12 (named 'countdown-tick') is pixel-identical to state 11. Both show 'Expire dans 4:59'. State 13 a few states later shows 'Expire dans 4:58' proving the countdown DOES tick. So state 12 was captured BEFORE any tick occurred — the spec didn't wait long enough OR didn't call LC.dev.advanceTime. The capture name promises evidence of countdown progression but actually shows no progression. Mis-labeled test artifact: a reviewer trusting the filename would conclude countdown is verified when it's not.",
+      "fix_hint": "tests/e2e/mobile-wave-D.spec.ts (state 12) — call `window.LC.dev.advanceTime(60)` before capture, then wait one frame so React re-renders. Or use `await page.waitForFunction(() => document.body.innerText.includes('3:'))` to assert ticked state. Reorder so state 11 = T0, state 12 = T0+60s, state 13 = barcode toggle."
+    },
+    {
+      "id": "D-007",
+      "state_artifact": "test-e2e-mobile-wave-D/13-loyalty-barcode-toggle.png",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "BarcodeMock visual quality. mobile/components/BarcodeMock.jsx renders only 60 segments via a weak LCG seed; 'FK:A1B2C3D4' yields ~50 dense bars rendered as a nearly-solid black block with no whitespace gaps a real scanner could parse. State 13 screenshot shows a featureless black rectangle with the FK:A1B2C3D4 label underneath. The 'mock should at minimum look parseable' bar from the brief is not met: an in-store cashier shown this on a phone could not pretend-scan it, and a real-pixel scanner test would 100% fail. For V0 demo OK; for any pilot/QA demo it looks broken.",
+      "fix_hint": "mobile/components/BarcodeMock.jsx — increase contrast: drop to ~24 segments, force 2x:1x:gap ratio, ensure ≥30% whitespace. Better: drop in jsbarcode (already free, ~12KB) with Code128 encoding so the mock is actually a real barcode."
+    },
+    {
+      "id": "D-008",
+      "state_artifact": "test-e2e-mobile-wave-D/01-orders-active-tab.console.json",
+      "category": "console_error",
+      "severity": "P2",
+      "evidence": "console.json contains a level=error entry for 404 on http://127.0.0.1:8081/.image-slots.state.json. Source is image-slot.js dev scaffolding polling persistence. Per protocol §9 console errors are P1 unless vendor.js; this is the project's own dev tooling, not vendor noise. Borderline P1 but downgraded to P2 because it's local-only dev scaffolding likely stripped in Phase 6 build. Worth listing because it pollutes every page load and would mask real errors during demos.",
+      "fix_hint": "mobile/image-slot.js:383 — guard the slots-state fetch behind a feature flag or try/catch swallow on 404 (treat 'no slots-state.json' as empty default). Alternatively pre-create an empty .image-slots.state.json on dev server start. Goal: zero red errors in browser console on every screen."
+    },
+    {
+      "id": "D-009",
+      "state_artifact": "test-e2e-mobile-wave-D/19-modal-redeem-idempotency-replay.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "Replay path masks the double-debit as a success. State 19 modal displays 'ÉCHANGÉ!' + same code LCY-964121 + 'Nouveau solde: 147 pts'. There is NO visible warning, no 'déjà échangé' indicator, no role=alert telling user this is a replay. A user who tapped twice (intentionally or not) sees two identical success confirmations and may not realize 100 extra pts were taken until they later check the history tab. Combined with D-001, this is a UX-level silent_error: the system both did the wrong thing AND told the user 'OK'. Even if D-001 is fixed via real idempotency, the wizard should distinguish a replayed success from a fresh one (e.g. badge 'Déjà appliqué — code identique') to prevent confusion.",
+      "fix_hint": "mobile/components/WizardRedeem.jsx onApply — once idempotency returns {replayed: true}, render step 3 with a yellow info banner above the code: 'Réservation déjà confirmée. Ton code reste valable.' Track also redeem history dedupe in the history tab so it doesn't double-list. Aria: announce 'Récompense déjà échangée, code inchangé.' via role=status."
+    },
+    {
+      "id": "D-010",
+      "state_artifact": "test-e2e-mobile-wave-D/15-loyalty-history-tab.png",
+      "category": "empty_state_quality",
+      "severity": "P2",
+      "evidence": "State 15 is named 'loyalty-history-tab' but the screenshot shows the SAME viewport as state 10/11/14 — QR card + balance card + tabs row at the bottom. The actual loyalty history entries (line items) are below the fold and never captured. Compounding: no scroll capture. So the wave never visually proves that the loyalty Historique tab renders correctly — that surface has zero evidence. Could be hiding lots of layout/empty-state defects below the fold.",
+      "fix_hint": "tests/e2e/mobile-wave-D.spec.ts — for state 15, click HISTORIQUE tab then scrollIntoView the first list entry before capturing (await page.locator('[data-testid=\"loyalty-history-entry\"]:first').scrollIntoViewIfNeeded()). Capture full page or extend viewport height for this state to include the data rows."
+    },
+    {
+      "id": "D-011",
+      "state_artifact": "test-e2e-mobile-wave-D/22-loyalty-after-optout-cleared.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "After RGPD opt-out, the only path to re-opt-in is the 'RÉACTIVER MON COMPTE' button. There is no role=alert OR aria-live on the 'Programme désactivé' announcement (it sits inside a static toast that has dismiss × but no role=status/aria-live). A screen reader user toggling consent gets no audible confirmation that the deactivation happened. The dismiss × in the toast also has no aria-label visible in the screenshot context — just '×' character.",
+      "fix_hint": "Wrap the 'Programme désactivé' confirmation toast in role=status aria-live=polite. Add aria-label='Fermer la notification' to the × button. Add focus management: after opt-out modal closes, focus moves to 'RÉACTIVER MON COMPTE' so keyboard users land on the recovery CTA, not somewhere random."
+    },
+    {
+      "id": "D-012",
+      "state_artifact": "test-e2e-mobile-wave-D/15-loyalty-history-tab.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "Sub-finding of D-003 — cross-screen point staleness. The PTS 347 stats card on Commandes › Historique (screens-main.jsx:745) is the third hardcoded number in the same block flagged by D-003 (737/741/745). Kept separate because the failure mode is distinct: D-003 is data-vs-UI drift at render-time; D-012 is staleness over the session (a redeem changing balance from 347→247 inside the session leaves the orders screen still saying 347 because there is no subscription). Will close automatically when D-003 fix replaces the hardcoded JSX with reactive bindings; listed here so reviewers do not assume D-003 covers the staleness vector.",
+      "fix_hint": "mobile/screens-main.jsx:745 — replace `<div className=\"lc-display\">347</div>` with `<div className=\"lc-display\">{window.LC.loyalty.account.balance}</div>` plus a useEffect subscribed to 'lc:loyalty-changed' so the orders screen re-renders when balance changes."
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 4,
+    "P2": 6,
+    "P3": 1,
+    "open_P0": 1,
+    "open_P1": 4,
+    "open_P2": 6,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED"
+}

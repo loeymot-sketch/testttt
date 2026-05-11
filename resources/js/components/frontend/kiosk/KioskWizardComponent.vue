@@ -187,7 +187,21 @@
             }}</span>
           </button>
         </div>
-        <div class="kiosk-nav-total">{{ $t('kiosk.total') }} {{ formatPrice(runningTotal) }}</div>
+        <!--
+          [test-e2e/borne C-001 fix round-2 2026-05-11] SSOT alignment with
+          KioskOrderSummaryComponent recap (`kiosk-order-summary-total-price`)
+          which binds to pure `calculateKioskRunningTotal(item, selections)`.
+          Using `runningTotal` here (which does `Math.max(serverPreviewTotal,
+          local)`) caused a same-page divergence when `menuChoice='frites'`:
+          the /pricing/preview endpoint over-included the boisson addon
+          (+1.20€ = drinkRatio × 3.00€ Coca), Math.max kept the inflated
+          server total, and the nav-total chip read €10,50/€12,50 while the
+          recap card correctly read €9,30/€11,30. Customer-trust P0.
+          Bind to `runningTotalLocal` so both surfaces match. Backend
+          /order remains SSOT for the actual charge (sidecar verified
+          cart line total === €11,30 at state 05).
+        -->
+        <div class="kiosk-nav-total">{{ $t('kiosk.total') }} {{ formatPrice(runningTotalLocal) }}</div>
       </div>
 
       <!-- P2 : confirmation avant abandon (évite erreur tactile) -->
