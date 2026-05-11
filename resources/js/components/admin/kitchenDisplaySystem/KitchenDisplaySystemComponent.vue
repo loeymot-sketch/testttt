@@ -216,7 +216,7 @@
             <form @submit.prevent="search"
               class="header-search-group group flex items-center justify-center border border-solid gap-2 px-3 xl:!max-w-[305px] w-full h-11 rounded-lg transition border-[#D9DBE9] focus-within:bg-white focus-within:border-primary">
               <i class="lab lab-search-normal lab-font-size-16"></i>
-              <input type="text" v-model="props.search.order_serial_no" placeholder="Rechercher une commande"
+              <input type="text" v-model="props.search.order_serial_no" :placeholder="$t('label.kds_search_orders')"
                 :aria-label="$t('button.search')"
                 class="header-search-field w-full h-full text-xs appearance-none placeholder:font-normal placeholder:text-paragraph text-heading" />
               <button type="button" @click.prevent="searchReset"
@@ -1287,7 +1287,7 @@ export default {
     },
     closeAllergensModal() {
       const returnTo = this.allergenModalReturnFocus;
-      this.allergenModal = { open: false, order: null };
+      this.allergensModal = { open: false, order: null };
       this.allergenModalReturnFocus = null;
       this.$nextTick(() => {
         if (returnTo && typeof returnTo.focus === "function") {
@@ -1735,11 +1735,11 @@ export default {
       const orderLabel = e(order.order_serial_no) || ('#' + e(order.id));
       const queueLabel = order.queue_number ? ` — N°${e(order.queue_number)}` : '';
       const typeLabel = {
-        [this.enums.orderTypeEnum.DINING_TABLE]: 'Sur place',
-        [this.enums.orderTypeEnum.DELIVERY]: 'Livraison',
-        [this.enums.orderTypeEnum.TAKEAWAY]: 'À emporter',
-        [this.enums.orderTypeEnum.POS]: 'Caisse',
-        [this.enums.orderTypeEnum.KIOSK]: 'Borne',
+        [this.enums.orderTypeEnum.DINING_TABLE]: this.$t('label.kds_type_dinein'),
+        [this.enums.orderTypeEnum.DELIVERY]: this.$t('label.kds_type_delivery'),
+        [this.enums.orderTypeEnum.TAKEAWAY]: this.$t('label.kds_type_takeaway'),
+        [this.enums.orderTypeEnum.POS]: this.$t('label.kds_type_pos'),
+        [this.enums.orderTypeEnum.KIOSK]: this.$t('label.kds_type_kiosk'),
       }[order.order_type] || '';
 
       lines.push(`<h2 style="margin:0 0 6px;font-size:18px;">${orderLabel}${queueLabel}</h2>`);
@@ -2349,5 +2349,24 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kds-table-flash,
+  .kds-wait-red.animate-pulse,
+  .animate-pulse,
+  .animate-spin,
+  .animate-bounce,
+  .animate-ping {
+    animation: none !important;
+  }
+  .kds-table-flash {
+    border-color: rgba(0, 132, 255, 0.7) !important;
+  }
+  .swiper-wrapper,
+  .swiper-slide,
+  .swiper-container,
+  [class*="swiper-"] {
+    transition-duration: 0.001ms !important;
+  }
 }
 </style>

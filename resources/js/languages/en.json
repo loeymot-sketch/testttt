@@ -1026,6 +1026,12 @@
         "kds_aria_live_preparing": "Order #{id} preparing",
         "kds_aria_live_ready": "Order #{id} ready",
         "kds_aria_live_accepted": "Order #{id} accepted",
+        "kds_search_orders": "Search an order",
+        "kds_type_dinein": "Dine-in",
+        "kds_type_delivery": "Delivery",
+        "kds_type_takeaway": "Takeaway",
+        "kds_type_pos": "POS",
+        "kds_type_kiosk": "Kiosk",
         "ws_session_invalid_text": "Session expired — your session has ended. Reload the page.",
         "ws_session_invalid_action": "Reload",
         "ingredient": {
