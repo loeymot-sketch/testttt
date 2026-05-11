@@ -58,7 +58,22 @@ class PersistOrderStatusChangedToOutbox
 
         DB::afterCommit(function () use ($domainEvent): void {
             // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.
-            DispatchDomainEventsJob::dispatch($domainEvent->id);
+            // [test-e2e fix E-001 round-3 cluster-8 2026-05-11] broadcast best-effort;
+            // do not fail HTTP on Pusher dispatch error (sibling defense — same
+            // defect class as PersistItemAvailabilityChangedToOutbox patched
+            // in cluster 6 / round 2).
+            try {
+                DispatchDomainEventsJob::dispatch($domainEvent->id);
+            } catch (\Throwable $broadcastException) {
+                Log::warning('[Outbox] DispatchDomainEventsJob inline dispatch failed (non-blocking)', [
+                    'gate'            => 'test-e2e-fix-E-001-round-3',
+                    'domain_event_id' => $domainEvent->id,
+                    'event_type'      => $domainEvent->event_type,
+                    'aggregate_id'    => $domainEvent->aggregate_id,
+                    'branch_id'       => $domainEvent->branch_id,
+                    'error'           => $broadcastException->getMessage(),
+                ]);
+            }
         });
     }
 

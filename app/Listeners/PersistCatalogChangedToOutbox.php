@@ -94,7 +94,27 @@ class PersistCatalogChangedToOutbox
 
         DB::afterCommit(function () use ($domainEventIds): void {
             foreach ($domainEventIds as $domainEventId) {
-                DispatchDomainEventsJob::dispatch($domainEventId);
+                // [test-e2e fix E-001 round-3 cluster-8 2026-05-11] broadcast best-effort;
+                // do not fail HTTP on Pusher dispatch error. Cluster 6 (762bf7812) wrapped
+                // the 3 Persist*AvailabilityChangedToOutbox listeners but missed THIS
+                // listener even though it ALSO subscribes to ItemAvailabilityChanged
+                // (EventServiceProvider:175). Under sync queue any broadcaster failure
+                // (Pusher unreachable in dev) bubbled up to AvailabilityController as
+                // HTTP 500 even though the outbox row IS persisted. Outbox retry cron
+                // (foodking:outbox:retry-failed) picks up rows with dispatched_at=null
+                // when broadcaster recovers.
+                try {
+                    DispatchDomainEventsJob::dispatch($domainEventId);
+                } catch (\Throwable $broadcastException) {
+                    Log::warning('[Outbox] DispatchDomainEventsJob inline dispatch failed (non-blocking)', [
+                        'gate'            => 'test-e2e-fix-E-001-round-3',
+                        'domain_event_id' => $domainEventId,
+                        'event_type'      => EventType::CATALOG_CHANGED,
+                        'aggregate_id'    => null,
+                        'branch_id'       => null,
+                        'error'           => $broadcastException->getMessage(),
+                    ]);
+                }
             }
         });
     }

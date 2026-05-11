@@ -89,7 +89,22 @@ class PersistCouponChangedToOutbox
 
         DB::afterCommit(function () use ($domainEventIds): void {
             foreach ($domainEventIds as $domainEventId) {
-                DispatchDomainEventsJob::dispatch($domainEventId);
+                // [test-e2e fix E-001 round-3 cluster-8 2026-05-11] broadcast best-effort;
+                // do not fail HTTP on Pusher dispatch error (sibling defense — same
+                // defect class as PersistItemAvailabilityChangedToOutbox patched
+                // in cluster 6 / round 2).
+                try {
+                    DispatchDomainEventsJob::dispatch($domainEventId);
+                } catch (\Throwable $broadcastException) {
+                    Log::warning('[Outbox] DispatchDomainEventsJob inline dispatch failed (non-blocking)', [
+                        'gate'            => 'test-e2e-fix-E-001-round-3',
+                        'domain_event_id' => $domainEventId,
+                        'event_type'      => EventType::COUPON_CHANGED,
+                        'aggregate_id'    => null,
+                        'branch_id'       => null,
+                        'error'           => $broadcastException->getMessage(),
+                    ]);
+                }
             }
         });
     }
