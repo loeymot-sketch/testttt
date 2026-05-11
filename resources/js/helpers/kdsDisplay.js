@@ -55,20 +55,46 @@ export function filterOrdersByStation(orders, filter) {
     return (orders || []).filter((o) => orderMatchesStationFilter(o, filter));
 }
 
-export function getKdsEscalationClass(createdMs, nowMs = Date.now()) {
+// [kds/sprint-2 F-5] Age thresholds tightened from 5/10 min to 3/6 min for V1
+// takeaway-only single-chef workflow (Innovorder publishes 3/10 for fast-food,
+// our V1 narrows the red-zone because takeaway prep target is < 5 min).
+// Returning the bucket name explicitly (in addition to the legacy CSS class)
+// lets the new card components decide their own visual treatment.
+export const KDS_AGE_WARNING_MS = 3 * 60 * 1000;
+export const KDS_AGE_CRITICAL_MS = 6 * 60 * 1000;
+
+export function getKdsAgeBucket(createdMs, nowMs = Date.now()) {
     const age = nowMs - createdMs;
-    const fiveMin = 5 * 60 * 1000;
-    const tenMin = 10 * 60 * 1000;
-    if (age < fiveMin) {
+    if (age < KDS_AGE_WARNING_MS) {
+        return 'fresh';
+    }
+    if (age < KDS_AGE_CRITICAL_MS) {
+        return 'warning';
+    }
+    return 'critical';
+}
+
+export function getKdsEscalationClass(createdMs, nowMs = Date.now()) {
+    const bucket = getKdsAgeBucket(createdMs, nowMs);
+    if (bucket === 'fresh') {
         return 'kds-wait-green';
     }
-    if (age < tenMin) {
+    if (bucket === 'warning') {
         return 'kds-wait-orange';
     }
     return 'kds-wait-red animate-pulse';
 }
 
 export function parseOrderCreatedMs(order) {
+    // [kds/sprint-2 F-5] Prefer created_at_iso (added to KDSOrderDetailsResource
+    // in B-1) over the locale-formatted order_datetime — stable wire format,
+    // no tz drift, no parsing ambiguity.
+    if (order.created_at_iso) {
+        const t = Date.parse(order.created_at_iso);
+        if (!Number.isNaN(t)) {
+            return t;
+        }
+    }
     if (order.created_at) {
         const t = Date.parse(order.created_at);
         if (!Number.isNaN(t)) {

@@ -13,8 +13,24 @@ const EXCLUSION_RE = [
     /\b(without|w\/o|w\/)\s+[\p{L}]+/iu,
 ];
 
-/* Prefix-friendly (e.g. allergique, arachide) */
-const ALLERGEN_RE = [/\ballerg/iu, /\bintol/iu, /\bgluten/iu, /\barach/iu, /\bcacahu/iu, /\blactos/iu, /\bsoja/iu];
+/* Prefix-friendly (e.g. allergique, arachide). Arabic forms added for RTL kitchens. */
+const ALLERGEN_RE = [
+    /\ballerg/iu,
+    /\bintol/iu,
+    /\bgluten/iu,
+    /\barach/iu,
+    /\bcacahu/iu,
+    /\blactos/iu,
+    /\bsoja/iu,
+    // [kds/sprint-2 F-6] Arabic allergen prefixes — حساسية (allergy), غلوتين (gluten), لاكتوز (lactose),
+    // فول (peanut/bean), مكسرات (nuts), صويا (soy). RTL marker-free for whole-word fallback.
+    /حساسي/u,
+    /غلوتين/u,
+    /لاكتوز/u,
+    /\bفول\b/u,
+    /مكسرات/u,
+    /صويا/u,
+];
 
 function matchesAllergen(text) {
     for (const re of ALLERGEN_RE) {
