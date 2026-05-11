@@ -745,9 +745,18 @@ export default {
 
     async confirmBackendPayment(orderId, payload) {
       let lastError = null;
+      // [round-5 fix E-NEW-001 2026-05-11] IdempotencyKeyMiddleware requires
+      // X-Idempotency-Key on all POST mutations. Without it the middleware
+      // throws 422 BEFORE the controller runs → kiosk customer never reaches
+      // the confirmation page. The key MUST be stable across the 3-retry loop
+      // so the backend's replay cache deduplicates correctly. Scope
+      // (branch_id, user_id, hash(key)) is server-side; key just needs to be
+      // unique per logical (order, transaction).
+      const idempotencyKey = `kiosk-payment-confirm-${orderId}-${payload?.transaction_id ?? 'no-tx'}`;
+      const requestConfig = { headers: { 'X-Idempotency-Key': idempotencyKey } };
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          await axios.post(`frontend/order/${orderId}/payment-confirm`, payload);
+          await axios.post(`frontend/order/${orderId}/payment-confirm`, payload, requestConfig);
           // [round-4 fix E-004 reopened 2026-05-10] If the first or second
           // attempt failed (transient 422 race with order state machine, or
           // 401 mid-rotation), Playwright captures the 4xx in network.json

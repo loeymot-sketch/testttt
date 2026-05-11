@@ -2429,12 +2429,24 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     confirmBackendPayment: function confirmBackendPayment(orderId, payload) {
       var _this8 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7() {
-        var _lastError;
-        var lastError, _loop, _ret, attempt, _window$axios2;
+        var _payload$transaction_, _lastError;
+        var lastError, idempotencyKey, requestConfig, _loop, _ret, attempt, _window$axios2;
         return _regenerator().w(function (_context8) {
           while (1) switch (_context8.n) {
             case 0:
-              lastError = null;
+              lastError = null; // [round-5 fix E-NEW-001 2026-05-11] IdempotencyKeyMiddleware requires
+              // X-Idempotency-Key on all POST mutations. Without it the middleware
+              // throws 422 BEFORE the controller runs → kiosk customer never reaches
+              // the confirmation page. The key MUST be stable across the 3-retry loop
+              // so the backend's replay cache deduplicates correctly. Scope
+              // (branch_id, user_id, hash(key)) is server-side; key just needs to be
+              // unique per logical (order, transaction).
+              idempotencyKey = "kiosk-payment-confirm-".concat(orderId, "-").concat((_payload$transaction_ = payload === null || payload === void 0 ? void 0 : payload.transaction_id) !== null && _payload$transaction_ !== void 0 ? _payload$transaction_ : 'no-tx');
+              requestConfig = {
+                headers: {
+                  'X-Idempotency-Key': idempotencyKey
+                }
+              };
               _loop = /*#__PURE__*/_regenerator().m(function _loop(attempt) {
                 var _t2;
                 return _regenerator().w(function (_context7) {
@@ -2442,7 +2454,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                     case 0:
                       _context7.p = 0;
                       _context7.n = 1;
-                      return axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/".concat(orderId, "/payment-confirm"), payload);
+                      return axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/".concat(orderId, "/payment-confirm"), payload, requestConfig);
                     case 1:
                       // [round-4 fix E-004 reopened 2026-05-10] If the first or second
                       // attempt failed (transient 422 race with order state machine, or
