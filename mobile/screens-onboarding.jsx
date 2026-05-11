@@ -53,22 +53,23 @@ function OnboardingShell({ index, onNext, onSkip, hero, eyebrow, title, body, ac
 }
 
 function ScreenOnb1({ onNext, onSkip }) {
+  // [Cycle C Wave 5] Claude Design V2 hero — BIENVENUE slanted + EST.2024 stamp +
+  // real signature hero photo preserved (Phase 6.A real-assets investment).
   const hero = (
-    <div className="lc-doodle-bg" style={{ position: 'absolute', inset: 0, background: '#FFD93D' }}>
+    <div style={{ position: 'absolute', inset: 0, background: '#FFD93D' }}>
       <div style={{ position: 'absolute', inset: 0, opacity: 0.16, backgroundImage: 'radial-gradient(circle at 18% 22%, rgba(0,0,0,0.4) 0 2px, transparent 2px), radial-gradient(circle at 78% 65%, rgba(0,0,0,0.4) 0 2px, transparent 2px)', backgroundSize: '80px 80px' }}/>
-      {/* big slanted text Pop's-style */}
-      {/* [test-e2e fix A-003 round-2 2026-05-11] clamp font-size + left-align so BIENVENUE never clips */}
-      <div style={{ position: 'absolute', top: 60, left: 10, right: 80, transform: 'rotate(-4deg)', opacity: 0.95 }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(48px, 18vw, 78px)', color: '#FF5A1F', textTransform: 'uppercase', lineHeight: 0.85, letterSpacing: '0.01em', textShadow: '4px 4px 0 #0A0A0A', whiteSpace: 'nowrap' }}>BIENVENUE</div>
+      {/* Slanted BIENVENUE wordmark — clamp prevents clip (cycle B A-003 fix preserved) */}
+      <div style={{ position: 'absolute', top: 36, left: -10, right: -10, transform: 'rotate(-4deg)' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(48px, 18vw, 78px)', color: 'var(--orange)', textTransform: 'uppercase', lineHeight: 0.85, letterSpacing: '0.02em', textShadow: '4px 4px 0 #0A0A0A', textAlign: 'center' }}>BIENVENUE</div>
       </div>
-      {/* Hero food slot */}
+      {/* V2 EST.2024 black-circle medallion top-right */}
+      <div style={{ position: 'absolute', top: 14, right: 16, width: 60, height: 60, background: '#0A0A0A', borderRadius: 999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--yellow)', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', zIndex: 2 }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 11, lineHeight: 1 }}>EST.</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, lineHeight: 1 }}>2024</div>
+      </div>
+      {/* Hero signature photo (Phase 6.A real-assets) */}
       <div style={{ position: 'absolute', bottom: -20, left: 24, right: 24, height: 280 }}>
         <Slot id="onb-burger" h="100%" radius={20} placeholder="Hero burger" src="assets/menu/signature/cayenne-hero.png" alt="Le Cayenne signature"/>
-      </div>
-      {/* corner accent — moved further up-right to avoid overlapping the BIENVENUE wordmark */}
-      <div style={{ position: 'absolute', top: 8, right: 12, width: 56, height: 56, background: '#0A0A0A', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
-        <Stamp size={36}/>
-        <div style={{ position: 'absolute', color: '#FFD93D', fontSize: 9, fontWeight: 700, letterSpacing: '0.08em' }}>EST. 24</div>
       </div>
     </div>
   );
@@ -114,20 +115,25 @@ function ScreenOnb2({ onNext, onSkip }) {
 }
 
 function ScreenOnb3({ onNext, onSkip }) {
+  // [Cycle C Wave 5] V2 hero — conveyor 3 bags + check medallion top-right + #1234 ids
   const hero = (
     <div style={{ position: 'absolute', inset: 0, background: '#FF5A1F', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: 24, left: 0, right: 0, textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: 64, color: '#FFD93D', textTransform: 'uppercase', lineHeight: 0.9, letterSpacing: '0.02em' }}>VIENS<br/>RÉCUPÉRER</div>
-      {/* Conveyor belt of bags */}
-      <div style={{ position: 'absolute', bottom: 40, left: 0, right: 0, display: 'flex', gap: 14, justifyContent: 'center' }}>
+      <div style={{ position: 'absolute', top: 30, left: 0, right: 0, textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: 64, color: '#FFD93D', textTransform: 'uppercase', lineHeight: 0.9, letterSpacing: '0.02em' }}>VIENS<br/>RÉCUPÉRER</div>
+      {/* V2 check medallion top-right (NEW for cycle C) */}
+      <div style={{ position: 'absolute', top: 14, right: 14, width: 56, height: 56, borderRadius: 999, background: '#0A0A0A', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--yellow)', boxShadow: '0 6px 16px rgba(0,0,0,0.25)', zIndex: 2 }} aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4 4 10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      </div>
+      {/* Conveyor belt of bags (V2 — center bag elevated + sequential ids) */}
+      <div style={{ position: 'absolute', bottom: 56, left: 0, right: 0, display: 'flex', gap: 14, justifyContent: 'center' }}>
         {[0,1,2].map(i => (
-          <div key={i} style={{ width: 96, height: 130, background: '#0A0A0A', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', padding: 12, transform: `rotate(${(i-1)*4}deg) translateY(${i===1?-8:0}px)`, boxShadow: i===1 ? '0 12px 24px rgba(0,0,0,0.25)' : 'none' }}>
-            <div style={{ width: 32, height: 4, background: '#FFD93D', marginBottom: 8 }}/>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: '#FFD93D', textAlign: 'center', lineHeight: 1 }}>LE<br/>CAYENNE</div>
-            <div style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,217,61,0.5)', letterSpacing: '0.18em', marginTop: 6 }}>#1234</div>
+          <div key={i} style={{ width: 78, height: 110, background: '#0A0A0A', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', padding: 10, transform: `rotate(${(i-1)*5}deg) translateY(${i===1?-12:0}px)`, boxShadow: i===1 ? '0 12px 24px rgba(0,0,0,0.3)' : '0 6px 12px rgba(0,0,0,0.18)' }}>
+            <div style={{ width: 28, height: 4, background: 'var(--yellow)', marginBottom: 6 }}/>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--yellow)', textAlign: 'center', lineHeight: 1 }}>LE<br/>CAYENNE</div>
+            <div style={{ fontSize: 7, fontWeight: 700, color: 'rgba(255,217,61,0.55)', letterSpacing: '0.18em', marginTop: 4 }}>#123{i+4}</div>
           </div>
         ))}
       </div>
-      <div style={{ position: 'absolute', bottom: 12, left: 0, right: 0, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.2em' }}>PRÊT POUR TOI · NO QUEUE</div>
+      <div style={{ position: 'absolute', bottom: 14, left: 0, right: 0, textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.85)', letterSpacing: '0.22em' }}>PRÊT POUR TOI · NO QUEUE</div>
     </div>
   );
   return (
@@ -145,27 +151,33 @@ function ScreenOnb3({ onNext, onSkip }) {
 }
 
 function ScreenOnb4({ onNext, onSkip }) {
+  // [Cycle C Wave 5] V2 hero — starburst rays bg + loyalty card tilted with tier
+  // pill + QR card tilted opposite. Editorial high-impact stack.
   const hero = (
     <div style={{ position: 'absolute', inset: 0, background: '#0A0A0A', overflow: 'hidden' }}>
-      {/* loyalty card mockup */}
-      <div style={{ position: 'absolute', top: 50, left: 32, right: 32, height: 200, background: '#FFD93D', borderRadius: 16, padding: 20, transform: 'rotate(-3deg)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
+      {/* V2 starburst rays bg (NEW for cycle C) */}
+      <svg viewBox="-100 -100 200 200" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.12 }} aria-hidden="true">
+        {Array.from({length: 16}).map((_,i) => <rect key={i} x="-1.5" y="-200" width="3" height="100" fill="var(--yellow)" transform={'rotate(' + (i*22.5) + ')'}/>)}
+      </svg>
+      {/* Loyalty card tilted with tier pill */}
+      <div style={{ position: 'absolute', top: 36, left: 26, right: 26, height: 170, background: '#FFD93D', borderRadius: 16, padding: 18, transform: 'rotate(-3deg)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Logo size={11}/>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#0A0A0A', opacity: 0.6 }}>#FK-12345</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', color: '#0A0A0A' }}>LE CAYENNE · CLUB</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#0A0A0A', opacity: 0.55 }}>#FK-12345</div>
         </div>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 56, color: '#0A0A0A', lineHeight: 0.9, marginTop: 22 }}>347<span style={{ fontSize: 18, color: 'var(--orange)' }}> PTS</span></div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 52, color: '#0A0A0A', lineHeight: 0.9, marginTop: 16 }}>347<span style={{ fontSize: 16, color: 'var(--orange)' }}> PTS</span></div>
         <div style={{ marginTop: 8, height: 6, background: 'rgba(0,0,0,0.15)', borderRadius: 999, overflow: 'hidden' }}>
-          <div style={{ width: '69%', height: '100%', background: '#FF5A1F' }}/>
+          <div style={{ width: '69%', height: '100%', background: 'linear-gradient(90deg, var(--orange), #E5341A)' }}/>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 9, fontWeight: 700, color: '#0A0A0A', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-          <span>FIDÉLITÉ</span>
-          <span>153 PTS → BURGER OFFERT</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 8, fontWeight: 700, color: '#0A0A0A', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <span>★ PEPPER CLUB</span>
+          <span>153 PTS → BURGER</span>
         </div>
       </div>
-      {/* QR card */}
-      <div style={{ position: 'absolute', bottom: 28, left: 60, right: 60, background: '#fff', borderRadius: 16, padding: 18, transform: 'rotate(2deg)', boxShadow: '0 16px 32px rgba(0,0,0,0.4)' }}>
-        <QRMock size={148}/>
-        <div style={{ marginTop: 10, fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textAlign: 'center', color: '#0A0A0A' }}>CARTE FIDÉLITÉ · LE CAYENNE</div>
+      {/* QR card tilted opposite */}
+      <div style={{ position: 'absolute', bottom: 18, left: 56, right: 56, background: '#fff', borderRadius: 14, padding: 12, transform: 'rotate(2deg)', boxShadow: '0 14px 28px rgba(0,0,0,0.4)' }}>
+        <QRMock size={140}/>
+        <div style={{ marginTop: 6, fontSize: 8, fontWeight: 700, letterSpacing: '0.18em', textAlign: 'center', color: '#0A0A0A' }}>CARTE FIDÉLITÉ</div>
       </div>
     </div>
   );

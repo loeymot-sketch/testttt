@@ -1119,50 +1119,61 @@ function ScreenLoyalty({ go }) {
           </div>
         )}
 
-        {/* ACTIONS RAPIDES — Apple Wallet + Google Wallet + plastic card (DEC-10) */}
+        {/* ACTIONS RAPIDES — Apple Wallet + Google Wallet + plastic card (DEC-10)
+            Cycle C Wave 4 refactor : rdl-actions grid 3-col (Claude Design rdl-* lib).
+            Apple/Google brand-compliant image badges PRESERVED inside rdl-action shell. */}
         {!isOptedOut && (
-          <div style={{ padding: '14px 20px 0', display: 'flex', gap: 8, overflowX: 'auto' }}>
+          <div className="rdl-actions">
             <button
+              className="rdl-action"
               data-testid="wallet-apple-btn"
               onClick={() => go('walletApple')}
               aria-label="Ajouter à Apple Wallet"
-              style={{ flexShrink: 0, padding: 0, background: 'transparent', border: 0, cursor: 'pointer', borderRadius: 10 }}
+              style={{ padding: 8 }}
             >
-              <img src="uploads/add-to-apple-wallet-fr-stub.svg" alt="" height="40" style={{ display: 'block', borderRadius: 10 }}/>
+              <img src="uploads/add-to-apple-wallet-fr-stub.svg" alt="" height="36" style={{ display: 'block', borderRadius: 10, maxWidth: '100%' }}/>
+              <div className="rdl-action-label" style={{ marginTop: 4 }}>Apple Wallet</div>
             </button>
             <button
+              className="rdl-action"
               data-testid="wallet-google-btn"
               onClick={() => go('walletGoogle')}
               aria-label="Ajouter à Google Wallet"
-              style={{ flexShrink: 0, padding: 0, background: 'transparent', border: 0, cursor: 'pointer', borderRadius: 10 }}
+              style={{ padding: 8 }}
             >
-              <img src="uploads/add-to-google-wallet-fr-stub.svg" alt="" height="40" style={{ display: 'block', borderRadius: 10 }}/>
+              <img src="uploads/add-to-google-wallet-fr-stub.svg" alt="" height="36" style={{ display: 'block', borderRadius: 10, maxWidth: '100%' }}/>
+              <div className="rdl-action-label" style={{ marginTop: 4 }}>Google Wallet</div>
             </button>
             <button
+              className="rdl-action"
               data-testid="link-plastic-card-btn"
               onClick={() => go('link')}
-              style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'var(--ink)', color: '#fff', border: 0, borderRadius: 999, fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', minHeight: 40 }}
+              aria-label={account.plastic_card_linked ? 'Carte plastique liée' : 'Lier carte plastique'}
             >
-              <I.Card size={14}/>
-              {account.plastic_card_linked ? 'Carte liée ✓' : 'Lier carte plastique'}
+              <div className="rdl-action-icon" style={{ background: 'var(--orange)' }}>
+                <I.Card size={18}/>
+              </div>
+              <div className="rdl-action-label">
+                {account.plastic_card_linked ? <>Carte<br/>liée ✓</> : <>Lier carte<br/>plastique</>}
+              </div>
             </button>
           </div>
         )}
 
-        {/* TABS */}
+        {/* TABS — Cycle C Wave 4 : rdl-tabs avec bottom indicator on active */}
         {!isOptedOut && (
-          <div role="tablist" aria-label="Sections fidélité" style={{ display: 'flex', gap: 6, padding: '20px 20px 0' }}>
+          <div className="rdl-tabs" role="tablist" aria-label="Sections fidélité">
             {[{ id: 'points', label: 'Mes points' }, { id: 'rewards', label: 'Récompenses' }, { id: 'history', label: 'Historique' }].map(t => {
               const a = tab === t.id;
               return (
                 <button
                   key={t.id}
+                  className={'rdl-tab' + (a ? ' is-on' : '')}
                   data-testid={'loyalty-tab-' + t.id}
                   role="tab"
                   aria-selected={a}
                   aria-controls={'loyalty-tabpanel-' + t.id}
                   onClick={() => setTab(t.id)}
-                  style={{ flex: 1, padding: '10px 0', borderRadius: 999, border: 0, background: a ? 'var(--ink)' : 'var(--cream)', color: a ? 'var(--yellow)' : 'var(--ink)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer' }}
                 >
                   {t.label}
                 </button>
@@ -1216,28 +1227,30 @@ function ScreenLoyalty({ go }) {
               </div>
             )}
 
-            {/* Récompenses — catalog with locked state */}
+            {/* Récompenses — catalog with locked state (Cycle C Wave 4 : rdl-reward design horizontal thumb+body+cta) */}
             {tab === 'rewards' && (
-              <div id="loyalty-tabpanel-rewards" role="tabpanel" style={{ display: 'grid', gap: 10 }}>
+              <div id="loyalty-tabpanel-rewards" role="tabpanel" className="rdl-rewards" style={{ padding: 0 }}>
                 {rewards.map(r => {
                   const locked = balance < r.points_cost;
                   const missing = locked ? r.points_cost - balance : 0;
                   return (
-                    <div key={r.id} data-testid={'reward-row-' + r.id} style={{ padding: 16, background: 'var(--cream)', borderRadius: 16, position: 'relative', overflow: 'hidden' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <span className="lc-pill lc-pill--ink" style={{ fontSize: 10 }}>{r.points_cost} PTS</span>
-                        {locked && (
-                          <span data-testid={'reward-locked-tooltip-' + r.id} style={{ fontSize: 10, color: 'var(--gray-4)', fontWeight: 700 }}>🔒 −{missing} pts manquants</span>
-                        )}
+                    <div key={r.id} className={'rdl-reward' + (locked ? ' is-locked' : '')} data-testid={'reward-row-' + r.id}>
+                      <div className="rdl-reward-thumb">{r.icon}</div>
+                      <div className="rdl-reward-body">
+                        <div className="rdl-reward-name">{r.name}</div>
+                        <div className="rdl-reward-meta">
+                          {locked
+                            ? <span data-testid={'reward-locked-tooltip-' + r.id}>🔒 −{missing} pts manquants</span>
+                            : <span>{r.points_cost} pts</span>}
+                        </div>
                       </div>
-                      <div className="lc-display" style={{ fontSize: 22 }}>{r.icon} {r.name}</div>
                       <button
+                        className={'rdl-reward-cta' + (locked ? ' rdl-reward-cta--locked' : '')}
                         data-testid={'reward-redeem-btn-' + r.id}
                         onClick={() => !locked && go('redeem', { reward: r.id })}
                         disabled={locked}
                         aria-disabled={locked}
                         aria-label={locked ? r.name + ' verrouillé, ' + missing + ' points manquants' : 'Échanger ' + r.name + ' contre ' + r.points_cost + ' points'}
-                        style={{ marginTop: 12, width: '100%', height: 44, borderRadius: 12, border: 0, background: locked ? 'var(--gray-2)' : 'var(--orange)', color: locked ? 'var(--gray-4)' : '#fff', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: locked ? 'not-allowed' : 'pointer' }}
                       >
                         {locked ? 'Verrouillé' : 'Échanger'}
                       </button>
@@ -1275,28 +1288,20 @@ function ScreenLoyalty({ go }) {
                     );
                   })}
                 </div>
-                <div data-testid="history-list" style={{ display: 'grid', gap: 8 }}>
+                <div data-testid="history-list">
                   {filteredHistory.length === 0 && (
                     <div style={{ padding: 18, textAlign: 'center', color: 'var(--gray-4)', fontSize: 12 }}>Aucune transaction pour ce filtre</div>
                   )}
                   {filteredHistory.map(h => {
                     const positive = h.points > 0;
-                    const surfaceIcon = (h.source_surface || '').startsWith('mobile')
-                      ? '📱'
-                      : h.source_surface === 'kiosk' ? '🖥'
-                      : h.source_surface === 'pos' ? '🛍'
-                      : h.source_surface === 'admin' ? '👤'
-                      : '★';
                     return (
-                      <div key={h.id} data-testid={'history-entry-' + h.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--cream)', borderRadius: 12 }}>
-                        <div data-testid="history-source-icon" data-source-surface={h.source_surface || 'unknown'} aria-label={'Source : ' + (h.source_surface || 'inconnu')} style={{ width: 36, height: 36, borderRadius: 10, background: positive ? 'var(--green)' : 'var(--ink)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16 }}>
-                          {surfaceIcon}
+                      <div key={h.id} className="rdl-hist" data-testid={'history-entry-' + h.id}>
+                        <div className={'rdl-hist-dot rdl-hist-dot--' + (positive ? 'earn' : 'spend')} data-testid="history-source-icon" data-source-surface={h.source_surface || 'unknown'} aria-label={'Source : ' + (h.source_surface || 'inconnu')}/>
+                        <div className="rdl-hist-body">
+                          <div className="rdl-hist-title">{h.description}</div>
+                          <div className="rdl-hist-date">{h.date} · {h.source_surface || '—'}</div>
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600 }}>{h.description}</div>
-                          <div style={{ fontSize: 11, color: 'var(--gray-4)' }}>{h.date} · {h.source_surface || '—'}</div>
-                        </div>
-                        <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: positive ? 'var(--green)' : 'var(--ink)' }}>{positive ? '+' : ''}{h.points}</div>
+                        <div className={'rdl-hist-pts ' + (positive ? 'earn' : 'spend')}>{positive ? '+' : ''}{h.points}</div>
                       </div>
                     );
                   })}
