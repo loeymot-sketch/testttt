@@ -617,14 +617,17 @@ export default {
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
         case 'salade':
-          // V3.7 — Salades : owner gate menu + suppléments. Garde sauce et
-          // garnitures (existants). Step menu + frites_style ajoutés.
+          // [LOCK_KIOSK_SALADE_2026-05-11 — Owner re-cadrage frozen-zone gate cleared]
+          // V3.7 avait 6 steps (garnitures + sauce + menu + frites_style + supplements + recap)
+          // = bêtise pour une salade dont la composition est FIXE par son nom
+          // (Salade Royale = Laitue+Tomate+Maïs+Poulet+Olives, pas de "garnitures à choisir").
+          // V3.8 simplifié : sauce (opt) → suppléments (opt) → menu (opt) → cascade → recap.
+          // Step "garnitures" retiré ; ordre logique humain restored.
           return [
-            { type: 'garnitures', label: 'Garnitures', component: 'KioskStepGarnitures' },
             { type: 'sauce', label: 'Sauce', component: 'KioskStepSauce' },
+            { type: 'supplements', label: 'Suppléments', component: 'KioskStepSupplements' },
             { type: 'menu', label: 'Menu', component: 'KioskStepMenu' },
             { type: 'frites_style', label: 'Style frites', component: 'KioskStepFritesStyle' },
-            { type: 'supplements', label: 'Suppléments', component: 'KioskStepSupplements' },
             { type: 'recap', label: 'Récap', component: 'KioskOrderSummary' }
           ].filter(s => this.shouldShowStep(s.type));
         default:

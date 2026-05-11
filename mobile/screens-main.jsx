@@ -33,6 +33,49 @@ const Tag = ({ t }) => {
   return <span className="lc-pill" style={{ background: s.bg, color: s.fg, padding: '4px 9px', fontSize: 9 }}>{t}</span>;
 };
 
+// [Owner re-cadrage 2026-05-11 D4] EU FIC 1169/2011 — disclosure obligation des 14 allergènes
+// majeurs sur tout produit alimentaire commercialisé. Composant compact (chip) + détail au tap.
+// Allergènes mappés sur emoji+label FR pour lisibilité immédiate.
+const ALLERGEN_META = {
+  gluten:     { icon: '🌾', label: 'Gluten' },
+  lactose:    { icon: '🥛', label: 'Lactose' },
+  oeuf:       { icon: '🥚', label: 'Œuf' },
+  arachide:   { icon: '🥜', label: 'Arachide' },
+  fruits_coque: { icon: '🌰', label: 'Fruits à coque' },
+  soja:       { icon: '🫘', label: 'Soja' },
+  poisson:    { icon: '🐟', label: 'Poisson' },
+  crustaces:  { icon: '🦐', label: 'Crustacés' },
+  mollusques: { icon: '🦑', label: 'Mollusques' },
+  celeri:     { icon: '🥬', label: 'Céleri' },
+  moutarde:   { icon: '🟡', label: 'Moutarde' },
+  sesame:     { icon: '⚪', label: 'Sésame' },
+  sulfites:   { icon: '🍇', label: 'Sulfites' },
+  lupin:      { icon: '🌿', label: 'Lupin' },
+};
+
+function AllergenBadge({ allergens, size = 'sm' }) {
+  if (!allergens || allergens.length === 0) return null;
+  const isLg = size === 'lg';
+  return (
+    <div
+      role="region"
+      aria-label={`Allergènes : ${allergens.map(k => (ALLERGEN_META[k]?.label || k)).join(', ')}`}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: isLg ? '6px 10px' : '2px 6px', background: 'var(--cream)', borderRadius: 999, fontSize: isLg ? 11 : 9, color: 'var(--gray-4)', fontWeight: 600 }}
+    >
+      <span aria-hidden="true" style={{ fontSize: isLg ? 12 : 10 }}>⚠️</span>
+      {allergens.slice(0, isLg ? 6 : 4).map((k, i) => {
+        const m = ALLERGEN_META[k] || { icon: '•', label: k };
+        return (
+          <span key={k} title={m.label} aria-hidden="true" style={{ fontSize: isLg ? 14 : 11, lineHeight: 1 }}>{m.icon}</span>
+        );
+      })}
+      {allergens.length > (isLg ? 6 : 4) && (
+        <span aria-hidden="true" style={{ marginLeft: 2 }}>+{allergens.length - (isLg ? 6 : 4)}</span>
+      )}
+    </div>
+  );
+}
+
 // HOME
 function ScreenHome({ go, name = 'Ikyes' }) {
   return (
@@ -203,13 +246,21 @@ function ScreenMenu({ go, cart, addToCart }) {
                       <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>{it.tags.slice(0,2).map(t => <Tag key={t} t={t}/>)}</div>
+                      <div style={{ display: 'flex', gap: 6, marginBottom: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+                        {it.tags.slice(0,2).map(t => <Tag key={t} t={t}/>)}
+                        {/* [D4 EU FIC 1169/2011] Allergens chip — disclosure légale obligatoire */}
+                        <AllergenBadge allergens={it.allergens} size="sm"/>
+                      </div>
                       <div style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.2 }}>{it.name}</div>
                       {/* [test-e2e fix B-004 round-2 2026-05-11] CSS line-clamp 2 + tooltip — no more hard viewport clip */}
                       <div title={it.desc} style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2, lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{it.desc}</div>
                       <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--orange)' }}>{it.price.toFixed(2).replace('.', ',')} €</span>
-                        <button onClick={e => { e.stopPropagation(); addToCart(it); }} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--ink)', color: 'var(--yellow)', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Plus size={16}/></button>
+                        {/* [Owner re-cadrage 2026-05-11 D3] Quick-add "+" : si item personnalisable (viandes / sauce / suppléments / menu_addon / frites_style),
+                            ouvrir le wizard au lieu d'ajouter direct au panier avec composition vide. Pour desserts/boissons/items direct, garder add direct. */}
+                        {(it.viandes > 0 || it.has_sauce || it.has_supplements !== false || it.has_menu_addon || it.has_frites_style)
+                          ? <button onClick={e => { e.stopPropagation(); go('item', it.id); }} aria-label={`Personnaliser ${it.name}`} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', color: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Arrow size={14} stroke="#fff" sw={2.4}/></button>
+                          : <button onClick={e => { e.stopPropagation(); addToCart(it); }} aria-label={`Ajouter ${it.name} au panier`} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--ink)', color: 'var(--yellow)', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Plus size={16}/></button>}
                       </div>
                     </div>
                   </div>
@@ -629,8 +680,10 @@ function ScreenCart({ go, cart, setCart }) {
       </div>
       {/* sticky checkout */}
       {cart.length > 0 && (
-        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', padding: '16px 20px 36px', borderTop: '1px solid var(--gray-1)' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', padding: '14px 20px 36px', borderTop: '1px solid var(--gray-1)' }}>
+          {/* [D6 Owner re-cadrage 2026-05-11] Promo code input — mock V0, backend wireup Phase 6.C */}
+          <PromoCodeRow/>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 10, marginBottom: 12 }}>
             <div>
               <div style={{ fontSize: 11, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Total</div>
               <div className="lc-display" style={{ fontSize: 36, lineHeight: 1 }}>{total.toFixed(2).replace('.', ',')} €</div>
@@ -1259,4 +1312,53 @@ function ScreenLoyalty({ go }) {
   );
 }
 
-Object.assign(window, { ScreenHome, ScreenMenu, ScreenItem, ScreenCart, ScreenConfirm, ScreenOrders, ScreenProfile, ScreenLoyalty, ITEMS, CATS });
+// [D6 Owner re-cadrage 2026-05-11] PromoCodeRow — input promo + mock validation (V0).
+// Backend wireup Phase 6.C : POST /api/v1/frontend/cart/promo with code → returns discount or 422.
+function PromoCodeRow() {
+  const [code, setCode] = uS('');
+  const [status, setStatus] = uS('idle'); // idle | applied | invalid
+  const [appliedCode, setAppliedCode] = uS('');
+  const apply = () => {
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) return;
+    // V0 mock : "WELCOME10" valide, autres invalides
+    if (trimmed === 'WELCOME10' || trimmed === 'CAYENNE') {
+      setStatus('applied');
+      setAppliedCode(trimmed);
+    } else {
+      setStatus('invalid');
+      setTimeout(() => setStatus('idle'), 2200);
+    }
+  };
+  const clear = () => { setCode(''); setStatus('idle'); setAppliedCode(''); };
+  if (status === 'applied') {
+    return (
+      <div data-testid="cart-promo-applied" role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--green-light, #ECFDF5)', border: '1px solid var(--green, #1FA653)', borderRadius: 10, marginBottom: 4 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green-dark, #047857)' }}>✓ Code <code>{appliedCode}</code> appliqué</span>
+        <button onClick={clear} aria-label="Retirer le code promo" style={{ background: 'transparent', border: 0, color: 'var(--gray-4)', fontSize: 11, cursor: 'pointer' }}>Retirer</button>
+      </div>
+    );
+  }
+  return (
+    <div style={{ marginBottom: 4 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+        <input
+          data-testid="cart-promo-input"
+          type="text"
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 16))}
+          placeholder="Code promo (ex. WELCOME10)"
+          aria-label="Code promo"
+          style={{ flex: 1, minWidth: 0, padding: '10px 12px', fontSize: 13, fontFamily: 'var(--font-mono)', border: status === 'invalid' ? '1.5px solid var(--red)' : '1.5px solid var(--gray-2)', borderRadius: 10, background: '#fff', color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '0.04em' }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); apply(); } }}
+        />
+        <button onClick={apply} disabled={!code.trim()} aria-label="Appliquer le code promo" style={{ padding: '0 16px', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', background: code.trim() ? 'var(--ink)' : 'var(--gray-1)', color: code.trim() ? 'var(--yellow)' : 'var(--gray-3)', border: 0, borderRadius: 10, cursor: code.trim() ? 'pointer' : 'not-allowed' }}>Appliquer</button>
+      </div>
+      {status === 'invalid' && (
+        <div role="alert" aria-live="assertive" style={{ marginTop: 4, fontSize: 11, color: 'var(--red)', fontWeight: 600 }}>Code invalide</div>
+      )}
+    </div>
+  );
+}
+
+Object.assign(window, { ScreenHome, ScreenMenu, ScreenItem, ScreenCart, ScreenConfirm, ScreenOrders, ScreenProfile, ScreenLoyalty, ITEMS, CATS, AllergenBadge, PromoCodeRow });

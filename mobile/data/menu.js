@@ -232,7 +232,7 @@
     { id: 4,  slug: 'nos-assiettes',          name: 'Nos Assiettes',          icon: '🍽️', sort: 4,  wizard_template: 'assiette', has_menu: false, description: 'Assiettes complètes avec garnitures',                 image: ASSET_BASE + 'generated_category_nos-assiettes.png' },
     { id: 5,  slug: 'ojja',                   name: 'Ojja',                   icon: '🍳', sort: 5,  wizard_template: 'omelette', has_menu: false, description: 'Ojja traditionnelle',                                image: ASSET_BASE + 'generated_category_ojja.png' },
     { id: 6,  slug: 'omelettes',              name: 'Omelettes',              icon: '🥚', sort: 6,  wizard_template: 'omelette', has_menu: false, description: 'Omelettes faites maison',                            image: ASSET_BASE + 'generated_category_omelettes.png' },
-    { id: 7,  slug: 'nos-salades',            name: 'Nos Salades',            icon: '🥗', sort: 7,  wizard_template: 'salade',   has_menu: false, description: 'Salades fraîches et légères',                        image: ASSET_BASE + 'generated_category_nos-salades.png' },
+    { id: 7,  slug: 'nos-salades',            name: 'Nos Salades',            icon: '🥗', sort: 7,  wizard_template: 'salade',   has_menu: true,  description: 'Salades fraîches et légères',                        image: ASSET_BASE + 'generated_category_nos-salades.png' },
     { id: 8,  slug: 'chicken-tenders',        name: 'Poulet croustillant',    icon: '🍗', sort: 8,  wizard_template: 'snacking', has_menu: false, description: 'Ailes et filets de poulet croustillants',            image: ASSET_BASE + 'generated_category_chicken-tenders.png' },
     { id: 9,  slug: 'nos-menus-enfants',      name: 'Nos Menus Enfants',      icon: '🧒', sort: 9,  wizard_template: 'omelette', has_menu: false, description: 'Pour les petits gourmands',                          image: ASSET_BASE + 'generated_category_nos-menus-enfants.png' },
     { id: 10, slug: 'frites-accompagnements', name: 'Frites & Accompagnements', icon: '🍟', sort: 10, wizard_template: 'simple', has_menu: false, description: 'Frites et accompagnements',                          image: ASSET_BASE + 'generated_category_frites-accompagnements.png' },
@@ -287,7 +287,8 @@
   const SANDWICHS = [
     mkItem(201, 'le-mega',          2, 'Le Méga',             8.00, '2 viandes au choix + Cheddar + Œuf',                                  { viandes: 2, has_crudites: true, has_menu_addon: true, time: 10, emoji: '🥖' }),
     mkItem(202, 'le-terminator',    2, 'Le Terminator',       9.00, '2 viandes au choix + 2 Cheddar + Œuf + Jambon de dinde',              { viandes: 2, has_crudites: true, has_menu_addon: true, time: 12, tags: ['TOP'], emoji: '💪' }),
-    mkItem(203, 'le-supreme',       2, 'Le Suprême',          7.00, 'Steak + Cordon Bleu + Cheddar',                                       { viandes: 0, has_crudites: true, has_menu_addon: true, time: 10, emoji: '🥖' }),
+    // [Owner re-cadrage 2026-05-11] Le Suprême = sandwich avec 2 viandes au choix (steak + cordon bleu par ex.) — drift fix viandes 0→2
+    mkItem(203, 'le-supreme',       2, 'Le Suprême',          7.00, '2 viandes au choix + Cheddar (Steak + Cordon Bleu par exemple)',     { viandes: 2, has_crudites: true, has_menu_addon: true, time: 10, emoji: '🥖' }),
     mkItem(204, 'le-cayenne',       2, 'Le Cayenne',          7.00, 'Viande hachée ou chicken + mozzarella + cheddar + crème fraîche',     { viandes: 1, has_crudites: true, has_menu_addon: true, time: 10, tags: ['SIGNATURE'], emoji: '🥖' }),
     mkItem(205, 'sandwich-froid',   2, 'Sandwich Froid',      4.50, 'Sandwich au Thon',                                                    { viandes: 0, has_crudites: true, has_menu_addon: true, time: 5,  emoji: '🥪' }),
     mkItem(206, 'panini',           2, 'Panini',              5.00, 'Thon · Jambon · Viande hachée · Fromage de chèvre · Saumon · Escalope', { viandes: 1, has_crudites: true, has_menu_addon: true, time: 8,  emoji: '🥪' }),
@@ -329,11 +330,13 @@
   ];
 
   // ====== NOS SALADES (cat 7) ======
+  // [Owner re-cadrage 2026-05-11] Salades : menu addon optionnel (Frites/Boisson) activé.
+  // Kiosk-fix : 6 steps → 3 steps optionnels (sauce + suppléments + menu + cascade si menu).
   const SALADES = [
-    mkItem(701, 'salade-chevre',    7, 'Salade Chèvre',    7.50, 'Laitue · Tomate · Chèvre · Croûtons · Vinaigrette · Maïs', { viandes: 0, has_crudites: false, has_menu_addon: false, time: 5, emoji: '🥗', is_vegetarian: true }),
-    mkItem(702, 'salade-royale',    7, 'Salade Royale',    7.50, 'Laitue · Tomate · Maïs · Poulet · Olives',                  { viandes: 0, has_crudites: false, has_menu_addon: false, time: 5, emoji: '🥗' }),
-    mkItem(703, 'salade-saumon',    7, 'Salade Saumon',    7.50, 'Laitue · Tomate · Maïs · Saumon · Olives',                  { viandes: 0, has_crudites: false, has_menu_addon: false, time: 5, emoji: '🥗' }),
-    mkItem(704, 'salade-tunisienne', 7, 'Salade Tunisienne', 7.50, 'Concombre · Tomate · Oignon · Poivrons · Thon · Olives · Huile d\'Olive', { viandes: 0, has_crudites: false, has_menu_addon: false, time: 5, emoji: '🥗' }),
+    mkItem(701, 'salade-chevre',    7, 'Salade Chèvre',    7.50, 'Laitue · Tomate · Chèvre · Croûtons · Vinaigrette · Maïs', { viandes: 0, has_crudites: false, has_menu_addon: true, time: 5, emoji: '🥗', is_vegetarian: true }),
+    mkItem(702, 'salade-royale',    7, 'Salade Royale',    7.50, 'Laitue · Tomate · Maïs · Poulet · Olives',                  { viandes: 0, has_crudites: false, has_menu_addon: true, time: 5, emoji: '🥗' }),
+    mkItem(703, 'salade-saumon',    7, 'Salade Saumon',    7.50, 'Laitue · Tomate · Maïs · Saumon · Olives',                  { viandes: 0, has_crudites: false, has_menu_addon: true, time: 5, emoji: '🥗' }),
+    mkItem(704, 'salade-tunisienne', 7, 'Salade Tunisienne', 7.50, 'Concombre · Tomate · Oignon · Poivrons · Thon · Olives · Huile d\'Olive', { viandes: 0, has_crudites: false, has_menu_addon: true, time: 5, emoji: '🥗' }),
   ];
 
   // ====== POULET CROUSTILLANT (cat 8) ======

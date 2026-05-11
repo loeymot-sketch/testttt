@@ -214,10 +214,11 @@ return [
                 'has_crudites'=> true,
             ],
             [
+                // [Owner re-cadrage 2026-05-11] 2 viandes au choix (steak + cordon bleu par exemple)
                 'name'        => 'Le Suprême',
                 'price'       => 7.00,
-                'description' => 'Steak + Cordon Bleu + Cheddar',
-                'viandes'     => 1, // Only fixed meats but let's allow customization or not. It says "Steak + Cordon Bleu" directly. I'll limit to 0 custom meats since it's fixed.
+                'description' => '2 viandes au choix + Cheddar (Steak + Cordon Bleu par exemple)',
+                'viandes'     => 2,
                 'has_sauce'   => true,
                 'has_crudites'=> true,
             ],

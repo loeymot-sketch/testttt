@@ -86,9 +86,13 @@ function computeActiveSteps(item, selections) {
       if (item.has_supplements !== false) steps.push(STEP.SUPPLEMENTS);
       break;
     case 'salade':
-      // D1 owner-gate decision: scope simplifié = sauce + suppléments uniquement
+      // [Owner re-cadrage 2026-05-11] Salade simplifiée : sauce(opt) + suppléments(opt) + menu(opt) + cascade.
+      // Kiosk a 6 steps (garnitures+sauce+menu+frites_style+supplements+recap) — c'est une bêtise pour
+      // une salade dont la composition est déjà fixée par le nom (Salade Royale = Laitue+Tomate+Maïs+Poulet+Olives).
+      // Logique humaine = "choisis sauce optionnelle + suppléments optionnels + veux-tu rajouter frites/boisson ?"
       if (item.has_sauce) steps.push(STEP.SAUCE);
       if (item.has_supplements !== false) steps.push(STEP.SUPPLEMENTS);
+      if (item.has_menu_addon) steps.push(STEP.MENU);
       break;
     case 'snacking':
       // Wings + tenders (cat 8/313). Sauce générique 15 sauces (U2 owner: pas BBQ/Nashville).
@@ -657,10 +661,12 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
       <div style={{ background: 'var(--cream)', borderRadius: 16, padding: '14px 0 0', overflow: 'hidden' }}>
         <div style={{ padding: '0 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
           <span aria-hidden="true" style={{ fontSize: 28 }}>{item.kiosk_emoji || '🍽️'}</span>
-          <div>
+          <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>{item.name}</div>
             <div style={{ fontSize: 11, color: 'var(--gray-4)' }}>Récapitulatif de ta commande</div>
           </div>
+          {/* [D4 EU FIC 1169/2011] AllergenBadge sur recap — disclosure légale obligatoire */}
+          {window.AllergenBadge && <window.AllergenBadge allergens={item.allergens} size="lg"/>}
         </div>
         {has(STEP.VIANDES) && <Row label="Viandes" value={meatLabels.length ? meatLabels.join(' · ') : '—'}/>}
         {has(STEP.SAUCE) && <Row label="Sauce" value={sauceLabels.length ? sauceLabels.join(' / ') : '—'}/>}
@@ -676,7 +682,28 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
         {has(STEP.FRITES_SAUCE) && <Row label="Sauce frites" value={fritesSauceLabels.length ? fritesSauceLabels.join(' / ') : '—'}/>}
       </div>
 
-      <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'var(--ink)', borderRadius: 16 }}>
+      {/* [D5 Owner re-cadrage 2026-05-11] Instructions spéciales — kiosk a champ instruction 190 char
+          (KW.vue:151-161), mobile alignment. Notes pour la cuisine : sans oignon, bien cuit, etc. */}
+      <div style={{ marginTop: 14 }}>
+        <label htmlFor="lc-recap-instructions" style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--gray-4)', marginBottom: 6 }}>
+          Instructions spéciales <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optionnel)</span>
+        </label>
+        <textarea
+          id="lc-recap-instructions"
+          data-testid="recap-instructions"
+          maxLength={190}
+          rows={2}
+          placeholder="Ex. Sans oignon, bien cuit, etc."
+          value={selections.instruction || ''}
+          onChange={(e) => setSelections(s => ({ ...s, instruction: e.target.value.slice(0, 190) }))}
+          style={{ width: '100%', padding: '10px 12px', fontSize: 13, lineHeight: 1.35, border: '1.5px solid var(--gray-2)', borderRadius: 12, background: '#fff', color: 'var(--ink)', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box' }}
+        />
+        <div aria-live="polite" style={{ fontSize: 10, color: 'var(--gray-3)', textAlign: 'right', marginTop: 2 }}>
+          {(selections.instruction || '').length} / 190
+        </div>
+      </div>
+
+      <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'var(--ink)', borderRadius: 16 }}>
         <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Quantité</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <button onClick={() => setQty(qty - 1)} aria-label="Diminuer la quantité" style={{ width: 32, height: 32, borderRadius: 999, background: 'rgba(255,255,255,0.15)', border: 0, color: '#fff', cursor: 'pointer' }}>
@@ -741,7 +768,9 @@ function buildLineItem(item, selections) {
     styleLabel,
     fritesSauceIds: selections.fritesSauceIds || [],
     fritesSauceLabels,
-    composition_summary: summary.join(' · '),
+    // [D5 Owner re-cadrage 2026-05-11] instruction spéciale recap → ligne cart
+    instruction: (selections.instruction || '').slice(0, 190),
+    composition_summary: summary.join(' · ') + ((selections.instruction && selections.instruction.length) ? ' · 📝 ' + selections.instruction.slice(0, 60) + (selections.instruction.length > 60 ? '…' : '') : ''),
     sups: selections.supplementIds || [],
     qty,
     unitPrice,
@@ -901,6 +930,8 @@ function ScreenItemDirectAdd({ item, selections, setSelections, go, addToCart })
         <div style={{ padding: '24px 20px' }}>
           <h1 className="lc-display" style={{ margin: 0, fontSize: 32, lineHeight: 0.95 }}>{item.name}</h1>
           <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.5, color: 'var(--gray-4)' }}>{item.description}</p>
+          {/* [D4 EU FIC 1169/2011] AllergenBadge sur item detail */}
+          {window.AllergenBadge && <div style={{ marginTop: 12 }}><window.AllergenBadge allergens={item.allergens} size="lg"/></div>}
           <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'var(--ink)', borderRadius: 16 }}>
             <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Quantité</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
