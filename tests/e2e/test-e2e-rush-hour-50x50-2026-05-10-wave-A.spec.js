@@ -354,7 +354,10 @@ test.describe('rush-hour-50x50 wave A — POS 50 orders', () => {
   test.setTimeout(45 * 60 * 1000); // 45 min hard cap (advisor wallclock estimate ~25 min + 5 min contamination grace + buffer)
 
   test.beforeAll(() => {
-    cleanupOrphanTestOrders();
+    // [test-e2e fix A-015 round-4 2026-05-11] wave-scoped cleanup. Round-3
+    // proved unscoped AUDIT-% sweep contaminated Wave A mid-burst when Wave
+    // B's beforeAll fired in parallel. Restrict to AUDIT-RUSH-A-% only.
+    cleanupOrphanTestOrders(['AUDIT-RUSH-A-']);
   });
 
   // ---------------------------------------------------------------
@@ -636,9 +639,25 @@ test.describe('rush-hour-50x50 wave A — POS 50 orders', () => {
       let a002_429_toast_snapped = false;
       const a002SnapOn429 = async (payload, resp) => {
         if (a002_429_toast_snapped) return;
+        // Set the guard IMMEDIATELY (before the new ~1.5s settle await) so
+        // a concurrent 429 callback can't re-enter and double-snap.
         a002_429_toast_snapped = true;
         observations.push(`a002: 429 detected idem=${payload.idempotency_key} status=${resp.status} — snapping IN PLACE before retry/clear`);
         try {
+          // [test-e2e fix A-002 round-4 2026-05-11] Round-3 evidence: the
+          // mid-burst-429-toast.dom.html captured the toast with role=alert
+          // and "Trop de requêtes…" text, but the PNG was visually empty
+          // because the snap fired during the Vue-Toastification bounce-in
+          // animation (`bounce-enter-active v-enter-to` classes still on
+          // the element). Wait for the enter classes to come off, then a
+          // small paint settle, before snapping.
+          await posPage.waitForFunction(() => {
+            const toast = document.querySelector('.Vue-Toastification__toast--error');
+            if (!toast) return false;
+            const cls = toast.className || '';
+            return !cls.includes('v-enter-to') && !cls.includes('v-enter-active');
+          }, { timeout: 1500 }).catch(() => {});
+          await posPage.waitForTimeout(150); // small additional settle for paint
           await posRec.snap('mid-burst-429-toast');
           observations.push('a002_429_toast_seen=true a002_429_state=mid-burst-429-toast');
         } catch (e) {
@@ -1334,7 +1353,10 @@ test.describe('rush-hour-50x50 wave A — POS 50 orders', () => {
       // DELIVERED rows persist by design — log warning, don't fail)
       // ===========================================================
       try {
-        cleanupOrphanTestOrders();
+        // [test-e2e fix A-015 round-4 2026-05-11] wave-scoped sweep — only
+        // delete this run's AUDIT-RUSH-A-% rows so a parallel Wave B (or any
+        // other concurrent audit) is never collateral-damaged.
+        cleanupOrphanTestOrders(['AUDIT-RUSH-A-']);
         const remRows = dbProbe(
           `SELECT COUNT(*) AS n, MIN(status) AS min_st, MAX(status) AS max_st FROM orders WHERE token LIKE '${TOKEN_PREFIX}-%'`
         );

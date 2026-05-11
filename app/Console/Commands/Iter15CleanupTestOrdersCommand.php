@@ -31,15 +31,17 @@ class Iter15CleanupTestOrdersCommand extends Command
     protected $signature = 'iter15:cleanup-test-orders
         {--dry-run : Report matching rows without deleting (default)}
         {--apply : Actually delete the matching rows}
-        {--json : Print machine-readable JSON output}';
+        {--json : Print machine-readable JSON output}
+        {--token-prefix=* : Restrict sweep to one or more token prefixes (repeatable). Each value is suffixed with %% in the LIKE clause. When empty, falls back to DEFAULT_TOKEN_PATTERNS for back-compat.}';
 
     protected $description = '[iter15] Sweep orphan test orders (AUDIT-*, RED-TEAM-*, ZZ-TEST-*, TEST-*, E2E-*) from the live KDS pile.';
 
     /**
-     * Token-LIKE patterns that mark an order as a Playwright/audit fixture.
+     * Default token-LIKE patterns that mark an order as a Playwright/audit
+     * fixture. Used ONLY when --token-prefix is empty (back-compat).
      * NOTE: kept as `prefix%` — anchored at the start of the token.
      */
-    private const TOKEN_PATTERNS = [
+    private const DEFAULT_TOKEN_PATTERNS = [
         'AUDIT-%',
         'RED-TEAM-%',
         'ZZ-TEST-%',
@@ -64,7 +66,19 @@ class Iter15CleanupTestOrdersCommand extends Command
             return 2;
         }
 
-        $matchedIds = $this->matchingOrderIds();
+        // [test-e2e fix A-015 round-4 2026-05-11] Wave-scoped sweep.
+        // When --token-prefix is provided (one or more times), restrict the
+        // WHERE clause to those prefixes only. This prevents the rush-hour
+        // Wave B beforeAll cleanup from scooping Wave A's just-created
+        // AUDIT-RUSH-A-% rows mid-burst (round-3 A-015 root cause). When
+        // empty, fall back to DEFAULT_TOKEN_PATTERNS for back-compat with
+        // the default sweep semantics used by older specs.
+        $tokenPrefixes = (array) $this->option('token-prefix');
+        $patterns = empty($tokenPrefixes)
+            ? self::DEFAULT_TOKEN_PATTERNS
+            : array_values(array_map(static fn (string $p): string => $p . '%', $tokenPrefixes));
+
+        $matchedIds = $this->matchingOrderIds($patterns);
         $beforeCount = $matchedIds->count();
         $deletedCount = 0;
 
@@ -87,7 +101,7 @@ class Iter15CleanupTestOrdersCommand extends Command
         $payload = [
             'dry_run' => $dryRun,
             'applied' => $apply,
-            'patterns' => self::TOKEN_PATTERNS,
+            'patterns' => $patterns,
             'active_statuses' => self::ACTIVE_STATUSES,
             'matched_count' => $beforeCount,
             'deleted_count' => $deletedCount,
@@ -117,17 +131,18 @@ class Iter15CleanupTestOrdersCommand extends Command
     }
 
     /**
+     * @param  array<int,string>  $patterns  LIKE patterns (already include %)
      * @return \Illuminate\Support\Collection<int,int>
      */
-    private function matchingOrderIds(): \Illuminate\Support\Collection
+    private function matchingOrderIds(array $patterns): \Illuminate\Support\Collection
     {
-        if (! Schema::hasTable('orders')) {
+        if (! Schema::hasTable('orders') || empty($patterns)) {
             return collect();
         }
 
         $query = DB::table('orders')
-            ->where(function ($outer): void {
-                foreach (self::TOKEN_PATTERNS as $pattern) {
+            ->where(function ($outer) use ($patterns): void {
+                foreach ($patterns as $pattern) {
                     $outer->orWhere('token', 'like', $pattern);
                 }
             })

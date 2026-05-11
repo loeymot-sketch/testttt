@@ -409,9 +409,14 @@ test.describe('rush-hour-50x50 wave B — Kiosk rush 50 orders (12 UI + 38 API)'
   test.setTimeout(HARD_CAP_MS);
 
   test.beforeAll(() => {
-    // Sweep orphan AUDIT-/RED-TEAM-/etc. orders before we start so KDS pile
-    // baseline only contains live data + this run's adds.
-    cleanupOrphanTestOrders();
+    // [test-e2e fix A-015 round-4 2026-05-11] wave-scoped cleanup. Round-3
+    // proved this beforeAll, when it ran in parallel with Wave A's burst,
+    // unscoped-swept Wave A's AUDIT-RUSH-A-% rows mid-flight. Scope strictly
+    // to Wave B's own prefixes:
+    //   - AUDIT-RUSH-B-%        (API path, this spec)
+    //   - AUDIT-KIOSK-WAVE-E-%  (helpers/kiosk-order.js hardcoded prefix
+    //                            used by placeKioskOrder, see round-1 B-007)
+    cleanupOrphanTestOrders(['AUDIT-RUSH-B-', 'AUDIT-KIOSK-WAVE-E-']);
     clearFoodKingRateLimits();
     fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
     fs.mkdirSync(REPORTS_DIR, { recursive: true });
@@ -1390,9 +1395,12 @@ test.describe('rush-hour-50x50 wave B — Kiosk rush 50 orders (12 UI + 38 API)'
         }
       }
 
-      // Token-prefix sweep — covers AUDIT-RUSH-B-* tokens used by API path.
+      // Token-prefix sweep — covers AUDIT-RUSH-B-* tokens used by API path
+      // AND AUDIT-KIOSK-WAVE-E-* used by the placeKioskOrder helper.
+      // [test-e2e fix A-015 round-4 2026-05-11] scoped sweep — never touch
+      // a parallel Wave A's AUDIT-RUSH-A-% rows.
       try {
-        cleanupOrphanTestOrders();
+        cleanupOrphanTestOrders(['AUDIT-RUSH-B-', 'AUDIT-KIOSK-WAVE-E-']);
       } catch (e) {
         // eslint-disable-next-line no-console
         console.warn(`[WAVE-B] cleanupOrphanTestOrders failed: ${e.message}`);

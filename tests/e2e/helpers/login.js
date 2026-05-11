@@ -8,10 +8,30 @@ const { clearFoodKingRateLimits } = require('./rate-limit');
  * Sweep orphan AUDIT-/RED-TEAM-/ZZ-TEST-/TEST-/E2E- orders off the live KDS
  * pile before the mega specs run. Best-effort: logs failure but never throws,
  * so a missing tinker shell does not block the test run itself.
+ *
+ * [test-e2e fix A-015 round-4 2026-05-11] Optional `prefixes` arg lets a
+ * caller restrict the sweep to its own wave-scoped token prefix(es). Default
+ * (no arg / empty array) preserves the original "sweep all known fixture
+ * prefixes" behaviour for back-compat.
+ *
+ * Round-3 root cause: Wave B's beforeAll cleanup unscoped-swept Wave A's
+ * just-created AUDIT-RUSH-A-% rows mid-burst (parallel waves share the
+ * AUDIT-% pattern). Pass `['AUDIT-RUSH-A-']` from Wave A and
+ * `['AUDIT-RUSH-B-', 'AUDIT-KIOSK-WAVE-E-']` from Wave B to scope each
+ * wave's sweep to its own rows.
+ *
+ * @param {string[]} [prefixes=[]] Token prefixes (without the trailing %).
+ *   When empty, the artisan command falls back to its DEFAULT_TOKEN_PATTERNS.
  */
-function cleanupOrphanTestOrders() {
+function cleanupOrphanTestOrders(prefixes = []) {
   try {
-    execFileSync('php', ['artisan', 'iter15:cleanup-test-orders', '--apply'], {
+    const args = ['artisan', 'iter15:cleanup-test-orders', '--apply'];
+    for (const p of (Array.isArray(prefixes) ? prefixes : [])) {
+      if (typeof p === 'string' && p.length > 0) {
+        args.push(`--token-prefix=${p}`);
+      }
+    }
+    execFileSync('php', args, {
       cwd: path.resolve(__dirname, '../../..'),
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
