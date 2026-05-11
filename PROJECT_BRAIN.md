@@ -47,8 +47,8 @@ Plateforme restaurant fast-food complète :
 ## §2 CURRENT STATE — Auto-managed
 
 - **Branche** : `feature/mobile-app-le-cayenne-2026-05-10`
-- **HEAD** : `8d31a7f92` (Phase 6.A real-asset wiring — AD-N4 image-slot leak DEAD)
-- **Last update** : 2026-05-11 (Phase 6.A real assets — 60 items + 13 cats + sauces/viandes/etc. wired avec photos kiosk + signature heroes owner)
+- **HEAD** : `552ce2ead` (mobile design-perfect cycle B GREEN converged + FINAL_REPORT)
+- **Last update** : 2026-05-11 (audit mobile design perfection cycle B — 4 rounds, 5 commits, 2 P0 + 7 P1 closed, axe critical=0 serious=0, 0 frozen-zone)
 - **Branche release antérieure** : `cycle/PHASE2-TRAIN-A-V1-RELEASE-PREP-2026-04-27`
   (HEAD `9d9dddae1`, NO-GO V1 par audit POS adversarial 2026-05-09 — état préservé)
 - **Domaines production-ready** : ~7-8 / 16 (revu après ultra audit POS 2026-05-09 ;
@@ -67,6 +67,63 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**Mobile design-perfect cycle B 2026-05-11** (HEAD `552ce2ead`,
+branche `feature/mobile-app-le-cayenne-2026-05-10`) :
+- **Mission** : audit + refactor mobile design « logique kiosk + fluidité mobile
+  premium SANS importer design kiosk » (re-cadrage post-crash, carte blanche
+  owner). 7 sub-agents read-only + Adversarial Red-Team single-invocation.
+  Convergence target 2 rounds GREEN set-equality, cap 3 rounds + verify.
+- **4 rounds** exécutés : R1 (initial RED 2 P0 + 7 P1) → R2 (fix C1-C5 + regression
+  C3 → AMBER → R2-b post-regression fix) → R3 (fix C6+C7+C8 → GREEN) →
+  R4 (convergence verify — set-equality confirmée).
+- **5 commits** : `d594df348` audit infrastructure ; `ebb712dd8` round-1 fixes
+  C1-C5 ; `8e452746a` round-2 regression + spec patches ; `9f4a388dc` round-3
+  fixes C6-C8 ; `552ce2ead` FINAL_REPORT + round-4 convergence docs.
+- **2 P0 closed** primary-source :
+  * S-001 RGPD POINTS card not gated (UPGRADE adversarial P1→P0) — fixé via
+    `screens-main.jsx` wrap `{!isOptedOut && (...)}` + `dev-helpers.js` setConsent
+    erase balance. Evidence : `15-loyalty-optout-applied.evidence.json`
+    `balance_card_visible: false`, `verdict: "S-001 fixed"`.
+  * ADV-A11-016 meta-viewport user-scalable disabled (NEW from axe CRITICAL,
+    WCAG SC 1.4.4 + RGAA 4 régulatoire) — fixé via `index.html` remove
+    `maximum-scale=1`. Plus ADV-A11-018 regression (aria-pressed sur role=tab
+    invalid) introduit par C3, closed via aria-pressed → aria-selected.
+- **7 P1 closed** cross-validated (axe critical=0, serious=0 round-3+4) :
+  TabBar div→button (3 sources A11-001/F-004/S-004) ; IconBtn aria-label
+  signature + 12 callsites (2 sources A11-002/A11-010/S-003) ; OTP/phone aria
+  + fieldset+legend (A11-005) ; modals dialog/ESC/focus-trap ModalShell
+  refactor + 4 callers (A11-006) ; cart trash destructive aria-label (A11-009) ;
+  color-contrast 5 nodes white-on-orange → ink-on-orange + new --orange-text
+  token #C2410C 4.86:1 (ADV-A11-017) ; F-003 keyboard nav role+tabIndex+
+  onKeyDown sur 5 critical sites (home cat tiles + menu rows + active order +
+  loyalty preview + profile menu).
+- **Spec authoring** : 4 specs Playwright orchestrator-authored
+  (`tests/e2e/test-e2e-mobile-design-perfect-wave-{wizard,fluidity,surfaces,a11y}.spec.js`)
+  + 1 diagnostic spec contrast investigation. 50 states + perf JSON sidecars +
+  axe.json inject. tests/mobile-e2e/playwright.config.js testMatch élargi.
+- **Reports** : `reports/test-e2e/mobile-design-perfect-2026-05-11/` —
+  AUDIT_PLAN + REVIEWER_PROTOCOL + FINDINGS_SCHEMA + kiosk-fsm-extracted.json
+  + 4 wave-findings.json + round-3-summary.json + round-4-convergence.md +
+  FINAL_REPORT.md (10 sections, 227 lignes).
+- **Perf** emulator DIRECTIONAL : 120.2 FPS menu scroll / 120.7 cart scroll /
+  56.7ms modal pay open / 24px CTA thumb-reach / 24.8ms back-nav recap→fritesSauce.
+  Raw perf excellent ; perceptual fluidity gap (W-001 motion) déferred P2.
+- **Frozen-zones** : 0 ligne modifiée (kiosk Vue / NF525 / pos-wizard / NF525
+  fiscal services). Validated via `git diff main..HEAD --` per file.
+- **Loyalty smoke** : 4/4 stable across rounds (loyalty-01 earn + loyalty-04
+  redeem-wizard + loyalty-11 opt-out S-001 validation + loyalty-adv-A1
+  clipboard). 0 régression.
+- **Deferred to backlog (P2 acceptable)** : 6/11 nav sites keyboard a11y ;
+  wizard motion polish W-001..W-005 ; modal exit animation (Babel-standalone
+  limitation) ; numeric_integrity S-002/S-006/S-007 ; region landmarks
+  ADV-S-016.
+- **Owner-gate backlog DATA** (Wave-Logic SUSPECT divergences, hors scope
+  design cycle) : tacos taille step, sandwich pain step, salade D1 simplifié
+  vs kiosk V3.7, snacking frites_style manquant, assiette supplements présent
+  mobile / absent kiosk.
+
+---
 
 **Phase 6.A real-asset wiring 2026-05-11** (HEAD `8d31a7f92`,
 branche `feature/mobile-app-le-cayenne-2026-05-10`) :
