@@ -927,13 +927,21 @@ test('wave C — wizard P1 by category + cart + pay flows + modals (28 states)',
       obs(`23 pay-choice modal total-line=${modalTotal}`);
       await snap('23-modal-pay-choice');
 
-      // ---------------- STATE 24 — pay counter confirm (modal → confirm) ----------------
-      // Click "Payer à la caisse" button
+      // ---------------- STATE 24 — pay-counter CTA focused (modal still visible) ----------------
+      // Adversarial round-2 → round-3 fix C-002: capture the pay-choice modal with the
+      // "Payer à la caisse" CTA focused (visible focus ring) so state-24 evidences the
+      // modal step independently from state-25 (post-transition ScreenConfirm). Previously
+      // both 24 and 25 snapped the same Confirmation screen → byte-identical PNGs (MD5
+      // f93fa0e35...). The focus-state snap proves keyboard a11y AND the modal step.
       const counterBtn = page.getByRole('button', { name: /Payer à la caisse/i });
+      await counterBtn.focus();
+      await page.waitForTimeout(180); // let the :focus-visible outline render
+      obs(`24 pay-counter CTA focused (modal still open, pre-transition)`);
+      await snap('24-modal-pay-counter-focused');
+
+      // Now actually click → transition to ScreenConfirm
       await counterBtn.click();
       await page.waitForSelector('[data-screen-label="11 Confirmation"]', { timeout: 6_000 });
-      obs(`24 pay-counter → confirm reached`);
-      await snap('24-modal-pay-counter-confirm');
 
       // ---------------- STATE 25 — confirm screen (success + order # + ETA) ----------------
       // Already on confirm. Capture the screen content.

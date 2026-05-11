@@ -1,0 +1,112 @@
+{
+  "wave": "D",
+  "round": 2,
+  "findings_reviewed": 12,
+  "summary": { "closed": 6, "regressed": 4, "partial": 2, "invalid": 0 },
+  "findings": [
+    {
+      "id": "D-001",
+      "severity": "P0",
+      "round_1_status": "open",
+      "round_2_status": "closed",
+      "round_2_evidence": "Round-2 19-modal-redeem-idempotency-replay.png now correctly handles idempotency: header reads 'DÉJÀ ÉCHANGÉE', body 'Cette récompense est déjà active — aucun point supplémentaire n'a été débité.', yellow info banner 'Tu as déjà confirmé l'échange. Présente le code ci-dessous à la caisse.', same code LCY-964131 as state 18, balance 'Solde : 247 pts' (UNCHANGED from state 18's 247 — no -100 double-debit). The P0 double-debit + duplicate history entry is resolved.",
+      "fix_commit": "d9ee89928 (cluster-3)"
+    },
+    {
+      "id": "D-002",
+      "severity": "P1",
+      "round_1_status": "open",
+      "round_2_status": "closed",
+      "round_2_evidence": "Round-2 22-loyalty-after-optout-cleared.png — balance card now shows '0 POINTS · Soit 0,00 € de réduction disponible · 0 / 100 pts · Plus que 100 pts pour Frites M offertes 🍟'. Toast at top reads 'Programme désactivé et points effacés. Tu peux te réinscrire à tout moment.' The full balance/progress are hidden behind opt-out (or actually cleared, per the toast). The RGPD copy ↔ UI mismatch is resolved.",
+      "fix_commit": "d9ee89928 (cluster-3)"
+    },
+    {
+      "id": "D-003",
+      "severity": "P1",
+      "round_1_status": "open",
+      "round_2_status": "closed",
+      "round_2_evidence": "Round-2 02-orders-historique-tab.png — Stats cards now show COMMANDES 5, DÉPENSÉ 105€, PTS 347 (all consistent with 5 entries × 29+21+22+18+15=105 € from data source). Tab badge HISTORIQUE shows 5. DOM grep returns 5 distinct #C-IDs (#C-1100, #C-1142, #C-1190, #C-1208, #C-1212) — full history now rendered (C-1100 no longer dropped). Drift resolved on all three cards.",
+      "fix_commit": "d9ee89928 (cluster-3)"
+    },
+    {
+      "id": "D-004",
+      "severity": "P1",
+      "round_1_status": "open",
+      "round_2_status": "closed",
+      "round_2_evidence": "Round-2 03-order-detail-active.png now renders a proper Order Detail view: header 'DÉTAIL', status 'EN PRÉPARATION', '#C-1234 · 10 mai 2026 à 19:33 · Hénin-Beaumont', line items (1× Box Nashville +Oignon caramélisé · Cheddar 17,00€ · 1× Le Cheese Smash 9,50€ · 1× Bowl Cheesy 11,50€), TOTAL 33,00€, +LOYALTY +33 pts crédités, 'Payé en caisse · Reçu fiscal NF525 #C-1234-R'. DOM grep confirms no 'C'EST PARTI' string. Routing now goes to ScreenOrderDetail not ScreenConfirm.",
+      "fix_commit": "292b4cd69 (cluster-2)"
+    },
+    {
+      "id": "D-005",
+      "severity": "P2",
+      "round_1_status": "open",
+      "round_2_status": "partial",
+      "round_2_evidence": "Round-2 03-order-detail-active.dom.html still contains 'LECAY-ORDER-' substring, but now prefixed as 'FK:LECAY-ORDER-...' — a hybrid scheme. Loyalty domain still uses pure 'FK:A1B2C3D4'. So the move toward a unified FK: namespace started but order id still embeds the legacy LECAY-ORDER segment, leaving an integrator ambiguity (FK:ORDER- vs FK:LECAY-ORDER-).",
+      "fix_commit": "d9ee89928 (cluster-3)"
+    },
+    {
+      "id": "D-006",
+      "severity": "P2",
+      "round_1_status": "open",
+      "round_2_status": "regressed",
+      "round_2_evidence": "Round-2 11-loyalty-qr-rendered.png and 12-loyalty-qr-countdown-tick.png have different PNG MD5s (83201c1... vs 4c81d56...), so the captures differ, but DOM grep on both files returns 'Expire dans 4:59' twice — same exact timer text. The visual difference is QR pixel-noise (animated reseed) but the countdown still has not actually ticked between captures. Filename-vs-content mismatch persists.",
+      "fix_commit": "unknown"
+    },
+    {
+      "id": "D-007",
+      "severity": "P2",
+      "round_1_status": "open",
+      "round_2_status": "regressed",
+      "round_2_evidence": "Round-2 13-loyalty-barcode-toggle.png still shows the BarcodeMock as a near-solid black rectangle with no parseable whitespace gaps. The 'FK:A1B2C3D4' label sits underneath. Cluster-4 visual-quality fix did not touch BarcodeMock segmentation; ≥30% whitespace ratio not met.",
+      "fix_commit": "unknown"
+    },
+    {
+      "id": "D-008",
+      "severity": "P2",
+      "round_1_status": "open",
+      "round_2_status": "regressed",
+      "round_2_evidence": "Round-2 01-orders-active-tab.console.json still contains a level=error 404 for http://127.0.0.1:8081/.image-slots.state.json (image-slot.js:383). The 404 is silenced on Wave A surfaces (cluster-4 did patch onboarding) but still leaks on Wave D orders entry point. Goal of 'zero red errors on every screen' not yet met.",
+      "fix_commit": "unknown"
+    },
+    {
+      "id": "D-009",
+      "severity": "P1",
+      "round_1_status": "open",
+      "round_2_status": "closed",
+      "round_2_evidence": "Round-2 19-modal-redeem-idempotency-replay.png clearly distinguishes the replay path from a fresh success: header changes to 'DÉJÀ ÉCHANGÉE' (vs 'ÉCHANGÉ !' in state 18), explicit yellow banner 'Tu as déjà confirmé l'échange. Présente le code ci-dessous à la caisse.' Code identical and balance unchanged. Visual + textual signal that no extra debit occurred. The silent_error UX masking is gone.",
+      "fix_commit": "d9ee89928 (cluster-3)"
+    },
+    {
+      "id": "D-010",
+      "severity": "P2",
+      "round_1_status": "open",
+      "round_2_status": "partial",
+      "round_2_evidence": "Round-2 15-loyalty-history-tab.png now shows HISTORIQUE tab pill highlighted black (active) — confirming tab click took effect. But the viewport still mostly displays the QR card + balance card at the top; the actual history entries are below the fold and not captured. scrollIntoView still not applied. Surface change confirmed, but the actual list rendering remains unevidenced.",
+      "fix_commit": "8c7fbe202 (cluster-4)"
+    },
+    {
+      "id": "D-011",
+      "severity": "P2",
+      "round_1_status": "open",
+      "round_2_status": "regressed",
+      "round_2_evidence": "Round-2 22-loyalty-after-optout-cleared.png shows the 'Programme désactivé et points effacés' toast at the top. Toast still has only an inline × close glyph (no role=alert/aria-live attribute on the toast in DOM, no aria-label on the × button). Focus management to 'RÉACTIVER MON COMPTE' button not verified via DOM. Screen-reader path remains weak.",
+      "fix_commit": "unknown"
+    },
+    {
+      "id": "D-012",
+      "severity": "P3",
+      "round_1_status": "open",
+      "round_2_status": "closed",
+      "round_2_evidence": "Round-2 02-orders-historique-tab.png PTS card now reads 347 — matches LC.loyalty.account.balance, derived from the same data store as the loyalty screens (D-003 fix replaced the hardcoded JSX with reactive bindings). Staleness vector resolved as predicted in the round-1 evidence ('will close automatically when D-003 fix replaces the hardcoded JSX with reactive bindings').",
+      "fix_commit": "d9ee89928 (cluster-3)"
+    }
+  ],
+  "new_findings": [
+    {
+      "id": "D-N1",
+      "severity": "P3",
+      "state_artifact": "test-e2e-mobile-wave-D/03-order-detail-active.png",
+      "evidence": "Order detail screen shows the order placed at '10 mai 2026 à 19:33' but the orders/active tab card (state 01) for the same order C-1234 currently shows '~12 MIN' remaining and 'EN PRÉPARATION'. The detail also says 'EN PRÉPARATION'. Internally consistent here, but the QR code on the new order-detail view isn't shown anywhere on this surface (only mentioned via 'Reçu fiscal NF525 #C-1234-R'). A returning user revisiting the active order from the orders list would still need a way to surface the pickup QR — unclear whether the SUIVRE button on the now-correctly-routed confirmation handles that. Worth one follow-up snap that scrolls the order-detail and exercises the QR retrieval CTA."
+    }
+  ]
+}

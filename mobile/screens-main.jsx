@@ -999,7 +999,7 @@ function ScreenLoyalty({ go }) {
           {isOptedOut ? (
             <div style={{ padding: '16px 24px', textAlign: 'center' }}>
               <div className="lc-display" style={{ fontSize: 24, color: 'var(--ink)', marginBottom: 6 }}>Programme désactivé</div>
-              <div style={{ fontSize: 13, color: 'var(--ink)', marginBottom: 16 }}>Tu ne cumules plus de points. Tes points existants restent valides.</div>
+              <div style={{ fontSize: 13, color: 'var(--ink)', marginBottom: 16 }}>Tu ne cumules plus de points et tes points ont été effacés (RGPD art. 17). Réactive pour t'inscrire à nouveau.</div>
               <button onClick={() => { if (window.LC.dev) window.LC.dev.setConsent('opted_in'); }} className="lc-btn lc-btn--ink" style={{ height: 48 }}>Réactiver mon compte</button>
             </div>
           ) : (

@@ -1,0 +1,105 @@
+{
+  "wave": "A",
+  "round": 2,
+  "findings_reviewed": 12,
+  "summary": { "closed": 5, "regressed": 5, "partial": 2, "invalid": 0 },
+  "findings": [
+    {
+      "id": "A-001",
+      "severity": "P1",
+      "round_1_status": "open",
+      "round_2_status": "closed",
+      "round_2_evidence": "Round-2 07-otp-empty.png shows only OTP inputs, +33 6 12 34 56 78 confirmation line with Modifier link, Renvoyer (29s) timer, and the yellow SMS reassurance card. No 'Code de démo : 1234' string anywhere; grep on both 07/08 dom.html returns 0 matches. Dev affordance removed.",
+      "fix_commit": "8c7fbe202 (cluster-4)"
+    },
+    {
+      "id": "A-002",
+      "severity": "P1",
+      "round_1_status": "open",
+      "round_2_status": "regressed",
+      "round_2_evidence": "Round-2 02-onb1.png still shows the dashed-border image-slot placeholder with image icon + raw caption 'Hero burger' on the yellow onboarding panel. 09-home-authed.png still displays the featured Tacos XXL card with empty image-slot (image icon + 'Tacos XXL (4 Viandes)' caption). 13-tab-menu-active.png shows every Nos Tacos card with the same solid-black image fill + raw title inset. DOM still contains 3 <image-slot> tags per home/menu view with no src.",
+      "fix_commit": "unknown"
+    },
+    {
+      "id": "A-003",
+      "severity": "P1",
+      "round_1_status": "open",
+      "round_2_status": "closed",
+      "round_2_evidence": "Round-2 02-onb1.png shows 'BIENVENUE' fully inside the yellow panel; the trailing E is no longer overlapped by the EST. 24 black badge. Badge sits to the right and slightly above, no glyph collision.",
+      "fix_commit": "8c7fbe202 (cluster-4)"
+    },
+    {
+      "id": "A-004",
+      "severity": "P2",
+      "round_1_status": "open",
+      "round_2_status": "regressed",
+      "round_2_evidence": "Round-2 03-onb2.png still shows '30S' glyphs clipped both edges, with the '3 TAPS' badge over the lower-right S. Identical editorial framing to round-1 — no clamp() applied. May still be by-design but unchanged from round-1.",
+      "fix_commit": "unknown"
+    },
+    {
+      "id": "A-005",
+      "severity": "P1",
+      "round_1_status": "open",
+      "round_2_status": "regressed",
+      "round_2_evidence": "Round-2 09-home-authed.png shows the featured Tacos XXL card SIGNATURE pill as a black rounded pill with no visible text — same WCAG ~1:1 fail. DOM confirms <span class=\"lc-pill lc-pill--ink\" style=\"font-size: 9px;\">SIGNATURE</span> still in place; no contrast color override added. Visible across 09/10/11/12.",
+      "fix_commit": "unknown"
+    },
+    {
+      "id": "A-006",
+      "severity": "P2",
+      "round_1_status": "open",
+      "round_2_status": "regressed",
+      "round_2_evidence": "Round-2 09-home-authed.dom.html still has 'Les envies du moment' h3 + 'Voir tout' button + 'Notre sélection de la semaine' subtitle, followed by <div style=\"display: flex; gap: 12px; padding: 0px 20px; overflow-x: auto;\"></div> with zero children. Same half-rendered section.",
+      "fix_commit": "unknown"
+    },
+    {
+      "id": "A-007",
+      "severity": "P2",
+      "round_1_status": "open",
+      "round_2_status": "partial",
+      "round_2_evidence": "Round-2 09-home-authed.dom.html now contains 30 aria-label attributes (was 0 in round-1). However, the bottom tab bar is still rendered with <div class=\"lc-tab\"> elements (no <button>, no role=button, no aria-pressed). Bell + IB + search buttons remain plain <button> without aria-label. Wizard dots now show role='radiogroup' + role='radio' (verified via Wave B 20-tacos-step-menu.dom.html). Improvement is partial: input/labels added but tab bar semantics unchanged.",
+      "fix_commit": "8c7fbe202 (cluster-4)"
+    },
+    {
+      "id": "A-008",
+      "severity": "P3",
+      "round_1_status": "open",
+      "round_2_status": "regressed",
+      "round_2_evidence": "Round-2 06-login-empty.png still shows the phone input pre-populated with '06'. No autocomplete attribute or placeholder-only treatment applied. Owner-decision finding flagged at P3 — state unchanged from round-1.",
+      "fix_commit": "unknown"
+    },
+    {
+      "id": "A-009",
+      "severity": "P2",
+      "round_1_status": "open",
+      "round_2_status": "closed",
+      "round_2_evidence": "Round-2 02-onb1.png — EST. 24 badge now sits in the top-right of the yellow panel above the BIENVENUE headline, no longer overlapping the final E glyph. Visually no overlap. Cosmetic conflict resolved.",
+      "fix_commit": "8c7fbe202 (cluster-4)"
+    },
+    {
+      "id": "A-010",
+      "severity": "P2",
+      "round_1_status": "open",
+      "round_2_status": "regressed",
+      "round_2_evidence": "Spec-level finding: tests/e2e/audit-mobile-wave-A-2026-05-11.spec.js was not modified between rounds (fix clusters touched mobile/* and styles.css only). The .catch() that swallows the data-screen-label timeout is still in place. Risk of false-green pass persists.",
+      "fix_commit": "unknown"
+    },
+    {
+      "id": "A-011",
+      "severity": "P3",
+      "round_1_status": "open",
+      "round_2_status": "regressed",
+      "round_2_evidence": "Spec-level finding about console+network buffer reset between snaps; no protocol change between rounds. Per-state snap-only buffer remains and reviewers still have the same blind spot on cross-state silent errors. Documentation acceptance still pending.",
+      "fix_commit": "unknown"
+    },
+    {
+      "id": "A-012",
+      "severity": "P3",
+      "round_1_status": "open",
+      "round_2_status": "closed",
+      "round_2_evidence": "Round-2 02-onb1.console.json is empty []. The '<image-slot> without an id' warning and the /image-slot.state.json 404 are no longer logged on the onboarding screens. Note: the 404 still leaks on at least one Wave D state (01-orders-active-tab.console.json — flagged in Wave D D-008) but cluster-4 silenced it on Wave A surfaces.",
+      "fix_commit": "8c7fbe202 (cluster-4)"
+    }
+  ],
+  "new_findings": []
+}

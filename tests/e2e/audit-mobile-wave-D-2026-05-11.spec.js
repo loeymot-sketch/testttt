@@ -111,9 +111,10 @@ test('wave D — orders + profile + loyalty + WizardRedeem + modals', async ({ p
   // onClick onClickGo('orderDetail', id) — locate by the "Refaire" CTA inside.
   const refaireBtns = ordersScreen.locator('button').filter({ hasText: /Refaire/i });
   const refaireCount = await refaireBtns.count();
-  observations.push(`state02: historique rendered_cards=${refaireCount} (data.history=5, badge=8 — observation only)`);
-  // Verify the stat banner shows 8 / 184€ / 347 (hard-coded line 737-746).
-  await expect.soft(ordersScreen).toContainText(/184€/);
+  observations.push(`state02: historique rendered_cards=${refaireCount} (data.history=5 — D-003 cluster-3 fix derives count from data, badge=5 now)`);
+  // Post-cluster-3: stats derived from ORDERS_HISTORY (5 entries × sum = 105€, 347 pts running tot).
+  // Round-1 hardcoded "184€ / 347 pts" drift fixed → expect derived "105€ / 347 pts".
+  await expect.soft(ordersScreen).toContainText(/105€/);
   await expect.soft(ordersScreen).toContainText(/347/);
   await snap('02-orders-historique-tab');
 
@@ -547,9 +548,11 @@ test('wave D — orders + profile + loyalty + WizardRedeem + modals', async ({ p
     // The banner "Programme désactivé" should be visible.
     const banner = loyaltyScreen.locator('text=/Programme désactivé/i').first();
     const bannerVisible = await banner.isVisible().catch(() => false);
-    observations.push(`state22: consent=${consentStatus} balance_pre=${balancePreOptOut} balance_post=${balancePostOptOut} banner_visible=${bannerVisible} (balance preserved in data, hidden in UI)`);
+    observations.push(`state22: consent=${consentStatus} balance_pre=${balancePreOptOut} balance_post=${balancePostOptOut} banner_visible=${bannerVisible} (cluster-3 zeroes balance per RGPD art.17, body+toast+balance now aligned)`);
     await expect.soft(consentStatus).toBe('opted_out');
-    await expect.soft(balancePostOptOut).toBe(balancePreOptOut); // NOT cleared
+    // Post-cluster-3 + cluster-5: balance cleared to 0 on opt-out (RGPD art.17 right to erasure).
+    // Body copy aligned with toast + balance card (round-3 AD-N1 fix in mobile/screens-main.jsx:1002).
+    await expect.soft(balancePostOptOut).toBe(0);
   } else {
     observations.push('state22: opt-out confirm button not present — captured current state');
   }

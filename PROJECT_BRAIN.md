@@ -47,8 +47,8 @@ Plateforme restaurant fast-food complète :
 ## §2 CURRENT STATE — Auto-managed
 
 - **Branche** : `feature/mobile-app-le-cayenne-2026-05-10`
-- **HEAD** : `8b63e678d` (mobile-loyalty E2E 20/20 GREEN + audit 7-agent adversarial closed)
-- **Last update** : 2026-05-11 (mobile loyalty system V0 livré — audit + 6 commits + 20 specs)
+- **HEAD** : `d9ee89928` (round-2 cluster-3 loyalty idempotency + RGPD + count drift) — cluster-5 round-3 + verdict en attente de commit
+- **Last update** : 2026-05-11 (`/test-e2e` mobile wizard cycle COMPLET — round-1→2→3 GREEN, GO V0 conditionnel)
 - **Branche release antérieure** : `cycle/PHASE2-TRAIN-A-V1-RELEASE-PREP-2026-04-27`
   (HEAD `9d9dddae1`, NO-GO V1 par audit POS adversarial 2026-05-09 — état préservé)
 - **Domaines production-ready** : ~7-8 / 16 (revu après ultra audit POS 2026-05-09 ;
@@ -67,6 +67,49 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**`/test-e2e` mobile wizard cycle complet 2026-05-11** (HEAD `d9ee89928`+cluster-5 pending,
+branche `feature/mobile-app-le-cayenne-2026-05-10`) :
+- **Mission** : valider raisonnement (state machine wizard) + affichage (visual) + logique
+  (pricing + flow + RGPD + loyalty) sur l'app mobile Le Cayenne post-refactor multi-page,
+  via le protocole `/test-e2e` skill complet (capture + dual-team adversarial reviewer).
+- **Round-1** baseline 4 waves Playwright (A onboarding/home/tabs, B menu/cats/wizard P0,
+  C wizard P1/cart/pay/modals, D orders/profile/loyalty/wizard) → **49 findings** (2 P0 /
+  16 P1 / 24 P2 / 7 P3) commit `de47be9e8`. Adversarial cross-validation finalisée par
+  audit-trail JSON `reports/test-e2e/mobile-wizard-e2e-2026-05-11/round-1/wave-*.json`.
+- **Round-2 cluster fixes 1-4** ciblant 4 domaines orthogonaux :
+  - `6cb067c78` cluster-1 — recap + cart composition display integrity (screens-item-steps.jsx)
+  - `292b4cd69` cluster-2 — ScreenConfirm bind cart live + ScreenOrderDetail routing (index.html + screens-main.jsx)
+  - `d9ee89928` cluster-3 — loyalty idempotency 10-min window + RGPD opt-out balance zeroing + count drift derived from data (api/storage + WizardRedeem + dev-helpers + screens-modals)
+  - `8c7fbe202` cluster-4 — visual quality + dev-leak baseline (image-slot dev controls gating, OTP demo code gated, SIGNATURE pill `--paper` !important, BIENVENUE typography)
+- **Round-2 reclassif + adversarial dispute** (cf. `round-2/wave-*-reclassif.json` +
+  `round-2/ADVERSARIAL.md`) : 23 truly closed, 17 regressed/open, 7 partial, 3 nouveaux
+  findings (1 P1 AD-N1 RGPD copy contradiction introduit par cluster-3, 1 P2 epic AD-N4
+  image-slot leak, 1 P3 AD-N3). 2 P1 must die → AD-N1 + C-002 (state 24/25 byte-identical).
+- **Round-3 cluster-5 surgical** (2 fichiers, scope-minimal) :
+  - `mobile/screens-main.jsx:1002` — body copy opt-out alignée sur toast + balance card
+    (« Tu ne cumules plus de points et tes points ont été effacés (RGPD art. 17). Réactive
+    pour t'inscrire à nouveau. ») — AD-N1 CLOSED.
+  - `tests/e2e/audit-mobile-wave-C-2026-05-11.spec.js:930` — state 24 renamed
+    `24-modal-pay-counter-focused`, snap pris AVANT click avec CTA focused. MD5 state 24
+    PNG `da529caa...` ≠ state 25 PNG `20d92d2e...` (round-2 round-1 identiques `f93fa0e3...`)
+    — C-002 CLOSED.
+  - `tests/e2e/audit-mobile-wave-D-2026-05-11.spec.js:116,552` — assertions round-1 anchored
+    bug values (`/184€/`, `balancePost === balancePre`) mises à jour pour matcher comportement
+    cluster-3 correct (`/105€/`, `balancePost === 0`). Wave-D `expect.soft` previously
+    failing on probes for OLD-BUG values → now green ✓.
+- **Round-3 wave verifications** : 4/4 green (A 9s, B 19s, C 33s, D 33s).
+- **Verdict final** : 🟢 **GO V0 conditionnel** — 0 P0 + 0 P1 customer-facing résiduel, 0
+  contradiction RGPD. Backlog 24 P2 + 14 P3 documenté pour cycles ultérieurs (épic AD-N4
+  image-slot placeholders à fermer Phase 6 quand assets photo bundlés).
+- **Discipline CLAUDE.md** : §5 LOOP max 3 cycles respecté (round-3 = dernier nécessaire),
+  §6 Visual Test Mandate (screenshots read+analysés), §7 frozen-zones intactes (0 diff
+  KioskWizard / KioskApp / KioskUpsell / pos-wizard.js / FiscalSequence / BranchScope /
+  PricingService / OrderState), §10 Decision Framework (heal 2 cycles, pas d'escalation
+  needed), §13 Evidence rules (PNG read, MD5 distinct, DOM grep, test assertions).
+- **Rapports** : `reports/test-e2e/mobile-wizard-e2e-2026-05-11/` complet — AUDIT_PLAN,
+  REVIEWER_PROTOCOL, round-1/wave-*.json + screenshots backup, round-2/wave-*-reclassif.json +
+  ADVERSARIAL.md, 99_VERDICT.md, CONVERGENCE_FINAL.md.
 
 **Mobile loyalty system V0 — 7-agent adversarial audit + 6 commits 2026-05-10/11** :
 - **Audit massif 7 sub-agents** (Architect / Security / DBA / UX / Wallet /
