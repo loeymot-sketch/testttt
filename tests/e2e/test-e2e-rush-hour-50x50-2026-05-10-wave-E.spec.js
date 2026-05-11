@@ -82,7 +82,8 @@ const SCREENSHOT_DIR = path.resolve(__dirname, '__screenshots__/test-e2e-rush-ho
 // [test-e2e fix E-003 round-3 cluster-9 2026-05-11] advance wizard to extras + bump REPORTS_DIR
 // Round-1 hardcoded path caused round-2 to overwrite round-1 sidecars; bump to round-3 so each
 // audit round produces a discrete artifact tree alongside Wave A/B round-3 outputs.
-const REPORT_DIR = path.resolve(__dirname, '..', '..', 'reports', 'test-e2e', 'rush-hour-50x50-2026-05-10', 'round-3');
+// [test-e2e fix round-4 REPORTS_DIR bump 2026-05-11] verification cycle — preserve round-3 sidecars
+const REPORT_DIR = path.resolve(__dirname, '..', '..', 'reports', 'test-e2e', 'rush-hour-50x50-2026-05-10', 'round-4');
 
 // Live catalog triplet (verified 2026-05-11 status=5/avail=1)
 const ITEM_FRITES = { id: 361, name: 'Frites Seules', price: 2.0, cat: 315 };
