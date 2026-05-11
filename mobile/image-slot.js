@@ -591,9 +591,16 @@
       this._ring.style.display = mask ? 'none' : '';
 
       // Controls and reframe entry gate on this so share links stay read-only.
-      const editable = !!(window.omelette && window.omelette.writeFile);
+      // [test-e2e fix A-002 round-2 2026-05-11] gate dev affordance — in
+      // prod-facing prototype the omelette runtime is still injected, but the
+      // SaaS UX must not expose author-only Replace/Remove controls. Require
+      // an explicit ?dev (or LC.isDev) opt-in alongside omelette.writeFile.
+      const lcDev = !!(window.LC && window.LC.isDev);
+      const editable = !!(window.omelette && window.omelette.writeFile) && lcDev;
       this.toggleAttribute('data-editable', editable);
       this._sub.style.display = editable ? '' : 'none';
+      // Non-editable empty state should not look clickable.
+      this._empty.style.cursor = editable ? 'pointer' : 'default';
 
       // Content. The sidecar is also writable by the agent's write_file
       // tool, so its value isn't guaranteed canvas-originated — only accept

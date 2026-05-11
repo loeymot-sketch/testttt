@@ -104,6 +104,20 @@ h1[tabindex="-1"]:focus-visible { outline: none; }
 .lc-pill--green { background: var(--green); color: #fff; }
 .lc-pill--ghost { background: var(--gray-1); color: var(--ink); }
 
+/* [test-e2e fix A-005 round-2 2026-05-11] specificity escalation —
+   [data-screen-label] span { color: inherit } (0,1,1) was beating
+   .lc-pill--ink (0,1,0), collapsing SIGNATURE pill to black-on-black.
+   Force white text on every solid-bg pill that needs to override the
+   contrast safety net. */
+[data-screen-label] .lc-pill--ink,
+[data-screen-label] .lc-pill--ink * { color: var(--paper) !important; }
+[data-screen-label] .lc-pill--orange,
+[data-screen-label] .lc-pill--orange *,
+[data-screen-label] .lc-pill--red,
+[data-screen-label] .lc-pill--red *,
+[data-screen-label] .lc-pill--green,
+[data-screen-label] .lc-pill--green * { color: #fff !important; }
+
 /* Image slot styling override */
 image-slot {
   --slot-bg: #1a1a1a;

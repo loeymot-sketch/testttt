@@ -57,15 +57,16 @@ function ScreenOnb1({ onNext, onSkip }) {
     <div className="lc-doodle-bg" style={{ position: 'absolute', inset: 0, background: '#FFD93D' }}>
       <div style={{ position: 'absolute', inset: 0, opacity: 0.16, backgroundImage: 'radial-gradient(circle at 18% 22%, rgba(0,0,0,0.4) 0 2px, transparent 2px), radial-gradient(circle at 78% 65%, rgba(0,0,0,0.4) 0 2px, transparent 2px)', backgroundSize: '80px 80px' }}/>
       {/* big slanted text Pop's-style */}
-      <div style={{ position: 'absolute', top: 30, left: -10, right: -10, transform: 'rotate(-4deg)', opacity: 0.95 }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 92, color: '#FF5A1F', textTransform: 'uppercase', lineHeight: 0.85, letterSpacing: '0.02em', textShadow: '4px 4px 0 #0A0A0A' }}>BIENVENUE</div>
+      {/* [test-e2e fix A-003 round-2 2026-05-11] clamp font-size + left-align so BIENVENUE never clips */}
+      <div style={{ position: 'absolute', top: 60, left: 10, right: 80, transform: 'rotate(-4deg)', opacity: 0.95 }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(48px, 18vw, 78px)', color: '#FF5A1F', textTransform: 'uppercase', lineHeight: 0.85, letterSpacing: '0.01em', textShadow: '4px 4px 0 #0A0A0A', whiteSpace: 'nowrap' }}>BIENVENUE</div>
       </div>
       {/* Hero food slot */}
       <div style={{ position: 'absolute', bottom: -20, left: 24, right: 24, height: 280 }}>
         <Slot id="onb-burger" h="100%" radius={20} placeholder="Hero burger" />
       </div>
-      {/* corner accent */}
-      <div style={{ position: 'absolute', top: 14, right: 18, width: 56, height: 56, background: '#0A0A0A', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {/* corner accent — moved further up-right to avoid overlapping the BIENVENUE wordmark */}
+      <div style={{ position: 'absolute', top: 8, right: 12, width: 56, height: 56, background: '#0A0A0A', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
         <Stamp size={36}/>
         <div style={{ position: 'absolute', color: '#FFD93D', fontSize: 9, fontWeight: 700, letterSpacing: '0.08em' }}>EST. 24</div>
       </div>
@@ -272,7 +273,10 @@ function ScreenOTP({ onNext, onBack }) {
           ))}
         </div>
         <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: 12, color: 'var(--gray-3)', fontFamily: 'var(--font-mono)' }}>Code de démo : 1234</div>
+          {/* [test-e2e fix A-001 round-2 2026-05-11] gate dev affordance — hide demo code from prod-facing users */}
+          {window.LC && window.LC.isDev
+            ? <div style={{ fontSize: 12, color: 'var(--gray-3)', fontFamily: 'var(--font-mono)' }}>Code de démo : 1234</div>
+            : <div/>}
           <button style={{ background: 'transparent', border: 0, fontSize: 12, fontWeight: 700, color: 'var(--gray-3)', cursor: 'pointer' }}>Renvoyer (29s)</button>
         </div>
         {/* fun illustration band */}

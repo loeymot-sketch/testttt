@@ -709,93 +709,131 @@ function ScreenConfirm({ go, order }) {
 }
 
 // ORDERS
+// [test-e2e fix D-003 round-2 2026-05-11] tabs/cards/stats derived from
+// window.LC.orders data layer — removed hardcoded {8, 184€, 4 cards}
+// that drifted from underlying 5-entry history array.
+// (D-004 active-card → orderDetail routing preserved from prior fix.)
 function ScreenOrders({ go }) {
   const [tab, setTab] = uS('current');
+  const ordersApi = (window.LC && window.LC.orders) ? window.LC.orders : { active: [], history: [] };
+  const active = Array.isArray(ordersApi.active) ? ordersApi.active : [];
+  const history = Array.isArray(ordersApi.history) ? ordersApi.history : [];
+  const histTotal = history.reduce((s, o) => s + (Number(o.total) || 0), 0);
+  const groupByDate = (ordersApi.groupByDate && typeof ordersApi.groupByDate === 'function')
+    ? ordersApi.groupByDate
+    : null;
+  const dateLabel = (ordersApi.dateLabel && typeof ordersApi.dateLabel === 'function')
+    ? ordersApi.dateLabel
+    : function (iso) { return (iso || '').slice(0, 10); };
+  const groups = groupByDate ? groupByDate(history) : [{ date: '', items: history }];
+  const balancePts = (window.LC && window.LC.loyalty && window.LC.loyalty.account)
+    ? window.LC.loyalty.account.balance
+    : 0;
+  const fmtEur = (n) => (Number(n) || 0).toFixed(2).replace('.', ',') + ' €';
+
   return (
     <div data-screen-label="12 Orders" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 100 }}>
         <div style={{ padding: '16px 20px 6px' }}>
           <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>Commandes</h1>
         </div>
-        {/* tabs */}
+        {/* tabs — counts derived from data layer */}
         <div style={{ display: 'flex', gap: 6, padding: '14px 20px 0' }}>
-          {[{ id: 'current', label: 'En cours', count: 1 }, { id: 'history', label: 'Historique', count: 8 }].map(t => {
-            const active = tab === t.id;
+          {[{ id: 'current', label: 'En cours', count: active.length }, { id: 'history', label: 'Historique', count: history.length }].map(t => {
+            const isActive = tab === t.id;
             return (
-              <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '10px 18px', borderRadius: 999, border: 0, background: active ? 'var(--ink)' : 'var(--cream)', color: active ? 'var(--yellow)' : 'var(--ink)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '10px 18px', borderRadius: 999, border: 0, background: isActive ? 'var(--ink)' : 'var(--cream)', color: isActive ? 'var(--yellow)' : 'var(--ink)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                 {t.label}
-                <span style={{ background: active ? 'var(--orange)' : 'var(--gray-2)', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 999 }}>{t.count}</span>
+                <span data-testid={'orders-tab-count-' + t.id} style={{ background: isActive ? 'var(--orange)' : 'var(--gray-2)', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 999 }}>{t.count}</span>
               </button>
             );
           })}
         </div>
         {tab === 'current' ? (
           <div style={{ padding: '20px 20px 0' }}>
-            {/* Active card */}
-            {/* [test-e2e fix D-004 round-2 2026-05-11] active order routes to detail, not confirm */}
-            <div onClick={() => go('orderDetail', 'C-1234')} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: 'pointer' }}>
-              <div style={{ position: 'absolute', top: -20, right: -20, width: 140, height: 140, opacity: 0.06 }}><I.Pepper size={140} stroke="#FF5A1F"/></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="lc-pill" style={{ background: 'var(--orange)', color: '#fff' }}><span className="lc-status-dot" style={{ background: '#fff' }}/> EN PRÉPARATION</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>#C-1234</span>
+            {active.length === 0 && (
+              <div role="status" style={{ background: 'var(--cream)', borderRadius: 16, padding: 24, textAlign: 'center', color: 'var(--gray-4)', fontSize: 13 }}>
+                Aucune commande en cours.
               </div>
-              <div className="lc-display" style={{ fontSize: 36, marginTop: 14, color: 'var(--yellow)' }}>~12 MIN</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>Box Nashville · Le Cheese · Bowl Cheesy</div>
-              <div style={{ display: 'flex', gap: 4, marginTop: 16 }}>
-                {[1,2,3,4].map(i => (
-                  <div key={i} style={{ flex: 1, height: 4, borderRadius: 999, background: i <= 2 ? 'var(--orange)' : 'rgba(255,255,255,0.15)' }}/>
-                ))}
-              </div>
-              <div style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--yellow)' }}>Voir le QR de retrait →</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>33,00 €</span>
-              </div>
-            </div>
+            )}
+            {active.map(o => {
+              const summary = o.items_summary || (Array.isArray(o.items) ? o.items.map(i => i.name).join(' · ') : '');
+              const statusLabel = (o.status_label || 'En préparation').toUpperCase();
+              const eta = Number(o.eta_minutes) || 12;
+              const progressSteps = Math.max(1, Math.round((Number(o.progress_pct) || 50) / 25));
+              return (
+                /* [test-e2e fix D-004 round-2 2026-05-11] active order routes to detail, not confirm */
+                <div key={o.id} onClick={() => go('orderDetail', o.id)} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: 'pointer', marginBottom: 12 }}>
+                  <div style={{ position: 'absolute', top: -20, right: -20, width: 140, height: 140, opacity: 0.06 }}><I.Pepper size={140} stroke="#FF5A1F"/></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className="lc-pill" style={{ background: 'var(--orange)', color: '#fff' }}><span className="lc-status-dot" style={{ background: '#fff' }}/> {statusLabel}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>#{o.id}</span>
+                  </div>
+                  <div className="lc-display" style={{ fontSize: 36, marginTop: 14, color: 'var(--yellow)' }}>~{eta} MIN</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>{summary}</div>
+                  <div style={{ display: 'flex', gap: 4, marginTop: 16 }}>
+                    {[1,2,3,4].map(i => (
+                      <div key={i} style={{ flex: 1, height: 4, borderRadius: 999, background: i <= progressSteps ? 'var(--orange)' : 'rgba(255,255,255,0.15)' }}/>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--yellow)' }}>Voir le QR de retrait →</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{fmtEur(o.total)}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div style={{ padding: '20px 20px 0' }}>
-            {/* Stats banner */}
+            {/* Stats banner — derived from data layer */}
             <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
               <div style={{ flex: 1, background: 'var(--ink)', color: '#fff', borderRadius: 14, padding: '12px 14px' }}>
                 <div style={{ fontSize: 10, color: 'var(--yellow)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Commandes</div>
-                <div className="lc-display" style={{ fontSize: 26, color: '#fff' }}>8</div>
+                <div data-testid="orders-stat-count" className="lc-display" style={{ fontSize: 26, color: '#fff' }}>{history.length}</div>
               </div>
               <div style={{ flex: 1, background: 'var(--orange)', color: '#fff', borderRadius: 14, padding: '12px 14px' }}>
                 <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Dépensé</div>
-                <div className="lc-display" style={{ fontSize: 26 }}>184€</div>
+                <div data-testid="orders-stat-total" className="lc-display" style={{ fontSize: 26 }}>{Math.round(histTotal)}€</div>
               </div>
               <div style={{ flex: 1, background: 'var(--yellow)', color: 'var(--ink)', borderRadius: 14, padding: '12px 14px' }}>
                 <div style={{ fontSize: 10, color: 'var(--ink)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Pts</div>
-                <div className="lc-display" style={{ fontSize: 26 }}>347</div>
+                <div data-testid="orders-stat-points" className="lc-display" style={{ fontSize: 26 }}>{balancePts}</div>
               </div>
             </div>
-            {[
-              { date: 'HIER', items: [{ id: 'C-1212', items: 'Box Familiale', total: 29.00 }, { id: 'C-1208', items: 'Smash Cheese × 2 · Frites', total: 21.00 }] },
-              { date: '30 AVRIL', items: [{ id: 'C-1190', items: 'Wrap Poulet · Bowl Cheesy', total: 22.00 }] },
-              { date: '24 AVRIL', items: [{ id: 'C-1142', items: 'Box Nashville · Coca', total: 18.00 }] },
-            ].map((g, gi) => (
-              <div key={gi} style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--orange)', letterSpacing: '0.22em', marginBottom: 8, paddingLeft: 4 }}>● {g.date}</div>
+            {history.length === 0 && (
+              <div role="status" style={{ background: 'var(--cream)', borderRadius: 16, padding: 24, textAlign: 'center', color: 'var(--gray-4)', fontSize: 13 }}>
+                Aucune commande passée.
+              </div>
+            )}
+            {groups.map((g, gi) => (
+              <div key={(g.date || '') + '-' + gi} style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--orange)', letterSpacing: '0.22em', marginBottom: 8, paddingLeft: 4 }}>● {dateLabel(g.date)}</div>
                 <div style={{ display: 'grid', gap: 8 }}>
-                  {g.items.map(o => (
-                    <div key={o.id} onClick={() => go('orderDetail', o.id)} style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, position: 'relative', cursor: 'pointer' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--gray-3)' }}>#{o.id}</span>
-                            <span style={{ width: 4, height: 4, borderRadius: 999, background: 'var(--gray-2)' }}/>
-                            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>✓ Récupérée</span>
+                  {g.items.map(o => {
+                    const summary = o.items_summary || (Array.isArray(o.items) ? o.items.map(i => i.name).join(' · ') : '');
+                    const points = Number(o.points_earned) || Math.round(Number(o.total) || 0);
+                    const statusLabel = o.status_label || 'Récupérée';
+                    return (
+                      <div key={o.id} data-testid={'orders-history-card-' + o.id} onClick={() => go('orderDetail', o.id)} style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, position: 'relative', cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--gray-3)' }}>#{o.id}</span>
+                              <span style={{ width: 4, height: 4, borderRadius: 999, background: 'var(--gray-2)' }}/>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>✓ {statusLabel}</span>
+                            </div>
+                            <div style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>{summary}</div>
+                            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--orange)' }}>{fmtEur(o.total)}</span>
+                              <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 600 }}>+{points} pts</span>
+                            </div>
                           </div>
-                          <div style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>{o.items}</div>
-                          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--orange)' }}>{o.total.toFixed(2).replace('.', ',')} €</span>
-                            <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 600 }}>+{Math.round(o.total)} pts</span>
-                          </div>
+                          <button onClick={(e) => { e.stopPropagation(); go('menu'); }} style={{ background: 'var(--ink)', color: 'var(--yellow)', border: 0, padding: '10px 14px', borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0, alignSelf: 'center' }}>↻ Refaire</button>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); go('menu'); }} style={{ background: 'var(--ink)', color: 'var(--yellow)', border: 0, padding: '10px 14px', borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0, alignSelf: 'center' }}>↻ Refaire</button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}

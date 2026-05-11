@@ -2,6 +2,20 @@
 
 const { useState, useEffect, useRef, Fragment } = React;
 
+// [test-e2e fix A-001 round-2 2026-05-11] gate dev affordance
+// Dev mode flag — true when URL has ?dev OR localStorage.lecayenne.dev === 'true'.
+// Use this to hide demo OTP codes, debug UI, etc. from production-facing users.
+const LC_IS_DEV = (() => {
+  try {
+    if (typeof window === 'undefined') return false;
+    const hasParam = new URLSearchParams(window.location.search).has('dev');
+    const hasLS = window.localStorage && window.localStorage.getItem('lecayenne.dev') === 'true';
+    return hasParam || hasLS;
+  } catch (_e) { return false; }
+})();
+window.LC = window.LC || {};
+window.LC.isDev = LC_IS_DEV;
+
 // Wordmark logo
 function Logo({ size = 22, color = '#0A0A0A', accent = '#FF5A1F' }) {
   return (
