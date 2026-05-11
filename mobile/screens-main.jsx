@@ -205,7 +205,8 @@ function ScreenMenu({ go, cart, addToCart }) {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>{it.tags.slice(0,2).map(t => <Tag key={t} t={t}/>)}</div>
                       <div style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.2 }}>{it.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.desc}</div>
+                      {/* [test-e2e fix B-004 round-2 2026-05-11] CSS line-clamp 2 + tooltip — no more hard viewport clip */}
+                      <div title={it.desc} style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2, lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{it.desc}</div>
                       <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--orange)' }}>{it.price.toFixed(2).replace('.', ',')} €</span>
                         <button onClick={e => { e.stopPropagation(); addToCart(it); }} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--ink)', color: 'var(--yellow)', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Plus size={16}/></button>
@@ -408,7 +409,8 @@ function ScreenItem({ go, itemId, addToCart }) {
                 {lcMenu.crudites.map(c => {
                   const on = cruditeIds.includes(c.id);
                   return (
-                    <div key={c.id} onClick={() => toggleCrudite(c.id)} style={{ padding: '12px 8px', borderRadius: 12, border: on ? '2px solid var(--green)' : '2px solid var(--gray-2)', background: on ? '#E8F8ED' : 'var(--cream)', cursor: 'pointer', textAlign: 'center', textDecoration: on ? 'none' : 'line-through', textDecorationColor: 'var(--gray-3)' }}>
+                    // [test-e2e fix B-005 round-2 2026-05-11] longhand to avoid React warning
+                    <div key={c.id} onClick={() => toggleCrudite(c.id)} style={{ padding: '12px 8px', borderRadius: 12, border: on ? '2px solid var(--green)' : '2px solid var(--gray-2)', background: on ? '#E8F8ED' : 'var(--cream)', cursor: 'pointer', textAlign: 'center', textDecorationLine: on ? 'none' : 'line-through', textDecorationColor: 'var(--gray-3)' }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: on ? 'var(--green)' : 'var(--gray-3)' }}>
                         {on ? '✓' : '✕'} {c.name}
                       </div>
@@ -565,7 +567,23 @@ function ScreenCart({ go, cart, setCart }) {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{it.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>+ {(it.sups||[]).length} suppléments</div>
+                {/* [test-e2e fix B-001/C-004 round-2 2026-05-11] render full composition_summary
+                    built by buildLineItem (mobile/screens-item-steps.jsx) so the customer can
+                    verify viandes / sauces / crudités / suppléments / formule on the cart line
+                    before pressing "Valider ma commande". Falls back to legacy "+ N supplément(s)"
+                    for direct-add items (Coca, Tiramisu) which never traverse the wizard and
+                    therefore have no composition_summary. B-006 plural/singular agreement on n=1
+                    is fixed at the same time. */}
+                {it.composition_summary
+                  ? <div title={it.composition_summary} style={{
+                      fontSize: 11, color: 'var(--gray-4)', marginTop: 2,
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.4,
+                    }}>{it.composition_summary}</div>
+                  : ((it.sups||[]).length > 0
+                      ? <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>+ {(it.sups).length} supplément{(it.sups).length > 1 ? 's' : ''}</div>
+                      : null)
+                }
                 <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div className="lc-stepper">
                     <button onClick={() => updateQty(idx, -1)}>−</button>

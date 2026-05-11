@@ -7,17 +7,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778472183108
-  },
-  {
-    "level": "error",
-    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
-    "location": {
-      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
-      "lineNumber": 11189,
-      "columnNumber": 0
-    },
-    "ts": 1778472188005
+    "ts": 1778473164062
   },
   {
     "level": "error",
@@ -27,7 +17,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778472188020
+    "ts": 1778473165979
   },
   {
     "level": "error",
@@ -37,7 +27,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778472191350
+    "ts": 1778473170196
   },
   {
     "level": "error",
@@ -47,6 +37,26 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778472191352
+    "ts": 1778473170205
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778473173716
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778473173727
   }
 ]

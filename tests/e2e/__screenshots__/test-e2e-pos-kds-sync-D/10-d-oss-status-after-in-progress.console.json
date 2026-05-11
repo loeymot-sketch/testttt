@@ -7,7 +7,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778471638978
+    "ts": 1778473072499
   },
   {
     "level": "error",
@@ -17,16 +17,16 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778471641750
+    "ts": 1778473075289
   },
   {
     "level": "warning",
-    "text": "[OSS] Realtime broadcast unavailable for 12s — polling fallback active. SYNC latency may exceed live cadence.",
+    "text": "[OSS] Realtime broadcast unavailable for 11s — polling fallback active. SYNC latency may exceed live cadence.",
     "location": {
       "url": "http://127.0.0.1:8000/js/admin-oss.js",
       "lineNumber": 1107,
       "columnNumber": 16
     },
-    "ts": 1778471645961
+    "ts": 1778473078469
   }
 ]

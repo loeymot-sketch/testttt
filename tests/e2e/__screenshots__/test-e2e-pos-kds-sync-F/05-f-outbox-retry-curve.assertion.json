@@ -4,20 +4,20 @@
   "when": "placeKioskOrder() + wait 2.5s for inline DispatchDomainEventsJob",
   "then": "a domain_events row exists for OrderCreated; dispatched_at semantics record truthful pipeline behavior",
   "observed": {
-    "order_id": 1261,
+    "order_id": 1307,
     "total": 2,
     "domain_event": {
-      "id": 1346,
+      "id": 1418,
       "event_type": "order.created",
-      "aggregate_id": 1261,
+      "aggregate_id": 1307,
       "dispatched_at": null,
       "attempts": 1,
       "channel": "[\"private-branch.1\"]",
       "broadcast_as": "OrderCreated",
-      "correlation_id": "fa7de651-3f62-428f-9eb2-02442830cef0",
-      "idempotency_key": "e83f3a2e021a1efc28854ff24e58b87ee2638dd5",
-      "last_error": "Pusher error: cURL error 7: Failed to connect to 127.0.0.1 port 6001 after 0 ms: Could not connect to server (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for http://127.0.0.1:6001/apps/app-id/events?auth_key=app-key&auth_timestamp=1778472440&auth_version=1.0&body_md5=087215c3b773555f840364cf006e4f2d&auth_signature=bbb48f774ecf352a9557443069e0629130e5145e2e32330c530a9ad2b019edde.",
-      "occurred_at": "2026-05-11 06:07:20.000"
+      "correlation_id": "0c345c64-692a-4fba-8d2c-bb57846033ee",
+      "idempotency_key": "8a32c70e9bddf20599cac9336302c61b426144fe",
+      "last_error": "Pusher error: cURL error 7: Failed to connect to 127.0.0.1 port 6001 after 0 ms: Could not connect to server (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for http://127.0.0.1:6001/apps/app-id/events?auth_key=app-key&auth_timestamp=1778473635&auth_version=1.0&body_md5=33da0b7ec67eff52be7d46179917fb3c&auth_signature=5a38ae594e2c56b0b134685f0cd48e284ae1b210524a780ba438030315d8ddea.",
+      "occurred_at": "2026-05-11 06:27:15.000"
     },
     "domain_events_count": 1
   },
@@ -26,5 +26,5 @@
     "event_type": "order.created"
   },
   "verdict": "PASS",
-  "evidence": "order_id=1261 domain_event={\"id\":1346,\"event_type\":\"order.created\",\"aggregate_id\":1261,\"dispatched_at\":null,\"attempts\":1,\"channel\":\"[\\\"private-branch.1\\\"]\",\"broadcast_as\":\"OrderCreated\",\"correlation_id\":\"fa7de651-3f62-428f-9eb2-02442830cef0\",\"idempotency_key\":\"e83f3a2e021a1efc28854ff24e58b87ee2638dd5\",\"last_error\":\"Pusher error: cURL error 7: Failed to connect to 127.0.0.1 port 6001 after 0 ms: Could not connect to server (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for http://127.0.0.1:6001/apps/app-id/events?auth_key=app-key&auth_timestamp=1778472440&auth_version=1.0&body_md5=087215c3b773555f840364cf006e4f2d&auth_signature=bbb48f774ecf352a9557443069e0629130e5145e2e32330c530a9ad2b019edde.\",\"occurred_at\":\"2026-05-11 06:07:20.000\"}"
+  "evidence": "order_id=1307 domain_event={\"id\":1418,\"event_type\":\"order.created\",\"aggregate_id\":1307,\"dispatched_at\":null,\"attempts\":1,\"channel\":\"[\\\"private-branch.1\\\"]\",\"broadcast_as\":\"OrderCreated\",\"correlation_id\":\"0c345c64-692a-4fba-8d2c-bb57846033ee\",\"idempotency_key\":\"8a32c70e9bddf20599cac9336302c61b426144fe\",\"last_error\":\"Pusher error: cURL error 7: Failed to connect to 127.0.0.1 port 6001 after 0 ms: Could not connect to server (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for http://127.0.0.1:6001/apps/app-id/events?auth_key=app-key&auth_timestamp=1778473635&auth_version=1.0&body_md5=33da0b7ec67eff52be7d46179917fb3c&auth_signature=5a38ae594e2c56b0b134685f0cd48e284ae1b210524a780ba438030315d8ddea.\",\"occurred_at\":\"2026-05-11 06:27:15.000\"}"
 }

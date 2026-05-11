@@ -4,14 +4,14 @@
   "when": "placeKioskOrder() and wait for order_serial to render on KDS DOM",
   "then": "KDS shows order within 14s (10s base + jitter + 1s buffer)",
   "observed": {
-    "order_id": 1265,
-    "order_serial": "1105261265",
-    "kds_pickup_latency_ms": 3999,
+    "order_id": 1310,
+    "order_serial": "1105261310",
+    "kds_pickup_latency_ms": 2727,
     "budget_ms": 14000
   },
   "expected": {
     "kds_pickup_latency_ms_max": 14000
   },
   "verdict": "PASS",
-  "evidence": "latency=3999ms serial=1105261265"
+  "evidence": "latency=2727ms serial=1105261310"
 }

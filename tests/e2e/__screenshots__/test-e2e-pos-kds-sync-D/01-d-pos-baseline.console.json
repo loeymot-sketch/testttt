@@ -7,7 +7,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778471584222
+    "ts": 1778473010100
   },
   {
     "level": "error",
@@ -17,7 +17,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778471586148
+    "ts": 1778473012015
   },
   {
     "level": "error",
@@ -27,7 +27,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778471589396
+    "ts": 1778473014978
   },
   {
     "level": "error",
@@ -37,7 +37,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778471589408
+    "ts": 1778473014984
   },
   {
     "level": "info",
@@ -47,6 +47,16 @@
       "lineNumber": 15975,
       "columnNumber": 16
     },
-    "ts": 1778471589956
+    "ts": 1778473015523
+  },
+  {
+    "level": "verbose",
+    "text": "[DOM] Input elements should have autocomplete attributes (suggested: \"username\"): (More info: https://goo.gl/9p2vKq) %o",
+    "location": {
+      "url": "http://127.0.0.1:8000/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778473015563
   }
 ]

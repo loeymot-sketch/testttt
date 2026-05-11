@@ -6,7 +6,7 @@
   "observed": {
     "kioskResult": {
       "ok": true,
-      "orderId": 1260,
+      "orderId": 1306,
       "status": null
     },
     "posResult": {
@@ -17,11 +17,11 @@
     "orders_delta": 1,
     "recent_orders": [
       {
-        "id": 1260,
+        "id": 1306,
         "source": "5",
         "order_type": 10,
         "total": "2.000000",
-        "token": "AUDIT-KIOSK-WAVE-E-1778472428328-475273"
+        "token": "AUDIT-KIOSK-WAVE-E-1778473621684-98838"
       }
     ]
   },
@@ -29,5 +29,5 @@
     "orders_delta": 2
   },
   "verdict": "PARTIAL",
-  "evidence": "recent=[{\"id\":1260,\"source\":\"5\",\"order_type\":10,\"total\":\"2.000000\",\"token\":\"AUDIT-KIOSK-WAVE-E-1778472428328-475273\"}]"
+  "evidence": "recent=[{\"id\":1306,\"source\":\"5\",\"order_type\":10,\"total\":\"2.000000\",\"token\":\"AUDIT-KIOSK-WAVE-E-1778473621684-98838\"}]"
 }

@@ -4,7 +4,7 @@
   "when": "tinker fires 2x event(new OrderUpdated($order, 'status_change', ['version' => 1]))",
   "then": "second event should be gated (version <= previousVersion). Observable proxy: MutationObserver count bounded.",
   "observed": {
-    "seed_order_id": 1262,
+    "seed_order_id": 1308,
     "dispatch_result": {
       "error": "Class \"App\\Events\\OrderUpdated\" not found",
       "class": "Error"

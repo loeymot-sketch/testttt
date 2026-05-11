@@ -389,7 +389,8 @@ function ScreenStepCrudites({ item, selections, setSelections, headingRef }) {
           const on = cruditeIds.includes(c.id);
           return (
             <ChoiceCard key={c.id} on={on} onPick={() => toggle(c.id)} ariaRole="checkbox" accent="green">
-              <div style={{ width: '100%', textAlign: 'center', textDecoration: on ? 'none' : 'line-through', textDecorationColor: 'var(--gray-3)' }}>
+              { /* [test-e2e fix B-005 round-2 2026-05-11] longhand to avoid React warning */ }
+              <div style={{ width: '100%', textAlign: 'center', textDecorationLine: on ? 'none' : 'line-through', textDecorationColor: 'var(--gray-3)' }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: on ? 'var(--green)' : 'var(--gray-3)' }}>
                   <span aria-hidden="true">{on ? '✓' : '✕'}</span> {c.name}
                 </div>

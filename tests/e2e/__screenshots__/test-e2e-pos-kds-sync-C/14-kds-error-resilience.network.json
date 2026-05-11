@@ -4,6 +4,13 @@
     "method": "GET",
     "status": 503,
     "duration_ms": null,
-    "ts": 1778446815820
+    "ts": 1778472991671
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/admin/kds-order?paginate=0&order_column=id&order_by=desc",
+    "method": "GET",
+    "status": 503,
+    "duration_ms": null,
+    "ts": 1778472991960
   }
 ]

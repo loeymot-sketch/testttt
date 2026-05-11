@@ -7,7 +7,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778472394211
+    "ts": 1778473585484
   },
   {
     "level": "error",
@@ -17,7 +17,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778472396169
+    "ts": 1778473587413
   },
   {
     "level": "error",
@@ -27,7 +27,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778472399312
+    "ts": 1778473590497
   },
   {
     "level": "error",
@@ -37,7 +37,7 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778472399319
+    "ts": 1778473590507
   },
   {
     "level": "info",
@@ -47,27 +47,37 @@
       "lineNumber": 15975,
       "columnNumber": 16
     },
-    "ts": 1778472399815
+    "ts": 1778473591063
+  },
+  {
+    "level": "verbose",
+    "text": "[DOM] Input elements should have autocomplete attributes (suggested: \"username\"): (More info: https://goo.gl/9p2vKq) %o",
+    "location": {
+      "url": "http://127.0.0.1:8000/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778473591099
   },
   {
     "level": "log",
     "text": "[POS-WIZARD] detectCategory (fallback): {apiCat: Frites & Accompagnements, domCat: frites & accompagnements, name: Frites Seules}",
     "location": {
-      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778472396",
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778473587",
       "lineNumber": 337,
       "columnNumber": 16
     },
-    "ts": 1778472401913
+    "ts": 1778473593149
   },
   {
     "level": "log",
     "text": "[POS-WIZARD] detectCategory (fallback): {apiCat: Frites & Accompagnements, domCat: frites & accompagnements, name: Frites Seules}",
     "location": {
-      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778472396",
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778473587",
       "lineNumber": 337,
       "columnNumber": 16
     },
-    "ts": 1778472401914
+    "ts": 1778473593150
   },
   {
     "level": "error",
@@ -77,27 +87,27 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778472411480
+    "ts": 1778473602662
   },
   {
     "level": "log",
     "text": "[POS-WIZARD] wizard_template from API: tacos",
     "location": {
-      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778472396",
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778473587",
       "lineNumber": 321,
       "columnNumber": 20
     },
-    "ts": 1778472414035
+    "ts": 1778473605431
   },
   {
     "level": "log",
     "text": "[POS-WIZARD] wizard_template from API: tacos",
     "location": {
-      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778472396",
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1778473587",
       "lineNumber": 321,
       "columnNumber": 20
     },
-    "ts": 1778472414035
+    "ts": 1778473605431
   },
   {
     "level": "error",
@@ -107,6 +117,6 @@
       "lineNumber": 11189,
       "columnNumber": 0
     },
-    "ts": 1778472414318
+    "ts": 1778473605500
   }
 ]
