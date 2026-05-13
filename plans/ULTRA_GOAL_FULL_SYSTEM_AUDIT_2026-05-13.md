@@ -14,7 +14,9 @@
 
 Claude est invoqué en mode `/goal` pour exécuter un **audit profond isolant** sur 11 axes orthogonaux, suivi d'un **heal cycle** par axe, puis d'une **convergence cross-axis**, et enfin d'un **test E2E massif** (50 commandes réelles avec captures visuelles + adversarial supervisor) **jusqu'à atteindre GREEN** sur 100% des acceptance criteria de §18.
 
-**Pas d'arrêt avant convergence**. Maximum 5 cycles de healing par axe. Si convergence impossible, escalation explicite owner (§20).
+**AUTONOMIE TOTALE — Claude est le cerveau, owner ne reçoit que le résultat final.** Claude ne pose AUCUNE question pendant l'exécution. Toutes les décisions sont prises par Claude avec validation par sub-agent adversarial + méta-adversarial. Seules 4 actions strictement légales/destructives provoquent un STOP (cf. §20.3). Pour tout le reste : Claude tranche, document, continue.
+
+**Pas d'arrêt avant convergence**. Maximum 5 cycles de healing par axe. Si convergence impossible après 5 cycles → Claude tranche avec rationale (downgrade severity, workaround, ou LOCK plan), document, continue. Jamais d'attente owner.
 
 **Discipline absolue** :
 - CLAUDE.md §1-§16 applicable intégralement
@@ -900,25 +902,29 @@ If evidence missing → downgrade confidence → prefer heal/block/human gate.
 
 ---
 
-## §13. DECISION FRAMEWORK (CLAUDE.md §10)
+## §13. DECISION FRAMEWORK (CLAUDE.md §10 + autonomy override §20)
 
 Per phase verdict :
 - **continue** : acceptable, proceed
 - **heal** : partially acceptable, loop max 5
-- **block** : unsafe, stop + escalate
-- **escalate** : require owner decision
-- **human** : explicit human approval
+- **conditional-pass** : not fully GREEN but Claude has documented rationale + adversarial validated → continue
+- **stop-legal** : NF525/destructive/force-push/secrets case (cf. §20.3) → STOP that specific action, continue other axes
 
-### Escalation triggers (mandatory owner gate)
-- Frozen-zone touch needed
-- NF525 invariant questioned
-- 3+ healing cycles same axis (loops to k=5)
-- Architecture direction uncertain
-- Evidence weak
-- Business correctness unclear
-- Production data deletion required
-- Force push branch protected
-- Public PR creation
+**Pas de "escalate to owner" pendant exécution. Owner reçoit FINAL_VERDICT.md à la fin.**
+
+### Self-decision protocol (au lieu d'escalation)
+
+Pour chaque cas qui aurait été escaladé dans l'ancien framework :
+
+1. Frozen-zone touch needed → write LOCK plan + 2/3 adversarial validation (cf. §20.4)
+2. NF525 invariant questioned → STOP that fix only, find alternative, document
+3. 5+ healing cycles same axis → §20.6 (downgrade or workaround or LOCK)
+4. Architecture direction uncertain → §20.5 (2-3 options + adversarial dispute → choose)
+5. Evidence weak → spawn additional adversarial, cross-validate, choose
+6. Business correctness unclear → choose safest interpretation, document risk
+7. Production data correction → ONLY non-destructive (UPDATE with WHERE + transaction), never DELETE/TRUNCATE
+8. Force push branch protected → §20.3 cas #3 STOP, branche alternative
+9. Public PR creation → defer to FINAL_VERDICT.md recommendation, do NOT create
 
 ---
 
@@ -1138,38 +1144,104 @@ reports/audit/ultra-goal-2026-05-13/
 
 ---
 
-## §20. OWNER GATES — Escalation points
+## §20. AUTONOMY DOCTRINE — Claude orchestre, jamais ne s'arrête
 
-Claude MUST stop and escalate to owner in these cases :
+**L'owner a délégué TOUTE la prise de décision à Claude.** L'owner n'a que le BUT, pas les techniques. Claude est le cerveau du projet pour la durée de ce goal.
 
-1. **Frozen-zone touch required** to fix P0
-2. **NF525 invariant questioned** (e.g., SoftDeletes on Order/OrderItem)
-3. **3+ healing cycles same axis** without convergence
-4. **Architecture direction uncertain** (e.g., do we add new Service vs extend existing)
-5. **Cross-branch data leak** detected
-6. **Production data correction needed** (manual SQL)
-7. **PR creation required** (always escalate)
-8. **Backend breaking API change** (clients impacted)
-9. **Migration with destructive intent** (DROP, TRUNCATE)
-10. **External service config change** (Pusher, Stripe, SenangPay credentials)
+### 20.1 Règle d'autonomie absolue
 
-Escalation format :
-```
-⚠️ OWNER GATE REQUIRED
+Claude **NE POSE PAS DE QUESTIONS** à l'owner pendant l'exécution. Pour CHAQUE décision (architecturale, scope, fix, refactor, etc.) :
 
-Axis: <Ai>
-Phase: <name>
-Issue: <one-line>
-Options:
-  (a) ...
-  (b) ...
-  (c) ...
-Default proposed: <(a|b|c)>
-Risk if proceed default: <one-line>
-Risk if escalate: <one-line>
-```
+1. **Claude analyse les options** (au moins 2 options envisagées)
+2. **Claude choisit la meilleure** selon : correctness > maintainability > coherence > speed
+3. **Adversarial sub-agent valide le choix** (challenge le raisonnement)
+4. **Si adversarial confirme** → proceed
+5. **Si adversarial dispute** → Claude reconsidère, choisit option différente, re-valide
+6. **Si 3 cycles adversarial sans convergence** → Claude tranche et documente le risque (PAS d'escalation owner)
 
-Wait for owner explicit decision. **DO NOT proceed default without confirmation.**
+Toute hésitation = adversarial review, jamais owner question.
+
+### 20.2 Méta-orchestrator adversarial (validation des décisions de Claude)
+
+À CHAQUE phase et à CHAQUE décision non-triviale, Claude spawn un sub-agent `meta-adversarial` avec mission :
+
+> "Tu audites les décisions d'orchestration de Claude principal. Pour chaque décision prise dans cette phase :
+> - Was the right axis prioritized?
+> - Was the right sub-agent role chosen?
+> - Were the right files touched (vs frozen-zone violation risk)?
+> - Was the heal scope-minimal vs over-engineering?
+> - Did Claude skip an adversarial cycle prematurely?
+> - Did Claude rationalize away a finding instead of fixing?
+>
+> Output: JSON verdict {decisions_validated: [], decisions_disputed: [], decisions_to_reverse: []}."
+
+Si méta-adversarial dispute → Claude reverse ou re-fait la décision avec correction.
+
+### 20.3 ZÉRO STOP (sauf 4 cas légaux/destructifs)
+
+Claude ne s'arrête JAMAIS sauf dans ces 4 cas exclusivement :
+
+1. **NF525 violation détectée** : un fix nécessite la suppression/modification de fiscal_sequence_no, audit_logs HMAC chain, z_reports chain, ou composition_snapshot. → STOP, document le risque légal (loi française = prison), n'applique RIEN, continue les autres axes en parallèle.
+
+2. **Destruction de données production irréversible** : DROP TABLE, TRUNCATE, force-delete sur orders/audit_logs/z_reports/fiscal_*, ou bypass MySQL BEFORE DELETE trigger. → STOP cette action, log le risque, choisis approche alternative non-destructive.
+
+3. **Force push sur branche protégée** : `main`, ou toute branche tagged `protected/*`. → STOP, créé branche `wip/<feature>` à la place, commit dessus.
+
+4. **External secrets/credentials modification** : .env Stripe/SenangPay/Pusher production keys, AWS keys, DB credentials. → STOP, ne touche pas, document.
+
+**Tous les autres cas** (architecture, scope, refactor, frozen-zone fix, breaking API, multi-tenant fix, etc.) → Claude tranche avec adversarial review, jamais owner question.
+
+### 20.4 Frozen-zones touch — autonomy override
+
+Si fix P0 nécessite touch frozen-zone (CLAUDE.md §7 list) :
+
+1. Claude écrit `plans/LOCK_<issue>_<date>.md` (scope + justification + rollback + acceptance + risk)
+2. Adversarial sub-agent review le LOCK (challenge nécessité + scope-minimal)
+3. Méta-adversarial review la décision d'écrire le LOCK
+4. Si 2/3 valident → Claude proceed avec LOCK (PAS d'attente owner)
+5. Tests régression triple-vert post-modification mandatory
+6. Si tests fail → revert immédiat + LOCK déclaré abandonné
+
+LOCK plans archivés dans `plans/LOCK_*.md`. Owner les lit après livraison finale.
+
+### 20.5 Décisions architecturales — autonomy with rationale
+
+Pour décisions de scope (ex : "ajouter nouveau service vs étendre existant?", "migrer Cayenne sandwich vers composer profile vs garder legacy?") :
+
+1. Claude écrit 2-3 options dans son raisonnement
+2. Évalue chaque option contre : correctness, maintainability, frozen-zone respect, NF525 safety, test coverage impact
+3. Choisit avec justification écrite
+4. Adversarial sub-agent dispute le choix (devil's advocate)
+5. Si dispute valide → re-évalue, change choix, document
+6. Si dispute invalide → confirme choix, document raisonnement
+
+Le rationale est écrit dans le rapport de phase. Owner peut le lire ex-post.
+
+### 20.6 Convergence non-atteinte (5+ healing cycles même axe)
+
+Si après 5 cycles healing sur un axe, P0 résiduel persiste :
+
+1. **PAS d'escalation owner** — Claude tranche
+2. Claude analyse pourquoi convergence impossible (root cause)
+3. Adversarial sub-agent valide l'analyse
+4. Choix entre :
+   - (a) Downgrade P0 → P1 si owner-impact réellement faible (avec rationale écrit)
+   - (b) Accept "known issue" avec workaround documenté
+   - (c) Touche frozen-zone via LOCK (cf. §20.4)
+5. Document final dans `axis-Ai-FINAL.md` avec verdict "GO-CONDITIONAL" + risk register
+6. Continue les autres axes (1 axe non-converged ne bloque pas le goal global)
+
+### 20.7 Comportement narratif
+
+Claude ne dit JAMAIS : "Should I... ?", "Do you want me to...?", "Would you prefer A or B?".
+
+Claude dit : "J'ai choisi X parce que Y. Adversarial validated. Proceeding."
+
+Claude n'attend rien de l'owner pendant l'exécution. L'owner reçoit la livraison finale.
+
+---
+
+**EXCEPTION UNIQUE — Final delivery report** : à la toute fin du goal (Phase 15 complete), Claude peut indiquer dans FINAL_VERDICT.md les 0-5 décisions où il a tranché malgré incertitude résiduelle, pour information owner ex-post. Mais pendant l'exécution : aucune pause, aucune question.
 
 ---
 
@@ -1206,15 +1278,21 @@ rm -rf reports/audit/ultra-goal-2026-05-13/
 
 ---
 
-## §22. FINAL NOTE — Discipline immuable
+## §22. FINAL NOTE — Discipline immuable + Autonomie totale
 
 Claude must remember at every moment :
 
+> **Tu es le cerveau du projet pour la durée de ce goal. L'owner t'a délégué la prise de décision intégrale.**
+>
+> **Tu ne poses PAS de questions. Tu décides, tu valides via adversarial, tu exécutes.**
+>
+> **Owner reçoit le résultat final. Pas de pause intermédiaire.**
+>
 > **Le but n'est pas la vitesse. Le but est correctness, coherence, reliability, quality.**
 >
 > **Partial est meilleur que faux.**
 >
-> **Bloqué est meilleur que silencieusement dangereux.**
+> **Bloqué est meilleur que silencieusement dangereux** (et "bloqué" = STOP cette action spécifique, continue les autres axes).
 >
 > **Real evidence is more important than confidence.**
 >
@@ -1223,6 +1301,8 @@ Claude must remember at every moment :
 > **Visual evidence required — un test technique vert ne prouve pas que l'UI est correcte.**
 >
 > **No return with broken state — si un fix échoue, loop pour corriger, pas livré tant que ce n'est pas vert.**
+>
+> **Chaque décision = Claude analyse + adversarial valide + méta-adversarial audite la décision d'orchestration.**
 
 Claude est responsable de **préserver l'intelligence du projet**. Cela signifie :
 - Protéger le projet de la dérive
