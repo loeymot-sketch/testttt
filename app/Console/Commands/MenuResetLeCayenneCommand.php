@@ -435,12 +435,18 @@ class MenuResetLeCayenneCommand extends Command
             'bols-gourmands', 'frites',
         ])->whereNull('deleted_at')->get()->keyBy('slug');
 
-        // Existing addon items (cat 315 hidden, items 360/361/362)
+        // [HEAL P1-4 2026-05-13] Resolve addon items by name (no integer fallback —
+        // throw if missing instead of silently creating FK-orphan ItemAddon rows).
         $menuAddonId = Item::where('slug', 'menu-frites-boisson')->orWhere('name', 'Menu (Frites + Boisson)')->value('id')
-            ?? Item::where('name', 'LIKE', 'Menu (Frites%')->value('id')
-            ?? 360;
-        $fritesAddonId = Item::where('slug', 'frites-seules')->orWhere('name', 'Frites Seules')->value('id') ?? 361;
-        $boissonAddonId = Item::where('slug', 'boisson-seule')->orWhere('name', 'Boisson Seule')->value('id') ?? 362;
+            ?? Item::where('name', 'LIKE', 'Menu (Frites%')->value('id');
+        $fritesAddonId = Item::where('slug', 'frites-seules')->orWhere('name', 'Frites Seules')->value('id');
+        $boissonAddonId = Item::where('slug', 'boisson-seule')->orWhere('name', 'Boisson Seule')->value('id');
+        if (! $menuAddonId || ! $fritesAddonId || ! $boissonAddonId) {
+            throw new \RuntimeException(sprintf(
+                'Required addon items missing — menu=%s frites=%s boisson=%s. Seed them before reset (cf. cat 315 frites-accompagnements).',
+                $menuAddonId ?? 'NULL', $fritesAddonId ?? 'NULL', $boissonAddonId ?? 'NULL',
+            ));
+        }
 
         // ── 9a Sandwich Cayenne (1 item, sauce locked Cayenne)
         if ($cat = $cats['sandwich-cayenne'] ?? null) {
@@ -557,8 +563,9 @@ class MenuResetLeCayenneCommand extends Command
                     'item_type'        => \App\Enums\ItemType::NON_VEG,
                 ]);
                 // Bols use custom composer profile (step10), no legacy variations needed.
-                // But seed base attribute + supplements as data sources for the profile.
+                // But seed base attribute + sauces + supplements as data sources for the profile.
                 $this->seedBolBaseAttribute($bol);
+                $this->seedBolSauces($bol);  // [HEAL P0-2 2026-05-13] sauce step idempotent
                 $this->seedBolSupplements($bol);
                 $this->seedBolBoissonAddon($bol, $boissonAddonId);
             }
@@ -769,6 +776,34 @@ class MenuResetLeCayenneCommand extends Command
         }
     }
 
+    /**
+     * [HEAL P0-2 2026-05-13] Seed sauce variations for bols (13 sauces) on a dedicated
+     * "Sauce bol" attribute. The composer profile step10 references this attribute.
+     */
+    private function seedBolSauces(Item $bol): void
+    {
+        $attr = $this->getOrCreateAttribute('Sauce bol', 1, 1);
+        foreach (self::SAUCES as $sauce) {
+            $existing = ItemVariation::withTrashed()
+                ->where('item_id', $bol->id)
+                ->where('item_attribute_id', $attr->id)
+                ->where('name', $sauce)
+                ->first();
+            if ($existing) {
+                if ($existing->trashed()) $existing->restore();
+                continue;
+            }
+            ItemVariation::create([
+                'item_id'           => $bol->id,
+                'item_attribute_id' => $attr->id,
+                'name'              => $sauce,
+                'price'             => 0,
+                'status'            => Status::ACTIVE,
+            ]);
+            $this->stats['created_variations']++;
+        }
+    }
+
     private function seedBolSupplements(Item $bol): void
     {
         $bolSupplements = [
@@ -863,7 +898,7 @@ class MenuResetLeCayenneCommand extends Command
             $this->stats['created_profiles']++;
 
             $position = 0;
-            // Step 1: Base
+            // Step 1: Base (Frites / Riz)
             ItemWizardStep::create([
                 'profile_id'               => $profile->id,
                 'step_key'                 => 'base',
@@ -880,7 +915,25 @@ class MenuResetLeCayenneCommand extends Command
                 'is_active'                => true,
                 'addon_role'               => null,
             ]);
-            // Step 2: Suppléments (extras)
+            // [HEAL P0-2 2026-05-13] Step 2: Sauce (13 choices) — was previously
+            // missing and added post-command via tinker patch (idempotency regression).
+            ItemWizardStep::create([
+                'profile_id'               => $profile->id,
+                'step_key'                 => 'sauce',
+                'label'                    => 'Choix de la sauce',
+                'source_type'              => 'item_attribute',
+                'source_ref'               => 'sauce bol',
+                'source_item_attribute_id' => ItemAttribute::where('name', 'Sauce bol')->value('id'),
+                'min_select'               => 1,
+                'max_select'               => 1,
+                'allow_repeat'             => false,
+                'visible_on'               => null,
+                'stockable_choices'        => false,
+                'position'                 => $position++,
+                'is_active'                => true,
+                'addon_role'               => null,
+            ]);
+            // Step 3: Suppléments (extras)
             ItemWizardStep::create([
                 'profile_id'        => $profile->id,
                 'step_key'          => 'supplements',
@@ -896,7 +949,7 @@ class MenuResetLeCayenneCommand extends Command
                 'is_active'         => true,
                 'addon_role'        => null,
             ]);
-            // Step 3: Boisson optionnelle (addon role=drink)
+            // Step 4: Boisson optionnelle (addon role=drink)
             ItemWizardStep::create([
                 'profile_id'        => $profile->id,
                 'step_key'          => 'drink',
@@ -912,8 +965,8 @@ class MenuResetLeCayenneCommand extends Command
                 'is_active'         => true,
                 'addon_role'        => 'drink',
             ]);
-            $this->stats['created_steps'] += 3;
-            $this->line("   ↳ Profile created for {$bol->name} (3 steps).");
+            $this->stats['created_steps'] += 4;
+            $this->line("   ↳ Profile created for {$bol->name} (4 steps: base/sauce/supp/drink).");
         }
     }
 

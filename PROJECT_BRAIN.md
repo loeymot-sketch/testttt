@@ -144,13 +144,47 @@ Plateforme restaurant fast-food complète :
   - Sauces locked Cayenne via attribut dédié "Sauce Cayenne (incluse)" min=1 max=1
     avec 1 variation (vs ne pas créer d'attribut sauce du tout — wizard rendrait
     step vide).
-- **Backlog résiduel (différé future cycle)** :
-  - Wizard label drink step affiche "QUEL MENU?" pour bols (label devrait être
-    "Boisson optionnelle") — frontend hardcoded label fallback.
-  - Branch.status=1 vs Status::ACTIVE=5 listener bug pré-existant (fan-out broken
-    when source event branchId=null). Workaround : fire avec branchId explicit.
-  - Mass 50-order E2E stress test déféré (proof of concept single-order OK).
-  - Adversarial Red-Team sub-agent toujours en cours (background).
+- **Adversarial Red-Team findings (sub-agent 2026-05-13)** :
+  - **P0-1 HEALED** : POS Vanilla wizard n'avait pas `case 'custom':` → fall-through
+    cassait bols/frites. Fix appliqué = `FK_POS_WIZARD_COMPOSER_AWARE_ENABLED=true`
+    dans `.env` (composer-aware path active, frozen pos-wizard.js non touché).
+  - **P0-2 HEALED** : command idempotence — bols sauce step était patched post-command
+    via tinker. Fix : `seedBolSauces()` method ajoutée + sauce step (position 1) dans
+    `step10CreateBolsComposerProfiles`. Re-run du command ne wipe plus la sauce.
+  - **P0-3 HEALED** : cat 315 (frites-accompagnements) `channels='[]'` set en DB →
+    cachée pour tous les surfaces (kiosk + admin + mobile). Items 360/361/362 restent
+    résolvables comme addons via `item_addons` table (FK intact).
+  - **P1-4 HEALED** : hardcoded fallback IDs 360/361/362 dans command supprimés →
+    throw RuntimeException si addon items missing (no silent FK landmine).
+  - **P1-5 HEALED** : regex `kioskCategoryOrder.js` `bol ` → `bols?` (matche bols-
+    gourmands en tier 0 main dishes).
+  - **P1-1 BACKLOG** : kiosk wizard `addon_role='drink'` mappé `internalType='menu'`
+    AVANT i18n lookup → label "QUEL MENU?" écrasé sur step.label DB "Boisson (optionnel)".
+    Fix : `KioskWizardComponent.vue:1571-1610` consulter `step.composer_step?.label`
+    avant `kiosk.wizard.prompt.menu` i18n key. Frozen-zone touch → LOCK plan requis.
+  - **P1-2 BACKLOG** : Cayenne/Galette/Classique items utilisent `wizard_template=
+    'sandwich'` → POS Vanilla wizard force step "pain" avec fallback hardcodé
+    `[Pain, Galette]` (`pos-wizard.js:698-703`) qui n'a pas de sens pour Sandwich
+    Cayenne. Fix : soit retirer fallback (frozen), soit migrer ces 4 items vers
+    `wizard_template='custom'` + composer profile.
+  - **P1-3 BACKLOG** : 187 order_items historiques référencent items soft-deleted
+    avec `composition_snapshot.name=NULL` → reprint receipt affiche item_name blank.
+    Fix : backfill composition_snapshot.name OU update `OrderItemResource:22-27`
+    avec coalesce fallback `?? '(item retiré)'`. NF525 chain integrity intact.
+  - **P2-1 BACKLOG** : `database/seeders/MenuSeeder.php` contient encore 6 slugs
+    obsolètes (`nos-sandwichs`, `nos-burgers`, `frites-accompagnements`, etc.) +
+    branches code mortes. Marquer comme deprecated ou refactor.
+  - **P2-2 BACKLOG** : test fixtures `tests/Unit/Http/Resources/ItemCategoryResourceTest.php`
+    + `tests/js/kioskSandwichSplit.spec.js` + 36 screenshots e2e contenu slugs
+    obsolètes. Regenerate après merge.
+  - **P2-3 BACKLOG** : `config/menu.php` contient encore définitions items archivés
+    (Frites Moyenne/Grande). Vérifier `ItemDeleted` listener invalide bien la cache.
+  - **Branch.status mismatch BACKLOG** : Branch.status=1 vs Status::ACTIVE=5 dans
+    `PersistCatalogChangedToOutbox` listener — fan-out broken pour events branchId=null.
+    Workaround : fire CatalogChanged avec branchId=1 explicite. Fix : aligner enum
+    OU listener filter.
+  - **Mass 50-order E2E stress test** déféré cycle suivant (proof of concept
+    single-order data shape verified OK).
 
 ---
 
