@@ -1,0 +1,222 @@
+{
+  "captured_at": "2026-05-11T04:36:53.767Z",
+  "wave": "B",
+  "round": 1,
+  "wizard_branch": {
+    "declared": "KioskWizardComponent.vue (Vue, auditable)",
+    "kioskUsePosWizard_env": "true",
+    "pos_wizard_single_page_count_on_open": 0,
+    "rationale": "KioskPosWizardComponent.vue is a wrapper that delegates back to KioskWizardComponent.vue, AND KioskCategoriesComponent.vue mounts KioskWizardComponent.vue directly. public/js/pos-wizard.js is NOT loaded by any kiosk codepath."
+  },
+  "per_item_recap_vs_cart": [
+    {
+      "label": "item-1",
+      "id": 363,
+      "name": "Tacos M (1 Viande)",
+      "recap_total": 6.5,
+      "recap_text": "Total €6,50",
+      "cart_line_total": 6.5,
+      "cart_line_text": "€6,50",
+      "integrity_ok": true,
+      "cart_lines_count": 1,
+      "wizard_step_trail": [
+        "viande",
+        "sauce",
+        "garnitures",
+        "supplements",
+        "menu",
+        "recap"
+      ]
+    },
+    {
+      "label": "item-2",
+      "id": 376,
+      "name": "Cheese Burger",
+      "recap_total": 9,
+      "recap_text": "Total €9,00",
+      "cart_line_total": 9,
+      "cart_line_text": "€9,00",
+      "integrity_ok": true,
+      "cart_lines_count": 2,
+      "wizard_step_trail": [
+        "menu",
+        "recap"
+      ],
+      "menu_step_seen": true,
+      "menu_full_clicked": true,
+      "menu_boisson_clicked": true,
+      "menu_frites_sauce_clicked": true
+    },
+    {
+      "label": "item-3",
+      "id": 367,
+      "name": "Le Méga",
+      "recap_total": 11,
+      "recap_text": "Total €11,00",
+      "cart_line_total": 11,
+      "cart_line_text": "€11,00",
+      "integrity_ok": true,
+      "cart_lines_count": 3,
+      "wizard_step_trail": [
+        "viande",
+        "sauce",
+        "garnitures",
+        "supplements",
+        "menu",
+        "recap"
+      ],
+      "composite_step_seen": false
+    }
+  ],
+  "full_cart_dom": {
+    "lines": [
+      {
+        "idx": 0,
+        "name": "Tacos M (1 Viande)",
+        "qty": "1",
+        "total_text": "€6,50",
+        "total_value": 6.5
+      },
+      {
+        "idx": 1,
+        "name": "Cheese Burger",
+        "qty": "1",
+        "total_text": "€9,00",
+        "total_value": 9
+      },
+      {
+        "idx": 2,
+        "name": "Le Méga",
+        "qty": "1",
+        "total_text": "€11,00",
+        "total_value": 11
+      }
+    ],
+    "subtotal_text": "€26,50",
+    "subtotal_value": 26.5,
+    "grand_total_text": "€26,50",
+    "grand_total_value": 26.5
+  },
+  "sum_lines_dom": 26.5,
+  "grand_total_integrity_dom_vs_sum": true,
+  "vuex_store_probe": {
+    "available": true,
+    "reason": null,
+    "order_type": 10,
+    "branch_id": 1,
+    "subtotal": 26.5,
+    "total": 26.5,
+    "count": 3,
+    "items_count": 3,
+    "items_sample": [
+      {
+        "item_id": 363,
+        "name": "Tacos M (1 Viande)",
+        "quantity": 1,
+        "convert_price": 6.5,
+        "item_variation_total": 0,
+        "item_extra_total": 0,
+        "total": 6.5,
+        "item_variations": [
+          {
+            "id": 262,
+            "variation_name": "Viande 1",
+            "name": "Merguez"
+          },
+          {
+            "id": 271,
+            "variation_name": "Sauce (1ère Gratuite)",
+            "name": "Ketchup"
+          }
+        ],
+        "item_extras": [
+          {
+            "id": 172,
+            "name": "Salade"
+          },
+          {
+            "id": 173,
+            "name": "Tomate"
+          },
+          {
+            "id": 174,
+            "name": "Oignon"
+          }
+        ],
+        "instruction": "Viandes : Merguez ×1"
+      },
+      {
+        "item_id": 376,
+        "name": "Cheese Burger",
+        "quantity": 1,
+        "convert_price": 6,
+        "item_variation_total": 3,
+        "item_extra_total": 0,
+        "total": 9,
+        "item_variations": [
+          {
+            "id": 644,
+            "variation_name": "Sauce (1ère Gratuite)",
+            "name": "Ketchup"
+          }
+        ],
+        "item_extras": [
+          {
+            "id": 471,
+            "name": "Salade"
+          },
+          {
+            "id": 472,
+            "name": "Tomate"
+          },
+          {
+            "id": 473,
+            "name": "Oignon"
+          }
+        ],
+        "instruction": "Formule : Menu complet (frites + boisson) (Coca-Cola 33cl). Sauce frites : Ketchup"
+      },
+      {
+        "item_id": 367,
+        "name": "Le Méga",
+        "quantity": 1,
+        "convert_price": 8,
+        "item_variation_total": 3,
+        "item_extra_total": 0,
+        "total": 11,
+        "item_variations": [
+          {
+            "id": 412,
+            "variation_name": "Viande 1",
+            "name": "Merguez"
+          },
+          {
+            "id": 430,
+            "variation_name": "Sauce (1ère Gratuite)",
+            "name": "Ketchup"
+          },
+          {
+            "id": 445,
+            "variation_name": "Type de Pain",
+            "name": ""
+          }
+        ],
+        "item_extras": [
+          {
+            "id": 264,
+            "name": "Salade"
+          },
+          {
+            "id": 265,
+            "name": "Tomate"
+          },
+          {
+            "id": 266,
+            "name": "Oignon"
+          }
+        ],
+        "instruction": "Pain : Pain. Viandes : Merguez ×1, Kefta ×1, Mexicain ×1, Cordon Bleu ×1. Formule : Menu complet (frites + boisson) (Coca-Cola 33cl). Sauce frites : Ketchup"
+      }
+    ]
+  }
+}

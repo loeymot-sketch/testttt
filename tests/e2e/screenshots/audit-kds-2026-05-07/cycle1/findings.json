@@ -1,20 +1,11 @@
 [
   {
-    "step": "D1-06",
-    "slug": "cleanliness",
-    "state": "capture",
-    "severity": "OK",
-    "note": "JS errors=0 (critical=0), console errors=3, network 4xx/5xx=0",
-    "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle1/06-cleanliness-capture.png",
-    "ts": "2026-05-10T02:35:46.802Z"
-  },
-  {
-    "step": "D1-07",
-    "slug": "responsive-tablet",
-    "state": "1024x768",
-    "severity": "OK",
-    "note": "tablet 1024×768: fatal=false, content-length=1406, JS-errors=0",
-    "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle1/07-responsive-tablet-1024x768.png",
-    "ts": "2026-05-10T02:35:55.746Z"
+    "step": "D1-05",
+    "slug": "ws-badge",
+    "state": "check",
+    "severity": "P2",
+    "note": "sync-mode-banner-visible=false (banner=offline-mode), sync-stamp-visible=false (last-sync footer)",
+    "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle1/05-ws-badge-check.png",
+    "ts": "2026-05-11T08:52:52.638Z"
   }
 ]

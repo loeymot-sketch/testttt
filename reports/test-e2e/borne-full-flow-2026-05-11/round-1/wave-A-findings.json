@@ -1,0 +1,102 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 13,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-borne-A/03-idle-language-en.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "State 03 is labeled 'idle-language-en' but the rendered DOM is bit-identical to state 02 (language-fr) — `diff 02-idle-language-fr.dom.html 03-idle-language-en.dom.html` returns empty. <html lang=\"fr\"> is preserved in both files, and the welcome heading still reads 'Bienvenue !' along with FR copy 'À emporter / Je récupère ma commande / Choisissez une option pour commencer'. The language toggle either wasn't clicked or has no effect — meaning a kiosk user tapping EN gets stuck on FR. Multimodal vision confirms both PNGs are visually identical to 02.",
+      "fix_hint": "Inspect KioskIdleComponent.vue language picker click handler — likely missing $i18n.locale = 'en' or kioskUx/setLocale dispatch. Also harden the spec: after tap, assert page.evaluate(() => document.documentElement.lang === 'en') and assert one EN-only string (e.g. 'Welcome' / 'Takeaway') is present before snapshotting.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-borne-A/04-categories-welcome.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "State 04 is named 'categories-welcome' (a clean first-paint per AUDIT_PLAN.md state 4: 'first paint after idle tap'). Actual DOM contains 9 kiosk-product-card-* elements (Boissons items 404-414) and the sidebar item kiosk-categories-sidebar-item-317 has class 'kiosk-sidebar-item active' with aria-current set. The PNG visually shows the BOISSONS grid (Eau Plate, Capri-Sun, Coca-Cola, Coca Zero, Fanta, Oasis, Orangina, Sprite) — not a welcome empty-state. Cat 317 is being auto-selected on landing, masking the true welcome experience. This is the carry-over A-008 ('auto-select Boissons') that the protocol note labels 'non-blocking P2/P3', but in a full-flow audit it (a) prevents observation of the true welcome screen and (b) means the user lands on Boissons regardless of which category they intended.",
+      "fix_hint": "KioskCategoriesComponent.vue / kioskCart store: remove the default-select-first-category logic on /kiosk mount, or pick a neutral 'welcome' overlay instead. Spec must re-capture state 04 BEFORE any category click — currently the captured DOM proves a category was already selected at snapshot time.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "test-e2e-borne-A/05-cat-309-assiettes.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Cat 309 'ASSIETTES' shows 4 product cards. The 4th card (top-right of second row, 'Assiette Mixte' at 14,50€) renders with the gray default placeholder (item-default.svg served from /storage/.../item-default.svg) rather than a real product photo. Verified in 05-cat-309-assiettes.dom.html — placeholder src present. Description text is also missing under the title vs. the other three cards which all show 'Kefta + Frites + Salade + Pain + Sauce' style descriptors. Network returns 200 so this is content-data quality, not a broken-resource HTTP error.",
+      "fix_hint": "Catalog data — item id matching 'Assiette Mixte' has no image binding and likely missing 'short_description' field. Backoffice catalog fix, not a frontend code change.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-borne-A/10-cat-314-menus-enfants.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Cat 314 'MENUS ENFANTS' — both items ('Menu Cheese Burger (Enfant)' and 'Menu Nuggets (Enfant)') render with item-default.svg placeholders. Same root cause as A-003 — catalog items lack assigned images. For a Menus Enfants category this is particularly weak from a UX standpoint (visible to parents/children at point of sale).",
+      "fix_hint": "Same as A-003: assign real product images in catalog backoffice for items in cat 314.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "test-e2e-borne-A/11-cat-316-desserts.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Cat 316 'DESSERTS' — only 'GLACE' has a real image (/storage/59/glace.png). 'TARTE DAIM' (/storage/60/item-default.svg) and 'TIRAMISU' (/storage/61/item-default.svg) render the gray default placeholder. Prices read €3,80 (DOM verified, matches plan).",
+      "fix_hint": "Same as A-003: assign real product images in catalog for desserts 60 + 61.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "test-e2e-borne-A/13-cat-318-supplements.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Cat 318 'SUPPLÉMENTS' — 8 items, ALL render with item-default.svg placeholders (storage ids 70-77). No supplement has a real image. While supplements are typically text-driven (sauce, fromage, œuf etc.), zero images across the whole category degrades grid legibility.",
+      "fix_hint": "Either (a) assign icons/photos for each supplement in catalog, or (b) hide the image block for cat 318 and render a denser text/icon-driven list layout — verify with owner which approach is preferred.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "test-e2e-borne-A/01-idle-screen.png",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "evidence": "The kiosk-idle-logo (<img data-testid=\"kiosk-idle-logo\" src=\"/images/theme/theme-logo.png\">) currently resolves to public/images/theme/theme-logo.png which reads 'FoodKing' (orange + yellow wordmark) — verified by reading the on-disk PNG. The owner-gate reminder says 'Wordmark (theme-logo.png) Cayenne — NOT pink' and 'verified Cayenne via PIL pixel scan in previous round'. The PIL scan asserted Cayenne PALETTE (#F4501E orange), which IS present, but the textual brand identity is the generic 'FoodKing' wordmark — not the restaurant's 'Le Cayenne' brand. Page <title> and footer DOM still contain 'Le Cayenne'. Severity P2 (cosmetic/brand) because the owner gate phrasing emphasises color over text. Flag for owner triage — if they expected the restaurant wordmark, this needs a new theme-logo.png asset.",
+      "fix_hint": "Owner clarification needed: is the FoodKing wordmark intentional (white-label) or should public/images/theme/theme-logo.png be replaced with the Le Cayenne wordmark? If the latter, swap the asset file and ensure cache-bust via versioned URL.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "test-e2e-borne-A/01-idle-screen.png",
+      "category": "console_error",
+      "severity": "P3",
+      "evidence": "01-idle-screen.console.json contains 2 entries, both 'WebSocket connection to ws://127.0.0.1:6001/app/app-key ... ERR_CONNECTION_REFUSED'. Stack location is vendor.js (Pusher). Allowlisted per REVIEWER_PROTOCOL.md (wss/Pusher in dev). Logged here for completeness — does not count against verdict.",
+      "fix_hint": "No fix required (allowlisted). Long-term: gate Pusher init behind APP_ENV or PUSHER_ENABLED flag to silence dev noise.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 2, "P2": 5, "P3": 1,
+    "open_P0": 0, "open_P1": 2, "open_P2": 5, "open_P3": 1
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER",
+  "notes": "Round-1 Wave A verdict AMBER. No P0 silent errors, no unexpected 4xx/5xx, no pink #E8001C drift (0 occurrences across all 13 DOMs), light mode persistent (data-kiosk-theme=\"light\" on every state), sidebar enforces gates perfectly (cat 315 absent, cats 306/307/308 present, 12 total visible). Two P1 blockers: (1) A-001 EN language toggle does not switch locale — DOMs of state 02 (FR) and 03 (EN) are bit-identical and the EN PNG still shows 'Bienvenue !'. (2) A-002 state 04 'categories-welcome' is mis-captured — Boissons (cat 317) is auto-selected with aria-current/active class and 9 product cards rendered, so the actual welcome screen was never observed in this round. Top 3 issues: A-001 (i18n EN broken), A-002 (welcome state never captured + auto-select Boissons), A-007 (FoodKing wordmark vs expected Le Cayenne — owner-gate ambiguity, needs clarification). Five P2 product-image placeholders (A-003 to A-006) are content-data quality, non-blocking. Fix-wave focus: i18n locale switching wiring + welcome-state capture discipline + owner verdict on wordmark identity."
+}

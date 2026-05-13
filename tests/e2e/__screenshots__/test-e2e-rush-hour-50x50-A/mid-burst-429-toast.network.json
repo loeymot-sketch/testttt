@@ -1,0 +1,9 @@
+[
+  {
+    "url": "http://127.0.0.1:8000/api/admin/pos",
+    "method": "POST",
+    "status": 429,
+    "duration_ms": null,
+    "ts": 1778458633921
+  }
+]

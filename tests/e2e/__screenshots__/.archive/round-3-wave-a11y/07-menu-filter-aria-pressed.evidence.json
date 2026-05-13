@@ -1,0 +1,44 @@
+{
+  "chips": [
+    {
+      "text": "",
+      "ariaPressed": null,
+      "ariaCurrent": null
+    },
+    {
+      "text": "Tout",
+      "ariaPressed": "true",
+      "ariaCurrent": null
+    },
+    {
+      "text": "🌮 Nos Tacos",
+      "ariaPressed": "false",
+      "ariaCurrent": null
+    },
+    {
+      "text": "🥖 Nos Sandwichs",
+      "ariaPressed": "false",
+      "ariaCurrent": null
+    },
+    {
+      "text": "🍔 Nos Burgers",
+      "ariaPressed": "false",
+      "ariaCurrent": null
+    },
+    {
+      "text": "🍽️ Nos Assiettes",
+      "ariaPressed": "false",
+      "ariaCurrent": null
+    },
+    {
+      "text": "🍳 Ojja",
+      "ariaPressed": "false",
+      "ariaCurrent": null
+    },
+    {
+      "text": "🥚 Omelettes",
+      "ariaPressed": "false",
+      "ariaCurrent": null
+    }
+  ]
+}

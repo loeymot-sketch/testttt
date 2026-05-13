@@ -1,0 +1,7 @@
+{
+  "cta": {
+    "ariaDisabled": "true",
+    "ariaDescribedBy": "wizard-cta-hint",
+    "hintVisible": true
+  }
+}

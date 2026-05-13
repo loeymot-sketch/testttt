@@ -2,8 +2,8 @@
   {
     "label": "R4-05_surface",
     "payload": {
-      "url": "http://127.0.0.1:8000/admin/kitchen-display-system",
-      "text_length": 1405,
+      "url": "http://localhost:8000/admin/kitchen-display-system",
+      "text_length": 6544,
       "console_errors": [
         "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
         "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
@@ -11,7 +11,7 @@
       ],
       "page_errors": []
     },
-    "ts": "2026-05-10T02:36:09.365Z"
+    "ts": "2026-05-11T08:47:37.910Z"
   },
   {
     "label": "R4-06_a11y_summary",
@@ -22,13 +22,13 @@
         "color-contrast(serious)"
       ]
     },
-    "ts": "2026-05-10T02:36:19.783Z"
+    "ts": "2026-05-11T08:47:48.622Z"
   },
   {
     "label": "R4-07_aria_probe",
     "payload": {
-      "order_card_count_no_role": 3,
-      "order_card_with_role_article": 3,
+      "order_card_count_no_role": 22,
+      "order_card_with_role_article": 22,
       "live_region_count": 1,
       "live_region_samples": [
         {
@@ -41,7 +41,7 @@
         }
       ]
     },
-    "ts": "2026-05-10T02:36:29.476Z"
+    "ts": "2026-05-11T08:47:58.278Z"
   },
   {
     "label": "R4-08_audio_probe",
@@ -54,23 +54,23 @@
       "muted": false,
       "volume": 1
     },
-    "ts": "2026-05-10T02:36:39.932Z"
+    "ts": "2026-05-11T08:48:08.503Z"
   },
   {
     "label": "R4-10_before_cancel",
     "payload": {
-      "serial": "R4CANCEL-51e04a",
+      "serial": "R4CANCEL-5a50fd",
       "visible_in_dom": true
     },
-    "ts": "2026-05-10T02:36:54.687Z"
+    "ts": "2026-05-11T08:48:23.240Z"
   },
   {
     "label": "R4-10_after_cancel",
     "payload": {
-      "serial": "R4CANCEL-51e04a",
+      "serial": "R4CANCEL-5a50fd",
       "still_visible": false
     },
-    "ts": "2026-05-10T02:37:02.224Z"
+    "ts": "2026-05-11T08:48:30.761Z"
   },
   {
     "label": "R4-11_probe",
@@ -79,7 +79,7 @@
       "has_86_attr": false,
       "listened_event": true
     },
-    "ts": "2026-05-10T02:37:12.086Z"
+    "ts": "2026-05-11T08:48:40.868Z"
   },
   {
     "label": "R4-12_ws",
@@ -89,7 +89,7 @@
       "ws_service_present": true,
       "ws_connected_state": false
     },
-    "ts": "2026-05-10T02:37:21.450Z"
+    "ts": "2026-05-11T08:48:50.484Z"
   },
   {
     "label": "R4-13_focus",
@@ -97,14 +97,14 @@
       "action_button_count": 0,
       "first_button": null
     },
-    "ts": "2026-05-10T02:37:30.831Z"
+    "ts": "2026-05-11T08:49:00.051Z"
   },
   {
     "label": "R4-16_render",
     "payload": {
       "visible": true,
-      "qty_badges_in_dom": 11
+      "qty_badges_in_dom": 59
     },
-    "ts": "2026-05-10T02:37:55.268Z"
+    "ts": "2026-05-11T08:49:25.018Z"
   }
 ]

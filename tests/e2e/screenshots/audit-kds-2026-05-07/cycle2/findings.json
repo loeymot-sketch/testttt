@@ -6,7 +6,7 @@
     "severity": "OK",
     "note": "KdsTransitionWhitelist + KdsExpectedStatusConflict présents et structurellement corrects (run phpunit en D5).",
     "screenshot": null,
-    "ts": "2026-05-07T01:13:36.348Z"
+    "ts": "2026-05-11T08:45:03.484Z"
   },
   {
     "step": "D2-02",
@@ -15,7 +15,7 @@
     "severity": "OK",
     "note": "bump-buttons-detected=0, JS-errors=0. Si 0 → pas de commande active (env-dependent).",
     "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle2/02-bump-button-check.png",
-    "ts": "2026-05-07T01:13:45.963Z"
+    "ts": "2026-05-11T08:45:12.530Z"
   },
   {
     "step": "D2-03",
@@ -24,16 +24,16 @@
     "severity": "OK",
     "note": "recall-buttons-detected=0 (grace-window 60s côté backend). Env-dependent si commandes BUMPED présentes.",
     "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle2/03-recall-button-check.png",
-    "ts": "2026-05-07T01:13:54.928Z"
+    "ts": "2026-05-11T08:45:21.705Z"
   },
   {
     "step": "D2-04",
     "slug": "station-filter",
     "state": "options",
     "severity": "OK",
-    "note": "Values (4): [all, bar, cuisine_chaude, cuisine_froide] | Texts: Tous les postes | Bar | Cuisine chaude | Cuisine froide",
+    "note": "Values (4): [all, bar, cuisine_chaude, cuisine_froide] | Texts: Toutes les stations | Bar | Cuisine chaude | Cuisine froide",
     "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle2/04-station-filter-initial.png",
-    "ts": "2026-05-07T01:14:03.890Z"
+    "ts": "2026-05-11T08:45:30.858Z"
   },
   {
     "step": "D2-04",
@@ -42,16 +42,16 @@
     "severity": "OK",
     "note": "Toggle cuisine_chaude → all OK. JS errors=0",
     "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle2/04-station-filter-after.png",
-    "ts": "2026-05-07T01:14:05.552Z"
+    "ts": "2026-05-11T08:45:32.526Z"
   },
   {
     "step": "D2-05",
     "slug": "search-serial",
     "state": "visible-marker",
-    "severity": "P3",
-    "note": "Marqueur serial/queue détecté dans la surface=false. Env-dependent si commandes présentes.",
+    "severity": "OK",
+    "note": "Marqueur serial/queue détecté dans la surface=true. Env-dependent si commandes présentes.",
     "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle2/05-search-serial-check.png",
-    "ts": "2026-05-07T01:14:14.434Z"
+    "ts": "2026-05-11T08:45:41.939Z"
   },
   {
     "step": "D2-06",
@@ -60,6 +60,6 @@
     "severity": "OK",
     "note": "Checkboxes ronds détectés=2 (group-by-table + sound-toggle attendus).",
     "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle2/06-group-by-table-initial.png",
-    "ts": "2026-05-07T01:14:23.390Z"
+    "ts": "2026-05-11T08:45:51.009Z"
   }
 ]

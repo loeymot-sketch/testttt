@@ -1,0 +1,141 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 24,
+  "findings": [
+    {
+      "id": "A-ADV-001",
+      "state_artifact": "test-e2e-wave-A-kiosk/06-cat-switch.png",
+      "category": "empty_state",
+      "severity": "P1",
+      "evidence": "Sandwichs category — the BRAND-EPONYMOUS hero category — renders 4 of 4 (100%) product cards with the gray plus-icon item-default.svg placeholder: 'LE CAYENNE' (€7,00), 'LE SUPRÊME' (€7,00), 'LE MÉGA' (€8,00), 'LE TERMINATOR' (€9,00). DOM confirms: src=\"/storage/22/item-default.svg\", \"/storage/23/item-default.svg\", \"/storage/24/item-default.svg\", \"/storage/25/item-default.svg\". These are the signature dishes literally named after the restaurant. The first impression of the menu sells the restaurant's identity — and it is invisible. This is the same root cause GStack flagged as A-002 (P2 mixed upsell) but on a much more brand-critical surface. With Sandwichs as the canonical example, GStack's A-002 should be re-classified as a corroborating data point of a P1 product-photo coverage issue.",
+      "fix_hint": "Two-layer fix. (1) DATA: seed image_path for items 22/23/24/25 (the four Le Cayenne sandwiches) and any other items currently pointing at item-default.svg — verify via SELECT id, name, image_path FROM items WHERE image_path LIKE '%item-default%'. (2) PRODUCT FALLBACK: KioskCategoriesComponent.vue card-image fallback should not render a literal 'add (+) icon' on a placeholder — that visual is reserved for cart-add affordance and creates a 'broken' read. Use a category-tinted silhouette or neutral food illustration instead. Quick relief: hide product cards lacking imagery (preserves brand integrity over discovery) until images are seeded.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-ADV-002",
+      "state_artifact": "test-e2e-wave-A-kiosk/01-idle-fresh.png",
+      "category": "color_contrast",
+      "severity": "P1",
+      "evidence": "Idle screen renders a 'FoodKing' wordmark logo (img src=\"http://127.0.0.1:8000/images/theme/theme-logo.png\" data-testid=\"kiosk-idle-logo\") but the actual restaurant brand on this tenant is 'Le Cayenne' — confirmed by the printed receipt zone in 23-thank-you.dom.html: <p class=\"receipt-restaurant\">Le Cayenne</p>. Customer-facing screen says one brand, the receipt the customer takes home says another. Brand fragmentation at the most photographed surface of the product (idle attract loop) is a P1 brand_consistency defect.",
+      "fix_hint": "This is almost certainly a deploy/tenant-config defect, NOT a Vue component bug. The component (KioskIdleScreenComponent.vue) correctly references images/theme/theme-logo.png as a per-tenant asset. Action: replace public/images/theme/theme-logo.png with the Le Cayenne brand logo (PNG with transparency, ~320×320 source for 160×160 render). If theme-logo path is restaurant-scoped via storage rather than public/, verify the active restaurant's branding row in DB has the Le Cayenne asset URL. Do NOT rewrite the Vue component.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-ADV-003",
+      "state_artifact": "test-e2e-wave-A-kiosk/02-idle-lang-fr.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "States 02-idle-lang-fr.png and 03-idle-lang-en.png are PIXEL-IDENTICAL — not because EN is broken (GStack A-001 interpretation), but because the language selector itself is feature-flag disabled at the v-if level. DOM evidence from 02-idle-lang-fr.dom.html line ~head: <html lang=\"fr\" ...>; DOM scan returns ZERO occurrences of testids 'kiosk-idle-lang-fr' or 'kiosk-idle-lang-en'; only data-testids present on the idle screen are {kiosk-idle-root, kiosk-idle-title, kiosk-idle-logo, kiosk-idle-a11y-btn, kiosk-idle-touch-btn, kiosk-theme-toggle, kiosk-order-type-chooser, kiosk-order-type-takeaway, kiosk-cart-bottom-sheet}. The component source (KioskIdleScreenComponent.vue) explicitly comments '<!-- [PHASE-37] Language selector — only if multiple languages enabled --><!--v-if-->'. Per CLAUDE.md memory ADR/iter15-P1a, kiosk runtime is FR-immutable post-boot. The spec authored markers for a feature that does not render in this build. GStack labeled this P2 i18n_leak — the more accurate category is P2 audit_integrity: spec captured a non-existent state under misleading labels. Recommend re-naming states to 02-idle-second-frame / 03-idle-third-frame (or removing them) to avoid future reviewers thinking EN is supposed to exist.",
+      "fix_hint": "Spec-side fix in tests/e2e/test-e2e-visual-e2e-2026-05-11-wave-A-kiosk.spec.js — either (a) drop states 02/03 (they duplicate state 01), or (b) rename them to clarify they capture animation frames of the idle attract loop, NOT locale variants. Component code does not need to change unless owner reverses the FR-only mandate.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-ADV-004",
+      "state_artifact": "test-e2e-wave-A-kiosk/11-wizard-menu.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "States 11-wizard-menu.png and 12-wizard-extras.png are visually identical — both display the GARNITURES step ('QUELLE CRUDITÉ ?' header, salade/tomate/oignon already selected). The spec's observations.json itself admits at state 11: 'menu step not detected — Tacos M may skip menu in V1 config.' But the spec then continues capturing state 12 as 'wizard-extras' which is ALSO the garnitures step because the wizard never advanced past garnitures. Net result: two state slots burned on a single surface, while the actual extras/supplements step (which exists per the step-tracker icons) is never captured. The wizard step-tracker in state 13 shows 6 step icons (Quelle Viande → Quelle Sauce → Quelle Crudité → Quel Supplément → Quel Menu → Récap) — the supplément step is the missed surface. Adversarial review cannot evaluate UI states that were never captured.",
+      "fix_hint": "Spec-side: after the sauce-step submit, await the supplement-step content marker explicitly (e.g. await kioskPage.locator('[data-testid=\"kiosk-step-supplement\"]').waitFor({timeout:3000})) and only THEN snap state 12. For Tacos-M (which skips the standalone menu step), document that state 11 is intentionally a duplicate or remove it. Either way, add an integrity assertion: if state N's marker_selector resolves to the same content as state N-1, observations.json should fail-loud rather than silently note 'not detected'.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-ADV-005",
+      "state_artifact": "test-e2e-wave-A-kiosk/22-confirmation.png",
+      "category": "loading_state_missing",
+      "severity": "P3",
+      "evidence": "State 22-confirmation.png captures the success screen during the entrance animation: queue number '#A0130' renders in PALE PEACH/CORAL (rgba(244,80,30,~0.45)) and 'TOTAL PAYÉ €15,00' is barely visible. State 23-thank-you.png — captured ~2s later — shows the same DOM with the queue number in full brand orange #F4501E and the auto-return progress bar visible at 90%. The capture caught state 22 mid-animation rather than at steady state. Not a product defect, but a SPEC-SIDE settle-wait policy gap: kiosk-confirmation has multi-stage CSS animations (check-svg dash-offset, card slide-in, color fade-in) and the spec snaps before they settle. Importantly: this means state 22 EVIDENCE is unreliable for any color/contrast finding — including A-005 numeric cross-validation. Tier 3 master dev should use state 23 (not state 22) as the canonical confirmation evidence.",
+      "fix_hint": "Spec-side: after [data-testid=\"kiosk-confirmation-root\"] is present, also await the timer-bar to reach >5% (signal animations have started settling) or wait for the .kiosk-check-path stroke-dashoffset to reach 0 (signal SVG animation complete). Practically: await kioskPage.waitForTimeout(1500) is acceptable here because the confirmation screen is animation-heavy and customer-visible for 30s, so 1.5s settle is well within UX bounds.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-ADV-006",
+      "state_artifact": "test-e2e-wave-A-kiosk/22-confirmation.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "CSS inspection of .kiosk-confirmation-price (the 'TOTAL PAYÉ €15,00' text on confirmation/thank-you): color: var(--kiosk-warning). The token --kiosk-warning is defined in the stylesheet as #B8730B (and overridden in some scopes to #F59E0B / #8A5200) — none of these match the palette declared in observations.json (orange #F4501E, black #000, yellow #FFD400, white #FFF). Two distinct problems: (1) palette drift — the displayed amber/gold does not exist in the kiosk design token system; (2) semantic mismatch — 'warning' is the wrong design intent for a positive 'order succeeded, you paid this' affordance. The contrast vs white background (~5:1 for #B8730B) clears AA but reads as 'caution', not 'celebration'. Compare with #A0130 queue number which uses brand orange #F4501E correctly.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue or its scoped stylesheet (data-v-255fc987): change .kiosk-confirmation-price color from var(--kiosk-warning) to either var(--kiosk-brand-orange) (#F4501E, matching the #A0130 number above it for visual rhythm) or the design-system's success-emphasis token. Confirm token map in resources/css/kiosk/_tokens.scss.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-ADV-007",
+      "state_artifact": "test-e2e-wave-A-kiosk/19-upsell.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "The auto-skip progress bar at the bottom of the upsell screen carries aria-label=\"(30s)\" (verbatim from 19-upsell.dom.html: <div ... role=\"progressbar\" aria-valuenow=\"97\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-label=\"(30s)\" data-testid=\"kiosk-upsell-autoskip-bar\">). A screen-reader user encountering this control hears literally 'progress bar parenthesis 30 s parenthesis' with zero context — they cannot know this bar represents 'time remaining before the cart auto-advances to payment'. This is the only auto-progressing element on a transactional screen and warrants a clear label.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue — replace aria-label=\"(30s)\" with aria-label=\"Temps restant avant passage au paiement\" (or i18n key kiosk.upsell.autoskip.aria_label) and expose the remaining seconds via aria-valuetext rather than baking it into the label parens. Add aria-live=\"polite\" if not already present so the countdown is announced at intervals (every 5s, not every tick — to avoid SR spam).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-ADV-008",
+      "state_artifact": "test-e2e-wave-A-kiosk/19-upsell.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "The upsell screen exposes only ONE bottom action: 'Non merci, continuer sans' (data-testid=\"kiosk-upsell-skip\"). There is no explicit 'Continuer avec ma sélection' confirm button. When a customer DOES tap a card to add an upsell, the only visible bottom CTA is still the REJECTION button. This inverts the action hierarchy: the negation is presented as the primary path. Users who tapped an upsell card must either (a) re-tap the skip button (whose label now lies — they DID add something) or (b) wait 30 seconds for auto-skip. Information architecture defect.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue — when at least one upsell-card has aria-pressed=\"true\", swap the skip button copy to 'Continuer avec ma sélection →' and adopt brand-orange filled style (mirroring 'Nouvelle commande →' on confirmation). The auto-skip progress bar can remain. Optionally show a small secondary 'Ne rien ajouter' text-link below for users who change their mind.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-ADV-009",
+      "state_artifact": "test-e2e-wave-A-kiosk/05-categories.png",
+      "category": "text_truncation",
+      "severity": "P3",
+      "evidence": "The left vertical category sidebar in state 05-categories.png renders 12 sub-categories stacked (Tacos, Sandwichs, Burgers, Nuggets, Salades, Poulet Croustillant, Club, Omelette, Sides, Menus Enfants, Suppléments, Snacks, Desserts, Sandwichs) inside a ~64px-wide rail at portrait viewport 1080×1920. Each cell renders a tiny image thumbnail + a label text that visually appears cramped (label height ~9-10pt). At touch-target standards (44×44 minimum per WCAG 2.5.5), each cell appears just barely compliant. Categories beyond visible viewport require scroll. Not a P1 defect — but on a 19-inch portrait kiosk this rail is going to be physically small relative to user reach (one-thumb operation while standing).",
+      "fix_hint": "Consider auto-collapsing the sidebar to icon-only at narrow widths and expanding on tap, with the full category name shown as a card-title in the main grid. Alternatively: convert to horizontal scroll-strip at top of categories view, matching mobile-app pattern. KioskCategoriesComponent.vue sidebar layout. Verify touch-target height ≥ 44px against current CSS.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-ADV-010",
+      "state_artifact": "test-e2e-wave-A-kiosk/13-wizard-recap.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "Wizard step-tracker at top of state 13 renders 6 step icons (Viande / Sauce / Crudité / Supplément(+) / Menu / Récap). The 'Supplément' icon shows a literal plus-sign-in-circle placeholder identical to the 'add to cart' affordance used elsewhere in the kiosk. Result: customers may read this as 'a fourth tappable add-to-cart control' rather than 'a wizard step labeled supplement that you skipped'. Visual vocabulary collision between step-tracker placeholder icon and primary CTA icon.",
+      "fix_hint": "Provide a dedicated icon for the supplement step (e.g. herb sprig, condiment bottle, simple 'S' badge) and reserve the plus-circle for add-to-cart only. Source asset directory likely public/images/kiosk/wizard-steps/. KioskWizardComponent.vue step-tracker mapping. Low priority but worth a P3 polish.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-ADV-011",
+      "state_artifact": "test-e2e-wave-A-kiosk/05-categories.png",
+      "category": "color_contrast",
+      "severity": "P3",
+      "evidence": "Category pill labels (small yellow rounded-rect tags reading 'NOS' above category title 'Boissons') use a yellow #FFD400-ish fill with thin black text. The yellow-on-white card surface creates a visual hotspot — these decorative tags compete for attention with product-card prices and the upsell-card add-buttons. The decorative tag adds no informational value ('NOS Boissons' = 'Our Drinks' is redundant with the header 'Boissons' immediately below). Visual density cost without UX gain.",
+      "fix_hint": "Consider removing the 'NOS' decorative pill entirely OR moving it to a tertiary slot (small uppercase eyebrow above title) where it cannot compete with primary affordances. KioskCategoriesComponent.vue category-card header markup. Owner brand choice — flag for Tier 3.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 2,
+    "P2": 5,
+    "P3": 4,
+    "open_P0": 0,
+    "open_P1": 2,
+    "open_P2": 5,
+    "open_P3": 4
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER",
+  "notes": "Tier 2 adversarial — VISUAL FIRST. Headlines: (1) A-ADV-001 P1: Sandwichs category — the brand-eponymous hero — renders 4/4 (100%) cards with placeholder images including 'LE CAYENNE' itself; same root cause as GStack A-002 but on far more brand-critical surface (cat-switch, not cross-sell). (2) A-ADV-002 P1: idle screen displays 'FoodKing' logo while receipt brand is 'Le Cayenne' — tenant-config asset mismatch. (3) Audit_integrity surfacing of two spec gaps GStack overlooked: states 02/03 duplicate (lang feature is v-if disabled, GStack misframed as broken EN), states 11/12 duplicate (wizard never advances past garnitures, supplement step never captured). On GStack findings: A-001 EN-broken should be DOWNGRADED in framing — kiosk is FR-only by design (CLAUDE.md ADR/iter15-P1a + DOM v-if comment). A-002 upsell-placeholder should be UPGRADED to P1 OR merged with A-ADV-001 (same root cause, broader surface). A-003 disabled-CTA contrast is real but the button is correctly disabled in DOM — it should style as 'awaiting selection' not as broken — keep as P2. Network and console artifacts clean across 24 states (only allowlisted wss Pusher errors). Numeric integrity verified end-to-end: €6,50 (1 article) → €8,50 (2 articles) → €15,00 (3 articles after qty+1 on Tacos) → confirmation €15,00 → receipt total €15,00 (line items 2× Tacos €13,00 + 1× Frites €2,00 = €15,00) — math is correct on every surface. Recommendation for Tier 3 Master Dev: focus the third-eye on (a) cross-surface coherence (kiosk wordmark vs receipt brand vs POS branding), (b) design-system audit of the --kiosk-warning token usage on confirmation-price, (c) IA review of upsell action hierarchy. Tier 3 may also re-evaluate A-ADV-006 once palette-token mapping is verified."
+}

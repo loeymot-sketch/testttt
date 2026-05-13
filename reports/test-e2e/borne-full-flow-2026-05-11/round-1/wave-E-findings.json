@@ -1,0 +1,86 @@
+{
+  "wave": "E",
+  "round": 1,
+  "states_reviewed": 14,
+  "findings": [
+    {
+      "id": "E-001",
+      "state_artifact": "test-e2e-borne-E/02-e-cart-bottom-sheet-open.dom.html",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "State 02 DOM (02-e-cart-bottom-sheet-open.dom.html) is byte-identical to state 01 (01-e-cart-multi-line.dom.html) — `diff` yields zero bytes. PNGs are visually identical. The spec did not capture a distinct 'bottom-sheet open' state. The cart bottom-sheet markup (`kiosk-cart-bottom-sheet`, count=9 in state 02 DOM) is already present in state 01 — the bottom-sheet is permanently rendered on the cart route, not toggled. The state thus does not prove a sheet-open interaction.",
+      "fix_hint": "tests/e2e/test-e2e-borne-2026-05-10-wave-E.spec.js — either (a) drop state 02 as redundant with state 01, or (b) capture an interaction that meaningfully alters the DOM (e.g. tap a line to reveal an expanded compact-card variant). Also: AUDIT_PLAN.md state 02 description references a bottom-sheet open transition that does not exist in current UI.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-002",
+      "state_artifact": "test-e2e-borne-E/03-e-cart-qty-increment.dom.html",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "State 03 DOM is byte-identical to state 01 (`diff` yields zero bytes). PNG shows a faint red focus border on the 'Assiette Poulet' line but the qty stepper still reads '1' and line total is still €12,50 — i.e. no +/- increment was actually executed. AUDIT_PLAN.md flags state 03 as P0 numeric_integrity ('stepper changes line subtotal AND grand total in lock-step') but the capture provides zero evidence of stepper firing. The P0 numeric assertion is therefore unverified by this round.",
+      "fix_hint": "tests/e2e/test-e2e-borne-2026-05-10-wave-E.spec.js — before screenshot, perform `await page.getByTestId('cart-line-1-qty-plus').click()` and `await page.waitForFunction(() => /€25,20|€26,20/.test(document.body.textContent))` so that the captured DOM reflects qty=2 with proportionally increased grand total. Adversarial verification needs the before/after delta.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-003",
+      "state_artifact": "test-e2e-borne-E/05-e-cart-eat-in-takeaway-mode.dom.html",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "State 05 DOM is byte-identical to state 01 (`diff` yields zero bytes). Both states show `À emporter` already selected (red filled) and `Sur place` visible/unselected. The spec did not capture a discrete 'mode pick' interaction. Separately, presence of `Sur place` button contradicts the project memory note `feedback_v1_dine_in_disabled_2026-05-06` ('V1 dine-in désactivé via feature flag pos.dine_in_enabled=false') — surface for owner gate, not a blocker (the flag may apply to POS only, not kiosk).",
+      "fix_hint": "tests/e2e/test-e2e-borne-2026-05-10-wave-E.spec.js — capture state 05 AFTER explicit click on `Sur place` (or assert the takeaway pre-selection is the documented default). Separately confirm whether kiosk should hide the `Sur place` tile in V1; if yes, gate the tile behind `config('feature.kiosk.dine_in_enabled', false)` in KioskCartComponent.vue.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-004",
+      "state_artifact": "test-e2e-borne-E/13-e-confirmation-after-cash.dom.html",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "State 13 ('confirmation reached via cash branch') DOM is byte-identical to state 14 ('back to idle') — both render `kiosk-idle` with 'Bienvenue !' and 'À emporter' tile. Zero `kiosk-confirmation-root` / `Commande confirmée` / `#A012N` markers in state 13 DOM. Either (a) the cash branch has no distinct confirmation page (state 11/12 'Rendez-vous en caisse' with `#A0129` IS the cash terminal screen, then auto-redirect to idle), in which case the spec's naming is misleading; or (b) the screenshot timing missed the actual confirmation. Cross-checking state 11/12 totals.json shows `#A0129` + 23.70 €, suggesting (a). The product is not broken — the spec's expectation is wrong.",
+      "fix_hint": "Either (a) rename state 13 to `13-e-cash-auto-redirect-to-idle` and update AUDIT_PLAN.md state 13 row to reflect that cash branch terminates at the 'Rendez-vous en caisse' page then redirects to idle (no separate confirmation page), or (b) if a distinct cash-confirmation page is expected, snapshot it BEFORE the auto-redirect timer fires (state 11 shows 'Retour à l'accueil dans 45 s'). Recommend option (a) based on observed UX.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-005",
+      "state_artifact": "test-e2e-borne-E/11-e-cash-alt-branch-instruction.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "Probe (11-e-cash-alt-branch-instruction.probe.json) reports `gridTemplateRows: '1689px 175px'` — fixed pixel rows, not the `1fr auto` requested in AUDIT_PLAN.md state 11. Visually the content (icon + 'Rendez-vous en caisse' + order card) sits roughly centered in the viewport above the sticky CTA, so the visual outcome is acceptable. AUDIT_PLAN's MUST-PASS clause states '1fr auto grid CSS OR visual inspection of bounding boxes' — the visual inspection branch passes. Surface as P3 info: implementation diverges from the design intent (computed fixed rows instead of fractional unit), which may regress on smaller viewports.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue (or KioskOrderConfirmationComponent.vue) — change `grid-template-rows: <fixed> <fixed>` to `grid-template-rows: 1fr auto` so vertical centering scales with viewport. Re-capture probe to confirm `1fr auto` literal in computed style fallback.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "E-006",
+      "state_artifact": "test-e2e-borne-E/04-e-cart-totals-ssot.png",
+      "category": "loading_state_missing",
+      "severity": "P3",
+      "evidence": "State 04 PNG is a loading spinner only — no cart content. The sidecars (04-e-cart-totals-ssot.delta.json and .quote.json) prove SSOT integrity (`absolute_delta: 0`, `cart_displayed_total: 23.7`, `backend_quote_total_ttc: 23.7`, verdict GREEN), so the audit assertion holds via the sidecar. Visually, however, the PNG provides no proof for a multimodal reviewer. The capture happened during a transient loader, presumably because the page re-fetched the quote on land.",
+      "fix_hint": "tests/e2e/test-e2e-borne-2026-05-10-wave-E.spec.js — at state 04, `await page.locator('.kiosk-cart-grand-total').waitFor({ state: 'visible' })` and `await page.waitForFunction(() => !document.querySelector('.kiosk-cart-loader'))` before screenshot, so the PNG also visually confirms the SSOT total.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 4,
+    "P3": 2,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 4,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {},
+  "verdict": "GREEN",
+  "notes": "FIRST CLEAN FULL-FLOW WAVE E PASS. Headline backend P0s from previous audit (loyalty_points_awarded UNSIGNED 422 + missing X-Idempotency-Key on payment-confirm) are CONFIRMED FIXED at HEAD cecbf186c. Evidence: (a) all 14 network.json files are empty arrays `[]` — zero 4xx/5xx requests across the entire flow; (b) state 09 DOM already contains `kiosk-confirmation-root` + order number `#A0128`, proving payment-confirm succeeded and the confirmation route mounted; (c) state 10 totals.json shows cart=23.70 → backend_quote=23.70 → confirmation=23.70 (#A0128) with zero numeric drift across surfaces; (d) cash branch similarly hits #A0129 with 23.70 €. Loyalty registration button visible (yellow gradient #F5C518→#E0B214, dark text rgb(15,15,15), WCAG passes). TPE overlay confirmed light-mode (rgb(255,255,255) background, not dark navy). Cart-bar correctly absent on loyalty/cash routes (3/3 = 0 hits). No pink #E8001C residue. All console errors are Pusher wss noise (allowlisted). The 6 open findings are all P2/P3 audit-integrity or visual-hash-drift — none block GREEN verdict per schema (open_P0==0 AND open_P1==0). Note: the audit did NOT independently prove qty-stepper interaction (state 03), bottom-sheet toggle (state 02), or explicit mode selection (state 05) because the spec captured static DOMs identical to state 01 — the happy-path render works but those specific micro-interactions need a follow-up spec for full discipline. The cash branch likely has no separate confirmation page (state 11/12 IS the cash terminal); spec naming for state 13 should be updated. Owner mandate 'tout validé en raisonnement et affichage et logique page par page' is met for the rendered happy path; full interaction proof requires a discipline round-2 with explicit click-then-capture sequences."
+}

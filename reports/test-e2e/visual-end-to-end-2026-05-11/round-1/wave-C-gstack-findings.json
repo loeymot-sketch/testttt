@@ -1,0 +1,185 @@
+{
+  "wave": "C",
+  "round": 1,
+  "states_reviewed": 15,
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "test-e2e-wave-C-edge/05-kiosk-rapid-double-click.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "Rapid double-click on kiosk product card (cat 316 Glace, direct-add product) DOES double-add. Observations captured: state05: cart_before=1 cart_after=3 (delta = +2 after a single double-click event sequence, expected +1). The screenshot shows the cart bottom-sheet line 'GLACE x3 €11,40' after only TWO rapid taps on a tile whose initial cart state was 1. KioskCategoriesComponent.vue openProduct() has a `if (this.loadingItemId) return` guard at line ~562 but it appears to be cleared between the two clicks (await dispatch('frontendItem/details') resolves before the second click fires), nullifying the de-dupe.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue:560 — strengthen the loadingItemId guard with a debounce timer (e.g. 250ms minimum between adds of the same item) OR keep loadingItemId set until the cart has actually mutated (await store.dispatch('kioskCart/addItem') completion). The current pattern clears loadingItemId in finally{} after the details fetch but BEFORE addItem completes.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "test-e2e-wave-C-edge/07-kiosk-payment-failure.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Simulated payment-confirm failure (HTTP 422 with body {message:'simulated payment failure (test)'}) was injected via page.route('**/payment-confirm**'). Observations: state07: failure_route_fired=true (confirming the intercept ran), method_clicked=card, but the captured DOM scan returned payment_error_visible=false, error_toast_visible=false, any_alert_visible=false, alert_text=null. NO user-visible error surface rendered after a 422 from the payment endpoint. By REVIEWER_PROTOCOL.md category 6 (silent_error), a 4xx network response with no role=alert/.toast/.alert-* visible is P0 production-breaking.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue line ~755-780 — the catch block on axios.post('frontend/order/${id}/payment-confirm', ...) currently console.warn's the error but does NOT call $refs.toast.show() nor set a reactive paymentError data field bound to [data-testid='kiosk-payment-error']. Add a visible error surface that shows the customer 'Paiement refusé — réessayez' on any non-2xx response. Critical: a kiosk hung silently after card-payment failure is a real-world cashier-blocking incident.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-wave-C-edge/10-pos-wizard-escape.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "POS variation modal (#item-variation-modal) opens on tile click. After pressing Escape key, observations: state10: post_esc={modal_present:true, modal_has_active_class:true, modal_visible:false, focused_tag:'DIV'}. The modal RETAINS the 'active' class after ESC — meaning the keyboard ESC handler does NOT remove the .active class that drives the modal display. This is the pre-existing B-002 deferred finding made visible. Accessibility: keyboard-only users cannot dismiss the wizard modal. modal_visible=false in the evaluate may indicate an inline style override but the .active class still applied is a state-machine bug.",
+      "fix_hint": "public/js/pos-wizard.js is FROZEN (CLAUDE.md §7). The fix requires a LOCK_<id>.md per CLAUDE.md §10 to add a keydown listener for Escape that calls the same close path as the ✕ button. Alternative non-frozen path: add an Escape listener in resources/js/components/admin/pos/ItemComponent.vue's modal mount that removes the .active class. Owner gate required before patch.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-wave-C-edge/14-pos-back-from-payment.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "POS browser-back from the payment modal: state14: pre_back_payment_lines=1, post_back={modal_active:false, cart_lines:0, url:'/admin/dashboard'}. Browser-back from payment redirects the cashier OUT of /admin/pos to /admin/dashboard with NO confirmation prompt. CAVEAT (advisor reconcile): cart_lines:0 was DOM-counted on /admin/dashboard (which does not render .pos-v5-cart-item), so it does NOT prove the Vuex posCart store was wiped — only that the cashier is no longer on the POS surface where the cart would be visible. The store may persist; returning to /admin/pos may restore the line. This finding is therefore re-graded P2 (workflow-breaking nav with no guard) rather than P1 (cart-destruction) until a follow-up state evaluates window.$store.state.posCart after the back-nav.",
+      "fix_hint": "resources/js/components/admin/pos/PosComponent.vue — add a beforeRouteLeave / popstate guard that surfaces a confirm dialog when cart.lines > 0 and the destination route is outside /admin/pos. Even if the store survives, the UX-jarring redirect mid-payment without warning is a defensive-edge defect. Round-2 should additionally evaluate posCart state to upgrade or close.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "test-e2e-wave-C-edge/02-kiosk-backdrop-dismiss.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Attempted to drive a payment screen for the kiosk backdrop-dismiss test (state 02). Observations: state02: glace_visible=true (item visible), payment_visible=false (despite cart having items), url=/kiosk/upsell, backdrop_dismiss_state={url:'/kiosk/upsell', payment_still_visible:false}. The cart-pay flow routed through /kiosk/upsell (upsell screen) instead of /kiosk/payment as expected — there is no /kiosk/cart 'Continue to pay' button discovered (testids kiosk-cart-pay, kiosk-cart-checkout, kiosk-cart-next all returned not-visible). Either the cart→pay CTA testid is mis-aligned with this spec's selectors, OR the cart screen forces upsell as a mandatory step. Reviewer: confirm what testid actually exists on the cart's primary CTA.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskCartComponent.vue — verify the data-testid on the primary 'Continuer / Payer' CTA. If it's something other than kiosk-cart-pay/checkout/next (e.g. kiosk-cart-continue, kiosk-cart-proceed), document it in the test helper for future specs. Not a customer-facing defect, just spec-DX alignment.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "test-e2e-wave-C-edge/03-kiosk-modal-stacking.png",
+      "category": "loading_state_missing",
+      "severity": "P2",
+      "evidence": "Modal-stacking state captured no stack: state03: stack_state={toast_present:false, payment_present:false}. The synthetic-toast injection via page.evaluate() found no payment surface to overlap (state cascaded from state 02 where payment never appeared). The captured PNG shows /kiosk/upsell, NOT a stacked payment+toast state. Adversarial reviewer: this state's intent (verify toast does not occlude critical payment CTAs) is NOT validated by this artifact. Need a re-attempt in round 2 with corrected payment navigation.",
+      "fix_hint": "Spec-side fix: state03 needs to FIRST verify payment screen is reachable (state 02 succeeded), THEN inject the toast. Cascade-failure handling improvement, no production code change required.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "test-e2e-wave-C-edge/13-pos-double-tap.png",
+      "category": "aria_keyboard",
+      "severity": "P3",
+      "evidence": "POS rapid double-tap on tile: state13: post_dbl_click={modal_count:1, active_modal_count:1, cart_lines:0}. The variation modal single-instance behavior is correct (modal_count=1, NOT 2). The second click was force=true (force:true bypasses pointer-event interception) and still resulted in a single modal — this is GOOD. Recorded as P3 informational confirmation that the POS modal architecture is double-tap-safe. Contrast with C-001: kiosk has NO modal interception for direct-add items so the same defensive pattern is absent there.",
+      "fix_hint": "No fix needed — informational. Architectural note: extend the POS single-modal-instance pattern to the kiosk direct-add flow to close C-001.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 0
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "test-e2e-wave-C-edge/15-pos-rapid-qty-spam.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "POS qty +1 spam (10 rapid clicks): state15: initial={grand:'Total2.00€', linePrice:'2.00€', qty:'🗑+'} → final={grand:'Total22.00€', linePrice:'22.00€', qty:'−+', hasNaN:false}. Math is correct: 2.00 × 11 = 22.00€. No NaN, no integer overflow, no race condition observed. The qty stepper holds up under burst input. Recorded as P3 positive confirmation of numeric_integrity invariant.",
+      "fix_hint": "No fix needed — informational positive evidence.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 0
+    },
+    {
+      "id": "C-009",
+      "state_artifact": "test-e2e-wave-C-edge/06-kiosk-slow-network.png",
+      "category": "loading_state_missing",
+      "severity": "P3",
+      "evidence": "Slow-network simulation on /frontend/order/quote (3s delay): state06: route_fired=true inflight={spinner_count:1, skeleton_count:0, processing_panel_visible:false, url:'/kiosk/cart'}. A loading spinner DID render during the in-flight 3s window — positive evidence that the kiosk handles slow API responses gracefully (REVIEWER_PROTOCOL.md cat 7 requires .spinner/.skeleton/[aria-busy] during >2000ms requests, found ≥1 spinner). Captured under url=/kiosk/cart (the navigation hadn't completed yet at snap time).",
+      "fix_hint": "No fix needed — informational positive evidence of loading-state quality.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 0
+    },
+    {
+      "id": "C-010",
+      "state_artifact": "test-e2e-wave-C-edge/01-kiosk-cart-empty.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "Kiosk empty-cart state quality: state01: {empty_visible:true, empty_copy_len:86, empty_copy_sample:'🛒Votre panier est videParcourez le menu et ajoutez des articles !Ajouter des articles', has_cta:true, cta_text:'Ajouter des articles', has_illustration:true}. Meets REVIEWER_PROTOCOL.md cat 5 (empty-state quality): has illustration (cart emoji), copy ≥20 chars (86), primary CTA present. Positive evidence — empty cart is well-designed.",
+      "fix_hint": "No fix needed — positive evidence.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 0
+    },
+    {
+      "id": "C-011",
+      "state_artifact": "test-e2e-wave-C-edge/09-pos-cart-empty.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "POS empty-cart state quality: state09: {empty_visible:true, empty_copy_len:57, empty_copy_sample:'🍽️Aucun article. Sélectionnez un produit dans la grille.', pay_btn_disabled:true, grand_total:'Total0.00€'}. Pay button is correctly disabled when no items present, grand_total reads 0.00€. Meets defensive UX. Positive evidence.",
+      "fix_hint": "No fix needed — positive evidence.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 0
+    },
+    {
+      "id": "C-012",
+      "state_artifact": "test-e2e-wave-C-edge/12-pos-receipt-print-fail.png",
+      "category": "silent_error",
+      "severity": "P2",
+      "evidence": "POS receipt-print-fail simulation: state12: print_btn_visible=false, print_route_fired=false, alert_visible=true, alert_text='Article ajouté au panier'. No print button was discovered in the current POS state (no completed order to print). The print-receipt path is INACCESSIBLE without a real completed order; the simulated 500 response never fired. Reviewer caveat: receipt-print failure UX could not be validated in this round. The visible alert in the capture is a generic 'item added to cart' toast — unrelated to print.",
+      "fix_hint": "Spec-side limitation, not a production defect. Round-2 should drive a real order to completion (PaymentMethod=CASH with simulated receipt) before installing the print-route-intercept, then trigger the print action from a completed order's tracker entry.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-013",
+      "state_artifact": "test-e2e-wave-C-edge/11-pos-payment-cancel.png",
+      "category": "aria_keyboard",
+      "severity": "P3",
+      "evidence": "POS payment cancel: state11: pay_btn_visible=true lines=1, close_visible=true, cancel_state={modal_active:false, cart_lines:1, focused_tag:'BODY'}. Modal correctly closes after ✕ click, cart line PRESERVED (1 line still present — cancel ≠ confirm), focus drops to BODY (P3 a11y nit — focus should return to the pay button per WAI-ARIA dialog pattern).",
+      "fix_hint": "resources/js/components/admin/pos/PaymentComponent.vue — on cancel, return focus to data-testid='pos-v5-pay' rather than letting it drop to document.body. Cosmetic a11y improvement.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "C-014",
+      "state_artifact": "test-e2e-wave-C-edge/04-kiosk-mid-flow-back.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "Kiosk mid-flow back from wizard: state04: pre_back_cart={sheet_item_count:1}, close_btn_visible=true, post_back={wizard_present:false, sheet_item_count:1, url:'/kiosk/categories'}. Wizard closed cleanly via ✕ button, cart preserved its existing 1 item (no cart-clear side-effect), and navigation returned to /kiosk/categories. Cart-preservation behavior is correct. Positive evidence.",
+      "fix_hint": "No fix needed — positive evidence.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 0
+    },
+    {
+      "id": "C-015",
+      "state_artifact": "test-e2e-wave-C-edge/08-kiosk-i18n-EN-deep.png",
+      "category": "i18n_leak",
+      "severity": "P3",
+      "evidence": "Kiosk EN-locale deep scan: state08: lang_en_visible=false url=http://127.0.0.1:8000/kiosk/idle, sidebar_visible=true, i18n_scan={leak_count:0, samples:[]}. The EN language toggle button (data-testid='kiosk-idle-lang-en') was NOT visible at idle in this round (consistent with Wave A finding A-001 — EN may not be wired). DOM walker scanned for raw-key patterns and found ZERO leaks — i18n resolution is clean regardless of locale. Positive evidence for i18n hygiene, related to Wave A A-001 for the missing EN selector.",
+      "fix_hint": "Cross-link to Wave A A-001: kiosk EN locale appears not exposed at idle. Master Dev tier should consolidate.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 1,
+    "P2": 4,
+    "P3": 8,
+    "open_P0": 2,
+    "open_P1": 1,
+    "open_P2": 4,
+    "open_P3": 3
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": "Tier 1 GStack Wave C — defensive edge-state visual capture (15/15 quartets emitted, 60 artifact files, ~1m20s wallclock). TWO P0 findings hit by the edge-state hunt: (C-001) kiosk rapid double-click DOES double-add (cart 1→3 from a 2-click event = +2, expected +1 — loadingItemId guard insufficient); and (C-002) kiosk payment-confirm 422 produces ZERO visible error surface (silent_error per REVIEWER_PROTOCOL.md cat 6). ONE P1: (C-003) POS wizard ESC does not remove .active class (B-002 deferred confirmed visible). Re-graded after advisor reconcile: C-004 POS back-from-payment is P2 not P1 because cart_lines=0 was DOM-counted on /admin/dashboard which does not render posCart anyway — the store may persist; round-2 must evaluate window.$store.state.posCart to upgrade or close. CASCADE NOTE: state-02 and state-03 PNGs capture /kiosk/upsell instead of /kiosk/payment because the cart→pay path was intercepted by an upsell screen (no kiosk-cart-pay/checkout/next testid discovered on cart). C-005 and C-006 are spec-DX findings re-runnable in round 2. Positive evidence: kiosk empty cart (C-010), POS empty cart (C-011), POS double-tap modal-safe (C-007), POS qty spam math holds (C-008), kiosk slow-network spinner renders (C-009), kiosk wizard close preserves cart (C-014), i18n leak-free DOM (C-015). The third-eye edge-state tier surfaced exactly the hidden defects the audit-plan targeted. Verdict RED on open_P0=2."
+}

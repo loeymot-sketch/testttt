@@ -1,0 +1,108 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 24,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-wave-A-kiosk/03-idle-lang-en.png",
+      "category": "i18n_leak",
+      "severity": "P2",
+      "evidence": "State 02-idle-lang-fr.png and state 03-idle-lang-en.png are visually IDENTICAL. Both show 'Bienvenue !' (FR) with 'À emporter / Je récupère ma commande' subtitle in French. The data-testid='kiosk-idle-lang-en' selector was NOT visible during capture (marker_present=false in observations.json). Either the EN locale button is missing from the idle screen, or the EN selector is wired but does not actually re-render the UI in EN. Owner mandate states EN must be reachable from idle.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue — inspect the lang-selector loop (kiosk-idle-lang-${lang}). Either availableLocales is filtering out 'en', or clicking the EN button does not commit i18n.locale. Per CLAUDE.md memory ADR-007/iter15-P1a, kiosk runtime is FR-immutable post-boot, which directly contradicts a multilingual idle screen. Decide: is EN supposed to exist? If yes, restore locale-switch capability; if no, remove the EN testid stub.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-wave-A-kiosk/19-upsell.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Upsell grid renders 6 cards but 3 of them (Salade verte €2,00, Fromage à raclette €1,00, Œuf €1,00) display the gray plus-icon image placeholder instead of a product photo. Fish Burger / Eau Plate 50cl / Assiette Poulet show proper photos. Mixed-media grid is visually jarring at the moment-of-cross-sell, hurting upsell conversion.",
+      "fix_hint": "Either (a) seed image_path on those 3 items in the database, or (b) hide upsell cards lacking an image, or (c) replace the gray plus-icon placeholder with a category-tinted fallback that reads as intentional rather than 'missing'. Check resources/js/components/frontend/kiosk/KioskUpsellComponent.vue card image fallback logic.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "test-e2e-wave-A-kiosk/20-payment-modal.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "The 'Confirmer — €15,00' CTA at the bottom of the payment screen renders in a gray pill on a near-white background with gray text + gray arrow. Even when a payment method is highlighted (or none), the affordance reads as PERMANENTLY-DISABLED to a first-time customer. By contrast, the upper '€15,00' total card is full orange #F4501E with white text (very strong). The CTA disabled-state contrast is below WCAG AA against the white app surface.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue — when canConfirm=true, switch the confirm button to the brand orange filled style. The disabled-look prevents pinpointing 'tap here to pay'. Even in disabled state, the text should be a darker gray to meet 4.5:1 contrast on white.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-wave-A-kiosk/01-idle-fresh.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "Idle screen shows ONLY 'À emporter' as the available order-type card; 'Sur place / Dine-in' is correctly absent per V1 feature flag (pos.dine_in_enabled=false per CLAUDE.md §10 / memory feedback_v1_dine_in_disabled_2026-05-06). However, when a single card is the only choice, the chooser pattern becomes redundant — user tap on 'À emporter' is the only path. Either auto-advance OR keep the friction for explicit consent (current behaviour).",
+      "fix_hint": "Confirm with owner whether the explicit takeaway tap is intentional UX (consent + signature gesture for the order session) or whether to auto-advance when dine-in is disabled. No code change unless owner instructs.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "test-e2e-wave-A-kiosk/22-confirmation.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "Confirmation screen displays 'TOTAL PAYÉ €15,00' but the cart-2-lines state (17-cart-2-lines.png) showed '2 articles ... €8,50' just before checkout — meaning the qty-plus interaction at state 18 added items that lifted the basket from €8,50 to €15,00 (a €6,50 delta = Tacos M repeat is consistent). Numeric integrity therefore checks out, but reviewer should cross-validate against POST /api/frontend/order body. The captured_order_id is in observations.json — adversarial / master dev tiers should diff the displayed total against the persisted order.total_amount_price field.",
+      "fix_hint": "No fix needed — flagged for tier-2/tier-3 cross-validation. Confirm displayed €15,00 == DB order.total_amount_price for captured_order_id.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "test-e2e-wave-A-kiosk/02-idle-lang-fr.png",
+      "category": "aria_keyboard",
+      "severity": "P3",
+      "evidence": "Idle screen shows a small icon top-left (moon/dark-mode toggle) and a small icon top-right (a11y/settings drawer) but neither has a visible label. data-testid='kiosk-theme-toggle' and data-testid='kiosk-idle-a11y-btn' exist in the DOM but the icons have no visible affordance text — relying on icon-only is risky for first-time customers and may fail screen-reader audits if aria-label is missing or generic.",
+      "fix_hint": "Verify resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue line ~20-30 — confirm aria-label on both icon buttons (e.g. aria-label=\"Accessibilité\" and \"Mode sombre\"). For first-time UX, consider a subtle bottom-anchored tooltip on first idle render.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "test-e2e-wave-A-kiosk/05-categories.png",
+      "category": "color_contrast",
+      "severity": "P3",
+      "evidence": "Bottom 'Abandonner ma commande' / cart-summary bar shows '0 article' on the left (gray text on light gray) and '€0,00' on the right (white text on solid orange #F4501E). The dual-tone bar mixes (1) low-contrast 'empty-state' text and (2) high-contrast brand orange total. When the cart IS populated (state 17), the same bar shifts to clearer text with brand orange retained — the empty-state styling could mirror the populated styling to keep visual rhythm.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue — bottom bar 'cart-empty' branch could use brand orange tint + bolder text matching the populated state. Currently the bar drops to a low-emphasis style when empty which is fine UX but the contrast on '0 article' / 'Abandonner' could be tightened.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "test-e2e-wave-A-kiosk/13-wizard-recap.png",
+      "category": "aria_keyboard",
+      "severity": "P3",
+      "evidence": "Wizard recap shows VIANDES (1) Merguez ×1 — 'Inclus' label; SAUCES (1) Ketchup — 'Gratuite' label; GARNITURES (3) pill-chips Salade / Tomate / Oignon. The pill chips are decorative with no role or aria-label exposed for the count. Step-tracker dots at top use orange/gray underline but no aria-current=step semantic visible.",
+      "fix_hint": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue — step-tracker should expose role=progressbar or each step button should carry aria-current=step on the active step. The pill chips below 'VOTRE COMPOSITION' could be wrapped in role=list / role=listitem for screen reader clarity.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 3,
+    "P3": 5,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 3,
+    "open_P3": 5
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER",
+  "notes": "Tier 1 GStack — visual capture of full kiosk home→payment flow (24/24 states, 96 artifacts, 30.5s wallclock). The flow itself is GREEN: cart computed €15,00 paid successfully (order_id captured in observations.json), confirmation rendered with proper queue number #A0130, and idle loop closed (state 24 = state 01 + decoration). Findings are visual / a11y polish — no P0 silent error and no P1 broken state. Verdict AMBER because EN locale claim (A-001) and upsell empty-image (A-002) materially impact the customer-visible flow. Tier 2 adversarial and Tier 3 master dev will extend with deeper categories (information_architecture, design_system tokens, microinteraction)."
+}

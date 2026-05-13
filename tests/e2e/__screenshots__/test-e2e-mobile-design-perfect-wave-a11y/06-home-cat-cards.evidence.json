@@ -1,0 +1,66 @@
+{
+  "cards": [
+    {
+      "tag": "BUTTON",
+      "role": null,
+      "tabindex": null,
+      "ariaLabel": "Profil — Ikyes B."
+    },
+    {
+      "tag": "BUTTON",
+      "role": null,
+      "tabindex": null,
+      "ariaLabel": "Notifications"
+    },
+    {
+      "tag": "DIV",
+      "role": null,
+      "tabindex": null,
+      "ariaLabel": null
+    },
+    {
+      "tag": "DIV",
+      "role": "button",
+      "tabindex": "0",
+      "ariaLabel": "Catégorie Nos Tacos"
+    },
+    {
+      "tag": "DIV",
+      "role": "button",
+      "tabindex": "0",
+      "ariaLabel": "Catégorie Nos Sandwichs"
+    },
+    {
+      "tag": "DIV",
+      "role": "button",
+      "tabindex": "0",
+      "ariaLabel": "Catégorie Nos Burgers"
+    },
+    {
+      "tag": "DIV",
+      "role": "button",
+      "tabindex": "0",
+      "ariaLabel": "Catégorie Nos Assiettes"
+    },
+    {
+      "tag": "DIV",
+      "role": "button",
+      "tabindex": "0",
+      "ariaLabel": "Catégorie Ojja"
+    },
+    {
+      "tag": "DIV",
+      "role": "button",
+      "tabindex": "0",
+      "ariaLabel": "Catégorie Omelettes"
+    },
+    {
+      "tag": "DIV",
+      "role": null,
+      "tabindex": null,
+      "ariaLabel": null
+    }
+  ],
+  "count": 10,
+  "has_role": 6
+}

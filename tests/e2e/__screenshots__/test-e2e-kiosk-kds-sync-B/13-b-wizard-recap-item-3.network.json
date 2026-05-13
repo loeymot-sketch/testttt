@@ -1,0 +1,23 @@
+[
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/pricing/preview",
+    "method": "POST",
+    "status": 422,
+    "duration_ms": null,
+    "ts": 1778474202563
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/pricing/preview",
+    "method": "POST",
+    "status": 422,
+    "duration_ms": null,
+    "ts": 1778474203177
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/pricing/preview",
+    "method": "POST",
+    "status": 422,
+    "duration_ms": null,
+    "ts": 1778474204369
+  }
+]

@@ -1,0 +1,7 @@
+{
+  "test_id": "F04",
+  "threshold_fps": 58,
+  "measured_fps": 119.5,
+  "frames_collected": 276,
+  "result": "PASS"
+}

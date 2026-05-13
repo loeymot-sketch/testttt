@@ -1,0 +1,116 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 19,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-wave-B-pos/16-pos-payment-success.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Vue-Toastification toast shown after clicking confirm in cash mode reads 'The received amount field is required ×' — raw English Laravel/validator error surfaced in a French UI (FoodKing is FR-default). Recorded in state16 observations: toasts[2].text='The received amount field is required ×'.",
+      "fix_hint": "Backend validator for POS cash payment must return a translated message (lang/fr/validation.php) or the frontend must intercept the validation error and surface the French label. Likely culprit: app/Http/Requests/PosPaymentRequest (or similar) — add explicit ->messages() or use trans(). The PaymentComponent toast handler in resources/js/components/admin/PaymentComponent (or PosV5PaymentModalComponent) should also translate axios 422 errors via $i18n before passing to vue-toastification.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "gstack_lens": "tester"
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "test-e2e-wave-B-pos/14-pos-payment-especes.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "After clicking pos-payment-mode-cash the cash UI surfaces but no input matched any of [data-testid=\"pos-payment-tendered\"], #orderpayment input[type=\"number\"], input[name*=\"tendered\"], input[placeholder*=\"reçu\"], input[placeholder*=\"endu\"]. state14 obs: 'no tendered input — quick-amount chip may be expected'; tendered_val=null. Without a discoverable tendered input the cashier cannot enter the customer-paid amount via keyboard, which is the standard POS cash UX. Adversarial reviewer should compare to legacy POS V4 payment modal screenshot for regression.",
+      "fix_hint": "Verify PosV5PaymentModalComponent / PaymentComponent.vue exposes a tendered <input> with data-testid=\"pos-payment-tendered\" and a clear FR label (e.g. 'Montant reçu'). If the quick-amount chips are the only entry mechanism, ensure they include a 'Personnalisé' chip or numeric keypad. Backend rejection 'The received amount field is required' (see B-001) proves the API expects the field — front-end has no UI to fill it.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "gstack_lens": "a11y"
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "test-e2e-wave-B-pos/12-pos-cart-qty-edit.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "state12 obs: cart first-line qty text = '−+' (minus + plus glyphs concatenated, with no visible numeric quantity between them). Either the qty number is being masked by an overlap or the stepper template renders the controls without exposing the value as text content. Visual reviewer should confirm whether a '2' renders between the buttons on the PNG.",
+      "fix_hint": "Inspect PosV5QtyStepper template — the qty value should sit between the −/+ buttons as a visible <span>. Most likely: the qty span exists but textContent of .pos-v5-cart-item__qty includes only the button glyphs because the qty number is rendered in a sibling node we're not capturing. Confirm via 12-pos-cart-qty-edit.dom.html. If qty really renders as '−+' with no number, it's a P1 numeric_integrity defect.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "gstack_lens": "tester"
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "test-e2e-wave-B-pos/17-pos-receipt-modal.png",
+      "category": "loading_state_missing",
+      "severity": "P1",
+      "evidence": "state17 obs: receipt_modal_present=true but receipt_modal_active=false even after the confirm click in cash flow. The #receiptModal element is in DOM but never receives the .active class because the upstream payment commit failed (see B-001 — 'received amount field is required'). The state-17 PNG therefore captures a hidden modal, not the receipt UX. This is a captured fact and a hard blocker for the receipt visual review tier.",
+      "fix_hint": "Fixing B-001 (translated 422) and B-002 (expose tendered input) will unblock the receipt render. Independent of those, the spec should detect the toast-error state and surface a 'payment failed' observation so the reviewer is not deceived by the empty 17/18 captures. Also: PaymentComponent should NOT emit a 'mode TEST — impression bypassée' toast on a payment that actually failed (state16 obs has it concurrent with the validation error).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "gstack_lens": "sre"
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "test-e2e-wave-B-pos/15-pos-payment-tpe.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "state15 obs: tpe_mode_visible=false. No data-testid matches pos-payment-mode-tpe nor pos-payment-mode-terminal in the rendered payment modal. The spec fell back to multi mode capture and observations.push('TPE not exposed — falling back to multi mode capture'). The audit plan's state 15 'TPE pending (stub state)' has no surface to capture on this build.",
+      "fix_hint": "Confirm whether TPE/terminal mode is intentionally hidden in V1 (feature flag pos.tpe_enabled=false) or whether it should appear alongside cash/card/multi. If hidden, document in AUDIT_PLAN.md so future rounds know state 15 is 'multi-mode fallback' and not 'TPE'. If meant to be visible, expose the button with data-testid pos-payment-mode-tpe in PosV5PaymentModalComponent.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "gstack_lens": "architect"
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "test-e2e-wave-B-pos/06-pos-wizard-viande.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Spec/code drift documented for reviewer transparency: public/js/pos-wizard.js line 363 declares the tacos category step sequence as ['viande_sauce', 'perso', 'menu', 'recap'] with a wizard-split layout. Live rendering on item 363 (Tacos M, 1 Viande) on this build shows a single-page wizard with section titles ['🥩 Viande', '🍟🥤 Formule', 'Options frites', '🍟 Sauce pour frites', '📝 Instruction spéciale'] and the wizard-btn-cart CTA visible from the start (no wizard-btn-next). The 4 wizard quartets (06-09) therefore capture the same scrollable wizard page in different interaction states (empty / viande+sauce selected / scrolled to extras / scrolled to cart-CTA).",
+      "fix_hint": "FROZEN ZONE — do not patch pos-wizard.js. Action for human reviewer: decide whether the standalone-section single-page wizard is the intended V1 layout (in which case pos-wizard.js line 363 is stale documentation) or whether the wizard-split layout was lost in a recent merge. If intended, update AUDIT_PLAN.md to reflect the actual mapping. If regression, file a LOCK_<id>.md to investigate.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "gstack_lens": "architect"
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "test-e2e-wave-B-pos/19-pos-return-catalog.png",
+      "category": "silent_error",
+      "severity": "P2",
+      "evidence": "state19 obs: cart_lines=2, empty_visible=false on /admin/pos return. The cart was NOT cleared after the payment flow ended. Since the payment never actually succeeded (B-001/B-004), this is expected — but in a happy-path success scenario the cart should be empty post-payment. Recorded as an observation so the next round (post B-001/B-004 fix) can validate cart-clear behavior. The current capture is therefore evidence of 'payment-failed-cart-retains-lines' which is correct UX but not what state 19 intends to show.",
+      "fix_hint": "After B-001/B-004 are resolved, re-run Wave B and validate state 19 shows empty_cart=true. If the cart still retains lines after a successful payment, that is a P1 SRE defect (lost order state on success). For now this is informational.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "gstack_lens": "tester"
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "test-e2e-wave-B-pos/03-pos-catalog-default.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "state03 positive baseline: 63 tiles, 0 broken thumbnails, cart panel present, empty-state visible. Brand chrome rendered (PNG to be visually reviewed for Cayenne #F4501E adherence). No console errors recorded in 03-pos-catalog-default.console.json window. Recorded as evidence baseline — a positive signal the catalog landing surface is clean from a technical observability standpoint, leaving brand/visual judgement to the adversarial + master-dev tiers.",
+      "fix_hint": "No action — baseline observation.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "gstack_lens": "dba"
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 3,
+    "P2": 3,
+    "P3": 2,
+    "open_P0": 0,
+    "open_P1": 3,
+    "open_P2": 3,
+    "open_P3": 2
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER",
+  "notes": "GStack tier-1 verdict: AMBER. open_P0=0 but open_P1=3 (B-001 i18n leak on validation toast, B-002 missing tendered input UI, B-004 receipt modal blocked by upstream payment failure). The cluster B-001/B-002/B-004 is a single root cause: the cash payment flow lacks a tendered-amount UI surface, so the backend 422-rejects with an untranslated English message, and the receipt modal never opens. Fixing one likely unblocks the other two. All 19 visual states captured (76 artifact files on disk). Wizard step mapping (audit plan slugs 06-09 → standalone-section single-page wizard, not legacy wizard-split) documented in B-006 for reviewer transparency. FROZEN ZONE public/js/pos-wizard.js untouched. State 15 (TPE) is a multi-mode fallback on this build — see B-005. Spec exit code 0 after the second run (rate-limit clear inserted pre-confirm). Wallclock: 41.1s capture + ~30s findings authoring."
+}

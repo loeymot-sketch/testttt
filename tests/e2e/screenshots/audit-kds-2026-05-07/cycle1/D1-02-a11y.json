@@ -1,6 +1,6 @@
 {
   "violations_count": 1,
-  "passes_count": 27,
+  "passes_count": 28,
   "incomplete_count": 1,
   "violations": [
     {
@@ -8,24 +8,24 @@
       "impact": "serious",
       "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
       "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
-      "nodes_count": 3,
+      "nodes_count": 22,
       "sample_nodes": [
         {
-          "html": "<button data-v-66aac04e=\"\" type=\"button\" class=\"rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white\">Démarrer la préparation</button>",
+          "html": "<button data-v-66aac04e=\"\" type=\"button\" class=\"rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white\">Démarrer la préparation</button>",
           "target": [
-            "div[aria-labelledby=\"order-241-title\"] > .pt-2.pb-3.px-3 > .kds-card-cta.mt-2[data-testid=\"kds-card-cta\"] > .bg-primary.h-9.text-white"
+            "div[aria-labelledby=\"order-1070-title\"] > .pt-2.pb-3.px-3 > .kds-card-cta.mt-2[data-testid=\"kds-card-cta\"] > .bg-\\[\\#F4501E\\].h-9.text-white"
           ]
         },
         {
-          "html": "<button data-v-66aac04e=\"\" type=\"button\" class=\"rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white\">Démarrer la préparation</button>",
+          "html": "<button data-v-66aac04e=\"\" type=\"button\" class=\"rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white\">Démarrer la préparation</button>",
           "target": [
-            "div[aria-labelledby=\"order-240-title\"] > .pt-2.pb-3.px-3 > .kds-card-cta.mt-2[data-testid=\"kds-card-cta\"] > .bg-primary.h-9.text-white"
+            "div[aria-labelledby=\"order-1050-title\"] > .pt-2.pb-3.px-3 > .kds-card-cta.mt-2[data-testid=\"kds-card-cta\"] > .bg-\\[\\#F4501E\\].h-9.text-white"
           ]
         },
         {
-          "html": "<button data-v-66aac04e=\"\" type=\"button\" class=\"rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-primary text-white\">Démarrer la préparation</button>",
+          "html": "<button data-v-66aac04e=\"\" type=\"button\" class=\"rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white\">Démarrer la préparation</button>",
           "target": [
-            "div[aria-labelledby=\"order-188-title\"] > .pt-2.pb-3.px-3 > .kds-card-cta.mt-2[data-testid=\"kds-card-cta\"] > .bg-primary.h-9.text-white"
+            "div[aria-labelledby=\"order-1018-title\"] > .pt-2.pb-3.px-3 > .kds-card-cta.mt-2[data-testid=\"kds-card-cta\"] > .bg-\\[\\#F4501E\\].h-9.text-white"
           ]
         }
       ]

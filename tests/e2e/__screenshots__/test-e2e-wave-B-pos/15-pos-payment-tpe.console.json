@@ -1,0 +1,92 @@
+[
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.split_summary' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=c6f90ff67ccce6d2caeeba703a196cff",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1778472903479
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.total_covered' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=c6f90ff67ccce6d2caeeba703a196cff",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1778472903479
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.remaining_due' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=c6f90ff67ccce6d2caeeba703a196cff",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1778472903480
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.split_among_n' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=c6f90ff67ccce6d2caeeba703a196cff",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1778472903480
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.split_among_n' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=c6f90ff67ccce6d2caeeba703a196cff",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1778472903480
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'button.split_equally' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=c6f90ff67ccce6d2caeeba703a196cff",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1778472903480
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.split_tranches' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=c6f90ff67ccce6d2caeeba703a196cff",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1778472903480
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'pos.split_empty_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=c6f90ff67ccce6d2caeeba703a196cff",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1778472903480
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'button.add_tranche' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=c6f90ff67ccce6d2caeeba703a196cff",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1778472903480
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "order_id": 1051,
+    "token": "AUDIT-RUSH-A-001-1778458607333",
+    "db_total": 6,
+    "kds_card_found": true,
+    "kds_source": "takeaway",
+    "kds_item_match": true,
+    "kds_text_excerpt": "#1105261051 N°A0095ConfirméesN° commande: AUDIT-RUSH-A-001-1778458607333 N° file: A009502:17, 11-05-20261xBurger Poulet Imprimer ticket Démarrer la préparation"
+  },
+  {
+    "order_id": 1052,
+    "token": "AUDIT-RUSH-A-002-1778458607333",
+    "db_total": 6,
+    "kds_card_found": true,
+    "kds_source": "takeaway",
+    "kds_item_match": true,
+    "kds_text_excerpt": "#1105261052 N°A0096ConfirméesN° commande: AUDIT-RUSH-A-002-1778458607333 N° file: A009602:17, 11-05-20261xBurger Poulet Imprimer ticket Démarrer la préparation"
+  },
+  {
+    "order_id": 1053,
+    "token": "AUDIT-RUSH-A-003-1778458607333",
+    "db_total": 6,
+    "kds_card_found": true,
+    "kds_source": "takeaway",
+    "kds_item_match": true,
+    "kds_text_excerpt": "#1105261053 N°A0097ConfirméesN° commande: AUDIT-RUSH-A-003-1778458607333 N° file: A009702:17, 11-05-20261xBurger Poulet Imprimer ticket Démarrer la préparation"
+  },
+  {
+    "order_id": 1054,
+    "token": "AUDIT-RUSH-A-004-1778458607333",
+    "db_total": 2,
+    "kds_card_found": true,
+    "kds_source": "takeaway",
+    "kds_item_match": true,
+    "kds_text_excerpt": "#1105261054 N°A0098ConfirméesN° commande: AUDIT-RUSH-A-004-1778458607333 N° file: A009802:17, 11-05-20261xFrites Seules Imprimer ticket Démarrer la préparation"
+  },
+  {
+    "order_id": 1055,
+    "token": "AUDIT-RUSH-A-005-1778458607333",
+    "db_total": 6,
+    "kds_card_found": true,
+    "kds_source": "takeaway",
+    "kds_item_match": true,
+    "kds_text_excerpt": "#1105261055 N°A0099ConfirméesN° commande: AUDIT-RUSH-A-005-1778458607333 N° file: A009902:17, 11-05-20261xBurger Poulet Imprimer ticket Démarrer la préparation"
+  }
+]

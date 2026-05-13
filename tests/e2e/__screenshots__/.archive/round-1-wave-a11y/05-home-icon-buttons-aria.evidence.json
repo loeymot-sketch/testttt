@@ -1,0 +1,11 @@
+{
+  "icon_only_buttons": [
+    {
+      "text": "",
+      "ariaLabel": null,
+      "hasSvg": true,
+      "hasIcon": true
+    }
+  ],
+  "all_labelled": false
+}

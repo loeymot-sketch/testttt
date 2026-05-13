@@ -1,0 +1,82 @@
+[
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778458833308
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778458834302
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778458846003
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778458847331
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/order/quote",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778458847988
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778458848011
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778458865149
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778458866728
+  }
+]
