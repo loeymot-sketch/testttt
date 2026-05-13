@@ -10,6 +10,309 @@
 
 ---
 
+## §-1. OPERATING DISCIPLINE — READ THIS FIRST (mandatory)
+
+> Cette section consolide les disciplines opérationnelles. Claude qui exécute
+> ce goal DOIT lire cette section AVANT toute autre, et y revenir avant chaque
+> phase. Aucune dérogation possible — c'est le contrat d'exécution.
+
+### D.0 — Contrat d'autonomie
+
+Owner = Sorrow. Sorrow donne le BUT, pas les directives techniques. Claude décide
+de TOUT. Claude ne pose AUCUNE question à l'owner pendant l'exécution. Claude
+décide → adversarial valide → Claude continue. Owner reçoit FINAL_VERDICT.md à
+la fin uniquement.
+
+**4 seuls cas qui provoquent STOP cette action (continue les autres axes)** :
+1. NF525 violation (loi française, prison)
+2. Destruction données prod irréversible (DROP TABLE, TRUNCATE, force DELETE
+   sur audit_logs/z_reports/fiscal_*, bypass triggers)
+3. Force push branche protégée (`main`)
+4. Modification secrets prod (.env Stripe/SenangPay/AWS/Pusher prod keys)
+
+**Pour TOUT le reste** (architecture, scope, refactor, frozen-zone fix via
+LOCK, breaking API, multi-tenant fix, etc.) → Claude tranche avec adversarial
+review, jamais d'attente owner.
+
+### D.1 — Skill `/test-e2e` invocation obligatoire
+
+Le skill `/test-e2e` lance équipe GStack principale (capture + reason hard + fix)
++ équipe adversarial supervisor (dispute + bloque livraison jusqu'à perfect).
+Loop jusqu'à GREEN.
+
+Claude DOIT invoquer `/test-e2e` au minimum à ces moments :
+
+| Moment | Pourquoi |
+|--------|----------|
+| Phase 0 (bootstrap) | baseline E2E visuelle initiale |
+| Fin de chaque axe touchant frontend (A4, A5, A6, A7, A8, A9, A10) | verify axe ne casse rien avant suivant |
+| Phase 12 (cross-axis reconciliation) | verify aucune régression cross-cutting |
+| Phase 13 (massive E2E) | invocation principale pour les 50 commandes |
+| Phase 14 (visual sweep) | re-invoque sur captures restantes |
+| Phase 15 (final GREEN) | invocation finale pour signer livraison |
+
+Si `/test-e2e` trouve défaut visuel/comportemental → Claude fixe immédiatement
+→ re-invoque `/test-e2e` → loop jusqu'à 0 défaut.
+
+### D.2 — Ordre wave-by-wave (fondations d'abord)
+
+```
+WAVE 1 — FONDATIONS (parallèle, 3 sub-agents) :
+  A1 Database & Schema (DBA)
+  A2 Backend Services (Architect)
+  A3 Sync + Outbox + Pusher (SRE)
+
+  ⛔ NE PAS passer à Wave 2 tant que :
+  - A1+A2+A3 verdicts = GO (0 P0 résiduel)
+  - DB integrity certifié
+  - Sync verified (events → domain_events + Pusher broadcast)
+  - PHPUnit Fiscal|Outbox|Order PASS
+
+WAVE 2 — POS (parallèle, 2 sub-agents) :
+  A4 POS Vanilla Wizard (frozen audit, read-only)
+  A5 POS Vue Admin
+  Verify POS bout-en-bout via /test-e2e avant Wave 3.
+
+WAVE 3 — KIOSK + KDS + OSS (parallèle, 3 sub-agents) :
+  A6 Kiosk Vue Wizard (frozen audit)
+  A7 KDS Display
+  A8 OSS Display
+  Verify cross-surface via /test-e2e avant Wave 4.
+
+WAVE 4 — ADMIN + MOBILE (parallèle, 2 sub-agents) :
+  A9 Admin CRUD
+  A10 Mobile App
+
+WAVE 5 — CROSS-SURFACE E2E (sériel, intensif) :
+  A11 + Phase 12 cross-axis + Phase 13 massive E2E + Phase 14 visual sweep
+  + Phase 15 GREEN convergence
+```
+
+Aucune wave ne commence tant que la précédente n'est pas GREEN.
+
+### D.3 — Protocole 23 étapes par axe (non-négociable)
+
+Pour CHAQUE axe Ai :
+
+```
+ÉTAPE A — AUDIT INITIAL
+  1. Spawn sub-agent rôle spécialiste (DBA/Architect/etc.)
+  2. Brief : scope axe + known backlog §17 + frozen-zones list
+  3. Sub-agent → reports/audit/ultra-goal-2026-05-13/axis-Ai-audit-round1.md
+     + JSON verdict
+
+ÉTAPE B — ADVERSARIAL REVIEW
+  4. Spawn sub-agent adversarial hostile : "Challenge chaque finding, re-verify
+     file:line, détecte hallucinations, calibre severity"
+  5. → axis-Ai-adversarial.md avec confirmed/disputed/hallucinated
+
+ÉTAPE C — MÉTA-ADVERSARIAL (audit des décisions d'orchestration de Claude)
+  6. Spawn sub-agent méta-adversarial : "Tu audites les décisions d'orchestration
+     de Claude principal. Right sub-agent role? Right scope? Skipped cycle?
+     Rationalized finding away?"
+  7. → verdict {decisions_validated, decisions_disputed, decisions_to_reverse}
+
+ÉTAPE D — HEAL (Claude applique fixes)
+  8. Pour chaque P0 confirmé : fix immédiat, scope-minimal, frozen-zones respect
+  9. Pour ≥80% des P1 confirmés : fix immédiat
+  10. Tests PHPUnit + Vitest après CHAQUE fix (pas batch)
+  11. Si frontend touché : invoke /test-e2e sur surface impactée
+
+ÉTAPE E — RE-AUDIT (sub-agent fresh)
+  12. Spawn sub-agent même spécialité, nouvelle instance
+  13. Re-audit avec connaissance des fixes appliqués
+  14. → axis-Ai-audit-round2.md + JSON verdict
+
+ÉTAPE F — CONVERGENCE CHECK
+  15. Compare findings_round2 vs findings_round1
+  16. Si P0 == 0 AND round2 ⊆ round1 → GREEN
+  17. Sinon → loop étape D max 5 cycles
+  18. Si 5 cycles sans convergence → Claude tranche (downgrade/workaround/LOCK)
+
+ÉTAPE G — SIGN-OFF AXE
+  19. Update PROJECT_BRAIN.md §2 status
+  20. Push épisode Graphiti court
+  21. Commit checkpoint : "chore(ultra-goal): axe Ai GREEN — N findings healed"
+  22. Print "RESUME_TOKEN_AXIS_Ai_DONE" 1-line
+  23. Archive axis-Ai-FINAL.md avec décisions + métriques
+```
+
+PAS DE RACCOURCI. 23 étapes par axe = OBLIGATOIRE.
+
+### D.4 — Tests massifs CONTINUS (pas en fin)
+
+Après CHAQUE fix unitaire :
+- PHPUnit filter module touché → doit PASS
+- Vitest filter composants impactés → doit PASS
+- Si frontend touché : capture preview → Read tool → analyse → adversarial visual
+- Si DB touché : query verify state + FK + indexes
+- Si sync touché : fire event test + verify domain_events + Pusher delivery
+- Si API touché : curl/Tinker → verify response shape + status code
+
+Si test échoue → STOP avancer, loop fix → re-test jusqu'à GREEN. Pas de "TODO".
+
+Cadence forcée :
+- Après chaque fix unitaire : tests filter module
+- Après chaque heal cycle (étape D) : full test suite axe
+- Après chaque axe GREEN : /test-e2e sur surface + cross-surface smoke
+- Après chaque wave GREEN : full PHPUnit + Vitest + Playwright + /test-e2e
+- Avant chaque commit : git diff sanity + frozen-zones diff check
+
+### D.5 — Protocole visuel 9 étapes par capture
+
+```
+1. CAPTURE — screenshot via preview tools ou /test-e2e
+2. READ — Read tool sur PNG (Claude VOIT)
+3. ANALYSE — texte structuré :
+   - Layout aligné, pas de débordement
+   - Pas de raw labels (Label.X / kiosk.X / 0undefined / NaN€)
+   - États empty/loading/error rendered correctement
+   - Contraste ≥4.5:1
+   - Branding FoodKing + Le Cayenne intacts
+   - i18n résolu
+4. CORRIGE — fix immédiat (CSS / i18n / template / data)
+5. RE-CAPTURE — nouveau screenshot
+6. RE-READ — Read tool
+7. RE-ANALYSE — défaut parti + zéro régression
+8. ADVERSARIAL VISUAL — sub-agent hostile lit nouvelle capture
+9. Si adversarial trouve → retour étape 4
+```
+
+Loop max 5 par capture. Au-delà → Claude tranche avec rationale documenté.
+
+### D.6 — Graphiti memory + warning staleness
+
+MCP Graphiti `group_id="foodking"` = mémoire long-terme.
+
+⚠️ **MENU RESET 2026-05-13 — souvenirs antérieurs OBSOLÈTES** :
+
+Ancienne structure (NE PAS utiliser comme référence) :
+- "Nos Tacos / Nos Sandwichs / Nos Burgers / Nos Assiettes / Ojja / Omelettes /
+  Nos Salades / Poulet croustillant / Nos Menus Enfants"
+- 9 viandes (Merguez/Kefta/Mexicain/Cordon Bleu/Hachée/Nuggets/Escalope/Tenders/
+  Fricandelle)
+- 15 sauces incluant Burger/Barbecue/Cocktail/Américaine/Poivre/Sans Sauce
+
+**Réalité actuelle 2026-05-13 (cite ceci)** :
+- 9 catégories visibles : Sandwich Cayenne / Galette / Sandwich Classique / Tacos
+  / Bols Gourmands / Frites / Suppléments / Desserts / Boissons
+- 4 viandes : Poulet classic, Poulet curry, Poulet tandoori, Poulet crispy
+- 13 sauces : Mayo, Ketchup, Algérienne, Samouraï, Curry, Andalouse, Harissa,
+  Hannibal, Blanche, Tandoori, Fromagère, Pimentée, Cayenne
+- 10 supplements génériques + 4 supplements_bols
+- 7 composer profiles (5 bols + 2 frites) + 22 wizard steps
+- Cat 315 frites-accompagnements hidden via `channels='[]'`
+
+Discipline Graphiti :
+1. Au démarrage : `search_nodes` menu/items/categories → identifier stale memories
+2. AVANT de citer Graphiti : cross-check DB actuelle (mysql foodking) + plan
+   menu reset 2026-05-13
+3. Si stale : note "STALE" dans raisonnement, ne pas citer comme référence
+4. À chaque axe complet : push nouvel épisode Graphiti
+5. À la fin : push épisodes consolidant l'état actuel
+
+### D.7 — Checkpoint discipline (anti-context-exhaustion)
+
+Après CHAQUE phase :
+1. `git commit -m "chore(ultra-goal): checkpoint phase X — résumé"`
+2. Push épisode Graphiti court (1 paragraphe)
+3. Update PROJECT_BRAIN.md §2
+4. Print "RESUME_TOKEN_PHASE_X_TS" 1-line dans output
+5. Sauvegarde checkpoint JSON dans
+   `reports/audit/ultra-goal-2026-05-13/checkpoints/`
+
+Si context limit approche : COMMIT IMMÉDIATEMENT (même partiel) + push Graphiti.
+`/goal --resume` reprendra du dernier checkpoint.
+
+### D.8 — Parallelisme max sub-agents
+
+Quand 2+ tâches indépendantes : lance sub-agents EN PARALLÈLE dans MÊME tool call.
+Limite : 4-6 sub-agents simultanés (rate-limit safety).
+
+Chaque sub-agent écrit rapport sur disque puis se ferme. Tu ne gardes pas leurs
+résultats dans ton contexte principal — lis le disque quand nécessaire.
+
+### D.9 — Frozen-zones touch via LOCK (autonomy override)
+
+Liste exhaustive (cf. §3.7). Si P0 nécessite touch frozen-zone :
+
+1. Tu écris `plans/LOCK_<issue>_<date>.md` (scope + justification + rollback
+   + acceptance + risk register)
+2. Sub-agent adversarial review LOCK (challenge nécessité + scope-minimal)
+3. Méta-adversarial review TA décision d'écrire LOCK
+4. Si 2/3 valident → proceed (pas d'attente owner)
+5. Tests régression triple-vert post-modification mandatory
+6. Si tests fail → revert immédiat + LOCK abandoned
+
+Solution préférée toujours : fix data-only (DB, config, composer profile,
+ItemAttribute) ou flag/feature gate.
+
+### D.10 — NF525 invariants intouchables
+
+- fiscal_sequence_no monotonic per-branch, ZÉRO gap
+- composition_snapshot JSON frozen à création, JAMAIS réécrit
+- audit_logs HMAC chain (prev_hash → current_hash), append-only
+- z_reports HMAC chain daily clôture
+- 6 ans rétention obligatoire post-close
+- DELETE on audit_logs/z_reports INTERDIT (trigger MySQL prod)
+
+Toute suggestion violant ces invariants = STOP cette action (D.0 cas #1),
+alternative non-destructive, continue autres axes.
+
+### D.11 — Auto-correction loop (find → fix → re-test jusqu'à GREEN)
+
+INTERDIT :
+- "this is known issue, I'll note for later"
+- Skip fix parce qu'il "semble cosmétique"
+- Marquer phase COMPLETE alors qu'un test échoue
+- Rationaliser défaut visuel comme "acceptable"
+- Batch les fixes pour "gagner du temps"
+
+OBLIGATOIRE :
+- Fixer immédiatement chaque défaut trouvé
+- Re-tester immédiatement après chaque fix
+- Re-vérifier visuellement chaque modification
+- Cycle adversarial après chaque fix non-trivial
+
+Si tu te dis "ça suffit, je passe" → c'est exactement le moment où tu dois
+ENCORE faire un cycle adversarial.
+
+### D.12 — Comportement narratif
+
+JAMAIS :
+- "Should I proceed with X?"
+- "Do you want me to fix Y?"
+- "Would you prefer A or B?"
+- "Let me know if..."
+- "Please confirm before..."
+
+TOUJOURS :
+- "J'ai analysé 3 options. J'ai choisi X parce que Y. Adversarial validated. Proceeding."
+- "P0 détecté : <claim>. Healing applied : <fix>. Test result : GREEN. Continuing."
+- "Frozen-zone touch required for fix Z. LOCK plan written + adversarial 2/3
+  validated. Proceeding with regression triple-test."
+- "5 healing cycles atteint sur Ai sans convergence. J'ai tranché : downgrade
+  P0→P1 avec rationale <reason>. Documented in axis-Ai-FINAL.md. Continuing
+  remaining axes."
+
+Tu communiques décisions + raisons. Jamais demande de permission.
+
+### D.13 — Final mode silence
+
+Owner est rentré dormir. Tu travailles seul, autonomie totale. Tu reviens demain
+matin avec système PARFAIT — tests massifs continus intégrés, visual sweep
+adversarial validated, NF525 chain intact, frozen zones respectées, 50 commandes
+E2E GREEN, FINAL_VERDICT.md livré.
+
+Tu n'écris AUCUN message intermédiaire à l'owner. Tous tes outputs vont sur disque
+(reports/, BRAIN, Graphiti, commits). Owner verra ton dernier commit +
+FINAL_VERDICT.md + Graphiti episodes.
+
+**GO. Commence par PHASE 0 Bootstrap, puis Wave 1 (A1+A2+A3 parallèles).
+N'écris pas "Je vais commencer" — exécute directement.**
+
+---
+
 ## §0. TL;DR — Contract de mission
 
 Claude est invoqué en mode `/goal` pour exécuter un **audit profond isolant** sur 11 axes orthogonaux, suivi d'un **heal cycle** par axe, puis d'une **convergence cross-axis**, et enfin d'un **test E2E massif** (50 commandes réelles avec captures visuelles + adversarial supervisor) **jusqu'à atteindre GREEN** sur 100% des acceptance criteria de §18.
