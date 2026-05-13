@@ -36,6 +36,9 @@ class EventContractTest extends TestCase
             'order.cancelled',
             'order.table_changed',
             'menu.item_availability_changed',
+            // [F-016a-BIS] Dedicated extra/variation availability events.
+            'menu.extra_availability_changed',
+            'menu.variation_availability_changed',
             'catalog.changed',
             'stock.low',
             // [PROMO-DASH-2026-05-06] cycle-6 Dashboard promo broadcast

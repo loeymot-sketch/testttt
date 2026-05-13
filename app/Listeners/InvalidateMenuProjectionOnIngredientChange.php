@@ -25,7 +25,8 @@ class InvalidateMenuProjectionOnIngredientChange
             $branchIds = $event->branchId !== null
                 ? collect([(int) $event->branchId])
                 : Branch::query()
-                    ->where('status', Status::ACTIVE)
+                    // [ultra-goal A3 heal 2026-05-13] Accept legacy literal 1.
+                    ->whereIn('status', [Status::ACTIVE, 1])
                     ->pluck('id')
                     ->map(fn ($branchId): int => (int) $branchId);
 

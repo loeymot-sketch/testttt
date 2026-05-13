@@ -37,8 +37,11 @@ class PersistItemAvailabilityChangedToOutbox
             $channels = ['private-branch.' . $event->branchId];
         } else {
             // Global menu change (admin edits item) — fan-out to every active branch.
+            // [ultra-goal A3 heal 2026-05-13] Accept legacy `1` alongside Status::ACTIVE (=5);
+            // production DB has status=1 from pre-enum-migration seeding. See
+            // PersistCatalogChangedToOutbox for the same heal + owner-action note.
             $channels = Branch::query()
-                ->where('status', Status::ACTIVE)
+                ->whereIn('status', [Status::ACTIVE, 1])
                 ->pluck('id')
                 ->map(fn (int $branchId): string => 'private-branch.' . $branchId)
                 ->values()

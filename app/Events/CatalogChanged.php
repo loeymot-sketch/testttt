@@ -82,6 +82,35 @@ class CatalogChanged
             );
         }
 
+        // [WAVE5-DATA-004] Bridge ItemExtra/ItemVariation availability events so
+        // they also emit a generic CATALOG_CHANGED row in the outbox. Sentinel:
+        // tests/Feature/Sentinels/ItemExtraVariationBridgeCatalogChangedSentinelTest.
+        if ($event instanceof ItemExtraAvailabilityChanged) {
+            return new self(
+                entityType: 'item_extra',
+                entityId: (int) $event->extraId,
+                changeType: 'availability_changed',
+                branchId: $branchId !== null ? (int) $branchId : null,
+                payloadDiff: [
+                    'is_available' => $event->isAvailable,
+                    'reason' => $event->reason,
+                ],
+            );
+        }
+
+        if ($event instanceof ItemVariationAvailabilityChanged) {
+            return new self(
+                entityType: 'item_variation',
+                entityId: (int) $event->variationId,
+                changeType: 'availability_changed',
+                branchId: $branchId !== null ? (int) $branchId : null,
+                payloadDiff: [
+                    'is_available' => $event->isAvailable,
+                    'reason' => $event->reason,
+                ],
+            );
+        }
+
         return null;
     }
 }

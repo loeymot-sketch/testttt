@@ -37,6 +37,11 @@ class PosOrderRequestNullableTotalTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // [iter15-BUG-NF525] Legacy HT-add fixture (test expects total=11
+        // for subtotal=10 + tax=1). Config default flipped to TTC 2026-05-10.
+        config(['pricing.tax_inclusive_prices' => false]);
+
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
 

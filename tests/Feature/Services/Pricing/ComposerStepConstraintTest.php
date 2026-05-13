@@ -36,6 +36,9 @@ class ComposerStepConstraintTest extends TestCase
     {
         parent::setUp();
 
+        // [iter15-BUG-NF525] Legacy HT-add fixture. Opt back into HT mode.
+        config(['pricing.tax_inclusive_prices' => false]);
+
         $this->seedMinimalSettings();
         $this->branch = Branch::factory()->create();
         $this->category = ItemCategory::factory()->create(['status' => Status::ACTIVE]);

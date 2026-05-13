@@ -359,7 +359,7 @@ export default {
             if (document.hidden) return;
             this.loading = true;
             try {
-                const { data } = await axios.get('admin/observability/outbox');
+                const { data } = await axios.get('/api/admin/observability/outbox');
                 this.generatedAt = data.generated_at || null;
                 this.pending = data.pending || { count: 0, rows: [] };
                 this.dispatched = data.dispatched_24h || this.dispatched;
@@ -373,7 +373,7 @@ export default {
         async retryFailed() {
             this.retrying = true;
             try {
-                await axios.post('admin/observability/outbox/retry-failed');
+                await axios.post('/api/admin/observability/outbox/retry-failed');
                 await this.loadAll();
             } finally {
                 this.retrying = false;
@@ -382,7 +382,7 @@ export default {
         async drainFailed() {
             this.draining = true;
             try {
-                await axios.post('admin/observability/outbox/drain-failed', {
+                await axios.post('/api/admin/observability/outbox/drain-failed', {
                     older_than_hours: 24,
                 });
                 await this.loadAll();

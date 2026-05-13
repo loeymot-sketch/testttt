@@ -181,9 +181,14 @@ class EventServiceProvider extends ServiceProvider
         // UI / Kiosk handlers subscribe to (F-016b).
         ItemExtraAvailabilityChanged::class => [
             PersistItemExtraAvailabilityChangedToOutbox::class,
+            // [WAVE5-DATA-004] Bridge to generic catalog stream so kiosk menu cache
+            // + POS catalog refresh without waiting for F-016b dedicated handlers.
+            PersistCatalogChangedToOutbox::class,
         ],
         ItemVariationAvailabilityChanged::class => [
             PersistItemVariationAvailabilityChangedToOutbox::class,
+            // [WAVE5-DATA-004] Bridge to generic catalog stream (same rationale).
+            PersistCatalogChangedToOutbox::class,
         ],
         IngredientAvailabilityChanged::class => [
             InvalidateMenuProjectionOnIngredientChange::class,

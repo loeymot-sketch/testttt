@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\Status;
 use App\Models\Branch;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -24,7 +25,12 @@ class BranchFactory extends Factory
             'state' => fake()->state(),
             'zip_code' => fake()->postcode(),
             'address' => fake()->streetAddress(),
-            'status' => 1,
+            // [ultra-goal A3 heal 2026-05-13] align test fixture with Status::ACTIVE enum.
+            // Production DB has legacy `1` value that pre-dates the enum (=5);
+            // factory was the only place still emitting literal 1, breaking listener
+            // sentinels that expect Branch::factory()->create() to be discoverable
+            // via where('status', Status::ACTIVE). Prod data migration TODO (owner).
+            'status' => Status::ACTIVE,
         ];
     }
 }

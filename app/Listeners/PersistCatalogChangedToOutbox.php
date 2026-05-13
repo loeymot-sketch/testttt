@@ -30,7 +30,13 @@ class PersistCatalogChangedToOutbox
         $branchIds = $catalogEvent->branchId !== null
             ? collect([(int) $catalogEvent->branchId])
             : Branch::query()
-                ->where('status', Status::ACTIVE)
+                // [ultra-goal A3 heal 2026-05-13] Accept legacy literal `1` alongside
+                // Status::ACTIVE (=5). Production DB seeded long before the enum
+                // migration still has status=1 for active branches. Listener
+                // filter was silently dropping all branchId=null fan-out (e.g.
+                // MenuResetLeCayenneCommand CategoryCreated/Updated/Deleted).
+                // Owner action: data migration `UPDATE branches SET status=5 WHERE status=1`.
+                ->whereIn('status', [Status::ACTIVE, 1])
                 ->pluck('id')
                 ->map(fn ($branchId): int => (int) $branchId);
 

@@ -42,6 +42,10 @@ class PricingServiceMultiQtyTest extends TestCase
     {
         parent::setUp();
 
+        // [iter15-BUG-NF525] Legacy HT-add fixture. Opt back into HT mode for
+        // these assertions. See config/pricing.php:25-29 + TaxInclusivePricesTest.
+        config(['pricing.tax_inclusive_prices' => false]);
+
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
 

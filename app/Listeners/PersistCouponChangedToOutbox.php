@@ -27,7 +27,8 @@ class PersistCouponChangedToOutbox
         $branchIds = !empty($event->branchScope)
             ? collect($event->branchScope)->map(fn ($id) => (int) $id)
             : Branch::query()
-                ->where('status', Status::ACTIVE)
+                // [ultra-goal A3 heal 2026-05-13] Accept legacy literal 1 alongside Status::ACTIVE.
+                ->whereIn('status', [Status::ACTIVE, 1])
                 ->pluck('id')
                 ->map(fn ($branchId): int => (int) $branchId);
 
