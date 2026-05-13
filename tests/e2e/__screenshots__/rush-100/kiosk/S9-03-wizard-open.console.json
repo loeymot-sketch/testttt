@@ -1,0 +1,52 @@
+[
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.wizard.generic.min_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=d810a87718db1eecfb15cc9264473bcd",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1778665664887
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778665664946
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/pricing/preview",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778665665310
+  },
+  {
+    "level": "warning",
+    "text": "[kiosk] pricing preview failed: Request failed with status code 422",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=d810a87718db1eecfb15cc9264473bcd",
+      "lineNumber": 67106,
+      "columnNumber": 18
+    },
+    "ts": 1778665665310
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778665665603
+  }
+]
