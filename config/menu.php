@@ -45,21 +45,23 @@ return [
     |--------------------------------------------------------------------------
     */
     'categories' => [
-        // [MENU-RESET 2026-05-13] Le Cayenne new structure — 9 visible categories.
-        // Old categories (Nos Sandwichs, Nos Burgers, Nos Assiettes, Ojja, Omelettes,
-        // Nos Salades, Poulet croustillant, Nos Menus Enfants) archived (soft-delete)
-        // via `php artisan menu:reset-le-cayenne`.
-        // Cat "Frites & Accompagnements" kept hidden (id 315) for addon items
+        // [MENU-RESET 2026-05-13] Le Cayenne 9-category baseline.
+        // [HEAL-LIGHT V2 2026-05-14] Owner-validated spec: added Burgers (sort=4) + Menu enfant (sort=11).
+        // Resort: Tacos→5, Bols→6, Frites→7, Suppléments→8, Desserts→9, Boissons→10.
+        // Old categories archived via `menu:reset-le-cayenne` (8 categories soft-deleted).
+        // Cat "Frites & Accompagnements" stays hidden (id 315) for addon items
         // (Menu/Frites Seules/Boisson Seule). New "Frites" cat exposes Petite/Grande.
-        ['name' => 'Sandwich Cayenne',   'slug' => 'sandwich-cayenne',   'sort' => 1, 'description' => 'Sandwich signature avec sauce Cayenne maison',                'wizard_template' => 'sandwich', 'has_menu' => true],
-        ['name' => 'Galette',            'slug' => 'galette',            'sort' => 2, 'description' => 'Galette traditionnelle ou Cayenne, viande au choix',         'wizard_template' => 'sandwich', 'has_menu' => true],
-        ['name' => 'Sandwich Classique', 'slug' => 'sandwich-classique', 'sort' => 3, 'description' => 'Sandwich classique en pain faluche',                          'wizard_template' => 'sandwich', 'has_menu' => true],
-        ['name' => 'Tacos',              'slug' => 'tacos',              'sort' => 4, 'description' => 'Tacos 1 viande ou Big Tacos 2 viandes, sauce fromagère',     'wizard_template' => 'tacos',    'has_menu' => true],
-        ['name' => 'Bols Gourmands',     'slug' => 'bols-gourmands',     'sort' => 5, 'description' => 'Bols Curry/Tandoori/Mariné/Crousti/Gratiné',                 'wizard_template' => 'custom',   'has_menu' => false],
-        ['name' => 'Frites',             'slug' => 'frites',             'sort' => 6, 'description' => 'Petite ou Grande frites, style nature/cheddar/cheddar+oignons','wizard_template' => 'custom',  'has_menu' => false],
-        ['name' => 'Suppléments',        'slug' => 'supplements',        'sort' => 7, 'description' => 'Suppléments et extras commandables séparément',              'wizard_template' => 'simple',   'has_menu' => false],
-        ['name' => 'Desserts',           'slug' => 'desserts',           'sort' => 8, 'description' => 'Desserts gourmands',                                          'wizard_template' => 'simple',   'has_menu' => false],
-        ['name' => 'Boissons',           'slug' => 'boissons',           'sort' => 9, 'description' => 'Boissons fraîches',                                           'wizard_template' => 'simple',   'has_menu' => false],
+        ['name' => 'Sandwich Cayenne',   'slug' => 'sandwich-cayenne',   'sort' => 1,  'description' => 'Sandwich signature avec sauce Cayenne maison',                'wizard_template' => 'sandwich', 'has_menu' => true],
+        ['name' => 'Galette',            'slug' => 'galette',            'sort' => 2,  'description' => 'Galette traditionnelle ou Cayenne, viande au choix',         'wizard_template' => 'sandwich', 'has_menu' => true],
+        ['name' => 'Sandwich Classique', 'slug' => 'sandwich-classique', 'sort' => 3,  'description' => 'Sandwich classique en pain faluche',                          'wizard_template' => 'sandwich', 'has_menu' => true],
+        ['name' => 'Burgers',            'slug' => 'burgers',            'sort' => 4,  'description' => 'Burgers pain brioché, viande croustillante, sauce au choix', 'wizard_template' => 'sandwich', 'has_menu' => true],
+        ['name' => 'Tacos',              'slug' => 'tacos',              'sort' => 5,  'description' => 'Tacos M ou Tacos L, sauce fromagère maison',                 'wizard_template' => 'tacos',    'has_menu' => true],
+        ['name' => 'Bols Gourmands',     'slug' => 'bols-gourmands',     'sort' => 6,  'description' => 'Bowls Frites ou Riz + viande + sauce + suppléments',         'wizard_template' => 'custom',   'has_menu' => false],
+        ['name' => 'Frites',             'slug' => 'frites',             'sort' => 7,  'description' => 'Petite ou Grande frites, style nature/cheddar/cheddar+oignons','wizard_template' => 'custom', 'has_menu' => false],
+        ['name' => 'Suppléments',        'slug' => 'supplements',        'sort' => 8,  'description' => 'Suppléments et extras commandables séparément',              'wizard_template' => 'simple',   'has_menu' => false],
+        ['name' => 'Desserts',           'slug' => 'desserts',           'sort' => 9,  'description' => 'Desserts gourmands',                                          'wizard_template' => 'simple',   'has_menu' => false],
+        ['name' => 'Boissons',           'slug' => 'boissons',           'sort' => 10, 'description' => 'Boissons fraîches',                                           'wizard_template' => 'simple',   'has_menu' => false],
+        ['name' => 'Menu enfant',        'slug' => 'menu-enfant',        'sort' => 11, 'description' => 'Menu enfant : Nuggets + Frites + Capri-Sun',                  'wizard_template' => 'simple',   'has_menu' => false],
     ],
 
     /*
