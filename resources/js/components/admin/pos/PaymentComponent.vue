@@ -875,6 +875,14 @@ export default {
             // Open receipt only after the fullscreen LoadingComponent tears down — otherwise Playwright
             // visibility and some overlays can keep the receipt in a "hidden" state.
             if (paymentSucceeded) {
+                // [rush-100 WB-R1-03 heal 2026-05-13] Defensive double modalHide on
+                // #orderpayment before showing receipt. The first hide happens inside
+                // handleOrderSuccess (line 778), but a subsequent 429 toast from a
+                // duplicate POST or polling cycle was observed leaving the payment
+                // modal in a `.active` state (wave-B-adversarial round 1, all S*-05
+                // captures). This belt-and-suspenders ensures the modal always closes
+                // on success regardless of post-success network noise.
+                try { appService.modalHide('#orderpayment'); } catch (e) { /* no-op */ }
                 await this.$nextTick();
                 await this.$nextTick();
                 await new Promise((resolve) => {
