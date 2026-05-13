@@ -1,0 +1,74 @@
+{
+  "run": "rush-100-2026-05-13",
+  "wave": "A",
+  "round": 1,
+  "generated_at": "2026-05-13T07:45:11.084Z",
+  "baseline_max_order_id": 1321,
+  "scenarios": [
+    {
+      "scenario": "S1",
+      "label": "Sandwich Cayenne + menu formule",
+      "item_id": 474,
+      "before_max_id": 1324,
+      "ui_order_number": null,
+      "ui_total": null,
+      "confirmation_reached": false,
+      "db_row": {
+        "error": "no_new_order",
+        "after_id": 1324
+      }
+    },
+    {
+      "scenario": "S2",
+      "label": "Galette Normale + sauce + supp",
+      "item_id": 475,
+      "before_max_id": 1324,
+      "ui_order_number": null,
+      "ui_total": null,
+      "confirmation_reached": false,
+      "db_row": {
+        "error": "no_new_order",
+        "after_id": 1324
+      }
+    },
+    {
+      "scenario": "S5",
+      "label": "Tacos 1v 8.50",
+      "item_id": 478,
+      "before_max_id": 1324,
+      "ui_order_number": null,
+      "ui_total": null,
+      "confirmation_reached": false,
+      "db_row": {
+        "error": "no_new_order",
+        "after_id": 1324
+      }
+    },
+    {
+      "scenario": "S7",
+      "label": "Bol Curry 4-step compose",
+      "item_id": 480,
+      "before_max_id": 1324,
+      "ui_order_number": null,
+      "ui_total": null,
+      "confirmation_reached": false,
+      "db_row": {
+        "error": "no_new_order",
+        "after_id": 1324
+      }
+    },
+    {
+      "scenario": "S9",
+      "label": "Petite Frites + supp",
+      "item_id": 485,
+      "before_max_id": 1324,
+      "ui_order_number": null,
+      "ui_total": null,
+      "confirmation_reached": false,
+      "db_row": {
+        "error": "no_new_order",
+        "after_id": 1324
+      }
+    }
+  ]
+}
