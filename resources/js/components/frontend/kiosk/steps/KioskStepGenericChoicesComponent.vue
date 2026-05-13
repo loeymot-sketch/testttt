@@ -21,6 +21,15 @@
         <span v-if="selectedCount(choice) > 0" class="kiosk-generic-choice-count">
           x{{ selectedCount(choice) }}
         </span>
+        <!-- [rush-100 WA-R1-03/04 heal 2026-05-13] Visible "+" affordance so
+             customers can tell composer-step cards (Frites/Riz, Nature/Cheddar)
+             are tappable. Was a P1 affordance gap — cards previously rendered
+             as plain text rectangles. -->
+        <span
+          v-if="selectedCount(choice) === 0"
+          class="kiosk-generic-choice-add"
+          aria-hidden="true"
+        >+</span>
       </button>
     </div>
   </section>
@@ -232,5 +241,23 @@ export default {
   text-align: center;
   font-size: 12px;
   line-height: 1;
+}
+
+/* [rush-100 WA-R1-03/04 heal 2026-05-13] "+" badge affordance on unselected
+   composer choice cards. Mirrors the .kiosk-product-card-add pattern used on
+   meat-step cards so customers can tell they are tappable. */
+.kiosk-generic-choice-add {
+  min-width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--kiosk-primary, #f4501e);
+  color: #fff;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 700;
 }
 </style>
