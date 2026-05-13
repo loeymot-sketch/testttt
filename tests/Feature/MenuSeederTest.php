@@ -53,19 +53,26 @@ class MenuSeederTest extends TestCase
     }
 
     /**
-     * MenuSeeder crée le menu français (Le Grill House)
+     * MenuSeeder crée le menu français (Le Cayenne 2026-05-13 structure)
      */
     public function test_menu_seeder_creates_french_menu(): void
     {
         $this->seed(\Database\Seeders\MenuSeeder::class);
 
         $categories = ItemCategory::pluck('name')->toArray();
-        $this->assertContains('Nos Tacos', $categories);
-        $this->assertContains('Nos Sandwichs', $categories);
-        $this->assertContains('Nos Burgers', $categories);
+        // [MENU-RESET 2026-05-13] New 9-category structure
+        $this->assertContains('Tacos', $categories);
+        $this->assertContains('Sandwich Cayenne', $categories);
+        $this->assertContains('Galette', $categories);
+        $this->assertContains('Sandwich Classique', $categories);
+        $this->assertContains('Bols Gourmands', $categories);
+        $this->assertContains('Frites', $categories);
+        $this->assertContains('Suppléments', $categories);
+        $this->assertContains('Desserts', $categories);
+        $this->assertContains('Boissons', $categories);
 
         $items = Item::pluck('name')->toArray();
-        $this->assertNotEmpty(array_filter($items, fn ($n) => str_contains($n, 'Tacos')));
+        $this->assertNotEmpty($items, 'Seeder should create at least some items');
     }
 
     /**

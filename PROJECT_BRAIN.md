@@ -47,8 +47,10 @@ Plateforme restaurant fast-food complète :
 ## §2 CURRENT STATE — Auto-managed
 
 - **Branche** : `feature/mobile-app-le-cayenne-2026-05-10`
-- **HEAD** : `4937d08b2` (mobile design-perfect cycle C wave 4+5 — Loyalty rdl-* + Onboarding V2 hero designs livrés)
-- **Last update** : 2026-05-11 (cycle C intégration Claude Design redesigns reçus — 4 waves complétées : CSS tokens rdw/rdl/rdo-* + Wizard rdw-* + Loyalty rdl-* + Onboarding V2 hero. Smoke loyalty 6/6 PASS stable.)
+- **HEAD** : (pre-commit) menu reset Le Cayenne 2026-05-13 (artisan command + 9 cats restructuration + composer profiles bols/frites + sandwich-split disabled)
+- **Backup branch** : `backup/pre-menu-reset-le-cayenne-2026-05-13` (HEAD `4937d08b2`) + tag `pre-menu-reset-2026-05-13`
+- **DB backup** : `storage/backups/menu-reset-2026-05-13/foodking-full-dump.sql` (5.4 MB)
+- **Last update** : 2026-05-13 (menu reset Le Cayenne complet — 8 cats archivées + 4 renommées + 5 NEW + 23 items + 7 composer profiles. 594 PHPUnit pass / 1 unrelated tax fail. Sync 17 events fired.)
 - **Branche release antérieure** : `cycle/PHASE2-TRAIN-A-V1-RELEASE-PREP-2026-04-27`
   (HEAD `9d9dddae1`, NO-GO V1 par audit POS adversarial 2026-05-09 — état préservé)
 - **Domaines production-ready** : ~7-8 / 16 (revu après ultra audit POS 2026-05-09 ;
@@ -67,6 +69,90 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**Menu Reset Le Cayenne 2026-05-13** (branche `feature/mobile-app-le-cayenne-2026-05-10`) :
+- **Mission owner** : restructuration globale menu — archiver (soft-delete, non destructif)
+  toutes les catégories sauf 4 conservées, créer 5 nouvelles, garder le wizard frozen,
+  vérifier kiosk + caisse + KDS + sync + DB. Lancement avec team GStack + adversarial.
+- **Phase exec 8 waves** (WAVE 0 backup → WAVE 8 commit) en ~3h wall-clock.
+- **Backup non-destructif** : `git branch backup/pre-menu-reset-le-cayenne-2026-05-13`
+  + tag `pre-menu-reset-2026-05-13` + mysqldump full DB (5.4 MB) +
+  config/menu.php.bak + config/kiosk.php.bak + mobile-menu.js.bak dans
+  `storage/backups/menu-reset-2026-05-13/`.
+- **Artisan command** créée `app/Console/Commands/MenuResetLeCayenneCommand.php`
+  (~600 lignes, idempotent, transaction, fire CategoryCreated/Updated/Deleted events,
+  --dry-run + --force, deletion_log audit trail). 12 steps : archive 8 cats /
+  rename 4 / create 5 / archive viandes (171 obsolètes) / seed 4 nouvelles /
+  archive sauces (234 obsolètes) / seed 13 nouvelles / reseed 10 suppléments /
+  create 23 items / 5 bols composer profiles / 2 frites composer profiles / sort.
+- **9 catégories actives finales** (+1 cat 315 hidden pour addons legacy) :
+  1. Sandwich Cayenne (cat 344, wizard=sandwich, has_menu, sauce locked Cayenne)
+  2. Galette (cat 345, 2 items : Normale sauce libre + Cayenne sauce locked)
+  3. Sandwich Classique (cat 346, pain faluche, wizard=sandwich)
+  4. Tacos (cat 306 renamed, 2 items : Tacos 1v 8.50€ + Big Tacos 2v 11.50€)
+  5. Bols Gourmands (cat 347, 5 items : Curry/Tandoori/Mariné/Crousti 10.50€
+     + Gratiné 12.50€, composer_profile custom 4 steps base/sauce/supp/drink)
+  6. Frites (cat 348, 2 items : Petite 2.50€ + Grande 4€, composer custom
+     1 step style : Nature / +Cheddar 1€ / +Cheddar+Oignons 2€)
+  7. Suppléments (cat 318 kept, 10 items 1€)
+  8. Desserts (cat 316 renamed, 3 items inchangés)
+  9. Boissons (cat 317 renamed, 8 items inchangés)
+- **Archivées soft-delete** (8 cats + 35 items) : nos-sandwichs, nos-burgers,
+  nos-assiettes, ojja, omelettes, nos-salades, chicken-tenders, nos-menus-enfants.
+- **Variations canoniques nouvelles** : 4 viandes (Poulet classic/curry/tandoori/
+  crispy) + 13 sauces (Mayo/Ketchup/Algérienne/Samouraï/Curry/Andalouse/Harissa/
+  Hannibal/Blanche/Tandoori/Fromagère/Pimentée/Cayenne).
+- **Composer profiles** : 7 ItemWizardProfile published (item_id, branch=null) +
+  17 ItemWizardSteps. Pour bols : base (item_attribute "Base bol") + sauce
+  (item_attribute "Sauce bol") + supplements (extra_group "supplement_bol") +
+  drink (addon role=drink). Pour frites : style (item_attribute "Style frites").
+- **Sync** : 17 CatalogChanged events fired avec branchId=1 explicite (workaround
+  branch status=1 ≠ Status::ACTIVE=5 bug pré-existant dans listener).
+  domain_events 17 lignes ajoutées, Pusher branch.1 broadcast OK.
+- **Config files** : `config/menu.php` categories block réécrit (9 cats),
+  `config/kiosk.php` sandwich_split.parent_category_slug=null + cold_item_slugs=[]
+  (désactivation), `mobile/data/menu.js` réécrit complet (9 cats, 4 viandes,
+  13 sauces, 34 items, helpers imgFor/heroFor préservés).
+- **Helper fix kiosk sort** : `resources/js/helpers/kioskCategoryOrder.js` tier 0
+  regex étendu pour matcher 'galette' et 'bol ' (sinon tombaient en tier 1).
+  Rebuild Mix `npm run production` (243 KiB kiosk-shell.js).
+- **Wizards verified via ItemResource simulation** :
+  - Bol Curry → composer 4 steps (base 2 choices / sauce 13 / supplements 4 / drink 1) ✓
+  - Petite Frites → composer 1 step (style 3 choices) ✓
+  - Sandwich Cayenne → wizard_template=sandwich + Viande 1 (4) + Sauce Cayenne (locked 1) + 14 extras + 3 addons ✓
+  - Galette Normale → sandwich + Viande 1 (4) + Sauce libre (13) + 14 extras + 3 addons ✓
+  - Galette Cayenne → sandwich + Viande 1 (4) + Sauce Cayenne (locked 1) + 14 extras + 3 addons ✓
+  - Sandwich Classique → sandwich + Viande 1 (4) + Sauce libre (13) + 14 extras + 3 addons ✓
+  - Tacos / Big Tacos → wizard_template=tacos + Viande 1 [+ Viande 2 pour Big] + 0 extras + 3 addons ✓
+- **Tests** : PHPUnit Menu|ItemCategory 155/155 PASS. PHPUnit Fiscal|Outbox|Order|Domain
+  594/595 PASS (1 unrelated fail PosOrderRequestNullableTotalTest:116 — tax computation
+  factory item, NON lié au reset). E2E kiosk visuel : sidebar ordre correct (Cayenne→
+  Galette→Classique→Tacos→Bols→Frites→Supp→Desserts→Boissons), wizard composer bols
+  ouvre avec 4 steps + recap. Admin POS + admin Items + KDS loadent OK.
+- **Test technique tinker** Bol Curry → 2 variation groups + 4 extras + 1 addon
+  data shape correct pour order creation pipeline.
+- **Frozen-zones intactes** : 0 ligne diff `public/js/pos-wizard.js`,
+  `resources/js/components/frontend/kiosk/KioskWizard*Component.vue`, NF525
+  (FiscalSequence/ZReport/AuditLog), BranchScope, PricingService, OrderStateMachine.
+- **DECISIONS scope-minimal** :
+  - Cat 315 "frites-accompagnements" kept ALIVE (slug intact) — contient les 3
+    addon items (Menu/Frites Seules/Boisson Seule) référencés par item_addons
+    pour les menus sandwiches/galette/tacos. Cachée via KIOSK_HIDDEN_CATEGORY_IDS=[315].
+    Visible en admin POS (pas idéal mais pré-existant).
+  - 4 anciens items Tacos M/L/XL/XXL (IDs 363-366) archivés via tinker post-command
+    (catégorie tacos renommée mais items legacy non archivés par step1).
+  - Sauces locked Cayenne via attribut dédié "Sauce Cayenne (incluse)" min=1 max=1
+    avec 1 variation (vs ne pas créer d'attribut sauce du tout — wizard rendrait
+    step vide).
+- **Backlog résiduel (différé future cycle)** :
+  - Wizard label drink step affiche "QUEL MENU?" pour bols (label devrait être
+    "Boisson optionnelle") — frontend hardcoded label fallback.
+  - Branch.status=1 vs Status::ACTIVE=5 listener bug pré-existant (fan-out broken
+    when source event branchId=null). Workaround : fire avec branchId explicit.
+  - Mass 50-order E2E stress test déféré (proof of concept single-order OK).
+  - Adversarial Red-Team sub-agent toujours en cours (background).
+
+---
 
 **Mobile design-perfect cycle C — Claude Design redesigns integration 2026-05-11**
 (HEAD `4937d08b2`, branche `feature/mobile-app-le-cayenne-2026-05-10`) :
@@ -538,6 +624,61 @@ Captures visuelles : kiosk idle confirmé branding intact + admin login OK.
 ---
 
 ## §4 NEXT TO DO — Auto-managed (brain-written)
+
+### 🆕 ULTRA PLAN Menu Reset Le Cayenne 2026-05-13 (owner-gated, ~7-8j-agent)
+
+**Status** : ⏸️ DRAFT en attente owner gate (Q1-Q7 dans plan).
+**Doc** : `plans/ULTRA_PLAN_MENU_RESET_LE_CAYENNE_2026-05-13.md` (14 sections, ~750 lignes).
+**Mission** : archiver (soft-delete, non destructif) 8 catégories existantes
+(`nos-sandwichs`, `nos-burgers`, `nos-assiettes`, `ojja`, `omelettes`,
+`nos-salades`, `chicken-tenders`, `nos-menus-enfants`) + rename 4 catégories
+gardées (`nos-tacos`→`tacos`, `frites-accompagnements`→`frites`,
+`nos-desserts`→`desserts`, `nos-boissons`→`boissons`, `supplements` inchangé)
++ créer 4 nouvelles catégories (`sandwich-cayenne`, `galette`,
+`sandwich-classique`, `bols-gourmands`). Total final : **9 catégories**.
+
+**Architecture confirmée** (6 sub-agents Explore parallèles 2026-05-13) :
+- DB schema OK : `item_categories` + `items` ont SoftDeletes + `deletion_log`
+  audit trail. FK `items.item_category_id` RESTRICT (soft-delete safe).
+  `composition_snapshot` JSON immutable → order history 100% protégé.
+- Stock/sync/order persistence : zéro dépendance `category_id` direct →
+  archive ne casse rien (sub-agent #4).
+- POS Vanilla wizard frozen : pas de case `bols` (fallback dangereux) →
+  utiliser `wizard_template='simple'` (path recap-only déjà testé).
+- Kiosk wizard frozen : 0 ligne diff prévue. `kioskMenu.js:85`
+  `KIOSK_HIDDEN_CATEGORY_IDS = [315]` à vérifier.
+- Mobile app : `mobile/data/menu.js` hardcoded (offline PWA), réécriture
+  manuelle obligatoire en lockstep.
+- Backup : `scripts/db/backup.sh` + git branch `backup/pre-menu-reset-*`.
+
+**Sauces nouveau set (13)** : Mayonnaise, Ketchup, Algérienne, Samouraï,
+Curry, Andalouse, Harissa, Hannibal, Blanche, Tandoori, Fromagère, Pimentée,
+Cayenne. À archiver : Burger, Barbecue, Cocktail, Américaine, Poivre, Sans Sauce.
+
+**Viandes nouveau set (4)** : Poulet classic, Poulet curry, Poulet tandoori,
+Poulet crispy. Les 9 actuelles (Merguez/Kefta/Mexicain/Cordon Bleu/Hachée/
+Nuggets/Escalope/Tenders/Fricandelle) toutes archivées.
+
+**Owner gates obligatoires** :
+- Q1 Bols wizard zéro vs minimal 1-2 steps
+- Q2 Frites standalone : style upgrade ou flat
+- Q3 "Boule gratinée" = Galette pommes de terre existante ?
+- Q4 Confirmer set 13 sauces
+- Q5 Viandes appliquées aussi aux sandwiches/galettes/tacos (pas que bols) ?
+- Q6 Sandwich-split kiosk UI logic : désactiver ou alimenter ?
+- Q7 Périmètre single-tenant (Le Cayenne) ou multi-branche ?
+
+**Zéro frozen-zone touché** : POS Vanilla wizard + Kiosk Vue wizard +
+NF525 (FiscalSequence/ZReport/AuditLog) + BranchScope + PricingService +
+OrderStateMachine intacts.
+
+**Non-scope explicite** : code wizard (différé), mobile API menu sync
+(différé), UI "Archiver" dédiée (différée), scopes Eloquent `archived()` (différé).
+
+**Rollback 3 niveaux** : (1) `ItemCategory::onlyTrashed()->restore()` ~5s ;
+(2) `git checkout backup/pre-menu-reset-*` ; (3) DB dump restore.
+
+---
 
 ### Remediation P0 ultra audit POS 2026-05-09 (~3-5j-agent)
 

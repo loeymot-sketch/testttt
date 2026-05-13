@@ -19,15 +19,12 @@ if (! in_array($defaultLocale, ['fr', 'en', 'ar'], true)) {
 }
 
 /*
-| Slugs items = Item::slug (Str::slug du nom FR) — alignés sur config/menu.php + MenuSeeder.
-| POS : une seule catégorie « Nos Sandwichs » ; la borne duplique visuellement la ligne « Sandwich froid » en bas.
+| [MENU-RESET 2026-05-13] Sandwich-split DISABLED — new structure has 3 separate
+| sandwich categories (sandwich-cayenne, galette, sandwich-classique) so no need
+| for cold-vs-signature sidebar split anymore. Kept as empty array for backwards
+| compat; kiosk store reads `cold_item_slugs` as [] → no sidebar duplication.
 */
-$sandwichColdSlugs = [
-    'sandwich-froid',
-    'panini',
-    'sandwich-classique-pain',
-    'sandwich-classique-galette',
-];
+$sandwichColdSlugs = [];
 
 if ($requireForm) {
     return [
@@ -40,7 +37,8 @@ if ($requireForm) {
             'drink_ratio'  => 0.4,
         ],
         'sandwich_split' => [
-            'parent_category_slug' => 'nos-sandwichs',
+            // [MENU-RESET 2026-05-13] Disabled. New structure: 3 sandwich cats.
+            'parent_category_slug' => null,
             'cold_item_slugs'      => $sandwichColdSlugs,
             'cold_sidebar_label'   => 'Sandwich froid',
         ],
@@ -83,7 +81,8 @@ return [
         'drink_ratio'  => 0.4,
     ],
     'sandwich_split' => [
-        'parent_category_slug' => 'nos-sandwichs',
+        // [MENU-RESET 2026-05-13] Disabled. New structure: 3 sandwich cats.
+        'parent_category_slug' => null,
         'cold_item_slugs'      => $sandwichColdSlugs,
         'cold_sidebar_label'   => 'Sandwich froid',
     ],

@@ -45,20 +45,21 @@ return [
     |--------------------------------------------------------------------------
     */
     'categories' => [
-        // [BUG-4 FIX] Added wizard_template and has_menu for proper POS wizard flow
-        ['name' => 'Nos Tacos', 'sort' => 1, 'description' => 'Nos délicieux tacos avec viandes au choix', 'wizard_template' => 'tacos', 'has_menu' => true],
-        ['name' => 'Nos Sandwichs', 'sort' => 2, 'description' => 'Sandwichs gourmands et généreux', 'wizard_template' => 'sandwich', 'has_menu' => true],
-        ['name' => 'Nos Burgers', 'sort' => 3, 'description' => 'Burgers maison 100% frais', 'wizard_template' => 'burger', 'has_menu' => true],
-        ['name' => 'Nos Assiettes', 'sort' => 4, 'description' => 'Assiettes complètes avec garnitures', 'wizard_template' => 'assiette', 'has_menu' => false],
-        ['name' => 'Ojja', 'sort' => 5, 'description' => 'Ojja traditionnelle', 'wizard_template' => 'simple', 'has_menu' => false],
-        ['name' => 'Omelettes', 'sort' => 6, 'description' => 'Omelettes faites maison', 'wizard_template' => 'omelette', 'has_menu' => false],
-        ['name' => 'Nos Salades', 'sort' => 7, 'description' => 'Salades fraîches et légères', 'wizard_template' => 'salade', 'has_menu' => false],
-        ['name' => 'Poulet croustillant', 'slug' => 'chicken-tenders', 'sort' => 8, 'description' => 'Ailes et filets de poulet croustillants', 'wizard_template' => 'snacking', 'has_menu' => false],
-        ['name' => 'Nos Menus Enfants', 'sort' => 9, 'description' => 'Pour les petits gourmands', 'wizard_template' => 'simple', 'has_menu' => false],
-        ['name' => 'Frites & Accompagnements', 'sort' => 10, 'description' => 'Frites et accompagnements', 'wizard_template' => 'simple', 'has_menu' => false],
-        ['name' => 'Nos Desserts', 'sort' => 11, 'description' => 'Desserts gourmands', 'wizard_template' => 'simple', 'has_menu' => false],
-        ['name' => 'Nos Boissons', 'sort' => 12, 'description' => 'Boissons fraîches', 'wizard_template' => 'simple', 'has_menu' => false],
-        ['name' => 'Suppléments', 'sort' => 13, 'description' => 'Suppléments et extras commandables séparément', 'wizard_template' => 'simple', 'has_menu' => false],
+        // [MENU-RESET 2026-05-13] Le Cayenne new structure — 9 visible categories.
+        // Old categories (Nos Sandwichs, Nos Burgers, Nos Assiettes, Ojja, Omelettes,
+        // Nos Salades, Poulet croustillant, Nos Menus Enfants) archived (soft-delete)
+        // via `php artisan menu:reset-le-cayenne`.
+        // Cat "Frites & Accompagnements" kept hidden (id 315) for addon items
+        // (Menu/Frites Seules/Boisson Seule). New "Frites" cat exposes Petite/Grande.
+        ['name' => 'Sandwich Cayenne',   'slug' => 'sandwich-cayenne',   'sort' => 1, 'description' => 'Sandwich signature avec sauce Cayenne maison',                'wizard_template' => 'sandwich', 'has_menu' => true],
+        ['name' => 'Galette',            'slug' => 'galette',            'sort' => 2, 'description' => 'Galette traditionnelle ou Cayenne, viande au choix',         'wizard_template' => 'sandwich', 'has_menu' => true],
+        ['name' => 'Sandwich Classique', 'slug' => 'sandwich-classique', 'sort' => 3, 'description' => 'Sandwich classique en pain faluche',                          'wizard_template' => 'sandwich', 'has_menu' => true],
+        ['name' => 'Tacos',              'slug' => 'tacos',              'sort' => 4, 'description' => 'Tacos 1 viande ou Big Tacos 2 viandes, sauce fromagère',     'wizard_template' => 'tacos',    'has_menu' => true],
+        ['name' => 'Bols Gourmands',     'slug' => 'bols-gourmands',     'sort' => 5, 'description' => 'Bols Curry/Tandoori/Mariné/Crousti/Gratiné',                 'wizard_template' => 'custom',   'has_menu' => false],
+        ['name' => 'Frites',             'slug' => 'frites',             'sort' => 6, 'description' => 'Petite ou Grande frites, style nature/cheddar/cheddar+oignons','wizard_template' => 'custom',  'has_menu' => false],
+        ['name' => 'Suppléments',        'slug' => 'supplements',        'sort' => 7, 'description' => 'Suppléments et extras commandables séparément',              'wizard_template' => 'simple',   'has_menu' => false],
+        ['name' => 'Desserts',           'slug' => 'desserts',           'sort' => 8, 'description' => 'Desserts gourmands',                                          'wizard_template' => 'simple',   'has_menu' => false],
+        ['name' => 'Boissons',           'slug' => 'boissons',           'sort' => 9, 'description' => 'Boissons fraîches',                                           'wizard_template' => 'simple',   'has_menu' => false],
     ],
 
     /*
@@ -77,19 +78,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Meat Options (from Image 2)
+    | Meat Options — Le Cayenne 2026-05-13 canonical set (4 viandes only)
     |--------------------------------------------------------------------------
     */
     'meats' => [
-        'Merguez',
-        'Kefta',
-        'Mexicain',
-        'Cordon Bleu',
-        'Viande Hachée',
-        'Nuggets',
-        'Escalope de poulet',
-        'Tenders',
-        'Fricandelle',
+        'Poulet classic',
+        'Poulet curry',
+        'Poulet tandoori',
+        'Poulet crispy',
     ],
 
     /*
