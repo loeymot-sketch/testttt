@@ -1,0 +1,97 @@
+{
+  "run": "rush-pos-2026-05-13",
+  "wave": "POS",
+  "round": 1,
+  "states_reviewed": 32,
+  "findings": [
+    {
+      "id": "WP-R1-01",
+      "category": "test_infrastructure",
+      "severity": "P1",
+      "state": "all-S*-04-payment-modal -> S*-05-receipt",
+      "evidence_file": "reports/test-e2e/rush-pos-2026-05-13/round-1/wave-POS-db-checks.json + tests/e2e/rush-100-pos-capture.spec.js:255-261",
+      "evidence_snippet": "spec waitForResponse predicate = /\\/api\\/admin\\/pos(?:\\?|$|\\/)/.test(res.url()) && res.request().method() === 'POST' && res.status() < 500 — too permissive (matches any POST under /api/admin/pos/*, accepts 200..499). Result: db-checks.json records paid_response_status:200 for all 5 scenarios while network.json (status>=400 filter) shows only 429 on /api/admin/pos for each *-05-receipt — i.e. the recorded 200 belongs to a DIFFERENT request than the actual order-POST that was throttled (likely a sub-route hit, observability heartbeat, or a /api/admin/pos GET poll). The load-bearing 'POST status' field in db-checks.json is therefore false-positive 200 on every row. Without a tighter predicate, every future round will silently repeat this misread.",
+      "claim": "db-checks.json paid_response_status=200 is misleading: the actual /api/admin/pos POST was 429 per network.json, but the spec's waitForResponse caught a different 200 response on a /api/admin/pos/* sub-URL.",
+      "fix_hint": "Tighten waitForResponse predicate to: res.url().endsWith('/api/admin/pos') && method==='POST' && status<500 (exact match, not regex with trailing path). Additionally, in the next round capture EVERY /api/admin/pos* POST regardless of status (extend network.json filter to include 2xx on this endpoint) so the 200 source is identifiable. Also: assert res.status()===200 OR explicitly record the 429 path so downstream tooling does not assume success.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WP-R1-02",
+      "category": "test_infrastructure",
+      "severity": "P2",
+      "state": "all-5-scenarios POST /api/admin/pos",
+      "evidence_file": "tests/e2e/helpers/rate-limit.js + app/Providers/RouteServiceProvider.php:77-91",
+      "evidence_snippet": "clearFoodKingRateLimits builds keys with md5($name.$key). 'admin-mutation' limiter (RouteServiceProvider line 77-91) keys POST by $request->user()->id (User model id). Helper plucks User ids at line 13 — should match. Yet all 5 scenario POSTs returned 429. Two non-exclusive root causes: (a) the limiter uses Laravel's internal cleanRateLimiterKey() format (Str::transliterate + ':' separator) which does NOT match md5($name.$key) — the helper is hashing the wrong way, (b) request fingerprint includes additional dimensions (session id, sanctum token suffix) not covered by the helper key list. Net effect: rate-limit is never actually cleared between scenarios, success path is unreachable, WB-R1-03 modalHide heal cannot be empirically verified.",
+      "claim": "clearFoodKingRateLimits helper does NOT clear the admin-mutation/pos-order-create buckets that gate POST /api/admin/pos — every scenario inherits a saturated limiter, yielding 429 for all 5.",
+      "fix_hint": "Replace md5-based key construction with Laravel's actual key derivation: use RateLimiter::clear(md5('admin-mutation' . $userId)) is wrong — call $limiter->clear(<exact-resolved-key>) where the exact key is the one Laravel's ThrottleRequests stores (commonly the named limiter name + sha1 of resolved by-value). Easiest fix: use Laravel's `RateLimiter::for(...)` reflection or temporarily set `pos-rate-limit-bypass=1` request header gated on APP_ENV=local in the limiter closure. Alternatively, clear the entire cache store between scenarios: Cache::store('default')->flush() — heavy but reliable. Also widen the keys list to include sanctum_token_id and session_id dimensions.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WP-R1-03",
+      "category": "verification_gap",
+      "severity": "P2",
+      "state": "S6-05-receipt, S8-05-receipt, S3-05-receipt, S4-05-receipt, S10-05-receipt",
+      "evidence_file": "tests/e2e/__screenshots__/rush-pos/pos/S6-05-receipt.dom.html + S6-05-receipt.png + S6-06-back-to-pos.png",
+      "evidence_snippet": "DOM grep on S6-05-receipt.dom.html confirms #orderpayment retains class='modal pos-v4-payment-modal pos-v5-payment-modal active' and #receiptModal class='modal pos-v5-receipt-modal' (no .active). Visual: S6-05 and S6-06 are pixel-identical, payment modal still open with 'Confirmer & Imprimer ticket' button visible AND 'Trop de requêtes — patientez 30s avant de réessayer' toast in upper-right corner. This is the EXPECTED 429-error UI (matches GStack's interpretation in report §2.3), but the WB-R1-03 modalHide() heal at PaymentComponent.vue ~line 879 is gated behind 'if (paymentSucceeded)' and never fires. The heal is shipped in source (commit 0f201e29d verified via git log) but its runtime effect cannot be observed because the success path was never exercised this run.",
+      "claim": "WB-R1-03 modalHide heal source-shipped but NOT empirically verified — runtime path blocked by rate-limit (WP-R1-02). GStack correctly flagged this as 'DEFERRED'.",
+      "fix_hint": "Two equally-good options: (a) add a Vitest/jsdom unit test that mounts PaymentComponent.vue with stubbed appService.modalHide spy, sets paymentSucceeded=true, and asserts spy called once with '#orderpayment' — closes the heal verification without depending on rate-limit infra (this was already recommended in GStack §5.4). (b) Fix WP-R1-02 and re-run the spec — at least one scenario should produce HTTP 200 and exercise modalHide. (a) is faster and more reliable.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WP-R1-04",
+      "category": "visual_quality",
+      "severity": "P3",
+      "state": "00-pos-v4-ready",
+      "evidence_file": "tests/e2e/__screenshots__/rush-pos/pos/00-pos-v4-ready.png + 00-pos-v4-ready.dom.html",
+      "evidence_snippet": "Capture shows POS V4 grid behind a 'Commandes borne — à encaisser' kiosk-orders right-side panel that occludes ~40% of the right viewport (kiosk orders #A0001, #A0059, #A0061, #A0063 visible). DOM confirms class='db-sidebar active' overlay rendered. The grid IS visible underneath (sidebar shows Commande rapide tile + category pills + item grid), so the heal claim 'POS V4 grid rendered' is technically true — but the 'cleanest proof of grid render' is actually S6-01-pos-empty.png which shows the grid unobstructed with cart panel in the standard slot.",
+      "claim": "Setup capture 00-pos-v4-ready.png shows the POS V4 grid partially occluded by an auto-opened kiosk-orders side panel — the heal claim holds (grid renders) but a future reviewer might be confused by the overlay.",
+      "fix_hint": "In test-00 add `await page.locator('.db-sidebar.active').first().evaluate(el => el.classList.remove('active')).catch(()=>{})` before snap('00-pos-v4-ready'). Alternatively, document in the report that S?-01-pos-empty captures are the canonical 'grid renders' proof.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "WP-R1-05",
+      "category": "i18n_pluralization",
+      "severity": "P3",
+      "state": "S3-03-cart-with-item, S4-03-cart-with-item, S6-03-cart-with-item, S8-03-cart-with-item, S10-03-cart-with-item",
+      "evidence_file": "tests/e2e/__screenshots__/rush-pos/pos/S6-03-cart-with-item.png",
+      "evidence_snippet": "Cart panel header reads '1 Articles' (singular quantity + plural noun). Should be '1 Article' (singular) and '3 Articles' (plural) per French grammar. Visible on every S?-03 with single-item cart. S10 shows '3 Articles' which is correctly plural — confirms the singular case is unhandled.",
+      "claim": "Cart label uses 'Articles' for both singular (1) and plural (n>=2) quantities — French grammar requires singular 'Article' when count=1.",
+      "fix_hint": "In the cart counter component (likely PosOrderTicketComponent.vue), use a trans_choice() / Vue i18n pluralization: `{ count, plural, =1 {Article} other {Articles} }`. Search for 'Articles' string + count binding.",
+      "confidence": "HIGH"
+    }
+  ],
+  "passing_states": [
+    "00-admin-dashboard",
+    "S3-01-pos-empty",
+    "S3-02-wizard-popup",
+    "S3-03-cart-with-item",
+    "S3-04-payment-modal",
+    "S4-01-pos-empty",
+    "S4-02-wizard-popup",
+    "S4-03-cart-with-item",
+    "S4-04-payment-modal",
+    "S6-01-pos-empty",
+    "S6-02-wizard-popup",
+    "S6-03-cart-with-item",
+    "S6-04-payment-modal",
+    "S8-01-pos-empty",
+    "S8-02-wizard-popup",
+    "S8-03-cart-with-item",
+    "S8-04-payment-modal",
+    "S10-01-pos-empty",
+    "S10-02-wizard-popup",
+    "S10-03-cart-with-item",
+    "S10-04-payment-modal"
+  ],
+  "claims_verified": [
+    "WB-R1-01 pos-app.js slim-router heal: VERIFIED. Zero pos-app.js errors across all 32 console.json files (pre-heal was 37 per load). Only console errors are vendor.js Pusher WebSocket failures (allowlisted) and one 429 toast on each *-05-receipt (expected). Setup test 00 rendered .pos-v5-grid within 15s timeout.",
+    "WB-R1-02 aria-label + title on category pills: VERIFIED. DOM grep on 00-pos-v4-ready.dom.html shows 10/10 matched aria-label+title pairs verbatim (Toutes les catégories, Sandwich Cayenne, Galette, Sandwich Classique, Tacos, Bols Gourmands, Frites, Suppléments, Desserts, Boissons). Sighted + SR operators can disambiguate the two visually-truncated 'Sandwich…' pills.",
+    "NF525 fiscal chain intact: max(fiscal_sequence_no)=321 unchanged from pre-test baseline, gap-free across range 300..321 (22/22 present), zero new orders persisted, zero fiscal_alloc_error_at flags. Acceptable for this run since no POST succeeded.",
+    "Frozen-zone integrity: git diff HEAD~12 -- public/js/pos-wizard.js = 0 lines. POS Vanilla wizard untouched across the rush-pos investigation."
+  ],
+  "claims_disputed": [
+    "GStack report §2.1 cited 'pageerrors=0 on every one of the 32 captures'. STRICTLY this is true for uncaught exceptions, BUT every S?-01-pos-empty has 4 vendor.js WebSocket errors and every S?-05-receipt has the 429 console error. Adversarial assessment: all are allowlisted per REVIEWER_PROTOCOL — claim stands as accurate-in-spirit, but the literal '0 errors' summary risks future reviewers missing a real regression. Recommend GStack report use 'zero application-code errors (allowlisted vendor.js WebSocket + 429 toast remaining)' phrasing.",
+    "GStack report §3 records paid_response_status:200 on all 5 scenarios but network.json shows ONLY 429 for /api/admin/pos. Adversarial finding WP-R1-01 confirms this is a spec-predicate bug (waitForResponse regex too loose) — the 200 belongs to a DIFFERENT request, not idempotency replay as the report hypothesised. The 'paid_response_status' field in db-checks.json is unreliable until predicate tightened."
+  ],
+  "verdict": "GO-CONDITIONAL"
+}
