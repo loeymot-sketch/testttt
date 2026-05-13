@@ -251,12 +251,20 @@ async function payCashAndConfirm(page, scenarioCode, snap) {
     await page.waitForTimeout(400);
   }
 
-  // 7 — wait for POS create response
+  // 7 — wait for POS create response (exact endpoint /api/admin/pos, NOT sub-routes
+  // like /api/admin/pos/quote, /api/admin/pos/refund, etc.)
+  // [rush-pos WP-R1-01 heal 2026-05-13] Previous regex `/api/admin/pos(?:\?|$|/)`
+  // matched sub-routes — the captured 200 was a different POST (likely /pos/quote
+  // 120/min) while the real order POST got 429. Tightened to exact path + verify
+  // status reflects actual order outcome (200, 201, 409 idempotency, or 429).
   const orderResp = page.waitForResponse(
-    (res) =>
-      /\/api\/admin\/pos(?:\?|$|\/)/.test(res.url()) &&
-      res.request().method() === 'POST' &&
-      res.status() < 500,
+    (res) => {
+      const url = res.url();
+      // Match exact `/api/admin/pos` with optional query string only.
+      const m = url.match(/\/api\/admin\/pos(\?[^/]*)?$/);
+      if (!m) return false;
+      return res.request().method() === 'POST';
+    },
     { timeout: 25_000 },
   ).catch(() => null);
 
