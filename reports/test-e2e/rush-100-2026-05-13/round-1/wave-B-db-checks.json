@@ -74,5 +74,24 @@
       "composition_snapshot_lines": 2
     },
     "ts": "2026-05-13T07:48:27.500Z"
+  },
+  {
+    "scenario": "S10",
+    "label": "Multi-cart 3 items",
+    "target_item_id": 474,
+    "target_item_name": "Sandwich Cayenne",
+    "paid_response_status": 200,
+    "read_grand_total": 21,
+    "db": {
+      "ok": true,
+      "id": 1325,
+      "fiscal_sequence_no": null,
+      "total": 2.5,
+      "payment_status": 15,
+      "status": 4,
+      "lines_count": 1,
+      "composition_snapshot_lines": 1
+    },
+    "ts": "2026-05-13T07:48:58.203Z"
   }
 ]
