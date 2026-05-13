@@ -33,7 +33,14 @@ class PricingPreviewRequest extends FormRequest
         $maxItems = (int) config('kiosk.max_item_qty', 20);
 
         return [
-            'items'                               => ['required', 'array', 'min:1', 'max:100'],
+            // [rush-100 WA-R1-05/06 heal 2026-05-13] Relax `items` required→nullable.
+            // Kiosk composer-step entry (Bol Curry, Petite Frites first paint) fires
+            // a pricing/preview before the user has selected anything; the previous
+            // `required + min:1` rule rejected this with a 422 → "Tarif rafraîchi
+            // localement" yellow toast + NF525 pricing SSOT bypass risk. Service
+            // returns 0-total cleanly for empty items. Backend remains gap-free
+            // (no negative impact) and adds an explicit early-exit for empty input.
+            'items'                               => ['nullable', 'array', 'max:100'],
             'items.*.item_id'                     => ['required', 'integer', 'min:1'],
             'items.*.quantity'                    => ['required', 'integer', 'min:1', "max:{$maxItems}"],
             'items.*.instruction'                 => ['nullable', 'string', 'max:255'],
