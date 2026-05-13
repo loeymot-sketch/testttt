@@ -98,6 +98,50 @@ const router = createRouter({
         { path: '/admin/pos/floorplan', name: 'admin.pos.floorplan', redirect: { name: 'admin.pos.v4.floorplan' } },
         { path: '/admin/profile/edit-profile', name: 'admin.profile.editProfile', redirect: { name: 'admin.pos.v4' } },
         { path: '/admin/profile/change-password', name: 'admin.profile.changePassword', redirect: { name: 'admin.pos.v4' } },
+        // [rush-sync WB-R1-01 heal 2026-05-13] Compatibility stubs for route
+        // names referenced by PosComponent.vue (tracker, customer screen,
+        // pos-orders list/show). These pages live in the FULL app bundle, NOT
+        // in pos-app.js's slim chunk. Without these stubs, Vue Router's
+        // useLink/resolve throws MATCHER_NOT_FOUND on every PosV5Button mount,
+        // producing ~37 unhandled-promise rejections at every POS V4 load
+        // (rush-100 round-1 wave-B WB-R1-01). The `beforeEnter` forces a hard
+        // navigation (window.location.assign) so the legacy app.js bundle
+        // takes over and renders the actual screens. RouterLink resolves the
+        // href correctly for both in-tab clicks and target="_blank" new tabs.
+        {
+            path: '/admin/pos-orders-tracker',
+            name: 'admin.pos-orders.tracker',
+            beforeEnter(to) { window.location.assign(to.fullPath); },
+            component: { render: () => null },
+        },
+        {
+            path: '/admin/order-status-screen',
+            name: 'admin.order-status-screen',
+            beforeEnter(to) { window.location.assign(to.fullPath); },
+            component: { render: () => null },
+        },
+        {
+            path: '/admin/pos-orders',
+            name: 'admin.pos-orders.list',
+            beforeEnter(to) { window.location.assign(to.fullPath); },
+            component: { render: () => null },
+        },
+        {
+            path: '/admin/pos-orders/show/:id',
+            name: 'admin.pos-orders.show',
+            beforeEnter(to) { window.location.assign(to.fullPath); },
+            component: { render: () => null },
+        },
+        // auth.login is read by DefaultComponent.vue L110 when staffOnlyMode
+        // triggers a logout-redirect; in pos-app this code path is unused
+        // (POS V4 is staff-authenticated) but we add the stub anyway to keep
+        // resolve() side-effect-free for any future shared layout component.
+        {
+            path: '/login',
+            name: 'auth.login',
+            beforeEnter(to) { window.location.assign(to.fullPath); },
+            component: { render: () => null },
+        },
         // Fallback — anything under /admin/pos-v4/* goes to POS.
         {
             path: '/admin/pos-v4/:pathMatch(.*)*',
