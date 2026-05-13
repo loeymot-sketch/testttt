@@ -186,6 +186,26 @@ export function createKioskPricingPreview(options = {}) {
                     return;
                 }
 
+                // [rush-100 WA-R1-05/06 heal round-2 2026-05-13] Skip preview
+                // when payload is just base items with zero modifier selections.
+                // At composer-step open the wizard's selections-watcher fires
+                // with the base item and empty modifier arrays — calling
+                // /pricing/preview at this point yields a 422 SSOT-exception
+                // (item-level guard) AND has no useful effect (server total
+                // would equal the locally-computed base price). The runningTotal
+                // computed property already falls back to runningTotalLocal in
+                // this state. Wait for the first real user selection to fire.
+                const hasAnyModifier = payload.items.some((it) => {
+                    const v = (it.item_variations || []).length;
+                    const e = (it.item_extras || []).length;
+                    const a = (it.item_addons || []).length;
+                    return v + e + a > 0;
+                });
+                if (!hasAnyModifier) {
+                    resolve(null);
+                    return;
+                }
+
                 // AbortController si dispo (fetch / axios ≥ 0.22), sinon
                 // CancelToken legacy.
                 let config = {};
