@@ -2,6 +2,11 @@
 
 return [
     'label' => [
+        // [ultra-goal A8 heal 2026-05-13] OSS (Order Status Screen) labels.
+        'oss_main_aria' => 'Order status screen — orders in preparation and ready for pickup',
+        'oss_popular_region_aria' => 'Popular items today',
+        'preparing' => 'Preparing',
+        'ready' => 'Ready',
         'name' => 'Name',
         'email' => 'Email',
         'phone' => 'Phone',

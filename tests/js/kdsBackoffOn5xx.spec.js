@@ -80,7 +80,14 @@ describe('KdsSyncService backoff', () => {
         });
         service.start(1);
 
-        await expect(service.forceSync()).rejects.toThrow('Network down');
+        // [ultra-goal A7 heal 2026-05-13] KdsSyncService is designed to SWALLOW
+        // network-level errors (DNS / TLS / ERR_NETWORK_CHANGED) and reschedule
+        // the poll loop — without this, a transient outage would halt the KDS
+        // permanently until an external trigger (F-03 / Lot 1.C / Audit G1).
+        // forceSync() therefore returns null on network error (NOT rejects).
+        // Self-heal guarantee = (1) returns null, (2) _timer rescheduled.
+        const firstResult = await service.forceSync();
+        expect(firstResult).toBeNull();
         expect(service._timer).not.toBeNull();
 
         await service.forceSync();
