@@ -29,11 +29,11 @@ The Ultra Goal mission was executed in autonomous mode (owner offline, NF525-onl
 | A3 Sync/Outbox/Pusher | GO-CONDITIONAL | 75/100 | 3 (bridge + axios + status filter) | 1 (KdsSync test rewrite) | 0 | 2 V1.x | 0 |
 | A4 POS Vanilla frozen | GO-CONDITIONAL | 72/100 | 0 (LOCK deferred) | 1 (A03-1 menu addon) | — | 4 V1.0.1 / Phase 13 | 0 |
 | A5 POS Vue Admin | GREEN | 92/100 | — (no P0) | 0 | 2 (BranchScope + lockForUpdate) | 0 | 0 |
-| A6 Kiosk Vue frozen | TBD | — | — | — | — | — | TBD |
-| A7 KDS Display | TBD | — | — | — | — | — | TBD |
-| A8 OSS Display | TBD | — | — | — | — | — | TBD |
-| A9 Admin CRUD | TBD | — | — | — | — | — | TBD |
-| A10 Mobile App | TBD | — | — | — | — | — | TBD |
+| A6 Kiosk Vue frozen | GREEN-COND | 85/100 | 0 (LOCK deferred) | 1 (drink label) | 0 | 1 (V1.0.1) | 0 |
+| A7 KDS Display | GREEN | 90/100 | — | 0 | 1 (kdsBackoff test rewrite) | 0 | 0 |
+| A8 OSS Display | GREEN | 92/100 | — | 0 | 1 (4 i18n EN+FR) | 1 P2 (V1.0.1) | 0 |
+| A9 Admin CRUD | FAIL-DEFERRED | 60/100 | 0 (V1.0.1) | 1 (RBAC 75/92 stubs) | 0 | 2 V1.0.1 + 1 V1.x | 0 |
+| A10 Mobile App | GREEN-MOSTLY | 88/100 | — | 0 | 0 | 2 P1 verify Phase 13 + 1 P2 Phase 6B | 0 |
 | A11 Cross-Surface E2E + NF525 | TBD | — | — | — | — | — | TBD |
 
 ---
