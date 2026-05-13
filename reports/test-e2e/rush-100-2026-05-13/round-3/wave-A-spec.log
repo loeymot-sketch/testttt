@@ -1,0 +1,8 @@
+
+Running 1 test using 1 worker
+
+[1A[2K[1/1] [chromium] › tests/e2e/rush-100-kiosk-capture.spec.js:308:3 › rush-100 Wave A — Kiosk multi-scenario visual capture › rush-100 kiosk : 5 scenarios × 7 states (35 quartets)
+[1A[2K[chromium] › tests/e2e/rush-100-kiosk-capture.spec.js:308:3 › rush-100 Wave A — Kiosk multi-scenario visual capture › rush-100 kiosk : 5 scenarios × 7 states (35 quartets)
+[rush-100 A] PNGs: 35 / 35 ; db scenarios: 5/5 ; console errs: 32 ; net anomalies: 0
+
+[1A[2K  1 passed (2.9m)
