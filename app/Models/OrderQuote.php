@@ -2,12 +2,25 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\BranchScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class OrderQuote extends Model
 {
     use HasFactory;
+
+    /**
+     * [ultra-goal A5 heal 2026-05-13] Multi-tenant invariant.
+     * Quotes can be consumed by orders — cross-branch leak would allow staff
+     * of branch A to consume a quote from branch B. Aligns with BranchScope
+     * pattern on Order/OrderItem (CLAUDE.md §9).
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+        static::addGlobalScope(new BranchScope());
+    }
 
     protected $fillable = [
         'quote_token',

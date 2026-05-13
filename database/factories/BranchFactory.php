@@ -25,12 +25,18 @@ class BranchFactory extends Factory
             'state' => fake()->state(),
             'zip_code' => fake()->postcode(),
             'address' => fake()->streetAddress(),
-            // [ultra-goal A3 heal 2026-05-13] align test fixture with Status::ACTIVE enum.
-            // Production DB has legacy `1` value that pre-dates the enum (=5);
-            // factory was the only place still emitting literal 1, breaking listener
-            // sentinels that expect Branch::factory()->create() to be discoverable
-            // via where('status', Status::ACTIVE). Prod data migration TODO (owner).
-            'status' => Status::ACTIVE,
+            // [ultra-goal A3 heal 2026-05-13] keep production-aligned literal 1.
+            // The codebase has TWO conventions for "active" branch filtering:
+            //   • Listeners use `where('status', Status::ACTIVE)` (=5)
+            //   • Commands/Services use `where('status', 1)` (literal)
+            // Production DB stores status=1 from pre-enum-migration seeding.
+            // To stay compatible with BOTH callers, the listeners were updated
+            // to `whereIn('status', [Status::ACTIVE, 1])` (see PersistCatalog/
+            // ItemAvailability/Coupon listeners + InvalidateMenuProjection).
+            // Factory keeps `1` so commands using literal-1 filter still match.
+            // Owner data migration TODO: UPDATE branches SET status=5 + align
+            // all `where('status', 1)` callers to `Status::ACTIVE`.
+            'status' => 1,
         ];
     }
 }

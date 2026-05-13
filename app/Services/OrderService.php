@@ -1479,26 +1479,42 @@ class OrderService
 
             // [POS-9.1.7] Wrap mutations in DB::transaction so a partial failure
             // (save / state-machine / payment_status flip) rolls back atomically.
+            // [ultra-goal A5 heal 2026-05-13] Add lockForUpdate (BRAIN P0-12
+            // family — legacy delivery-boy caller previously raced with
+            // changeStatus and admin updates, duplicating audit rows and
+            // corrupting state machine. Mirrors the locked pattern at line
+            // 1549-1568 (changeStatus) and OrderStateMachine::apply:185-210.).
             // Notifications + OrderStatusChanged broadcast are deferred to
             // afterCommit so listeners (OSS, KDS, loyalty) never observe a
             // half-written state nor fire if the transaction rolls back.
-            DB::transaction(function () use ($order, $oldStatus, $newStatus) {
-                $transaction = Transaction::where('order_id', $order->id)->first();
-                if (!$transaction && $order->payment_status == PaymentStatus::UNPAID) {
-                    $order->payment_status = PaymentStatus::PAID;
+            DB::transaction(function () use (&$order, $oldStatus, $newStatus) {
+                $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+
+                // Idempotent: if a concurrent caller already applied the
+                // target status, exit silently (no double recordTransition).
+                if ((int) $locked->status === (int) $newStatus) {
+                    $order = $locked;
+                    return;
                 }
 
-                $order->status = $newStatus;
-                $order->save();
+                $transaction = Transaction::where('order_id', $locked->id)->first();
+                if (!$transaction && $locked->payment_status == PaymentStatus::UNPAID) {
+                    $locked->payment_status = PaymentStatus::PAID;
+                }
+
+                $locked->status = $newStatus;
+                $locked->save();
 
                 OrderStateMachine::recordTransition(
                     Order::class,
-                    (int) $order->id,
+                    (int) $locked->id,
                     $oldStatus,
                     $newStatus,
                     Auth::check() ? (int) Auth::id() : null,
                     null
                 );
+
+                $order = $locked;
             });
 
             // Dispatch notifications + broadcast AFTER the transaction has
