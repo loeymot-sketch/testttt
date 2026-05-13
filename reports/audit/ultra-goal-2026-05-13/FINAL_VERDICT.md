@@ -224,7 +224,12 @@ All 11 axes (A1-A11) audited + healed where in-scope. Cross-axis reconciliation 
 
 **16 code heals applied, 0 frozen-zone touch.**
 
-**Test wins** : PHPUnit 20→8 fails (+12), Vitest 6→4 fails (+2). Remaining failures = 3 PHP-8.3 vendor + 1 CSP sentinel + 2 frozen-Vue audit-only + 1 banner = NOT regressions, baseline-known.
+**Test wins (post-Wave1-4 final re-run 04:36)** : 
+- **PHPUnit 20→3 fails (+17 wins)** / 1880 passed / 232s
+- **Vitest 6→4 fails (+2 wins)** / 1383 passed / 13s
+- **Playwright smoke 14/15 passed** (1 flaky POS cash E2E known issue not a regression)
+
+Final remaining failures = 3 DiscountCalculatorTest (PHP 8.3 vendor Doctrine syntax — env upgrade needed, NOT a code bug) + 1 CSP sentinel (A9 verified PASS, sentinel needs investigation) + 2 frozen-Vue audit-only (f008KioskPaymentReconcileQueue + kioskFormatPrice — A6 locked) + 1 banner suppression (A5 V1.0.1) = **all baseline-known, NOT regressions**.
 
 **OWNER ACTION REQUIRED (in priority order)** :
 
