@@ -179,6 +179,8 @@
                     type="button"
                     role="tab"
                     :aria-selected="(index === 0 && currentCategoryId === 0) || (Number(category.id) === currentCategoryId) ? 'true' : 'false'"
+                    :aria-label="category.name || ''"
+                    :title="category.name || ''"
                     :class="['pos-v5-category', 'pos-v4-category-pill', {
                         'is-active': (index === 0 && currentCategoryId === 0) || (Number(category.id) === currentCategoryId)
                     }]"
@@ -188,6 +190,9 @@
                         <img v-if="category.thumb" :src="category.thumb" :alt="category.name || ''" loading="lazy" />
                         <span v-else class="pos-v5-category__visual-fallback" aria-hidden="true">{{ (category.name || '?').charAt(0).toUpperCase() }}</span>
                     </span>
+                    <!-- [rush-100 WB-R1-02 heal 2026-05-13] aria-label + title above
+                         so "Sandwich Cayenne" vs "Sandwich Classique" stay distinguishable
+                         when the visible label truncates to "Sandwich..." in the pill. -->
                     <span class="pos-v5-category__label">{{ category.name }}</span>
                 </button>
             </template>
