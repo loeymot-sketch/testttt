@@ -50,7 +50,7 @@ Plateforme restaurant fast-food complète :
 - **HEAD** : (pre-commit) menu reset Le Cayenne 2026-05-13 (artisan command + 9 cats restructuration + composer profiles bols/frites + sandwich-split disabled)
 - **Backup branch** : `backup/pre-menu-reset-le-cayenne-2026-05-13` (HEAD `4937d08b2`) + tag `pre-menu-reset-2026-05-13`
 - **DB backup** : `storage/backups/menu-reset-2026-05-13/foodking-full-dump.sql` (5.4 MB)
-- **Last update** : 2026-05-13 (menu reset Le Cayenne complet — 8 cats archivées + 4 renommées + 5 NEW + 23 items + 7 composer profiles. 594 PHPUnit pass / 1 unrelated tax fail. Sync 17 events fired.)
+- **Last update** : 2026-05-13 03:55 — **ULTRA GOAL en cours** (Phase 0 Bootstrap complete, Wave 1 A1+A2+A3 lancée en parallèle). Baseline tests : **PHPUnit 20 failed / 1863 passed** (regression vs BRAIN "1 unrelated" — Pricing tax-inclusive vs tax-exclusive formula suspect, A2 priority P0), **Vitest 6 failed / 1381 passed**, **Playwright 4/9 baseline captures** (login + auth captures pending, will be covered in Phase 13). DB metrics : 10 active cats (cat 315 hidden via channels='[]'), 37 active items, 7 composer profiles published, 22 wizard steps, branch 1 max fiscal_seq=293 BUT 162 missing seq integers (potential NF525 gap — A1 investigation P0). Plan : `plans/ULTRA_GOAL_FULL_SYSTEM_AUDIT_2026-05-13.md`. Reports : `reports/audit/ultra-goal-2026-05-13/`. Backup branch : `backup/pre-ultra-goal-2026-05-13`, DB dump 5.5 MB md5 `8dcdb0e0dac6942359e4bb684f223ca4`.
 - **Branche release antérieure** : `cycle/PHASE2-TRAIN-A-V1-RELEASE-PREP-2026-04-27`
   (HEAD `9d9dddae1`, NO-GO V1 par audit POS adversarial 2026-05-09 — état préservé)
 - **Domaines production-ready** : ~7-8 / 16 (revu après ultra audit POS 2026-05-09 ;
@@ -61,10 +61,17 @@ Plateforme restaurant fast-food complète :
 - **Tests filter cumulative iter14** : 705/705 PHPUnit verts (filter
   Outbox|Persist|DomainEvent|Fiscal|FinalizePaid|ZReport|FiscalSequence|Order)
 - **E2E Playwright iter14** : 16/16 PASS (POS+Kiosk+KDS+auth+admin baseURL)
-- **Frozen-zones spécifiques** : 0 lines diff vs main sur les 4 fichiers
-  protégés (KioskWizard + KioskApp + KioskUpsell + POS Vanilla wizard).
-  La branche release globale a normalement >4000 fichiers diff vs main
-  — c'est attendu pour un cycle PHASE2.
+- **Frozen-zones diff baseline ultra-goal (vs main 2026-05-13)** :
+  - pos-wizard.js +304 (composer-aware iter12), KioskWizardComponent +2668,
+    KioskAppComponent +1298, KioskUpsellComponent +168, admin-pos-v4.blade +171,
+    ZReportService +714, AuditLogService +312, PricingService +740,
+    IdempotencyKeyMiddleware +250, OrderStateMachine +157.
+  - Clean : pos-wizard.css 0, FiscalSequenceService 0, BranchScope 0.
+  - **L'ancien claim "0 lignes diff vs main"** était stale ; le hardening multi-cycles
+    iter1-14 + audit waves a accumulé du diff *expected*. La référence pour
+    frozen-zones intactes pendant le goal = `HEAD@phase0` (snapshot capture
+    dans `reports/audit/ultra-goal-2026-05-13/frozen-zones-baseline.diff`),
+    pas `main`.
 
 ---
 
