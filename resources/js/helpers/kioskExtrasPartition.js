@@ -38,10 +38,15 @@ export function kioskIsSauceExtra(extra) {
 /**
  * Un extra est une "viande payante" (choix exclusif, pas accompagnement) si :
  *   - son group_label contient 'viande' (priorité, source catalogue)
- *   - OU son nom contient 'viande' et prix > 0
+ *   - OU son nom contient 'viande' et prix > 0 ET group_label n'est PAS
+ *     un groupe-supplément explicite ('supplement', 'supplement_burger',
+ *     'supplement_bol', 'supp', 'supplements').
  *
  * Heuristique volontairement stricte : on n'inclut pas les accompagnements
  * carnés type "nuggets supplémentaires" qui restent des suppléments.
+ * [HEAL v3.1 2026-05-14] L'option Burger "Double viande +2.50€" (group=supplement)
+ * doit rester un SUPPLÉMENT — pas un choix viande exclusif. Le group_label
+ * explicite 'supplement' wins over le name-based heuristic.
  */
 export function kioskIsViandePaidExtra(extra) {
   const price = parseFloat(extra?.convert_price || extra?.price || 0);
@@ -50,6 +55,11 @@ export function kioskIsViandePaidExtra(extra) {
   if (gl.includes('viande') || gl.includes('meat') || gl.includes('protein')) {
     return true;
   }
+  // Explicit supplement group_label wins over the name heuristic — e.g.
+  // "Double viande" with group_label='supplement' is a supplément ticked
+  // alongside Cheddar/Jambon, not an exclusive viande choice.
+  const SUPPLEMENT_GROUPS = ['supplement', 'supplements', 'supplement_burger', 'supplement_bol', 'supp'];
+  if (gl && SUPPLEMENT_GROUPS.includes(gl)) return false;
   const name = String(extra?.name || '').toLowerCase();
   return name.includes('viande');
 }
