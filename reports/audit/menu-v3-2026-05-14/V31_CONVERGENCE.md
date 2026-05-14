@@ -239,3 +239,33 @@ Files modified (non-frozen, data + helper layer only):
 
 Owner mandate satisfied : **"WIZARD comme toujours"** — Sauce → Supp (with
 Double viande +2,50€) → Menu, no viande step, Crispy implicit.
+
+---
+
+## Known follow-up (out of scope this heal, surfaced for owner visibility)
+
+The current heal addresses owner spec "no viande step" half of the burger
+exception. The "implicit Crispy locked" half has no backend enforcement in
+this commit :
+
+- Burger card description text shows "Poulet crispy" (static `items.description`
+  field).
+- But because the burger wizard has no viande step, the resulting order's
+  `composition_snapshot.lines` will not include a "Viande 1: Poulet crispy"
+  row (compare with Big Classique 489 snapshot which DOES include
+  attribute_id=307 "Viande 1" + "Poulet mariné").
+
+Consequence : receipts + KDS tickets for Chicken Burger / Chicken Burger
+Special will NOT show "POULET CRISPY" as a configured viande line — only
+sauce + supplements + menu choices.
+
+Recommended next slice (owner gate before action) :
+- Option A : add a default auto-locked `item_variation` row "Poulet crispy"
+  on attr 307 for items 375/490 + adapt `composition_snapshot` capture so
+  the wizard emits a synthetic Crispy line.
+- Option B : extend the burger item description with a "INCLUS : Poulet
+  crispy" tag that surfaces in receipt instruction snapshot.
+- Option C : leave as-is — owner has stated burger is "always crispy" so
+  the receipt's product name "Chicken Burger" already implies it.
+
+Decision deferred to owner — does NOT block the current heal's GO verdict.
