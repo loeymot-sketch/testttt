@@ -1,0 +1,41 @@
+{
+  "run": "menu-v2-final-2026-05-14",
+  "round": 1,
+  "wave": "POS-CROSS-SUPPLEMENT",
+  "started_at": "2026-05-13T23:26:41.286Z",
+  "evidence_orders": [
+    {
+      "id": 1444,
+      "ok": false,
+      "reason": "not_found"
+    },
+    {
+      "id": 1445,
+      "ok": false,
+      "reason": "not_found"
+    },
+    {
+      "id": 1446,
+      "ok": false,
+      "reason": "not_found"
+    }
+  ],
+  "kds_api_check": {
+    "status": 401,
+    "orders_count": 0,
+    "contains_1444_chicken_burger": false,
+    "contains_1445_bowl_frites": false,
+    "contains_1446_multi": false
+  },
+  "oss_api_check": {
+    "status": 401,
+    "body_size_bytes": 28,
+    "contains_1444": false,
+    "contains_1445": false,
+    "contains_1446": false
+  },
+  "kds_ui": {
+    "cards_count_via_selectors": 22
+  },
+  "finished_at": "2026-05-13T23:27:03.704Z"
+}
