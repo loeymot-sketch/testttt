@@ -84,6 +84,15 @@ class LoginController extends Controller
         $user = User::where('email', $request['email'])->first();
         Auth::guard('web')->logout();
 
+        // [Sprint 5D Z6-01 2026-05-16] Revoke prior `auth_token` rows on relogin
+        // to prevent token sprawl. CLAUDE.md §9 explicitly required this; the
+        // original LoginController issued a fresh token every login without
+        // invalidating the previous one, leaving stale tokens valid for the
+        // full 480-min TTL after a user logged in from a second device or
+        // re-authenticated after a password change. Scoped by name so we
+        // never touch kiosk:order tokens (different name, separate concern).
+        $user->tokens()->where('name', 'auth_token')->delete();
+
         $this->token = $user->createToken(
             'auth_token',
             ['*'],
