@@ -7,6 +7,7 @@ use App\Models\CashDrawerSession;
 use App\Models\CashMovement;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
@@ -40,6 +41,13 @@ class CashDrawerEndpointsTest extends TestCase
         $this->cashierB = User::factory()->create(['branch_id' => $this->branchB->id]);
         $this->cashierB->assignRole('POS Operator');
         $this->cashierB->givePermissionTo('pos');
+
+        // [Sprint 1D / F-4] Endpoint suite covers happy-path reconcile with
+        // a +5€ variance designed to exercise the I3 arithmetic invariant.
+        // Neutralise the variance gate here — dedicated coverage is in
+        // tests/Feature/Cash/CashVarianceGateTest.php.
+        Config::set('cash.variance_threshold_eur', 999.0);
+        Config::set('cash.variance_manager_approval_required', false);
     }
 
     public function test_open_session_endpoint_creates_session(): void
