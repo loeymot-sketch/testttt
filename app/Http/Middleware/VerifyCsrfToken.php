@@ -17,6 +17,12 @@ class VerifyCsrfToken extends Middleware
         '/payment/cashfree/*',
         '/payment/phonepe/*',
         '/payment/iyzico/*',
-        '/payment/pesapal/*'
+        '/payment/pesapal/*',
+        // [Sprint 3A — Webhook idempotency 2026-05-16]
+        // Stripe + SenangPay POST these webhook endpoints from external
+        // origins without CSRF tokens. Authentication is enforced via
+        // provider signature (Stripe-Signature header / SenangPay HMAC).
+        '/payment/stripe-webhook/*',
+        '/payment/senangpay-webhook/*',
     ];
 }
