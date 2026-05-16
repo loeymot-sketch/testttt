@@ -148,6 +148,16 @@ class PosController extends AdminController
 
     public function quote(Request $request): \Illuminate\Http\JsonResponse
     {
+        // [Sprint 5B Z1-NEW-002 / Sister POS-A3] Gate `/api/admin/pos/quote`
+        // on permission:pos (alongside the constructor middleware which
+        // only covers `store`). The kiosk surface uses
+        // `/api/frontend/order/quote` (auth:sanctum + kiosk:order ability)
+        // which lives in a different route group — bypass perm check there
+        // so kiosk pricing checks keep working.
+        if (! $request->is('api/frontend/*')) {
+            abort_unless($request->user()?->can('pos'), 403);
+        }
+
         $request->validate([
             'branch_id' => ['nullable', 'numeric'],
             'customer_id' => ['nullable', 'numeric'],
