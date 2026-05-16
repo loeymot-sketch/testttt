@@ -40,7 +40,15 @@ class PosController extends AdminController
         $this->orderQuoteService = $orderQuoteService;
         $this->walkInCustomerResolver = $walkInCustomerResolver;
         $this->deliveryFeeService = $deliveryFeeService;
-        $this->middleware(['permission:pos'])->only('store');
+        // [Sprint 4 2026-05-16 — POS-A3 / Wave Z 5B] RBAC extended to walk-in
+        // customer endpoint via constructor middleware (closes the original
+        // Wave A POS-A3 PII leak), with `quote` excluded so the surface-aware
+        // guard inside the method itself can bypass kiosk callers — the same
+        // `PosController::quote` action is mounted on /api/frontend/order/quote
+        // (auth:sanctum + kiosk:order ability) and that path's users have no
+        // `pos` Spatie permission. Constructor-level `permission:pos` would
+        // 403 every kiosk pricing call.
+        $this->middleware(['permission:pos'])->except('quote');
     }
 
     public function store(PosOrderRequest $request): \Illuminate\Http\Response | OrderDetailsResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
