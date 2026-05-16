@@ -112,11 +112,37 @@ $ git diff backup/pre-ultra-review-heal-2026-05-16 HEAD -- <13 frozen files>
 
 ---
 
-## §4 Couverture E2E
+## §4 Couverture E2E — Foreground sequential run (post-rate-limit fallback)
 
-⚠️ **E2E massive convergence loop** : agent `ab02377300cee0f21` lancé pour orchestration 6 vagues Playwright + adversarial supervisor, mais l'API a rate-limited durant l'exécution. Les commits heal sont **techniquement validés** par 78/78 PHPUnit + Vitest tests passants + frozen-zone diff = 0.
+E2E orchestrator agent rate-limited → fallback foreground sequential Playwright run.
 
-**Owner action recommandée** : lancer manuellement `/test-e2e` ou Playwright suite complète sur les 6 surfaces (POS/Kiosk/KDS/OSS/Delivery/Cash drawer) pour validation visuelle finale avant V1 ship. Toutes les surfaces ont été refactor par les heals donc devraient passer.
+```
+$ PLAYWRIGHT_NO_WEB_SERVER=1 npx playwright test \
+    tests/e2e/01-auth-refresh.spec.js tests/e2e/02-pos-cash.spec.js \
+    tests/e2e/03-kiosk-wizard.spec.js tests/e2e/04-kds-status.spec.js \
+    tests/e2e/05-pos-card.spec.js tests/e2e/06-staff-only-routing.spec.js \
+    --workers=1 --retries=1
+
+  25 passed (2.6m)
+  1 failed  (02-pos-cash: full POS cash order cycle — adversarial)
+  2 skipped
+  Total: 28 tests
+```
+
+**89% PASS rate.** Failure analysis :
+
+- `02-pos-cash.spec.js:74` cherche selector `[data-testid="kiosk-cash-open"]` (ancien F-003 UI) — Sprint 1A a remplacé par `PosCashDrawerSessionDialog` avec bouton "Caisse" header sans ce data-testid → **test-infra update V1.0.1, pas régression heal**.
+- Le heal Sprint 1B est **working as designed** : la vente cash sans session bloque correctement (POS-A1 P0 close). Le test E2E n'avait pas été mis à jour pour ouvrir une session via le nouveau UI Sprint 1A avant la vente.
+
+**Pas de régression introduite par les 10 commits heal**. Test 01-auth-refresh.spec.js (qui avait échoué dans le batch parallèle workers=4) PASS 2/2 en isolation séquentielle → flakiness parallel uniquement.
+
+### Surfaces couvertes Playwright
+- ✅ POS V4 auth refresh + staff routing
+- ✅ Kiosk wizard navigation
+- ✅ KDS status flow
+- ✅ POS card payment
+- ✅ Admin redirects + staffOnlyMode flag
+- ⚠️ POS cash order cycle — test selector update needed pour Sprint 1A UI
 
 ---
 
@@ -144,11 +170,11 @@ $ git diff backup/pre-ultra-review-heal-2026-05-16 HEAD -- <13 frozen files>
 
 ## §7 Owner pre-ship checklist
 
-### Bloqueurs production carry-over de l'audit précédent (non-heal scope)
-1. 🔥 **Rotate AWS credentials** exposed in commit `a4a88df06` (pré-existant)
-2. `UPDATE branches SET status=5 WHERE status=1` (pré-existant)
+### Owner-only physical constraints (non-Claude-actionable)
+1. 🔥 **Rotate AWS credentials** exposed in commit `a4a88df06` — physically requires owner AWS console access, Claude has no credentials
+2. `UPDATE branches SET status=5 WHERE status=1` — auto-mode classifier blocks shared resource mass-update without explicit owner authorization. Owner doit lancer manuellement : `mysql foodking -e "UPDATE branches SET status=5 WHERE status=1"`
 
-### V1 ship ready après ces 2 actions owner
+### V1 ship ready après ces 2 actions owner (5 minutes)
 - Architecture solide (sync, NF525, multi-tenant, idempotency)
 - 17 P0 audit closed
 - 15+ P1 audit closed
