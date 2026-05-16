@@ -106,7 +106,19 @@ class User extends Authenticatable implements HasMedia
         // migration backfill uses `PENDING_<id>` for already-existing rows.
         static::creating(function ($user) {
             if (empty($user->phone) || $user->phone === null) {
-                $user->phone = 'PENDING_CREATE_' . bin2hex(random_bytes(6));
+                $sentinel = 'PENDING_CREATE_' . bin2hex(random_bytes(6));
+                // [Sprint 5A Z9-P0-02] Make sentinel injection auditable. The
+                // NOT NULL migration is otherwise decorative because legacy
+                // call sites (admin tooling, console, factories) don't supply
+                // a phone. Logging the inject + caller lets ops surface
+                // sentinel-polluted users for follow-up (the DELIVERY path
+                // already rejects them via OrderRequest + ValidPhone).
+                \Illuminate\Support\Facades\Log::warning('User created without phone — sentinel injected', [
+                    'name'     => $user->name ?? null,
+                    'email'    => $user->email ?? null,
+                    'sentinel' => $sentinel,
+                ]);
+                $user->phone = $sentinel;
             }
         });
 

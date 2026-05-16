@@ -212,10 +212,12 @@ class KDSDeliveryEnrichmentTest extends TestCase
         $this->assertArrayHasKey('order_address', $row);
         $this->assertNull($row['order_address'], 'DINE_IN order with no address must serialise order_address as null');
 
-        // Customer present even on dine-in (the name is useful for receipts);
-        // the contract just guarantees `address` is null in this case.
+        // [Sprint 5A Z9-P0-03] GDPR data-minimization: customer.name remains
+        // on dine-in (useful for receipts / table callout), but customer.phone
+        // is suppressed for non-delivery orders. The chef physically near the
+        // dine-in table doesn't need a tel: callback channel.
         $this->assertSame('Bob Surplace', $row['customer']['name'] ?? null);
-        $this->assertSame('+33677889900', $row['customer']['phone'] ?? null);
+        $this->assertNull($row['customer']['phone'] ?? null, 'customer.phone must be null on non-DELIVERY orders (Z9-P0-03)');
     }
 
     /** @test */

@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 
+use App\Enums\OrderType;
 use App\Libraries\AppLibrary;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -49,7 +50,12 @@ class SimpleOrderResource extends JsonResource
                 'latitude'  => $this->address->latitude,
                 'longitude' => $this->address->longitude,
             ] : null),
-            'customer_phone'               => $this->user?->phone,
+            // [Sprint 5A Z9-P0-03] GDPR data-minimization: ship customer phone
+            // ONLY for DELIVERY orders. The KDS/livreur surfaces need it; the
+            // admin sales-report / online-orders / POS surfaces do not, and
+            // shipping PII unconditionally over the wire is a data-protection
+            // defect even though the Vue UI already gated rendering.
+            'customer_phone'               => ((int) $this->order_type === OrderType::DELIVERY) ? $this->user?->phone : null,
         ];
     }
 }

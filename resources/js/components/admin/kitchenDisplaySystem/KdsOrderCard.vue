@@ -313,7 +313,15 @@ export default {
             return this.order?.customer?.name || '';
         },
         customerPhone() {
-            return this.order?.customer?.phone || '';
+            // [Sprint 5A Z9-P1-03] Hide Sprint 2B legacy sentinels from the
+            // tel: link / on-card display — `PENDING_<id>` / `PENDING_CREATE_*`
+            // are placeholders injected by User::creating for legacy paths
+            // and produce a broken `tel:PENDING_*` href otherwise.
+            const phone = this.order?.customer?.phone || '';
+            if (typeof phone === 'string' && phone.startsWith('PENDING_')) {
+                return '';
+            }
+            return phone;
         },
     },
     methods: {

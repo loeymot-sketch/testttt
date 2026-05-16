@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Enums\Ask;
+use App\Enums\OrderType;
 use App\Enums\PaymentStatus;
 use App\Libraries\AppLibrary;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -59,11 +60,14 @@ class KDSOrderDetailsResource extends JsonResource
                 'latitude'  => $this->address->latitude,
                 'longitude' => $this->address->longitude,
             ] : null),
+            // [Sprint 5A Z9-P0-03] GDPR data-minimization: customer.phone is
+            // shipped ONLY for DELIVERY orders. Dine-in/takeaway/kiosk KDS
+            // cards don't need (and shouldn't expose) the customer phone
+            // number; the Vue UI gated rendering on isDeliveryOrder but JSON
+            // wire still leaked phone to all KDS WebSocket subscribers.
             'customer'                            => $this->whenLoaded('user', fn () => $this->user ? [
                 'name'  => $this->user->name,
-                // E.164 normalization handled upstream (Sprint 2B); raw `phone`
-                // column is the canonical contact channel for delivery callbacks.
-                'phone' => $this->user->phone,
+                'phone' => ((int) $this->order_type === OrderType::DELIVERY) ? $this->user->phone : null,
             ] : null),
         ];
     }
