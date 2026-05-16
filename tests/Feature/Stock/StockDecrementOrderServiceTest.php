@@ -14,6 +14,7 @@ use App\Models\StockLevel;
 use App\Models\StockMovement;
 use App\Models\Tax;
 use App\Models\User;
+use App\Services\Cash\CashDrawerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
@@ -76,12 +77,22 @@ class StockDecrementOrderServiceTest extends TestCase
         $operator = User::factory()->create([
             'branch_id' => $branch->id,
             'password' => Hash::make('password123'),
+            // [Sprint 2B compat] users.phone NOT NULL.
+            'phone' => fake()->unique()->numerify('06########'),
         ]);
         $operator->assignRole('POS Operator');
         $operator->givePermissionTo('pos');
 
-        $customer = User::factory()->create(['branch_id' => $branch->id]);
+        $customer = User::factory()->create([
+            'branch_id' => $branch->id,
+            'phone' => fake()->unique()->numerify('06########'),
+        ]);
         $customer->assignRole('Customer');
+
+        // [Sprint 1B 2026-05-16] POS CASH path now requires an OPEN cash
+        // drawer session for the cashier — open one upfront so the legacy
+        // stock decrement scenarios stay focused on stock semantics.
+        app(CashDrawerService::class)->openSession($branch->id, $operator->id, 100.00);
 
         $tax = Tax::factory()->create([
             'tax_rate' => 0,

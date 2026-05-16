@@ -92,8 +92,16 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
 
         $this->admin = \Database\Factories\UserFactory::new()->create([
             'branch_id' => $this->branch->id,
+            // [Sprint 2B compat] users.phone NOT NULL.
+            'phone' => fake()->unique()->numerify('06########'),
         ]);
         $this->admin->assignRole('Admin');
+
+        // [Sprint 1B 2026-05-16] POS CASH path now requires an OPEN cash
+        // drawer session — open one for the admin actor so the BL2 audit
+        // tests can issue PAID POS orders without the cash guard tripping.
+        app(\App\Services\Cash\CashDrawerService::class)
+            ->openSession($this->branch->id, $this->admin->id, 100.00);
     }
 
     public function test_pos_order_with_manual_discount_writes_discount_applied_audit(): void

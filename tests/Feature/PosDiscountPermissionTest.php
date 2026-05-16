@@ -49,6 +49,8 @@ class PosDiscountPermissionTest extends TestCase
         $this->customer = User::factory()->create([
             'branch_id' => $this->branch->id,
             'password' => Hash::make('password'),
+            // [Sprint 2B compat] users.phone NOT NULL.
+            'phone' => fake()->unique()->numerify('06########'),
         ]);
         $this->customer->assignRole('Customer');
 
@@ -85,8 +87,17 @@ class PosDiscountPermissionTest extends TestCase
         $user = User::factory()->create([
             'branch_id' => $this->branch->id,
             'password' => Hash::make('password'),
+            // [Sprint 2B compat] users.phone NOT NULL.
+            'phone' => fake()->unique()->numerify('06########'),
         ]);
         $user->syncPermissions(array_merge(['pos', 'pos-orders'], $permissions));
+
+        // [Sprint 1B 2026-05-16] POS CASH path now requires an open cash
+        // drawer session — open one for the operator so the discount tests
+        // can focus on discount semantics, not the cash gate.
+        app(\App\Services\Cash\CashDrawerService::class)
+            ->openSession($this->branch->id, $user->id, 100.00);
+
         return $user;
     }
 

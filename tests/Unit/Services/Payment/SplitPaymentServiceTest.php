@@ -6,6 +6,8 @@ use App\Enums\PosPaymentMethod;
 use App\Models\Branch;
 use App\Models\Order;
 use App\Models\OrderPayment;
+use App\Models\User;
+use App\Services\Cash\CashDrawerService;
 use App\Services\Payments\SplitPaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -118,7 +120,19 @@ class SplitPaymentServiceTest extends TestCase
 
     public function test_persist_two_tranches_creates_two_rows_with_branch_id(): void
     {
+        $this->seedSpatieRoles();
         $order = $this->createOrder(25.00, branchId: 1);
+
+        // [Sprint 1B 2026-05-16] CASH tranche path needs an authenticated
+        // cashier with an OPEN cash drawer session on the order's branch.
+        $cashier = User::factory()->create([
+            'branch_id' => $order->branch_id,
+            'phone' => fake()->unique()->numerify('06########'),
+        ]);
+        $cashier->assignRole('POS Operator');
+        $this->actingAs($cashier);
+        app(CashDrawerService::class)->openSession((int) $order->branch_id, $cashier->id, 100.00);
+
         $service = app(SplitPaymentService::class);
 
         $persisted = $service->persistTranches($order, [

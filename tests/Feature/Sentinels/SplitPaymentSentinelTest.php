@@ -53,14 +53,23 @@ class SplitPaymentSentinelTest extends TestCase
         $this->customerA = User::factory()->create([
             'branch_id' => $this->branchA->id,
             'password' => Hash::make('password'),
+            // [Sprint 2B compat] users.phone NOT NULL.
+            'phone' => fake()->unique()->numerify('06########'),
         ]);
         $this->customerA->assignRole('Customer');
 
         $this->cashierA = User::factory()->create([
             'branch_id' => $this->branchA->id,
             'password' => Hash::make('password'),
+            'phone' => fake()->unique()->numerify('06########'),
         ]);
         $this->cashierA->assignRole('POS Operator');
+
+        // [Sprint 1B 2026-05-16] POS CASH path now requires an OPEN cash
+        // drawer session for the cashier — open one upfront so sentinel
+        // scenarios stay focused on split-payment semantics.
+        app(\App\Services\Cash\CashDrawerService::class)
+            ->openSession($this->branchA->id, $this->cashierA->id, 100.00);
 
         $tax = Tax::factory()->create([
             'name' => 'TVA 0%',

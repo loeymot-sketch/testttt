@@ -12,6 +12,7 @@ use App\Models\ItemCategory;
 use App\Models\OrderPayment;
 use App\Models\Tax;
 use App\Models\User;
+use App\Services\Cash\CashDrawerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
@@ -55,12 +56,15 @@ class SplitPaymentEndToEndTest extends TestCase
         $this->customer = User::factory()->create([
             'branch_id' => $this->branch->id,
             'password' => Hash::make('password'),
+            // [Sprint 2B compat] users.phone NOT NULL — provide unique sentinel.
+            'phone' => fake()->unique()->numerify('06########'),
         ]);
         $this->customer->assignRole('Customer');
 
         $this->operator = User::factory()->create([
             'branch_id' => $this->branch->id,
             'password' => Hash::make('password'),
+            'phone' => fake()->unique()->numerify('06########'),
         ]);
         $this->operator->assignRole('POS Operator');
 
@@ -85,6 +89,13 @@ class SplitPaymentEndToEndTest extends TestCase
             'price' => 25.00,
             'status' => Status::ACTIVE,
         ]);
+
+        // [Sprint 1B 2026-05-16] NF525 cash trail — POS direct & split CASH
+        // require an OPEN cash drawer session for the cashier. Opening one
+        // upfront keeps the existing split-payment scenarios green; the new
+        // PosCashTrailTest suite covers the "no session → 422" path.
+        app(CashDrawerService::class)
+            ->openSession($this->branch->id, $this->operator->id, 100.00);
     }
 
     private function basePayload(array $overrides = []): array
