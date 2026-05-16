@@ -62,7 +62,12 @@ class KitchenDisplaySystemOrderService
 
             $userBranchId = auth()->user()->branch_id ?? 0;
 
-            $query = Order::with('orderItems')
+            // [Sprint 2A DEL-3 2026-05-16] Eager-load `address` + `user` so
+            // KDSOrderDetailsResource can expose order_address + customer for
+            // DELIVERY orders (chef + livreur). Order::user() is BranchScope-
+            // exempt + withTrashed; Order::address() is hasOne with no scope.
+            // No isolation risk — relations join via order_id only.
+            $query = Order::with(['orderItems', 'address', 'user'])
                 ->whereIn('status', KitchenReleaseRule::visibleStatuses())
                 ->where(function ($query) {
                     $query->where('payment_status', PaymentStatus::PAID)

@@ -35,6 +35,21 @@ class SimpleOrderResource extends JsonResource
             'status'                       => $this->status,
             'status_name'                  => trans('orderStatus.' . $this->status),
             'customer_name'                => $this->user?->name,
+            // [Sprint 2A DEL-3 2026-05-16] Delivery enrichment subset for the
+            // admin orders list / online orders / POS sales report screens that
+            // consume SimpleOrderResource. Mirrors KDSOrderDetailsResource shape
+            // for downstream JS consumers (KdsOrderCard delivery block, mobile
+            // courier app). schema-anchored: only fields backed by columns —
+            // `apartment` is nullable, `instructions`/`floor` columns do NOT
+            // exist (see migration 2023_02_20_180253).
+            'order_address'                => $this->whenLoaded('address', fn () => $this->address ? [
+                'label'     => $this->address->label,
+                'address'   => $this->address->address,
+                'apartment' => $this->address->apartment,
+                'latitude'  => $this->address->latitude,
+                'longitude' => $this->address->longitude,
+            ] : null),
+            'customer_phone'               => $this->user?->phone,
         ];
     }
 }

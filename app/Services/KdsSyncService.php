@@ -54,7 +54,10 @@ class KdsSyncService
 
             // Mirror KitchenDisplaySystemOrderService::list active window
             // (today's standard orders + advance orders scheduled today/overdue).
-            $ordersQuery = Order::with('orderItems')
+            // [Sprint 2A DEL-3 2026-05-16] Mirror eager-load of address/user so
+            // sync-delta payloads carry delivery info parity with the full /list
+            // endpoint (KDSOrderDetailsResource::toArray reads these relations).
+            $ordersQuery = Order::with(['orderItems', 'address', 'user'])
                 ->whereIn('status', $activeStatuses)
                 ->where('updated_at', '>=', $sinceForDb)
                 ->where(function ($q) {

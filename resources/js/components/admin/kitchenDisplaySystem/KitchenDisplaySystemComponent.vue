@@ -469,6 +469,34 @@
                     v-if="onlineOrder.token">
                     {{ $t("label.token_no") }}: <span class="text-heading font-medium">{{ onlineOrder.token }}</span>
                   </p>
+                  <!-- [Sprint 2A DEL-3 2026-05-16] Legacy delivery block —
+                       online lane = DELIVERY orders only (filter at line
+                       1690 below). Even if the operator falls back to
+                       ?v2=0, the livreur must still see address + phone +
+                       name. Backend KDSOrderDetailsResource now provides
+                       order_address + customer on every payload. -->
+                  <div
+                    v-if="kdsLegacyShouldShowDelivery(onlineOrder)"
+                    class="mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]"
+                    data-testid="kds-legacy-delivery"
+                  >
+                    <p v-if="kdsLegacyDeliveryAddress(onlineOrder)" class="text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1">
+                      <span aria-hidden="true">&#128205;</span>
+                      <span class="break-words">{{ kdsLegacyDeliveryAddress(onlineOrder) }}</span>
+                    </p>
+                    <p v-if="onlineOrder.customer && onlineOrder.customer.name" class="text-xs leading-snug text-[#115E59] flex items-center gap-1">
+                      <span aria-hidden="true">&#128100;</span>
+                      <span>{{ onlineOrder.customer.name }}</span>
+                    </p>
+                    <a
+                      v-if="onlineOrder.customer && onlineOrder.customer.phone"
+                      :href="`tel:${onlineOrder.customer.phone}`"
+                      class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+                    >
+                      <span aria-hidden="true">&#128241;</span>
+                      <span>{{ onlineOrder.customer.phone }}</span>
+                    </a>
+                  </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. -->
                   <button type="button" @click="openFilterSlide($event)"
                     class="filter group text-xs font-[300] flex justify-between items-center w-full"
@@ -1057,25 +1085,46 @@ export default {
     direction() {
       return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
     },
-    // [kds/sprint-2 V-5] Feature flag for the new V2 layout. Order of precedence:
-    //   1. URL param ?v2=1 (preview without touching localStorage)
-    //   2. localStorage 'kds.v2_enabled' === '1' (per-device opt-in)
-    //   3. Default false → legacy 4-column layout stays
+    // [kds/sprint-2 V-5 / Sprint 3C 2026-05-16] V2 layout = PRODUCTION DEFAULT
+    // since 2026-05-16. The original gated rollout (default false, ?v2=1 opt-in)
+    // left the V2 P0 fixes (consolidated banner, fixed-height card, allergen
+    // pill, age stripe, single-FIFO grid) inert in production — kitchen still
+    // saw the legacy 4-column UI with the accordion-closed-by-default bug + 5
+    // stacked banners eating ~10% screen height.
+    //
+    // New order of precedence (inverted):
+    //   1. URL param ?v2=0           — emergency rollback to legacy (per-tab)
+    //   2. URL param ?v2=1           — explicit V2 (per-tab)
+    //   3. localStorage kds.v2_enabled === '0' — per-device legacy opt-out
+    //   4. localStorage kds.v2_enabled === '1' — per-device V2 force-on (legacy)
+    //   5. Default                   — V2 (new behaviour)
+    //
+    // The legacy 4-column path remains intact in the v-else branch so
+    // operators in the kitchen can revert in one URL keystroke if a
+    // regression surfaces during the rollout window.
     useV2Layout() {
       try {
         if (typeof window === 'undefined') {
-          return false;
-        }
-        const params = new URLSearchParams(window.location.search || '');
-        if (params.get('v2') === '1') {
+          // SSR or unit tests without window: default to V2 unchanged.
           return true;
         }
-        if (params.get('v2') === '0') {
+        const params = new URLSearchParams(window.location.search || '');
+        const urlV2 = params.get('v2');
+        if (urlV2 === '0') {
           return false;
         }
-        return window.localStorage?.getItem('kds.v2_enabled') === '1';
+        if (urlV2 === '1') {
+          return true;
+        }
+        const stored = window.localStorage?.getItem('kds.v2_enabled');
+        if (stored === '0') {
+          return false;
+        }
+        // null / '1' / any other value → V2 default.
+        return true;
       } catch (_e) {
-        return false;
+        // Fail-safe: if storage is denied, still render the modern UI.
+        return true;
       }
     },
     // [iter15-mega-fix C-008 run-3 2026-05-10] Supersedes the run-1/run-2
@@ -1291,6 +1340,36 @@ export default {
     this._kdsSyncStampTimer = setInterval(() => { this.syncNowTick = Date.now(); }, 1000);
   },
   methods: {
+    // [Sprint 2A DEL-3 2026-05-16] Legacy template delivery-block helpers.
+    // Mirror the V2 KdsOrderCard `isDeliveryOrder` + `deliveryAddressLine`
+    // computed logic for the rollback path (?v2=0 / kds.v2_enabled='0').
+    // Source-truth precedence identical to V2 to avoid drift between the
+    // two UIs the kitchen could switch between in a single shift.
+    kdsLegacyShouldShowDelivery(order) {
+      if (!order) {
+        return false;
+      }
+      const surface = String(order.source_surface || '').toLowerCase();
+      if (surface === 'delivery') {
+        return true;
+      }
+      // OrderType::DELIVERY === 5 (app/Enums/OrderType.php).
+      return Number(order.order_type) === 5;
+    },
+    kdsLegacyDeliveryAddress(order) {
+      const a = order && order.order_address;
+      if (!a) {
+        return '';
+      }
+      const parts = [];
+      if (a.apartment) {
+        parts.push(a.apartment);
+      }
+      if (a.address) {
+        parts.push(a.address);
+      }
+      return parts.join(' — ');
+    },
     // [kds/sprint-2 V-5] V2 grid event handlers — both delegate to the same
     // store action `kitchenDisplaySystemOrder/changeStatus` used by the
     // legacy 4-column layout. KDSOrderStateMachine on the server stays the

@@ -77,6 +77,32 @@
 
     <!-- BODY -->
     <div class="kds-card__body">
+      <!-- [Sprint 2A DEL-3 2026-05-16] Delivery block — only renders when
+           the order is destined for delivery AND the backend has populated
+           `order_address` (i.e. the eager-load was applied). Without this,
+           the livreur sees a token + delivery_time and literally cannot
+           deliver. Kept visually quiet (border-left accent, monospace
+           latin digits for the phone) so it never out-screams the queue
+           number or the elapsed timer. -->
+      <div v-if="isDeliveryOrder" class="kds-card__delivery" data-testid="kds-card-delivery">
+        <div v-if="deliveryAddressLine" class="kds-card__delivery-row">
+          <span class="kds-card__delivery-icon" aria-hidden="true">&#128205;</span>
+          <span class="kds-card__delivery-text">{{ deliveryAddressLine }}</span>
+        </div>
+        <div v-if="customerName" class="kds-card__delivery-row kds-card__delivery-row--muted">
+          <span class="kds-card__delivery-icon" aria-hidden="true">&#128100;</span>
+          <span class="kds-card__delivery-text">{{ customerName }}</span>
+        </div>
+        <a
+          v-if="customerPhone"
+          class="kds-card__delivery-row kds-card__delivery-phone keep-latin"
+          :href="`tel:${customerPhone}`"
+          :aria-label="`Appeler ${customerName || ''} ${customerPhone}`.trim()"
+        >
+          <span class="kds-card__delivery-icon" aria-hidden="true">&#128241;</span>
+          <span class="kds-card__delivery-text">{{ customerPhone }}</span>
+        </a>
+      </div>
       <template v-for="(item, idx) in order.order_items" :key="item.id || idx">
         <div class="kds-card__item-block">
           <KdsOrderLine
@@ -252,6 +278,42 @@ export default {
             const m = Math.floor(this.elapsedSeconds / 60);
             const r = this.elapsedSeconds % 60;
             return `Commande ${this.order.queue_number || this.order.id}, source ${this.sourceLabel}, ${this.stateLabel}, attente ${m} minutes ${r} secondes`;
+        },
+        // [Sprint 2A DEL-3 2026-05-16] Delivery-context computeds.
+        // Source-truth precedence: explicit source_surface === 'delivery'
+        // (set by Order.php boot creating hook) OR legacy order_type === 5
+        // (OrderType::DELIVERY) — backwards-compatible with rows created
+        // before the source_surface column was added.
+        isDeliveryOrder() {
+            const surface = String(this.order?.source_surface || '').toLowerCase();
+            if (surface === 'delivery') {
+                return true;
+            }
+            // OrderType::DELIVERY === 5 (app/Enums/OrderType.php).
+            return Number(this.order?.order_type) === 5;
+        },
+        deliveryAddress() {
+            return this.order?.order_address || null;
+        },
+        deliveryAddressLine() {
+            const a = this.deliveryAddress;
+            if (!a) {
+                return '';
+            }
+            const parts = [];
+            if (a.apartment) {
+                parts.push(a.apartment);
+            }
+            if (a.address) {
+                parts.push(a.address);
+            }
+            return parts.join(' — ');
+        },
+        customerName() {
+            return this.order?.customer?.name || '';
+        },
+        customerPhone() {
+            return this.order?.customer?.phone || '';
         },
     },
     methods: {
@@ -439,6 +501,61 @@ export default {
 .kds-card__item-block:first-child {
     border-top: none;
 }
+
+/* [Sprint 2A DEL-3 2026-05-16] Delivery block — sits at the top of the
+   card body, quiet teal accent (matches KDS_SOURCE.DELIVERY palette in
+   helpers/kdsSource.js). Never out-screams the queue number or timer. */
+.kds-card__delivery {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    margin: 4px 0 6px;
+    border-radius: 8px;
+    background: #F0FDFA;
+    border-left: 3px solid #0F766E;
+}
+.kds-card__delivery-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    line-height: 1.3;
+    color: #0F766E;
+    font-weight: 600;
+    text-decoration: none;
+}
+.kds-card__delivery-row--muted {
+    color: #115E59;
+    font-weight: 500;
+}
+.kds-card__delivery-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.kds-card__delivery-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.kds-card__delivery-phone {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+}
+.kds-card__delivery-phone:hover {
+    text-decoration: underline;
+}
+.kds-card__delivery-phone:focus-visible {
+    outline: 2px solid #0F766E;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
 .kds-card__body-fade {
     position: sticky;
     bottom: 0;

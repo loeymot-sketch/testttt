@@ -61,6 +61,11 @@ const mountKds = (displayMode) => shallowMount(TestKdsComponent, {
             SwiperSlide: true,
             LoadingComponent: true,
             ConnectionStatusBanner: true,
+            // [Sprint 3C 2026-05-16] V2 grid stays mounted under v-if when
+            // useV2Layout returns true (production default). This test asserts
+            // legacy Swiper RTL — stub the V2 wrapper so it does not register
+            // its own kbd / ticker side effects in the smoke render.
+            KdsV2Grid: true,
         },
         mocks: {
             $store: makeStore(displayMode),
@@ -74,6 +79,13 @@ const mountKds = (displayMode) => shallowMount(TestKdsComponent, {
 describe('KDS Swiper RTL quickwin', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        // [Sprint 3C 2026-05-16] Pin legacy layout for the Swiper assertions
+        // below — V2 grid is now production-default and does not render the
+        // legacy Swiper at all. ?v2=0 is the documented emergency revert path
+        // and the test exercises legacy behaviour explicitly.
+        const url = new URL(window.location.href);
+        url.searchParams.set('v2', '0');
+        window.history.replaceState({}, '', url.toString());
     });
 
     it('uses ltr by default and passes it to Swiper', () => {

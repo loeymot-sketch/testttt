@@ -44,6 +44,27 @@ class KDSOrderDetailsResource extends JsonResource
             'queue_number'                        => $this->queue_number,
             'order_items'                         => OrderItemResource::collection($this->orderItems->loadMissing('orderItem')),
             'table_name'                          => $this->diningTable?->name,
+            // [Sprint 2A DEL-3 2026-05-16] Expose delivery address + customer
+            // contact so the chef / livreur can actually fulfil DELIVERY orders.
+            // Order::address() is hasOne (not orderAddress) — see Order.php:147.
+            // Schema (migration 2023_02_20_180253) only ships:
+            //   id, order_id, user_id, label, address, apartment, latitude, longitude.
+            // `instructions` / `floor` columns do NOT exist — do not expose phantom fields.
+            // User is BranchScope-exempt + withTrashed() (see Order::user()), so the
+            // eager-load by KitchenDisplaySystemOrderService is multi-tenant-safe.
+            'order_address'                       => $this->whenLoaded('address', fn () => $this->address ? [
+                'label'     => $this->address->label,
+                'address'   => $this->address->address,
+                'apartment' => $this->address->apartment,
+                'latitude'  => $this->address->latitude,
+                'longitude' => $this->address->longitude,
+            ] : null),
+            'customer'                            => $this->whenLoaded('user', fn () => $this->user ? [
+                'name'  => $this->user->name,
+                // E.164 normalization handled upstream (Sprint 2B); raw `phone`
+                // column is the canonical contact channel for delivery callbacks.
+                'phone' => $this->user->phone,
+            ] : null),
         ];
     }
 }
