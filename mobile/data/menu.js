@@ -1,15 +1,28 @@
-// Le Cayenne — Catalogue mobile aligné FoodKing config/menu.php (SSOT)
+// Le Cayenne — Catalogue mobile aligné FoodKing system central (SSOT = DB seed commands)
 // [MENU-RESET 2026-05-13] Restructuration globale : 9 catégories visibles.
 // [HEAL-LIGHT V2 2026-05-14] Owner-validated spec: 11 catégories (Burgers + Menu enfant).
+// [MOBILE-REALIGNMENT 2026-05-16] composer_profile hardcoded mirroring DB shape for
+// future API wireup (when owner connects mobile to backend, swap data source — render
+// layer stays identical, no rewrites). Mobile stays standalone for now.
 //
-// Source de vérité : /config/menu.php + artisan menu:heal-light-v2
+// SSOT (source of truth) = system central :
+//   - app/Console/Commands/MenuResetLeCayenneCommand.php (2026-05-13)
+//   - app/Console/Commands/MenuHealLightV2Command.php (2026-05-14)
+//   - DB tables: items, item_variations, item_extras, item_addons,
+//     item_wizard_profiles, item_wizard_steps
+// /config/menu.php = STALE pre-reset documentation (15 sauces / €1 supps) — DO NOT trust.
+//
 // Catégories : Sandwich Cayenne, Galette, Sandwich Classique, Burgers, Tacos,
 //              Bols Gourmands, Frites, Suppléments, Desserts, Boissons, Menu enfant.
 // Viandes (4) : Poulet mariné, Poulet curry, Poulet tandoori, Poulet crispy.
 // Sauces (11) : Mayonnaise, Ketchup, Algérienne, Samouraï, Curry, Andalouse,
 //               Harissa, Hannibal, Blanche, Sauce fromagère maison, Spicy.
-// Bols : 8 items (Frites/Riz × 4 viandes) @ 8.90€ + composer_profile (sauce + supp + drink + gratiné).
-// Frites : composer_profile custom (style Nature/+Cheddar/+Cheddar+Oignons).
+// Suppléments (9 @ 0.90€) : Cheddar, Raclette, Emmental, Œuf, Boursin, Légumes sautés,
+//                            Jambon, Oignon frais, Champignons.
+// Suppléments bols (4) : Oignon frais 0.90€, Jambon 0.90€, Champignons 0.90€, Boule gratinée 2.00€.
+// Bols : 8 items (Frites/Riz × 4 viandes) @ 8.90€ + composer 'custom' (sauce + supp_bols + drink).
+// Frites : composer 'custom' (style Nature/+Cheddar/+Cheddar+Oignons).
+// Drink addon Bols : opt-in optional, 1 boisson du catalogue Boissons (8 choix) au prix unitaire.
 
 (function () {
   'use strict';
@@ -47,9 +60,9 @@
     // Sandwich Classique (1 + Big)
     'sandwich-classique-faluche': 'generated_sandwich-classique-pain.png',
     'big-classique':              'generated_sandwich-classique-pain.png',
-    // Burgers (2 — heal-light v2 NEW)
-    'chicken-burger': 'generated_burger-cheese-burger.png',
-    'big-chicken':    'generated_burger-double-cheese-burger.png',
+    // Burgers (2 — heal-light v2 NEW) — assets aliased from existing kiosk generated_*.png
+    'chicken-burger': 'generated_chicken-burger.png',
+    'big-chicken':    'generated_big-burger.png',
     // Tacos (2)
     'tacos-1-viande': 'generated_tacos-m-1-viande.png',
     'big-tacos-2-viandes': 'generated_tacos-l-2-viandes.png',
@@ -234,7 +247,7 @@
 
   function mkItem(id, slug, category_id, name, price, description, opts) {
     opts = opts || {};
-    return {
+    const item = {
       id, slug, category_id, name, price, description,
       thumb: 'item-' + slug,
       image: imgFor(slug),
@@ -248,6 +261,7 @@
       is_halal: opts.is_halal !== false,
       is_vegetarian: !!opts.is_vegetarian,
       viandes: opts.viandes ?? 0,
+      viande_count: opts.viandes ?? 0, // canonical field name (kiosk parity)
       has_sauce: opts.has_sauce !== false,
       has_crudites: !!opts.has_crudites,
       has_supplements: opts.has_supplements !== false,
@@ -257,8 +271,118 @@
       sauce_locked: opts.sauce_locked || null,
       bol_meat_fixed: opts.bol_meat_fixed || null,
       bol_sauce_default: opts.bol_sauce_default || null,
+      wizard_template: opts.wizard_template || null, // item-level override (kiosk parity)
       allergens: defaultAllergensFor(category_id, opts),
     };
+    // [MOBILE-REALIGNMENT 2026-05-16] composer_profile hardcoded for V0 standalone,
+    // mirrors DB shape (item_wizard_profiles + item_wizard_steps) so future API wireup
+    // = just swap data source. Render layer reads item.composer_profile.steps[].
+    if (opts.has_bol_wizard) {
+      item.composer_profile = buildBolComposerProfile(item, opts);
+    } else if (opts.has_frites_style && category_id === 7) {
+      item.composer_profile = buildFritesComposerProfile(item, opts);
+    }
+    return item;
+  }
+
+  // -------------------------------------------------------------------------
+  // COMPOSER PROFILE HELPERS — mirror DB shape (item_wizard_profiles)
+  // Future API wireup : swap these for `item.composer_profile` from API response.
+  // Shape: { template, version, is_published, steps: [{ step_key, label,
+  //         source_type, position, min_select, max_select, addon_role?, choices[] }] }
+  // -------------------------------------------------------------------------
+  function buildBolComposerProfile(item, opts) {
+    // Sauce default ID resolved from name (bol_sauce_default = "Curry" → 's-curry')
+    const defaultSauce = opts.bol_sauce_default
+      ? (SAUCES.find(s => s.name === opts.bol_sauce_default) || {})
+      : {};
+    return {
+      template: 'bol',
+      version: 1,
+      is_published: true,
+      steps: [
+        {
+          step_key: 'sauce',
+          label: 'Sauce',
+          source_type: 'item_attribute',
+          position: 1,
+          min_select: 1,
+          max_select: 1,
+          allow_repeat: false,
+          addon_role: null,
+          default_choice_id: defaultSauce.id || null,
+          choices: SAUCES.map(s => ({
+            id: s.id, name: s.name, price: 0, image: s.image,
+            is_default: s.id === defaultSauce.id,
+            is_spicy: !!s.is_spicy,
+          })),
+        },
+        {
+          step_key: 'bol_supplements',
+          label: 'Suppléments du bol',
+          source_type: 'extra_group',
+          position: 2,
+          min_select: 0,
+          max_select: 4,
+          allow_repeat: false,
+          addon_role: null,
+          default_choice_id: null,
+          choices: SUPPLEMENTS_BOLS.map(s => ({
+            id: s.id, name: s.name, price: s.price, image: null, is_default: false,
+          })),
+        },
+        {
+          step_key: 'bol_drink',
+          label: 'Ajouter une boisson',
+          source_type: 'addon',
+          addon_role: 'drink',
+          position: 3,
+          min_select: 0,
+          max_select: 1,
+          allow_repeat: false,
+          default_choice_id: null,
+          choices: FORMULE_DRINKS.map(d => ({
+            id: d.id, name: d.name, price: priceForDrinkAddon(d.id), image: d.image, emoji: d.emoji, is_default: false,
+          })),
+        },
+      ],
+    };
+  }
+
+  function buildFritesComposerProfile(item, opts) {
+    return {
+      template: 'frites',
+      version: 1,
+      is_published: true,
+      steps: [
+        {
+          step_key: 'frites_style',
+          label: 'Style de frites',
+          source_type: 'item_attribute',
+          position: 1,
+          min_select: 1,
+          max_select: 1,
+          allow_repeat: false,
+          addon_role: null,
+          default_choice_id: null, // Nature = id null
+          choices: FRITES_STYLES.map(fs => ({
+            id: fs.id, name: fs.name, price: fs.price, image: fs.image, emoji: fs.emoji,
+            is_default: !!fs.is_default,
+          })),
+        },
+      ],
+    };
+  }
+
+  // Drink prices for bol addon — read from Boissons catalogue (cat 10) by slug match.
+  // Used by composer profile builder above. Returns the catalogue price for the drink
+  // (e.g. d-coca → 1.50€, d-eau → 1.00€). Same drink slugs as FORMULE_DRINKS.
+  function priceForDrinkAddon(formuleDrinkId) {
+    const drinkSlugMap = {
+      'd-coca': 1.50, 'd-coca-zero': 1.50, 'd-fanta': 1.50, 'd-sprite': 1.50,
+      'd-oasis': 1.50, 'd-orangina': 1.50, 'd-eau': 1.00, 'd-capri': 1.50,
+    };
+    return drinkSlugMap[formuleDrinkId] !== undefined ? drinkSlugMap[formuleDrinkId] : 1.50;
   }
 
   // ====== SANDWICH CAYENNE (cat 1) — heal-light v2 prix 7.00→7.50 + Big Cayenne ======
@@ -405,6 +529,10 @@
       const s = SUPPLEMENTS_BOLS.find(x => x.id === id);
       if (s) total += s.price;
     });
+    // Bol drink addon (optionnel — prix catalogue Boissons : 1.50€ standard / 1.00€ eau)
+    if (opts.bolDrinkId) {
+      total += priceForDrinkAddon(opts.bolDrinkId);
+    }
     // Formule menu
     if (opts.formuleId) {
       const f = FORMULES.find(x => x.id === opts.formuleId);
@@ -457,8 +585,13 @@
       return ITEMS.filter(i => i.category_id === categoryId);
     },
     priceFor,
+    priceForDrinkAddon, // bol drink addon pricing (mirror DB addon item price)
     defaultCruditeIds,
     defaultSauceId,
+    // [MOBILE-REALIGNMENT 2026-05-16] composer profile helpers — exposed so wizard
+    // render layer can lazy-build from item OR read API response in future wireup.
+    buildBolComposerProfile,
+    buildFritesComposerProfile,
   };
 
   // Backwards-compat globals

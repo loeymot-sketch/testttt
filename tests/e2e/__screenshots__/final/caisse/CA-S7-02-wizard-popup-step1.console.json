@@ -1,0 +1,12 @@
+[
+  {
+    "level": "log",
+    "text": "[POS-WIZARD] wizard_template from API: tacos",
+    "location": {
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1778750501",
+      "lineNumber": 321,
+      "columnNumber": 20
+    },
+    "ts": 1778750508547
+  }
+]

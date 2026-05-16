@@ -1,0 +1,42 @@
+[
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://localhost:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778714802917
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://localhost:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778714804860
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://localhost:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778714809274
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://localhost:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778714809276
+  }
+]

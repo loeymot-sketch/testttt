@@ -35,6 +35,8 @@ const STEP = {
   DRINK: 'drink',
   FRITES_STYLE: 'fritesStyle',
   FRITES_SAUCE: 'fritesSauce',
+  BOL_SUPPLEMENTS: 'bolSupplements', // [MOBILE-REALIGNMENT 2026-05-16] Bols custom composer
+  BOL_DRINK: 'bolDrink',             // [MOBILE-REALIGNMENT 2026-05-16] Bols optional drink addon
   RECAP: 'recap',
 };
 
@@ -47,6 +49,8 @@ const STEP_LABELS = {
   drink: 'Boisson',
   fritesStyle: 'Style de frites',
   fritesSauce: 'Sauce frites',
+  bolSupplements: 'Suppléments du bol',
+  bolDrink: 'Ajouter une boisson',
   recap: 'Récapitulatif',
 };
 
@@ -56,14 +60,16 @@ const STEP_LABELS = {
 function computeActiveSteps(item, selections) {
   if (!item) return [STEP.RECAP];
   const cat = window.LC.menu.findCategory(item.category_id);
-  const template = (cat && cat.wizard_template) || 'simple';
+  // [MOBILE-REALIGNMENT 2026-05-16] item.wizard_template priority over category
+  // (kiosk parity: KW.vue:890-895 — item override allowed for special items).
+  const template = item.wizard_template || (cat && cat.wizard_template) || 'simple';
   const steps = [];
 
   // Per-template canonical sequence, filtered by item flags
   switch (template) {
     case 'tacos':
     case 'sandwich':
-      if (item.viandes > 0) steps.push(STEP.VIANDES);
+      if ((item.viande_count || item.viandes) > 0) steps.push(STEP.VIANDES);
       if (item.has_sauce) steps.push(STEP.SAUCE);
       if (item.has_crudites) steps.push(STEP.CRUDITES);
       if (item.has_supplements !== false) steps.push(STEP.SUPPLEMENTS);
@@ -100,6 +106,22 @@ function computeActiveSteps(item, selections) {
       if (item.has_menu_addon) steps.push(STEP.MENU);
       if (item.has_supplements !== false) steps.push(STEP.SUPPLEMENTS);
       break;
+    case 'custom':
+      // [MOBILE-REALIGNMENT 2026-05-16] Custom composer profile driven by
+      // item.composer_profile.steps[] (DB-mirror shape). Bols + Frites use 'custom'.
+      // Reads from API in future wireup, hardcoded today via mobile/data/menu.js helpers.
+      if (item.has_bol_wizard) {
+        if (item.has_sauce) steps.push(STEP.SAUCE);            // step_key=sauce
+        steps.push(STEP.BOL_SUPPLEMENTS);                       // step_key=bol_supplements
+        steps.push(STEP.BOL_DRINK);                             // step_key=bol_drink (addon role)
+        break;
+      }
+      if (item.has_frites_style) {
+        steps.push(STEP.FRITES_STYLE);                          // step_key=frites_style
+        break;
+      }
+      // Unknown custom profile — fall through to simple
+      // FALLTHROUGH
     case 'simple':
     default:
       // Cas spéciaux : frites standalone, sauce sup, ou direct add
@@ -135,7 +157,7 @@ function computeActiveSteps(item, selections) {
 function canAdvance(stepKey, selections, item) {
   switch (stepKey) {
     case STEP.VIANDES:
-      return (selections.meatIds || []).length === item.viandes;
+      return (selections.meatIds || []).length === (item.viande_count || item.viandes);
     case STEP.SAUCE:
       return (selections.sauceIds || []).length >= 1;
     case STEP.CRUDITES:
@@ -151,6 +173,10 @@ function canAdvance(stepKey, selections, item) {
       return selections.fritesStyleId !== undefined;
     case STEP.FRITES_SAUCE:
       return (selections.fritesSauceIds || []).length >= 1;
+    case STEP.BOL_SUPPLEMENTS:
+      return true; // optional (0-4 supplements bols)
+    case STEP.BOL_DRINK:
+      return true; // optional (can skip without picking)
     case STEP.RECAP:
       return true;
     default:
@@ -166,6 +192,8 @@ function computeTotal(item, selections) {
   return lcMenu.priceFor(item, {
     sauceIds: selections.sauceIds,
     supplementIds: selections.supplementIds,
+    bolSupplementIds: selections.bolSupplementIds,
+    bolDrinkId: selections.bolDrinkId,
     formuleId: selections.menuChoice && selections.menuChoice !== 'none'
       ? (selections.menuChoice === 'full' ? 'f-menu' : selections.menuChoice === 'frites' ? 'f-frites' : 'f-boisson')
       : null,
@@ -613,6 +641,111 @@ function ScreenStepFritesSauce(props) {
 }
 
 // ============================================================================
+// STEP — Bol Suppléments (optionnel · 4 options Oignon frais / Jambon / Champignons / Boule gratinée +2€)
+// [MOBILE-REALIGNMENT 2026-05-16] Bols custom composer. Pool = SUPPLEMENTS_BOLS (mobile/data/menu.js).
+// Mirrors kiosk extra_group='supplement_bol' DB shape.
+// ============================================================================
+function ScreenStepBolSupplements({ item, selections, setSelections, headingRef }) {
+  const lcMenu = window.LC.menu;
+  const supplementsBols = lcMenu.supplementsBols || [];
+  const bolSupplementIds = selections.bolSupplementIds || [];
+  const toggle = (id) => {
+    setSelections(s => {
+      const arr = s.bolSupplementIds || [];
+      return { ...s, bolSupplementIds: arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id] };
+    });
+  };
+  return (
+    <div style={{ padding: '20px 20px 120px' }}>
+      <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--gray-4)' }}>
+        Optionnel · personnalise ton bol
+      </p>
+      <div role="group" aria-label="Suppléments bol" style={{ background: 'var(--cream)', borderRadius: 14, overflow: 'hidden' }}>
+        {supplementsBols.map(s => {
+          const on = bolSupplementIds.includes(s.id);
+          const isGratine = s.id === 'sb-boule-gratinee';
+          const handleKey = (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(s.id); }
+          };
+          return (
+            <div
+              key={s.id}
+              role="checkbox"
+              aria-checked={on ? 'true' : 'false'}
+              tabIndex={0}
+              onClick={() => toggle(s.id)}
+              onKeyDown={handleKey}
+              className="lc-toggle-row"
+              data-testid={`bol-supp-${s.id}`}
+              style={{ outline: 'none' }}
+            >
+              <span aria-hidden="true" style={{ fontSize: 24, marginRight: 10 }}>
+                {isGratine ? '🧀' : s.id === 'sb-oignon-frais' ? '🧅' : s.id === 'sb-jambon' ? '🥓' : '🍄'}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
+                  {s.name}{isGratine && <span style={{ marginLeft: 6, fontSize: 10, padding: '2px 6px', background: 'var(--orange)', color: '#fff', borderRadius: 4, fontWeight: 700, letterSpacing: '0.05em' }}>POPULAIRE</span>}
+                </div>
+                <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 700, marginTop: 2 }}>
+                  + {s.price.toFixed(2).replace('.', ',')} €
+                </div>
+              </div>
+              <div aria-hidden="true" className={`lc-checkbox ${on ? 'lc-checkbox--on' : ''}`}>
+                {on && <I.Check size={12} stroke="#fff" sw={3}/>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// STEP — Bol Drink (optionnel · 1 boisson du catalogue Boissons, prix unitaire)
+// [MOBILE-REALIGNMENT 2026-05-16] Bols custom composer addon role=drink (optionnel).
+// "Aucune boisson" = skip choice ; sinon picker like ScreenStepDrink avec prix affiché.
+// ============================================================================
+function ScreenStepBolDrink({ item, selections, setSelections, headingRef }) {
+  const lcMenu = window.LC.menu;
+  const bolDrinkId = selections.bolDrinkId; // null = explicit "no drink", undefined = not yet picked
+  const pick = (id) => setSelections(s => ({ ...s, bolDrinkId: id }));
+  return (
+    <div style={{ padding: '20px 20px 120px' }}>
+      <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--gray-4)' }}>
+        Optionnel · ajoute une boisson à ton bol (prix catalogue)
+      </p>
+      <div role="radiogroup" aria-label="Boisson optionnelle" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+        {/* "Aucune boisson" option first */}
+        <ChoiceCard on={bolDrinkId === null} onPick={() => pick(null)} ariaRole="radio">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: '100%', padding: '4px 0' }}>
+            <span aria-hidden="true" style={{ fontSize: 28 }}>🚫</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>Aucune boisson</span>
+          </div>
+        </ChoiceCard>
+        {lcMenu.formuleDrinks.map(d => {
+          const on = bolDrinkId === d.id;
+          const price = lcMenu.priceForDrinkAddon ? lcMenu.priceForDrinkAddon(d.id) : 1.50;
+          return (
+            <ChoiceCard key={d.id} on={on} onPick={() => pick(d.id)} ariaRole="radio">
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: '100%', padding: '4px 0' }}>
+                {d.image
+                  ? <img src={d.image} alt="" aria-hidden="true" style={{ width: 56, height: 56, objectFit: 'contain', flexShrink: 0 }}/>
+                  : <span aria-hidden="true" style={{ fontSize: 28 }}>{d.emoji}</span>}
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textAlign: 'center' }}>{d.name}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink)', fontWeight: 700 }}>
+                  +{price.toFixed(2).replace('.', ',')}€
+                </span>
+              </div>
+            </ChoiceCard>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // STEP 9 — Recap (composition résumé + total + Ajouter au panier)
 // ============================================================================
 function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
@@ -624,11 +757,24 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
   const cruditeRemoved = cruditeAll.filter(id => !cruditeIds.includes(id)).map(id => (lcMenu.crudites.find(c => c.id === id) || {}).name).filter(Boolean);
   const cruditeKept = lcMenu.crudites.filter(c => cruditeIds.includes(c.id)).map(c => c.name);
   const supLabels = (selections.supplementIds || []).map(id => (lcMenu.supplements.find(s => s.id === id) || {}).name).filter(Boolean);
+  const bolSupLabels = (selections.bolSupplementIds || []).map(id => (lcMenu.supplementsBols.find(s => s.id === id) || {}).name).filter(Boolean);
+  const bolDrinkLabel = selections.bolDrinkId
+    ? (lcMenu.formuleDrinks.find(d => d.id === selections.bolDrinkId) || {}).name
+    : (selections.bolDrinkId === null ? 'Aucune' : null);
   const drinkLabel = selections.drinkId ? (lcMenu.formuleDrinks.find(d => d.id === selections.drinkId) || {}).name : null;
   const styleLabel = selections.fritesStyleId !== undefined
     ? (lcMenu.fritesStyles.find(fs => fs.id === selections.fritesStyleId) || {}).name
     : null;
   const fritesSauceLabels = (selections.fritesSauceIds || []).map(id => (lcMenu.sauces.find(s => s.id === id) || {}).name).filter(Boolean);
+  // [MOBILE-REALIGNMENT 2026-05-16] Show locked sauce for items with sauce_locked
+  // (e.g. Sandwich Cayenne, Big Cayenne, Galette Cayenne → "Sauce Cayenne maison incluse").
+  const sauceLockedLabel = item.sauce_locked ? `Sauce ${item.sauce_locked} maison (incluse)` : null;
+  // [MOBILE-REALIGNMENT 2026-05-16] Show fixed meat for bols (item.bol_meat_fixed)
+  const bolMeatLabel = item.bol_meat_fixed || null;
+  const bolBaseLabel = item.has_bol_wizard
+    ? (item.slug && item.slug.indexOf('bowl-frites-') === 0 ? 'Frites' :
+       item.slug && item.slug.indexOf('bowl-riz-') === 0 ? 'Riz basmati' : null)
+    : null;
   const menuLabel = (() => {
     if (selections.menuChoice === 'full') return 'Menu (Frites + Boisson) +3€';
     if (selections.menuChoice === 'frites') return 'Ajouter Frites +2€';
@@ -669,6 +815,10 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
           {/* [D4 EU FIC 1169/2011] AllergenBadge sur recap — disclosure légale obligatoire */}
           {window.AllergenBadge && <window.AllergenBadge allergens={item.allergens} size="lg"/>}
         </div>
+        {/* [MOBILE-REALIGNMENT 2026-05-16] Bol pre-filled rows : base + viande fixed by item */}
+        {bolBaseLabel && <Row label="Base" value={bolBaseLabel}/>}
+        {bolMeatLabel && <Row label="Viande" value={bolMeatLabel}/>}
+        {sauceLockedLabel && !has(STEP.SAUCE) && <Row label="Sauce" value={sauceLockedLabel}/>}
         {has(STEP.VIANDES) && <Row label="Viandes" value={meatLabels.length ? meatLabels.join(' · ') : '—'}/>}
         {has(STEP.SAUCE) && <Row label="Sauce" value={sauceLabels.length ? sauceLabels.join(' / ') : '—'}/>}
         {has(STEP.CRUDITES) && (
@@ -677,6 +827,8 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
             : <Row label="Crudités" value={cruditeKept.length ? 'Toutes (' + cruditeKept.join(' · ') + ')' : 'Toutes'}/>
         )}
         {has(STEP.SUPPLEMENTS) && <Row label="Suppléments" value={supLabels.length ? supLabels.join(' + ') : 'Aucun'}/>}
+        {has(STEP.BOL_SUPPLEMENTS) && <Row label="Suppléments bol" value={bolSupLabels.length ? bolSupLabels.join(' + ') : 'Aucun'}/>}
+        {has(STEP.BOL_DRINK) && <Row label="Boisson bol" value={bolDrinkLabel || 'Aucune'}/>}
         {has(STEP.MENU) && <Row label="Formule" value={menuLabel || 'Sans formule'}/>}
         {has(STEP.DRINK) && <Row label="Boisson" value={drinkLabel || '—'}/>}
         {has(STEP.FRITES_STYLE) && <Row label="Style frites" value={styleLabel || '—'}/>}
@@ -730,16 +882,29 @@ function buildLineItem(item, selections) {
   const cruditeIds = selections.cruditeIds || lcMenu.defaultCruditeIds();
   const cruditeRemoved = lcMenu.crudites.filter(c => !cruditeIds.includes(c.id)).map(c => c.name);
   const supLabels = (selections.supplementIds || []).map(id => (lcMenu.supplements.find(s => s.id === id) || {}).name).filter(Boolean);
+  const bolSupLabels = (selections.bolSupplementIds || []).map(id => (lcMenu.supplementsBols.find(s => s.id === id) || {}).name).filter(Boolean);
+  const bolDrinkLabel = selections.bolDrinkId
+    ? (lcMenu.formuleDrinks.find(d => d.id === selections.bolDrinkId) || {}).name
+    : null;
   const drinkLabel = selections.drinkId ? (lcMenu.formuleDrinks.find(d => d.id === selections.drinkId) || {}).name : null;
   const styleLabel = selections.fritesStyleId !== undefined
     ? (lcMenu.fritesStyles.find(fs => fs.id === selections.fritesStyleId) || {}).name
     : null;
   const fritesSauceLabels = (selections.fritesSauceIds || []).map(id => (lcMenu.sauces.find(s => s.id === id) || {}).name).filter(Boolean);
   const summary = [];
+  // [MOBILE-REALIGNMENT 2026-05-16] Bol pre-filled context (base + viande fixed)
+  if (item.has_bol_wizard) {
+    const baseLabel = item.slug && item.slug.indexOf('bowl-frites-') === 0 ? 'Frites' :
+                      item.slug && item.slug.indexOf('bowl-riz-') === 0 ? 'Riz' : null;
+    if (baseLabel) summary.push(baseLabel);
+    if (item.bol_meat_fixed) summary.push(item.bol_meat_fixed);
+  }
   if (meatLabels.length) summary.push(meatLabels.join(' + '));
   if (sauceLabels.length) summary.push('Sauce ' + sauceLabels.join('/'));
   if (cruditeRemoved.length) summary.push('Sans ' + cruditeRemoved.map(s => s.toLowerCase()).join('/'));
   if (supLabels.length) summary.push('+ ' + supLabels.join(' + '));
+  if (bolSupLabels.length) summary.push('+ ' + bolSupLabels.join(' + '));
+  if (bolDrinkLabel) summary.push('🥤 ' + bolDrinkLabel);
   if (selections.menuChoice && selections.menuChoice !== 'none') {
     const mLabel = selections.menuChoice === 'full' ? '🍽 Menu' : selections.menuChoice === 'frites' ? '🍟 Frites' : '🥤 Boisson';
     summary.push(mLabel);
@@ -762,6 +927,10 @@ function buildLineItem(item, selections) {
     cruditeRemoved,
     supplementIds: selections.supplementIds || [],
     supLabels,
+    bolSupplementIds: selections.bolSupplementIds || [],
+    bolSupLabels,
+    bolDrinkId: selections.bolDrinkId !== undefined ? selections.bolDrinkId : null,
+    bolDrinkLabel,
     menuChoice: selections.menuChoice || 'none',
     drinkId: selections.drinkId || null,
     drinkLabel,
@@ -788,17 +957,29 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   const item = lcMenu.findItem(itemId);
   const headingRef = useRef_w(null);
 
-  const [selections, setSelections] = useState_w(() => ({
-    meatIds: [],
-    sauceIds: [],
-    cruditeIds: lcMenu.defaultCruditeIds(),
-    supplementIds: [],
-    menuChoice: undefined, // undefined = not yet picked, distinct from 'none'
-    drinkId: undefined,
-    fritesStyleId: undefined,
-    fritesSauceIds: [],
-    qty: 1,
-  }));
+  const [selections, setSelections] = useState_w(() => {
+    // [MOBILE-REALIGNMENT 2026-05-16] Pre-fill defaults from composer profile + item flags
+    // (kiosk parity: KW.vue initSelections — sauce default + bol context).
+    const init = {
+      meatIds: [],
+      sauceIds: [],
+      cruditeIds: lcMenu.defaultCruditeIds(),
+      supplementIds: [],
+      bolSupplementIds: [],     // Bols custom composer
+      bolDrinkId: undefined,    // null = explicit "no drink", undefined = not yet picked
+      menuChoice: undefined,    // undefined = not yet picked, distinct from 'none'
+      drinkId: undefined,
+      fritesStyleId: undefined,
+      fritesSauceIds: [],
+      qty: 1,
+    };
+    // Bol sauce default (e.g. bowl-frites-curry → 'Curry' sauce pre-selected)
+    if (item && item.bol_sauce_default) {
+      const defaultSauce = lcMenu.sauces.find(s => s.name === item.bol_sauce_default);
+      if (defaultSauce) init.sauceIds = [defaultSauce.id];
+    }
+    return init;
+  });
 
   const [stepIndex, setStepIndex] = useState_w(0);
 
@@ -859,7 +1040,8 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   const hint = (() => {
     if (valid) return null;
     if (currentKey === STEP.VIANDES) {
-      const remain = item.viandes - (selections.meatIds || []).length;
+      const required = item.viande_count || item.viandes;
+      const remain = required - (selections.meatIds || []).length;
       return `Encore ${remain} viande${remain > 1 ? 's' : ''} à choisir`;
     }
     if (currentKey === STEP.SAUCE) return 'Choisis au moins une sauce (ou Sans Sauce)';
@@ -873,16 +1055,18 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
   // Render step body
   let body;
   switch (currentKey) {
-    case STEP.VIANDES:       body = <ScreenStepViandes item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
-    case STEP.SAUCE:         body = <ScreenStepSauce item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
-    case STEP.CRUDITES:      body = <ScreenStepCrudites item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
-    case STEP.SUPPLEMENTS:   body = <ScreenStepSupplements item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
-    case STEP.MENU:          body = <ScreenStepMenu item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
-    case STEP.DRINK:         body = <ScreenStepDrink item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
-    case STEP.FRITES_STYLE:  body = <ScreenStepFritesStyle item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
-    case STEP.FRITES_SAUCE:  body = <ScreenStepFritesSauce item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
-    case STEP.RECAP:         body = <ScreenStepRecap item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
-    default:                 body = <div style={{ padding: 40, textAlign: 'center' }}><p>Étape inconnue : {currentKey}</p></div>;
+    case STEP.VIANDES:           body = <ScreenStepViandes item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
+    case STEP.SAUCE:             body = <ScreenStepSauce item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
+    case STEP.CRUDITES:          body = <ScreenStepCrudites item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
+    case STEP.SUPPLEMENTS:       body = <ScreenStepSupplements item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
+    case STEP.MENU:              body = <ScreenStepMenu item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
+    case STEP.DRINK:             body = <ScreenStepDrink item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
+    case STEP.FRITES_STYLE:      body = <ScreenStepFritesStyle item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
+    case STEP.FRITES_SAUCE:      body = <ScreenStepFritesSauce item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
+    case STEP.BOL_SUPPLEMENTS:   body = <ScreenStepBolSupplements item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
+    case STEP.BOL_DRINK:         body = <ScreenStepBolDrink item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
+    case STEP.RECAP:             body = <ScreenStepRecap item={item} selections={selections} setSelections={setSelections} headingRef={headingRef}/>; break;
+    default:                     body = <div style={{ padding: 40, textAlign: 'center' }}><p>Étape inconnue : {currentKey}</p></div>;
   }
 
   const stepTitle = STEP_LABELS[currentKey] || currentKey;
@@ -975,4 +1159,7 @@ Object.assign(window, {
   buildLineItem,
   WIZARD_STEPS: STEP,
   WIZARD_STEP_LABELS: STEP_LABELS,
+  // [MOBILE-REALIGNMENT 2026-05-16] expose bol/frites step components for e2e tests
+  ScreenStepBolSupplements,
+  ScreenStepBolDrink,
 });

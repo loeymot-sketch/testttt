@@ -666,7 +666,35 @@ Captures visuelles : kiosk idle confirmé branding intact + admin login OK.
 
 ## §4 NEXT TO DO — Auto-managed (brain-written)
 
-### 🆕 ULTRA PLAN Menu Reset Le Cayenne 2026-05-13 (owner-gated, ~7-8j-agent)
+### 🆕 ULTRA-PLAN Mobile App Realignment 2026-05-16 (owner-gated, ~8.5j-agent)
+
+**Status** : ⏸️ ULTRA-PLAN ONLY — awaiting owner gate Q1-Q4.
+**Doc** : `plans/MASTER_ULTRAPLAN_MOBILE_REALIGNMENT_2026-05-16.md` (15 sections, 6 axes).
+**Mission** : aligner l'app mobile au new global system POS+Kiosk+KDS+OSS+Admin+DB
+(post menu-reset 2026-05-13 + heal-light V2 2026-05-14, 11 catégories finales).
+Mobile data layer DÉJÀ aligned à DB (vérifié par 6-agent parallel audit : Architect +
+DBA + Mobile Auditor + Wizard Auditor + Integration Auditor + Adversarial RED).
+Vrai gap = **integration** (0 fetch backend, 100% standalone) + **wizard parity**
+(Bols `wizard_template='custom'` non géré dans mobile/screens-item-steps.jsx) +
+**5 P0 wiring blockers** (slug-only payload, idempotency default, Sanctum mobile
+ability, channels filter, pricing client-side).
+**6 axes** :
+- A1 — Data layer truth reconciliation (config/menu.php stale, CONNECTION_PLAN.md
+  stale "13 cats" → 11)
+- A2 — Wizard parity mobile (composer profile Bols 4-step + Frites 1-step)
+- A3 — API surface mobile (customer:order ability, idempotency on, channels doc)
+- A4 — NF525 + auth + pricing SSOT (mobile sends composition only, fiscal seq flow)
+- A5 — Visual mandate + assets + UX parity (18 surfaces capture+Read+analyze)
+- A6 — Test + adversarial + ship (PHPUnit + Vitest + Playwright + RED + GO/NO-GO)
+**Sequenced** : W1 docs → W2 wizard+visual baseline → W3 API → W4 NF525 →
+W5 full visual + tests → W6 ship gate.
+**4 owner-gate questions** Q1 (config strategy) / Q2 (API path) / Q3 (pricing
+display) / Q4 (composer delivery mode).
+**Frozen-zones** : 0 ligne diff sur Kiosk Vue / pos-wizard.js / FiscalSequence /
+ZReport / AuditLog / BranchScope / PricingService / OrderStateMachine.
+**Sub-plans** seront créés après owner gate (SUB_A1..A6).
+
+### 🟢 ULTRA-PLAN Menu Reset Le Cayenne 2026-05-13 (owner-gated, ~7-8j-agent) — **CLOSED**
 
 **Status** : ⏸️ DRAFT en attente owner gate (Q1-Q7 dans plan).
 **Doc** : `plans/ULTRA_PLAN_MENU_RESET_LE_CAYENNE_2026-05-13.md` (14 sections, ~750 lignes).

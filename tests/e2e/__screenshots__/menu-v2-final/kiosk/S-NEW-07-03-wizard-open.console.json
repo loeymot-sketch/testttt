@@ -1,0 +1,32 @@
+[
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/pricing/preview",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1778749132112
+  },
+  {
+    "level": "warning",
+    "text": "[kiosk] pricing preview failed: Request failed with status code 422",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=0f5bf11751f1ae6bc05447e85001c0f4",
+      "lineNumber": 67106,
+      "columnNumber": 18
+    },
+    "ts": 1778749132112
+  },
+  {
+    "level": "error",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 11189,
+      "columnNumber": 0
+    },
+    "ts": 1778749133024
+  }
+]

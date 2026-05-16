@@ -1,0 +1,250 @@
+{
+  "surfaces": {
+    "S1": {
+      "total_cards": 8,
+      "cards": [
+        {
+          "item_id": 493,
+          "name_expected": "Bowl Frites curry",
+          "card_found": true,
+          "image_rendered": true,
+          "image_src": "/storage/88/conversions/bol-frite-curie-thumb.png",
+          "image_complete": true,
+          "image_naturalWidth": 168,
+          "fallback_rendered": false,
+          "fallback_text": null,
+          "name_in_card": false,
+          "card_text_preview": "Personnaliser+Bowl Frites Poulet curryPoulet curry · Base Frites · Sauce + suppléments + boisson optionnel...€8,90"
+        }
+      ],
+      "i18n_leaks": []
+    },
+    "S2": {
+      "step_labels": [
+        "QUELLE SAUCE ?",
+        "QUEL SUPPLÉMENT ?",
+        "QUEL MENU ?",
+        "RÉCAP"
+      ],
+      "dots_count": 4,
+      "active_dot_index": 0,
+      "heading": "Quelle sauce ?",
+      "choices": [
+        "Sauce fromagère maison+",
+        "Spicy+"
+      ],
+      "choices_count": 2,
+      "choice_selector_used": ".kiosk-option-card",
+      "has_spicy": true,
+      "has_sauce_fromagere": true,
+      "has_barbecue": false,
+      "has_ail": false,
+      "has_boule_gratinee": false,
+      "has_plus_2_00": false,
+      "has_big_chicken": false,
+      "has_chicken_burger_special": false,
+      "body_text_preview": "☾ Bowl Frites Poulet curry BOWL FRITES POULET CURRY × QUELLE SAUCE ? QUEL SUPPLÉMENT ? QUEL MENU ? RÉCAP ‹ 1 2 3 4 › VOTRE COMPOSITION Vos choix s'ajoutent ici au fur et à mesure. QUELLE SAUCE ? 1re sauce gratuite SAUCE FROMAGÈRE MAISON + SPICY + Sélectionnez au moins une sauce ABANDONNER L'ARTICLE PRÉCÉDENT SUIVANT Total €8,90"
+    },
+    "S3": {
+      "step_labels": [
+        "QUELLE SAUCE ?",
+        "QUEL SUPPLÉMENT ?",
+        "QUEL MENU ?",
+        "RÉCAP"
+      ],
+      "dots_count": 4,
+      "active_dot_index": 1,
+      "heading": "Quel supplément ?",
+      "choices": [
+        "Oignon fraisSupplément€0,90 Choisir",
+        "JambonSupplément€0,90 Choisir",
+        "ChampignonsSupplément€0,90 Choisir",
+        "Boule gratinéeSupplément€2,00 Choisir"
+      ],
+      "choices_count": 4,
+      "choice_selector_used": ".kiosk-supplement-row",
+      "has_spicy": false,
+      "has_sauce_fromagere": true,
+      "has_barbecue": false,
+      "has_ail": false,
+      "has_boule_gratinee": true,
+      "has_plus_2_00": false,
+      "has_big_chicken": false,
+      "has_chicken_burger_special": false,
+      "body_text_preview": "☾ Bowl Frites Poulet curry BOWL FRITES POULET CURRY × 1 QUELLE SAUCE ? QUEL SUPPLÉMENT ? QUEL MENU ? RÉCAP ‹ 1 2 3 4 › VOTRE COMPOSITION SAUCES Sauce fromagère maison QUEL SUPPLÉMENT ? Options payantes OIGNON FRAIS Supplément €0,90 CHOISIR JAMBON Supplément €0,90 CHOISIR CHAMPIGNONS Supplément €0,90 CHOISIR BOULE GRATINÉE Supplément €2,00 CHOISIR ABANDONNER L'ARTICLE PRÉCÉDENT SUIVANT Total €8,90"
+    },
+    "S4": {
+      "step_labels": [
+        "QUELLE SAUCE ?",
+        "QUEL SUPPLÉMENT ?",
+        "QUEL MENU ?",
+        "RÉCAP"
+      ],
+      "dots_count": 4,
+      "active_dot_index": 2,
+      "heading": "Quel menu ?",
+      "choices": [],
+      "choices_count": 0,
+      "choice_selector_used": null,
+      "has_spicy": false,
+      "has_sauce_fromagere": true,
+      "has_barbecue": false,
+      "has_ail": false,
+      "has_boule_gratinee": false,
+      "has_plus_2_00": false,
+      "has_big_chicken": false,
+      "has_chicken_burger_special": false,
+      "body_text_preview": "☾ Bowl Frites Poulet curry BOWL FRITES POULET CURRY × 1 QUELLE SAUCE ? 2 QUEL SUPPLÉMENT ? QUEL MENU ? RÉCAP ‹ 1 2 3 4 › VOTRE COMPOSITION SAUCES Sauce fromagère maison QUEL MENU ? Touchez une option pour continuer — y compris « Sans menu » si vous ne voulez pas de formule. 🍟🥤 MENU COMPLET Frites + Boisson + 🍟 + FRITES Seulement les frites + 🚫 SANS MENU Article seul + ABANDONNER L'ARTICLE PRÉCÉDENT SUIVANT Total €8,90"
+    },
+    "S5": {
+      "step_labels": [
+        "QUELLE VIANDE ?",
+        "QUELLE SAUCE ?",
+        "QUELLE CRUDITÉ ?",
+        "QUEL SUPPLÉMENT ?",
+        "QUEL MENU ?",
+        "RÉCAP"
+      ],
+      "dots_count": 6,
+      "active_dot_index": 1,
+      "heading": "Quelle sauce ?",
+      "choices": [
+        "Mayonnaise+",
+        "Ketchup+",
+        "Algérienne+",
+        "Samouraï+",
+        "Curry+",
+        "Andalouse+",
+        "Harissa+",
+        "Hannibal+",
+        "Blanche+",
+        "Sauce fromagère maison+",
+        "Spicy+",
+        "Barbecue+",
+        "Ail+"
+      ],
+      "choices_count": 13,
+      "choice_selector_used": ".kiosk-option-card",
+      "has_spicy": true,
+      "has_sauce_fromagere": true,
+      "has_barbecue": true,
+      "has_ail": true,
+      "has_boule_gratinee": false,
+      "has_plus_2_00": false,
+      "has_big_chicken": false,
+      "has_chicken_burger_special": false,
+      "body_text_preview": "☾ Sandwich Classique SANDWICH CLASSIQUE × 1 QUELLE VIANDE ? QUELLE SAUCE ? QUELLE CRUDITÉ ? QUEL SUPPLÉMENT ? QUEL MENU ? RÉCAP ‹ 1 2 3 4 5 6 › VOTRE COMPOSITION VIANDES Poulet mariné QUELLE SAUCE ? 1re sauce gratuite MAYONNAISE + KETCHUP + ALGÉRIENNE + SAMOURAÏ + CURRY + ANDALOUSE + HARISSA + HANNIBAL + BLANCHE + SAUCE FROMAGÈRE MAISON + SPICY + BARBECUE + AIL + Sélectionnez au moins une sauce ABANDONNER L'ARTICLE PRÉCÉDENT SUIVANT Total €7,00"
+    },
+    "S6": {
+      "grid": {
+        "total_cards": 2,
+        "cards": [
+          {
+            "item_id": 490,
+            "name_expected": "Chicken Burger Special",
+            "card_found": true,
+            "image_rendered": true,
+            "image_src": "/storage/84/conversions/chicken-big-burger-thumb.png",
+            "image_complete": true,
+            "image_naturalWidth": 168,
+            "fallback_rendered": false,
+            "fallback_text": null,
+            "name_in_card": true,
+            "card_text_preview": "Personnaliser+Chicken Burger SpecialBig Burger pain brioché · Poulet crispy · Sauce libre · INCLUS : Che...€8,90"
+          }
+        ],
+        "i18n_leaks": []
+      },
+      "burgers_text": {
+        "has_big_chicken": false,
+        "has_chicken_burger_special": true,
+        "text_preview": "☾ NOS Burgers 👤 Mon compte SANDWICH CAYENNE GALETTE SANDWICH CLASSIQUE BURGERS TACOS BOLS GOURMANDS FRITES SUPPLÉMENTS DESSERTS BOISSONS BURGERS 2 produits Personnaliser + CHICKEN BURGER Burger pain brioché · Poulet crispy · Sauce libre · Crudités · Suppl... €6,90 Personnaliser + CHICKEN BURGER SPECIAL Big Burger pain brioché · Poulet crispy · Sauce libre · INCLUS : Che... €8,90 0 article €0,00 Abandonner ma commande Payer"
+      }
+    },
+    "S7": {
+      "total_cards": 2,
+      "cards": [
+        {
+          "item_id": 474,
+          "name_expected": "Sandwich Cayenne",
+          "card_found": true,
+          "image_rendered": true,
+          "image_src": "/storage/78/conversions/cayene-thumb.png",
+          "image_complete": true,
+          "image_naturalWidth": 168,
+          "fallback_rendered": false,
+          "fallback_text": null,
+          "name_in_card": true,
+          "card_text_preview": "Personnaliser+Sandwich CayenneSandwich signature avec sauce Cayenne maison. Choix de viande + crud...€7,50"
+        },
+        {
+          "item_id": 488,
+          "name_expected": "Big Cayenne",
+          "card_found": true,
+          "image_rendered": true,
+          "image_src": "/storage/79/conversions/big_cayenne_2v_avec_oeuf_cheddar-thumb.png",
+          "image_complete": true,
+          "image_naturalWidth": 168,
+          "fallback_rendered": false,
+          "fallback_text": null,
+          "name_in_card": true,
+          "card_text_preview": "Personnaliser+Big CayenneSandwich signature XL · 2 viandes au choix · Sauce Cayenne maison in...€9,50"
+        }
+      ],
+      "i18n_leaks": []
+    },
+    "S8": {
+      "total_cards": 2,
+      "cards": [
+        {
+          "item_id": 475,
+          "name_expected": "Galette Normale",
+          "card_found": true,
+          "image_rendered": true,
+          "image_src": "/storage/80/conversions/galette-mariné-thumb.png",
+          "image_complete": true,
+          "image_naturalWidth": 168,
+          "fallback_rendered": false,
+          "fallback_text": null,
+          "name_in_card": true,
+          "card_text_preview": "Personnaliser+Galette NormaleGalette traditionnelle. Sauce au choix parmi 13 sauces.€6,50"
+        }
+      ],
+      "i18n_leaks": []
+    },
+    "S9": {
+      "total_cards": 2,
+      "cards": [
+        {
+          "item_id": 489,
+          "name_expected": "Big Classique",
+          "card_found": true,
+          "image_rendered": true,
+          "image_src": "/storage/83/conversions/classic-maxi-cryspy-thumb.png",
+          "image_complete": true,
+          "image_naturalWidth": 168,
+          "fallback_rendered": false,
+          "fallback_text": null,
+          "name_in_card": true,
+          "card_text_preview": "Personnaliser+Big ClassiqueSandwich classique XL en pain faluche · 2 viandes au choix · Sauce l...€9,00"
+        }
+      ],
+      "i18n_leaks": []
+    }
+  },
+  "observations": [
+    "kiosk vuex ready=true",
+    "S1 cards=8 i18n_leaks=0",
+    "wizard 493 opened=true",
+    "S2 steps=[\"QUELLE SAUCE ?\",\"QUEL SUPPLÉMENT ?\",\"QUEL MENU ?\",\"RÉCAP\"] dots=4 choices=2 spicy=true fromagere=true",
+    "S2->S3 next button : {\"ok\":true,\"selector\":\"button.kiosk-btn-next:not([disabled])\"}",
+    "S3 heading=Quel supplément ? gratinee=true plus_2=false",
+    "S3->S4 next button : {\"ok\":true,\"selector\":\"button.kiosk-btn-next:not([disabled])\"}",
+    "S4 heading=Quel menu ? step_labels=[\"QUELLE SAUCE ?\",\"QUEL SUPPLÉMENT ?\",\"QUEL MENU ?\",\"RÉCAP\"]",
+    "wizard 477 opened=true",
+    "S5 walk step=0 heading=Choisissez 1 viande barbecue=false ail=false",
+    "S5 walk step=0 next={\"ok\":true,\"selector\":\"button.kiosk-btn-next:not([disabled])\"}",
+    "S5 walk step=1 heading=Quelle sauce ? barbecue=true ail=true",
+    "S6 cards=2 has_big_chicken=false has_special=true"
+  ]
+}
