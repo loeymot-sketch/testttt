@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use Exception;
+use App\Enums\PosPaymentMethod;
+use App\Exceptions\CashDrawerSessionNotOpenException;
+use App\Services\Cash\CashDrawerService;
 use App\Services\OrderService;
 use App\Http\Requests\PosOrderRequest;
 use App\Http\Resources\OrderDetailsResource;
@@ -13,6 +16,7 @@ use App\Services\Order\OrderQuoteService;
 use App\Services\Pos\WalkInCustomerResolver;
 use App\Enums\OrderType;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -43,13 +47,83 @@ class PosController extends AdminController
     {
         try {
             $this->normalizePosRuntimePayload($request);
+            $this->assertCashDrawerSessionOpenIfCashInvolved($request);
             return new OrderDetailsResource($this->orderService->posOrderStore($request));
         } catch (ValidationException $exception) {
             throw $exception;
+        } catch (CashDrawerSessionNotOpenException $exception) {
+            // [Sprint 1B 2026-05-16] CASH sale w/o open drawer → 422 with i18n
+            // label so the POS UI can show a remediation hint.
+            return response([
+                'status' => false,
+                'message' => __('all.label.cash_no_open_session_blocks_sale'),
+                'code'    => 'CASH_NO_OPEN_SESSION',
+            ], $exception->getStatusCode());
         } catch (HttpException $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    /**
+     * [Sprint 1B 2026-05-16] NF525 cash trail guard — block at controller
+     * level before the order is created if any CASH involvement (single
+     * tender or any tranche) and no CashDrawerSession OPEN for the cashier
+     * on the target branch.
+     *
+     * This is a defense-in-depth check: OrderService + SplitPaymentService
+     * also throw the same exception inside the transaction, but stopping
+     * here avoids partial work (fiscal seq alloc, stock decrement, etc.).
+     *
+     * @throws CashDrawerSessionNotOpenException when CASH is present and no
+     *                                           open session exists.
+     */
+    private function assertCashDrawerSessionOpenIfCashInvolved(PosOrderRequest $request): void
+    {
+        $needsCashSession = false;
+
+        // Single-tender legacy path
+        if ((int) $request->input('pos_payment_method', 0) === PosPaymentMethod::CASH) {
+            $needsCashSession = true;
+        }
+
+        // Multi-tender split path — only if feature flag is ON, else
+        // payment_breakdown is silently stripped and ignored downstream.
+        if (! $needsCashSession && config('split_payment.enabled', false)) {
+            $breakdown = (array) $request->input('payment_breakdown', []);
+            foreach ($breakdown as $tranche) {
+                if (is_array($tranche)
+                    && (int) ($tranche['mode'] ?? 0) === PosPaymentMethod::CASH) {
+                    $needsCashSession = true;
+                    break;
+                }
+            }
+        }
+
+        if (! $needsCashSession) {
+            return;
+        }
+
+        if (! Auth::check()) {
+            throw new CashDrawerSessionNotOpenException();
+        }
+
+        $branchId = (int) $request->input('branch_id', 0);
+        if ($branchId <= 0) {
+            $authBranchId = (int) (Auth::user()->branch_id ?? 0);
+            $branchId = $authBranchId;
+        }
+        if ($branchId <= 0) {
+            throw new CashDrawerSessionNotOpenException();
+        }
+
+        $session = app(CashDrawerService::class)->findOpenSessionForUser(
+            $branchId,
+            (int) Auth::id(),
+        );
+        if (! $session) {
+            throw new CashDrawerSessionNotOpenException();
         }
     }
 

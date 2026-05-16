@@ -3,10 +3,14 @@
 namespace App\Services\Payments;
 
 use App\Enums\PosPaymentMethod;
+use App\Exceptions\CashDrawerSessionNotOpenException;
+use App\Models\CashMovement;
 use App\Models\Order;
 use App\Models\OrderPayment;
+use App\Services\Cash\CashDrawerService;
 use App\Services\Fiscal\AuditLogService;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -32,6 +36,7 @@ final class SplitPaymentService
 
     public function __construct(
         private readonly AuditLogService $auditLog,
+        private readonly CashDrawerService $cashDrawerService,
     ) {
     }
 
@@ -152,7 +157,34 @@ final class SplitPaymentService
 
         $this->validateBreakdown($tranches, (float) $order->total, (int) $order->branch_id);
 
-        return DB::transaction(function () use ($order, $tranches): EloquentCollection {
+        // [Sprint 1B 2026-05-16] NF525 cash trail — fail-fast guard si au
+        // moins une tranche est CASH. Une CashDrawerSession OPEN doit exister
+        // pour le caissier sur la branche de l'order, sinon on bloque la
+        // vente (transaction parente rollback). Cohérent avec le path single-
+        // tender dans OrderService::posOrderStore.
+        $hasCashTranche = false;
+        foreach ($tranches as $t) {
+            if (is_array($t) && (int) ($t['mode'] ?? 0) === PosPaymentMethod::CASH) {
+                $hasCashTranche = true;
+                break;
+            }
+        }
+
+        $cashSession = null;
+        if ($hasCashTranche) {
+            if (! Auth::check()) {
+                throw new CashDrawerSessionNotOpenException();
+            }
+            $cashSession = $this->cashDrawerService->findOpenSessionForUser(
+                (int) $order->branch_id,
+                (int) Auth::id(),
+            );
+            if (! $cashSession) {
+                throw new CashDrawerSessionNotOpenException();
+            }
+        }
+
+        return DB::transaction(function () use ($order, $tranches, $cashSession): EloquentCollection {
             $persisted = new EloquentCollection();
 
             foreach ($tranches as $idx => $t) {
@@ -180,7 +212,7 @@ final class SplitPaymentService
 
                 $this->auditLog->write([
                     'branch_id'   => (int) $order->branch_id,
-                    'user_id'     => auth()->check() ? (int) auth()->id() : null,
+                    'user_id'     => Auth::check() ? (int) Auth::id() : null,
                     'action'      => 'order.payment_tranche_persisted',
                     'resource'    => 'order_payment',
                     'resource_id' => (int) $row->id,
@@ -193,6 +225,22 @@ final class SplitPaymentService
                         'change'        => round($change, 2),
                     ],
                 ]);
+
+                // [Sprint 1B 2026-05-16] Write cash_movement IN for each CASH
+                // tranche (amount = tranche amount, not order total). strict=
+                // true → throw HttpException if session race-closed between
+                // guard above and movement write (defense-in-depth).
+                if ($mode === PosPaymentMethod::CASH && $cashSession !== null) {
+                    $this->cashDrawerService->recordMovement(
+                        sessionId: (int) $cashSession->id,
+                        type: CashMovement::TYPE_ORDER_PAYMENT,
+                        amount: round($amount, 2),
+                        direction: CashMovement::DIRECTION_IN,
+                        orderId: (int) $order->id,
+                        notes: 'split_tranche_' . (int) $idx,
+                        strict: true,
+                    );
+                }
 
                 $persisted->push($row);
             }

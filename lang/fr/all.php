@@ -17,6 +17,13 @@ return [
         'name' => 'Nom',
         'email' => 'Email',
         'phone' => 'Téléphone',
+        // [Wave F F-2 / Sprint 1C] Payment terminals admin
+        'fee_percent' => 'Frais (%)',
+        'fee_fixed' => 'Frais fixes (€)',
+        'serial_number' => 'N° de série',
+        'gateway' => 'Passerelle',
+        'archived' => 'Archivé',
+        'no_data' => 'Aucune donnée',
         'item_category_id' => 'Catégorie',
         'tax_id' => 'Taxe',
         'code' => 'Code',
@@ -116,6 +123,35 @@ return [
         ],
         'view_product' => 'Voir le produit',
         'continue' => 'Continuer',
+        // [Sprint 1A 2026-05-16] Cash drawer SESSION dialog (fond de caisse).
+        // NOTE: la clé `cash_drawer_open` existante (resources/js/languages/fr.json:399)
+        // = "Ouvrir le tiroir-caisse" est utilisée par le no-sale hardware button —
+        // on garde `cash_session_*` distinct pour la session de caissier.
+        'cash_session_open' => 'Ouvrir la caisse',
+        'cash_session_close' => 'Clôturer la caisse',
+        'cash_session_opening_amount' => 'Fond de caisse initial',
+        'cash_session_closing_amount' => 'Montant compté',
+        'cash_session_variance' => 'Écart',
+        'cash_session_variance_reason' => "Raison de l'écart",
+        'cash_session_movements' => 'Mouvements de caisse',
+        'cash_session_active' => 'Session active',
+        'cash_session_no_session' => 'Aucune caisse ouverte',
+        'cash_session_manager_approval_required' => 'Approbation manager requise',
+        'cash_session_expected_amount' => 'Montant attendu',
+        'cash_session_opened_at' => 'Ouverte le',
+        'cash_session_movements_count' => 'Mouvements',
+        'cash_session_no_movements' => 'Aucun mouvement enregistré.',
+        'cash_session_confirm_close' => 'Valider la clôture',
+        'cash_session_view_movements' => 'Voir les mouvements',
+        'cash_session_back' => 'Retour',
+        'cash_session_header_btn' => 'Caisse',
+        'cash_session_dialog_title' => 'Gestion de la caisse',
+        'cash_session_required_reason' => "L'écart nécessite une raison.",
+        'cash_session_failure' => 'Opération impossible. Réessayez ou contactez un manager.',
+        // [Sprint 1B 2026-05-16] NF525 cash trail guard — message renvoyé
+        // par PosController::store quand le caissier tente une vente espèces
+        // sans avoir une CashDrawerSession OPEN sur sa branche.
+        'cash_no_open_session_blocks_sale' => 'Aucune caisse ouverte — ouvrir une session avant de prendre un paiement espèces.',
     ],
     'studio' => [
         'eyebrow' => 'Catalogue centralisé',

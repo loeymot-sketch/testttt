@@ -113,6 +113,11 @@
             kioskAutoLogin: @json(request()->is('kiosk*') ? config('kiosk.spa_payload') : null),
             // Langue UI borne : fr | ar | en (défaut fr) — évite anglais si le navigateur / localStorage était en "en"
             kioskDefaultLocale: @json((string) config('kiosk.default_locale', 'fr')),
+            // [ADR-007 / Sprint 3D 2026-05-16] Kiosk runtime FR-immutable en V1.
+            // `false` ferme le UI picker locale (KsA11ySettings) ET désactive la
+            // persistance de `kioskSettings.locale` dans localStorage. Voir
+            // docs/adr/ADR-007-kiosk-fr-lock.md pour relax post-V1.
+            kioskLocaleSwitchAllowed: @json((bool) config('kiosk.locale_switch_allowed', false)),
             kioskMenuPricing: @json(config('kiosk.menu_pricing', [])),
             // Borne : une catégorie « Nos Sandwichs » en base, deux lignes sidebar (signatures / froid)
             kioskSandwichSplit: @json(config('kiosk.sandwich_split')),

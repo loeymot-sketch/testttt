@@ -1008,9 +1008,34 @@ class OrderService
                 // - Le total utilisé pour la validation est `$this->order->total` (SSOT
                 //   serveur), JAMAIS la valeur client.
                 $breakdown = (array) $request->input('payment_breakdown', []);
-                if (! empty($breakdown) && config('split_payment.enabled', false)) {
+                $splitActive = ! empty($breakdown) && config('split_payment.enabled', false);
+                if ($splitActive) {
                     app(\App\Services\Payments\SplitPaymentService::class)
                         ->persistTranches($this->order, $breakdown);
+                }
+
+                // [Sprint 1B 2026-05-16] NF525 cash trail — write cash_movement
+                // INSIDE the same DB::transaction, AFTER fiscal_sequence_no is
+                // allocated by saveOrderWithQueueNumber. Strict mode = throw
+                // CashDrawerSessionNotOpenException → rollback order + 0
+                // movement if cashier has no open session.
+                //
+                // Three paths:
+                //   - split active + at least one CASH tranche → SplitPaymentService
+                //     already wrote one movement per CASH tranche.
+                //   - split active + no CASH tranche → 0 movement here.
+                //   - legacy single-tender, pos_payment_method=CASH → 1 movement
+                //     for $order->total here.
+                //
+                // Kiosk counter-collect path (PaymentService::confirmCounterPayment)
+                // is untouched — still calls recordCashOrderMovement($strict=false).
+                if (! $splitActive
+                    && (int) $request->pos_payment_method === \App\Enums\PosPaymentMethod::CASH) {
+                    app(\App\Services\PaymentService::class)->recordCashOrderMovement(
+                        order: $this->order,
+                        note: null,
+                        strict: true,
+                    );
                 }
 
                 $order = $this->order;

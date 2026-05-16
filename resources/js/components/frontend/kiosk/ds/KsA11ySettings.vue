@@ -21,27 +21,15 @@
           @click="close">×</button>
       </div>
 
-      <!-- Section langue -->
-      <section
-        class="ks-a11y-section"
-        :aria-labelledby="langHeadingId"
-      >
-        <h3 :id="langHeadingId" class="ks-a11y-section-title">{{ $t('kiosk.a11y.language') }}</h3>
-        <div class="ks-a11y-options" role="radiogroup" :aria-labelledby="langHeadingId" data-testid="kiosk-a11y-lang-group">
-          <button type="button"
-            v-for="opt in localeOptions"
-            :key="opt.code"
-            class="ks-a11y-option"
-            :class="{ 'is-selected': locale === opt.code }"
-            role="radio"
-            :aria-checked="locale === opt.code"
-            :data-testid="'kiosk-a11y-lang-' + opt.code"
-            @click="selectLocale(opt.code)">
-            <span class="ks-a11y-option-flag" aria-hidden="true">{{ opt.flag }}</span>
-            <span class="ks-a11y-option-label">{{ opt.label }}</span>
-          </button>
-        </div>
-      </section>
+      <!--
+        [ADR-007 / Sprint 3D 2026-05-16] Sélecteur de langue retiré : kiosk
+        runtime FR-immutable. Le drawer ne propose plus FR/EN/AR — la borne
+        reste FR pour toute la session, le clavier virtuel, la voix Web Speech
+        et la lecture i18n. Voir docs/adr/ADR-007-kiosk-fr-lock.md.
+        Pour ré-ouvrir un pilote multi-langue post-V1, basculer
+        KIOSK_LOCALE_SWITCH_ALLOWED=true (config/kiosk.php) ET réintroduire
+        une UI dédiée — pas dans ce drawer a11y.
+      -->
 
       <!-- Contraste AA/AAA -->
       <section class="ks-a11y-section" :aria-labelledby="contrastHeadingId">
@@ -183,7 +171,7 @@
 
 <script>
 /**
- * KsA11ySettings — drawer de paramètres d'accessibilité & langue.
+ * KsA11ySettings — drawer de paramètres d'accessibilité.
  * -----------------------------------------------------------------------------
  * Phase 4.3 — European Accessibility Act (EAA).
  *
@@ -200,17 +188,19 @@
  * A11y :
  *  - role="dialog", aria-modal, aria-labelledby
  *  - Focus management : focus initial sur le drawer au mount (tabindex=-1)
- *  - Radiogroups pour langue & contraste (role=radio + aria-checked)
+ *  - Radiogroup pour contraste (role=radio + aria-checked)
  *  - Switches pour PMR/Audio (role=switch + aria-checked)
  *  - Escape ferme la modale
+ *
+ * [ADR-007 / Sprint 3D 2026-05-16] La sélection de langue (FR/EN/AR) a été
+ * retirée du drawer pour restaurer le FR-lock kiosk en V1. Voir
+ * docs/adr/ADR-007-kiosk-fr-lock.md pour la justification et la procédure de
+ * relaxation post-V1.
  */
 const UID = () => 'ks-a11y-' + Math.random().toString(36).slice(2, 10);
 
-const LOCALE_OPTIONS = [
-    { code: 'fr', label: 'Français', flag: '🇫🇷' },
-    { code: 'en', label: 'English',  flag: '🇬🇧' },
-    { code: 'ar', label: 'العربية',  flag: '🇸🇦' },
-];
+// [ADR-007 / Sprint 3D 2026-05-16] LOCALE_OPTIONS retiré : kiosk runtime
+// FR-immutable. Voir docs/adr/ADR-007-kiosk-fr-lock.md.
 
 import KsThemeToggle from './KsThemeToggle.vue';
 
@@ -225,18 +215,18 @@ export default {
         const uid = UID();
         return {
             titleId: uid + '-title',
-            langHeadingId: uid + '-lang',
+            // [ADR-007] langHeadingId conservé pour rétro-compat si un consumer
+            // externe le référençait — mais aucun radiogroup langue n'est plus
+            // rendu dans le drawer.
             contrastHeadingId: uid + '-contrast',
             pmrHeadingId: uid + '-pmr',
             audioHeadingId: uid + '-audio',
             audioDescHeadingId: uid + '-audio-desc',
             reducedMotionHeadingId: uid + '-reduced-motion',
             themeHeadingId: uid + '-theme',
-            localeOptions: LOCALE_OPTIONS,
         };
     },
     computed: {
-        locale() { return this.$store.state.kioskSettings?.locale || 'fr'; },
         contrast() { return this.$store.state.kioskSettings?.contrast || 'aa'; },
         theme() { return this.$store.state.kioskSettings?.theme || 'auto'; },
         pmr() { return !!this.$store.state.kioskSettings?.pmr; },
@@ -259,10 +249,10 @@ export default {
         close() {
             this.$emit('update:modelValue', false);
         },
-        selectLocale(code) {
-            this.$store.dispatch('kioskSettings/setLocale', code);
-            this.reportEvent('locale_change', { value: code });
-        },
+        // [ADR-007 / Sprint 3D 2026-05-16] selectLocale retiré : kiosk runtime
+        // FR-immutable. La méthode et son dispatch kioskSettings setLocale
+        // n'existent plus dans le drawer pour empêcher toute remise en place
+        // accidentelle par copier-coller. Voir docs/adr/ADR-007-kiosk-fr-lock.md.
         selectContrast(mode) {
             this.$store.dispatch('kioskSettings/setContrast', mode);
             this.reportEvent('contrast_change', { value: mode });

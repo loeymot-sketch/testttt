@@ -37,6 +37,9 @@ const KIOSK_DIR      = join(REPO_ROOT, 'resources/js/components/frontend/kiosk')
 const TARGETS_NO_SETLOCALE = [
     join(KIOSK_DIR, 'KioskIdleScreenComponent.vue'),
     join(KIOSK_DIR, 'KioskAppComponent.vue'),
+    // [Sprint 3D 2026-05-16] KsA11ySettings.vue ne doit plus dispatcher
+    // `kioskSettings/setLocale` ni rendre de radiogroup langue (K-001 P0).
+    join(KIOSK_DIR, 'ds', 'KsA11ySettings.vue'),
 ];
 
 /**
@@ -67,7 +70,7 @@ function listKioskComponentFiles() {
 }
 
 describe('[ADR-007] FR-lock kiosk immutable — sources', () => {
-    it('KioskIdleScreenComponent.vue + KioskAppComponent.vue : aucun appel `setLocale(` (hors commentaires)', () => {
+    it('KioskIdleScreenComponent.vue + KioskAppComponent.vue + KsA11ySettings.vue : aucun appel `setLocale(` (hors commentaires)', () => {
         for (const file of TARGETS_NO_SETLOCALE) {
             const rawSrc = readFileSync(file, 'utf8');
             // On exige : ni import nommé `setLocale` depuis i18n, ni appel
@@ -146,6 +149,62 @@ describe('[ADR-007] FR-lock kiosk immutable — runtime', () => {
         const store = { state: { kioskSettings: { contrast: 'aa' } } };
         applyKioskA11yFromStore(store);
         expect(i18n.global.locale.value).toBe('fr');
+    });
+});
+
+describe('[ADR-007 / Sprint 3D 2026-05-16] FR-lock kiosk — UI surface a11y drawer', () => {
+    it('KsA11ySettings.vue : aucun radiogroup langue rendu côté source (FR/EN/AR retirés)', () => {
+        const file = join(KIOSK_DIR, 'ds', 'KsA11ySettings.vue');
+        const src  = readFileSync(file, 'utf8');
+        // Le drawer ne doit plus déclarer le wrapper langue ni les data-testid
+        // `kiosk-a11y-lang-*`. Un futur dev qui ré-introduirait l'UI sans
+        // passer par le feature flag config/kiosk.php se fera attraper ici.
+        expect(src).not.toMatch(/data-testid=["']kiosk-a11y-lang-group["']/);
+        expect(src).not.toMatch(/['"`]kiosk-a11y-lang-(?:fr|en|ar)['"`]/);
+        expect(src).not.toMatch(/'kiosk-a11y-lang-'\s*\+\s*opt\.code/);
+        // La constante `LOCALE_OPTIONS` ne doit plus exister non plus.
+        expect(src).not.toMatch(/const\s+LOCALE_OPTIONS\s*=/);
+    });
+
+    it('store/index.js : `kioskSettings.locale` retiré de createPersistedState (FR-lock après reload)', () => {
+        // Sprint 3D restaure l'invariant ADR-007 contre un localStorage hérité :
+        // si l'iter15 antérieur a persisté `kioskSettings.locale="ar"`, ce ne
+        // doit plus être réinjecté au boot. La protection vit dans la liste
+        // `paths` de createPersistedState : l'absence de la clé garantit que
+        // chaque reload réinitialise le store sur le default FR (cf.
+        // `state.locale = 'fr'` dans kioskSettings module).
+        const storeFile = join(REPO_ROOT, 'resources/js/store/index.js');
+        const src       = readFileSync(storeFile, 'utf8');
+
+        // Extrait le bloc `paths: [...]` pour scanner uniquement la liste
+        // persistée (et pas les commentaires ADR-007 explicatifs qui peuvent
+        // mentionner la clé pour documenter sa suppression). On strip d'abord
+        // les commentaires pour éviter qu'un `]` à l'intérieur d'un commentaire
+        // (ex: `[AUDIT-P1]`) ne ferme prématurément la capture non-greedy.
+        const srcNoComments = stripComments(src);
+        const pathsMatch    = srcNoComments.match(/paths\s*:\s*\[([\s\S]*?)\]/);
+        expect(pathsMatch, 'createPersistedState paths array introuvable').not.toBeNull();
+        const pathsBlock = pathsMatch[1];
+
+        // On ne tolère pas la chaîne entre guillemets — uniquement les
+        // commentaires (// ...) sont autorisés à mentionner la clé.
+        expect(
+            /["']kioskSettings\.locale["']/.test(pathsBlock),
+            'kioskSettings.locale est encore persisté (regression ADR-007 / Sprint 3D)'
+        ).toBe(false);
+
+        // Sanity-check : les autres clés a11y restent persistées (on ne casse
+        // pas le storage des préférences contrast/pmr/audio par effet de bord).
+        expect(pathsBlock).toMatch(/["']kioskSettings\.contrast["']/);
+        expect(pathsBlock).toMatch(/["']kioskSettings\.pmr["']/);
+    });
+
+    it('config/kiosk.php : `locale_switch_allowed` feature flag exposé, default false', () => {
+        const cfg = readFileSync(join(REPO_ROOT, 'config/kiosk.php'), 'utf8');
+        // La clé doit être présente (les deux branches de retour : requireForm
+        // ET le retour standard) et l'env var doit défaulter à false.
+        expect(cfg).toMatch(/'locale_switch_allowed'\s*=>\s*\$localeSwitchAllowed/);
+        expect(cfg).toMatch(/KIOSK_LOCALE_SWITCH_ALLOWED'?\s*,\s*false/);
     });
 });
 

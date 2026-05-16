@@ -19,6 +19,18 @@ if (! in_array($defaultLocale, ['fr', 'en', 'ar'], true)) {
 }
 
 /*
+ | [ADR-007 / Sprint 3D 2026-05-16] Kiosk runtime FR-immutable.
+ |
+ | En V1 fast-food Le Cayenne, la borne tourne en français pour toute la
+ | session (UI, clavier virtuel, Web Speech, screen readers). Le drawer
+ | a11y ne propose plus de sélecteur FR/EN/AR — exposé ici uniquement comme
+ | feature flag pour un pilote multi-langue post-V1. Tant que `false`, le
+ | frontend doit refuser tout `kioskSettings/setLocale` initié par l'UI.
+ | Voir docs/adr/ADR-007-kiosk-fr-lock.md.
+ */
+$localeSwitchAllowed = filter_var(env('KIOSK_LOCALE_SWITCH_ALLOWED', false), FILTER_VALIDATE_BOOLEAN);
+
+/*
 | [MENU-RESET 2026-05-13] Sandwich-split DISABLED — new structure has 3 separate
 | sandwich categories (sandwich-cayenne, galette, sandwich-classique) so no need
 | for cold-vs-signature sidebar split anymore. Kept as empty array for backwards
@@ -31,6 +43,9 @@ if ($requireForm) {
         'spa_auto_login' => false,
         'spa_payload'    => null,
         'default_locale' => $defaultLocale,
+        // [ADR-007 / Sprint 3D] V1 FR-immutable. `false` désactive le picker UI
+        // côté SPA. Voir docs/adr/ADR-007-kiosk-fr-lock.md.
+        'locale_switch_allowed' => $localeSwitchAllowed,
         'menu_pricing'   => [
             'full_ratio'   => 1.0,
             'fries_ratio'  => 0.6,
@@ -75,6 +90,9 @@ return [
     'spa_auto_login' => (bool) $spaPayload,
     'spa_payload'    => $spaPayload,
     'default_locale' => $defaultLocale,
+    // [ADR-007 / Sprint 3D] V1 FR-immutable. `false` désactive le picker UI côté
+    // SPA et le persisted-state localStorage. Voir docs/adr/ADR-007-kiosk-fr-lock.md.
+    'locale_switch_allowed' => $localeSwitchAllowed,
     'menu_pricing'   => [
         'full_ratio'   => 1.0,
         'fries_ratio'  => 0.6,

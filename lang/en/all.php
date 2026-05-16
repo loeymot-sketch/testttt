@@ -130,6 +130,8 @@ return [
         ],
         'view_product' => 'View product',
         'continue' => 'Continue',
+        // [Sprint 1B 2026-05-16] NF525 cash trail guard message.
+        'cash_no_open_session_blocks_sale' => 'No open cash drawer — open a session before accepting a cash payment.',
     ],
     'studio' => [
         'eyebrow' => 'Centralized catalog',
