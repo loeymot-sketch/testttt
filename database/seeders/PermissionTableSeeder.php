@@ -642,6 +642,19 @@ class PermissionTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            // [Sprint 1D / F-4 — 2026-05-16] Cash variance override permission.
+            // Required to reconcile a session whose |variance| exceeds
+            // config('cash.variance_threshold_eur'). Granted to Admin (via
+            // Permission::all() in RolePermissionTableSeeder) and explicitly
+            // listed for Branch Manager.
+            [
+                'title'      => 'Cash variance override',
+                'name'       => 'cash.reconcile.variance.override',
+                'guard_name' => 'sanctum',
+                'url'        => 'pos/cash-drawer/sessions/reconcile',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ];
 
         $permissions = AppLibrary::associativeToNumericArrayBuilder($permissions);

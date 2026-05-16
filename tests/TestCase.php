@@ -145,6 +145,8 @@ abstract class TestCase extends BaseTestCase
             // [POS-9.4.12] fiscal management (NF525 Z/X reports, drawer audit)
             'pos-manage-fiscal',
             'pos-reopen-z',
+            // [Sprint 1D / F-4 — 2026-05-16] Cash variance override
+            'cash.reconcile.variance.override',
         ];
         foreach ($permissionNames as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'sanctum']);
@@ -181,6 +183,8 @@ abstract class TestCase extends BaseTestCase
                 // [POS-9.4.12] fiscal management is a manager-level responsibility.
                 'pos-manage-fiscal',
                 'pos-reopen-z',
+                // [Sprint 1D / F-4] approve cash variance beyond threshold.
+                'cash.reconcile.variance.override',
             ]);
         }
 

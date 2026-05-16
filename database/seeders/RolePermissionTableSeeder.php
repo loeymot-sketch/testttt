@@ -72,6 +72,10 @@ class RolePermissionTableSeeder extends Seeder
                 'chefs_show',
                 'transactions',
                 'sales-report',
+                // [Sprint 1D / F-4] Branch Manager may approve cash variance
+                // beyond the configured threshold (default 2€). Cashiers
+                // (POS Operator) must escalate to a manager.
+                'cash.reconcile.variance.override',
             ];
             $branchManager->givePermissionTo(
                 Permission::whereIn('name', $branchManagerPermissionNames)->get()

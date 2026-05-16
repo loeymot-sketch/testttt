@@ -11,6 +11,7 @@ use App\Services\Cash\CashDrawerService;
 use App\Services\Fiscal\ZReportCashEnrichmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
@@ -45,6 +46,14 @@ class ZReportCashEnrichmentTest extends TestCase
         $this->enricher = app(ZReportCashEnrichmentService::class);
 
         $this->actingAs($this->cashier);
+
+        // [Sprint 1D / F-4] Pre-existing Z-enrichment scenarios use variances
+        // up to 10€ to exercise the aggregator; the variance gate is covered
+        // by dedicated CashVarianceGateTest. Neutralise the gate here so this
+        // suite continues to verify the Z math without entangling itself
+        // with role-based reconcile authorisation.
+        Config::set('cash.variance_threshold_eur', 999.0);
+        Config::set('cash.variance_manager_approval_required', false);
     }
 
     /** Z-1 — aggregateForWindow somme variance correctement */

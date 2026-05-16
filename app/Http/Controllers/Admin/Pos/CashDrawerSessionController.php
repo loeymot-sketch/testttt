@@ -97,13 +97,37 @@ class CashDrawerSessionController extends AdminController
 
     /**
      * POST /api/admin/pos/cash-drawer/sessions/{session}/reconcile
+     *
+     * Body (optional): { variance_reason: string max 255 }
+     *
+     * [Sprint 1D / F-4] When |variance| > config('cash.variance_threshold_eur'),
+     * the request MUST provide a non-empty variance_reason AND the calling
+     * user MUST hold cash.reconcile.variance.override permission (Admin or
+     * Branch Manager). Otherwise responds 422 with code
+     *   CASH_VARIANCE_REASON_REQUIRED  or  CASH_VARIANCE_MANAGER_APPROVAL_REQUIRED.
      */
     public function reconcile(Request $request, int $session): JsonResponse
     {
         $this->assertSessionVisibleToUser($request, $session);
 
+        $data = $request->validate([
+            'variance_reason' => ['nullable', 'string', 'max:255'],
+        ]);
+
         try {
-            $result = $this->service->reconcileSession($session);
+            $result = $this->service->reconcileSession(
+                $session,
+                $data['variance_reason'] ?? null,
+                $request->user(),
+            );
+        } catch (\App\Exceptions\CashVarianceRequiresApprovalException $e) {
+            return response()->json([
+                'status'    => false,
+                'message'   => $e->getMessage(),
+                'code'      => $e->getErrorCode(),
+                'variance'  => $e->getVariance(),
+                'threshold' => $e->getThreshold(),
+            ], $e->getStatusCode());
         } catch (HttpException $e) {
             return response()->json([
                 'status'  => false,
@@ -187,6 +211,9 @@ class CashDrawerSessionController extends AdminController
             'closing_amount'          => $session->closing_amount === null ? null : (float) $session->closing_amount,
             'expected_closing_amount' => $session->expected_closing_amount === null ? null : (float) $session->expected_closing_amount,
             'variance'                => $session->variance === null ? null : (float) $session->variance,
+            // [Sprint 1D / F-4] Expose variance_reason — NF525 evidence,
+            // displayed in admin reconciliation screen and Z-report drilldown.
+            'variance_reason'         => $session->variance_reason,
             'status'                  => $session->status,
         ];
     }

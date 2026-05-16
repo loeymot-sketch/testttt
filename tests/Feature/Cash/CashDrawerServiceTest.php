@@ -8,6 +8,7 @@ use App\Models\CashMovement;
 use App\Models\User;
 use App\Services\Cash\CashDrawerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
@@ -31,6 +32,15 @@ class CashDrawerServiceTest extends TestCase
         $this->branch = Branch::factory()->create();
         $this->user = User::factory()->create(['branch_id' => $this->branch->id]);
         $this->actingAs($this->user);
+
+        // [Sprint 1D / F-4] These legacy tests target the I1..I5 + idempotency
+        // invariants and pre-date the variance gate. Neutralise the gate
+        // (threshold 999€, approval not required) so existing test data
+        // (variances around 5€) continues to exercise the original arithmetic
+        // paths. Dedicated coverage of the gate lives in
+        // tests/Feature/Cash/CashVarianceGateTest.php.
+        Config::set('cash.variance_threshold_eur', 999.0);
+        Config::set('cash.variance_manager_approval_required', false);
     }
 
     /** I1 — open session créée OK */

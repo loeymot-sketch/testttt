@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Services\Cash\CashDrawerService;
 use App\Services\PaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
@@ -69,6 +70,13 @@ class ReconciliationFlowsE2ETest extends TestCase
         ]);
         $this->cashier->assignRole('POS Operator');
         $this->cashier->givePermissionTo('pos');
+
+        // [Sprint 1D / F-4] Scenario #6 (Cash session close avec variance)
+        // intentionally creates a -5€ variance to exercise the F-003
+        // arithmetic path. Neutralise the gate here — coverage lives in
+        // tests/Feature/Cash/CashVarianceGateTest.php.
+        Config::set('cash.variance_threshold_eur', 999.0);
+        Config::set('cash.variance_manager_approval_required', false);
     }
 
     /* ------------------------------------------------------------------ */

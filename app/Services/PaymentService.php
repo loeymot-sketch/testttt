@@ -237,18 +237,47 @@ class PaymentService
     }
 
     /**
-     * [AUDIT-F-003] Hook side-effect : enregistre le movement cash sur la
-     * session OPEN du caissier (si elle existe). Best-effort (jamais bloquant).
+     * [AUDIT-F-003 + Sprint 1B 2026-05-16] Enregistre un movement cash IN sur
+     * la session OPEN du caissier.
+     *
+     * Deux modes :
+     *   - $strict = false (legacy, kiosk counter-collect) — best-effort,
+     *     log + return si pas de session OPEN. NF525 fiscalement loose
+     *     mais préserve la backward-compat kiosk takeaway.
+     *   - $strict = true (Sprint 1B, POS direct + split CASH) — throw
+     *     `CashDrawerSessionNotOpenException` (422) si pas de session.
+     *     L'order est rollback par la transaction parente : 0 order,
+     *     0 movement, 0 audit ; le caissier doit ouvrir sa session
+     *     avant de pouvoir vendre cash.
+     *
+     * `$amountOverride` permet d'écrire un movement multi-tender (tranche
+     * cash seule, pas le total order). Si null → fallback `$order->total`
+     * (legacy single-tender path).
+     *
+     * Public depuis Sprint 1B pour être appelable depuis `OrderService`
+     * sans réflexion (SplitPaymentService passe par CashDrawerService
+     * directement pour les tranches).
      */
-    private function recordCashOrderMovement(Order $order, ?string $note = null): void
+    public function recordCashOrderMovement(
+        Order $order,
+        ?string $note = null,
+        bool $strict = false,
+        ?float $amountOverride = null,
+    ): void
     {
         try {
             if (! Auth::check()) {
+                if ($strict) {
+                    throw new \App\Exceptions\CashDrawerSessionNotOpenException();
+                }
                 return;
             }
             $userId = (int) Auth::id();
             $branchId = (int) ($order->branch_id ?? 0);
             if ($branchId <= 0) {
+                if ($strict) {
+                    throw new \App\Exceptions\CashDrawerSessionNotOpenException();
+                }
                 return;
             }
 
@@ -256,6 +285,14 @@ class PaymentService
             $session = $cashService->findOpenSessionForUser($branchId, $userId);
 
             if (! $session) {
+                if ($strict) {
+                    Log::warning('[Sprint 1B] POS cash sale blocked — no open cash drawer session', [
+                        'order_id'  => $order->id,
+                        'branch_id' => $branchId,
+                        'user_id'   => $userId,
+                    ]);
+                    throw new \App\Exceptions\CashDrawerSessionNotOpenException();
+                }
                 Log::info('[F-003] No open cash drawer session — order paid cash without session linkage', [
                     'order_id'  => $order->id,
                     'branch_id' => $branchId,
@@ -264,15 +301,26 @@ class PaymentService
                 return;
             }
 
+            $amount = $amountOverride !== null
+                ? round((float) $amountOverride, 2)
+                : round((float) $order->total, 2);
+
             $cashService->recordMovement(
                 sessionId: (int) $session->id,
                 type: \App\Models\CashMovement::TYPE_ORDER_PAYMENT,
-                amount: round((float) $order->total, 2),
+                amount: $amount,
                 direction: \App\Models\CashMovement::DIRECTION_IN,
                 orderId: (int) $order->id,
                 notes: $note,
+                strict: $strict,
             );
+        } catch (\App\Exceptions\CashDrawerSessionNotOpenException $e) {
+            // Re-throw : doit remonter pour rollback la transaction order.
+            throw $e;
         } catch (\Throwable $e) {
+            if ($strict) {
+                throw $e;
+            }
             Log::warning('[F-003] recordCashOrderMovement failed (non-blocking)', [
                 'order_id' => $order->id,
                 'error'    => $e->getMessage(),

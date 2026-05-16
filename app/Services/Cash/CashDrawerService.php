@@ -2,11 +2,16 @@
 
 namespace App\Services\Cash;
 
+use App\Exceptions\CashVarianceRequiresApprovalException;
 use App\Models\CashDrawerSession;
 use App\Models\CashMovement;
+use App\Models\User;
+use App\Services\Fiscal\AuditLogService;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -24,6 +29,18 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  *       et variance = closing - expected, puis fige le statut RECONCILED.
  *   I4. recordMovement refuse si la session n'est plus OPEN (rejet 422).
  *   I5. recordMovement valide direction ∈ {in, out} et type whitelisted.
+ *
+ * [Sprint 1D / F-4 — 2026-05-16] Variance gate:
+ *   I6. Si |variance| > config('cash.variance_threshold_eur'), reconcile exige:
+ *       - variance_reason non-vide (string, max 255 char)
+ *       - permission cash.reconcile.variance.override (Admin + Branch Manager)
+ *   Sinon → CashVarianceRequiresApprovalException (422).
+ *
+ * [Sprint 1D / F-8 — 2026-05-16] Audit binding:
+ *   Chaque event NF525-significant (open / close / reconcile / movement) est
+ *   posté dans audit_logs HMAC chain via AuditLogService::write(). Best-effort
+ *   logging — l'audit log NE doit JAMAIS bloquer l'opération cash si le chain
+ *   est indisponible (downgrade en log warning).
  */
 class CashDrawerService
 {
@@ -58,7 +75,7 @@ class CashDrawerService
         $lockKey = "cash_drawer_open_b{$branchId}_u{$userId}";
 
         try {
-            return Cache::lock($lockKey, 5)->block(3, function () use ($branchId, $userId, $openingAmount) {
+            $session = Cache::lock($lockKey, 5)->block(3, function () use ($branchId, $userId, $openingAmount) {
                 return DB::transaction(function () use ($branchId, $userId, $openingAmount) {
                     $existing = CashDrawerSession::query()
                         ->where('branch_id', $branchId)
@@ -90,6 +107,14 @@ class CashDrawerService
             ]);
             throw new HttpException(409, 'A cash drawer session open is already in progress for this user on this branch');
         }
+
+        // [Sprint 1D / F-8] Audit cash.session.opened — NF525 evidence.
+        $this->writeAuditLog('cash.session.opened', $session, [
+            'session_id'      => $session->id,
+            'opening_amount'  => (float) $session->opening_amount,
+        ], $userId);
+
+        return $session;
     }
 
     /**
@@ -104,7 +129,7 @@ class CashDrawerService
             throw new HttpException(422, 'closing_amount must be >= 0');
         }
 
-        return DB::transaction(function () use ($sessionId, $closingAmount) {
+        $result = DB::transaction(function () use ($sessionId, $closingAmount) {
             try {
                 $session = CashDrawerSession::query()
                     ->whereKey($sessionId)
@@ -120,7 +145,7 @@ class CashDrawerService
 
             // Idempotent: appel répété sur closed → no-op
             if ($session->status === CashDrawerSession::STATUS_CLOSED) {
-                return $session;
+                return ['session' => $session, 'transitioned' => false];
             }
 
             $session->closing_amount = $closingAmount;
@@ -128,21 +153,49 @@ class CashDrawerService
             $session->status         = CashDrawerSession::STATUS_CLOSED;
             $session->save();
 
-            return $session->refresh();
+            return ['session' => $session->refresh(), 'transitioned' => true];
         });
+
+        // [Sprint 1D / F-8] Audit cash.session.closed — only on real transition.
+        // Idempotent calls (already-closed) skip the audit entry to avoid
+        // duplicate chain rows for the same business event.
+        if ($result['transitioned']) {
+            $this->writeAuditLog('cash.session.closed', $result['session'], [
+                'session_id'     => $result['session']->id,
+                'closing_amount' => (float) $result['session']->closing_amount,
+            ]);
+        }
+
+        return $result['session'];
     }
 
     /**
      * Reconcilier : calcule expected_closing_amount + variance, fige RECONCILED.
      * Idempotent : appel sur session déjà RECONCILED → renvoie le résultat existant.
      *
+     * [Sprint 1D / F-4] Variance gate:
+     *   - |variance| <= threshold      → reconcile OK, variance_reason optional
+     *   - |variance| >  threshold      → MUST provide variance_reason AND user
+     *                                     MUST hold cash.reconcile.variance.override
+     *                                     permission (when approval_required=true).
+     *
+     * @param  int          $sessionId
+     * @param  string|null  $varianceReason  Required if |variance| > threshold
+     * @param  User|null    $actor           User performing reconcile (defaults to Auth::user())
      * @return array{session: CashDrawerSession, expected: float, variance: float}
      *
      * @throws HttpException 422 si session OPEN (doit être CLOSED d'abord)
+     * @throws CashVarianceRequiresApprovalException 422 si variance > threshold sans gate
      */
-    public function reconcileSession(int $sessionId): array
-    {
-        return DB::transaction(function () use ($sessionId) {
+    public function reconcileSession(
+        int $sessionId,
+        ?string $varianceReason = null,
+        ?User $actor = null,
+    ): array {
+        // Best-effort actor resolution: passed-in user OR currently authenticated.
+        $actor ??= Auth::user() instanceof User ? Auth::user() : null;
+
+        $result = DB::transaction(function () use ($sessionId, $varianceReason, $actor) {
             try {
                 $session = CashDrawerSession::query()
                     ->whereKey($sessionId)
@@ -159,9 +212,10 @@ class CashDrawerService
             // Idempotent
             if ($session->status === CashDrawerSession::STATUS_RECONCILED) {
                 return [
-                    'session'  => $session,
-                    'expected' => (float) $session->expected_closing_amount,
-                    'variance' => (float) $session->variance,
+                    'session'      => $session,
+                    'expected'     => (float) $session->expected_closing_amount,
+                    'variance'     => (float) $session->variance,
+                    'transitioned' => false,
                 ];
             }
 
@@ -173,17 +227,91 @@ class CashDrawerService
             $expected = round((float) $session->opening_amount + (float) $movementsSum, 2);
             $variance = round((float) $session->closing_amount - $expected, 2);
 
+            // [Sprint 1D / F-4] Variance gate.
+            $threshold = (float) Config::get('cash.variance_threshold_eur', 2.00);
+            $approvalRequired = (bool) Config::get('cash.variance_manager_approval_required', true);
+            $permission = (string) Config::get('cash.variance_override_permission', 'cash.reconcile.variance.override');
+            $maxReasonLength = (int) Config::get('cash.variance_reason_max_length', 255);
+
+            $trimmedReason = $varianceReason === null ? null : trim($varianceReason);
+            if ($trimmedReason === '') {
+                $trimmedReason = null;
+            }
+
+            if (abs($variance) > $threshold) {
+                if ($trimmedReason === null) {
+                    throw new CashVarianceRequiresApprovalException(
+                        message: sprintf(
+                            'Cash variance %.2f€ exceeds threshold %.2f€ — variance_reason required',
+                            $variance,
+                            $threshold
+                        ),
+                        errorCode: CashVarianceRequiresApprovalException::CODE_REASON_REQUIRED,
+                        variance: $variance,
+                        threshold: $threshold,
+                    );
+                }
+
+                if (mb_strlen($trimmedReason) > $maxReasonLength) {
+                    throw new HttpException(
+                        422,
+                        sprintf('variance_reason exceeds %d characters', $maxReasonLength)
+                    );
+                }
+
+                if ($approvalRequired) {
+                    if ($actor === null || ! $this->actorCanOverrideVariance($actor, $permission)) {
+                        throw new CashVarianceRequiresApprovalException(
+                            message: sprintf(
+                                'Cash variance %.2f€ exceeds threshold %.2f€ — manager approval required (permission %s)',
+                                $variance,
+                                $threshold,
+                                $permission
+                            ),
+                            errorCode: CashVarianceRequiresApprovalException::CODE_MANAGER_APPROVAL,
+                            variance: $variance,
+                            threshold: $threshold,
+                        );
+                    }
+                }
+            }
+
             $session->expected_closing_amount = $expected;
             $session->variance                = $variance;
+            // Always persist the reason when provided (even under threshold),
+            // because cashier voluntary note is useful evidence.
+            if ($trimmedReason !== null) {
+                $session->variance_reason = $trimmedReason;
+            }
             $session->status                  = CashDrawerSession::STATUS_RECONCILED;
             $session->save();
 
             return [
-                'session'  => $session->refresh(),
-                'expected' => $expected,
-                'variance' => $variance,
+                'session'      => $session->refresh(),
+                'expected'     => $expected,
+                'variance'     => $variance,
+                'transitioned' => true,
             ];
         });
+
+        // [Sprint 1D / F-8] Audit cash.session.reconciled — only on transition.
+        if ($result['transitioned']) {
+            $thresholdForAudit = (float) Config::get('cash.variance_threshold_eur', 2.00);
+            $this->writeAuditLog('cash.session.reconciled', $result['session'], [
+                'session_id'      => $result['session']->id,
+                'expected'        => $result['expected'],
+                'variance'        => $result['variance'],
+                'variance_reason' => $result['session']->variance_reason,
+                'threshold'       => $thresholdForAudit,
+                'over_threshold'  => abs($result['variance']) > $thresholdForAudit,
+            ], $actor?->id);
+        }
+
+        return [
+            'session'  => $result['session'],
+            'expected' => $result['expected'],
+            'variance' => $result['variance'],
+        ];
     }
 
     /**
@@ -258,7 +386,7 @@ class CashDrawerService
             return null;
         }
 
-        return CashMovement::create([
+        $movement = CashMovement::create([
             'cash_drawer_session_id' => $session->id,
             'branch_id'              => $session->branch_id,
             'order_id'               => $orderId,
@@ -267,6 +395,18 @@ class CashDrawerService
             'direction'              => $direction,
             'notes'                  => $notes,
         ]);
+
+        // [Sprint 1D / F-8] Audit cash.movement.recorded — NF525 evidence.
+        $this->writeAuditLog('cash.movement.recorded', $session, [
+            'session_id' => $session->id,
+            'movement_id'=> $movement->id,
+            'order_id'   => $orderId,
+            'type'       => $type,
+            'amount'     => (float) $movement->amount,
+            'direction'  => $direction,
+        ]);
+
+        return $movement;
     }
 
     /**
@@ -279,5 +419,71 @@ class CashDrawerService
             ->where('opened_by_user_id', $userId)
             ->where('status', CashDrawerSession::STATUS_OPEN)
             ->first();
+    }
+
+    /**
+     * [Sprint 1D / F-4] Check whether the actor holds the variance-override
+     * permission. Uses Spatie's standard ->can() bridge so the same predicate
+     * works whether the user inherits the permission through a role or has it
+     * granted directly. Fail-closed: any throw → denied.
+     */
+    private function actorCanOverrideVariance(User $actor, string $permission): bool
+    {
+        if (! method_exists($actor, 'can')) {
+            return false;
+        }
+        try {
+            return (bool) $actor->can($permission);
+        } catch (\Throwable $e) {
+            Log::warning('[Sprint 1D / F-4] actorCanOverrideVariance threw', [
+                'user_id'    => $actor->id ?? null,
+                'permission' => $permission,
+                'error'      => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * [Sprint 1D / F-8] Write an audit_logs row via the official frozen
+     * AuditLogService writer (we never bypass HMAC chain). Best-effort:
+     * audit log failures are downgraded to log warnings — the fiscal
+     * invariants enforced upstream (DB triggers, immutability, FK RESTRICT)
+     * remain the source of truth even if the chain temporarily fails.
+     *
+     * @param  array<string,mixed>  $payload
+     */
+    private function writeAuditLog(
+        string $action,
+        CashDrawerSession $session,
+        array $payload,
+        ?int $userIdOverride = null,
+    ): void {
+        try {
+            $userId = $userIdOverride
+                ?? (Auth::check() ? (int) Auth::id() : (int) ($session->opened_by_user_id ?? 0));
+
+            app(AuditLogService::class)->write([
+                'branch_id'   => (int) $session->branch_id,
+                'user_id'     => $userId > 0 ? $userId : null,
+                'action'      => $action,
+                'resource'    => 'cash_drawer_session',
+                'resource_id' => (int) $session->id,
+                'payload'     => $payload,
+            ]);
+        } catch (\Throwable $e) {
+            // Audit chain unavailable → log + continue. DB-layer immutability
+            // (cash_movements_no_delete trigger + cash_drawer_sessions_no_delete
+            // trigger from migration 2026_05_10_010000) already guarantees the
+            // raw fiscal evidence cannot be erased — the audit row is a
+            // belt-and-suspenders helper.
+            Log::warning('[Sprint 1D / F-8] cash audit_log.write_failed', [
+                'action'      => $action,
+                'session_id'  => $session->id,
+                'branch_id'   => $session->branch_id,
+                'exception'   => get_class($e),
+                'message'     => $e->getMessage(),
+            ]);
+        }
     }
 }

@@ -15,6 +15,7 @@ use App\Services\Cash\CashDrawerService;
 use App\Services\Fiscal\ZReportCashEnrichmentService;
 use App\Services\PaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -53,6 +54,12 @@ class F003CashReconciliationSentinelTest extends TestCase
         $this->cashier->assignRole('POS Operator');
         $this->cashier->givePermissionTo('pos');
         $this->actingAs($this->cashier);
+
+        // [Sprint 1D / F-4] F003 sentinel checks the arithmetic invariants
+        // of reconcile (INV-4) with +5€/-5€ scenarios — pre-dates the
+        // variance gate. Neutralise the gate here.
+        Config::set('cash.variance_threshold_eur', 999.0);
+        Config::set('cash.variance_manager_approval_required', false);
     }
 
     /** F003-INV-1 — Schema complet, colonnes critiques présentes */
