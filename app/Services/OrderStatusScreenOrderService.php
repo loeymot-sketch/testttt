@@ -69,6 +69,13 @@ class OrderStatusScreenOrderService
                 $query->where('branch_id', $branchScope);
             }
 
+            // [Sprint 5C Z4-P1-02 2026-05-16] Deterministic order — FIFO by
+            // queue_number with id as tiebreaker. Without this, polls
+            // re-shuffled the customer wall between fetches (Mongo-style
+            // unordered result set) and customers saw their queue token
+            // jump positions.
+            $query->orderBy('queue_number', 'asc')->orderBy('id', 'asc');
+
             return $query->get();
         } catch (HttpException $exception) {
             throw $exception;
@@ -122,6 +129,10 @@ class OrderStatusScreenOrderService
             if ($branchId > 0) {
                 $query->where('branch_id', $branchId);
             }
+
+            // [Sprint 5C Z4-P1-02 2026-05-16] Deterministic FIFO order — see
+            // sibling list() comment.
+            $query->orderBy('queue_number', 'asc')->orderBy('id', 'asc');
 
             return $query->get();
         } catch (Exception $exception) {

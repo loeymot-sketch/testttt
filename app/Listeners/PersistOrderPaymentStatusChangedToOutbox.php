@@ -63,6 +63,13 @@ class PersistOrderPaymentStatusChangedToOutbox
             ]
         );
 
+        // [Sprint 5C Z8-P1-01 2026-05-16] Skip afterCommit dispatch on listener
+        // replay (firstOrCreate returned existing row). Parity with
+        // PersistOrderCreatedToOutbox / PersistCatalogChangedToOutbox.
+        if (! $domainEvent->wasRecentlyCreated) {
+            return;
+        }
+
         DB::afterCommit(function () use ($domainEvent): void {
             // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.
             // [test-e2e fix E-001 round-3 cluster-8 2026-05-11] broadcast best-effort;

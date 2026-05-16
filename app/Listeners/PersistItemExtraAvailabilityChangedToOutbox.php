@@ -60,6 +60,13 @@ class PersistItemExtraAvailabilityChangedToOutbox
             ]
         );
 
+        // [Sprint 5C Z8-P1-01 2026-05-16] Skip afterCommit dispatch on listener
+        // replay (firstOrCreate returned existing row). Parity with
+        // PersistOrderCreatedToOutbox / PersistCatalogChangedToOutbox.
+        if (! $domainEvent->wasRecentlyCreated) {
+            return;
+        }
+
         DB::afterCommit(function () use ($domainEvent): void {
             // [test-e2e fix E-001 round-2 2026-05-11] Same isolation as
             // PersistItemAvailabilityChangedToOutbox: under sync queue any
