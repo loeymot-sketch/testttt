@@ -63,6 +63,7 @@ import { kioskSetup } from './modules/kioskSetup';
 import { loyaltySetup } from './modules/loyaltySetup';
 import { offerItem } from './modules/offerItem';
 import { paymentGateway } from './modules/paymentGateway';
+import { paymentTerminal } from './modules/paymentTerminal';
 import { smsGateway } from './modules/smsGateway';
 import { salesReport } from './modules/salesReport';
 import { frontendCart } from "./modules/frontend/frontendCart";
@@ -87,6 +88,7 @@ import { posFloorplan } from './modules/posFloorplan';
 import { posParked } from './modules/posParked';
 import { posCustomer } from './modules/posCustomer';
 import { posOrder } from './modules/posOrder';
+import { cashDrawer } from './modules/cashDrawer';
 import { transaction } from './modules/transaction';
 import { notificationAlert } from './modules/notificationAlert';
 import { creditBalanceReport } from './modules/creditBalanceReport';
@@ -190,6 +192,7 @@ export default new createStore({
         loyaltySetup,
         offerItem,
         paymentGateway,
+        paymentTerminal,
         smsGateway,
         salesReport,
         itemsReport,
@@ -212,6 +215,7 @@ export default new createStore({
         posParked,
         posCustomer,
         posOrder,
+        cashDrawer,
         transaction,
         notificationAlert,
         creditBalanceReport,
@@ -264,8 +268,15 @@ export default new createStore({
                 "kioskCart.kioskMachineId",
                 // Phase 4 — Accessibility & locale preferences (European Accessibility Act).
                 // Stockés sur l'appareil (localStorage) pour survivre aux reloads Electron.
-                // Aucune PII ici — uniquement les toggles a11y et la langue choisie.
-                "kioskSettings.locale",
+                // Aucune PII ici — uniquement les toggles a11y.
+                //
+                // [ADR-007 / Sprint 3D 2026-05-16] `kioskSettings.locale` est volontairement
+                // EXCLU de la persistance : le kiosk runtime est FR-immutable en V1.
+                // Persister la locale permettrait à un store en `ar`/`en` (legacy iter15
+                // antérieur au lock) de forcer une locale non-FR au boot via
+                // `applyKioskA11yFromStore`. Le store retombe sur le default 'fr' à
+                // chaque reload, ce qui restaure le FR-lock même sur les bornes qui
+                // auraient un localStorage hérité. Voir docs/adr/ADR-007-kiosk-fr-lock.md.
                 "kioskSettings.contrast",
                 "kioskSettings.pmr",
                 "kioskSettings.audio",

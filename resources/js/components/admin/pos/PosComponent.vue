@@ -148,6 +148,24 @@
                     <template #icon>💵</template>
                     <span class="hidden lg:inline">{{ $t('pos.no_sale') }}</span>
                 </PosV5Button>
+                <!--
+                  [Sprint 1A 2026-05-16] Bouton "Caisse" — ouvre le dialog de
+                  gestion de session caisse (fond de caisse, mouvements, clôture).
+                  Variant ghost + tone "ready" quand session active = halo subtil
+                  pour signaler au caissier qu'une session est ouverte.
+                -->
+                <PosV5Button
+                    variant="ghost"
+                    size="md"
+                    class="pos-v4-cash-session-btn"
+                    data-testid="pos-cash-session-open"
+                    :tone="cashSessionActive ? 'ready' : 'neutral'"
+                    :title="$t('label.cash_session_dialog_title')"
+                    @click="openCashSessionDialog"
+                >
+                    <template #icon>🏦</template>
+                    <span class="hidden lg:inline">{{ $t('label.cash_session_header_btn') }}</span>
+                </PosV5Button>
             </nav>
         </header>
         <!-- [POS-V5] Search V5 — input large unifié, soumission par Enter. -->
@@ -809,6 +827,18 @@
         @close="showParkedOrders = false"
         @restored="applyParkedSnapshot"
     />
+    <!--
+      [Sprint 1A 2026-05-16] Dialog session caisse.
+      Auto-ouvert au démarrage si aucune session OPEN n'existe sur la branche
+      du caissier (cf. mounted hook → loadCurrentSession après applyPosBranchScope).
+    -->
+    <PosCashDrawerSessionDialog
+        :open="showCashSessionDialog"
+        :initial-mode="cashSessionInitialMode"
+        @close="closeCashSessionDialog"
+        @session-opened="onCashSessionOpened"
+        @session-closed="onCashSessionClosed"
+    />
     <PaymentComponent
         :props="checkoutProps"
         @payment-form:patch="patchPaymentForm"
@@ -1026,6 +1056,8 @@ import PosV5StatChip from "./v5/PosV5StatChip.vue";
 import PosV5TotalRow from "./v5/PosV5TotalRow.vue";
 import PosV5QtyStepper from "./v5/PosV5QtyStepper.vue";
 import PosV5SearchInput from "./v5/PosV5SearchInput.vue";
+// [Sprint 1A 2026-05-16] Dialog session caisse (fond de caisse, mouvements, clôture).
+import PosCashDrawerSessionDialog from "../cash/PosCashDrawerSessionDialog.vue";
 
 // [Phase-6 / T10–T12] Recherche menu, lecteur code-barres + F-keys, debounce,
 // `SkeletonGrid` sur chargement grille — perçu perfo (spinners discrets) ; pas de
@@ -1052,6 +1084,8 @@ export default {
         PosV5TotalRow,
         PosV5QtyStepper,
         PosV5SearchInput,
+        // [Sprint 1A] Cash drawer session dialog (admin/cash/).
+        PosCashDrawerSessionDialog,
     },
     data() {
         return {
@@ -1068,6 +1102,13 @@ export default {
             kioskCashLoading: false,
             showKioskCashPanel: false,
             showParkedOrders: false,
+            // [Sprint 1A 2026-05-16] Cash drawer session dialog state.
+            // Auto-opened in mounted() after branch_id is resolved if no OPEN
+            // session is found for the current user. Cashier can also manually
+            // open via the "Caisse" button in the operator bar header.
+            showCashSessionDialog: false,
+            cashSessionInitialMode: 'auto', // 'auto' | 'open' | 'active' | 'close' | 'movements'
+            _cashSessionAutoChecked: false,
             expandedKioskCashOrders: {},
             // [POS-V4-ORDERS-TRACKER 2026-05-02] Stats discrètes pour le bouton "Suivi
             // commandes" : `active` = ACCEPT+PREPARING+PREPARED (badge), `ready` =
@@ -1231,6 +1272,15 @@ export default {
     computed: {
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
+        },
+        // [Sprint 1A 2026-05-16] Indicateur visuel — bouton "Caisse" en tone "ready"
+        // si une session est OPEN pour le caissier courant.
+        cashSessionActive: function () {
+            try {
+                return !!this.$store.getters['cashDrawer/isOpen'];
+            } catch (_e) {
+                return false;
+            }
         },
         // [iter15-mega-fix D-003 2026-05-10] Reactive list of currently
         // unavailable catalog items used by the persistent rupture banner.
@@ -1543,6 +1593,10 @@ export default {
                     this.applyPosBranchScope(branchId);
                     this.loadBranchLocation(branchId);
                     this._startPosSyncFallback();
+                    // [Sprint 1A 2026-05-16] Auto-check cash drawer session AFTER
+                    // branch scope is resolved (controller derives branch_id from
+                    // auth user — branch must be in scope before /current fires).
+                    this.autoLoadCashSession();
                     if (previousBranchId !== branchId) {
                         this.itemList();
                     } else {
@@ -1558,6 +1612,8 @@ export default {
                 if (fallbackBranchId) {
                     this.applyPosBranchScope(fallbackBranchId);
                     this._startPosSyncFallback();
+                    // [Sprint 1A 2026-05-16] Auto-check même en fallback path.
+                    this.autoLoadCashSession();
                     if (previousBranchId !== fallbackBranchId) {
                         this.itemList();
                     }
@@ -1648,6 +1704,54 @@ export default {
 
     },
     methods: {
+        // [Sprint 1A 2026-05-16] Cash drawer session — handlers UI ──────────────
+        /**
+         * Charge la session OPEN du caissier courant et auto-ouvre le dialog
+         * en mode "open" si aucune session n'existe. Appelé après que
+         * `applyPosBranchScope` ait résolu le branch_id, garantissant que
+         * la requête `/cash-drawer/sessions/current` est authentifiée avec
+         * le contexte branche correct.
+         */
+        autoLoadCashSession() {
+            if (this._cashSessionAutoChecked) return;
+            this._cashSessionAutoChecked = true;
+            try {
+                this.$store.dispatch('cashDrawer/loadCurrentSession').then((session) => {
+                    if (!session) {
+                        // No session open → prompt cashier immediately.
+                        this.cashSessionInitialMode = 'open';
+                        this.showCashSessionDialog = true;
+                    }
+                }).catch(() => {
+                    // Fail-soft: don't block POS bootstrap on a network blip.
+                    // Cashier can still open via the header button.
+                });
+            } catch (_e) {
+                /* defensive */
+            }
+        },
+        openCashSessionDialog() {
+            this.cashSessionInitialMode = 'auto';
+            this.showCashSessionDialog = true;
+        },
+        closeCashSessionDialog() {
+            this.showCashSessionDialog = false;
+        },
+        onCashSessionOpened(session) {
+            // Session OPEN successfully — leave dialog open in "active" view
+            // so cashier sees the live stats. They can close manually.
+            // (Vuex store already updated by the action.)
+        },
+        onCashSessionClosed(_result) {
+            // Reconciled — refresh store state to reflect "no session" state.
+            this._cashSessionAutoChecked = false;
+            // Optionally re-load (not auto-open) so badge updates without
+            // forcing the cashier into a new "open" flow immediately.
+            try {
+                this.$store.dispatch('cashDrawer/loadCurrentSession').catch(() => {});
+            } catch (_e) { /* defensive */ }
+        },
+        // ────────────────────────────────────────────────────────────────────
         // [POS-V5 WAVE 3 2026-05-02] Animations triggers ─────────────────────
         triggerCartBump() {
             if (this._cartBumpTimer) clearTimeout(this._cartBumpTimer);
