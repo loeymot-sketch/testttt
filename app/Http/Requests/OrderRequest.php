@@ -215,8 +215,50 @@ class OrderRequest extends FormRequest
                 $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
             }
 
+            // [Sprint 2B / DEL-4] DELIVERY orders require a reachable phone on
+            // the buyer account. The downstream pipeline (delivery boy dispatch,
+            // SMS notifications, courier API callbacks) all reference
+            // $order->user->phone — a null or sentinel value here propagates as
+            // silent NULL into the delivery flow. Validating BEFORE create
+            // avoids creating un-deliverable orders. The check is intentionally
+            // only applied to DELIVERY: kiosk / takeaway / web pickup do not
+            // require an off-site phone callback.
+            if ($orderTypeInt === OrderType::DELIVERY) {
+                $this->validateAuthenticatedUserPhoneForDelivery($validator);
+            }
+
             $this->validateOrderItemVariationsAfter($validator);
         });
+    }
+
+    /**
+     * [Sprint 2B / DEL-4] Reject a DELIVERY order when the authenticated buyer
+     * has no usable phone on file. Two failure modes:
+     *   - "phone is required" -> the column is NULL or starts with the
+     *     PENDING_ sentinel installed by the make_user_phone_required
+     *     migration. UX must prompt for re-entry.
+     *   - "phone is invalid"  -> the column has data but fails ValidPhone.
+     */
+    private function validateAuthenticatedUserPhoneForDelivery($validator): void
+    {
+        $user = $this->user();
+        if (! $user) {
+            return; // Already rejected by authorize().
+        }
+
+        $phone = (string) ($user->phone ?? '');
+        if ($phone === '' || str_starts_with($phone, 'PENDING_')) {
+            $validator->errors()->add(
+                'phone',
+                'Un numéro de téléphone valide est requis pour les commandes en livraison. Veuillez le renseigner depuis votre profil.'
+            );
+            return;
+        }
+
+        $rule = new \App\Rules\ValidPhone();
+        if (! $rule->passes('phone', $phone)) {
+            $validator->errors()->add('phone', $rule->message());
+        }
     }
 
     private function isKioskMachineOrder(): bool

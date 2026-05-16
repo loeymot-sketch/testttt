@@ -18,7 +18,17 @@ class WalkInCustomerResolver
             [
                 'name' => 'Client Comptoir',
                 'username' => 'client_comptoir',
-                'phone' => null,
+                // [Sprint 2B / DEL-4] phone is now NOT NULL on users (see
+                // 2026_05_16_140100_make_user_phone_required migration). The
+                // walk-in / counter customer is a system-internal user — it
+                // never receives a phone callback by design. We persist a
+                // stable sentinel (`PENDING_WALKIN`) that:
+                //   - satisfies the NOT NULL constraint
+                //   - fails App\Rules\ValidPhone (non-digit prefix), so any
+                //     accidental DELIVERY flow attempting to reuse this
+                //     account is rejected with a phone-validation error
+                //   - is never matched by a real phone lookup
+                'phone' => 'PENDING_WALKIN',
                 'password' => Hash::make('123456'),
                 'status' => Status::ACTIVE,
                 'country_code' => '+33',

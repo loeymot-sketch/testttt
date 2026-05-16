@@ -524,23 +524,45 @@ class FrontendOrderService
                 }, $isKioskMachineOrder ? 'kiosk' : 'frontend');
 
                 if ($request->address_id) {
-                    // [SECURITY-IDOR] Ensure the address belongs to the authenticated user.
-                    // Without this check, any user could reference another user's address_id
-                    // and snapshot their private address data onto an order.
+                    // [SECURITY-IDOR / Sprint 2B DEL-2] Ensure the address belongs to the
+                    // authenticated user. Without this check, any user could reference
+                    // another user's address_id and snapshot their private address data
+                    // onto an order.
+                    //
+                    // Prior implementation silently skipped OrderAddress::create when the
+                    // ownership check failed — leaving DELIVERY orders persisted in the
+                    // database with no attached shipping address. Wave E audit flagged
+                    // this as P0: a forged address_id would be rejected (no snapshot
+                    // written) but the order itself was still created, leaving the
+                    // kitchen / delivery boy with no destination AND no audit trail of
+                    // the IDOR attempt.
+                    //
+                    // The fix throws OrderAddressOwnershipException (HTTP 403) which
+                    // bubbles through catch (HttpException) at line 590 to Laravel's
+                    // exception handler, and exits this DB::transaction closure WITHOUT
+                    // a commit, so the FrontendOrder + OrderItem + OrderCoupon rows and
+                    // the StockService decrement that share the same transaction all
+                    // roll back atomically.
                     $address = Address::where('id', $request->address_id)
                         ->where('user_id', Auth::user()->id)
                         ->first();
-                    if ($address) {
-                        OrderAddress::create([
-                            'order_id' => $this->frontendOrder->id,
-                            'user_id' => Auth::user()->id,
-                            'label' => $address->label,
-                            'address' => $address->address,
-                            'apartment' => $address->apartment,
-                            'latitude' => $address->latitude,
-                            'longitude' => $address->longitude
+                    if (! $address) {
+                        Log::warning('[FrontendOrder] OrderAddress IDOR refused', [
+                            'address_id' => (int) $request->address_id,
+                            'user_id'    => (int) Auth::id(),
+                            'order_id'   => (int) ($this->frontendOrder->id ?? 0),
                         ]);
+                        throw new \App\Exceptions\OrderAddressOwnershipException();
                     }
+                    OrderAddress::create([
+                        'order_id'  => $this->frontendOrder->id,
+                        'user_id'   => Auth::user()->id,
+                        'label'     => $address->label,
+                        'address'   => $address->address,
+                        'apartment' => $address->apartment,
+                        'latitude'  => $address->latitude,
+                        'longitude' => $address->longitude,
+                    ]);
                 }
 
                 if ($validatedCoupon instanceof Coupon) {

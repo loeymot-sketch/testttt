@@ -52,7 +52,16 @@ class UserAddressService
     {
         try {
             DB::transaction(function () use ($request, $user) {
-                $this->address = Address::create($request->validated() + ['user_id' => $user->id]);
+                $payload = $request->validated() + ['user_id' => $user->id];
+                // [Sprint 2B / DEL-1] Mirror AddressService::store — derive geocode_status
+                // from the supplied lat/lng so the admin-side address writer never
+                // produces NULL rows that subsequently bypass the DeliveryQuoteService
+                // geocode gate.
+                $payload['geocode_status'] = AddressService::deriveGeocodeStatus(
+                    $payload['latitude'] ?? null,
+                    $payload['longitude'] ?? null
+                );
+                $this->address = Address::create($payload);
             });
             return $this->address;
         } catch (Exception $exception) {
@@ -68,7 +77,12 @@ class UserAddressService
     {
         try {
             if ($user->id == $address->user_id) {
-                return tap($address)->update($request->validated());
+                $payload = $request->validated();
+                $payload['geocode_status'] = AddressService::deriveGeocodeStatus(
+                    $payload['latitude'] ?? null,
+                    $payload['longitude'] ?? null
+                );
+                return tap($address)->update($payload);
             } else {
                 throw new Exception(trans('all.user_match'), 422);
             }

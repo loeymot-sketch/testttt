@@ -89,6 +89,27 @@ class User extends Authenticatable implements HasMedia
         parent::boot();
         static::addGlobalScope(new BranchScope());
 
+        // [Sprint 2B / DEL-4] users.phone is now NOT NULL (see
+        // 2026_05_16_140100_make_user_phone_required migration). Several
+        // legacy code paths create User rows without supplying a phone
+        // (admin tooling, walk-in customer, console commands, sentinel
+        // factories). To preserve backward compat without weakening the
+        // NOT NULL invariant, we backfill an empty phone with a stable
+        // `PENDING_CREATE_<rand>` sentinel that fails App\Rules\ValidPhone
+        // (non-digit prefix). DELIVERY orders made by such users are
+        // rejected by OrderRequest::validateAuthenticatedUserPhoneForDelivery
+        // until they update their profile.
+        //
+        // We intentionally do NOT use `PENDING_<id>` here because the row
+        // does not have an id yet at `creating`; the random suffix is
+        // unique enough to never collide with another sentinel. The
+        // migration backfill uses `PENDING_<id>` for already-existing rows.
+        static::creating(function ($user) {
+            if (empty($user->phone) || $user->phone === null) {
+                $user->phone = 'PENDING_CREATE_' . bin2hex(random_bytes(6));
+            }
+        });
+
         static::updating(function ($user) {
             if ($user->id === 1) {
                 $user->status = Status::ACTIVE;
