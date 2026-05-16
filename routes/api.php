@@ -837,6 +837,15 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/{printer}/test-print', [PrinterController::class, 'testPrint'])->name('test-print');
     });
 
+    // [Wave F F-2 / Sprint 1C] Payment terminals (TPE) — per-TPE fee tracking.
+    Route::prefix('payment-terminals')->name('paymentTerminals.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\PaymentTerminalController::class, 'index'])->name('index');
+        Route::post('/', [App\Http\Controllers\Admin\PaymentTerminalController::class, 'store'])->name('store');
+        Route::get('/{payment_terminal}', [App\Http\Controllers\Admin\PaymentTerminalController::class, 'show'])->name('show');
+        Route::match(['put', 'patch'], '/{payment_terminal}', [App\Http\Controllers\Admin\PaymentTerminalController::class, 'update'])->name('update');
+        Route::delete('/{payment_terminal}', [App\Http\Controllers\Admin\PaymentTerminalController::class, 'destroy'])->name('destroy');
+    });
+
     Route::prefix('pos-order')->name('posOrder.')->group(function () {
         Route::get('/', [PosOrderController::class, 'index']);
         Route::get('show/{order}', [PosOrderController::class, 'show']);

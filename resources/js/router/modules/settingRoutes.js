@@ -43,6 +43,7 @@ const OrderSetupComponent = () => import(/* webpackChunkName: "admin-shell" */ "
 const KioskSetupComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/KioskSetup/KioskSetupComponent");
 const LoyaltySetupComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/LoyaltySetup/LoyaltySetupComponent");
 const PaymentGatewayComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/PaymentGateway/PaymentGatewayComponent");
+const PaymentTerminalsComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/PaymentTerminals/PaymentTerminalsComponent");
 const SmsGatewayComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/SmsGateway/SmsGatewayComponent");
 const NotificationAlertComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/NotificationAlert/NotificationAlertComponent");
 const KioskMachineComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/settings/KioskMachine/KioskMachineComponent.vue");
@@ -543,6 +544,18 @@ export default [
                     auth: true,
                     permissionUrl: "settings",
                     breadcrumb: "payment_gateway",
+                },
+            },
+            {
+                // [Wave F F-2 / Sprint 1C] Per-TPE fee tracking
+                path: "payment-terminals",
+                component: PaymentTerminalsComponent,
+                name: "admin.settings.paymentTerminals",
+                meta: {
+                    isFrontend: false,
+                    auth: true,
+                    permissionUrl: "settings",
+                    breadcrumb: "payment_terminals",
                 },
             },
             {

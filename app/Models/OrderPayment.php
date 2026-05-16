@@ -30,6 +30,10 @@ class OrderPayment extends Model
         'order_id',
         'branch_id',
         'mode',
+        // [Wave F F-2 / Sprint 1C] FK to payment_terminals — tracks the physical
+        // TPE used so Z report enrichment can compute fees per terminal.
+        // NULLABLE: legacy payments + COUNTER_DEFERRED remain valid.
+        'terminal_id',
         'amount',
         'tendered',
         'change_amount',
@@ -40,6 +44,7 @@ class OrderPayment extends Model
     protected $casts = [
         'mode'           => 'int',
         'branch_id'      => 'int',
+        'terminal_id'    => 'int',
         'amount'         => 'decimal:2',
         'tendered'       => 'decimal:2',
         'change_amount'  => 'decimal:2',
@@ -65,6 +70,16 @@ class OrderPayment extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * [Wave F F-2 / Sprint 1C] Physical TPE relation. NULL pour legacy
+     * payments ou COUNTER_DEFERRED. Permet d'agréger fees per terminal
+     * via ZReportCashEnrichmentService.
+     */
+    public function terminal(): BelongsTo
+    {
+        return $this->belongsTo(PaymentTerminal::class, 'terminal_id');
     }
 
     /**

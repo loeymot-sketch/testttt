@@ -4,8 +4,11 @@ namespace App\Services\Fiscal;
 
 use App\Models\CashDrawerSession;
 use App\Models\CashMovement;
+use App\Models\OrderPayment;
+use App\Models\PaymentTerminal;
 use App\Models\ZReport;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * [AUDIT-F-003 / Sub-task 5] ZReport cash enrichment — DECORATOR PATTERN.
@@ -88,13 +91,134 @@ class ZReportCashEnrichmentService
      * ZReportService::aggregate()) avec les agrégats cash. Ne modifie PAS la
      * signature originelle.
      *
+     * [Wave F F-2 / Sprint 1C] Ajout du breakdown par TPE et net_after_fees :
+     *   - by_terminal : list of {terminal_id, name, gateway_type, cash_total,
+     *                              card_total, transactions_count, fees_total}
+     *   - net_after_fees : Σ amount payments dans la fenêtre − Σ fees_total
+     *
+     * Read-only : ce breakdown est calculé runtime, JAMAIS persisté sur le
+     * Z report (n'altère pas la chaîne HMAC). Les paiements legacy avec
+     * terminal_id NULL apparaissent sous une row synthétique "Sans TPE".
+     *
      * @param  array<string,mixed>  $aggregates  output ZReportService::aggregate
      * @return array<string,mixed>
      */
     public function enrich(array $aggregates, int $branchId, ?Carbon $from, Carbon $to): array
     {
-        $cash = $this->aggregateForWindow($branchId, $from, $to);
-        return array_merge($aggregates, $cash);
+        $cash       = $this->aggregateForWindow($branchId, $from, $to);
+        $terminals  = $this->aggregateByTerminal($branchId, $from, $to);
+        $feesTotal  = array_sum(array_column($terminals, 'fees_total'));
+        $grossTotal = array_sum(array_map(
+            fn ($row) => (float) $row['cash_total'] + (float) $row['card_total'],
+            $terminals
+        ));
+
+        return array_merge($aggregates, $cash, [
+            'by_terminal'    => $terminals,
+            'fees_total'     => round((float) $feesTotal, 2),
+            'net_after_fees' => round($grossTotal - $feesTotal, 2),
+        ]);
+    }
+
+    /**
+     * Agrégation par TPE pour la fenêtre (from, to] (sur paid_at).
+     *
+     * Pour chaque PaymentTerminal référencé par un order_payment de la fenêtre,
+     * retourne :
+     *   - terminal_id, name, gateway_type
+     *   - cash_total : Σ amount où mode = CASH
+     *   - card_total : Σ amount où mode ∈ {CARD, MOBILE_BANKING, TICKET_RESTAURANT, OTHER}
+     *   - transactions_count : nombre de order_payments
+     *   - fees_total : (cash_total + card_total) * fee_percent/100
+     *                  + transactions_count * fee_fixed
+     *
+     * Les paiements sans terminal_id (legacy ou COUNTER_DEFERRED) sont
+     * regroupés sous une row synthétique {terminal_id: null, name: "Sans TPE",
+     * gateway_type: "unknown"} avec fees_total = 0.
+     *
+     * Bypass BranchScope identique à aggregateForWindow (service-level contract).
+     *
+     * @return list<array{
+     *     terminal_id: int|null,
+     *     name: string,
+     *     gateway_type: string,
+     *     cash_total: float,
+     *     card_total: float,
+     *     transactions_count: int,
+     *     fees_total: float,
+     * }>
+     */
+    public function aggregateByTerminal(int $branchId, ?Carbon $from, Carbon $to): array
+    {
+        $paymentsQuery = OrderPayment::query()
+            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('branch_id', $branchId)
+            ->where('paid_at', '<=', $to);
+
+        if ($from) {
+            $paymentsQuery->where('paid_at', '>', $from);
+        }
+
+        // Group by terminal_id (NULL bucket allowed) + mode bucket
+        $rows = (clone $paymentsQuery)
+            ->select([
+                'terminal_id',
+                DB::raw('SUM(CASE WHEN mode = ' . \App\Enums\PosPaymentMethod::CASH . ' THEN amount ELSE 0 END) as cash_total'),
+                DB::raw('SUM(CASE WHEN mode <> ' . \App\Enums\PosPaymentMethod::CASH . ' THEN amount ELSE 0 END) as card_total'),
+                DB::raw('COUNT(*) as transactions_count'),
+            ])
+            ->groupBy('terminal_id')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return [];
+        }
+
+        $terminalIds = $rows->pluck('terminal_id')->filter()->unique()->values()->all();
+        $terminals = empty($terminalIds)
+            ? collect()
+            : PaymentTerminal::query()
+                ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->whereIn('id', $terminalIds)
+                ->get()
+                ->keyBy('id');
+
+        $out = [];
+        foreach ($rows as $row) {
+            $terminalId = $row->terminal_id !== null ? (int) $row->terminal_id : null;
+            $terminal   = $terminalId !== null ? $terminals->get($terminalId) : null;
+
+            $cashTotal     = (float) $row->cash_total;
+            $cardTotal     = (float) $row->card_total;
+            $txCount       = (int) $row->transactions_count;
+            $feesTotal     = 0.0;
+
+            if ($terminal instanceof PaymentTerminal) {
+                $feePercent = (float) $terminal->fee_percent;
+                $feeFixed   = (float) $terminal->fee_fixed;
+                $feesTotal  = (($cashTotal + $cardTotal) * $feePercent / 100.0)
+                            + ($txCount * $feeFixed);
+            }
+
+            $out[] = [
+                'terminal_id'        => $terminalId,
+                'name'               => $terminal?->name ?? 'Sans TPE',
+                'gateway_type'       => $terminal?->gateway_type ?? 'unknown',
+                'cash_total'         => round($cashTotal, 2),
+                'card_total'         => round($cardTotal, 2),
+                'transactions_count' => $txCount,
+                'fees_total'         => round($feesTotal, 2),
+            ];
+        }
+
+        // Sort : terminals with id first (alphabetic name), then "Sans TPE" last
+        usort($out, function ($a, $b) {
+            if ($a['terminal_id'] === null && $b['terminal_id'] !== null) return 1;
+            if ($a['terminal_id'] !== null && $b['terminal_id'] === null) return -1;
+            return strcmp((string) $a['name'], (string) $b['name']);
+        });
+
+        return $out;
     }
 
     /**
