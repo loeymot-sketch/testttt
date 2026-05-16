@@ -9,9 +9,17 @@
 .env.codex
 .env.cursor
 .env.backup
+.env.backup-*
+.env.backup.*
 .env.testing
 .env.anthropic.local
 .env.orcai
+.env.local
+.env.local.*
+.env.production
+.env.production.*
+.env.staging
+.env.staging.*
 opencode.local.json
 .orcai-cache/
 .cursor/mcp/graphiti.json

@@ -79,20 +79,31 @@ test.describe('POS Cash — commande complète', () => {
     const grid = page.locator('.pos-v5-grid, .pos-grid, [data-testid="pos-cart-stat-chip"]').first();
     await expect(grid).toBeVisible({ timeout: 15_000 });
 
-    // Step 2 — best-effort cash drawer (F-003) si le bouton est présent.
-    // Si déjà ouvert : pas de bouton → skip propre.
-    const openCashBtn = page.locator('[data-testid="kiosk-cash-open"]').first();
+    // Step 2 — Sprint 1A 2026-05-16 cash drawer session (PosCashDrawerSessionDialog).
+    // Le bouton header "Caisse" (data-testid="pos-cash-session-open") ouvre le dialog.
+    // Si auto-open au mount (pas de session) : dialog est déjà visible.
+    const openCashBtn = page.locator('[data-testid="pos-cash-session-open"]').first();
     if (await openCashBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
       await openCashBtn.click({ timeout: 5_000 });
       await page.waitForTimeout(800);
-      const floatField = page.locator('input[type="number"], input[name*="float" i]').first();
-      if (await floatField.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        await floatField.fill('100');
-        const confirmFloat = page.getByRole('button', { name: /ouvrir|valider|confirmer|confirm/i }).first();
-        if (await confirmFloat.isVisible({ timeout: 2_000 }).catch(() => false)) {
-          await confirmFloat.click({ timeout: 3_000 });
-          await page.waitForTimeout(1_000);
-        }
+    }
+    // Si dialog en mode "open" présent → fill opening amount + submit
+    const openForm = page.locator('[data-testid="cash-session-open-form"]').first();
+    if (await openForm.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      const openingInput = page.locator('[data-testid="cash-session-opening-input"]').first();
+      if (await openingInput.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        await openingInput.fill('100');
+      }
+      const submitBtn = page.locator('[data-testid="cash-session-open-submit"]').first();
+      if (await submitBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        await submitBtn.click({ timeout: 3_000 });
+        await page.waitForTimeout(1_500);
+      }
+      // Close dialog si présent (mode active)
+      const closeBtn = page.locator('[data-testid="cash-session-close"]').first();
+      if (await closeBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        await closeBtn.click({ timeout: 2_000 });
+        await page.waitForTimeout(500);
       }
     }
 
