@@ -51,6 +51,22 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // [Sprint 3B P1-SYNC-02 2026-05-16] Retry rows where attempts >= 5
+        // (terminal failures past Phase 1 retries). The complementary
+        // `outbox:rescue` only re-queues rows with attempts < 5, so without
+        // this schedule terminal failures stay pending forever and silently
+        // never broadcast. Scoped to last 24h to bound the recovery surface
+        // (older rows are paged on the staleness monitor / require manual
+        // triage). Command signature uses `--since=24h` for consistency with
+        // the existing CLI idiom (see `OutboxRetryFailedCommand::resolveCutoff`);
+        // semantically equivalent to the `--max-age-hours=24` spec note.
+        $schedule->command('foodking:outbox:retry-failed --since=24h')
+            ->hourly()
+            ->withoutOverlapping(10)
+            ->onOneServer()
+            ->name('outbox-retry-failed')
+            ->description('Retry domain events failed after 5 attempts within last 24h');
+
         $schedule->job(new CleanupStalePendingKioskOrders())
             ->everyFiveMinutes()
             ->withoutOverlapping()

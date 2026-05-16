@@ -44,6 +44,17 @@ class PersistOrderPaidAtCounterToOutbox
             ]
         );
 
+        // [Sprint 3B P1-SYNC-03 2026-05-16] Parity with PersistCatalogChangedToOutbox:92
+        // and PersistCouponChangedToOutbox:82. On a listener replay (e.g. queue retry
+        // between persistence and post-commit dispatch), the second firstOrCreate()
+        // returns the existing row and `wasRecentlyCreated` is false. Phase 1 of the
+        // job (claim skip) would correctly absorb the dup, but we save the cost of
+        // queue serialization + log noise by skipping the afterCommit dispatch
+        // registration entirely on replay.
+        if (! $domainEvent->wasRecentlyCreated) {
+            return;
+        }
+
         DB::afterCommit(function () use ($domainEvent): void {
             // [test-e2e fix E-001 round-3 cluster-8 2026-05-11] broadcast best-effort;
             // do not fail HTTP on Pusher dispatch error (sibling defense — same
