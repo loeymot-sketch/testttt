@@ -56,16 +56,17 @@ Cross-validated P0 (≥2 agents) :
 - P0-#2 Stripe cents-truncation fix uncommitted in working tree (A1, A5)
 - P0-#3 POS offline replay POSTs `admin/pos/order` (404) instead of `admin/pos` (A2 file:line strict)
 - P0-#4 5 PHPUnit fixture files untracked → CI fresh-clone RED (A5)
-- P0-#5 Ansible `group_vars/vault.yml.example` reference (A6) — **resolved as audit false positive : `vault.yml.example` already present in repo pre-audit** (verified `ls deploy/ansible/group_vars/`)
-- P0-#6 `PRODUCTION_ENV_TEMPLATE.env.txt` missing 4 keys (A6) — **resolved as audit false positive : all 4 keys (STRIPE_WEBHOOK_SECRET, POS_SIMULATION_HARDWARE, CASH_MANAGER_GATE_ROUTINE_CLOSE, KDS_V2_DEFAULT_ENABLED, KIOSK_LOCALE_SWITCH_ALLOWED) verified present pre-audit** (grep hits at lines 131, 112, 142, 152, 161 respectively)
+- P0-#5 Ansible `group_vars/vault.yml.example` missing (A6) — **closed by commit `59fdd279f`** : `vault.yml.example` created NEW 53 LOC with 8 required vault_* placeholders (db_password / redis_password / soketi_app_{id,key,secret} / fiscal_audit_secret / fiscal_z_report_secret / backup_alert_webhook) + 4 optional commented placeholders + inline cp/edit/ansible-vault-encrypt instructions + NF525 caveats. README updated with "Setting up Ansible vault" bootstrap section.
+- P0-#6 `PRODUCTION_ENV_TEMPLATE.env.txt` missing 4 keys (A6) — **closed by commit `59fdd279f`** (+40 LOC) : STRIPE_WEBHOOK_SECRET (CRITICAL — empty default in `config/services.php:68` meant signature verification skipped → forged `payment_intent.succeeded` risk) + CASH_MANAGER_GATE_ROUTINE_CLOSE (Sprint H2.2) + KDS_V2_DEFAULT_ENABLED (Sprint H4.5) + KIOSK_LOCALE_SWITCH_ALLOWED (FR-lock K-001 ADR-007). POS_SIMULATION_HARDWARE already at line 112 from Wave 5I `1235e3e1a` (no change).
 - P0-#7 CONVERGENCE_FINAL.md stale by 2 commits + Wave 5H labeled "pending" while landed (A5, A7) — **this refresh closes it**
 
-### Insights heal Round 1 commits (landed post-audit)
+### Insights heal Round 1 commits (landed post-audit, 5 total)
 
 - `c0c315ef8` fix(stripe): P0-#2 — round-before-cast cents conversion (€9.99 → 999, not 900)
 - `31a33cd24` fix(pos): P0-#3 + P0-#4 — offline replay URL + commit 5 PHPUnit fixtures
 - `2477a2d05` fix(pos): P0-#1 — commit POS_SIMULATION_HARDWARE triad + production boot guard + sentinel
-- TBD docs commit : P0-#7 CONVERGENCE refresh + BRAIN §2/§3/§7 + memory project file + frozen-zones reconcile + garbage cleanup + OWNER_GATES / LOCK XSS status notes (this commit)
+- `59fdd279f` fix(deploy): P0-#5 + P0-#6 — Ansible vault.yml.example NEW (53 LOC + 8 placeholders) + PRODUCTION_ENV_TEMPLATE +4 keys (STRIPE_WEBHOOK_SECRET CRITICAL + 3 sprint-config keys)
+- `6b8644ee0` docs(v1-cloud-prep): P0-#7 + P1 cluster — CONVERGENCE refresh + BRAIN §2/§3/§7 + memory project file + frozen-zones reconcile + garbage cleanup + OWNER_GATES / LOCK XSS status notes
 
 ### Recalibrated owner-claim scope (insight #6 from RED-team)
 
