@@ -133,6 +133,8 @@
         "next": "Nächste",
         "default": "Verzug",
         "dismiss": "Schließen",
+        "kds_call_customer_aria": "{name} {phone} anrufen",
+        "kds_card_aria": "Bestellung {queue}, Quelle {source}, {state}, Wartezeit {minutes} Minuten {seconds} Sekunden",
         "configure_wizard": "Wizard konfigurieren",
         "composer": {
             "product_context": "Produkt",

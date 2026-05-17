@@ -97,7 +97,7 @@
           v-if="customerPhone"
           class="kds-card__delivery-row kds-card__delivery-phone keep-latin"
           :href="`tel:${customerPhone}`"
-          :aria-label="`Appeler ${customerName || ''} ${customerPhone}`.trim()"
+          :aria-label="$t('label.kds_call_customer_aria', { name: customerName || '', phone: customerPhone })"
         >
           <span class="kds-card__delivery-icon" aria-hidden="true">&#128241;</span>
           <span class="kds-card__delivery-text">{{ customerPhone }}</span>
@@ -277,7 +277,7 @@ export default {
         ariaLabel() {
             const m = Math.floor(this.elapsedSeconds / 60);
             const r = this.elapsedSeconds % 60;
-            return `Commande ${this.order.queue_number || this.order.id}, source ${this.sourceLabel}, ${this.stateLabel}, attente ${m} minutes ${r} secondes`;
+            return this.$t('label.kds_card_aria', { queue: this.order.queue_number || this.order.id, source: this.sourceLabel, state: this.stateLabel, minutes: m, seconds: r });
         },
         // [Sprint 2A DEL-3 2026-05-16] Delivery-context computeds.
         // Source-truth precedence: explicit source_surface === 'delivery'

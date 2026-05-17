@@ -133,6 +133,8 @@
         "next": "পরবর্তী",
         "default": "ডিফল্ট",
         "dismiss": "বন্ধ করুন",
+        "kds_call_customer_aria": "{name} {phone} কল করুন",
+        "kds_card_aria": "অর্ডার {queue}, উৎস {source}, {state}, অপেক্ষা {minutes} মিনিট {seconds} সেকেন্ড",
         "configure_wizard": "উইজার্ড কনফিগার করুন",
         "composer": {
             "product_context": "পণ্য",

@@ -1021,6 +1021,8 @@
         "kds_sync_never": "Pas encore synchronisé",
         "kds_allergens_badge": "Allergènes",
         "kds_allergens_badge_aria": "Voir les allergènes de cette commande",
+        "kds_call_customer_aria": "Call {name} {phone}",
+        "kds_card_aria": "Order {queue}, source {source}, {state}, waiting {minutes} minutes {seconds} seconds",
         "kds_allergens_modal_title": "Allergènes commande #{order_id}",
         "kds_allergens_modal_intro": "Vérifiez chaque article avant préparation. Cette information n'interrompt pas le flux cuisine.",
         "kds_allergens_for_item": "{item_name} : {allergens}",

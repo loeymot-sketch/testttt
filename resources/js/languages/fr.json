@@ -547,6 +547,8 @@
         "kds_sync_never": "Pas encore synchronisé",
         "kds_allergens_badge": "Allergènes",
         "kds_allergens_badge_aria": "Voir les allergènes de cette commande",
+        "kds_call_customer_aria": "Appeler {name} {phone}",
+        "kds_card_aria": "Commande {queue}, source {source}, {state}, attente {minutes} minutes {seconds} secondes",
         "kds_allergens_modal_title": "Allergènes de la commande #{order_id}",
         "kds_allergens_modal_intro": "Vérifiez chaque article avant préparation. L'information est purement informative et ne bloque PAS le flux normal.",
         "kds_allergens_for_item": "{item_name} : {allergens}",
