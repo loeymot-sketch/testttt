@@ -163,6 +163,10 @@
             },
             @endif
         };
+        // [Sprint H1 K-003 2026-05-17] Externalize FRITES_INCLUDED_CATS so DB
+        // renumber/menu reset doesn't silently break wizard fries-inclusion logic.
+        // Consumed by KioskWizardComponent.vue:1029 (shouldAskStep frites_style).
+        window.FK_KIOSK_FRITES_CATS = @json(config('kiosk.frites_included_category_ids', []));
         // [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle
         // [GAP-32-6] Use config() instead of env() — env() returns null after config:cache in production
         window.__FOODKING_RUNTIME__ = {

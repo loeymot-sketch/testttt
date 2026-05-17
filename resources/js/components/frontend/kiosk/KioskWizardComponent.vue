@@ -1026,7 +1026,8 @@ export default {
         const extras = Array.isArray(item.extras) ? item.extras : [];
         const hasFritesStyleExtras = extras.some((e) => e?.group_label === 'frites_style');
         if (!hasFritesStyleExtras) return false;
-        const FRITES_INCLUDED_CATS = new Set([309, 310, 311, 314]);
+        // [Sprint H1 K-003 2026-05-17] Externalized to config/kiosk.php — injected via master.blade.php as window.FK_KIOSK_FRITES_CATS. Hardcoded fallback preserved for SSR/test safety.
+        const FRITES_INCLUDED_CATS = new Set(Array.isArray(window.FK_KIOSK_FRITES_CATS) ? window.FK_KIOSK_FRITES_CATS : [309, 310, 311, 314]);
         const catId = parseInt(item.item_category_id, 10);
         if (FRITES_INCLUDED_CATS.has(catId)) return false;
         // Si l'item a un menu choice : conditionner sur la sélection actuelle.

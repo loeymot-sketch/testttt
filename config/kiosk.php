@@ -38,6 +38,20 @@ $localeSwitchAllowed = filter_var(env('KIOSK_LOCALE_SWITCH_ALLOWED', false), FIL
 */
 $sandwichColdSlugs = [];
 
+/*
+| [Sprint H1 K-003 2026-05-17] FRITES_INCLUDED_CATS
+|
+| Category IDs whose items include a free side of fries (sandwich/menu
+| bundles). Previously hardcoded in KioskWizardComponent.vue:1029.
+| Externalize so a menu reset / DB renumber doesn't silently break the
+| wizard. Override via KIOSK_FRITES_INCLUDED_CATS env (CSV of int IDs).
+| Defaults to 309,310,311,314 (Assiettes, Ojja, Omelettes, Menus Enfants).
+*/
+$fritesIncludedCategoryIds = array_values(array_filter(array_map(
+    static fn ($v) => (int) trim((string) $v),
+    explode(',', (string) env('KIOSK_FRITES_INCLUDED_CATS', '309,310,311,314'))
+), static fn ($v) => $v > 0));
+
 if ($requireForm) {
     return [
         'spa_auto_login' => false,
@@ -62,6 +76,8 @@ if ($requireForm) {
         // [iter15-mega-fix D-001 2026-05-10] Hardware credential, not a brute-force surface.
         'login_rate_limit' => (int) env('KIOSK_LOGIN_RATE_LIMIT', 30),
         'confirmation_auto_return_seconds' => (int) env('KIOSK_CONFIRMATION_AUTO_RETURN_SECONDS', 30),
+        // [Sprint H1 K-003 2026-05-17] Externalized FRITES_INCLUDED_CATS — see top of file.
+        'frites_included_category_ids' => $fritesIncludedCategoryIds,
     ];
 }
 
@@ -109,4 +125,6 @@ return [
     // [iter15-mega-fix D-001 2026-05-10] Hardware credential, not a brute-force surface.
     'login_rate_limit' => (int) env('KIOSK_LOGIN_RATE_LIMIT', 30),
     'confirmation_auto_return_seconds' => (int) env('KIOSK_CONFIRMATION_AUTO_RETURN_SECONDS', 30),
+    // [Sprint H1 K-003 2026-05-17] Externalized FRITES_INCLUDED_CATS — see top of file.
+    'frites_included_category_ids' => $fritesIncludedCategoryIds,
 ];
