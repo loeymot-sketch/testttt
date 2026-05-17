@@ -787,6 +787,37 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
   const qty = selections.qty || 1;
   const setQty = (q) => setSelections(s => ({ ...s, qty: Math.max(1, q) }));
 
+  // [MASSIVE-LOGIC HEAL 2026-05-17 P0 FIC 1169/2011] Aggregate allergens across item +
+  // selected supplements + bol supplements + drink + bol drink (legal disclosure compliance).
+  // Previously recap only surfaced item.allergens — supplements/drinks selected silently dropped.
+  const aggregatedAllergens = (() => {
+    const set = new Set(item.allergens || []);
+    // Supplements pool IDs are 'sup-*' (e.g. sup-cheddar), distinct from catalog item
+    // slugs 'supp-*'. Look up allergens on the SUPPLEMENTS pool directly (now populated
+    // post MASSIVE-LOGIC HEAL 2026-05-17 P0).
+    (selections.supplementIds || []).forEach(id => {
+      const s = lcMenu.supplements.find(x => x.id === id);
+      ((s && s.allergens) || []).forEach(a => set.add(a));
+    });
+    (selections.bolSupplementIds || []).forEach(id => {
+      const s = lcMenu.supplementsBols.find(x => x.id === id);
+      ((s && s.allergens) || []).forEach(a => set.add(a));
+    });
+    if (selections.drinkId) {
+      const d = lcMenu.items.find(x => x.slug === selections.drinkId || x.id === selections.drinkId);
+      ((d && d.allergens) || []).forEach(a => set.add(a));
+    }
+    if (selections.bolDrinkId && selections.bolDrinkId !== null) {
+      const drinkSlugMap = { 'd-coca': 'coca', 'd-coca-zero': 'coca-zero', 'd-fanta': 'fanta', 'd-sprite': 'sprite', 'd-oasis': 'oasis', 'd-orangina': 'orangina', 'd-eau': 'eau-plate', 'd-capri': 'capri-sun' };
+      const slug = drinkSlugMap[selections.bolDrinkId];
+      if (slug) {
+        const d = lcMenu.items.find(x => x.slug === slug);
+        ((d && d.allergens) || []).forEach(a => set.add(a));
+      }
+    }
+    return Array.from(set);
+  })();
+
   // [test-e2e fix B-002/B-003 round-2 2026-05-11] derive active steps from the template
   // state machine so the recap surfaces a row for EVERY step the user traversed, with a
   // sentinel value ("Toutes", "Aucun", "Sans formule") when the selection equals the
@@ -812,8 +843,10 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
             <div style={{ fontSize: 16, fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>{item.name}</div>
             <div style={{ fontSize: 11, color: 'var(--gray-4)' }}>Récapitulatif de ta commande</div>
           </div>
-          {/* [D4 EU FIC 1169/2011] AllergenBadge sur recap — disclosure légale obligatoire */}
-          {window.AllergenBadge && <window.AllergenBadge allergens={item.allergens} size="lg"/>}
+          {/* [D4 EU FIC 1169/2011] AllergenBadge sur recap — disclosure légale obligatoire.
+              [MASSIVE-LOGIC HEAL 2026-05-17] now uses aggregatedAllergens (item + supps + drinks)
+              instead of item.allergens only — full FIC disclosure per selection. */}
+          {window.AllergenBadge && <window.AllergenBadge allergens={aggregatedAllergens} size="lg"/>}
         </div>
         {/* [MOBILE-REALIGNMENT 2026-05-16] Bol pre-filled rows : base + viande fixed by item */}
         {bolBaseLabel && <Row label="Base" value={bolBaseLabel}/>}
@@ -977,6 +1010,13 @@ function ScreenItemWizard({ go, itemId, addToCart }) {
     if (item && item.bol_sauce_default) {
       const defaultSauce = lcMenu.sauces.find(s => s.name === item.bol_sauce_default);
       if (defaultSauce) init.sauceIds = [defaultSauce.id];
+    }
+    // [MOBILE-REALIGNMENT 2026-05-16 RED heal P1-6] Pre-select "Nature" (id=null) for
+    // Frites items so user is not blocked at first step if they accept the default.
+    // FRITES_STYLES marks Nature with is_default=true ; mobile honors that intent.
+    if (item && item.has_frites_style) {
+      const defaultStyle = lcMenu.fritesStyles.find(fs => fs.is_default);
+      if (defaultStyle !== undefined) init.fritesStyleId = defaultStyle.id; // null for Nature
     }
     return init;
   });
