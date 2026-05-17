@@ -151,6 +151,11 @@ class CashDrawerService
             $session->closing_amount = $closingAmount;
             $session->closed_at      = now();
             $session->status         = CashDrawerSession::STATUS_CLOSED;
+            // [Sprint H2 F-10 2026-05-17] Persist closing actor for forensics.
+            // Audit HMAC chain (F-8) remains the authoritative actor source;
+            // this column is a query-convenience. Null if no auth context
+            // (console commands, system tasks) — column is nullable.
+            $session->closed_by_user_id = Auth::check() ? (int) Auth::id() : null;
             $session->save();
 
             return ['session' => $session->refresh(), 'transitioned' => true];
@@ -283,6 +288,10 @@ class CashDrawerService
             if ($trimmedReason !== null) {
                 $session->variance_reason = $trimmedReason;
             }
+            // [Sprint H2 F-10 2026-05-17] Persist reconciliation actor for
+            // forensics — uses the same resolved $actor that backs the
+            // variance gate + audit log payload. Null-safe if no auth context.
+            $session->reconciled_by_user_id = $actor?->id;
             $session->status                  = CashDrawerSession::STATUS_RECONCILED;
             $session->save();
 

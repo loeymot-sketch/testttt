@@ -41,6 +41,9 @@ class CashDrawerSession extends Model
         'variance',
         'variance_reason',
         'status',
+        // [Sprint H2 F-10 2026-05-17] Per-row actor IDs for forensic clarity.
+        'closed_by_user_id',
+        'reconciled_by_user_id',
     ];
 
     protected $casts = [
@@ -54,6 +57,9 @@ class CashDrawerSession extends Model
         'expected_closing_amount' => 'decimal:2',
         'variance'                => 'decimal:2',
         'status'                  => 'string',
+        // [Sprint H2 F-10 2026-05-17] Per-row actor IDs.
+        'closed_by_user_id'       => 'integer',
+        'reconciled_by_user_id'   => 'integer',
     ];
 
     protected static function boot(): void
