@@ -105,9 +105,11 @@ class PosOrderController extends AdminController
         int|string $order
     ): \Illuminate\Http\Response|OrderDetailsResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
         try {
-            // RED-team P0 fix 2026-05-17: remove withoutGlobalScope IDOR + explicit branch guard.
-            // BranchScope naturally filters by user.branch_id; admin (branch_id=0) bypasses scope.
-            $order = Order::findOrFail($order);
+            // RED-team P0 fix 2026-05-17 + sentinel OrderShowBranchGuardSentinelTest:44 (expect 403 not 404):
+            // Lookup with withoutGlobalScope INTERNAL to apply EXPLICIT branch guard.
+            // BranchScope alone returns 404 ModelNotFoundException (leaks via no info disclosure) +
+            // controller catches Exception → 422 (sentinel fails). Use explicit 403 deny.
+            $order = Order::withoutGlobalScope(BranchScope::class)->findOrFail($order);
             abort_unless(
                 auth()->user()?->branch_id === 0 || $order->branch_id === auth()->user()?->branch_id,
                 403,
