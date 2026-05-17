@@ -129,6 +129,36 @@ class CashDrawerService
             throw new HttpException(422, 'closing_amount must be >= 0');
         }
 
+        // [Sprint H2 F-11 — 2026-05-17] Manager-gate routine close (config opt-in).
+        //
+        // When config('cash.manager_gate_routine_close') is true, ANY close
+        // (variance OR no-variance) requires the actor to hold the same
+        // `cash.reconcile.variance.override` permission used by the Sprint 1D
+        // variance gate (reuses actorCanOverrideVariance — no duplicate
+        // permission-resolution path).
+        //
+        // Default false: single-cashier deploys keep the "POS Operator
+        // self-closes own drawer" UX intact. Multi-cashier / SaaS deploys
+        // flip CASH_MANAGER_GATE_ROUTINE_CLOSE=true to enforce manager
+        // approval on ALL closes (second pair of eyes).
+        //
+        // Gate runs BEFORE the DB::transaction so refused closes leave the
+        // session in OPEN state untouched (fail-closed; no partial mutation).
+        // Idempotent replay of an already-closed session by a non-permitted
+        // actor will also 403 by design — config flips mid-session are an
+        // operator action that must be repeated by a permitted actor.
+        // CLAUDE.md §9 (multi-tenant + auth).
+        if (Config::get('cash.manager_gate_routine_close', false)) {
+            $actor = Auth::user() instanceof User ? Auth::user() : null;
+            $permission = (string) Config::get('cash.variance_override_permission', 'cash.reconcile.variance.override');
+            if ($actor === null || ! $this->actorCanOverrideVariance($actor, $permission)) {
+                throw new HttpException(
+                    403,
+                    sprintf('Routine cash drawer close requires `%s` permission (manager gate enabled)', $permission)
+                );
+            }
+        }
+
         $result = DB::transaction(function () use ($sessionId, $closingAmount) {
             try {
                 $session = CashDrawerSession::query()
