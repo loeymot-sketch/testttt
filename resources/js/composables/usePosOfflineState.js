@@ -45,7 +45,7 @@ export function usePosOfflineState() {
             for (const entry of await listPending()) {
                 const config = { headers: { 'X-Idempotency-Key': entry.idempotencyKey } };
                 try {
-                    await postFn('admin/pos/order', entry.payload, config);
+                    await postFn('admin/pos', entry.payload, config);
                     await markSynced(entry.idempotencyKey);
                     synced += 1;
                 } catch (error) {

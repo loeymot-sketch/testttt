@@ -110,10 +110,16 @@ class TerminalIdWireInTest extends TestCase
     }
 
     /** @test
-     *  Legacy path: a tranche WITHOUT terminal_id keeps the column NULL
-     *  (no implicit default, no fabricated values). MASTER §5 Risk #4.
+     *  [F-SPLIT-PHANTOM-CARD-001 2026-05-17] CONTRACT CHANGED — terminal_id
+     *  is now MANDATORY for every CARD tranche (phantom-CARD theft vector
+     *  fix). A CARD tranche without terminal_id MUST be rejected at the
+     *  service layer (defense-in-depth, even for non-HTTP callers).
+     *
+     *  The original "legacy nullable" contract still applies to non-CARD
+     *  modes (CASH/MOBILE_BANKING/OTHER/TICKET_RESTAURANT) — see
+     *  test_split_payment_terminal_id_remains_nullable_for_non_card.
      */
-    public function test_split_payment_terminal_id_nullable_legacy_path(): void
+    public function test_split_payment_card_without_terminal_id_is_rejected(): void
     {
         $branch = Branch::factory()->create();
         $order = Order::factory()->create([
@@ -125,15 +131,57 @@ class TerminalIdWireInTest extends TestCase
         $this->makeCashierActor($branch);
 
         $service = app(SplitPaymentService::class);
+
+        $threw = false;
+        try {
+            $service->persistTranches($order, [
+                ['mode' => PosPaymentMethod::CARD, 'amount' => 20.00, 'reference' => '1234'],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $threw = true;
+            $this->assertArrayHasKey(
+                'payment_breakdown.0.terminal_id',
+                $e->errors(),
+                'Error key MUST point to the offending CARD tranche terminal_id.'
+            );
+        }
+        $this->assertTrue($threw, 'Expected ValidationException on CARD tranche without terminal_id.');
+        $this->assertSame(
+            0,
+            OrderPayment::query()->count(),
+            'No OrderPayment should be persisted when CARD tranche lacks terminal_id.'
+        );
+    }
+
+    /** @test
+     *  Non-CARD modes (CASH/MOBILE_BANKING/OTHER/TICKET_RESTAURANT) keep the
+     *  V1.0.1 legacy behaviour: terminal_id stays NULL when not provided.
+     *  MASTER §5 Risk #4 — "Sans TPE" bucket still valid for cash-equivalent
+     *  paths that do not transit a physical TPE.
+     */
+    public function test_split_payment_terminal_id_remains_nullable_for_non_card(): void
+    {
+        $branch = Branch::factory()->create();
+        $order = Order::factory()->create([
+            'branch_id' => $branch->id,
+            'total'     => 20.00,
+            'subtotal'  => 20.00,
+        ]);
+
+        $cashier = $this->makeCashierActor($branch);
+        app(\App\Services\Cash\CashDrawerService::class)
+            ->openSession((int) $branch->id, $cashier->id, 100.00);
+
+        $service = app(SplitPaymentService::class);
         $service->persistTranches($order, [
-            ['mode' => PosPaymentMethod::CARD, 'amount' => 20.00, 'reference' => '1234'],
+            ['mode' => PosPaymentMethod::CASH, 'amount' => 20.00, 'tendered' => 20.00],
         ]);
 
         $payment = OrderPayment::where('order_id', $order->id)->first();
         $this->assertNotNull($payment);
         $this->assertNull(
             $payment->terminal_id,
-            'Legacy path without terminal_id in payload stays NULL — no fabricated default.'
+            'CASH tranche keeps terminal_id NULL — phantom-CARD fix only constrains CARD mode.'
         );
     }
 
