@@ -167,6 +167,11 @@
         // renumber/menu reset doesn't silently break wizard fries-inclusion logic.
         // Consumed by KioskWizardComponent.vue:1029 (shouldAskStep frites_style).
         window.FK_KIOSK_FRITES_CATS = @json(config('kiosk.frites_included_category_ids', []));
+        // [Sprint H1 K-004 2026-05-17] Wizard template aliases (Owner G3 Option B):
+        // owner-curated substring → canonical template map, consulted first by
+        // KioskWizardComponent.vue:907 detectTemplateFromName so admin renames
+        // don't silently break wizard template routing.
+        window.FK_KIOSK_WIZARD_TEMPLATE_ALIASES = @json(config('kiosk.wizard_template_aliases', []));
         // [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle
         // [GAP-32-6] Use config() instead of env() — env() returns null after config:cache in production
         window.__FOODKING_RUNTIME__ = {

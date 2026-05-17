@@ -52,6 +52,46 @@ $fritesIncludedCategoryIds = array_values(array_filter(array_map(
     explode(',', (string) env('KIOSK_FRITES_INCLUDED_CATS', '309,310,311,314'))
 ), static fn ($v) => $v > 0));
 
+/*
+| [Sprint H1 K-004 2026-05-17] Wizard template aliases (Owner G3 Option B)
+|
+| Map of name/category-substring → canonical wizard template. Consulted
+| BEFORE the legacy substring inference in KioskWizardComponent's
+| detectTemplateFromName so admin item renames don't silently break
+| template routing (e.g., "Sandwich Cayenne" → "Sandwich Royal Spicy").
+|
+| Canonical templates that exist in the wizard switch:
+|   simple | tacos | sandwich | burger | assiette | omelette | salade | snacking
+|
+| Keys are case-insensitive substrings matched against
+| `${name} ${category_name}`. Keep them lowercase here.
+*/
+$wizardTemplateAliases = [
+    // Sandwich family
+    'cayenne'           => 'sandwich',
+    'galette'           => 'sandwich',
+    'classique'         => 'sandwich',
+    'royal'             => 'sandwich',
+    // Tacos family
+    'tacos'             => 'tacos',
+    'big tacos'         => 'tacos',
+    // Burger family
+    'burger'            => 'burger',
+    'cheeseburger'      => 'burger',
+    // Assiette family
+    'assiette'          => 'assiette',
+    // Omelette / Ojja / Menu Enfant (legacy mapping preserved)
+    'omelette'          => 'omelette',
+    'ojja'              => 'omelette',
+    // Salades
+    'salade'            => 'salade',
+    // Snacking family
+    'nugget'            => 'snacking',
+    'tenders'           => 'snacking',
+    'goujon'            => 'snacking',
+    // Frites are addons, not standalone wizard templates — excluded.
+];
+
 if ($requireForm) {
     return [
         'spa_auto_login' => false,
@@ -78,6 +118,8 @@ if ($requireForm) {
         'confirmation_auto_return_seconds' => (int) env('KIOSK_CONFIRMATION_AUTO_RETURN_SECONDS', 30),
         // [Sprint H1 K-003 2026-05-17] Externalized FRITES_INCLUDED_CATS — see top of file.
         'frites_included_category_ids' => $fritesIncludedCategoryIds,
+        // [Sprint H1 K-004 2026-05-17] Wizard template aliases — see top of file.
+        'wizard_template_aliases' => $wizardTemplateAliases,
     ];
 }
 
@@ -127,4 +169,6 @@ return [
     'confirmation_auto_return_seconds' => (int) env('KIOSK_CONFIRMATION_AUTO_RETURN_SECONDS', 30),
     // [Sprint H1 K-003 2026-05-17] Externalized FRITES_INCLUDED_CATS — see top of file.
     'frites_included_category_ids' => $fritesIncludedCategoryIds,
+    // [Sprint H1 K-004 2026-05-17] Wizard template aliases — see top of file.
+    'wizard_template_aliases' => $wizardTemplateAliases,
 ];
