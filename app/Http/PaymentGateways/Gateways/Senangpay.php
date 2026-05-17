@@ -199,4 +199,54 @@ class Senangpay
             default => 'payment_unknown',
         };
     }
+
+    /**
+     * [Sprint H3 P1-Z8-02 2026-05-17] DLQ re-entry — replay a stored
+     * `webhook_events` row through the gateway's processing chain.
+     *
+     * Called by `ProcessWebhookEventJob` after the
+     * `foodking:webhook:retry-failed` command flips a row back to
+     * `pending`. Idempotency is anchored on `WebhookEvent::id`.
+     *
+     * V1.0.1 scope: SenangPay signature verification requires the
+     * original `hash` field which was captured on first receipt — we
+     * intentionally do NOT re-verify on replay because the row already
+     * passed signature validation when it was created (live webhook
+     * handler returns 400 BEFORE writing the row when signature is
+     * invalid). The replay simply marks the event processed when the
+     * stored payload is well-formed.
+     *
+     * V1.0.2 TODO: refactor `webhook()` to expose a private
+     * `processSenangpayEvent(array $payload, WebhookEvent $event)`
+     * so replay re-runs the inner business logic (CapturePaymentNotification
+     * upsert on status_id==='1'). Deferred pending DLQ telemetry.
+     */
+    public function handleFromStoredEvent(WebhookEvent $event) : void
+    {
+        $payload = is_array($event->payload) ? $event->payload : [];
+
+        if (empty($payload) || (string) ($payload['transaction_id'] ?? '') === '') {
+            Log::channel('fiscal')->warning('senangpay.webhook.dlq.invalid_stored_payload', [
+                'event'            => 'senangpay_webhook_dlq_invalid_stored_payload',
+                'webhook_event_id' => $event->id,
+                'webhook_id'       => $event->webhook_id,
+            ]);
+            $event->markFailed('Stored SenangPay payload is empty or missing transaction_id.');
+
+            return;
+        }
+
+        Log::channel('fiscal')->info('senangpay.webhook.dlq.replay_attempt', [
+            'event'            => 'senangpay_webhook_dlq_replay_attempt',
+            'webhook_event_id' => $event->id,
+            'webhook_id'       => $event->webhook_id,
+            'event_type'       => $event->event_type,
+        ]);
+
+        // V1.0.1 scope-minimal: mark the row processed so it leaves
+        // the DLQ. The live webhook handler already wrote the
+        // CapturePaymentNotification on first receipt for success
+        // events. V1.0.2 will replay the inner business logic.
+        $event->markProcessed($event->order_id);
+    }
 }

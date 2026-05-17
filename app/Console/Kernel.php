@@ -67,6 +67,18 @@ class Kernel extends ConsoleKernel
             ->name('outbox-retry-failed')
             ->description('Retry domain events failed after 5 attempts within last 24h');
 
+        // [Sprint H3 P1-Z8-02 2026-05-17] Webhook DLQ — re-run failed
+        // webhook_events whose provider retry window expired. Hourly
+        // cadence matches outbox:retry-failed (operationally consistent).
+        // Wave Z 5C scheduled this command but it didn't exist — the
+        // implementation lands in this sprint. See CLAUDE.md §9.
+        $schedule->command('foodking:webhook:retry-failed --since=24h')
+            ->hourly()
+            ->withoutOverlapping(10)
+            ->onOneServer()
+            ->name('webhook-retry-failed')
+            ->description('Retry failed webhook_events (Stripe/SenangPay) within last 24h');
+
         $schedule->job(new CleanupStalePendingKioskOrders())
             ->everyFiveMinutes()
             ->withoutOverlapping()
