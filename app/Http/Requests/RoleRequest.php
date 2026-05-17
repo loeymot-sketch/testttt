@@ -15,7 +15,10 @@ class RoleRequest extends FormRequest
      */
     public function authorize() : bool
     {
-        return true;
+        // V1.0.1 R7 heal: defense-in-depth — RoleController middleware enforces
+        // `permission:settings` on show/store/update/destroy (RoleRequest only injected
+        // on store/update); FormRequest doubles down so any future route bypass still authz-checks.
+        return $this->user()?->can('settings') ?? false;
     }
 
     /**
