@@ -760,9 +760,20 @@ export default {
             });
 
             const quotedForm = await this.refreshQuote(preparedForm);
-            const saveForm = this.alignCashReceivedWithQuotedTotal(preparedForm, quotedForm);
+            const aligned = this.alignCashReceivedWithQuotedTotal(preparedForm, quotedForm);
+            // [Sprint H5 POS-A6 2026-05-17] SSOT enforcement (CLAUDE.md §8) —
+            // strip `total/subtotal/discount` from the POST payload. The
+            // server recomputes via PricingService::calculateOrder regardless
+            // of what we send, and `PosOrderRequest` made these nullable in
+            // POS-9.1.8 / POS-GA-F-47. Sending them was redundant wire bytes
+            // AND a (now-defused) tampering surface. We keep the values on
+            // the local form for UX (badge, change calculation, parking
+            // snapshot) and only omit them from the network payload.
+            // Sister test: tests/Feature/Pos/PosOrderRequestNoClientTotalsTest.php
+            // eslint-disable-next-line no-unused-vars
+            const { total: _t, subtotal: _s, discount: _d, ...saveForm } = aligned;
             const orderResponse = await this.$store.dispatch('posOrder/save', saveForm);
-            await this.handleOrderSuccess(orderResponse, saveForm);
+            await this.handleOrderSuccess(orderResponse, aligned);
         },
         handleOrderSuccess: async function (orderResponse, submittedForm) {
             // [POS-9.1.12] Open the physical cash drawer the moment a CASH
