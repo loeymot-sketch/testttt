@@ -115,6 +115,19 @@
       become_user: www-data
       changed_when: true
       tags: [app]
+    # [RED-team Wave 5I A.2 — 2026-05-18] Pre-migrate snapshot (NF525 safety net).
+    # Runs BEFORE migrate --force so a destructive migration can be reverted via restore.
+    # Uses --triggers --routines to preserve BEFORE DELETE triggers on audit_logs / z_reports.
+    - name: Pre-migrate snapshot — mysqldump (NF525 safety net)
+      ansible.builtin.shell: >-
+        mysqldump --triggers --routines --single-transaction --quick
+        --user={{ db_user }} --password={{ vault_db_password }}
+        {{ db_name }} | gzip > /var/backups/foodking-pre-migrate-$(date +%Y%m%d-%H%M%S).sql.gz
+      args:
+        creates: "/var/backups/foodking-pre-migrate-marker-{{ ansible_date_time.date }}"
+      become: true
+      no_log: true
+      tags: [app]
     - name: Artisan migrate --force
       ansible.builtin.command:
         cmd: "php{{ php_version }} artisan migrate --force"

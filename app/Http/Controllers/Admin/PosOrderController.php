@@ -105,11 +105,15 @@ class PosOrderController extends AdminController
         int|string $order
     ): \Illuminate\Http\Response|OrderDetailsResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
         try {
-            // RED-team P0 fix 2026-05-17 + sentinel OrderShowBranchGuardSentinelTest:44 (expect 403 not 404):
-            // Lookup with withoutGlobalScope INTERNAL to apply EXPLICIT branch guard.
-            // BranchScope alone returns 404 ModelNotFoundException (leaks via no info disclosure) +
-            // controller catches Exception → 422 (sentinel fails). Use explicit 403 deny.
-            $order = Order::withoutGlobalScope(BranchScope::class)->findOrFail($order);
+            // RED-team Wave 5I A.1 timing-leak fix 2026-05-18: catch ModelNotFoundException
+            // and unify with 403 to prevent existence enumeration (foreign-branch order id
+            // returns 403, non-existent id also 403 — single response shape, no info leak).
+            // BranchScope + sentinel OrderShowBranchGuardSentinelTest:44 expect 403 baseline.
+            try {
+                $order = Order::withoutGlobalScope(BranchScope::class)->findOrFail($order);
+            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                abort(403, 'Cross-branch access denied');
+            }
             abort_unless(
                 auth()->user()?->branch_id === 0 || $order->branch_id === auth()->user()?->branch_id,
                 403,
