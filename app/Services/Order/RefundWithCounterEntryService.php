@@ -4,6 +4,7 @@ namespace App\Services\Order;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Events\RefundCreated;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderPayment;
@@ -219,6 +220,13 @@ class RefundWithCounterEntryService
             } catch (\Throwable) {
                 // best-effort log
             }
+
+            // [REFUND-EVENT-WIRE] Fire RefundCreated for stock + availability release.
+            // Pass PARENT (positive qty) — listeners iterate $order->orderItems and use
+            // qty as a positive release amount; the mirror order has NEGATED qty which
+            // would no-op / corrupt the released_qty ledger. DispatchableAfterCommit
+            // ensures the event fires only after this DB::transaction commits.
+            RefundCreated::dispatch($parent);
 
             return $mirror->refresh();
         });

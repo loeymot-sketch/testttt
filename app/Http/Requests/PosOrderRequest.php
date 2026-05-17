@@ -7,6 +7,7 @@ use App\Enums\Ask;
 use App\Enums\OrderType;
 use App\Enums\PosPaymentMethod;
 use App\Http\Requests\Concerns\ValidatesOrderItemVariations;
+use App\Models\PaymentTerminal;
 use App\Rules\ValidJsonOrder;
 use App\Services\Delivery\DeliveryFeeService;
 use Illuminate\Foundation\Http\FormRequest;
@@ -168,6 +169,44 @@ class PosOrderRequest extends FormRequest
                     $validator->errors()->add('discount_reason', 'A reason is required for any POS discount (min 3 characters).');
 
                     return;
+                }
+            }
+
+            // [F-SPLIT-PHANTOM-CARD-001 2026-05-17] Phantom-CARD theft vector fix.
+            // Without this guard, a cashier could submit a CARD tranche with a
+            // forged/free-form reference and pocket the matching cash (no
+            // cash_movement is written for CARD tranches → drawer reconciles).
+            // Rule: every CARD tranche MUST carry a `terminal_id` pointing to
+            // an ACTIVE payment_terminals row OWNED by the order's branch.
+            // `exists` alone is unsafe — BranchScope is bypassed by the DB
+            // query builder, so we explicitly check branch_id + status.
+            $breakdown = (array) $this->input('payment_breakdown', []);
+            $orderBranchId = (int) $this->input('branch_id', 0);
+            foreach ($breakdown as $idx => $tranche) {
+                if (! is_array($tranche)) {
+                    continue;
+                }
+                if ((int) ($tranche['mode'] ?? 0) !== PosPaymentMethod::CARD) {
+                    continue;
+                }
+                $terminalId = (int) ($tranche['terminal_id'] ?? 0);
+                if ($terminalId <= 0) {
+                    $validator->errors()->add(
+                        "payment_breakdown.{$idx}.terminal_id",
+                        'A valid payment terminal is required for every CARD tranche.'
+                    );
+                    continue;
+                }
+                $exists = PaymentTerminal::withoutGlobalScopes()
+                    ->where('id', $terminalId)
+                    ->where('branch_id', $orderBranchId)
+                    ->where('status', PaymentTerminal::STATUS_ACTIVE)
+                    ->exists();
+                if (! $exists) {
+                    $validator->errors()->add(
+                        "payment_breakdown.{$idx}.terminal_id",
+                        'The selected payment terminal is not available for this branch.'
+                    );
                 }
             }
 

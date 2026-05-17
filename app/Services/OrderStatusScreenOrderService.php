@@ -51,15 +51,16 @@ class OrderStatusScreenOrderService
                       });
                 })
                 ->whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED])
+                // [RED-team P1 perf 2026-05-17] whereDate non-sargable → range query (uses idx_orders_datetime)
                 ->where(function ($q) {
                     $q->where(function ($sub) {
                         // [P3-4 FIX] Align with KDS: today's non-advance orders
-                        $sub->whereDate('order_datetime', Carbon::today())->where('is_advance_order', Ask::NO);
+                        $sub->whereBetween('order_datetime', [Carbon::today(), Carbon::today()->endOfDay()])->where('is_advance_order', Ask::NO);
                     })->orWhere(function ($sub) {
                         // [AUDIT-52-BUG1] Mirror KDS fix: show ALL overdue advance orders (not just yesterday)
                         // that are still active (not DELIVERED or CANCELED). Prevents zombie disappearance.
                         $sub->where('is_advance_order', Ask::YES)
-                            ->whereDate('order_datetime', '<=', Carbon::today())
+                            ->where('order_datetime', '<', Carbon::tomorrow())
                             ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                     });
                 })
@@ -155,12 +156,13 @@ class OrderStatusScreenOrderService
                       });
                 })
                 ->whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED])
+                // [RED-team P1 perf 2026-05-17] whereDate non-sargable → range query (uses idx_orders_datetime)
                 ->where(function ($q) {
                     $q->where(function ($sub) {
-                        $sub->whereDate('order_datetime', Carbon::today())->where('is_advance_order', Ask::NO);
+                        $sub->whereBetween('order_datetime', [Carbon::today(), Carbon::today()->endOfDay()])->where('is_advance_order', Ask::NO);
                     })->orWhere(function ($sub) {
                         $sub->where('is_advance_order', Ask::YES)
-                            ->whereDate('order_datetime', '<=', Carbon::today())
+                            ->where('order_datetime', '<', Carbon::tomorrow())
                             ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                     });
                 })

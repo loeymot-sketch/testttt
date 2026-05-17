@@ -810,16 +810,18 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::post('/{tableId}/assign', [FloorplanController::class, 'assign'])->name('assign');
             Route::post('/{tableId}/release', [FloorplanController::class, 'release'])->name('release');
         });
-        Route::post('/cash-drawer/open', [CashDrawerController::class, 'open'])->name('cash-drawer.open');
+        Route::post('/cash-drawer/open', [CashDrawerController::class, 'open'])->middleware('idempotency')->name('cash-drawer.open');
         // [AUDIT-F-003] Cash drawer SESSION management — distinct du hardware open above.
         Route::prefix('cash-drawer/sessions')->name('cash-drawer.sessions.')->group(function () {
             Route::get('/current', [CashDrawerSessionController::class, 'current'])->name('current');
-            Route::post('/open', [CashDrawerSessionController::class, 'open'])->name('open');
+            Route::post('/open', [CashDrawerSessionController::class, 'open'])->middleware('idempotency')->name('open');
             Route::post('/{session}/close', [CashDrawerSessionController::class, 'close'])
                 ->whereNumber('session')
+                ->middleware('idempotency')
                 ->name('close');
             Route::post('/{session}/reconcile', [CashDrawerSessionController::class, 'reconcile'])
                 ->whereNumber('session')
+                ->middleware('idempotency')
                 ->name('reconcile');
             Route::get('/{session}/movements', [CashDrawerSessionController::class, 'movements'])
                 ->whereNumber('session')

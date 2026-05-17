@@ -87,16 +87,17 @@ class KitchenDisplaySystemOrderService
             // [FIX-FRONT-05] Pagination KDS: limiter à 50 commandes actives maximum
             // [AUDIT-P51-BUG1] Fix: include advance orders scheduled for today OR overdue from yesterday+
             // Previously only showed yesterday's advance orders, causing "zombie" orders to persist unseen.
+            // [RED-team P1 perf 2026-05-17] whereDate non-sargable → range query (uses idx_orders_datetime)
             $orders = $query->where(function ($query) {
                 // Standard orders: placed today (non-advance)
                 $query->where(function ($subQuery) {
-                    $subQuery->whereDate('order_datetime', Carbon::today())
+                    $subQuery->whereBetween('order_datetime', [Carbon::today(), Carbon::today()->endOfDay()])
                              ->where('is_advance_order', Ask::NO);
                 })
                 // Advance orders: scheduled for today OR overdue from yesterday/past
                 ->orWhere(function ($subQuery) {
                     $subQuery->where('is_advance_order', Ask::YES)
-                             ->whereDate('order_datetime', '<=', Carbon::today()) // Today or overdue past dates
+                             ->where('order_datetime', '<', Carbon::tomorrow()) // Today or overdue past dates
                              ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]); // Not already completed
                 });
             })->where(function ($query) use ($requests) {
@@ -253,12 +254,13 @@ class KitchenDisplaySystemOrderService
             // [FIX-53-2] Mirror the same fix applied to list() in Phase 51:
             // orderItems() was still using Carbon::yesterday() for advance orders,
             // causing overdue orders to vanish from the items board after 24h.
+            // [RED-team P1 perf 2026-05-17] whereDate non-sargable → range query (uses idx_orders_datetime)
             $orders = $query->where(function ($query) {
                 $query->where(function ($subQuery) {
-                    $subQuery->whereDate('order_datetime', Carbon::today())->where('is_advance_order', Ask::NO);
+                    $subQuery->whereBetween('order_datetime', [Carbon::today(), Carbon::today()->endOfDay()])->where('is_advance_order', Ask::NO);
                 })->orWhere(function ($subQuery) {
                     $subQuery->where('is_advance_order', Ask::YES)
-                             ->whereDate('order_datetime', '<=', Carbon::today())
+                             ->where('order_datetime', '<', Carbon::tomorrow())
                              ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                 });
             })->get();

@@ -9,6 +9,33 @@
         intacts. Cf. plans/PLAN_POS_V5_DESIGN_CONVERGENCE_2026-05-02.md.
     -->
     <section class="pos-v5-shell fk-pos-v4 pos-v4-shell" data-pos-v4-shell data-pos-v5-shell>
+    <!--
+      [POS-OFFLINE-WIRE 2026-05-17] Visible degraded-mode banner driven by the
+      `usePosOfflineState` composable (helper landed in V1.0.2, wired here).
+      Renders ABOVE the operator header so the cashier cannot miss the state.
+      role="alert" + aria-live="polite" → screen-reader announce on transition.
+      data-testid stable hooks for Playwright/Vitest. Does not touch frozen-zone
+      (PaymentComponent / pos-wizard.js / admin-pos-v4.blade.php untouched).
+    -->
+    <div
+      v-if="!isOnline"
+      class="pos-offline-banner"
+      role="alert"
+      aria-live="polite"
+      data-testid="pos-offline-banner"
+    >
+      <strong class="pos-offline-banner__label">&#x26A0; MODE DÉGRADÉ</strong>
+      <span class="pos-offline-banner__detail">
+        Commandes en file d'attente (<span data-testid="pos-offline-queue-depth">{{ queueDepth }}</span>)
+      </span>
+      <button
+        type="button"
+        class="pos-offline-banner__sync"
+        :disabled="queueDepth === 0"
+        data-testid="pos-offline-sync"
+        @click="tryManualFlush"
+      >Synchroniser</button>
+    </div>
     <a href="#pos-cart" class="pos-v5-skip-link sr-only focus:not-sr-only">{{ $t('a11y.skip_to_cart') }}</a>
     <!-- [iter15-mega-fix D-003 2026-05-10] aria-live region now reflects the
          latest availability change so screen readers announce rupture broadcasts
@@ -71,6 +98,17 @@
                             :class="{ 'is-bumping': cartBumping }"
                             data-testid="pos-cart-stat-chip"
                         />
+                        <!--
+                          [POS-OFFLINE-WIRE 2026-05-17] Discreet queue-depth chip
+                          shown even when online if there are pending replays
+                          (e.g. after a brief disconnect during cash close).
+                        -->
+                        <span
+                          v-if="queueDepth > 0"
+                          class="pos-queue-depth-badge"
+                          :title="`${queueDepth} commande(s) en attente de synchronisation`"
+                          data-testid="pos-queue-depth-badge"
+                        >&#128230; {{ queueDepth }}</span>
                     </div>
                 </div>
             </div>
@@ -1058,6 +1096,12 @@ import PosV5QtyStepper from "./v5/PosV5QtyStepper.vue";
 import PosV5SearchInput from "./v5/PosV5SearchInput.vue";
 // [Sprint 1A 2026-05-16] Dialog session caisse (fond de caisse, mouvements, clôture).
 import PosCashDrawerSessionDialog from "../cash/PosCashDrawerSessionDialog.vue";
+// [POS-OFFLINE-WIRE 2026-05-17] Offline replay queue (helper + composable landed
+// in V1.0.2 with 16/16 unit-test coverage; this commit wires it into the Caisse
+// shell so the cashier sees MODE DÉGRADÉ + queue depth + manual flush. Server
+// remains SSOT for fiscal_sequence_no (NF525 CLAUDE.md §8) — we only stash
+// item_id / quantity / option_ids / total_cents until reconnect.
+import { usePosOfflineState } from "../../../composables/usePosOfflineState";
 
 // [Phase-6 / T10–T12] Recherche menu, lecteur code-barres + F-keys, debounce,
 // `SkeletonGrid` sur chargement grille — perçu perfo (spinners discrets) ; pas de
@@ -1086,6 +1130,23 @@ export default {
         PosV5SearchInput,
         // [Sprint 1A] Cash drawer session dialog (admin/cash/).
         PosCashDrawerSessionDialog,
+    },
+    // [POS-OFFLINE-WIRE 2026-05-17] Composition-API bridge: expose the offline
+    // composable refs (isOnline, queueDepth) and helpers (enqueueOrder,
+    // tryFlush, bindAutoFlush) so the Options API template + methods can
+    // consume them as `this.isOnline`, `this.queueDepth`, etc.
+    // onScopeDispose inside the composable handles window-listener cleanup.
+    setup() {
+        const {
+            isOnline,
+            queueDepth,
+            isFlushing,
+            enqueueOrder,
+            refresh,
+            tryFlush,
+            bindAutoFlush,
+        } = usePosOfflineState();
+        return { isOnline, queueDepth, isFlushing, enqueueOrder, refreshOfflineQueue: refresh, tryFlush, bindAutoFlush };
     },
     data() {
         return {
@@ -1543,6 +1604,10 @@ export default {
         if (this._cartBumpTimer) { clearTimeout(this._cartBumpTimer); this._cartBumpTimer = null; }
         if (this._totalFlashTimer) { clearTimeout(this._totalFlashTimer); this._totalFlashTimer = null; }
         if (this._successFlashTimer) { clearTimeout(this._successFlashTimer); this._successFlashTimer = null; }
+        // [POS-OFFLINE-WIRE 2026-05-17] Stop periodic flush attempt. Window
+        // online/offline listeners are owned by the composable and disposed
+        // via onScopeDispose() — nothing to clean up here for them.
+        if (this._posOfflineFlushTimer) { clearInterval(this._posOfflineFlushTimer); this._posOfflineFlushTimer = null; }
         PosSyncService.stop();
         this._posSyncBranchId = null;
         this._unsubscribeEcho();
@@ -1552,6 +1617,18 @@ export default {
         this._debouncedListRefresh = debounce(() => {
             this.itemList(1, { overlay: false });
         }, 150);
+        // [POS-OFFLINE-WIRE 2026-05-17] Bind axios.post as the replay transport
+        // and run an opportunistic flush every 30s while the page is open. The
+        // composable also auto-flushes on the `online` event — interval covers
+        // the case where network came back without a clean offline→online edge
+        // (e.g. flaky DNS, captive portal) and gives an upper bound on stale
+        // cash sales sitting in IndexedDB.
+        this.bindAutoFlush(axios.post);
+        this._posOfflineFlushTimer = setInterval(() => {
+            try { this.tryFlush(axios.post); } catch (_e) { /* defensive */ }
+        }, 30000);
+        // Initial flush attempt at mount (covers reload-while-offline-queue-pending).
+        try { this.refreshOfflineQueue && this.refreshOfflineQueue(); } catch (_e) { /* defensive */ }
         this._stopBarcode = createBarcodeDetector((code) => this.onBarcodeScanned(code));
         // [V14 C-α / FINDING C-5 P2] Disable F-key shortcuts when the parked
         // orders drawer is open (prevents background category switching while
@@ -2894,8 +2971,51 @@ export default {
             }
             this.checkoutProps.form.idempotency_key = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${_branchId}`;
 
+            // [POS-OFFLINE-WIRE 2026-05-17] Pre-modal network gate. If the
+            // browser reports offline (navigator.onLine === false), do NOT
+            // open the payment modal — server-side capture is impossible and
+            // PaymentComponent would loop on its own axios.post failing.
+            // Instead, enqueue the assembled checkout payload (idempotency_key
+            // stamped above is harmless — composable replay generates its own
+            // stable X-Idempotency-Key per entry, server is SSOT on fiscal seq
+            // at replay time per NF525 CLAUDE.md §8) and toast soft so the
+            // cashier knows the order will sync when network returns.
+            if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                try {
+                    const queued = await this.enqueueOrder({ ...this.checkoutProps.form });
+                    this.loading.isActive = false;
+                    if (queued) {
+                        alertService.info(`Commande mise en file d'attente (${this.queueDepth}). Synchronisation auto au retour réseau.`);
+                    } else {
+                        alertService.warning('File d\'attente offline pleine. Réessayez à la reconnexion.');
+                    }
+                } catch (_e) {
+                    this.loading.isActive = false;
+                    alertService.error('Impossible de mettre la commande en file d\'attente offline.');
+                }
+                return;
+            }
+
             this.loading.isActive = false;
             appService.modalShow('#orderpayment');
+        },
+        // [POS-OFFLINE-WIRE 2026-05-17] Manual flush trigger bound to the
+        // banner "Synchroniser" button. Delegates to the composable which
+        // is the single source of truth for replay logic + idempotency.
+        tryManualFlush: async function () {
+            try {
+                const res = await this.tryFlush(axios.post);
+                if (res && !res.skipped) {
+                    if (res.synced > 0) {
+                        alertService.success(`${res.synced} commande(s) synchronisée(s).`);
+                    }
+                    if (res.failed > 0) {
+                        alertService.warning(`${res.failed} commande(s) en échec, retentée(s) plus tard.`);
+                    }
+                }
+            } catch (_e) {
+                alertService.error('Erreur lors de la synchronisation manuelle.');
+            }
         },
         totalItems: function () {
             if (this.carts.length > 0) {
@@ -3766,4 +3886,58 @@ export default {
 .slide-panel-leave-active .kiosk-cash-panel { transition: transform var(--pos-v5-duration-slow) var(--pos-v5-ease-standard); }
 .slide-panel-enter-from .kiosk-cash-panel,
 .slide-panel-leave-to .kiosk-cash-panel { transform: translateX(100%); }
+
+/* =============================================================================
+   POS OFFLINE — banner + queue-depth badge ([POS-OFFLINE-WIRE 2026-05-17])
+   -----------------------------------------------------------------------------
+   Banner sticks at the top of the POS shell while !isOnline. Yellow (#FFD700)
+   matches "warning / degraded" semantics and contrasts the warm cream V5 bg.
+   Queue-depth badge is shown discreetly in the operator status row even when
+   online if pending replays remain (post-flush trickle).
+   ============================================================================= */
+.pos-offline-banner {
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #FFD700;
+  color: #1A1A1A;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.3;
+  border-bottom: 2px solid #B8860B;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+.pos-offline-banner__label { letter-spacing: 0.5px; }
+.pos-offline-banner__detail { flex: 1; }
+.pos-offline-banner__sync {
+  padding: 6px 14px;
+  background: #1A1A1A;
+  color: #FFD700;
+  border: 0;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.pos-offline-banner__sync:hover:not(:disabled) { background: #333; }
+.pos-offline-banner__sync:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.pos-queue-depth-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(255, 215, 0, 0.18);
+  color: #8B6F00;
+  border: 1px solid rgba(184, 134, 11, 0.4);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: 6px;
+}
 </style>

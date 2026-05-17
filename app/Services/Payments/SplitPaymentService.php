@@ -7,6 +7,7 @@ use App\Exceptions\CashDrawerSessionNotOpenException;
 use App\Models\CashMovement;
 use App\Models\Order;
 use App\Models\OrderPayment;
+use App\Models\PaymentTerminal;
 use App\Services\Cash\CashDrawerService;
 use App\Services\Fiscal\AuditLogService;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -103,6 +104,34 @@ final class SplitPaymentService
                 if ((int) round($tendered * 100) < (int) round($amount * 100)) {
                     throw ValidationException::withMessages([
                         "payment_breakdown.{$idx}.tendered" => 'Montant reçu inférieur au montant cash.',
+                    ]);
+                }
+            }
+
+            // [F-SPLIT-PHANTOM-CARD-001 2026-05-17] Defense-in-depth — CARD
+            // tranches MUST carry a valid terminal_id scoped to the order's
+            // branch + ACTIVE status. Mirrors PosOrderRequest withValidator;
+            // catches non-HTTP callers (queue jobs, direct service use).
+            // BranchScope is bypassed for the lookup, branch_id is checked
+            // explicitly to prevent cross-branch terminal leakage.
+            if ($mode === PosPaymentMethod::CARD) {
+                $terminalIdRaw = $t['terminal_id'] ?? null;
+                $terminalId = ($terminalIdRaw !== null && $terminalIdRaw !== '' && (int) $terminalIdRaw > 0)
+                    ? (int) $terminalIdRaw
+                    : 0;
+                if ($terminalId <= 0) {
+                    throw ValidationException::withMessages([
+                        "payment_breakdown.{$idx}.terminal_id" => 'CARD tranche requires a valid terminal_id.',
+                    ]);
+                }
+                $terminalOk = PaymentTerminal::withoutGlobalScopes()
+                    ->where('id', $terminalId)
+                    ->where('branch_id', $branchId)
+                    ->where('status', PaymentTerminal::STATUS_ACTIVE)
+                    ->exists();
+                if (! $terminalOk) {
+                    throw ValidationException::withMessages([
+                        "payment_breakdown.{$idx}.terminal_id" => 'CARD terminal_id is not active on this branch.',
                     ]);
                 }
             }

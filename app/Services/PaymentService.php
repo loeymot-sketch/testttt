@@ -10,6 +10,7 @@ use App\Enums\PosPaymentMethod;
 use App\Events\OrderCanceled;
 use App\Events\OrderPaidAtCounter;
 use App\Events\OrderStatusChanged;
+use App\Events\RefundCreated;
 use App\Models\Order;
 use App\Models\Transaction;
 use App\Models\User;
@@ -122,6 +123,15 @@ class PaymentService
             if ($order instanceof Order) {
                 $this->recordCashBackMovement($order, (float) $order->total);
             }
+
+            // [REFUND-EVENT-WIRE] Fire RefundCreated so listeners release stock /
+            // availability counters. Inside `if ($transaction)` so the second
+            // idempotent cashBack() call (early-returned above) does NOT re-fire
+            // the event. DispatchableAfterCommit defers to post-commit; double-
+            // fire with OrderCanceled (admin RETURN/CANCEL paths in OrderService /
+            // FrontendOrderService) is acceptable — AvailabilityService is
+            // idempotent via the released_qty ledger.
+            RefundCreated::dispatch($order);
         }
 
         return $transaction;
