@@ -79,6 +79,11 @@ class ItemResource extends JsonResource
             "is_featured"      => $this->is_featured,
             // [GAP-27-1] Expose is_upsell so admin UI can read/write it (Ask::NO=10 default)
             "is_upsell"        => $this->is_upsell ?? 10,
+            // [v1-0-1-h5 Z5-P1-01 2026-05-17] Expose channels so the admin
+            // items form can hydrate the channel checkbox group on edit.
+            // NULL means "visible everywhere" (Item::displaysOn); an array
+            // (e.g. ['kiosk','pos']) restricts the item to those surfaces.
+            "channels"         => $this->channels,
             "status"           => $this->status,
             "description"      => $this->description === null ? '' : $this->description,
             "caution"          => $this->caution === null ? '' : $this->caution,

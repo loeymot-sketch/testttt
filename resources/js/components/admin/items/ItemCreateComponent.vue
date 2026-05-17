@@ -152,6 +152,32 @@
                             }}</small>
                     </div>
 
+                    <!-- [v1-0-1-h5 Z5-P1-01 2026-05-17] Channels checkbox group — surface segregation UI.
+                         Server validation (ItemRequest::rules) accepts in:kiosk,pos,web only.
+                         Empty array on save = no channels[] keys appended = server keeps NULL
+                         = visible everywhere (Item::displaysOn legacy semantics). -->
+                    <div class="form-col-12" data-testid="admin-item-form-channels">
+                        <label class="db-field-title" for="item-channels-kiosk">{{ $t("label.channels") }}</label>
+                        <div class="db-field-radio-group">
+                            <div class="db-field-radio" v-for="channel in ['kiosk', 'pos', 'web']" :key="channel">
+                                <div class="custom-radio">
+                                    <input type="checkbox"
+                                        :id="'item-channels-' + channel"
+                                        :value="channel"
+                                        v-model="props.form.channels"
+                                        class="custom-radio-field"
+                                        :data-testid="'admin-item-form-channel-' + channel">
+                                    <span class="custom-radio-span"></span>
+                                </div>
+                                <label :for="'item-channels-' + channel" class="db-field-label">
+                                    {{ $t('label.channel_' + channel) }}
+                                </label>
+                            </div>
+                        </div>
+                        <small class="db-field-alert" v-if="errors.channels">{{ errors.channels[0] }}</small>
+                        <p class="text-xs text-gray-400 mt-1">{{ $t('label.channels_help') }}</p>
+                    </div>
+
                     <div class="form-col-12">
                         <label for="description" class="db-field-title">{{ $t("label.description") }}</label>
                         <textarea v-model="props.form.description" v-bind:class="errors.description ? 'invalid' : ''"
@@ -312,6 +338,8 @@ export default {
                 item_category_id: null,
                 tax_id: null,
                 status: statusEnum.ACTIVE,
+                // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
+                channels: [],
             };
             if (this.image) {
                 this.image = "";
@@ -332,6 +360,8 @@ export default {
                 item_category_id: null,
                 tax_id: null,
                 status: statusEnum.ACTIVE,
+                // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
+                channels: [],
             };
             if (this.image) {
                 this.image = "";
@@ -352,6 +382,17 @@ export default {
                 fd.append('caution', this.props.form.caution);
                 fd.append('order', 1);
                 fd.append('status', this.props.form.status);
+                // [v1-0-1-h5 Z5-P1-01 2026-05-17] Append channels[] entries.
+                // Empty array → skip → server keeps existing value (legacy
+                // NULL = visible everywhere). To explicitly clear on edit
+                // (i.e. hide on all surfaces), an admin currently needs API
+                // / tinker; UI "clear-to-empty-array" is V1.0.2 backlog.
+                const channels = Array.isArray(this.props.form.channels) ? this.props.form.channels : [];
+                channels.forEach((c) => {
+                    if (['kiosk', 'pos', 'web'].indexOf(c) !== -1) {
+                        fd.append('channels[]', c);
+                    }
+                });
                 if (this.image) {
                     fd.append('image', this.image);
                 }
@@ -375,6 +416,8 @@ export default {
                         item_category_id: null,
                         tax_id: null,
                         status: statusEnum.ACTIVE,
+                        // [v1-0-1-h5 Z5-P1-01 2026-05-17] Reset channels too.
+                        channels: [],
                     };
                     this.image = "";
                     this.errors = {};

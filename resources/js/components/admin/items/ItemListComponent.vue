@@ -397,6 +397,12 @@ export default {
                     item_category_id: null,
                     tax_id: null,
                     status: statusEnum.ACTIVE,
+                    // [v1-0-1-h5 Z5-P1-01 2026-05-17] Default = empty array = "all surfaces"
+                    // (Item::displaysOn treats NULL as universal; the FormData
+                    // builder in ItemCreateComponent.save() skips the channels[]
+                    // append when the array is empty, so the server keeps the
+                    // legacy NULL = visible-everywhere semantics.)
+                    channels: [],
                 },
                 search: {
                     paginate: 1,
@@ -555,6 +561,12 @@ export default {
                 tax_id: item.tax_id,
                 item_category_id: item.item_category_id,
                 status: item.status,
+                // [v1-0-1-h5 Z5-P1-01 2026-05-17] Hydrate channels from API.
+                // NULL (legacy "all surfaces") → empty array; array stays.
+                // Unknown channels filtered out as defence against schema drift.
+                channels: Array.isArray(item.channels)
+                    ? item.channels.filter((c) => ['kiosk', 'pos', 'web'].indexOf(c) !== -1)
+                    : [],
             };
         },
         destroy: function (id) {
