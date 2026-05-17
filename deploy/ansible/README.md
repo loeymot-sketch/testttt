@@ -15,8 +15,30 @@ services, BranchScope, audit_logs triggers) are untouched by Ansible by design.
 
 - Ansible 2.14+ on operator workstation (`ansible-galaxy collection install community.general community.crypto`)
 - SSH key access to OVH VPS-1 as `deploy` user with passwordless sudo
-- `ansible-vault edit group_vars/vault.yml` populated — every `vault_*` secret regenerated via `openssl rand -hex 32`
+- `ansible-vault edit group_vars/vault.yml` populated — every `vault_*` secret regenerated via `openssl rand -hex 32` (see "Setting up Ansible vault" below)
 - `inventory/production.ini` IP placeholder `__OVH_VPS1_IP__` replaced after OVH commande
+
+## Setting up Ansible vault
+
+The playbook expects an encrypted `group_vars/vault.yml` with 8 `vault_*`
+secrets consumed by `group_vars/all.yml` + `site.yml`. To bootstrap from the
+scaffold:
+
+```bash
+cd deploy/ansible/group_vars
+cp vault.yml.example vault.yml
+$EDITOR vault.yml                       # replace every PLACEHOLDER_* value
+ansible-vault encrypt vault.yml         # prompts for a strong vault password
+```
+
+Store the vault password in your secret manager (1Password / Bitwarden / SOPS /
+cloud KMS) — NEVER commit it. The encrypted `vault.yml` itself should also stay
+out of public repos; even encrypted, it is a target for offline brute-force.
+
+Required `vault_*` keys (see `vault.yml.example` for inline help):
+`vault_db_password`, `vault_redis_password`, `vault_soketi_app_id`,
+`vault_soketi_app_key`, `vault_soketi_app_secret`, `vault_fiscal_audit_secret`,
+`vault_fiscal_z_report_secret`, `vault_backup_alert_webhook`.
 
 ## First-run
 
