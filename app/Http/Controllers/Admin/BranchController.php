@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use Exception;
+use App\Events\BranchStatusChanged;
 use App\Models\Branch;
 use Illuminate\Http\Request;
 use App\Services\BranchService;
@@ -58,7 +59,19 @@ class BranchController extends AdminController
         Branch $branch
     ): BranchResource | \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory {
         try {
-            return new BranchResource($this->branchService->update($request, $branch));
+            // [Wave 5G R10 heal 2026-05-17] Capture old status BEFORE service
+            // mutation — BranchService::update uses tap(...)->update() which
+            // mutates the model in place; reading $branch->status after the
+            // service call would always equal the new value.
+            $oldStatus = (int) $branch->status;
+            $updated   = $this->branchService->update($request, $branch);
+            $newStatus = (int) $updated->status;
+
+            if ($oldStatus !== $newStatus) {
+                BranchStatusChanged::dispatch((int) $updated->id, $oldStatus, $newStatus);
+            }
+
+            return new BranchResource($updated);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

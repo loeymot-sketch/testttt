@@ -53,6 +53,13 @@
 </template>
 
 <script>
+// [RED-team R4 V1.0.2 2026-05-17] wakeLock screen for TV wall surfaces.
+// Customer TV idles long between order events; without `navigator.wakeLock.request('screen')`
+// the OS screen-saver sleeps the display, making the green flash + chime invisible/inaudible
+// when a new order moves to PREPARED. Acquire on mount, re-acquire on `visibilitychange`
+// (browsers auto-release on tab switch / OS lock), release on unmount. Graceful degrade on
+// browsers without API (Safari iOS <16.4); feature-flag `window.foodkingConfig.ossWakeLockEnabled`
+// (default true). No external deps — native browser API.
 import LoadingContentComponent from "../components/LoadingContentComponent";
 import orderStatusEnum from "../../../enums/modules/orderStatusEnum";
 import alertService from "../../../services/alertService";
@@ -82,6 +89,9 @@ export default {
       // session) because Chrome blocks AudioContext until a user gesture.
       _audioCtx: null,
       _audioInitListener: null,
+      // [RED-team R4 V1.0.2 2026-05-17] wakeLock sentinel + visibility handler refs
+      _wakeLockSentinel: null,
+      _onVisibilityChange: null,
     };
   },
   computed: {},
@@ -105,6 +115,12 @@ export default {
       window.addEventListener('pointerdown', this._audioInitListener, { once: true, passive: true });
       window.addEventListener('keydown', this._audioInitListener, { once: true, passive: true });
     } catch (_) { /* never block mount on listener wiring */ }
+    // [RED-team R4 V1.0.2 2026-05-17] Acquire screen wakeLock + re-acquire on visibilitychange.
+    this._acquireWakeLock();
+    this._onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') this._acquireWakeLock();
+    };
+    try { document.addEventListener('visibilitychange', this._onVisibilityChange); } catch (_) { /* noop */ }
   },
   beforeUnmount() {
     window.removeEventListener('realtime-order-update', this.list);
@@ -123,6 +139,12 @@ export default {
     try { this._audioCtx?.close?.(); } catch (_) { /* noop */ }
     this._audioCtx = null;
     this._audioInitListener = null;
+    // [RED-team R4 V1.0.2 2026-05-17] Release wakeLock + drop visibility listener.
+    try {
+      if (this._onVisibilityChange) document.removeEventListener('visibilitychange', this._onVisibilityChange);
+    } catch (_) { /* noop */ }
+    this._onVisibilityChange = null;
+    this._releaseWakeLock();
   },
   methods: {
     authBranchId() {
@@ -144,6 +166,24 @@ export default {
       }
 
       return 0;
+    },
+    // [RED-team R4 V1.0.2 2026-05-17] Best-effort screen wakeLock for TV walls.
+    async _acquireWakeLock() {
+      const flag = window?.foodkingConfig?.ossWakeLockEnabled;
+      if (flag === false) return;
+      if (!('wakeLock' in navigator) || typeof navigator.wakeLock?.request !== 'function') return;
+      if (this._wakeLockSentinel) return;
+      try {
+        const sentinel = await navigator.wakeLock.request('screen');
+        this._wakeLockSentinel = sentinel;
+        try { sentinel.addEventListener?.('release', () => { this._wakeLockSentinel = null; }); } catch (_) { /* noop */ }
+      } catch (_) { this._wakeLockSentinel = null; /* graceful degrade */ }
+    },
+    _releaseWakeLock() {
+      const sentinel = this._wakeLockSentinel;
+      this._wakeLockSentinel = null;
+      if (!sentinel) return;
+      try { sentinel.release?.(); } catch (_) { /* noop */ }
     },
     _bindWsService() {
       const ws = window._wsService;

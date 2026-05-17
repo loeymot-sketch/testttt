@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Events\BranchStatusChanged;
 use App\Events\SendOrderDeliveryBoyMail;
 use App\Events\SendOrderDeliveryBoyPush;
 use App\Events\SendOrderDeliveryBoySms;
@@ -11,6 +12,7 @@ use App\Events\CategoryUpdated;
 use App\Events\CatalogChanged;
 use App\Events\ComposerProfileChanged;
 use App\Events\CouponChanged;
+use App\Events\SettingsUpdated;
 use App\Events\IngredientAvailabilityChanged;
 use App\Events\ItemAvailabilityChanged;
 use App\Events\ItemCreated;
@@ -59,6 +61,8 @@ use App\Listeners\PersistOrderPaidAtCounterToOutbox;
 use App\Listeners\PersistOrderPaymentStatusChangedToOutbox;
 use App\Listeners\PersistOrderStatusChangedToOutbox;
 use App\Listeners\PersistOrderTableChangedToOutbox;
+use App\Listeners\PersistSettingsUpdatedToOutbox;
+use App\Listeners\RevokeTokensOnBranchDeactivated;
 use App\Listeners\NotifyStockLowOnStockLevelChanged;
 use App\Listeners\SendFcmOnOrderCreated;
 use App\Listeners\SendFcmOnOrderStatusChange;
@@ -228,6 +232,18 @@ class EventServiceProvider extends ServiceProvider
         // [PROMO-DASH-2026-05-06] Coupon mutations -> outbox per active branch.
         CouponChanged::class => [
             PersistCouponChangedToOutbox::class,
+        ],
+        // [Wave 5G R9 heal 2026-05-17] Admin Settings mutations -> outbox fan-out.
+        // POS/Kiosk listening on `private-branch.{id}` receive a SettingsUpdated
+        // broadcast and refresh their `frontend/setting` payload live.
+        SettingsUpdated::class => [
+            PersistSettingsUpdatedToOutbox::class,
+        ],
+        // [Wave 5G R10 heal 2026-05-17] Branch status flip -> revoke Sanctum
+        // tokens for users of that branch when new status === INACTIVE.
+        // Closes the 480-min TTL hole flagged by RED-team R10.
+        BranchStatusChanged::class => [
+            RevokeTokensOnBranchDeactivated::class,
         ],
     ];
 

@@ -29,7 +29,14 @@ return [
     */
 
     'bcrypt' => [
-        'rounds' => env('BCRYPT_ROUNDS', 10),
+        // [V1.0.1 RED-team P1 — Wave 5G 2026-05-17] Bumped 10 → 12 to align
+        // with current bcrypt cost recommendations for V1.0.1 hardening.
+        // Existing user passwords hashed at rounds<12 are transparently
+        // upgraded on next successful login via LoginController rehash hook
+        // (Hash::needsRehash check after Auth::guard('web')->attempt). No
+        // password resets required; rehash is silent and zero-impact for
+        // cashier UX. Set BCRYPT_ROUNDS in .env to override per environment.
+        'rounds' => env('BCRYPT_ROUNDS', 12),
     ],
 
     /*

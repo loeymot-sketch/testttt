@@ -45,6 +45,10 @@ class EventContractTest extends TestCase
             'promo.coupon_changed',
             // [P13 — F-VERIFY-09-01 / F-VERIFY-09-10] payment_status transitions.
             'order.payment_status_changed',
+            // [Wave 5G R9 heal 2026-05-17] Admin settings live-propagation
+            'settings.updated',
+            // [Wave 5G R10 heal 2026-05-17] Branch deactivation token revoke
+            'branch.status_changed',
         ];
         $actual = EventType::all();
 

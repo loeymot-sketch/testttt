@@ -17,6 +17,7 @@ use App\Services\PermissionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\Validator;
 use Smartisan\Settings\Facades\Settings;
@@ -82,6 +83,20 @@ class LoginController extends Controller
         // Bearer sont résolues par Sanctum via la session → TransientToken, et logout ne peut
         // pas révoquer le PersonalAccessToken.
         $user = User::where('email', $request['email'])->first();
+
+        // [V1.0.1 RED-team P1 — Wave 5G 2026-05-17] Transparent bcrypt rounds
+        // upgrade on login. config/hashing.php was bumped 10 → 12 but existing
+        // hashes stay at their original cost factor forever unless rehashed.
+        // We have the plain password in $request['password'] at this exact
+        // moment (Auth::attempt already validated it) so we rehash silently
+        // if Hash::needsRehash() reports a stale cost. Zero impact on UX —
+        // login succeeds either way. The check uses the current config rounds,
+        // so once a user is upgraded to 12 they are not re-saved on next login.
+        if (Hash::needsRehash($user->password)) {
+            $user->password = Hash::make($request['password']);
+            $user->save();
+        }
+
         Auth::guard('web')->logout();
 
         // [Sprint 5D Z6-01 2026-05-16] Revoke prior `auth_token` rows on relogin
