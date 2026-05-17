@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use Exception;
+use App\Enums\Status;
 use App\Events\BranchStatusChanged;
 use App\Models\Branch;
 use Illuminate\Http\Request;
@@ -81,7 +82,22 @@ class BranchController extends AdminController
         Branch $branch
     ): \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory {
         try {
+            // [P1 V1 Cloud-Prep insights 2026-05-18] Capture old status BEFORE
+            // soft-delete so we can dispatch BranchStatusChanged with a real
+            // transition pair. Soft-deleting a branch is semantically a
+            // permanent INACTIVE transition: without this dispatch, orphan
+            // user tokens scoped to the deleted branch stay valid up to the
+            // 480-min Sanctum TTL (same security gap that update() closed in
+            // Wave 5G R10). The listener
+            // RevokeTokensOnBranchDeactivated already no-ops when
+            // $oldStatus === $newStatus, so we never double-fire.
+            $oldStatus = (int) $branch->status;
+            $branchId  = (int) $branch->id;
+
             $this->branchService->destroy($branch);
+
+            BranchStatusChanged::dispatch($branchId, $oldStatus, Status::INACTIVE);
+
             return response('', 202);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);

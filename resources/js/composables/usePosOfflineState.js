@@ -5,8 +5,10 @@
  * (D1 UX decision) and a "n commande(s) en attente" counter.
  *
  * tryFlush(postFn) replays queued orders with a stable X-Idempotency-Key per
- * entry. PosComponent.vue integration is deferred to V1.0.2 — helper ships
- * standalone with full unit-test coverage.
+ * entry. [Wave 5F SHIPPED 2026-05-17, commit 55edb83ba] PosComponent.vue
+ * integration is now live (see PosComponent.vue:1104 / :1148 / :1626) — the
+ * "deferred to V1.0.2" claim from Wave H3.6 was stale and corrected as part
+ * of the P1 V1 Cloud-Prep insights heal (2026-05-18).
  */
 import { getCurrentScope, onScopeDispose, ref } from 'vue';
 

@@ -101,6 +101,22 @@ class PosOrderRequest extends FormRequest
             'pos_payment_method' => ['required', 'numeric'],
             'pos_payment_note' => request('pos_payment_method') === PosPaymentMethod::CARD || request('pos_payment_method') === PosPaymentMethod::MOBILE_BANKING || request('pos_payment_method') === PosPaymentMethod::OTHER || (string) request('pos_payment_method') === (string) PosPaymentMethod::TICKET_RESTAURANT ? (request('pos_payment_method') === PosPaymentMethod::CARD ? ['required', 'numeric', 'min_digits:4', 'max_digits:4'] : ['required', 'string', 'max:200']) : ['nullable', 'string'],
             'pos_received_amount' => request('pos_payment_method') === PosPaymentMethod::CASH ? ['required', 'numeric', 'min:0'] : ['nullable', 'numeric', 'min:0'],
+            // [P1 V1 Cloud-Prep insights 2026-05-18] Single-tender CARD path
+            // also requires a `terminal_id` so the Z-report TPE breakdown can
+            // attribute the sale to a specific terminal. Wave 5F
+            // F-SPLIT-PHANTOM-CARD-001 closed the split-tender path
+            // (payment_breakdown.*.terminal_id) but legacy single-tender CARD
+            // sales (pos_payment_method=CARD WITHOUT payment_breakdown) were
+            // still being bucketed as "Sans TPE" in the Z-report — losing
+            // per-terminal fee/volume attribution. Shape-level rule only here;
+            // the deep ACTIVE+branch ownership check is enforced in
+            // OrderService::posOrderStore where branch context is reliable.
+            'terminal_id' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'required_if:pos_payment_method,' . PosPaymentMethod::CARD,
+            ],
             'loyalty_customer_code' => ['nullable', 'string', 'min:4', 'max:25'],
             // [F-SPLIT-PAYMENT-001] Optional multi-tender breakdown — see SplitPaymentService.
             // When the feature flag is OFF, prepareForValidation() strips this field

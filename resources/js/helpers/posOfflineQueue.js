@@ -12,8 +12,11 @@
  * PCI-DSS + PII: PAN / CVV / customer_email / customer_phone STRIPPED on enqueue.
  * Frozen-zone-safe: no touch to pos-wizard.js / admin-pos-v4.blade.php.
  *
- * Integration in PosComponent.vue deferred to V1.0.2 — this commit is helper
- * + tests only (scope-minimal).
+ * [Wave 5F SHIPPED 2026-05-17, commit 55edb83ba] PosComponent.vue integration
+ * is now live (see PosComponent.vue:1104 / :1148 / :1626). The V1.0.2 deferral
+ * note from the original Wave H3.6 was superseded by Wave 5F; this header was
+ * lying about the shipped status until the P1 V1 Cloud-Prep insights heal
+ * (2026-05-18). The helper + the Vue integration both ship in V1.0.1.
  */
 import { clearQueueEntries, getQueueEntry, setQueueEntry } from './posOfflineQueueDb';
 

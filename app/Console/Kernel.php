@@ -110,10 +110,13 @@ class Kernel extends ConsoleKernel
         // Only processed + duplicate rows are eligible; pending/failed are
         // owned by the DLQ retry lane (foodking:webhook:retry-failed). 04:15
         // staggers the lock window vs outbox:prune.
-        $schedule->command('foodking:webhook:prune --older-than-days=90')
+        // [P1 V1 Cloud-Prep insights 2026-05-18] 90d → 180d bump matches the
+        // command default (PCI dispute lookback window). See command class
+        // PruneWebhookEventsCommand docblock for rationale.
+        $schedule->command('foodking:webhook:prune --older-than-days=180')
             ->dailyAt('04:15')
             ->name('webhook-prune')
-            ->description('Prune processed + duplicate webhook_events older than 90d')
+            ->description('Prune processed + duplicate webhook_events older than 180d (PCI dispute window)')
             ->withoutOverlapping()
             ->onOneServer()
             ->runInBackground();
