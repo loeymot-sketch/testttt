@@ -66,6 +66,37 @@ MUST be preceded by a successful staging DR drill** per `docs/runbooks/BACKUP_RE
 `audit_logs.verifyChain: OK` + `z_reports.verifyChain: OK`. Do NOT skip;
 an unverified pipeline = NF525 non-compliance.
 
+> **Fiscal chain probing — no live endpoint in V1.** The `verifyChain` checks
+> above (run by `scripts/restore-foodking-from-backup.sh`) are the canonical
+> NF525 chain-integrity probe. There is **no `/api/health/fiscal`** HTTP
+> endpoint — `HealthController` exposes only `live`, `ready`, and the
+> top-level `/health` (DB + Redis + queue worker, no fiscal check). Cloud
+> uptime monitors (Uptime-Kuma, Pingdom) should poll `/api/health/ready`
+> for liveness and rely on the monthly DR drill for chain assurance. A
+> rate-limited `/api/health/fiscal` probe is V1.0.2 backlog (insights
+> P1-#12) — out of scope for the current cycle.
+
+## Backup env file (Ansible-managed)
+
+`/etc/foodking-backup.env` is rendered by the `Render foodking-backup.env`
+task from `templates/foodking-backup.env.j2`. The cron line sources it
+before invoking `scripts/backup-foodking-daily.sh`. Values come from
+`group_vars/all.yml` (`app_root`, `backup_s3_bucket`, `backup_local_dir`,
+`backup_local_retention_days`) + vault (`backup_alert_webhook` →
+`vault_backup_alert_webhook`). To rotate the webhook: edit
+`group_vars/vault.yml`, re-run `ansible-playbook site.yml --tags cron`
+— the file is overwritten idempotently (mode 0640, root:www-data).
+
+## Soketi config file (Ansible-managed)
+
+`{{ app_root }}/soketi.json` is rendered by the `Render soketi.json` task
+from `templates/soketi.json.j2`. Values come from the 3 vault refs
+(`vault_soketi_app_id`, `vault_soketi_app_key`, `vault_soketi_app_secret`).
+On change, the `restart soketi` handler fires (`supervisorctl restart
+foodking-soketi`) so the new credentials take effect without manual
+intervention. Mode 0640 (root:www-data) — `www-data` runs the soketi
+process under supervisor.
+
 ## Owner physical actions (Phase D kickoff gate)
 
 Run the playbook ONLY after every box below is checked:
@@ -74,7 +105,7 @@ Run the playbook ONLY after every box below is checked:
 - [ ] DNS A record `lecayenne.fr` + `www.lecayenne.fr` → VPS IP (TTL ≤300s during cutover)
 - [ ] OVH Object Storage bucket `foodking-backups-gra` created with versioning + object-lock (compliance mode, 2200d)
 - [ ] `~/.s3cfg` provisioned on VPS for `www-data` (chmod 600) with OVH S3 access/secret keypair scoped bucket-only
-- [ ] `BACKUP_ALERT_WEBHOOK` URL (Slack/Discord/PagerDuty) populated in `group_vars/vault.yml` AND `/etc/foodking-backup.env`
+- [ ] `vault_backup_alert_webhook` (Slack/Discord/PagerDuty inbound URL) populated in `group_vars/vault.yml` — Ansible renders `/etc/foodking-backup.env` from this value (no manual file edit)
 - [ ] Staging DR drill GREEN (owner sign-off logged)
 
 ## V1 single-resto vs V2 multi-tenant

@@ -82,6 +82,18 @@ printed by the restore script (exit 0). Any FAIL = backup pipeline broken,
 escalate immediately and do NOT trust the chain on the live DB until
 investigated.
 
+> **NF525 chain integrity — canonical check.** The `verifyChain` invocations
+> performed by `scripts/restore-foodking-from-backup.sh` (via
+> `AuditLogService::verifyChainIntegrity` + `ZReportService::verifyChainIntegrity`)
+> are the **canonical** NF525 chain-integrity probes for V1. There is **no
+> live HTTP endpoint** (`/api/health/fiscal` or equivalent) — only `/health`,
+> `/health/live`, and `/api/health/ready` exist, and `ready` checks
+> DB + Redis + queue worker only. Real-time fiscal-chain probing
+> (rate-limited + IP-allowlisted `/api/health/fiscal`) is V1.0.2 backlog
+> (per `reports/audit/v1-cloud-prep-insights-2026-05-18/INSIGHTS_FINAL.md`
+> P1-#12). For V1, NF525 chain integrity is asserted at restore-time via
+> the monthly DR drill above — sufficient for single-resto Le Cayenne.
+
 ---
 
 ## 4. NF525 6-year retention enforcement (Object Storage lifecycle)

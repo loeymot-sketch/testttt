@@ -87,6 +87,20 @@
     - name: Soketi global install (Node assumed pre-installed)
       community.general.npm: { name: "@soketi/soketi", global: true, state: present }
       tags: [soketi]
+    # [V1 Cloud-Prep insights P1-#11 2026-05-18] Render soketi.json from template.
+    # Previously the supervisor config referenced {{ app_root }}/soketi.json but
+    # no Ansible task created it — supervisor would leave foodking-soketi in
+    # FATAL state on first boot. This task closes the gap idempotently.
+    - name: Render soketi.json from template (V1 Cloud-Prep P1-#11)
+      ansible.builtin.template:
+        src: templates/soketi.json.j2
+        dest: "{{ app_root }}/soketi.json"
+        owner: www-data
+        group: www-data
+        mode: "0640"
+      no_log: true
+      notify: restart soketi
+      tags: [soketi]
     - name: Supervisor config — Soketi + queue worker
       ansible.builtin.template:
         src: templates/supervisor-foodking.conf.j2
@@ -143,6 +157,20 @@
         minute: "*"
         job: "cd {{ app_root }} && php{{ php_version }} artisan schedule:run >> /dev/null 2>&1"
       tags: [cron]
+    # [V1 Cloud-Prep insights P1-#10 2026-05-18] Render /etc/foodking-backup.env.
+    # The cron line below sources this file BEFORE invoking the backup script
+    # (cron has empty env by default). Previously documented as a manual owner
+    # step in docs/runbooks/BACKUP_RESTORE_NF525.md §1 — now Ansible-managed
+    # so a re-run is idempotent and secrets stay in sync with vault.yml.
+    - name: Render foodking-backup.env from template (V1 Cloud-Prep P1-#10)
+      ansible.builtin.template:
+        src: templates/foodking-backup.env.j2
+        dest: /etc/foodking-backup.env
+        owner: root
+        group: www-data
+        mode: "0640"
+      no_log: true
+      tags: [cron, backup]
     - name: Cron — daily backup 03:00 UTC
       ansible.builtin.cron:
         name: foodking-backup-daily
@@ -171,3 +199,10 @@
     - { name: restart redis, ansible.builtin.systemd: { name: redis-server, state: restarted } }
     - { name: reload nginx, ansible.builtin.systemd: { name: nginx, state: reloaded } }
     - { name: reload supervisor, ansible.builtin.systemd: { name: supervisor, state: restarted } }
+    # [V1 Cloud-Prep insights P1-#11 2026-05-18] Restart Soketi when its config rotates
+    # (vault_soketi_* key rotation, sizing knobs). Supervisor manages the process,
+    # so we go through `supervisorctl restart` rather than systemd.
+    - name: restart soketi
+      community.general.supervisorctl:
+        name: foodking-soketi
+        state: restarted
