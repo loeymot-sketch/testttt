@@ -172,6 +172,13 @@
         // KioskWizardComponent.vue:907 detectTemplateFromName so admin renames
         // don't silently break wizard template routing.
         window.FK_KIOSK_WIZARD_TEMPLATE_ALIASES = @json(config('kiosk.wizard_template_aliases', []));
+        // [Sprint H4 Z3-NEW-006 2026-05-17] KDS V2 org-wide kill-switch. Defaults
+        // true (V2 is the rollout default per Wave Z 5C). Operators can rollback
+        // all devices via KDS_V2_DEFAULT_ENABLED=false in .env instead of
+        // per-tab localStorage flipping. Consumed by
+        // KitchenDisplaySystemComponent.vue::useV2Layout (config layer between
+        // localStorage and hardcoded fallback).
+        window.FK_KDS_V2_DEFAULT_ENABLED = @json((bool) config('kds.v2_default_enabled', true));
         // [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle
         // [GAP-32-6] Use config() instead of env() — env() returns null after config:cache in production
         window.__FOODKING_RUNTIME__ = {

@@ -1167,19 +1167,23 @@ export default {
     direction() {
       return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
     },
-    // [kds/sprint-2 V-5 / Sprint 3C 2026-05-16] V2 layout = PRODUCTION DEFAULT
-    // since 2026-05-16. The original gated rollout (default false, ?v2=1 opt-in)
-    // left the V2 P0 fixes (consolidated banner, fixed-height card, allergen
-    // pill, age stripe, single-FIFO grid) inert in production — kitchen still
-    // saw the legacy 4-column UI with the accordion-closed-by-default bug + 5
-    // stacked banners eating ~10% screen height.
+    // [kds/sprint-2 V-5 / Sprint 3C 2026-05-16 / Sprint H4 Z3-NEW-006 2026-05-17]
+    // V2 layout = PRODUCTION DEFAULT since 2026-05-16. The original gated rollout
+    // (default false, ?v2=1 opt-in) left the V2 P0 fixes (consolidated banner,
+    // fixed-height card, allergen pill, age stripe, single-FIFO grid) inert in
+    // production — kitchen still saw the legacy 4-column UI with the
+    // accordion-closed-by-default bug + 5 stacked banners eating ~10% screen height.
     //
-    // New order of precedence (inverted):
+    // Order of precedence (Z3-NEW-006 added the org config layer so operators
+    // can rollback the whole org via KDS_V2_DEFAULT_ENABLED=false in .env
+    // instead of per-tab localStorage flipping each device):
     //   1. URL param ?v2=0           — emergency rollback to legacy (per-tab)
     //   2. URL param ?v2=1           — explicit V2 (per-tab)
     //   3. localStorage kds.v2_enabled === '0' — per-device legacy opt-out
     //   4. localStorage kds.v2_enabled === '1' — per-device V2 force-on (legacy)
-    //   5. Default                   — V2 (new behaviour)
+    //   5. window.FK_KDS_V2_DEFAULT_ENABLED — org config (Blade-injected from
+    //      config('kds.v2_default_enabled') / KDS_V2_DEFAULT_ENABLED env)
+    //   6. Default true              — V2 (Wave Z 5C rollout default)
     //
     // The legacy 4-column path remains intact in the v-else branch so
     // operators in the kitchen can revert in one URL keystroke if a
@@ -1202,7 +1206,15 @@ export default {
         if (stored === '0') {
           return false;
         }
-        // null / '1' / any other value → V2 default.
+        if (stored === '1') {
+          return true;
+        }
+        // [Z3-NEW-006] Org-wide config layer between localStorage and hardcoded
+        // fallback. Lets ops flip KDS_V2_DEFAULT_ENABLED=false in .env to
+        // rollback the whole fleet without touching each device.
+        if (typeof window.FK_KDS_V2_DEFAULT_ENABLED === 'boolean') {
+          return window.FK_KDS_V2_DEFAULT_ENABLED;
+        }
         return true;
       } catch (_e) {
         // Fail-safe: if storage is denied, still render the modern UI.
