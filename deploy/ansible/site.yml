@@ -1,0 +1,160 @@
+---
+# FoodKing V1 Phase D — OVH VPS-1 Strasbourg. Mirrors Phase C (72b078682).
+# Idempotent. NEVER modifies app code (frozen-zone safe). See README.md.
+- name: FoodKing production provisioning
+  hosts: foodking_prod
+  become: true
+  vars_files: [group_vars/all.yml]
+  tasks:
+    - name: Base packages + firewall + intrusion detection
+      ansible.builtin.apt:
+        name: [git, curl, jq, htop, fail2ban, ufw, unzip, ca-certificates, supervisor]
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+      tags: [base]
+    - name: UFW allow SSH/HTTP/HTTPS
+      community.general.ufw: { rule: allow, port: "{{ item }}", proto: tcp }
+      loop: [22, 80, 443]
+      tags: [base]
+    - name: PHP {{ php_version }} extensions (Sury PPA assumed)
+      ansible.builtin.apt:
+        name: "php{{ php_version }}-{{ item }}"
+        state: present
+      loop: "{{ php_extensions }}"
+      tags: [php]
+    - name: Composer
+      ansible.builtin.apt: { name: composer, state: present }
+      tags: [php]
+    - name: MySQL 8 + client + python driver
+      ansible.builtin.apt:
+        name: [mysql-server, mysql-client, python3-pymysql]
+        state: present
+      tags: [mysql]
+    - name: MySQL tuning (VPS-1 capped)
+      ansible.builtin.copy:
+        dest: /etc/mysql/mysql.conf.d/foodking.cnf
+        mode: "0644"
+        content: |
+          [mysqld]
+          innodb_buffer_pool_size = {{ mysql_innodb_buffer_pool_size }}
+          max_connections = {{ mysql_max_connections }}
+          character-set-server = utf8mb4
+          collation-server = utf8mb4_unicode_ci
+      notify: restart mysql
+      tags: [mysql]
+    - name: Redis 7
+      ansible.builtin.apt: { name: redis-server, state: present }
+      tags: [redis]
+    - name: Redis config (maxmemory + AOF + password)
+      ansible.builtin.copy:
+        dest: /etc/redis/redis.conf.d/foodking.conf
+        owner: redis
+        group: redis
+        mode: "0640"
+        content: |
+          maxmemory {{ redis_maxmemory }}
+          maxmemory-policy allkeys-lru
+          appendonly yes
+          requirepass {{ redis_password }}
+      no_log: true
+      notify: restart redis
+      tags: [redis]
+    - name: Nginx + Certbot
+      ansible.builtin.apt:
+        name: [nginx, certbot, python3-certbot-nginx]
+        state: present
+      tags: [nginx]
+    - name: Nginx site config (gzip + HTTP/2 + HSTS)
+      ansible.builtin.template:
+        src: templates/nginx-foodking.conf.j2
+        dest: /etc/nginx/sites-available/foodking
+        mode: "0644"
+      notify: reload nginx
+      tags: [nginx]
+    - name: Enable Nginx site
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/foodking
+        dest: /etc/nginx/sites-enabled/foodking
+        state: link
+      notify: reload nginx
+      tags: [nginx]
+    - name: Let's Encrypt cert (idempotent via creates:)
+      ansible.builtin.command:
+        cmd: certbot --nginx -n --agree-tos -m {{ letsencrypt_email }} -d {{ nginx_server_name }} -d www.{{ nginx_server_name }}
+        creates: "/etc/letsencrypt/live/{{ nginx_server_name }}/fullchain.pem"
+      tags: [nginx]
+    - name: Soketi global install (Node assumed pre-installed)
+      community.general.npm: { name: "@soketi/soketi", global: true, state: present }
+      tags: [soketi]
+    - name: Supervisor config — Soketi + queue worker
+      ansible.builtin.template:
+        src: templates/supervisor-foodking.conf.j2
+        dest: /etc/supervisor/conf.d/foodking.conf
+        mode: "0644"
+      notify: reload supervisor
+      tags: [soketi]
+    - name: Clone FoodKing repo
+      ansible.builtin.git:
+        repo: "{{ app_repo_url }}"
+        dest: "{{ app_root }}"
+        version: "{{ app_branch }}"
+        force: false
+      become_user: www-data
+      tags: [app]
+    - name: Composer install (no-dev, optimize)
+      ansible.builtin.command:
+        cmd: composer install --no-dev --optimize-autoloader --no-interaction
+        chdir: "{{ app_root }}"
+        creates: "{{ app_root }}/vendor/autoload.php"
+      become_user: www-data
+      tags: [app]
+    - name: NPM ci + production build
+      ansible.builtin.command: { cmd: "{{ item }}", chdir: "{{ app_root }}" }
+      loop: [npm ci, npm run production]
+      become_user: www-data
+      changed_when: true
+      tags: [app]
+    - name: Artisan migrate --force
+      ansible.builtin.command:
+        cmd: "php{{ php_version }} artisan migrate --force"
+        chdir: "{{ app_root }}"
+      become_user: www-data
+      register: migrate_out
+      changed_when: "'Nothing to migrate' not in migrate_out.stdout"
+      tags: [app]
+    - name: Cron — Laravel schedule:run every minute
+      ansible.builtin.cron:
+        name: foodking-schedule-run
+        user: www-data
+        minute: "*"
+        job: "cd {{ app_root }} && php{{ php_version }} artisan schedule:run >> /dev/null 2>&1"
+      tags: [cron]
+    - name: Cron — daily backup 03:00 UTC
+      ansible.builtin.cron:
+        name: foodking-backup-daily
+        user: www-data
+        minute: "0"
+        hour: "3"
+        job: ". /etc/foodking-backup.env && {{ app_root }}/scripts/backup-foodking-daily.sh >> /var/log/foodking-backup.log 2>&1"
+      tags: [cron]
+    - name: Logrotate (Laravel + backup logs)
+      ansible.builtin.copy:
+        dest: /etc/logrotate.d/foodking
+        mode: "0644"
+        content: |
+          {{ app_root }}/storage/logs/*.log /var/log/foodking-backup.log {
+            daily
+            rotate 14
+            compress
+            delaycompress
+            missingok
+            notifempty
+            copytruncate
+          }
+      tags: [cron]
+  handlers:
+    - { name: restart mysql, ansible.builtin.systemd: { name: mysql, state: restarted } }
+    - { name: restart redis, ansible.builtin.systemd: { name: redis-server, state: restarted } }
+    - { name: reload nginx, ansible.builtin.systemd: { name: nginx, state: reloaded } }
+    - { name: reload supervisor, ansible.builtin.systemd: { name: supervisor, state: restarted } }

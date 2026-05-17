@@ -17,6 +17,15 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+// idb-keyval mock with a togglable `set()` rejection — only flipped on for the
+// localStorage-fallback test below; default behavior is the real implementation.
+const idbKeyvalThrowFlag = { set: false };
+vi.mock('idb-keyval', async () => {
+    const actual = await vi.importActual('idb-keyval');
+    return { ...actual, set: (...a) => (idbKeyvalThrowFlag.set
+        ? Promise.reject(new Error('indexeddb unavailable')) : actual.set(...a)) };
+});
+
 import {
     clearQueue,
     enqueueOrder,
@@ -207,5 +216,55 @@ describe('usePosOfflineState — composable reactive state', () => {
         await new Promise((resolve) => setTimeout(resolve, 20));
         expect(postFn).toHaveBeenCalled();
         state.unbindAutoFlush();
+    });
+});
+
+describe('posOfflineQueue — RED-team gap coverage', () => {
+    beforeEach(async () => {
+        await clearQueue();
+        await clearQueueEntries();
+        try { localStorage.clear(); } catch (_) {}
+        vi.restoreAllMocks();
+    });
+
+    it('markSynced() on unknown key returns false and leaves the queue untouched', async () => {
+        await enqueueOrder({ items: [{ item_id: 1, quantity: 1 }] });
+        const result = await markSynced('00000000-0000-4000-8000-000000000000');
+        expect(result).toBe(false);
+        expect((await listPending()).length).toBe(1);
+    });
+
+    it('markFailed() on unknown key returns false and leaves the queue untouched', async () => {
+        const entry = await enqueueOrder({ items: [{ item_id: 1, quantity: 1 }] });
+        const result = await markFailed('00000000-0000-4000-8000-000000000000', { status: 409 });
+        expect(result).toBe(false);
+        const pending = await listPending();
+        expect(pending.length).toBe(1);
+        expect(pending[0].attempts).toBe(entry.attempts);
+        expect(pending[0].lastFailedAt).toBeNull();
+    });
+
+    it('falls back to localStorage when IndexedDB set() throws (Safari ITP / private mode)', async () => {
+        idbKeyvalThrowFlag.set = true;
+        try {
+            const entry = await enqueueOrder({ items: [{ item_id: 42, quantity: 1 }], total_cents: 100 });
+            expect(entry).toBeTruthy();
+            const rawLs = localStorage.getItem('__pos_idb_fallback__:pos:offline-queue:v1');
+            expect(rawLs).toBeTruthy();
+            const parsed = JSON.parse(rawLs);
+            expect(Array.isArray(parsed)).toBe(true);
+            expect(parsed[0].idempotencyKey).toBe(entry.idempotencyKey);
+        } finally {
+            idbKeyvalThrowFlag.set = false;
+        }
+    });
+
+    it('clearQueue() empties the in-memory cache and the persisted store', async () => {
+        await enqueueOrder({ items: [{ item_id: 1, quantity: 1 }] });
+        await enqueueOrder({ items: [{ item_id: 2, quantity: 1 }] });
+        expect(__unsafeGetCacheForTests().length).toBe(2);
+        await clearQueue();
+        expect(__unsafeGetCacheForTests().length).toBe(0);
+        expect((await listPending()).length).toBe(0);
     });
 });

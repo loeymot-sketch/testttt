@@ -62,6 +62,10 @@ MYSQL_PWD="$DB_PASSWORD" mysqldump \
 
 [[ -s "$DUMP" ]] || fail "dump file empty: $DUMP"
 
+# RED-team P1: gzip integrity test catches truncated/corrupt gz (e.g. disk full
+# mid-stream produces a valid-looking but truncated archive that gunzip -t detects).
+gunzip -t "$DUMP" || fail "gzip integrity test failed (corrupt/truncated): $DUMP"
+
 # --- 3. Checksum ------------------------------------------------------------
 ( cd "$LOCAL_DIR" && sha256sum "$(basename "$DUMP")" > "$SHA" ) \
   || fail "sha256sum failed"
@@ -69,11 +73,27 @@ log "sha256: $(awk '{print $1}' "$SHA")"
 
 # --- 4. Upload to OVH Object Storage (S3-compatible) ------------------------
 # s3cmd reads credentials from ~/.s3cfg (see runbook setup section).
+# RED-team P1: retry with exponential backoff (2s/4s/8s) — OVH Object Storage
+# occasionally 5xx-flakes on cold-tier writes; single-shot upload fails the run.
+s3_put_retry() {
+  local src="$1" dst="$2" attempt=1 delay=2
+  while (( attempt <= 3 )); do
+    if s3cmd put "$src" "$dst" --acl-private; then
+      return 0
+    fi
+    log "s3cmd put attempt ${attempt}/3 failed for $(basename "$src"); sleeping ${delay}s"
+    sleep "$delay"
+    attempt=$((attempt + 1))
+    delay=$((delay * 2))
+  done
+  return 1
+}
+
 log "uploading to $S3_BUCKET/"
-s3cmd put "$DUMP" "$S3_BUCKET/$(basename "$DUMP")" --acl-private \
-  || fail "s3cmd upload (dump) failed"
-s3cmd put "$SHA"  "$S3_BUCKET/$(basename "$SHA")"  --acl-private \
-  || fail "s3cmd upload (checksum) failed"
+s3_put_retry "$DUMP" "$S3_BUCKET/$(basename "$DUMP")" \
+  || fail "s3cmd upload (dump) failed after 3 attempts"
+s3_put_retry "$SHA"  "$S3_BUCKET/$(basename "$SHA")" \
+  || fail "s3cmd upload (checksum) failed after 3 attempts"
 
 # --- 5. Local retention (keep RETENTION_DAYS days; remote retention = lifecycle policy) ---
 log "rotating local copies (>${RETENTION_DAYS} days)"
