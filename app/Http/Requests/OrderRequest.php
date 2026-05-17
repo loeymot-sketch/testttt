@@ -59,7 +59,23 @@ class OrderRequest extends FormRequest
         // PersonalAccessToken path where the ability check bites.
         $token = $user->currentAccessToken();
         if (! $token) {
-            return true;
+            // [Sprint H1 K-002 2026-05-17] Tighten the tokenless fallback.
+            // Production HTTP never reaches this branch — Sanctum's Guard
+            // __invoke wraps web-guard session-auth with TransientToken
+            // (non-null). The branch only fires for test fixtures using
+            // `$this->actingAs($user, 'sanctum')`. Wave Z RED-team flagged
+            // the prior `return true` as too broad: a hypothetical future
+            // reuse of OrderRequest at a non-frontend.order endpoint would
+            // inherit the fail-open. Now we require BOTH:
+            //   - the request is genuinely guard-authenticated (web for
+            //     session SPA, sanctum for the test-fixture path), and
+            //   - the route is in the `frontend.order.*` namespace — the
+            //     only legitimate mount point of this FormRequest.
+            // CLAUDE.md §9 (multi-tenant + auth invariants).
+            $guardAuthenticated = auth()->guard('web')->check()
+                || auth()->guard('sanctum')->check();
+            $routeName = (string) ($this->route()?->getName() ?? '');
+            return $guardAuthenticated && str_starts_with($routeName, 'frontend.order.');
         }
 
         return (bool) $user->tokenCan('kiosk:order');
