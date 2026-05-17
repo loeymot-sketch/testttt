@@ -60,6 +60,10 @@ class ItemRequest extends FormRequest
                 $allergenCodes !== [] ? Rule::in($allergenCodes) : null,
             ])),
             'kiosk_emoji'      => ['nullable', 'string', 'max:10'],
+            // [v1-0-1-h5 Z5-P1-02 2026-05-17] barcode + kds_station — fields fillable on Item model but were
+            // silently dropped when posted via admin form (FormRequest gatekeeping). POS scanners + KDS routing rely on them.
+            'barcode'          => ['nullable', 'string', 'max:64', 'unique:items,barcode' . ($this->item ? ',' . $this->item->id : '')],
+            'kds_station'      => ['nullable', 'string', 'max:32'],
             'description'      => ['nullable', 'string', 'max:5000'],
             'caution'          => ['nullable', 'string', 'max:5000'],
             'status'           => ['required', 'numeric', 'max:24'],

@@ -1,54 +1,55 @@
 <template>
     <LoadingComponent :props="loading" />
     <div class="col-12">
+        <!-- [v1-0-1-h5 Z5-P1-03 2026-05-17] hardcoded FR strings (eyebrow, subtitle, sync chip, 4 metric labels, 4 action labels, 2 aria-labels) replaced with $t() — 5-language JSON parity added -->
         <section class="catalog-control-plane">
             <div class="catalog-control-plane__summary">
-                <span class="catalog-control-plane__eyebrow">Pilotage catalogue</span>
+                <span class="catalog-control-plane__eyebrow">{{ $t('label.catalog_pilot') }}</span>
                 <div class="catalog-control-plane__title-row">
-                    <h2>Produits, catégories, offres et disponibilités</h2>
+                    <h2>{{ $t('label.catalog_subtitle') }}</h2>
                     <span class="catalog-control-plane__sync">
                         <i class="lab lab-refresh"></i>
-                        POS / borne
+                        {{ $t('label.catalog_pos_kiosk') }}
                     </span>
                 </div>
             </div>
 
             <!-- [iter15-mega-fix A-010 round-7 2026-05-10] :title attribute exposes full label even when CSS clips, and aria-label keeps SR action context -->
-            <div class="catalog-control-plane__metrics" aria-label="Résumé catalogue">
-                <button type="button" class="catalog-control-plane__metric" :title="`${itemsCount} produits`" :aria-label="`Filtrer ${itemsCount} produits`" @click.prevent="clear">
+            <div class="catalog-control-plane__metrics" :aria-label="$t('label.catalog_summary_aria')">
+                <button type="button" class="catalog-control-plane__metric" :title="`${itemsCount} ${$t('label.catalog_metric_products')}`" :aria-label="`${$t('label.filter')} ${itemsCount} ${$t('label.catalog_metric_products')}`" @click.prevent="clear">
                     <span>{{ itemsCount }}</span>
-                    <small>produits</small>
+                    <small>{{ $t('label.catalog_metric_products') }}</small>
                 </button>
-                <router-link class="catalog-control-plane__metric" :title="`${categoriesCount} catégories`" :aria-label="`Voir ${categoriesCount} catégories`" :to="{ name: 'admin.settings.itemCategory.list' }">
+                <router-link class="catalog-control-plane__metric" :title="`${categoriesCount} ${$t('label.catalog_metric_categories')}`" :aria-label="`${$t('label.view')} ${categoriesCount} ${$t('label.catalog_metric_categories')}`" :to="{ name: 'admin.settings.itemCategory.list' }">
                     <span>{{ categoriesCount }}</span>
-                    <small>catégories</small>
+                    <small>{{ $t('label.catalog_metric_categories') }}</small>
                 </router-link>
-                <button type="button" class="catalog-control-plane__metric" :title="`${activeItemsCount} actifs`" :aria-label="`Filtrer ${activeItemsCount} produits actifs`" @click.prevent="filterActiveItems">
+                <button type="button" class="catalog-control-plane__metric" :title="`${activeItemsCount} ${$t('label.catalog_metric_active')}`" :aria-label="`${$t('label.filter')} ${activeItemsCount} ${$t('label.catalog_metric_active')}`" @click.prevent="filterActiveItems">
                     <span>{{ activeItemsCount }}</span>
-                    <small>actifs</small>
+                    <small>{{ $t('label.catalog_metric_active') }}</small>
                 </button>
-                <button type="button" class="catalog-control-plane__metric catalog-control-plane__metric--alert" :title="`${unavailableItemsCount} indisponibles`" :aria-label="`Filtrer ${unavailableItemsCount} produits indisponibles`" @click.prevent="focusAvailability">
+                <button type="button" class="catalog-control-plane__metric catalog-control-plane__metric--alert" :title="`${unavailableItemsCount} ${$t('label.catalog_metric_unavailable')}`" :aria-label="`${$t('label.filter')} ${unavailableItemsCount} ${$t('label.catalog_metric_unavailable')}`" @click.prevent="focusAvailability">
                     <span>{{ unavailableItemsCount }}</span>
-                    <small>indisponibles</small>
+                    <small>{{ $t('label.catalog_metric_unavailable') }}</small>
                 </button>
             </div>
 
-            <div class="catalog-control-plane__actions" aria-label="Actions catalogue">
+            <div class="catalog-control-plane__actions" :aria-label="$t('label.catalog_actions_aria')">
                 <router-link class="catalog-control-plane__action" :to="{ name: 'admin.items.list' }">
                     <i class="lab lab-list"></i>
-                    Produits
+                    {{ $t('label.catalog_action_products') }}
                 </router-link>
                 <router-link class="catalog-control-plane__action" :to="{ name: 'admin.settings.itemCategory.list' }">
                     <i class="lab lab-category"></i>
-                    Catégories
+                    {{ $t('label.catalog_action_categories') }}
                 </router-link>
                 <router-link class="catalog-control-plane__action" :to="{ name: 'admin.offers.list' }">
                     <i class="lab lab-discount"></i>
-                    Offres
+                    {{ $t('label.catalog_action_offers') }}
                 </router-link>
                 <button type="button" class="catalog-control-plane__action" @click.prevent="focusAvailability">
                     <i class="lab lab-toggle-on"></i>
-                    Disponibilités
+                    {{ $t('label.catalog_action_availability') }}
                 </button>
             </div>
         </section>
