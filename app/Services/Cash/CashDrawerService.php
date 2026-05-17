@@ -406,46 +406,67 @@ class CashDrawerService
             return null;
         }
 
-        $session = CashDrawerSession::query()->find($sessionId);
-        if (! $session) {
-            $msg = "Cash drawer session {$sessionId} not found";
-            if ($strict) {
-                throw new HttpException(404, $msg);
+        // [Sprint H2 P2-Z10-08 2026-05-17] Race-resistant session reload +
+        // movement insertion. Mirror the openSession / closeSession /
+        // reconcileSession discipline: SELECT FOR UPDATE inside a
+        // DB::transaction blocks concurrent recordMovement calls on the
+        // same session row, AND prevents a concurrent close() from
+        // flipping the session between our status check and our INSERT
+        // (which would silently corrupt Z-report aggregates by writing
+        // a movement onto a CLOSED session).
+        //
+        // Validation guards above (type / direction / amount) stay OUTSIDE
+        // the transaction — they fail-fast on bad input without acquiring
+        // a row lock. Audit-log write STAYS INSIDE so the audit_logs row
+        // and the cash_movements row commit atomically (NF525 evidence).
+        return DB::transaction(function () use ($sessionId, $type, $amount, $direction, $orderId, $notes, $strict) {
+            $session = CashDrawerSession::query()
+                ->whereKey($sessionId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $session) {
+                $msg = "Cash drawer session {$sessionId} not found";
+                if ($strict) {
+                    throw new HttpException(404, $msg);
+                }
+                Log::warning('[F-003] '.$msg);
+                return null;
             }
-            Log::warning('[F-003] '.$msg);
-            return null;
-        }
 
-        if ($session->status !== CashDrawerSession::STATUS_OPEN) {
-            $msg = "Cannot record movement on a {$session->status} session ({$sessionId})";
-            if ($strict) {
-                throw new HttpException(422, $msg);
+            if ($session->status !== CashDrawerSession::STATUS_OPEN) {
+                $msg = "Cannot record movement on a {$session->status} session ({$sessionId})";
+                if ($strict) {
+                    throw new HttpException(422, $msg);
+                }
+                Log::warning('[F-003] '.$msg);
+                return null;
             }
-            Log::warning('[F-003] '.$msg);
-            return null;
-        }
 
-        $movement = CashMovement::create([
-            'cash_drawer_session_id' => $session->id,
-            'branch_id'              => $session->branch_id,
-            'order_id'               => $orderId,
-            'type'                   => $type,
-            'amount'                 => $amount,
-            'direction'              => $direction,
-            'notes'                  => $notes,
-        ]);
+            $movement = CashMovement::create([
+                'cash_drawer_session_id' => $session->id,
+                'branch_id'              => $session->branch_id,
+                'order_id'               => $orderId,
+                'type'                   => $type,
+                'amount'                 => $amount,
+                'direction'              => $direction,
+                'notes'                  => $notes,
+            ]);
 
-        // [Sprint 1D / F-8] Audit cash.movement.recorded — NF525 evidence.
-        $this->writeAuditLog('cash.movement.recorded', $session, [
-            'session_id' => $session->id,
-            'movement_id'=> $movement->id,
-            'order_id'   => $orderId,
-            'type'       => $type,
-            'amount'     => (float) $movement->amount,
-            'direction'  => $direction,
-        ]);
+            // [Sprint 1D / F-8] Audit cash.movement.recorded — NF525 evidence.
+            // Stays inside the transaction so the audit row and the movement
+            // row commit atomically (no partial audit chain on failure).
+            $this->writeAuditLog('cash.movement.recorded', $session, [
+                'session_id' => $session->id,
+                'movement_id'=> $movement->id,
+                'order_id'   => $orderId,
+                'type'       => $type,
+                'amount'     => (float) $movement->amount,
+                'direction'  => $direction,
+            ]);
 
-        return $movement;
+            return $movement;
+        });
     }
 
     /**
