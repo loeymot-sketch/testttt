@@ -17,11 +17,13 @@ use App\Models\User;
 use App\Services\Fiscal\AuditLogService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
 class PosManualDiscountAuditTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsOpenCashDrawerSession;
 
     public function test_manual_pos_discount_writes_actor_reason_and_backend_subtotal_audit(): void
     {
@@ -40,6 +42,8 @@ class PosManualDiscountAuditTest extends TestCase
             'password' => Hash::make('password'),
         ]);
         $operator->syncPermissions(['pos', 'pos-orders', 'pos-discount-up-to-10']);
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($operator, $branch);
 
         $customer = User::factory()->create(['branch_id' => $branch->id]);
         $customer->assignRole('Customer');

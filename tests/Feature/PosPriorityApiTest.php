@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
 /**
  * Tests prioritaires automatisables côté API (coupon / adresse livraison) — alignés local-validation / E2E.
@@ -21,6 +22,7 @@ class PosPriorityApiTest extends TestCase
 {
     use RefreshDatabase;
     use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     private function apiKey(): string
     {
@@ -35,6 +37,8 @@ class PosPriorityApiTest extends TestCase
         $branch = \Database\Factories\BranchFactory::new()->create();
         $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $admin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($admin, $branch);
 
         $customer = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $customer->assignRole('Customer');

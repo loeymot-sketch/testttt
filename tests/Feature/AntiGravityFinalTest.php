@@ -11,11 +11,13 @@ use App\Models\Tax;
 use App\Enums\TaxType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
 class AntiGravityFinalTest extends TestCase
 {
     use RefreshDatabase;
     use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected function setUp(): void
     {
@@ -29,6 +31,8 @@ class AntiGravityFinalTest extends TestCase
         $branch = Branch::factory()->create();
         $admin = User::factory()->create(['email' => 'admin@test.com', 'branch_id' => $branch->id]);
         $admin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($admin, $branch);
         $tax = Tax::factory()->create(['tax_rate' => 0, 'type' => TaxType::FIXED]);
         $item = Item::factory()->create(['name' => 'Tacos L (2 Viandes)', 'price' => 10.00, 'tax_id' => $tax->id]);
 

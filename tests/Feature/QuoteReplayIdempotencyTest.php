@@ -18,11 +18,13 @@ use App\Models\OrderQuote;
 use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
 class QuoteReplayIdempotencyTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsOpenCashDrawerSession;
 
     public function test_quote_consume_replay_is_idempotent(): void
     {
@@ -127,6 +129,8 @@ class QuoteReplayIdempotencyTest extends TestCase
         $operator = User::factory()->create(['branch_id' => $branch->id]);
         $operator->assignRole('POS Operator');
         $operator->givePermissionTo('pos');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($operator, $branch);
         $customer = User::factory()->create(['branch_id' => $branch->id]);
         $customer->assignRole('Customer');
 

@@ -17,10 +17,11 @@ use App\Enums\TaxType;
 use App\Enums\OrderStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
 /**
  * Module 9: Synchronisation Inter-Écrans (6 tests)
- * 
+ *
  * Vérifie que quand une commande est créée/modifiée sur un écran,
  * les autres la voient immédiatement.
  * Priorité: 🔴 Critique
@@ -29,6 +30,7 @@ class SyncComprehensiveTest extends TestCase
 {
     use RefreshDatabase;
     use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected function setUp(): void
     {
@@ -42,6 +44,8 @@ class SyncComprehensiveTest extends TestCase
         $branch = \Database\Factories\BranchFactory::new()->create();
         $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $admin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($admin, $branch);
         return [$branch, $admin];
     }
 

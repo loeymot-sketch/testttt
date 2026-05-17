@@ -22,6 +22,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
 /**
@@ -31,6 +32,7 @@ class PosKioskPricingParityTest extends TestCase
 {
     use RefreshDatabase;
     use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     private Branch $branch;
     private User $posOperator;
@@ -54,6 +56,8 @@ class PosKioskPricingParityTest extends TestCase
         ]);
         $this->posOperator->assignRole('POS Operator');
         $this->posOperator->givePermissionTo('pos');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($this->posOperator, $this->branch);
 
         $this->customer = User::factory()->create([
             'branch_id' => $this->branch->id,

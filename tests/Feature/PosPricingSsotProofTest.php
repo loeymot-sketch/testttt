@@ -17,6 +17,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
 /**
@@ -28,6 +29,7 @@ class PosPricingSsotProofTest extends TestCase
 {
     use RefreshDatabase;
     use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     public function test_pos_order_overwrites_client_forged_pricing_with_ssot(): void
     {
@@ -43,6 +45,8 @@ class PosPricingSsotProofTest extends TestCase
         ]);
         $posUser->assignRole('POS Operator');
         $posUser->givePermissionTo('pos');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($posUser, $branch);
 
         $customer = User::factory()->create([
             'branch_id' => $branch->id,

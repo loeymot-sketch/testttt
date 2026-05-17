@@ -17,6 +17,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
 /**
  * Tests discount application in POS orders (Sprint 15 - BUG-3 FIX)
@@ -26,6 +27,7 @@ class PosDiscountTest extends TestCase
 {
     use RefreshDatabase;
     use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected Branch $branch;
     protected User $posOperator;
@@ -53,6 +55,8 @@ class PosDiscountTest extends TestCase
         // the dedicated gate tests live in PosDiscountPermissionTest.
         $this->posOperator->givePermissionTo('pos-discount-unlimited');
         $this->posOperator->givePermissionTo('pos-discount-over-10-requires-manager');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($this->posOperator, $this->branch);
 
         // Create Customer
         $this->customer = User::factory()->create([

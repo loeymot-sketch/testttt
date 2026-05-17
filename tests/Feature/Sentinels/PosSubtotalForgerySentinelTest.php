@@ -14,6 +14,7 @@ use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
 /**
@@ -22,6 +23,7 @@ use Tests\TestCase;
 class PosSubtotalForgerySentinelTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsOpenCashDrawerSession;
 
     protected function setUp(): void
     {
@@ -39,6 +41,8 @@ class PosSubtotalForgerySentinelTest extends TestCase
         $branch = Branch::factory()->create();
         $cashier = User::factory()->create(['branch_id' => $branch->id]);
         $cashier->assignRole('POS Operator');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($cashier, $branch);
 
         $tax = Tax::factory()->create(['tax_rate' => 0, 'type' => TaxType::FIXED]);
         $item = Item::factory()->create(['price' => 100.00, 'tax_id' => $tax->id]);

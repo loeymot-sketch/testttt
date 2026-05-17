@@ -20,12 +20,14 @@ use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
 class PosReorderHistoricalPricingSentinelTest extends TestCase
 {
     use RefreshDatabase;
     use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     public function test_reorder_items_returns_historical_snapshot_but_commit_uses_current_quote_ssot(): void
     {
@@ -38,6 +40,8 @@ class PosReorderHistoricalPricingSentinelTest extends TestCase
         $operator->assignRole('POS Operator');
         $operator->givePermissionTo('pos');
         $operator->givePermissionTo('pos-orders');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($operator, $branch);
 
         $customer = User::factory()->create(['branch_id' => $branch->id]);
         $customer->assignRole('Customer');

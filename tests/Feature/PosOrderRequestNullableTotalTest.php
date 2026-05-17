@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
 /**
@@ -28,6 +29,7 @@ class PosOrderRequestNullableTotalTest extends TestCase
 {
     use RefreshDatabase;
     use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected Branch $branch;
     protected User $customer;
@@ -58,6 +60,8 @@ class PosOrderRequestNullableTotalTest extends TestCase
             'password' => Hash::make('password'),
         ]);
         $this->operator->assignRole('POS Operator');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($this->operator, $this->branch);
 
         $tax = Tax::factory()->create([
             'name' => 'TVA 10%',
