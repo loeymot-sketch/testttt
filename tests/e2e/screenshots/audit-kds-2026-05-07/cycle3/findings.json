@@ -6,7 +6,7 @@
     "severity": "OK",
     "note": "Souscriptions broadcast détectées : {\"OrderCreated\":true,\"OrderStatusChanged\":true,\"OrderPaidAtCounter\":true,\"ItemAvailabilityChanged\":true,\"OrderTableChanged\":true}",
     "screenshot": null,
-    "ts": "2026-05-11T08:45:51.569Z"
+    "ts": "2026-05-16T17:00:59.627Z"
   },
   {
     "step": "D3-02",
@@ -15,7 +15,7 @@
     "severity": "OK",
     "note": "import=true, start()=true, on('sync')=true, stop()=true",
     "screenshot": null,
-    "ts": "2026-05-11T08:45:52.067Z"
+    "ts": "2026-05-16T17:01:00.096Z"
   },
   {
     "step": "D3-03",
@@ -24,7 +24,7 @@
     "severity": "OK",
     "note": "controller-import=true, sync-route=true, kds-order-prefix=true",
     "screenshot": null,
-    "ts": "2026-05-11T08:45:52.551Z"
+    "ts": "2026-05-16T17:01:00.579Z"
   },
   {
     "step": "D3-04",
@@ -33,7 +33,7 @@
     "severity": "OK",
     "note": "namespace=true, sync()-method=true",
     "screenshot": null,
-    "ts": "2026-05-11T08:45:53.019Z"
+    "ts": "2026-05-16T17:01:01.043Z"
   },
   {
     "step": "D3-05",
@@ -42,6 +42,6 @@
     "severity": "OK",
     "note": "Page errors total=0, critical=0. Sample: ",
     "screenshot": "tests/e2e/screenshots/audit-kds-2026-05-07/cycle3/05-mount-smoke-loaded.png",
-    "ts": "2026-05-11T08:46:02.993Z"
+    "ts": "2026-05-16T17:01:10.965Z"
   }
 ]

@@ -6,7 +6,7 @@
     "severity": "OK",
     "note": "/kiosk/admin → http://localhost:8000/kiosk/idle",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/01-lockdown-redirect-from-admin.png",
-    "ts": "2026-05-06T23:58:56.308Z"
+    "ts": "2026-05-16T17:02:26.243Z"
   },
   {
     "step": "K5-02",
@@ -15,7 +15,7 @@
     "severity": "OK",
     "note": "/js/kiosk-admin.js status=404 (expected 404)",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/02-lockdown-kiosk-admin-js-404.png",
-    "ts": "2026-05-06T23:58:57.234Z"
+    "ts": "2026-05-16T17:02:26.895Z"
   },
   {
     "step": "K5-03",
@@ -24,7 +24,7 @@
     "severity": "OK",
     "note": "Page error/payment-refused length=204",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/03-error-payment-refused-rendered.png",
-    "ts": "2026-05-06T23:59:00.581Z"
+    "ts": "2026-05-16T17:02:30.507Z"
   },
   {
     "step": "K5-04",
@@ -33,7 +33,7 @@
     "severity": "OK",
     "note": "Length=176",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/04-error-menu-unavailable-rendered.png",
-    "ts": "2026-05-06T23:59:03.952Z"
+    "ts": "2026-05-16T17:02:34.138Z"
   },
   {
     "step": "K5-05",
@@ -42,7 +42,7 @@
     "severity": "OK",
     "note": "Length=196",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/05-error-product-removed-rendered.png",
-    "ts": "2026-05-06T23:59:07.295Z"
+    "ts": "2026-05-16T17:02:37.859Z"
   },
   {
     "step": "K5-06",
@@ -51,7 +51,7 @@
     "severity": "OK",
     "note": "lint=true, test=true, policy=true",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/06-sentinel-lockdown-enforced.png",
-    "ts": "2026-05-06T23:59:07.949Z"
+    "ts": "2026-05-16T17:02:38.445Z"
   },
   {
     "step": "K5-07",
@@ -60,7 +60,7 @@
     "severity": "OK",
     "note": "kiosk-post-payment-auto-return.spec.js exists=true",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/07-auto-return-spec-present.png",
-    "ts": "2026-05-06T23:59:08.532Z"
+    "ts": "2026-05-16T17:02:38.995Z"
   },
   {
     "step": "K5-08",
@@ -69,6 +69,6 @@
     "severity": "OK",
     "note": "kioskOfflineQueue=true, db=true, V2 spec=true",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle5/08-sentinel-offline-wired.png",
-    "ts": "2026-05-06T23:59:09.148Z"
+    "ts": "2026-05-16T17:02:39.536Z"
   }
 ]

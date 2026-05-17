@@ -145,6 +145,17 @@ function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) 
 function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
 function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+// [RED-team R4 V1.0.2 2026-05-17] wakeLock screen for TV wall surfaces.
+// Customer TV idles long between order events; without `navigator.wakeLock.request('screen')`
+// the OS screen-saver sleeps the display, making the green flash + chime invisible/inaudible
+// when a new order moves to PREPARED. Acquire on mount, re-acquire on `visibilitychange`
+// (browsers auto-release on tab switch / OS lock), release on unmount. Graceful degrade on
+// browsers without API (Safari iOS <16.4); feature-flag `window.foodkingConfig.ossWakeLockEnabled`
+// (default true). No external deps — native browser API.
 
 
 
@@ -179,7 +190,10 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       // flooded the customer screen console with autoplay warnings (~8x per
       // session) because Chrome blocks AudioContext until a user gesture.
       _audioCtx: null,
-      _audioInitListener: null
+      _audioInitListener: null,
+      // [RED-team R4 V1.0.2 2026-05-17] wakeLock sentinel + visibility handler refs
+      _wakeLockSentinel: null,
+      _onVisibilityChange: null
     };
   },
   computed: {},
@@ -212,6 +226,14 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         passive: true
       });
     } catch (_) {/* never block mount on listener wiring */}
+    // [RED-team R4 V1.0.2 2026-05-17] Acquire screen wakeLock + re-acquire on visibilitychange.
+    this._acquireWakeLock();
+    this._onVisibilityChange = function () {
+      if (document.visibilityState === 'visible') _this._acquireWakeLock();
+    };
+    try {
+      document.addEventListener('visibilitychange', this._onVisibilityChange);
+    } catch (_) {/* noop */}
   },
   beforeUnmount: function beforeUnmount() {
     window.removeEventListener('realtime-order-update', this.list);
@@ -233,6 +255,12 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     } catch (_) {/* noop */}
     this._audioCtx = null;
     this._audioInitListener = null;
+    // [RED-team R4 V1.0.2 2026-05-17] Release wakeLock + drop visibility listener.
+    try {
+      if (this._onVisibilityChange) document.removeEventListener('visibilitychange', this._onVisibilityChange);
+    } catch (_) {/* noop */}
+    this._onVisibilityChange = null;
+    this._releaseWakeLock();
   },
   methods: {
     authBranchId: function authBranchId() {
@@ -250,16 +278,76 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       }
       return 0;
     },
-    _bindWsService: function _bindWsService() {
+    // [RED-team R4 V1.0.2 2026-05-17] Best-effort screen wakeLock for TV walls.
+    _acquireWakeLock: function _acquireWakeLock() {
       var _this2 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var _window, _navigator$wakeLock;
+        var flag, sentinel, _sentinel$addEventLis, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              flag = (_window = window) === null || _window === void 0 || (_window = _window.foodkingConfig) === null || _window === void 0 ? void 0 : _window.ossWakeLockEnabled;
+              if (!(flag === false)) {
+                _context.n = 1;
+                break;
+              }
+              return _context.a(2);
+            case 1:
+              if (!(!('wakeLock' in navigator) || typeof ((_navigator$wakeLock = navigator.wakeLock) === null || _navigator$wakeLock === void 0 ? void 0 : _navigator$wakeLock.request) !== 'function')) {
+                _context.n = 2;
+                break;
+              }
+              return _context.a(2);
+            case 2:
+              if (!_this2._wakeLockSentinel) {
+                _context.n = 3;
+                break;
+              }
+              return _context.a(2);
+            case 3:
+              _context.p = 3;
+              _context.n = 4;
+              return navigator.wakeLock.request('screen');
+            case 4:
+              sentinel = _context.v;
+              _this2._wakeLockSentinel = sentinel;
+              try {
+                (_sentinel$addEventLis = sentinel.addEventListener) === null || _sentinel$addEventLis === void 0 || _sentinel$addEventLis.call(sentinel, 'release', function () {
+                  _this2._wakeLockSentinel = null;
+                });
+              } catch (_) {/* noop */}
+              _context.n = 6;
+              break;
+            case 5:
+              _context.p = 5;
+              _t = _context.v;
+              _this2._wakeLockSentinel = null; /* graceful degrade */
+            case 6:
+              return _context.a(2);
+          }
+        }, _callee, null, [[3, 5]]);
+      }))();
+    },
+    _releaseWakeLock: function _releaseWakeLock() {
+      var sentinel = this._wakeLockSentinel;
+      this._wakeLockSentinel = null;
+      if (!sentinel) return;
+      try {
+        var _sentinel$release;
+        (_sentinel$release = sentinel.release) === null || _sentinel$release === void 0 || _sentinel$release.call(sentinel);
+      } catch (_) {/* noop */}
+    },
+    _bindWsService: function _bindWsService() {
+      var _this3 = this;
       var ws = window._wsService;
       if (!ws) return;
       this._onWsConnected = function () {
-        _this2.wsConnected = true;
-        _this2.list();
+        _this3.wsConnected = true;
+        _this3.list();
       };
       this._onWsDisconnected = function () {
-        _this2.wsConnected = false;
+        _this3.wsConnected = false;
       };
       ws.on('connected', this._onWsConnected);
       ws.on('disconnected', this._onWsDisconnected);
@@ -271,15 +359,15 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
     },
     startOssSync: function startOssSync() {
-      var _this3 = this;
+      var _this4 = this;
       this.ossSyncUnsubscribers.push(_services_OssSyncService__WEBPACK_IMPORTED_MODULE_4__["default"].on('sync', function (_ref) {
         var _ref$rows = _ref.rows,
           rows = _ref$rows === void 0 ? [] : _ref$rows;
-        _this3._hydrateFromRows(rows);
+        _this4._hydrateFromRows(rows);
       }));
       this.ossSyncUnsubscribers.push(_services_OssSyncService__WEBPACK_IMPORTED_MODULE_4__["default"].on('ws_state', function (_ref2) {
         var state = _ref2.state;
-        _this3.wsConnected = String(state || '').toLowerCase() === 'connected';
+        _this4.wsConnected = String(state || '').toLowerCase() === 'connected';
       }));
       _services_OssSyncService__WEBPACK_IMPORTED_MODULE_4__["default"].start({
         store: this.$store,
@@ -298,7 +386,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       this.ossSyncUnsubscribers = [];
     },
     subscribeEcho: function subscribeEcho() {
-      var _this4 = this;
+      var _this5 = this;
       if (!window.Echo) return;
       var branchId = this.authBranchId();
       if (branchId <= 0) return;
@@ -314,16 +402,16 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
             // Solution: pre-register the ID in _echoMarkedReady so list() skips it.
             if (parseInt(data.new_status, 10) === _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_1__["default"].PREPARED) {
               var oid = parseInt(data.order_id, 10);
-              _this4._echoMarkedReady = _this4._echoMarkedReady || new Set();
-              _this4._echoMarkedReady.add(oid);
-              _this4._markNewReady(oid);
+              _this5._echoMarkedReady = _this5._echoMarkedReady || new Set();
+              _this5._echoMarkedReady.add(oid);
+              _this5._markNewReady(oid);
             }
-            _this4.list();
+            _this5.list();
           }
         }, {
           broadcastAs: 'OrderCreated',
           handler: function handler() {
-            _this4.list();
+            _this5.list();
           }
         }]);
         // [P13_LOG_HYGIENE] console.log(`[OSS] Echo subscribed to branch.${branchId}`);
@@ -345,19 +433,19 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     },
     // Mark an order as newly ready: plays sound + triggers flash animation for 4s
     _markNewReady: function _markNewReady(orderId) {
-      var _this5 = this;
+      var _this6 = this;
       if (!orderId) return;
       this.newReadyIds = new Set([].concat(_toConsumableArray(this.newReadyIds), [parseInt(orderId)]));
       this._playReadySound();
       this.newReadyFlash = true;
       if (this._flashTimer) clearTimeout(this._flashTimer);
       this._flashTimer = setTimeout(function () {
-        _this5.newReadyFlash = false;
+        _this6.newReadyFlash = false;
         // Clear the highlight after 6s so it doesn't persist forever
         setTimeout(function () {
-          var ids = new Set(_this5.newReadyIds);
+          var ids = new Set(_this6.newReadyIds);
           ids["delete"](parseInt(orderId));
-          _this5.newReadyIds = ids;
+          _this6.newReadyIds = ids;
         }, 2000);
       }, 4000);
     },
@@ -395,7 +483,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       } catch (_) {/* never throw from chime */}
     },
     _hydrateFromRows: function _hydrateFromRows(rows) {
-      var _this6 = this;
+      var _this7 = this;
       var prevPreparedIds = new Set(this.preparedItems.map(function (i) {
         return i.id;
       }));
@@ -411,7 +499,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       var echoMarked = this._echoMarkedReady || new Set();
       newPrepared.forEach(function (item) {
         if (!prevPreparedIds.has(item.id) && !echoMarked.has(item.id)) {
-          _this6._markNewReady(item.id);
+          _this7._markNewReady(item.id);
         }
       });
       // Clear the echo-marked set after list() processes it (one-shot guard)
@@ -419,15 +507,15 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       this.preparedItems = newPrepared;
     },
     list: function list() {
-      var _this7 = this;
+      var _this8 = this;
       this.loading.isActive = true;
       this.$store.dispatch("orderStatusScreenOrder/lists").then(function (res) {
-        _this7._hydrateFromRows(res.data.data || []);
-        _this7.loading.isActive = false;
+        _this8._hydrateFromRows(res.data.data || []);
+        _this8.loading.isActive = false;
       })["catch"](function (err) {
         var _err$response;
-        _this7.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].error((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this7.$t('message.something_wrong'));
+        _this8.loading.isActive = false;
+        _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].error((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this8.$t('message.something_wrong'));
       });
     }
   }

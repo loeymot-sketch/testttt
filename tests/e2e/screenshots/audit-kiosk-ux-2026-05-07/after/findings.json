@@ -1,0 +1,9 @@
+[
+  {
+    "slug": "cart-screen",
+    "phase": "after",
+    "ok": true,
+    "note": "editBtn=0x0, grandTotal fontVariantNumeric=\"\", summary aria-live=\"null\", shot=tests/e2e/screenshots/audit-kiosk-ux-2026-05-07/after/01-cart-screen.png",
+    "ts": "2026-05-16T17:25:12.303Z"
+  }
+]
