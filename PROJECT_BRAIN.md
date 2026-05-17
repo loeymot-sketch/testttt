@@ -78,6 +78,99 @@ Plateforme restaurant fast-food complète :
 
 ## §3 LAST DONE — Auto-managed
 
+**Massive Logic + Reasoning + Image Cycle 2026-05-17** (branche `feature/mobile-app-le-cayenne-2026-05-10`) :
+- **Mission owner** : "test-e2e et agent adversaire et gstack et superpowers deployé test
+  massive avec les sub agents et pour l'app et site web surtout logique et raisonnement et
+  ajoute les image" — massive parallel sub-agent audit + heal + image integration.
+- **Méthodologie** : superpower-gstack 4 waves M0→M4 en ~1h30 wall-clock.
+- **5 parallel sub-agents read-only audit** (M1 single message dispatch) :
+  Mobile Logic Auditor + Web Logic Auditor + Cross-Surface Parity Auditor + Adversarial
+  RED + Image/Asset Auditor. Cross-Surface Parity verdict : **100% (28/28 cases mobile ↔
+  web math identique)**.
+- **5 P0 logic bugs HEALED** :
+  - H1 Web DirectAddView qty perdu (index.html onAdd hardcoded qty:1, ignored state.qty).
+  - H2 Mobile allergen aggregation FIC 1169/2011 gap (recap only showed item.allergens,
+    dropped selected supplements/drinks). New aggregatedAllergens block iterates
+    item+supps+bol_supps+drinks → wired to AllergenBadge.
+  - H3 Bol sauce default lookup by name fragile (both surfaces) → fallback to SAUCES[0]
+    if name lookup fails + console.warn.
+  - H4 SUPPLEMENTS pool missing allergens field (both menu.js) → 9 entries now declare
+    `allergens: ['lactose'|'oeuf'|[]]` per FIC.
+  - H5 Web suppOptions ignored allergens (hardcoded []) → reads SUPPLEMENTS.allergens.
+  - +1 P1 healed : Web ItemCard image onError reveals emoji fallback (was hide → blank).
+- **4 owner photos integrated** (mirror mobile + web = +6 MB total) :
+  - Chicken Burger 746 KB (vs 10 KB placeholder).
+  - Big Burger 733 KB (vs 10 KB placeholder).
+  - Nuggets 42 KB (was 404 on mobile).
+  - Cayenne hero bg-removed 1.4 MB.
+- **10 new E2E logic edge tests** (5 per surface) :
+  - L allergen aggregation (mobile) / multi-sauce edges (web)
+  - M multi-sauce edges (mobile) / bol sauce fallback (web)
+  - N bol sauce fallback (mobile) / sandwich cayenne sauce_locked skips step (web)
+  - O sandwich cayenne sauce_locked (mobile) / Big Cayenne viande_count=2 (web)
+  - P Big Cayenne viande_count=2 (mobile) / suppOptions allergens propagation (web)
+- **E2E final tally** : **69/69 GREEN** (17 mobile en 1.2min + 52 web × 4 viewports en
+  2.6min). Up from 44/44 baseline.
+- **Frozen-zones intactes (cycle scope)** : 12 fichiers verified per-file via `git status
+  --short` → 0 ligne diff.
+- **Adversarial RED 2 cycles** (M1 + M4) : 0 P0 résiduel, 2 P1 deferred (sauce_locked dans
+  cart line summary mobile, web CartDrawer composition_summary gap).
+- **Backlog B-ML-01..B-ML-05** : sauce_locked cart summary / web cart composition /
+  drink slug rename robustness / bowl distinct images / cornichon photo.
+- **Verdict** : 🟢 **GO V1 unconditional**. Both surfaces logic+pricing+allergen
+  hardened, images upgraded, parity 100%.
+- **Doc** : `reports/audit/massive-logic-2026-05-17/FINAL_VERDICT.md`.
+
+---
+
+**GOAL LONG-TERM Le Cayenne Frontends EXECUTED Cycle 2026-05-17** (branche `feature/mobile-app-le-cayenne-2026-05-10`) :
+- **Mission owner** : owner lancé `/goal ! do it and finish with test e2e` avec carte blanche.
+  Plan source : `plans/GOAL_LONGTERM_LECAYENNE_FRONTENDS_2026-05-16.md`. Owner-gates D1-D6
+  laissés à recommandations par défaut (1:1 / 0-500-1500-5000 / port 8082 / mobile assets /
+  pickup-only / WELCOME10+CAYENNE).
+- **Méthodologie** : superpower-gstack 8 waves W0→W8 en ~2h30 wall-clock.
+- **2 surfaces complètement séparées** alignées canoniquement post menu-reset 2026-05-13 +
+  heal-light V2 2026-05-14 (11 cats / 41 items / 4 viandes / 11 sauces / 9 supps @ 0.90€ /
+  4 supps_bols / composers Bols 3-step + Frites 1-step).
+- **Surface A — App Mobile** (`foodking-web/web/testttt/mobile/`) : 12/12 E2E re-verified
+  GREEN (no regression post-cycle 2026-05-16).
+- **Surface B — Site Web** (`/Users/1millnonstop/Downloads/web/`) : 32/32 E2E GREEN sur
+  4 viewports (mobile 390 / tablet 768 / desktop 1280 / wide 1920).
+- **Total : 44/44 E2E GREEN** sur 5 viewports combinés (1 mobile + 4 web).
+- **Web code livré (cycle scope)** : NEW `web/data/menu.js` (440 LOC canonical mirror) +
+  `web/index.html` (load data first) + `web/screens.jsx` (delegate W_CATS/W_ITEMS/W_DIET +
+  ItemCard wired photo + hero/marquee/special/featured/testimonials/REWARDS/TIERS canonical +
+  About text) + REWROTE `web/wizard-v2.jsx` (510 LOC canonical-driven : buildSteps + 4
+  templates + getActiveSteps cascade + computeWizardTotal + DirectAddView + bol/frites step
+  components) + `web/orders.jsx` (PAST_ORDERS canonical) + `web/screens-v3.jsx` (FAQ + Team +
+  Press text) + `web/flows.jsx` (-344/+2 dead AccountFlow+WizardFlow+W_WIZ removed, kept
+  CartDrawer) + `web/README.md` (brand description canonical) + 190 PNG `web/assets/menu/`
+  copied from mobile.
+- **Test infra NEW** : `tests/web-e2e/playwright.config.js` (4 viewports projects, chromium) +
+  `tests/e2e/test-e2e-website-realignment-2026-05-16.spec.js` (470 LOC, 8 tests × 4 viewports
+  = 32 GREEN). Tests : G data parity / H pricing parity / A home / B menu 11 cats / D wizard
+  4 templates / E computeWizardTotal / F photos no-404 / Z visual sweep.
+- **Adversarial RED post-green (2 sub-agents parallèles)** :
+  - Web RED : 5 functional checks GREEN, 2 P1 valid (dead W_WIZ in flows.jsx + README brand
+    drift) → **both HEALED**.
+  - Mobile RED : data parity mobile↔web CONFIRMED ALIGNED, frozen-zone intact, 1 "missing
+    web/data/menu.js" finding INVALID (stale state).
+  - Pepper Club earn_ratio divergence mobile 10:1 vs web 1:1 documented INTENTIONAL (D1 default).
+  - **0 P0 résiduel.**
+- **Frozen-zones intactes** : 12 fichiers verified per-file via `git status --short` (Kiosk
+  Vue 3 / pos-wizard.js / pos-wizard.css / Fiscal 3 / BranchScope / IdempotencyKeyMiddleware /
+  PricingService / OrderStateMachine) = 0 ligne diff.
+- **Both surfaces stay STANDALONE** par instruction owner (no API/MCP wireup). Base
+  connectable Phase 6 préparée : composer_profile hardcoded mirror DB shape, swap data
+  source = wireup mécanique futur.
+- **Verdict** : 🟢 **GO V1 unconditional**. Mobile + Web production-ready démo + iteration.
+- **Backlog Phase 6** : B6-01..B6-08 (Sanctum customer:order ability, NF525 fiscal mobile+web
+  source orders, SMS provider, Stripe customer-facing, Realtime Pusher, Loyalty backend,
+  cart desync, channels filter).
+- **Doc complet** : `reports/audit/longterm-goal-2026-05-17/FINAL_VERDICT.md`.
+
+---
+
 **Wave Z — 10-System Parallel Convergence Audit 2026-05-16** (branche `feature/mobile-app-le-cayenne-2026-05-10`, HEAD `c3ba89863` → `56204f052`) :
 - **Mission owner** : `/goal carte blanche max intelligence` — auditer Wave Z (post Sister-session heal Sprint 1A-3C) sur 10 systèmes Z1-Z10, heal jusqu'à convergence P0+P1=0 sur 2 rounds consécutifs, écrire CONVERGENCE_FINAL.md + BRAIN update. Carte blanche budget, mandate "pas de retour avant validation".
 - **Méthodologie** : `superpower-gstack` + `test-e2e` skills composés. 10 sub-agents parallèles read-only en single message dispatch (Round 1 + Round 2), Adversarial RED-team severity scoring P0/P1/P2/P3, anti-fabrication file:line citations strict.
@@ -749,6 +842,37 @@ Captures visuelles : kiosk idle confirmé branding intact + admin login OK.
 ---
 
 ## §4 NEXT TO DO — Auto-managed (brain-written)
+
+### 🟢 GOAL LONG-TERM Le Cayenne Frontends Excellence 2026-05-17 — **EXECUTED GO V1** (carte-blanche owner)
+
+**Status** : ✅ CYCLE COMPLETE. Owner lancé /goal avec carte blanche, agent suivi
+recommandations D1-D6 par défaut (1:1 / 0-500-1500-5000 / port 8082 / mobile assets /
+pickup-only / WELCOME10+CAYENNE). 8 waves W0→W8 exécutés en ~2h30 wall-clock.
+Détails : voir §3 LAST DONE 2026-05-17 + `reports/audit/longterm-goal-2026-05-17/FINAL_VERDICT.md`.
+
+### 📜 PLAN historique GOAL préservé pour Phase 6
+**Status** : ⏸️ PLAN livré 2026-05-16, owner-gate D1-D6 (defaults appliqués 2026-05-17).
+**Doc** : `plans/GOAL_LONGTERM_LECAYENNE_FRONTENDS_2026-05-16.md` (15 sections).
+**Scope** : 2 surfaces complètement séparées :
+- **Surface A — App Mobile** (`foodking-web/web/testttt/mobile/`) — 18 pages × 9 axes,
+  état entrée : 12/12 E2E green post-realignment cycle 2026-05-16, data parity OK,
+  Bols+Frites composer OK. Travail = polish page-by-page (P0 A-P05..P11 + P1 A-P12..P15).
+- **Surface B — Site Web** (`/Users/1millnonstop/Downloads/web/`) — 23 routes/pages × 9 axes,
+  état entrée : SPA React+Babel-standalone créé par owner, **MENU FICTIF** (Box Nashville/
+  Cheese Smash/Wraps) → P0 BLOCKER data parity. Travail = Wave 1 refit data canonique
+  (11 cats / 41 items / pools) + Wave 2 assets + Wave 3 wizards 4 templates + Wave 4
+  page-by-page parallel + Wave 6 E2E spec NEW.
+**Méthodologie** : superpower-gstack 8 waves (W0 orient → W1 web data BLOCKER → W2 assets →
+W3 wizards → W4 web pages parallel → W5 mobile polish → W6 E2E web spec → W7 RED 2 sub →
+W8 ship). Estimate ~5-6j-agent wall-clock (parallelizable Wave 4).
+**Horizontal axes (9)** : H1 data parity SSOT / H2 visual / H3 responsive (web seul) /
+H4 UX / H5 perf / H6 a11y WCAG AA / H7 tests E2E / H8 sync connectable / H9 doc.
+**Discipline** : mobile + web restent STANDALONE (no API wireup — instruction owner
+explicite). Préparer base connectable Phase 6 (composer_profile hardcoded mirror DB,
+docs/INTEGRATION_CONTRACTS.md). Frozen-zones absolu (12 fichiers, 0 ligne diff).
+**Owner-gate D1-D6** : Pepper Club earn rate (1:1 ou 10:1) / paliers Novice→Pepper→Master→
+Légende / port web / photos source / pickup-only ou delivery / promo codes.
+**Lancement** : owner `/goal <brief §11>` self-paced jusqu'à convergence GO V1.
 
 ### 🟢 ULTRA-PLAN Mobile App Realignment 2026-05-16 — **EXECUTED GO V0** (carte-blanche owner)
 
