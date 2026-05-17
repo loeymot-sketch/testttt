@@ -47,8 +47,15 @@ class Stripe extends PaymentAbstract
                 }
             }
 
+            // [P0-6 CTO audit 2026-05-16] Use round-before-cast to prevent
+            // cents truncation. Previously `(int) $order->total * 100` cast
+            // $total to int FIRST (dropping decimals) then multiplied by 100,
+            // so €9.99 became 900 cents (€9.00) — €0.99 revenue loss per
+            // order + NF525 receipt/payment mismatch. Pattern matches the
+            // already-correct callsites at OrderController:137,
+            // PaymentReconcileController:173, SplitPaymentService:103/110.
             $response = $this->gateway->charges->create([
-                'amount'      => (int) $order->total * 100,
+                'amount'      => (int) round((float) $order->total * 100),
                 'currency'    => $currencyCode,
                 'source'      => $request->stripeToken,
                 'description' => 'Food order payment',
