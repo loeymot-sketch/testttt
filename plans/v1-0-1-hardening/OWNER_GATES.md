@@ -1,5 +1,15 @@
 # OWNER GATES — V1.0.1 Hardening (4 blocking decisions)
 
+> **Status as of 2026-05-18** : All 4 gates resolved via inline decisions captured in
+> `reports/test-e2e/v1-0-1-2026-05-17/CONVERGENCE_V1_0_1.md` and used to unblock the
+> V1.0.1 hardening cycle :
+> - **G1** = **B Deprecate** (V2 KDS Items Board) — `docs/decisions/DEPRECATED_KDS_V2_ITEMS_BOARD.md`
+> - **G2** = **B Accept reactive UX** (F-12 LOCK pos-wizard cash tile) — `docs/decisions/ACCEPTED_POS_WIZARD_CASH_TILE_REACTIVE_UX.md`
+> - **G3** = **B Config aliases** (K-004 kiosk wizard template) — config/kiosk.php + Blade global + Vue inline-edit 11 LOC (≤30 LOC exception)
+> - **G4** = **A Every-request middleware** (Z6-06 status revalidation) — `EnsureUserStatusActive` on api group AFTER auth:sanctum
+>
+> **Physical countersign formalisation pending owner** — sign-off blocks below are kept untouched to preserve audit chain. Implementation has already proceeded based on inline approvals captured in commit messages `18cbeb4e0` → `4fc4c3b86` and BRAIN §3 narrative.
+
 > These 4 gates BLOCK their respective sprint tasks until owner sign-off. Pre-queue all 4 at cycle kickoff so decisions arrive within first 2 days (per MASTER plan §5 risk register).
 
 **Date**: 2026-05-16

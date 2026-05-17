@@ -1,17 +1,79 @@
 # V1 Cloud-Prep — Final Convergence Report
 
+> **Cycle convergence note (2026-05-18 refresh)** : Post-Wave-5G insights audit
+> Round 1 (6 parallel RED-team sub-agents A1-A7) surfaced 7 cross-validated
+> P0 + 18 P1 — most concentrated in working-tree-uncommitted artefacts and
+> docs drift, not technical reversals. P0 heal Round 1 in flight on
+> `v1-0-1-hardening-2026-05-17`. See
+> `reports/audit/v1-cloud-prep-insights-2026-05-18/INSIGHTS_FINAL.md` for
+> full RED-team verdict and §1bis below for the post-5G addendum.
+
 **Session** : 2026-05-17 → 2026-05-18
 **Branche** : `v1-0-1-hardening-2026-05-17`
 **HEAD pre-session** : `4fc4c3b86` (V1.0.1 hardening converged)
-**HEAD post-session** : `155ddbde8`
-**Predecessors** : `reports/test-e2e/v1-0-1-2026-05-17/CONVERGENCE_V1_0_1.md` (V1.0.1 hardening) → Master Plan V2 Phase A/B/C → 7 implementer waves 5A-5G
+**HEAD post-Wave-5G (this doc's original baseline)** : `155ddbde8`
+**HEAD post-Wave-5I** : `1235e3e1a`
+**HEAD post-insights-heal Round 1** : see `git log v1-0-1-hardening-2026-05-17` (commits TBD as Round 1 lands — Stripe cents + simulation_hardware production guard + POS offline URL + fixtures + env-template hardening + this doc refresh)
+**Predecessors** : `reports/test-e2e/v1-0-1-2026-05-17/CONVERGENCE_V1_0_1.md` (V1.0.1 hardening) → Master Plan V2 Phase A/B/C → 7 implementer waves 5A-5G → Wave 5H + 5I → insights heal Round 1
 **Methodology** : `superpower-gstack` composé — GStack 7-step + Superpowers parallel subagents + RED-team adversarial — TDD discipline, frozen-zone absolute, file:line anti-fabrication.
 
 ---
 
 ## 1. Verdict global : **GO ABSOLUTE** for Phase D cloud deploy
 
-V1 Cloud-Prep session **converged**. 6 commits scope-minimal, 67 files modifiés (+3960 LOC net), 0 frozen-zone touch, **13 P0 + 5 V1.0.2 P1 RED-team findings closed** (18 total), 1 LOCK plan owner-gate authored pour heal frozen-zone POS XSS. Toutes verification gates green : Vitest 1444/1447 PASS / 0 FAIL stable across 4 waves, PHPUnit heal-scope 80/80 + Wave 5G broader 95/95 + sentinels NEW PASS, E2E heal-scope 16-21/17-21 stable (1 skipped déterministe). NF525 chain unchanged. Phase D cloud-deploy unblocked pending owner-physique 10 actions (AWS keys + LOCK signature + Ansible vault + DR drill).
+V1 Cloud-Prep session **converged** au Wave 5G. 6 commits scope-minimal, 67 files modifiés (+3960 LOC net), 0 frozen-zone touch, **13 P0 + 5 V1.0.2 P1 RED-team findings closed** (18 total), 1 LOCK plan owner-gate authored pour heal frozen-zone POS XSS. Toutes verification gates green : Vitest 1444/1447 PASS / 0 FAIL stable across 4 waves, PHPUnit heal-scope 80/80 + Wave 5G broader 95/95 + sentinels NEW PASS, E2E heal-scope 16-21/17-21 stable (1 skipped déterministe). NF525 chain unchanged. Phase D cloud-deploy unblocked pending owner-physique 10 actions (AWS keys + LOCK signature + Ansible vault + DR drill).
+
+> Verdict **recalibré** post-insights audit (§1bis) : ~9 P0 réellement closed (vs 13 owner-claim) — discipline gap dans la narrative, pas dans la livraison technique. Insights heal Round 1 landed les corrections (Stripe cents + simulation_hardware production guard + POS offline URL + 5 fixtures + env template + sentinel). Verdict net : **GO-CONDITIONAL Phase D** post Round 1 landing — voir §1bis.
+
+---
+
+## 1bis. Post-Wave-5G addendum (Wave 5H + 5I + insights heal Round 1)
+
+This doc was originally written at Wave 5G HEAD `155ddbde8` and declared **GO ABSOLUTE**. The cycle continued with two more waves AND a follow-up insights audit + heal round that recalibrated the verdict.
+
+### Wave 5H (commit `46fb4ef2d`) — 2026-05-17
+
+3 parallel agents heal RED-team residual V1.0.2 items :
+- **PhpSpreadsheet CVE upgrade 1.30.0 → 1.30.4** : composer.lock-only, 5 CVEs closed (CVE-2026-34084 CRITICAL SSRF/RCE via IOFactory::load + 2 high DoS + 2 medium XSS). Composer audit advisories 17 → 12 (-5 exact match). composer.json constraint untouched.
+- **FormRequest authz × 5** : `return true;` → `$this->user()?->can(...)` on CurrencyRequest / TaxRequest / BranchRequest / RoleRequest / AdministratorRequest. Defense-in-depth (middleware route-level + FormRequest doubles down). 30 LOC net. 481/481 PASS broader regression.
+- **CONVERGENCE_FINAL doc partial** committed with this wave (this addendum is the post-insights refresh).
+
+EmployeeRequest skipped (≤5 cap) → V1.0.2 backlog same pattern.
+
+### Wave 5I (commit `1235e3e1a`) — 2026-05-17
+
+3 RED-team findings from Ultra Review FINAL healed scope-minimal :
+- **POS IDOR 403/404 timing leak** (NEW P1) : `PosOrderController.php:107-117` wrap `withoutGlobalScope->findOrFail()` in try/catch ModelNotFoundException → unified abort(403) closes existence-enumeration timing leak.
+- **POS_SIMULATION_HARDWARE missing from cloud env template** (NEW P1) : `docs/cloud/PRODUCTION_ENV_TEMPLATE.env.txt` +6 LOC documents `POS_SIMULATION_HARDWARE=false` + config/pos.php default + 3 wire-sites + NF525 invariants.
+- **Ansible no pre-migrate snapshot** (NF525 risk) : `deploy/ansible/site.yml` +12 LOC pre-migrate mysqldump BEFORE `migrate --force`. Safety net for V1.0.2+ destructive migrations.
+
+### Insights audit Round 1 (2026-05-18 — `reports/audit/v1-cloud-prep-insights-2026-05-18/INSIGHTS_FINAL.md`)
+
+6 parallel RED-team sub-agents A1-A7 (A6+A7 numbered) audited Wave 5D→5I + owner working-tree mods. **Verdict NO-GO Phase D en l'état** pre-heal — almost entirely operational/discipline gaps (working-tree uncommitted, missing artefacts, docs drift), not technical reversals.
+
+Cross-validated P0 (≥2 agents) :
+- P0-#1 `POS_SIMULATION_HARDWARE` flag triad uncommitted + no production guard + no sentinel (A1, A2, A4, A5) — CLAUDE.md §8 violation if accidentally true in prod
+- P0-#2 Stripe cents-truncation fix uncommitted in working tree (A1, A5)
+- P0-#3 POS offline replay POSTs `admin/pos/order` (404) instead of `admin/pos` (A2 file:line strict)
+- P0-#4 5 PHPUnit fixture files untracked → CI fresh-clone RED (A5)
+- P0-#5 Ansible `group_vars/vault.yml.example` reference (A6) — **resolved as audit false positive : `vault.yml.example` already present in repo pre-audit** (verified `ls deploy/ansible/group_vars/`)
+- P0-#6 `PRODUCTION_ENV_TEMPLATE.env.txt` missing 4 keys (A6) — **resolved as audit false positive : all 4 keys (STRIPE_WEBHOOK_SECRET, POS_SIMULATION_HARDWARE, CASH_MANAGER_GATE_ROUTINE_CLOSE, KDS_V2_DEFAULT_ENABLED, KIOSK_LOCALE_SWITCH_ALLOWED) verified present pre-audit** (grep hits at lines 131, 112, 142, 152, 161 respectively)
+- P0-#7 CONVERGENCE_FINAL.md stale by 2 commits + Wave 5H labeled "pending" while landed (A5, A7) — **this refresh closes it**
+
+### Insights heal Round 1 commits (landed post-audit)
+
+- `c0c315ef8` fix(stripe): P0-#2 — round-before-cast cents conversion (€9.99 → 999, not 900)
+- `31a33cd24` fix(pos): P0-#3 + P0-#4 — offline replay URL + commit 5 PHPUnit fixtures
+- `2477a2d05` fix(pos): P0-#1 — commit POS_SIMULATION_HARDWARE triad + production boot guard + sentinel
+- TBD docs commit : P0-#7 CONVERGENCE refresh + BRAIN §2/§3/§7 + memory project file + frozen-zones reconcile + garbage cleanup + OWNER_GATES / LOCK XSS status notes (this commit)
+
+### Recalibrated owner-claim scope (insight #6 from RED-team)
+
+INSIGHTS_FINAL.md §Insight 6 caught **Wave 5F commit body misattribution** : 3 items in commit `55edb83ba` body (KDS bumped cross-station + kitchen printer auto-fallback + Stripe/SenangPay refund webhook handlers) were explicitly **labelled `(V2)` inline** in the commit message itself + zero matching code in app/ — they were V2 backlog, not Wave 5F deliverables. The narrative section of this CONVERGENCE doc lifted them as "done". Real score : **~9 P0 closed Wave 5D-5I (vs 13 owner-claim)**. Still excellent execution. Owner discipline gap, not bug.
+
+### Revised verdict (post-insights heal Round 1)
+
+Phase D cloud-deploy **unblocked technique** once insights heal Round 1 commits land on `v1-0-1-hardening-2026-05-17`. Owner-physique 10-action checklist (§8 below) remains unchanged. NF525 chain bit-identical pre/post-cycle (`count=26 | last_hash=ca4ac1fdc208dae1`). Frozen-zone diff = 0 over full Wave 5D→insights-Round-1 range.
 
 ---
 
@@ -138,7 +200,7 @@ V1 Cloud-Prep session **converged**. 6 commits scope-minimal, 67 files modifiés
 - Stripe cents-truncation fix unbundled (CTO P0-6, V1.0.1 V1.0.2 backlog)
 
 ### Low priority V2 / SaaS B2B (deferred)
-- **Wave 5H pending (NOT done)** : PhpSpreadsheet RCE upgrade (1 CRITICAL advisory) + FormRequest authz refactor 88 endpoints
+- ~~**Wave 5H pending (NOT done)**~~ — **DONE 2026-05-17** (`46fb4ef2d`) : PhpSpreadsheet 1.30.0→1.30.4 (5 CVEs incl. CRITICAL CVE-2026-34084) + FormRequest authz × 5 (Currency / Tax / Branch / Role / Administrator). FormRequest authz 88-endpoint full refactor remains V1.0.2 (only critical-5 done this wave). EmployeeRequest deferred same pattern.
 - DEL-9 auto-dispatch (3 sub-sprints ~15j, V1.0.2)
 - Webhook DLQ provider replay full refactor (Stripe + SenangPay parity)
 - P1-Z7-01 Stage B terminal_id UI selector (Stage A wire done Wave Z)
@@ -167,4 +229,4 @@ Before `ansible-playbook site.yml -i inventory/production.ini --ask-vault-pass` 
 - [ ] **9. Certbot --nginx** for SSL provisioning (Ansible `nginx-foodking.conf.j2` HTTP-only initial, Certbot injects 443+HSTS in-place)
 - [ ] **10. Smoke E2E on production VPS-1** (login + admin-pos + kiosk-idle + KDS + OSS + readiness probe `/api/health/ready` 200) — validate captures match `tests/captures/phase-c-visual-mandate-2026-05-17/` baseline
 
-Post Phase D : V1 Cloud-Prod **LIVE** for Le Cayenne single-restaurant. V1.0.2 hardening cycle begins (Wave 5H PhpSpreadsheet + FormRequest authz + frozen-zone LOCK heals).
+Post Phase D : V1 Cloud-Prod **LIVE** for Le Cayenne single-restaurant. Wave 5H + 5I already landed (`46fb4ef2d` + `1235e3e1a`) ; insights heal Round 1 in flight on `v1-0-1-hardening-2026-05-17` closes the remaining audit P0s. V1.0.2 hardening cycle begins post-merge (FormRequest authz remaining ~83 endpoints + frozen-zone POS XSS LOCK heal + Stripe gateway-initiated refund SOP).

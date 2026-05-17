@@ -1,5 +1,12 @@
 # LOCK — POS Wizard Stored XSS Heal (escapeHtml)
 
+> **Status as of 2026-05-18** : LOCK plan authored Wave 5G (`155ddbde8`) — V1.0.2
+> frozen-zone heal scope. Owner physical countersign pending. Plan content (scope /
+> rollback / safety-check override / sub-agent instructions / sign-off blocks below)
+> is finalised and ready for owner gate per CLAUDE.md §10 human gate. Implementation
+> blocked until owner signature on §6.2 row 2. Tracked in V1.0.2 backlog per
+> `reports/test-e2e/v1-cloud-prep-2026-05-17/CONVERGENCE_FINAL.md` §7.
+
 - **Date**: 2026-05-17
 - **Frozen-zone target**: `public/js/pos-wizard.js` (CLAUDE.md §7 — POS Vanilla JS wizard, owner-protected)
 - **Severity**: P0 — Stored XSS in cashier-authenticated origin → Sanctum token / PCI-DSS scope compromise
