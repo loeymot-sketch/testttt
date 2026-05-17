@@ -90,6 +90,34 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // [RED-team P0 / Outbox unbounded growth — 2026-05-17]
+        // domain_events grows unbounded without this prune. NF525 6y retention
+        // applies to audit_logs + z_reports ONLY (CLAUDE.md §8), NOT to this
+        // operational outbox. 90d default = far past the staleness monitor /
+        // retry-failed window (24h), so any row matched here is provably
+        // terminal. Daily cadence at 04:00 (off-peak, after fiscal archive
+        // 02:00). Mutex + onOneServer mirror the outbox:rescue/monitor lanes.
+        $schedule->command('foodking:outbox:prune --older-than-days=90')
+            ->dailyAt('04:00')
+            ->name('outbox-prune')
+            ->description('Prune dispatched + terminally-failed domain_events older than 90d')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->runInBackground();
+
+        // [RED-team P0 / webhook_events unbounded growth — 2026-05-17]
+        // Mirror of outbox:prune for the payment-provider webhook ledger.
+        // Only processed + duplicate rows are eligible; pending/failed are
+        // owned by the DLQ retry lane (foodking:webhook:retry-failed). 04:15
+        // staggers the lock window vs outbox:prune.
+        $schedule->command('foodking:webhook:prune --older-than-days=90')
+            ->dailyAt('04:15')
+            ->name('webhook-prune')
+            ->description('Prune processed + duplicate webhook_events older than 90d')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->runInBackground();
+
         $schedule->job(new SloEvaluatorJob())
             ->everyFiveMinutes()
             ->withoutOverlapping(5)

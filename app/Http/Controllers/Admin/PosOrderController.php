@@ -105,7 +105,14 @@ class PosOrderController extends AdminController
         int|string $order
     ): \Illuminate\Http\Response|OrderDetailsResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
         try {
-            $order = Order::withoutGlobalScope(BranchScope::class)->findOrFail($order);
+            // RED-team P0 fix 2026-05-17: remove withoutGlobalScope IDOR + explicit branch guard.
+            // BranchScope naturally filters by user.branch_id; admin (branch_id=0) bypasses scope.
+            $order = Order::findOrFail($order);
+            abort_unless(
+                auth()->user()?->branch_id === 0 || $order->branch_id === auth()->user()?->branch_id,
+                403,
+                'Cross-branch access denied'
+            );
             return new OrderDetailsResource($this->orderService->show($order, false));
         } catch (HttpException $http) {
             throw $http;
