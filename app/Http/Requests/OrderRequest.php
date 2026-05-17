@@ -241,10 +241,46 @@ class OrderRequest extends FormRequest
             // require an off-site phone callback.
             if ($orderTypeInt === OrderType::DELIVERY) {
                 $this->validateAuthenticatedUserPhoneForDelivery($validator);
+                $this->validateDeliveryMinimumOrder($validator);
             }
 
             $this->validateOrderItemVariationsAfter($validator);
         });
+    }
+
+    /**
+     * [Sprint H3 DEL-8 2026-05-17] Reject DELIVERY orders whose subtotal is
+     * below the branch's configured `delivery_minimum_order` threshold.
+     * NULL threshold = no minimum (V1 legacy behavior). When set, the rule
+     * fires AFTER PricingService SSOT recomputes server-side — we trust the
+     * subtotal posted by the client only for the floor check, and the
+     * production pipeline already rejects forged totals separately.
+     * CLAUDE.md §9.
+     */
+    private function validateDeliveryMinimumOrder($validator): void
+    {
+        $branchId = (int) $this->input('branch_id', 0);
+        if ($branchId <= 0) {
+            return;
+        }
+        $branch = \App\Models\Branch::find($branchId);
+        if (! $branch || $branch->delivery_minimum_order === null) {
+            return;
+        }
+
+        $minimum = (float) $branch->delivery_minimum_order;
+        $subtotal = (float) $this->input('subtotal', 0);
+
+        if ($subtotal < $minimum) {
+            $validator->errors()->add(
+                'subtotal',
+                sprintf(
+                    'Le montant minimum pour la livraison est de %.2f€ (sous-total actuel : %.2f€).',
+                    $minimum,
+                    $subtotal
+                )
+            );
+        }
     }
 
     /**

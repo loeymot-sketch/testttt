@@ -20,7 +20,8 @@ describe('user-reported runtime blockers', () => {
     expect(kiosk).toMatch(/<ConnectionStatusBanner suppress-transient \/>/);
     expect(kiosk).not.toMatch(/suppress-session-invalid/);
     expect(pos).toMatch(/<ConnectionStatusBanner suppress-transient suppress-session-invalid \/>/);
-    expect(kds).toMatch(/<ConnectionStatusBanner \/>/);
+    // KDS heal 2026-05 added suppress-transient (operator-friendly, transient noise filtered).
+    expect(kds).toMatch(/<ConnectionStatusBanner\s+suppress-transient\s*\/>/);
   });
 
   it('keeps the customer kiosk locked without maintenance/admin escape paths', () => {
