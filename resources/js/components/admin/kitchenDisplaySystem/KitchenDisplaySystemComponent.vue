@@ -309,6 +309,34 @@
                       dineinOrder.token : $t("label.online")
                       }}</span>
                   </p>
+                  <!-- [Sprint H4 Z3-NEW-002/003 2026-05-17] Legacy delivery
+                       block mirrored from onlineOrder lane. Helper gates on
+                       order_type === DELIVERY so this only renders for
+                       misclassified delivery orders that landed in the
+                       dine-in lane — defensive UX so chef + courier never
+                       miss a delivery on the ?v2=0 rollback path. -->
+                  <div
+                    v-if="kdsLegacyShouldShowDelivery(dineinOrder)"
+                    class="mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]"
+                    data-testid="kds-legacy-delivery"
+                  >
+                    <p v-if="kdsLegacyDeliveryAddress(dineinOrder)" class="text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1">
+                      <span aria-hidden="true">&#128205;</span>
+                      <span class="break-words">{{ kdsLegacyDeliveryAddress(dineinOrder) }}</span>
+                    </p>
+                    <p v-if="dineinOrder.customer && dineinOrder.customer.name" class="text-xs leading-snug text-[#115E59] flex items-center gap-1">
+                      <span aria-hidden="true">&#128100;</span>
+                      <span>{{ dineinOrder.customer.name }}</span>
+                    </p>
+                    <a
+                      v-if="dineinOrder.customer && dineinOrder.customer.phone"
+                      :href="`tel:${dineinOrder.customer.phone}`"
+                      class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+                    >
+                      <span aria-hidden="true">&#128241;</span>
+                      <span>{{ dineinOrder.customer.phone }}</span>
+                    </a>
+                  </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] Chevron now exposes
                        aria-expanded so assistive tech can announce the
                        collapse state. The state-transition CTAs (Démarrer /
@@ -643,6 +671,33 @@
                   <p v-if="takeawayOrder.queue_number" class="text-sm font-normal leading-6 font-client text-[#6E7191]">
                     N° file: <span class="text-heading font-medium">{{ takeawayOrder.queue_number }}</span>
                   </p>
+                  <!-- [Sprint H4 Z3-NEW-002/003 2026-05-17] Legacy delivery
+                       block mirrored from onlineOrder lane. Helper gates on
+                       order_type === DELIVERY so this only renders for
+                       misclassified delivery orders that landed in the
+                       takeaway lane — defensive UX for ?v2=0 rollback. -->
+                  <div
+                    v-if="kdsLegacyShouldShowDelivery(takeawayOrder)"
+                    class="mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]"
+                    data-testid="kds-legacy-delivery"
+                  >
+                    <p v-if="kdsLegacyDeliveryAddress(takeawayOrder)" class="text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1">
+                      <span aria-hidden="true">&#128205;</span>
+                      <span class="break-words">{{ kdsLegacyDeliveryAddress(takeawayOrder) }}</span>
+                    </p>
+                    <p v-if="takeawayOrder.customer && takeawayOrder.customer.name" class="text-xs leading-snug text-[#115E59] flex items-center gap-1">
+                      <span aria-hidden="true">&#128100;</span>
+                      <span>{{ takeawayOrder.customer.name }}</span>
+                    </p>
+                    <a
+                      v-if="takeawayOrder.customer && takeawayOrder.customer.phone"
+                      :href="`tel:${takeawayOrder.customer.phone}`"
+                      class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+                    >
+                      <span aria-hidden="true">&#128241;</span>
+                      <span>{{ takeawayOrder.customer.phone }}</span>
+                    </a>
+                  </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. -->
                   <button type="button" @click="openFilterSlide($event)"
                     class="filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full"
@@ -785,6 +840,33 @@
                   </span>
                 </div>
                 <div class="w-full pt-2 pb-3 px-3">
+                  <!-- [Sprint H4 Z3-NEW-002/003 2026-05-17] Legacy delivery
+                       block mirrored from onlineOrder lane. Helper gates on
+                       order_type === DELIVERY so this only renders for
+                       misclassified delivery orders that landed in the
+                       kiosk lane — defensive UX for ?v2=0 rollback. -->
+                  <div
+                    v-if="kdsLegacyShouldShowDelivery(kioskOrder)"
+                    class="mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]"
+                    data-testid="kds-legacy-delivery"
+                  >
+                    <p v-if="kdsLegacyDeliveryAddress(kioskOrder)" class="text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1">
+                      <span aria-hidden="true">&#128205;</span>
+                      <span class="break-words">{{ kdsLegacyDeliveryAddress(kioskOrder) }}</span>
+                    </p>
+                    <p v-if="kioskOrder.customer && kioskOrder.customer.name" class="text-xs leading-snug text-[#115E59] flex items-center gap-1">
+                      <span aria-hidden="true">&#128100;</span>
+                      <span>{{ kioskOrder.customer.name }}</span>
+                    </p>
+                    <a
+                      v-if="kioskOrder.customer && kioskOrder.customer.phone"
+                      :href="`tel:${kioskOrder.customer.phone}`"
+                      class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+                    >
+                      <span aria-hidden="true">&#128241;</span>
+                      <span>{{ kioskOrder.customer.phone }}</span>
+                    </a>
+                  </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. -->
                   <button type="button" @click="openFilterSlide($event)"
                     class="filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full"
