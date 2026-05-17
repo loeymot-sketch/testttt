@@ -108,10 +108,25 @@ class OrderStatusScreenController extends AdminController
      * thumb — these are already public via `/api/frontend/item/popular-items`,
      * so opening the OSS variant is data-equivalent to existing public surface.
      */
-    public function publicMostPopularItems(): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
+    public function publicMostPopularItems(\Illuminate\Http\Request $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return CDSPopularItemResource::collection($this->orderStatusScreenOrderService->mostPopularItems());
+            // [Sprint H5-B Z4-P2-04 2026-05-17] Resolve branch from the same
+            // request param the customer-wall poll already uses for the OSS
+            // list. Falls back to the first ACTIVE branch — mirrors
+            // publicIndex() resolution — so a wall on a single-branch fleet
+            // never displays an unrelated branch's top-9.
+            $branchId = (int) $request->query('branch_id', 0);
+            if ($branchId <= 0) {
+                $defaultBranch = Branch::where('status', Status::ACTIVE)
+                    ->orderBy('id')
+                    ->first();
+                $branchId = $defaultBranch?->id ?? 0;
+            }
+
+            return CDSPopularItemResource::collection(
+                $this->orderStatusScreenOrderService->mostPopularItems($branchId > 0 ? $branchId : null)
+            );
         } catch (HttpException $http) {
             throw $http;
         } catch (Exception $exception) {

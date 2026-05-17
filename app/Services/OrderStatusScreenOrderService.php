@@ -62,7 +62,14 @@ class OrderStatusScreenOrderService
                             ->whereDate('order_datetime', '<=', Carbon::today())
                             ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                     });
-                });
+                })
+                // [Sprint H5-B Z4-P2-03 2026-05-17] Stale prune: orders older
+                // than config('oss.stale_window_hours') drop off the wall
+                // regardless of status (would otherwise linger as zombies
+                // until midnight rollover or manual bump). Combined with the
+                // sibling whereDate(today()) filter the effective TTL is
+                // min(today, N hours from order_datetime).
+                ->where('order_datetime', '>=', now()->subHours((int) config('oss.stale_window_hours', 8)));
 
             // [M-09] Branch filter: only global Admin may request branch_id=0/global OSS.
             if ($branchScope !== null) {
@@ -85,10 +92,42 @@ class OrderStatusScreenOrderService
         }
     }
 
-    public function mostPopularItems()
+    /**
+     * Top 9 most-popular items by order frequency.
+     *
+     * [Sprint H5-B Z4-P2-04 2026-05-17] Branch-scoped variant. Previously
+     * `withCount('orders')` ran UNSCOPED — Branch A's wall would surface items
+     * popular at Branch B (or even Branch C's deleted dataset), a SaaS
+     * multi-tenant correctness violation. The popularity count is now
+     * constrained by branch_id on the order_items pivot, falling back to the
+     * caller's branch (auth user for admin, query param for public wall).
+     *
+     * `$branchId = null` preserves legacy global behaviour for global Admin
+     * dashboards (branch_id=0) that intentionally want the org-wide top 9.
+     * Tests should pass an explicit int to assert per-branch scoping.
+     */
+    public function mostPopularItems(?int $branchId = null)
     {
         try {
-            return Item::with('media', 'category', 'offer')->withCount('orders')->where(['status' => Status::ACTIVE])->orderBy('orders_count', 'desc')->limit(9)->get();
+            // Resolve from auth context if not provided. Admin (branch_id=0)
+            // explicitly returns null → unscoped (global view); staff with a
+            // positive branch_id scopes to their branch.
+            if ($branchId === null) {
+                $user = auth()->user();
+                $resolved = $user?->branch_id;
+                $branchId = ($resolved !== null && (int) $resolved > 0) ? (int) $resolved : null;
+            }
+
+            $ordersCount = $branchId !== null
+                ? ['orders' => fn ($q) => $q->where('branch_id', $branchId)]
+                : 'orders';
+
+            return Item::with('media', 'category', 'offer')
+                ->withCount($ordersCount)
+                ->where(['status' => Status::ACTIVE])
+                ->orderBy('orders_count', 'desc')
+                ->limit(9)
+                ->get();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -124,7 +163,11 @@ class OrderStatusScreenOrderService
                             ->whereDate('order_datetime', '<=', Carbon::today())
                             ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                     });
-                });
+                })
+                // [Sprint H5-B Z4-P2-03 2026-05-17] Stale prune mirror — see
+                // sibling list() comment. Keeps the public customer wall
+                // identical to the admin dashboard in shape AND in TTL.
+                ->where('order_datetime', '>=', now()->subHours((int) config('oss.stale_window_hours', 8)));
 
             if ($branchId > 0) {
                 $query->where('branch_id', $branchId);

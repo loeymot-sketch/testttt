@@ -127,6 +127,30 @@ class RouteServiceProvider extends ServiceProvider
             });
         });
 
+        // [Sprint H5-B Z4-P2-05 2026-05-17] Public OSS endpoints
+        // (/api/frontend/oss-order, /api/frontend/oss-order/popular-items)
+        // are unauthenticated by design — they feed the customer-wall TV
+        // in the restaurant lobby and must work without a session.
+        //
+        // Because they accept `?branch_id=N`, an attacker can probe the
+        // existence of branches AND measure throughput / catalog size by
+        // sweeping branch_ids. We mitigate by IP-keying a hard ceiling
+        // (60 req/min/IP across BOTH endpoints — a single TV polls every
+        // ~5-10s, ~12 req/min, so a fleet of 5 walls behind one NAT still
+        // fits with headroom). Anything beyond is either a misconfigured
+        // poll or an enumeration sweep.
+        //
+        // Logging of >10 distinct branch_id values from the same IP within
+        // 5 min is deferred to V1.0.2 (see plans/v1-0-2 backlog).
+        RateLimiter::for('oss-public', function (Request $request) {
+            return Limit::perMinute(60)->by($request->ip())->response(function () {
+                return response()->json([
+                    'message' => 'OSS rate limit exceeded.',
+                    'retry_after' => 60,
+                ], 429);
+            });
+        });
+
         RateLimiter::for('login-lockout', function (Request $request) {
             // [W8.B REM B3] Fuzz protection : si client malveillant envoie email[]=foo,
             // is_string() empêche TypeError sur cast (string) array.

@@ -1096,11 +1096,14 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // status — no PII) scoped to a branch resolved from `?branch_id=` or
     // the first active branch. Throttle 120/min/IP: customer screens poll
     // every 5–60s and a fleet of walls behind one NAT must not 429.
+    // [Sprint H5-B Z4-P2-05 2026-05-17] Throttle moved to named limiter
+    // `oss-public` (60/min/IP). See App\Providers\RouteServiceProvider for
+    // rationale (anti branch_id enumeration on unauthenticated wall feed).
     Route::get('/oss-order', [\App\Http\Controllers\Admin\OrderStatusScreenController::class, 'publicIndex'])
-        ->middleware('throttle:120,1')
+        ->middleware('throttle:oss-public')
         ->name('oss-order.public');
     Route::get('/oss-order/popular-items', [\App\Http\Controllers\Admin\OrderStatusScreenController::class, 'publicMostPopularItems'])
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:oss-public')
         ->name('oss-order.popular-items.public');
 
     Route::prefix('language')->name('language.')->group(function () {
