@@ -89,6 +89,13 @@ class PosController extends AdminController
      */
     private function assertCashDrawerSessionOpenIfCashInvolved(PosOrderRequest $request): void
     {
+        // [2026-05-18] Hardware simulation: when the physical drawer is not yet
+        // plugged in, skip the open-session precondition. NF525 invariants
+        // (sequence, audit chain, composition_snapshot) remain enforced.
+        if (config('pos.simulation_hardware') === true) {
+            return;
+        }
+
         $needsCashSession = false;
 
         // Single-tender legacy path

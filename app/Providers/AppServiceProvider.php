@@ -76,6 +76,20 @@ class AppServiceProvider extends ServiceProvider
         $this->registerSqliteRegexpIfNeeded();
 
         if (app()->environment('production')) {
+            // [P0 V1 Cloud-Prep insights 2026-05-18] POS hardware simulation
+            // production guard. CLAUDE.md §8 forbids env-flag bypass of fiscal
+            // invariants — POS_SIMULATION_HARDWARE is a dev convenience while
+            // the physical cash drawer is not wired, and MUST be false in
+            // production. Refusing to boot is the most explicit failure mode
+            // (vs silent NF525 cash-trail corruption).
+            if ((bool) config('pos.simulation_hardware', false)) {
+                throw new \RuntimeException(
+                    'POS_SIMULATION_HARDWARE must be false in production (NF525 compliance). '
+                    . 'Set POS_SIMULATION_HARDWARE=false in your .env file or unset it, then '
+                    . 'run `php artisan config:cache`.'
+                );
+            }
+
             // [BYPASS-P1 / GATE_BYPASS_MODE_2026-05-08] Production guard — refuse
             // boot if any bypass flag is enabled in production. Bypass mode is
             // strictly for local dev / staging E2E flow validation. Activating

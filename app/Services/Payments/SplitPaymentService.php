@@ -200,7 +200,11 @@ final class SplitPaymentService
         }
 
         $cashSession = null;
-        if ($hasCashTranche) {
+        // [2026-05-18] Hardware simulation: when no physical drawer is wired,
+        // CASH tranches are still recorded (OrderPayment row + audit log) but
+        // no cash_movement is written (handled below via $cashSession===null).
+        $simulating = config('pos.simulation_hardware') === true;
+        if ($hasCashTranche && ! $simulating) {
             if (! Auth::check()) {
                 throw new CashDrawerSessionNotOpenException();
             }

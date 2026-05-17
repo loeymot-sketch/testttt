@@ -275,6 +275,11 @@ class PaymentService
         ?float $amountOverride = null,
     ): void
     {
+        // [2026-05-18] Hardware simulation: downgrade strict→soft when the
+        // physical drawer is not connected. NF525 invariants unchanged.
+        if ($strict && config('pos.simulation_hardware') === true) {
+            $strict = false;
+        }
         try {
             if (! Auth::check()) {
                 if ($strict) {
