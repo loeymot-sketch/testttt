@@ -112,6 +112,13 @@ class PosOrderRequest extends FormRequest
             'payment_breakdown.*.change' => ['nullable', 'numeric', 'min:0'],
             'payment_breakdown.*.note' => ['nullable', 'string', 'max:191'],
             'payment_breakdown.*.reference' => ['nullable', 'string', 'max:64'],
+            // [Sprint H2 P1-Z7-01 2026-05-17] Optional FK to payment_terminals (Sprint 1C).
+            // Nullable for V1.0.1 — POS UI selector is Stage B; legacy callers without
+            // a terminal selector keep working ("Sans TPE" bucket per MASTER §5 Risk #4).
+            // No `exists` rule yet — branch-level cross-check belongs in a Stage B
+            // dedicated request after the UI ships, to avoid coupling V1.0.1 backend
+            // wire-in to a branch_id-aware exists rule that needs ->where().
+            'payment_breakdown.*.terminal_id' => ['nullable', 'integer', 'min:1'],
         ];
     }
 

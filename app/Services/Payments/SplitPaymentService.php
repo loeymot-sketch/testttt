@@ -199,10 +199,21 @@ final class SplitPaymentService
                     $reference = substr($reference, 0, 64);
                 }
 
+                // [Sprint H2 P1-Z7-01 2026-05-17] Forward terminal_id from tranche
+                // payload so the Z-report TPE breakdown (Sprint 1C) gets per-terminal
+                // aggregation. Pre-fix the column was always NULL → ZReportCashEnrichment
+                // ::aggregateByTerminal returned a single "Sans TPE" bucket with
+                // fees_total=0. Nullable for legacy callers / UI Stage B not yet shipped.
+                $terminalIdRaw = $t['terminal_id'] ?? null;
+                $terminalId = ($terminalIdRaw !== null && $terminalIdRaw !== '' && (int) $terminalIdRaw > 0)
+                    ? (int) $terminalIdRaw
+                    : null;
+
                 $row = OrderPayment::create([
                     'order_id'      => (int) $order->id,
                     'branch_id'     => (int) $order->branch_id,
                     'mode'          => $mode,
+                    'terminal_id'   => $terminalId,
                     'amount'        => $amount,
                     'tendered'      => $tendered,
                     'change_amount' => $change,
