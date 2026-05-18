@@ -178,6 +178,12 @@ class PosOrderController extends AdminController
     {
         try {
             return new OrderDetailsResource($this->orderService->selectDeliveryBoy($order, $request));
+        } catch (HttpException $http) {
+            // [GOAL-2026-05-18 P0-LIV-01] OrderService::selectDeliveryBoy now
+            // calls abort(403)/abort(422) for cross-branch + role guards. Let
+            // the HttpException reach the client intact — masking it as a
+            // generic 422 would defeat the multi-tenant security signal.
+            throw $http;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
