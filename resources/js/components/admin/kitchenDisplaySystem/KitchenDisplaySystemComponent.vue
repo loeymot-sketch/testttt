@@ -1434,6 +1434,27 @@ export default {
     this._kdsSyncStampTimer = setInterval(() => { this.syncNowTick = Date.now(); }, 1000);
   },
   methods: {
+    // [2026-05-18 PR-C T2 reframe heal] JS-side filter for OrderStatusChanged.
+    // Mirrors `KitchenReleaseRule::visibleStatuses` (ACCEPT / PREPARING /
+    // PREPARED). A status change affects the KDS board when EITHER the
+    // previous OR the next status is in that set:
+    //   - Entry transitions (PENDING→ACCEPT, ACCEPT→PREPARING, etc.)
+    //   - Exit transitions  (PREPARED→DELIVERED, ACCEPT→CANCELED)
+    //   - Same-board mutations (ACCEPT→PREPARING bump)
+    // Pure transitions outside the KDS board (e.g. DELIVERED→REFUNDED,
+    // CANCELED→RETURNED) no longer trigger an unnecessary debounced refresh.
+    _statusChangeAffectsKds(parsed) {
+      const KDS_VISIBLE = [4, 7, 8]; // ACCEPT, PREPARING, PREPARED (mirror KitchenReleaseRule)
+      const payload = parsed && parsed.payload ? parsed.payload : (parsed || {});
+      const oldStatus = Number(payload.old_status);
+      const newStatus = Number(payload.new_status);
+      // Missing payload (legacy / unparsed event) → fall back to refresh
+      // rather than risk swallowing a real transition.
+      if (!Number.isFinite(oldStatus) && !Number.isFinite(newStatus)) {
+        return true;
+      }
+      return KDS_VISIBLE.includes(oldStatus) || KDS_VISIBLE.includes(newStatus);
+    },
     // [Sprint 2A DEL-3 2026-05-16] Legacy template delivery-block helpers.
     // Mirror the V2 KdsOrderCard `isDeliveryOrder` + `deliveryAddressLine`
     // computed logic for the rollback path (?v2=0 / kds.v2_enabled='0').
@@ -1759,7 +1780,17 @@ export default {
       this.unsubscribeEcho();
       try {
         this._eventSub = onEvents(branchId, [
-          { broadcastAs: 'OrderStatusChanged', handler: () => { this._debouncedRefresh(); } },
+          // [2026-05-18 PR-C T2 reframe heal] Filter OrderStatusChanged JS-side:
+          // refresh only when from OR to is in the KDS-visible status set
+          // (ACCEPT=4 / PREPARING=7 / PREPARED=8 — mirror KitchenReleaseRule).
+          // Before this guard, every status flip (DELIVERED→REFUNDED, CANCELED,
+          // RETURNED, etc.) triggered a debounced full refresh even though
+          // none of those affect the KDS board → wasted backend calls + flicker.
+          { broadcastAs: 'OrderStatusChanged', handler: (parsed) => {
+              if (this._statusChangeAffectsKds(parsed)) {
+                this._debouncedRefresh();
+              }
+          } },
           { broadcastAs: 'OrderCreated', handler: () => { this._debouncedRefresh(); } },
           { broadcastAs: 'OrderPaidAtCounter', handler: () => { this._debouncedRefresh(); } },
           // [SYNC-001 + CV1-KDS-INFLIGHT-OOS-MARKER-001] KDS now also receives
