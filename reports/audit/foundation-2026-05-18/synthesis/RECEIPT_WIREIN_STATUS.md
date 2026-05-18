@@ -183,9 +183,17 @@ If anybody, anywhere, wants to read `fiscal_sequence_no` /
 `App\Services\Receipt\ReceiptDataService::buildForOrderModel($order)`
 (or the legacy `buildForOrder(int $id)` which now delegates).
 
-If `OrderDetailsResource` ever stops calling the service for any of
-these six keys, `ReceiptDataServiceWireInTest::test_order_details_resource_delegates_nf525_fields_to_receipt_data_service`
+If the service and the resource ever return **different values** for
+any of these six keys, `ReceiptDataServiceWireInTest::test_order_details_resource_delegates_nf525_fields_to_receipt_data_service`
 fires immediately. That's the canary.
+
+(Subtle limit : the sentinel is an output-equality check, not a Mockery
+spy. A future agent could theoretically revert the resource to direct
+model reads without breaking the test as long as the resulting values
+stay aligned. For SSOT we care about answer-consistency, not
+implementation-pattern enforcement — that's an acceptable tradeoff for
+V1. Tighten to a Mockery `shouldHaveReceived` spy assertion only if a
+future incident proves otherwise.)
 
 Other fields (`audit_chain_fingerprint`, `payments_breakdown`,
 `tax_lines`, etc.) are **intentionally NOT in scope** of this service
