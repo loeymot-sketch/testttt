@@ -16,13 +16,27 @@ class KDSOrderItemsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'item_id'         => $this->item_id,
-            'item_name'       => $this->orderItem?->name,
-            'quantity'        => $this->quantity,
-            'item_variations' => $this->safeJsonDecode($this->item_variations),
-            'item_extras'     => $this->safeJsonDecode($this->item_extras),
-            'item_addons'     => $this->resolveAddonsForKds(),
-            'instruction'     => $this->instruction,
+            'item_id'            => $this->item_id,
+            'item_name'          => $this->orderItem?->name,
+            'quantity'           => $this->quantity,
+            'item_variations'    => $this->safeJsonDecode($this->item_variations),
+            'item_extras'        => $this->safeJsonDecode($this->item_extras),
+            'item_addons'        => $this->resolveAddonsForKds(),
+            'instruction'        => $this->instruction,
+            // [PK-3 Wave 1 Intersection POS×KDS 2026-05-18] Confirms Z-1 KDS
+            // deeper-audit finding: items-board endpoint was allergen-blind
+            // while today-orders cards (via KDSOrderDetailsResource →
+            // OrderItemResource:37) already exposed allergens_snapshot.
+            // KitchenDisplaySystemOrderService::orderItems() (lines 297-326)
+            // already splits merged KDS lines by allergen-hash for food
+            // safety; the data WAS present in the model row but dropped at
+            // serialization, breaking contract parity between the two KDS
+            // surfaces. The OrderItem model casts allergens_snapshot to
+            // 'array' (app/Models/OrderItem.php:76), so the value reaches
+            // the resource as array; safeJsonDecodeArray handles both
+            // already-decoded and legacy JSON-string shapes defensively.
+            // Sentinel: tests/Feature/KDS/KdsOrderItemsResourceAllergenExposureTest.php.
+            'allergens_snapshot' => $this->safeJsonDecodeArray($this->allergens_snapshot),
         ];
     }
 

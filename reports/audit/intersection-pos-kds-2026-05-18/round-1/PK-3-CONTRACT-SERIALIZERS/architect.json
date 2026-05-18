@@ -1,0 +1,81 @@
+{
+  "role": "Architect",
+  "zone": "PK-3 — Contract Integrity (POS-creates ↔ KDS-reads serializers)",
+  "scope": "Contract divergence between KDSOrderDetailsResource, KDSOrderItemsResource, OrderItemResource + allergen aggregation logic across multi-items",
+  "method": "read-only static analysis of 3 resources + controller + service + Vue consumers",
+  "files_reviewed": [
+    "app/Http/Resources/KDSOrderDetailsResource.php",
+    "app/Http/Resources/KDSOrderItemsResource.php",
+    "app/Http/Resources/OrderItemResource.php",
+    "app/Http/Controllers/Admin/KitchenDisplaySystemController.php",
+    "app/Services/KitchenDisplaySystemOrderService.php (orderItems() lines 257-331)",
+    "resources/js/store/modules/kitchenDisplaySystemOrder.js",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue",
+    "resources/js/helpers/kdsCustomization.js"
+  ],
+  "findings": [
+    {
+      "id": "PK-3-ARCH-01",
+      "severity": "P1",
+      "title": "KDSOrderItemsResource silently omits allergens_snapshot — items-board contract drift from OrderItemResource (food-safety field, not exposed on items board)",
+      "evidence": {
+        "kds_items_resource_keys": ["item_id", "item_name", "quantity", "item_variations", "item_extras", "item_addons", "instruction"],
+        "order_item_resource_keys_relevant": ["item_id", "item_name", "quantity", "item_variations", "item_extras", "item_addons", "instruction", "composition_snapshot", "allergens_snapshot", "kds_station"],
+        "missing_on_items_board": ["allergens_snapshot", "composition_snapshot", "kds_station", "branch_id", "order_id"],
+        "file": "app/Http/Resources/KDSOrderItemsResource.php:17-26"
+      },
+      "consequence": "Two divergent KDS payload shapes for the same chef-facing surface. Today's-orders cards see allergens (via OrderItemResource); items-board column (via KDSOrderItemsResource) does not. A chef relying on items-board column for prep batching never sees per-line allergens. Service-layer aggregation already splits items by allergen-hash (KitchenDisplaySystemOrderService:310) — the data exists in the merged row but is dropped at serialization. The items-board template (KitchenDisplaySystemComponent.vue:124-160) does not currently render allergens, so user-visible regression is latent; food-safety risk emerges if any future Vue template iteration uses the kdsCustomization renderItem() helper (which requires allergens_snapshot to set hasAllergen)."
+    },
+    {
+      "id": "PK-3-ARCH-02",
+      "severity": "P2",
+      "title": "Three serializers for the same domain object — no shared base class, drift risk on every contract change",
+      "evidence": {
+        "kds_details_resource": "wraps Order → embeds OrderItemResource::collection for items",
+        "kds_items_resource": "standalone OrderItem serializer (different field shape from OrderItemResource)",
+        "order_item_resource": "canonical OrderItem serializer with composition_snapshot priority + allergens",
+        "files": [
+          "app/Http/Resources/KDSOrderDetailsResource.php:46 (delegates items to OrderItemResource)",
+          "app/Http/Resources/KDSOrderItemsResource.php (standalone, different shape)"
+        ]
+      },
+      "consequence": "Adding a new contract field requires touching 2 resources. Symmetric drift is invisible to PHPUnit unless test fixtures assert both shapes. Z-1 finding is the canonical example — allergens_snapshot was added to OrderItemResource months ago without sister update to KDSOrderItemsResource. V1.0.X candidate refactor: extract a shared trait or have KDSOrderItemsResource delegate the per-line shape to a thin subset of OrderItemResource."
+    },
+    {
+      "id": "PK-3-ARCH-03",
+      "severity": "P1",
+      "title": "Items-board groupBy hash mixes JSON-encoded scalars with sha1 (cross-line determinism risk on edge data)",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php:298-319",
+        "code": "$mergedItems = $allItems->groupBy(function ($item) { ... return json_encode([item_id, item_variations, item_extras, item_addons, instruction, allergens_hash]); })"
+      },
+      "consequence": "The hash key is plain json_encode of a struct that itself contains pre-encoded JSON sub-strings for variations/extras, raw addon JSON, lowercased trimmed instruction, AND a sha1 of allergens. Mixing encoding levels (json-inside-json + sha1) means: (a) any unicode/escaping inconsistency in legacy data flips the merge key silently; (b) per-row debugging across versions is hard. Function works today (sentinel tests pass for the documented shapes) but is a source of future regression if any of those sub-encoders change. Not a P0 — sentinel coverage exists at KdsAllergenAggregationSplitTest. Architectural note: prefer a single canonical normalize() helper that returns a flat array of stringly-typed components, then sha1 the whole thing."
+    },
+    {
+      "id": "PK-3-ARCH-04",
+      "severity": "P2",
+      "title": "OrderItemResource ships BOTH composition_snapshot (full) AND derived item_variations/item_extras/item_addons — payload triple-encodes same data",
+      "evidence": {
+        "file": "app/Http/Resources/OrderItemResource.php:33-37",
+        "fields_shipped": ["item_variations (resolved from snapshot or legacy)", "item_extras (resolved from snapshot or legacy)", "item_addons (from snapshot)", "composition_snapshot (full)"]
+      },
+      "consequence": "Wire payload size 2-3x larger than necessary for KDS use-case. Frontend (KitchenDisplaySystemComponent.vue + kdsCustomization.js) prefers composition_snapshot.lines/extras/addons over flat fields (per readVariations() priority). Cleanup candidate V1.0.X: gate the legacy flat fields behind a query param, or remove them once all clients use composition_snapshot. Not blocking — no functional bug, just bandwidth."
+    },
+    {
+      "id": "PK-3-ARCH-05",
+      "severity": "INFO",
+      "title": "KDSOrderDetailsResource correctly minimizes customer.phone for non-DELIVERY (Sprint 5A Z9-P0-03) — customer.name still ships unconditionally",
+      "evidence": {
+        "file": "app/Http/Resources/KDSOrderDetailsResource.php:68-71",
+        "current_logic": "name shipped always; phone shipped only when order_type=DELIVERY"
+      },
+      "consequence": "Out-of-scope per task brief (owner-decision V1.0.X). Documented for completeness. Recommendation if owner gates Yes: gate name with same isDeliveryOrder predicate, OR redact to first-name-only for dine-in/takeaway/kiosk surfaces. Risk model: KDS WebSocket subscribers are all branch staff with permission:kitchen-display-system — not an external leak, but data-minimization principle still applies."
+    }
+  ],
+  "verdict": {
+    "summary": "Contract drift between KDS-items-board (KDSOrderItemsResource) and KDS-cards (KDSOrderDetailsResource → OrderItemResource) is real and confirms Z-1 finding. Heal is one field addition + sentinel test. Three serializers without a shared base class is a V1.0.X refactor candidate, not a V1 blocker. Items-board template doesn't currently render allergens, so user-visible regression is latent — but service-layer allergen-hash aggregation depends on the column being present on the model (it is, via cast).",
+    "blocking_v1": false,
+    "heal_scope": "1-line addition to KDSOrderItemsResource::toArray + new sentinel test + verify admin-kds.js bundle (no rebuild required — items-board template doesn't read the field today)"
+  }
+}
