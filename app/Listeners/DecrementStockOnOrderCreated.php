@@ -3,7 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\OrderCreated;
-use App\Exceptions\StockUnavailableException;
+use App\Exceptions\Stock\StockUnavailableException;
 use App\Services\Stock\StockService;
 use Illuminate\Support\Facades\Log;
 use Throwable;
