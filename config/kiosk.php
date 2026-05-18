@@ -96,6 +96,10 @@ if ($requireForm) {
     return [
         'spa_auto_login' => false,
         'spa_payload'    => null,
+        // [2026-05-18 PR-B P0 heal] Mirror the gate config so the blade can
+        // read these regardless of which branch this file returns through.
+        'auto_login_trusted_ips' => [],
+        'auto_login_local_bypass' => env('APP_ENV') === 'local',
         'default_locale' => $defaultLocale,
         // [ADR-007 / Sprint 3D] V1 FR-immutable. `false` désactive le picker UI
         // côté SPA. Voir docs/adr/ADR-007-kiosk-fr-lock.md.
@@ -144,9 +148,42 @@ $spaPayload = ($username !== '' && trim($password) !== '') ? [
     'password' => $password,
 ] : null;
 
+/*
+| [2026-05-18 PR-B P0 kiosk-creds-leak heal] Security gate for the SPA
+| machine-credential auto-login payload.
+|
+| Before this gate, `master.blade.php` would inject `spa_payload` (a JSON
+| containing the kiosk machine username + password) into the global
+| `window.foodkingConfig` whenever the request matched `/kiosk*`, regardless
+| of the requester's identity / network. Result: any unauthenticated HTTP
+| caller (`curl https://host/kiosk/idle`) could harvest the credentials
+| and mint a `kiosk:order` Sanctum token.
+|
+| Gate semantics (cumulative — ALL conditions must be true):
+|   1. `request()->is('kiosk*')`  ← existing path filter, still required
+|   2. `spa_payload !== null`     ← credentials actually configured
+|   3. EITHER `APP_ENV=local` (dev convenience)
+|      OR `request()->ip()` is in `KIOSK_AUTO_LOGIN_TRUSTED_IPS` (CSV)
+|
+| Production deployment must set `KIOSK_AUTO_LOGIN_TRUSTED_IPS` to the LAN
+| IPs of the physical kiosk machines, OR set
+| `KIOSK_REQUIRE_MACHINE_LOGIN=true` to disable auto-login entirely (a UI
+| login form is shown instead — see top of this file).
+|
+| The gate is evaluated at blade-render time (not here, because config files
+| load before the request container). This file exposes the two pieces the
+| blade needs: the canonical IP allowlist and the local-bypass signal.
+*/
+$autoLoginTrustedIps = array_values(array_filter(array_map(
+    'trim',
+    explode(',', (string) env('KIOSK_AUTO_LOGIN_TRUSTED_IPS', '')),
+)));
+
 return [
     'spa_auto_login' => (bool) $spaPayload,
     'spa_payload'    => $spaPayload,
+    'auto_login_trusted_ips' => $autoLoginTrustedIps,
+    'auto_login_local_bypass' => env('APP_ENV') === 'local',
     'default_locale' => $defaultLocale,
     // [ADR-007 / Sprint 3D] V1 FR-immutable. `false` désactive le picker UI côté
     // SPA et le persisted-state localStorage. Voir docs/adr/ADR-007-kiosk-fr-lock.md.

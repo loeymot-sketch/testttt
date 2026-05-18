@@ -59,21 +59,38 @@ After these heals: **18/18 GREEN**, all 15 pages visually attested.
 
 ## 4. Findings
 
-### BORNE-001 (P1, GREEN_WITH_FINDING)
+### BORNE-001 (P2, GREEN_WITH_FINDING) — severity downgraded after verification
 
 **Page** : 10b cart-with-items  
-**Category** : UI inconsistency / V1 dine-in disabled not visually enforced  
+**Category** : UI inconsistency + i18n leak in error path  
 **Evidence** : Cart UI renders both `kiosk-cart-order-type-dinein` ("Sur place")
-AND `kiosk-cart-order-type-takeaway` ("À emporter") buttons. The "Sur place"
-button is NOT disabled — user can click. But backend `OrderRequest:213` rejects
-kiosk dine-in orders when `pos_dine_in_enabled=false` (V1 default).  
-**Source comment** : Backend explicitly documents this defer at OrderRequest:209-210 :
+AND `kiosk-cart-order-type-takeaway` ("À emporter") buttons fully clickable
+(verified DOM grep: no `disabled` attr, no `v-if` guard, no `aria-disabled`).
+Backend `OrderRequest:213` rejects kiosk dine-in orders when
+`pos_dine_in_enabled=false` (V1 default), returning HTTP 422 with hardcoded
+English message `"Dine-in is disabled in V1 — kiosk orders must use TAKEAWAY (à
+emporter)."`. 
+
+**Severity discriminator** : Code-trace at `KioskCartComponent.vue:608-613` shows
+`catch` block calls `showToast(message, 'error', 6000)` + sets `quoteError`
+inline. User DOES see an error toast for 6s, so NOT a silent failure (P0
+discarded). But: (a) UX wart that the button shouldn't have been clickable in
+V1, and (b) the error message is backend-hardcoded English literal (not via
+`__()` helper), so it leaks raw English text on a kiosk locale-locked to FR.
+Severity = **P2** (UX nuisance + i18n leak in error path).
+
+**Source comment** : Backend explicitly documents this defer at
+`OrderRequest:209-210`:
 > "Frontend visual gating in KioskCart Vue is deferred to F-016b (frozen-zone wizards). This is a server-authoritative line of defense."
 
-**Fix hint** : `KioskCartComponent.vue:94` — add `v-if="dineInEnabled"` guard or
-disabled state when `settings.pos.pos_dine_in_enabled === false`. File is NOT in
-frozen list (only KioskWizardComponent/KioskAppComponent/KioskUpsellComponent are
-frozen). Could heal-light in V1.0.1 — owner gate to confirm.
+**Fix hint** : Two-pronged :  
+(a) `KioskCartComponent.vue:94` — add `v-if="dineInEnabled"` to the dinein
+button reading from server-rendered `window.foodkingConfig.posDineInEnabled`
+(mirror in Blade scope).  
+(b) `OrderRequest:216` — translate the error message via `__()` helper + add
+`order_type.kiosk_dine_in_disabled` key to fr/en/ar.json bundles.  
+File `KioskCartComponent.vue` is NOT in frozen list — eligible heal-light or
+V1.0.1 backlog. Owner gate.
 
 ### BORNE-002 (P3, cosmetic)
 
@@ -84,6 +101,32 @@ frozen). Could heal-light in V1.0.1 — owner gate to confirm.
 breaks line at last char with awkward space.  
 **Fix hint** : Gate test categories out of kiosk snapshot OR add ellipsis on
 `.kiosk-zone-title` h1 at viewport ≤ 1080px. Cosmetic P3 — no loop block.
+
+### BORNE-003 (P3, graceful 422 with visible status banner)
+
+**Page** : 05 wizard-burger + 09a after-add  
+**Category** : Network 4xx handled with visible status indicator  
+**Evidence** : `POST /api/frontend/pricing/preview` returns HTTP 422 during
+wizard composition (mid-state where the composition payload is incomplete).
+However the wizard footer shows the visible status banner :
+`"Tarif rafraîchi localement. Le total est vérifié au paiement."` (visible in
+`page-05-wizard-burger.png`), confirming graceful degradation with local-pricing
+fallback. Per Reviewer Protocol category #6 (silent error P0), the visible
+status banner disqualifies P0; the disclaimer IS the expected fallback message.  
+**Severity** : P3 info-only (no loop block).
+
+### BORNE-004 (P3, expected post-paid quote 401)
+
+**Page** : 12b confirmation-paid  
+**Category** : Post-paid follow-up 401 (token-lifecycle expected)  
+**Evidence** : `POST /api/frontend/order/quote` returns HTTP 401 after order
+id=1498 was already PAID (separate previous payment-confirm 200 OK in same
+test session). The kiosk SPA loads `/kiosk/confirmation?order_id=1498` and
+attempts a follow-up quote that fails authentication — likely the SPA's
+cart-token rotated or was consumed at order placement. SPA gracefully redirects
+to `/kiosk/idle` on this failure. Per Reviewer Protocol allowlist category #10
+(401 on logout-equivalent acceptable). Not a defect — token-lifecycle expected.  
+**Severity** : P3 info-only.
 
 ---
 
@@ -165,10 +208,62 @@ Artifacts written to :
 
 **GREEN WITH FINDINGS** — 18/18 specs pass; visual evidence confirms 13/15
 pages production-quality, 2 pages visual-deferred (modal gated by runtime
-conditions). 1 P1 finding (BORNE-001) requires owner gate on whether to
-heal-light in this branch or backlog to V1.0.1. 1 P3 cosmetic finding
-(BORNE-002) info-only.
+conditions). 1 P2 finding (BORNE-001) — UX wart + i18n leak on dine-in dead
+button — requires owner gate on whether to heal-light here or backlog to V1.0.1.
+3 P3 findings (BORNE-002 cosmetic truncation / BORNE-003 graceful pricing
+fallback / BORNE-004 expected token-lifecycle 401) all info-only.
 
 **Frozen-zone diff = 0 lines.** NF525 + Sanctum invariants attested intact.
+
+---
+
+## 11. Console + Network artifact scan (22 states, Reviewer Protocol cat #6/#9/#10)
+
+Per Reviewer Protocol, all 4 artifact files inspected per state. Console
+scanned for errors/pageerrors (excluding `vendor.js` / `wss://` / `csp-report` /
+`pusher` allowlist). Network scanned for status ≥ 400 (excluding 304 cache,
+401 logout, 422 validation form-state).
+
+### Console errors found
+
+```bash
+for f in tests/e2e/__screenshots__/goal-pageby-borne-2026-05-18/*.console.json; do
+  jq -r '.[] | select(.level=="error" or .level=="pageerror") | .text' "$f"
+done | grep -v -E 'vendor\.js|wss://|csp-report|pusher'
+```
+
+Result : 3 entries across 22 states, all corresponding to network 4xx logged
+by browser :
+
+- `page-05-wizard-burger.console.json` : "Failed to load resource: status 422"
+  → corresponds to BORNE-003 (pricing/preview 422 with visible fallback)
+- `page-09a-after-add.console.json` : "Failed to load resource: status 422"
+  → same root cause as BORNE-003
+- `page-12b-confirmation-paid.console.json` : "Failed to load resource: status 401"
+  → corresponds to BORNE-004 (post-paid quote 401, expected)
+
+**NO** TypeError / ReferenceError / Cannot-read / function-undefined errors.
+**NO** pageerror entries.
+
+### Network 4xx/5xx found
+
+```bash
+for f in tests/e2e/__screenshots__/goal-pageby-borne-2026-05-18/*.network.json; do
+  jq -r '.[] | select(.status >= 400) | "\(.status) \(.method) \(.url)"' "$f"
+done | grep -v -E 'logout|304'
+```
+
+Result : 3 entries across 22 states, all mapped to documented findings :
+
+| Entry | Finding |
+|---|---|
+| 422 POST /api/frontend/pricing/preview (page-05) | BORNE-003 (graceful) |
+| 422 POST /api/frontend/pricing/preview (page-09a) | BORNE-003 (graceful) |
+| 401 POST /api/frontend/order/quote (page-12b) | BORNE-004 (expected) |
+
+**0 unexpected 4xx/5xx.** Reviewer Protocol categories #6 (silent error P0),
+#9 (console error P1), #10 (unexpected 4xx/5xx P0) : **all clean.**
+
+---
 
 End of BORNE evidence summary — 2026-05-18.

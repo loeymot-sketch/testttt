@@ -103,14 +103,41 @@
         window.foodkingConfig.kioskDefaultLocale au moment de l'initialisation du bundle.
         (config:cache OK : on utilise config() et non env() directement)
     --}}
+    @php
+        // [2026-05-18 PR-B P0 kiosk-creds-leak heal] Gate the SPA auto-login
+        // payload by (a) path filter `/kiosk*` (legacy), (b) request IP in
+        // the configured allowlist OR `APP_ENV=local` (dev bypass).
+        // Without this, any unauthenticated requester to `/kiosk/idle` could
+        // harvest the machine credentials in cleartext (curl public host →
+        // grep kioskAutoLogin → mint a `kiosk:order` Sanctum token).
+        // Production deployment MUST set KIOSK_AUTO_LOGIN_TRUSTED_IPS to the
+        // LAN IPs of the physical kiosk machines, OR set
+        // KIOSK_REQUIRE_MACHINE_LOGIN=true (shows a UI login form instead).
+        // Sister test: tests/Feature/Kiosk/KioskAutoLoginGateTest.php
+        $kioskAutoLoginPayload = null;
+        if (request()->is('kiosk*')) {
+            $payload = config('kiosk.spa_payload');
+            if ($payload !== null) {
+                $localBypass = (bool) config('kiosk.auto_login_local_bypass', false);
+                $trustedIps  = (array) config('kiosk.auto_login_trusted_ips', []);
+                $clientIp    = (string) request()->ip();
+                $ipTrusted   = ! empty($trustedIps) && in_array($clientIp, $trustedIps, true);
+                if ($localBypass || $ipTrusted) {
+                    $kioskAutoLoginPayload = $payload;
+                }
+            }
+        }
+    @endphp
     <script>
         window.foodkingConfig = {
             baseUrl: @json(rtrim((string) config('app.url'), '/')),
             apiKey: @json((string) config('app.api_key')),
             googleMapKey: @json((string) config('app.google_map_key')),
             demo: @json((bool) config('app.demo_mode')),
-            // Borne : n'injecter les credentials machine que sur les routes kiosk.
-            kioskAutoLogin: @json(request()->is('kiosk*') ? config('kiosk.spa_payload') : null),
+            // [2026-05-18 PR-B P0 heal] Machine creds gated by IP allowlist +
+            // APP_ENV=local. See @php block above. Public unauth requests now
+            // get `null` even on /kiosk/* paths.
+            kioskAutoLogin: @json($kioskAutoLoginPayload),
             // Langue UI borne : fr | ar | en (défaut fr) — évite anglais si le navigateur / localStorage était en "en"
             kioskDefaultLocale: @json((string) config('kiosk.default_locale', 'fr')),
             // [ADR-007 / Sprint 3D 2026-05-16] Kiosk runtime FR-immutable en V1.

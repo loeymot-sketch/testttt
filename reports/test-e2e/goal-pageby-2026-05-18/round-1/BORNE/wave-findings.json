@@ -16,10 +16,10 @@
       "id": "BORNE-001",
       "page": "10b cart-with-items",
       "state_artifact": "page-10b-cart-with-items.png",
-      "category": "ui_inconsistency",
-      "severity": "P1",
-      "evidence": "Cart UI renders both 'Sur place' (kiosk-cart-order-type-dinein) AND 'À emporter' (kiosk-cart-order-type-takeaway) buttons clickable. Backend OrderRequest:213 rejects kiosk dine-in (V1 pos_dine_in_enabled=false). User can click Sur place but order submission fails silently from user perspective.",
-      "fix_hint": "KioskCartComponent.vue:94 — hide kiosk-cart-order-type-dinein button when settings.pos.pos_dine_in_enabled=false. Backend comment OrderRequest:209-210 explicitly defers this to F-016b backlog. File NOT frozen (only KioskWizardComponent, KioskAppComponent, KioskUpsellComponent are). Heal-light or V1.0.1 backlog."
+      "category": "ui_inconsistency_plus_i18n_leak",
+      "severity": "P2",
+      "evidence": "Cart UI renders both 'Sur place' (kiosk-cart-order-type-dinein) AND 'À emporter' (kiosk-cart-order-type-takeaway) buttons fully clickable (no disabled, no v-if guard). Backend OrderRequest:213 rejects kiosk dine-in (V1 pos_dine_in_enabled=false) returning HTTP 422 with hardcoded English message 'Dine-in is disabled in V1 — kiosk orders must use TAKEAWAY (à emporter).' KioskCartComponent.vue:608-613 catches the error and shows it via showToast(...,'error',6000) + sets quoteError inline. So user DOES see an error (not silent), but message is English-hardcoded backend literal, NOT localized. Severity downgraded from initial P1 (silent error) to P2 (UX nuisance + i18n leak in error message).",
+      "fix_hint": "Two-pronged: (a) KioskCartComponent.vue:94 — add v-if='dineInEnabled' to kiosk-cart-order-type-dinein button reading from server-rendered window.foodkingConfig.posDineInEnabled (mirror posDineInEnabled in window scope from Blade). (b) OrderRequest:216 — translate error message via __() helper + add to fr/en/ar i18n bundles. Backend comment OrderRequest:209-210 explicitly defers (a) to F-016b. File KioskCartComponent NOT frozen. Eligible heal-light or V1.0.1 backlog."
     },
     {
       "id": "BORNE-002",
@@ -29,17 +29,35 @@
       "severity": "P3",
       "evidence": "Test category 'E2E_PLAYWRIGHT_STUDIO_CATEGORY' wraps to two lines awkwardly at viewport 1080px ('E2E_PLAYWRIGHT_STUDIO_CATEGOR Y'). Likely cosmetic since this is a test-seeded category not present in production.",
       "fix_hint": "Either gate test categories out of kiosk SPA snapshot, or apply ellipsis on h1 inside .kiosk-zone-title at 1080px viewport. Cosmetic P3 — no loop block."
+    },
+    {
+      "id": "BORNE-003",
+      "page": "05 wizard-burger + 09a after-add",
+      "state_artifact": "page-05-wizard-burger.network.json + page-09a-after-add.network.json + page-09a-after-add.console.json + page-05-wizard-burger.console.json",
+      "category": "network_4xx_handled_with_visible_status",
+      "severity": "P3",
+      "evidence": "POST /api/frontend/pricing/preview returns HTTP 422 during wizard composition (steps where the composition payload is incomplete, e.g. clicking sauce before viande or pricing service rejects partial). However the wizard UI shows the visible status indicator 'Tarif rafraîchi localement. Le total est vérifié au paiement.' in the wizard footer (visible in page-05-wizard-burger.png), confirming this is GRACEFUL DEGRADATION with local-pricing fallback, NOT silent error. Per Reviewer Protocol category #6 (silent error P0) the visible status banner disqualifies P0; the disclaimer is the expected fallback message. Acceptance: P3 info-only.",
+      "fix_hint": "(Optional) Backend could return 200 with 'preview=partial' field instead of 422 when composition is mid-state, avoiding the noisy 422 in network log. Cosmetic refinement only — current behavior intentionally fails forward to local pricing."
+    },
+    {
+      "id": "BORNE-004",
+      "page": "12b confirmation-paid",
+      "state_artifact": "page-12b-confirmation-paid.network.json + page-12b-confirmation-paid.console.json",
+      "category": "post-paid quote 401 (expected token-lifecycle)",
+      "severity": "P3",
+      "evidence": "POST /api/frontend/order/quote returns HTTP 401 after the order id=1498 was already PAID (separate previous payment-confirm 200 OK confirmed in console log). The kiosk SPA loads /kiosk/confirmation?order_id=1498 and attempts a follow-up quote that fails authentication — likely the SPA's token rotated or the cart-token consumed at order placement. The SPA gracefully redirects to /kiosk/idle when this happens. Not a defect — token-lifecycle expected. Per Reviewer Protocol allowlist category #10 (401 on logout-equivalent acceptable). Acceptance: P3 info-only.",
+      "fix_hint": "(Optional) SPA could check window.lastPaidOrder instead of re-quoting when navigating to confirmation page. Defensive refinement only — current behavior gracefully falls back."
     }
   ],
   "summary": {
     "P0": 0,
-    "P1": 1,
-    "P2": 0,
-    "P3": 1,
+    "P1": 0,
+    "P2": 1,
+    "P3": 3,
     "open_P0": 0,
-    "open_P1": 1,
-    "open_P2": 0,
-    "open_P3": 1
+    "open_P1": 0,
+    "open_P2": 1,
+    "open_P3": 3
   },
   "page_results": {
     "page-01-idle": {

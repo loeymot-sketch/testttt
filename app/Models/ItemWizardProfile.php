@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\WizardProfileBranchScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ItemWizardProfile extends Model
 {
     use HasFactory;
+
+    /**
+     * [2026-05-18 PR-D blocker heal] Apply the nullable-column variant of
+     * BranchScope. Wizard profiles can be globally published (branch_id_scope
+     * NULL → visible to every branch) or branch-scoped (specific INT → only
+     * that branch sees it). Default `BranchScope` would 500 on `unknown
+     * column 'branch_id'` AND would hide every global profile from staff
+     * queries. Admin (branch_id=0) bypasses the filter.
+     */
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new WizardProfileBranchScope());
+    }
 
     protected $fillable = [
         'item_id',
