@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\Ask;
 use App\Libraries\AppLibrary;
+use App\Services\Receipt\ReceiptDataService;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class OrderDetailsResource extends JsonResource
@@ -15,6 +16,13 @@ class OrderDetailsResource extends JsonResource
      */
     public function toArray($request): array
     {
+        // [NF525 RECEIPT WIRE-IN 2026-05-18] ReceiptDataService is the
+        // SSOT for the six fiscal/operator header fields used on the
+        // printed POS ticket. Delegating here keeps the HTTP resource
+        // and the JS-side receipt builder converged on a single source
+        // of truth — see ReceiptDataServiceWireInTest for the contract.
+        $receipt = app(ReceiptDataService::class)->buildForOrderModel($this->resource);
+
         return [
             'id' => $this->id,
             'order_serial_no' => $this->order_serial_no,
@@ -65,14 +73,17 @@ class OrderDetailsResource extends JsonResource
             // (CGI art. 242 nonies A — every receipt must list HT base
             // and tax per rate). POS-GA-F-20.
             'tax_lines' => $this->buildTaxLines(),
-            // [T21] NF525 receipt exposure — read-only, no fiscal mutation.
-            'fiscal_sequence_no' => $this->fiscal_sequence_no ?? null,
+            // [T21 → NF525 RECEIPT WIRE-IN 2026-05-18] Six NF525 fields
+            // delegated to ReceiptDataService (SSOT). audit_chain_fingerprint
+            // and payments_breakdown stay owned by this resource — they're
+            // resource-shaped, not part of the printed-ticket payload.
+            'fiscal_sequence_no' => $receipt['fiscal_sequence_no'],
             'audit_chain_fingerprint' => $this->buildAuditFingerprint(),
-            'pos_register_id' => optional($this->branch)->register_id,
-            'pos_siret' => optional($this->branch)->siret,
-            'pos_vat_intra' => optional($this->branch)->vat_intra,
-            'pos_legal_footer' => optional($this->branch)->legal_footer,
-            'operator_name' => optional($this->user)->name ?? null,
+            'pos_register_id' => $receipt['pos_register_id'],
+            'pos_siret' => $receipt['pos_siret'],
+            'pos_vat_intra' => $receipt['pos_vat_intra'],
+            'pos_legal_footer' => $receipt['pos_legal_footer'],
+            'operator_name' => $receipt['operator_name'],
             'payments_breakdown' => $this->buildPaymentsBreakdown(),
         ];
     }

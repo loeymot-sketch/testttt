@@ -171,12 +171,12 @@ Cycle 1 a confirmé :
 **État** : 🟡 **À ÉTENDRE cycle 2**.
 
 Cycle 1 a confirmé via code review + Feature tests :
-- `ReceiptDataService::buildForOrder` pure read, aucune mutation
+- `ReceiptDataService::buildForOrder` / `buildForOrderModel` pure read, aucune mutation. **WIRE-IN 2026-05-18** : `OrderDetailsResource::toArray()` delegates the six NF525-receipt fields (fiscal_sequence_no, register_id, siret, vat_intra, legal_footer, operator_name) to the service via `buildForOrderModel($this->resource)`. Both signatures are interchangeable; legacy `buildForOrder(int $id)` works through `buildForOrderModel` under the hood. Audit sentinel : `tests/Feature/Receipt/ReceiptDataServiceWireInTest.php`.
 - `PosReceiptPrintController::increment` atomic increment scoped branch, audit `pos.receipt.print` (1st) / `pos.receipt.reprint` (2+) via `AuditLogService::write` best-effort
 - `ReceiptDuplicataMarker.vue` affiche badge si `receipt_print_count >= 2`
-- Helper `posReceiptBuilder.js` monte structure ticket
+- Helper `posReceiptBuilder.js` monte structure ticket en consommant la sortie de `OrderDetailsResource` (donc indirectement `ReceiptDataService`) — voir `resources/js/components/admin/pos/ReceiptComponent.vue` qui lit `order.fiscal_sequence_no`, `order.pos_siret`, etc.
 - Hardware : `EscPosPrinterService::sendRaw` + `PrinterTransport` (TcpPrinterTransport prod, NullPrinterTransport dev)
-- Tests Feature passants : `PosReceiptTaxLinesTest`, `PosReceiptFiscalExposureTest`, `PosReceiptDuplicataMarker.spec.js`
+- Tests Feature passants : `PosReceiptTaxLinesTest`, `PosReceiptFiscalExposureTest`, `PosReceiptDuplicataMarker.spec.js`, `ReceiptDataServiceWireInTest`
 
 **Manque cycle 1** : capture Playwright du ticket réel + duplicata + flow `print-receipt` API call. À écrire en cycle 2.
 
