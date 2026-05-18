@@ -114,6 +114,21 @@ class DispatchDomainEventsJob implements ShouldQueue
                 // `connection('pusher')` — breaks CI/tests when PUSHER_* env is unset.
                 $broadcaster = app(BroadcastManager::class)->connection();
                 $broadcaster->broadcast($channels, $domainEvent->broadcast_as, $envelope);
+
+                // [GOAL-CMS-2026-05-18 S-P0-A heal] R1 SRE-001:
+                // ws:heartbeat cache key was READ by SyncOverviewController:531
+                // but NEVER WRITTEN anywhere — admin observability dashboard
+                // stayed green-emerald while Pusher died silently. Successful
+                // broadcast proves Pusher is responsive: stamp the cache key
+                // with the wall-clock timestamp. 120s TTL > 4× the polling
+                // fallback window (config('broadcasting.polling_fallback_ms')
+                // 30s in prod, 5s aspirational per V1 architecture). Wrapped
+                // best-effort: observability must NEVER break outbox dispatch.
+                try {
+                    \Illuminate\Support\Facades\Cache::put('ws:heartbeat', now()->timestamp, 120);
+                } catch (Throwable $heartbeatException) {
+                    // best-effort observability — swallow
+                }
             }
 
             // [NEW-04] Non-blocking telemetry: record dispatch latency on the
