@@ -119,10 +119,13 @@ class TrustHostsTest extends TestCase
         );
 
         $this->assertContains(
-            '^::1$',
+            '^\[::1\]$',
             $hosts,
             'SYNC-ADV3C-03: TrustHosts::hosts() must whitelist '
-            .'`::1` (IPv6 loopback) for dual-stack PHP-FPM deployment.'
+            .'`[::1]` (IPv6 loopback, BRACKETED form). Per RFC 3986, '
+            .'HTTP Host: header for IPv6 carries the bracketed form, '
+            .'and Symfony Request.php:1163 preserves it after '
+            .'strtolower + trailing :port strip.'
         );
 
         $this->assertContains(
@@ -206,10 +209,14 @@ class TrustHostsTest extends TestCase
         }
 
         // === MUST ACCEPT (legitimate loopback) ===
+        // Note: IPv6 loopback arrives as the bracketed form `[::1]` from
+        // Symfony's getHost() pipeline (per RFC 3986 Host: header carries
+        // brackets; strtolower+trim+port-strip at Request.php:1163 keeps
+        // them since the port-strip regex only matches `:\d+$`).
         $legitHosts = [
             '127.0.0.1',
             'localhost',
-            '::1',
+            '[::1]',
             '0.0.0.0',
         ];
 

@@ -23,15 +23,19 @@ class TrustHosts extends Middleware
         // HEADER_X_FORWARDED_HOST enabled (TrustProxies.php:33), the attacker
         // could spoof X-Forwarded-Host to poison Request::getHost() →
         // URL::route() / signed URLs / password reset links / abort_unless()
-        // checks. Anchoring with `^...$` closes that vector. The IPv6 `^::1$`
-        // and `^0\.0\.0\.0$` entries cover `php artisan serve --host=0.0.0.0`
-        // and IPv6 loopback (SYNC-ADV3C-03). `allSubdomainsOfApplicationUrl()`
+        // checks. Anchoring with `^...$` closes that vector. The IPv6
+        // `^\[::1\]$` and `^0\.0\.0\.0$` entries cover IPv6 loopback (HTTP
+        // Host: header for IPv6 carries the bracket form per RFC 3986; after
+        // Symfony's `strtolower(preg_replace('/:\d+$/', '', trim($host)))` at
+        // Request.php:1163 the value remains `[::1]` because the port-strip
+        // regex only consumes a trailing `:port`) and `php artisan serve
+        // --host=0.0.0.0` (SYNC-ADV3C-03). `allSubdomainsOfApplicationUrl()`
         // is already anchored by the vendor (`^(.+\.)?host$`).
         return [
             $this->allSubdomainsOfApplicationUrl(),
             '^127\.0\.0\.1$',
             '^localhost$',
-            '^::1$',
+            '^\[::1\]$',
             '^0\.0\.0\.0$',
         ];
     }
