@@ -111,14 +111,26 @@ class PosCategoryController extends AdminController
 
             $itemCategoryArray = [];
 
+            // [2026-05-18 F-4] Featured allowlist for the POS first-page filter.
+            // Empty config = "no filter" → every category renders as featured
+            // (safe default before owner provisions the env knob).
+            $featuredIds = (array) config('pos.featured_category_ids', []);
+            $featuredSet = ! empty($featuredIds)
+                ? array_flip(array_map('intval', $featuredIds))
+                : null;
+
             $addArray[] = [
                 'id'          => 0,
                 'name'        =>  trans('all.label.all_items'),
                 'slug'        => 'all-items',
                 'thumb'       => asset("images/default/all-category.png"),
-                'cover'       => asset("images/default/all-category.png")
+                'cover'       => asset("images/default/all-category.png"),
+                'featured'    => true,
             ];
             foreach ($itemCategories as $itemCategory) {
+                $isFeatured = $featuredSet === null
+                    ? true
+                    : isset($featuredSet[(int) $itemCategory->id]);
                 $itemCategoryArray[] = [
                     'id'          => $itemCategory->id,
                     'name'        => $itemCategory->name,
@@ -126,9 +138,17 @@ class PosCategoryController extends AdminController
                     'description' => $itemCategory->description === null ? '' : $itemCategory->description,
                     'status'      => $itemCategory->status,
                     'thumb'       => $itemCategory->thumb,
-                    'cover'       => $itemCategory->cover
+                    'cover'       => $itemCategory->cover,
+                    'featured'    => $isFeatured,
                 ];
             }
+
+            // Sort featured-first, preserving existing order within each bucket.
+            usort($itemCategoryArray, static function (array $a, array $b): int {
+                $af = $a['featured'] ?? false ? 0 : 1;
+                $bf = $b['featured'] ?? false ? 0 : 1;
+                return $af <=> $bf;
+            });
 
             $newObj = array_merge($addArray, $itemCategoryArray);
 

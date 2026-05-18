@@ -35,4 +35,28 @@ return [
     |   - All hardware-presence checks fire normally.
     */
     'simulation_hardware' => filter_var(env('POS_SIMULATION_HARDWARE', false), FILTER_VALIDATE_BOOLEAN),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Featured category allowlist — POS first-page filter
+    |--------------------------------------------------------------------------
+    |
+    | Owner spec 2026-05-18: the cashier's landing screen on `/admin/pos`
+    | shows ONLY this curated set of categories on the strip + their items
+    | in the grid. All other categories remain accessible by:
+    |   (a) typing into the search input (full menu, unfiltered), or
+    |   (b) clicking the "Toutes les catégories" pill (escape hatch).
+    |
+    | Default = Le Cayenne best-sellers per menu reset 2026-05-13:
+    |   344 Sandwich Cayenne, 345 Galette, 346 Sandwich Classique,
+    |   306 Tacos, 348 Frites, 347 Bols Gourmands.
+    |
+    | Override via env CSV: POS_FEATURED_CATEGORY_IDS=344,345,346,306,348,347
+    | Empty list → fallback "no filter" (all categories shown — safe default
+    | when config not yet provisioned).
+    */
+    'featured_category_ids' => array_values(array_filter(array_map(
+        'intval',
+        explode(',', (string) env('POS_FEATURED_CATEGORY_IDS', '344,345,346,306,348,347')),
+    ))),
 ];

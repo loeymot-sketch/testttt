@@ -144,10 +144,20 @@ class PosSimulationHardware4ScenariosTest extends TestCase
     {
         $this->actingAs($this->operator, 'sanctum');
 
+        $terminal = PaymentTerminal::create([
+            'branch_id'    => $this->branch->id,
+            'name'         => 'TPE S2',
+            'gateway_type' => PaymentTerminal::GATEWAY_MANUAL,
+            'fee_percent'  => 0,
+            'fee_fixed'    => 0,
+            'status'       => PaymentTerminal::STATUS_ACTIVE,
+        ]);
+
         $payload = $this->basePayload([
             'pos_payment_method' => PosPaymentMethod::CARD,
             'pos_payment_note' => 1234,
             'pos_received_amount' => 0,
+            'terminal_id' => $terminal->id,
         ]);
 
         $response = $this->withHeader('x-api-key', config('app.api_key'))
@@ -214,12 +224,13 @@ class PosSimulationHardware4ScenariosTest extends TestCase
         // Mixed split: dominant tender must be CARD because the CASH tranche
         // alone (0.75€) is below the 1.50€ total — OrderService's legacy
         // single-tender sufficiency check would otherwise 422. PosOrderRequest
-        // requires `pos_payment_note` to be a 4-digit numeric string when
-        // dominant is CARD.
+        // requires `pos_payment_note` 4-digit numeric AND `terminal_id` when
+        // dominant is CARD (rule added 2026-05-18 Wave 5F).
         $payload = $this->basePayload([
             'pos_payment_method' => PosPaymentMethod::CARD,
             'pos_received_amount' => 0,
             'pos_payment_note' => '1234',
+            'terminal_id' => $terminal->id,
             'payment_breakdown' => $breakdown,
         ]);
 

@@ -50,6 +50,16 @@ class OrderStatusScreenOrderService
                               ->whereNotNull('queue_number');
                       });
                 })
+                // [2026-05-18 RED R-3 heal] Fail-closed allowlist — only KIOSK
+                // and TAKEAWAY ever reach the customer wall. The previous
+                // `!= DELIVERY` blacklist still let POS=15 / DINING_TABLE=20
+                // leak through the `whereNotNull('token')` OR-branch above
+                // if they ever happened to carry a token. Sister coverage:
+                // tests/Feature/OSS/OssCustomerScreenFilterTest.php.
+                ->whereIn('order_type', [
+                    \App\Enums\OrderType::KIOSK,
+                    \App\Enums\OrderType::TAKEAWAY,
+                ])
                 ->whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED])
                 // [RED-team P1 perf 2026-05-17] whereDate non-sargable → range query (uses idx_orders_datetime)
                 ->where(function ($q) {
@@ -155,6 +165,13 @@ class OrderStatusScreenOrderService
                               ->whereNotNull('queue_number');
                       });
                 })
+                // [2026-05-18 RED R-3 heal] Sister of list() — keep query body
+                // byte-identical per service docstring (line 144). Fail-closed
+                // allowlist excludes POS / DELIVERY / DINING_TABLE.
+                ->whereIn('order_type', [
+                    \App\Enums\OrderType::KIOSK,
+                    \App\Enums\OrderType::TAKEAWAY,
+                ])
                 ->whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED])
                 // [RED-team P1 perf 2026-05-17] whereDate non-sargable → range query (uses idx_orders_datetime)
                 ->where(function ($q) {

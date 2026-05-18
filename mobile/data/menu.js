@@ -253,7 +253,10 @@
       thumb: 'item-' + slug,
       image: imgFor(slug),
       hero: heroFor(slug),
-      kiosk_emoji: opts.emoji || '',
+      kiosk_emoji: opts.emoji || '', // legacy field used by screens-item-steps.jsx:841
+      // [ULTRA-FRONTENDS HEAL 2026-05-18 P1] also expose `emoji` for web parity (consumers
+      // expecting item.emoji per web mkItem shape — mobile consumers may use either field).
+      emoji: opts.emoji || '',
       time: opts.time !== undefined ? opts.time : 8,
       tags: opts.tags || [],
       is_featured: !!opts.is_featured,

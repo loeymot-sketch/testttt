@@ -222,15 +222,19 @@
           [POS-V5] Categories strip warm — pills avec photos rondes 56px
           (mirror direct du stepper visual du wizard kiosk). L'active est marquée
           par un anneau rouge brand 2px + ring soft 4px (mirror exact wizard).
+          [2026-05-18 F-4] First-page filter: by default, only featured
+          categories render. The trailing "Toutes les catégories" pill
+          toggles the strip to full view. Backend signals featured via
+          `category.featured === true` on the /admin/pos-category response.
         -->
         <nav
-            v-if="categories.length > 1"
+            v-if="displayedCategories.length > 1"
             class="pos-v5-category-strip pos-menu-category-scroll pos-v4-category-strip"
             ref="categoryScrollStrip"
             role="tablist"
             aria-label="Catégories"
         >
-            <template v-for="(category, index) in categories" :key="category.id || index">
+            <template v-for="(category, index) in displayedCategories" :key="category.id || index">
                 <button
                     type="button"
                     role="tab"
@@ -252,6 +256,24 @@
                     <span class="pos-v5-category__label">{{ category.name }}</span>
                 </button>
             </template>
+            <!-- [2026-05-18 F-4] Escape hatch: reveal all categories. Only
+                 shown when the backend marked some as non-featured (i.e.
+                 the allowlist is active). -->
+            <button
+                v-if="hasNonFeaturedCategories"
+                type="button"
+                class="pos-v5-category pos-v4-category-pill pos-v5-category--toggle"
+                :class="{ 'is-active': showAllCategories }"
+                :aria-pressed="showAllCategories ? 'true' : 'false'"
+                :title="showAllCategories ? 'Masquer les catégories non-essentielles' : 'Voir toutes les catégories'"
+                data-testid="pos-category-toggle-all"
+                @click="toggleShowAllCategories"
+            >
+                <span class="pos-v5-category__visual">
+                    <span class="pos-v5-category__visual-fallback" aria-hidden="true">{{ showAllCategories ? '➖' : '➕' }}</span>
+                </span>
+                <span class="pos-v5-category__label">{{ showAllCategories ? 'Réduire' : 'Toutes' }}</span>
+            </button>
         </nav>
 
         <div aria-live="polite" aria-relevant="additions"
@@ -259,7 +281,7 @@
             class="pos-menu-products-region">
             <SkeletonGrid v-if="loadingItems" :count="12" />
             <template v-else>
-                <ItemComponent ref="posItemComponent" :items="items" :drinks-catalog="drinksCatalog" />
+                <ItemComponent ref="posItemComponent" :items="displayedItems" :drinks-catalog="drinksCatalog" />
 
                 <div class="my-12" v-if="items.length === 0 && !props.search.name">
                     <div class="max-w-[350px] mx-auto">
@@ -1180,6 +1202,12 @@ export default {
             // no-sale button while the hardware bridge resolves (real till can
             // take ~200-500ms to physically open).
             noSaleBusy: false,
+            // [2026-05-18 F-4] POS first-page filter. False (default) = strip
+            // shows only featured categories per `config('pos.featured_category_ids')`.
+            // Toggled true via the "Toutes" pill (escape hatch). Persists for
+            // the lifetime of the SPA instance only — resets on reload so the
+            // cashier always lands on the curated set.
+            showAllCategories: false,
             parkingInFlight: false,
             // [POS-V5 WAVE 3 2026-05-02] Flags pour animations cart-bump et
             // total-flash. Toggled via watcher sur totalItems()/subtotal et
@@ -1415,8 +1443,51 @@ export default {
         categories: function () {
             return this.$store.getters["posCategory/lists"];
         },
+        // [2026-05-18 F-4] First-page filter: when `showAllCategories=false`
+        // (default), render only categories the backend marked `featured===true`.
+        // The 'all-items' sentinel (id=0) carries `featured=true` so it always
+        // stays in front. Backend treats an empty allowlist as "no filter" and
+        // marks every category featured — strip then renders identical to the
+        // legacy unfiltered shape, preserving the safe default.
+        displayedCategories: function () {
+            const all = this.$store.getters["posCategory/lists"] || [];
+            if (this.showAllCategories) return all;
+            const featured = all.filter((c) => c && c.featured === true);
+            // Defensive fallback — if every entry is unfeatured (misconfig),
+            // fall back to showing all so the cashier is never stranded.
+            return featured.length > 0 ? featured : all;
+        },
+        hasNonFeaturedCategories: function () {
+            const all = this.$store.getters["posCategory/lists"] || [];
+            return all.some((c) => c && c.featured === false);
+        },
         items: function () {
             return this.$store.getters["item/lists"];
+        },
+        // [2026-05-18 F-4] First-page item grid filter — when the cashier
+        // is on the "Toutes les ..." sentinel (no explicit category selected)
+        // AND `showAllCategories=false`, show ONLY items belonging to
+        // featured categories. Search input continues to query the full
+        // catalogue (search.name flows through the backend, unaffected).
+        // Picking a specific category pill (featured or hidden via Toutes
+        // toggle) bypasses this filter — the cashier sees that category's
+        // full item list.
+        displayedItems: function () {
+            const allItems = this.$store.getters["item/lists"] || [];
+            const onLanding = (this.props.search.item_category_id === '' || Number(this.props.search.item_category_id) === 0)
+                && !this.props.search.name;
+            if (!onLanding || this.showAllCategories) return allItems;
+            const allCats = this.$store.getters["posCategory/lists"] || [];
+            const featuredIds = new Set(
+                allCats
+                    .filter((c) => c && c.featured === true && Number(c.id) > 0)
+                    .map((c) => Number(c.id)),
+            );
+            if (featuredIds.size === 0) return allItems;
+            return allItems.filter((it) => {
+                const cid = Number(it && (it.item_category_id != null ? it.item_category_id : it.category_id));
+                return featuredIds.has(cid);
+            });
         },
         // [iter15-mega-fix Vue-warn-cluster round-7 2026-05-10]
         // Alias `itemsRaw` -> same store-backed catalog list. The D-003 rupture
@@ -2669,6 +2740,12 @@ export default {
             this.props.search.name = "";
             this.props.search.item_category_id = "";
             this.itemList(1, { overlay: false });
+        },
+        // [2026-05-18 F-4] Toggle the "Toutes les catégories" escape hatch.
+        // Showing all does NOT auto-clear the active category selection — the
+        // cashier can still keep their current pill active or pick a new one.
+        toggleShowAllCategories: function () {
+            this.showAllCategories = !this.showAllCategories;
         },
         closeSidebar: function () {
             this.$store.dispatch("globalState/set", { topSidebar: false });
