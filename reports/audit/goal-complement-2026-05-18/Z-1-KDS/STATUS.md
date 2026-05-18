@@ -18,18 +18,19 @@
 
 ## One-line summary
 
-Z-1 KDS deeper audit-only: **0 P0, 4 P1, 6 P2, 4 P3**. Branch isolation + transition whitelist + tz-aware + sargable queries all PASS. 78/78 KDS tests green. Heal deferred to V1.0.2/V1.0.3 backlog tickets per the goal mode contract.
+Z-1 KDS deeper audit-only: **0 P0, 4 P1, 5 P2, 4 P3** (13 total). Branch isolation + transition whitelist + tz-aware + sargable queries all PASS. 78/78 KDS tests green (2 consecutive clean runs). Heal deferred to V1.0.2/V1.0.3 backlog tickets per the goal mode contract.
 
 ---
 
-## Severity Distribution
+## Severity Distribution (reconciled with findings.json + red-dispute.json appendix)
 
 | Severity | Count | Headline |
 |---|---|---|
 | **P0** | **0** | (none — no fiscal/critical security/data-loss vector found) |
 | **P1** | **4** | Items-board allergen exposure gap; localStorage-only recall; GDPR customer.name minimization; no throttle on change-status |
-| **P2** | **6** | Item-board limit+cache; idempotency-key absent; bump user-namespace; broadcast metric absent; snapshot parity gap; admin-global items-board UX |
-| **P3** | **4** | status_changed_at TODO; sideffect-vs-broadcast ordering; order.token doc-only; orderItems admin global UX |
+| **P2** | **5** | Item-board limit+cache; idempotency-key absent; bump user-namespace; broadcast metric absent; snapshot parity gap |
+| **P3** | **4** | status_changed_at TODO; sideffect-vs-broadcast ordering; order.token doc-only; admin-global items-board UX |
+| **TOTAL** | **13** | (matches findings.json 11 + red-dispute.json 2 appendix items, with Z1-P3-13 downgraded from P2 per RED-FINAL-NEW-FINDING-07 verdict) |
 
 ---
 
@@ -65,7 +66,7 @@ All evidence is Read-verified file:line citations. No hallucinated paths.
 | Sentinel tests | 3 (KdsTransitionWhitelistSentinel, KdsExpectedStatusConflictSentinel, KdsItemAvailabilityEchoSentinel) | PASS |
 | TZ-aware sister tests | `SisterServicesTzAwareTest` (kds list + orderItems UTC boundaries) | PASS |
 
-**Note**: One transient "1 failed" appeared on a mid-run repeat — could not be re-reproduced on re-run (78/78 green). Likely race with another Bash call (`grep` parallel). Will not block VALIDATED verdict; final two consecutive runs both green. Noted for awareness.
+**Test attestation honesty**: Three sequential runs observed during audit. Run 1: 77 pass / 0 fail. Run 2: 77 pass / 1 fail (transient, not investigated). Run 3 (re-run after run 2): 78 pass / 0 fail. Run 4 (final attestation): 78 pass / 0 fail. **Two consecutive green** confirmed (run 3 + run 4). The mid-session flake was not caused by Z-1 (zero source changes during the session — all writes confined to `reports/audit/.../Z-1-KDS/`); suspected concurrent-Bash race during specialist analysis. Final state: GREEN.
 
 ---
 
@@ -109,7 +110,9 @@ All evidence is Read-verified file:line citations. No hallucinated paths.
 
 ---
 
-## Backlog Tickets (V1.0.2 + V1.0.3)
+## Backlog Tickets
+
+### Findings-derived tickets (13 — match findings.json + red-dispute.json appendix)
 
 | Ticket | Severity | Headline | Files |
 |---|---|---|---|
@@ -122,15 +125,24 @@ All evidence is Read-verified file:line citations. No hallucinated paths.
 | V1.0.2-KDS-BUMP-USER-NAMESPACE | P2 | localStorage key salted by user_id+branch_id | `kds.js:1` (subsumed if Z1-P1-02 implemented) |
 | V1.0.2-KDS-BROADCAST-FAILURE-METRIC | P2 | SyncMetricsRecorder counter on Pusher failure | `KitchenDisplaySystemOrderService.php:243-245` |
 | V1.0.2-KDS-ITEMS-BOARD-SNAPSHOT-PARITY | P2 | Mirror resolveVariations/Extras pattern | `KDSOrderItemsResource.php` |
-| V1.0.2-KDS-SYNC-CACHE-KEY-SENTINEL | P2 | Sentinel test for cache key branch salt | new test file |
 | V1.0.3-KDS-STATUS-CHANGED-AT-COLUMN | P3 | Migration + version computation | new migration + `KdsSyncService.php` |
 | V1.0.3-KDS-SIDEEFFECT-ORDERING | P3 | Reorder broadcast-then-notifications | `KitchenDisplaySystemOrderService.php:237-245` |
 | V1.0.3-KDS-ORDER-TOKEN-DOC | P3 | Document order.token = internal table-routing | `KDSOrderDetailsResource.php` |
 | V1.0.3-KDS-ITEMS-BOARD-ADMIN-BRANCH-UX | P3 | Branch column on items board for admin global view | `KitchenDisplaySystemComponent.vue` |
-| V1.0.3-KDS-COMPOSITE-INDEX-STATUS-DATETIME | P3 | Optional composite (status, order_datetime) if EXPLAIN shows index-merge cost | new migration (conditional) |
-| V1.0.3-KDS-CACHE-STAMPEDE-PROTECTION | P3 | Defer until measurement shows thundering herd | `KdsSyncService.php` |
-| V1.0.3-KDS-BROADCAST-OUTBOX-REPLAY | P3 | Already partially wired via PersistOrderStatusChangedToOutbox — verify replay path | listener + outbox |
-| V1.0.3-KDS-LAYOUT-XSS-RESILIENCE | P3 | Upstream XSS issue, not KDS-specific | `config/kds.php` |
+
+### Sentinel-only / advisory tickets (not counted in 13 findings — PASS-derived sentinels)
+
+| Ticket | Type | Headline |
+|---|---|---|
+| V1.0.2-KDS-SYNC-CACHE-KEY-SENTINEL | sentinel-only | Add explicit sentinel test for `kds.sync` cache key branch salt (PASS today, sentinel to prevent regression) |
+| V1.0.3-KDS-COMPOSITE-INDEX-STATUS-DATETIME | advisory | Optional composite (status, order_datetime) if EXPLAIN on production shows index-merge cost — perf measurement deferred |
+| V1.0.3-KDS-CACHE-STAMPEDE-PROTECTION | advisory | Defer until measurement shows thundering herd (5s minute-bucket cache currently sufficient) |
+| V1.0.3-KDS-BROADCAST-OUTBOX-REPLAY | advisory | Already partially wired via PersistOrderStatusChangedToOutbox — verify replay path in V1.0.3 cycle |
+| V1.0.3-KDS-LAYOUT-XSS-RESILIENCE | advisory | Upstream XSS issue, not KDS-specific |
+
+### Frozen-zone heal-time re-evaluation note
+
+- **Z1-P1-02 (bump/recall backend persistence)** lists `resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1709-1740` as a touch point for the V1.0.2 heal session. **For this Z-1 mission scope, that Vue file is read-only** (per the "NO writes to KDS frontend" constraint). The V1.0.2 heal session **must re-evaluate frozen status at that time** — the file is currently labeled "DIRTY (do not write)" in the GOAL scope only because of session-A coexistence, not because of CLAUDE.md §7 frozen list (POS wizard is the canonical frozen Vue scope, NOT KDS Vue). Orchestrator flag added.
 
 ---
 
