@@ -20,7 +20,11 @@ const WS_SESSION_INVALID = 'SESSION_INVALID';
 // [Wave 3 P1 / KDS-RED-09 2026-05-18] Safe cadence floor — 4 req/s max per
 // station. Mirrors config/catalog_v15.php clamp; protects against owner
 // misconfig (FK_CATALOG_KDS_*=10 → ~80 req/s/station DoS).
+// [Wave 3b P1 / KDS-ADV3B-04 2026-05-18] Upper cap 60_000ms base / 30_000ms
+// jitter protects against silent-blind misconfig (e.g. =999999999 → 11.5d).
 const CADENCE_FLOOR_MS = 250;
+const CADENCE_CEILING_MS = 60_000;
+const JITTER_CEILING_MS = 30_000;
 const DEFAULT_CADENCE_OPTIONS = Object.freeze({
     highActivityBaseMs: 3000,
     highActivityJitterMs: 1000,
@@ -458,15 +462,21 @@ export class KdsSyncService {
         // window.foodkingConfig.kdsFallbackPolling.disconnectedBaseMs=10 cannot
         // weaponize the polling loop into PHP-FPM saturation. Jitters keep a
         // 0 floor since they widen — never shorten — the wait.
+        // [Wave 3b P1 / KDS-ADV3B-04 2026-05-18] Upper cap CADENCE_CEILING_MS
+        // (60_000ms = 1 poll/min minimum) and JITTER_CEILING_MS (30_000ms)
+        // prevent the symmetric silent-blind misconfig where a runaway value
+        // (e.g. disconnectedBaseMs=999999999) would stall KDS for ~11.5 days.
         const clampBase = (value, fallback) => {
             const parsed = parseInt(value, 10);
             const candidate = Number.isFinite(parsed) ? parsed : fallback;
-            return candidate >= CADENCE_FLOOR_MS ? candidate : CADENCE_FLOOR_MS;
+            const floored = candidate >= CADENCE_FLOOR_MS ? candidate : CADENCE_FLOOR_MS;
+            return floored <= CADENCE_CEILING_MS ? floored : CADENCE_CEILING_MS;
         };
         const clampJitter = (value, fallback) => {
             const parsed = parseInt(value, 10);
             const candidate = Number.isFinite(parsed) ? parsed : fallback;
-            return candidate >= 0 ? candidate : 0;
+            const floored = candidate >= 0 ? candidate : 0;
+            return floored <= JITTER_CEILING_MS ? floored : JITTER_CEILING_MS;
         };
 
         return {

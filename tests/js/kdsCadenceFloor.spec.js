@@ -110,4 +110,61 @@ describe('KdsSyncService cadence floor (KDS-RED-09 / Wave 3 P1)', () => {
         expect(opts.disconnectedBaseMs).toBe(10000);
         expect(opts.degradedBaseMs).toBe(5000);
     });
+
+    // Wave 3b P1 / KDS-ADV3B-04 — silent-blind upper cap (symmetric to floor)
+    it('clamps a 999999999ms silent-blind owner-misconfig down to 60_000ms', () => {
+        setRuntimeCfg({
+            disconnectedBaseMs: 999999999,
+            degradedBaseMs: 999999999,
+            highActivityBaseMs: 999999999,
+        });
+
+        const svc = new KdsSyncService();
+        const opts = svc._runtimeCadenceOptions();
+
+        expect(opts.disconnectedBaseMs).toBe(60_000);
+        expect(opts.degradedBaseMs).toBe(60_000);
+        expect(opts.highActivityBaseMs).toBe(60_000);
+    });
+
+    it('clamps a 120_000ms base down to the 60_000ms ceiling', () => {
+        setRuntimeCfg({
+            disconnectedBaseMs: 120_000,
+            degradedBaseMs: 120_000,
+        });
+
+        const svc = new KdsSyncService();
+        const opts = svc._runtimeCadenceOptions();
+
+        expect(opts.disconnectedBaseMs).toBe(60_000);
+        expect(opts.degradedBaseMs).toBe(60_000);
+    });
+
+    it('preserves a 30_000ms base (below ceiling)', () => {
+        setRuntimeCfg({
+            disconnectedBaseMs: 30_000,
+            degradedBaseMs: 30_000,
+        });
+
+        const svc = new KdsSyncService();
+        const opts = svc._runtimeCadenceOptions();
+
+        expect(opts.disconnectedBaseMs).toBe(30_000);
+        expect(opts.degradedBaseMs).toBe(30_000);
+    });
+
+    it('caps jitter above 30_000ms to the JITTER_CEILING_MS', () => {
+        setRuntimeCfg({
+            disconnectedJitterMs: 999999,
+            degradedJitterMs: 60_000,
+            highActivityJitterMs: 50_000,
+        });
+
+        const svc = new KdsSyncService();
+        const opts = svc._runtimeCadenceOptions();
+
+        expect(opts.disconnectedJitterMs).toBe(30_000);
+        expect(opts.degradedJitterMs).toBe(30_000);
+        expect(opts.highActivityJitterMs).toBe(30_000);
+    });
 });
