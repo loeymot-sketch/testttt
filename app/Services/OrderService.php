@@ -533,13 +533,18 @@ class OrderService
                     ]);
                 }
 
+                // [F-9 OBS RED-RED1 V1.0.1 quick win — 2026-05-19]
+                // Drop the customer name from ActionLog.details (RGPD 5(1)(c)
+                // minimisation). user_id is already persisted on this row and
+                // is the canonical forensic lookup key.
+                // Source: reports/audit/foundation-2026-05-18/round-1/F-9-OBS/STATUS.md §HEAL RED-RED1
+                // Sentinel: tests/Feature/Sentinels/ActionLogPiiRedactionSentinelTest.php
                 \App\Models\ActionLog::create([
                     'user_id'  => Auth::check() ? Auth::id() : null,
                     'action'   => 'Nouvelle commande Web/App',
                     'resource' => 'Commande #' . $this->order->order_serial_no,
                     'details'  => sprintf(
-                        'Auteur: %s | Total: %s€ | Taxe: %s€ | Remise: %s€',
-                        Auth::check() ? Auth::user()->name : 'Client anonyme',
+                        'Total: %s€ | Taxe: %s€ | Remise: %s€',
                         number_format($this->order->total, 2),
                         number_format($totalTax, 2),
                         number_format($calculatedDiscount, 2)
