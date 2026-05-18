@@ -2,7 +2,7 @@
 
 **Date** : 2026-05-19
 **Branch** : `heal/cms-pr1-quickwins-2026-05-18`
-**Status** : GREEN — 6/6 sentinel pass + 5/5 regression pass + migration valid + frozen-zone diff 0
+**Status** : GREEN — 9/9 sentinel pass + 5/5 loyalty regression pass + 254/254 full sentinel suite + migration valid + frozen-zone diff 0
 **Scope** : V1 backend heal, mobile-side wire-up DEFERRED to mobile cycle (V1.0.X backlog)
 
 ---
@@ -45,22 +45,39 @@
 
 ## Tests
 
-### Sentinel — 6/6 PASS
+### Sentinel — 9/9 PASS (post advisor-recommended follow-up: 3 HTTP tests for generation endpoint)
 
 ```
 $ ./vendor/bin/phpunit tests/Feature/Sentinels/LoyaltyQrSigningSentinelTest.php
-......                                                              6 / 6 (100%)
-OK (6 tests, 31 assertions)
+.........                                                           9 / 9 (100%)
+OK (9 tests, 53 assertions)
 ```
 
 | # | Case | Asserts |
 |---|---|---|
-| 1 | Valid signed token → ok=true + balance + `X-Loyalty-QR-Status: signed` + nonce row inserted | 8 |
+| 1 | Valid signed token scan → ok=true + balance + `X-Loyalty-QR-Status: signed` + nonce row inserted | 8 |
 | 2 | Expired token (iat=now-1h, TTL=300s, leeway=30s) → ok=false + error_code=qr_expired, nonce NOT consumed | 4 |
 | 3 | Tampered HMAC (replaced with 32 zero bytes b64url) → ok=false + error_code=qr_invalid_signature, nonce NOT consumed | 4 |
 | 4 | Replay (same valid token twice) → 1st ok, 2nd ok=false + error_code=qr_replay, exactly one row in DB | 6 |
 | 5 | Legacy plaintext `FK:<code>` → ok=true + balance + `X-Loyalty-QR-Status: legacy-plaintext` | 5 |
-| 6 | Production env + empty `LOYALTY_QR_SECRET` → AppServiceProvider::boot() throws RuntimeException matching `/LOYALTY_QR_SECRET must be set in production/` | 2 |
+| 6 | Production env + empty `LOYALTY_QR_SECRET` → AppServiceProvider::boot() throws RuntimeException | 2 |
+| 7 | Generation endpoint without bearer → 401 (auth:sanctum gate enforced) | 1 |
+| 8 | Generation → returns `lqr.*` token, round-trips successfully through /scan, scan returns `X-Loyalty-QR-Status: signed` | 11 |
+| 9 | Customer without loyalty_code → endpoint mints one on demand and persists it | 4 |
+
+### Full sentinel suite — 254/254 PASS
+
+```
+$ ./vendor/bin/phpunit tests/Feature/Sentinels/
+........................................................... 254 / 254 (100%)
+Tests: 254, Assertions: 705, Skipped: 2
+```
+
+Touched `tests/Feature/Sentinels/CorsAppUrlProductionGuardSentinelTest.php` to neutralize the new `loyalty.qr.secret` prod guard (mirrors the same neutralization the existing test already does for sibling guards). 2 skipped tests are pre-existing baseline.
+
+### Scan-controller status-active alignment heal (incidental)
+
+Pre-heal, `LoyaltyController::scan` used `(int) ($target->status ?? 1) !== 1` to gate customer activity — legacy from before the `Status::ACTIVE = 5` enum / `EnsureUserStatusActive` (H1 Z6-06) middleware. With the QR generation endpoint authenticating the customer directly, the inconsistency surfaced as a 401 on the round-trip test. Extracted to a private `isCustomerActive()` helper that accepts BOTH legacy `1` and `Status::ACTIVE` — backward-compatible with existing production rows on either value, forward-compatible with full enum migration.
 
 ### Regression — 5/5 PASS
 

@@ -49,13 +49,18 @@ class LoyaltyQrSigningSentinelTest extends TestCase
             'branch_id' => $branch->id,
         ]);
 
+        // Status = Status::ACTIVE so EnsureUserStatusActive (Z6-06) passes
+        // when the customer authenticates to /loyalty/qr generation. The
+        // /loyalty/scan controller accepts BOTH legacy 1 and Status::ACTIVE
+        // via the new isCustomerActive() helper introduced in this commit
+        // (alignment heal — was the only place still using status==1).
         $customer = User::factory()->create([
             'username'      => 'cust_' . uniqid(),
             'branch_id'     => $branch->id,
             'loyalty_code'  => 'ABCD1234',
             'loyalty_points'=> 200,
             'name'          => 'Alice',
-            'status'        => 1,
+            'status'        => \App\Enums\Status::ACTIVE,
         ]);
 
         $kioskToken = $kioskUser->createToken('kiosk-token', ['kiosk:order'])->plainTextToken;
@@ -202,6 +207,82 @@ class LoyaltyQrSigningSentinelTest extends TestCase
             ->assertJsonPath('data.loyalty_balance_points', 200)
             ->assertJsonPath('data.error_code', null)
             ->assertHeader('X-Loyalty-QR-Status', 'legacy-plaintext');
+    }
+
+    public function test_generate_qr_endpoint_requires_authentication(): void
+    {
+        $this->setupKioskAuth(); // seeds settings + sets test secret
+
+        // No Authorization header → auth:sanctum middleware must reject.
+        $response = $this->postJson('/api/frontend/loyalty/qr');
+
+        $response->assertStatus(401);
+    }
+
+    public function test_generate_qr_endpoint_returns_signed_token_that_round_trips_through_scan(): void
+    {
+        [, $kioskToken, $customer, $customerToken] = $this->setupKioskAuth();
+
+        // 1. Customer mints a fresh QR via /api/frontend/loyalty/qr.
+        //    Use the bearer token path (same as the /scan tests above) —
+        //    actingAs(..., 'sanctum') trips the EnsureUserStatusActive
+        //    middleware's status==ACTIVE(=5) check, while the bearer path
+        //    used by the existing LoyaltyController callsites does not in
+        //    the same way (kept consistent with our /scan invocations to
+        //    rule out the auth bridge as a confounder).
+        $mint = $this->withHeaders(['Authorization' => "Bearer {$customerToken}"])
+            ->postJson('/api/frontend/loyalty/qr');
+
+        $mint->assertStatus(200)
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('data.loyalty_code', $customer->loyalty_code)
+            ->assertJsonPath('data.ttl_seconds', 300)
+            ->assertJsonStructure(['data' => ['token', 'expires_at', 'ttl_seconds', 'loyalty_code']]);
+
+        $token = $mint->json('data.token');
+        $this->assertIsString($token);
+        $this->assertStringStartsWith('lqr.', $token, 'token must use lqr. prefix');
+
+        // 2. Kiosk presents the freshly-minted token to /loyalty/scan.
+        $scan = $this->withHeaders(['Authorization' => "Bearer {$kioskToken}"])
+            ->postJson('/api/frontend/loyalty/scan', [
+                'method'   => 'qr',
+                'raw_data' => $token,
+            ]);
+
+        $scan->assertStatus(200)
+            ->assertJsonPath('data.ok', true)
+            ->assertJsonPath('data.error_code', null)
+            ->assertHeader('X-Loyalty-QR-Status', 'signed');
+    }
+
+    public function test_generate_qr_mints_loyalty_code_for_customer_without_one(): void
+    {
+        $this->setupKioskAuth();
+
+        // Customer with no loyalty_code yet — the endpoint must mint one
+        // on demand so the response is never empty for an authenticated user.
+        $newCustomer = User::factory()->create([
+            'username'     => 'no_code_' . uniqid(),
+            'branch_id'    => 1,
+            'loyalty_code' => null,
+            'status'       => \App\Enums\Status::ACTIVE,
+        ]);
+        $token = $newCustomer->createToken('cust-no-code')->plainTextToken;
+
+        $response = $this->withHeaders(['Authorization' => "Bearer {$token}"])
+            ->postJson('/api/frontend/loyalty/qr');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('status', true);
+
+        $loyaltyCode = $response->json('data.loyalty_code');
+        $this->assertIsString($loyaltyCode);
+        $this->assertNotSame('', $loyaltyCode, 'loyalty_code must be minted on demand');
+
+        // Persisted on the user row so subsequent calls see it.
+        $newCustomer->refresh();
+        $this->assertSame($loyaltyCode, $newCustomer->loyalty_code);
     }
 
     public function test_production_boot_guard_refuses_empty_loyalty_qr_secret(): void

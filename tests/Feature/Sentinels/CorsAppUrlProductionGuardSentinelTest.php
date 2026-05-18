@@ -34,6 +34,9 @@ class CorsAppUrlProductionGuardSentinelTest extends TestCase
         config(['broadcasting.default' => 'pusher']);
         config(['queue.default' => 'redis']);
         config(['cache.default' => 'redis']);
+        // [LCS-S-001 / 2026-05-19] Loyalty QR secret guard fires before
+        // APP_URL guard — neutralize it so we keep testing our own.
+        config(['loyalty.qr.secret' => str_repeat('a', 32)]);
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessageMatches('/APP_URL must be set in production/');
@@ -55,6 +58,7 @@ class CorsAppUrlProductionGuardSentinelTest extends TestCase
         config(['broadcasting.default' => 'pusher']);
         config(['queue.default' => 'redis']);
         config(['cache.default' => 'redis']);
+        config(['loyalty.qr.secret' => str_repeat('a', 32)]);
 
         $provider = new \App\Providers\AppServiceProvider($this->app);
         try {

@@ -631,7 +631,7 @@ class LoyaltyController extends Controller
                     if ($code !== '') {
                         $target = User::where('loyalty_code', $code)->first();
                     }
-                    if (! $target || (int) ($target->status ?? 1) !== 1) {
+                    if (! $target || ! $this->isCustomerActive($target)) {
                         // Signed payload was valid but the customer row vanished
                         // (rotation / deletion). Still HTTP 200, parcours continues.
                         return response()->json([
@@ -690,7 +690,7 @@ class LoyaltyController extends Controller
                     }
                 }
 
-                if (! $target || (int) ($target->status ?? 1) !== 1) {
+                if (! $target || ! $this->isCustomerActive($target)) {
                     // Ne jamais renvoyer 404 → parcours doit continuer (invariant §12).
                     return response()->json([
                         'status' => true,
@@ -822,6 +822,22 @@ class LoyaltyController extends Controller
             'last_order'             => null,
             'error_code'             => $errorCode,
         ];
+    }
+
+    /**
+     * Customer-active predicate used by /loyalty/scan.
+     *
+     * Historical code compared `status == 1` because the User model used 1
+     * as the active flag before the Status enum was introduced (ACTIVE = 5).
+     * Both values are still found in production rows (legacy seeders / data
+     * migrations). Accepting either keeps the legacy plaintext path working
+     * for existing accounts while aligning with the H1 Z6-06
+     * EnsureUserStatusActive middleware which uses Status::ACTIVE.
+     */
+    private function isCustomerActive(\App\Models\User $target): bool
+    {
+        $status = (int) ($target->status ?? 0);
+        return $status === 1 || $status === (int) \App\Enums\Status::ACTIVE;
     }
 
     /**
