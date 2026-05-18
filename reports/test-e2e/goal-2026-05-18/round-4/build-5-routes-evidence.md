@@ -262,16 +262,37 @@ respected : only `routes/api.php` + 1 new test file (+ this evidence).
 ## 10. Commit
 
 Branch : `heal/cms-pr1-quickwins-2026-05-18`
-Files changed :
+
+**Race-condition note** : BUILD-5 commit operation coincided with BUILD-3
+(ZReportCashEnrichmentService) commit, and the pre-commit hook batched both
+sets of staged files into a SINGLE commit. The intended commit message
+`feat(api-routes-v1-0-2): idempotency on 7 change-status + Livreur cash session routes`
+was overridden by the BUILD-3 hook-batched message
+`feat(fiscal-v1-0-2-zreport-enrichment): NEW service composes ZReportService + 5 sentinels`.
+
+Resolved commit SHA : **`40c683f63`** — includes all BUILD-5 files in the
+diff (verifiable via `git show 40c683f63 --stat`) :
+
+```
+ .../Fiscal/ZReportCashEnrichmentService.php        | 320 ++++++ (BUILD-3)
+ .../round-4/build-3-zreport-enrichment-evidence.md | 185 ++++  (BUILD-3)
+ .../round-4/build-5-routes-evidence.md             | 277 ++++  (BUILD-5)
+ routes/api.php                                     |  64 ++   (BUILD-5)
+ .../Idempotency/ChangeStatusIdempotencyTest.php    | 151 ++++  (BUILD-5)
+ .../ZReportCashEnrichmentSentinelTest.php          | 358 ++++  (BUILD-3)
+ 6 files changed, 1349 insertions(+), 6 deletions(-)
+```
+
+BUILD-5 deliverable is durable in HEAD. The mis-attribution is a parallel
+agent race artifact (per CLAUDE.md "never amend prior commits" rule, no
+amend is performed — the diff verification in `git show 40c683f63 --stat`
+is the canonical attribution evidence).
+
+Files changed (BUILD-5 only) :
 - `routes/api.php` (+44 / -6)
-- `tests/Feature/Idempotency/ChangeStatusIdempotencyTest.php` (NEW)
+- `tests/Feature/Idempotency/ChangeStatusIdempotencyTest.php` (NEW, 136 lines)
 - `reports/test-e2e/goal-2026-05-18/round-4/build-5-routes-evidence.md` (NEW)
 
-Commit message :
-```
-feat(api-routes-v1-0-2): idempotency on 7 change-status + Livreur cash session routes
-```
-
-Co-author : Claude.
+Co-author : Claude Opus 4.7 (1M context).
 
 — END build-5-routes-evidence.md —
