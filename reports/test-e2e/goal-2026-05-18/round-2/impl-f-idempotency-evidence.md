@@ -218,7 +218,7 @@ fix(api-idempotency-v1-prep): precision sweep — add idempotency to 4 gap route
 
 Co-author : Claude.
 
-Commit SHA : *(populated post-commit)*
+Commit SHA : **`bcc84c0c0`** (`fix(api-idempotency-v1-prep): precision sweep — add idempotency to 4 gap routes + verification table`)
 
 ## 10. Summary table (≤250 words equivalent)
 
