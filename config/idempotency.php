@@ -56,9 +56,9 @@ return [
         'api/frontend/delivery-boy-order/change-status/*',
         // Livreur cash-session routes (new V1.0.2-sub6-3 NF525 cash session
         // foundation, commit 3d5ca01f6 — parallel mission)
-        'api/admin/delivery-boy/cash-session/open',
-        'api/admin/delivery-boy/cash-session/*/close',
-        'api/admin/delivery-boy/cash-session/*/reconcile',
+        'api/admin/delivery-boy/cash-sessions/open',
+        'api/admin/delivery-boy/cash-sessions/*/close',
+        'api/admin/delivery-boy/cash-sessions/*/reconcile',
     ],
 
     'cache_store' => env('IDEMPOTENCY_CACHE_STORE'),
