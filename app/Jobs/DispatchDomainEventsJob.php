@@ -156,8 +156,7 @@ class DispatchDomainEventsJob implements ShouldQueue
             // [NEW-01] Phase 3b — release the claim so the queue retry
             // ($tries / $backoff curve documented at top of class) can re-attempt
             // cleanly. Preserves PayloadMismatchException semantics:
-            // last_error is populated AND the original exception is rethrown so the
-            // job lands in failed_jobs after all attempts exhausted.
+            // last_error is populated AND the failed() callback fires once.
             $domainEvent->forceFill([
                 'dispatched_at' => null,
                 'last_error' => $e instanceof PayloadMismatchException
@@ -171,6 +170,19 @@ class DispatchDomainEventsJob implements ShouldQueue
                     'event_type' => $domainEvent->event_type,
                     'errors' => $e->errors,
                 ]);
+
+                // [F-3 SYNC P1 V1.0.1 quick win — 2026-05-19]
+                // Contract violations are NOT retry-recoverable: the payload
+                // itself is malformed, so re-attempting wastes 6 'high' queue
+                // messages per bad event (with the $backoff curve). 1000 bad
+                // payloads = 6000 useless messages saturating the high lane.
+                // Short-circuit via $this->fail() so the job lands in
+                // failed_jobs immediately and the failed() callback fires once.
+                // Source: reports/audit/foundation-2026-05-18/round-1/F-3-SYNC/STATUS.md §P1
+                // Sentinel: tests/Feature/Sentinels/PayloadMismatchFailOnceSentinelTest.php
+                $this->fail($e);
+
+                return;
             }
 
             throw $e;
