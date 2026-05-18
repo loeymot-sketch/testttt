@@ -33,7 +33,7 @@ Plateforme restaurant fast-food complète :
 - Spatie permissions 5 → 6 (track séparé)
 - ESLint v10 setup + Vue plugin
 - Saga pattern Order + Payment + Stock orchestration
-- Stripe webhook idempotency (parité SenangPay iter11)
+- ~~Stripe webhook idempotency (parité SenangPay iter11)~~ **CLOSED Sprint 3A 2026-05-16** (verified Round 2 T-3.3.1 Architect : `app/Http/PaymentGateways/Gateways/Stripe.php:166-328` + route + 6 tests at `tests/Feature/Webhooks/StripeWebhookIdempotencyTest.php`)
 
 ### Goals immuables
 - Production-grade correctness, coherence, reliability, quality
