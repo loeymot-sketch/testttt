@@ -171,7 +171,19 @@ ZERO hardcoded offline-payment strings remain
 
 **Logic change** : ZERO (pure string extraction).
 
-**Commit SHA** : see `git log -1` on this branch (HEAD after final amend; self-referential SHA in bundle is a known chicken-and-egg — see commit message for canonical reference)
+**Commit SHA** : `c138b32dd`
+
+**Attribution note (Round 2 parallel-sweep)** : Impl B's 5 source-file changes
+(2 Vue + 3 JSON) and this evidence bundle were absorbed into commit
+`c138b32dd` whose subject line reads `fix(oss-v1-prep): chime TV-wall
+fallback + PRÊT WCAG AA contrast heal` (Impl C's heading). This is the
+result of parallel sub-agents (Impl B, C, D) sharing the same working tree
+and competing for the staging area; my final `git commit --amend` window
+captured Impl C's and Impl D's freshly-staged files in addition to mine.
+The CONTENT of my fix is intact and verified (8 `$t()` refs in modal, 2 in
+payment, 10 keys × 3 locales = 30 string entries in fr/en/ar.json). Impl
+C's and Impl D's work also live in the same commit. The orchestrator should
+treat `c138b32dd` as a multi-Impl convergence commit, not as Impl C alone.
 
 ---
 
