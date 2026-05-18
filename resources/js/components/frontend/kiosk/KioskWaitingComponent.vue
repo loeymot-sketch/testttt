@@ -147,6 +147,7 @@ import orderStatusEnum from '../../../enums/modules/orderStatusEnum';
 import paymentStatusEnum from '../../../enums/modules/paymentStatusEnum';
 import { onEvents } from '../../../services/eventContract';
 import kioskHardware from '../../../services/kioskHardware';
+import { buildIdempotencyHeaders } from '../../../helpers/idempotencyHeaders';
 
 // [AUDIT-P1-C] Polling interval is always 15s — Echo provides real-time pushes.
 // Timeout after 15 minutes if order never becomes ready (customer should contact staff).
@@ -427,9 +428,12 @@ export default {
         // [AUDIT-F-004] Kiosk customer cancellation from waiting screen → 'customer_request'
         // (OrderCancelReason enum). Backend OrderStatusRequest 422s without whitelisted reason
         // when actor is kiosk machine token.
-        await axios.post(`frontend/order/change-status/${this.orderId}`, {
+        const cancelPayload = {
           status: STATUS_CANCELLED,
           reason: 'customer_request',
+        };
+        await axios.post(`frontend/order/change-status/${this.orderId}`, cancelPayload, {
+          headers: buildIdempotencyHeaders(cancelPayload),
         });
         // Success — clean up and return to idle
         this.showCancelConfirm = false;

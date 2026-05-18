@@ -230,6 +230,7 @@ import kioskHardware from '../../../services/kioskHardware';
 import { KIOSK_HARDWARE } from '../../../config/kioskHardware';
 // [PHASE-6.4] Analytics instrumentation (gated par consent, no-op si opt-out).
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
+import { buildIdempotencyHeaders } from '../../../helpers/idempotencyHeaders';
 // Kiosk Phase 9.1.8 — TTS sur erreurs de paiement (EAA 2025).
 // Les malvoyants n'avaient aucun retour audio en cas de refus TPE → risque
 // que le client ne réalise pas que la transaction a échoué.
@@ -551,9 +552,12 @@ export default {
           // 'tpe_declined' covers generic refusal. Backend OrderStatusRequest 422s on missing
           // or non-whitelisted code when actor is kiosk machine token.
           const tpeReasonCode = (paymentResult?.error_code === 'timeout' ? 'tpe_timeout' : 'tpe_declined');
-          axios.post(`frontend/order/change-status/${this._lastOrder.id}`, {
+          const tpeVoidPayload = {
             status: orderStatusEnum.CANCELED,
             reason: tpeReasonCode,
+          };
+          axios.post(`frontend/order/change-status/${this._lastOrder.id}`, tpeVoidPayload, {
+            headers: buildIdempotencyHeaders(tpeVoidPayload),
           })
             .catch(e => console.warn('[KioskPayment] void order failed:', e.message));
         }
@@ -734,9 +738,12 @@ export default {
       // [AUDIT-P1] Void the server order created before TPE — prevents orphan PENDING orders.
       if (this._lastOrder?.id && !String(this._lastOrder.id).startsWith('offline_')) {
         // [AUDIT-F-004] Customer pressed Cancel on the TPE prompt → 'tpe_cancel_user'.
-        axios.post(`frontend/order/change-status/${this._lastOrder.id}`, {
+        const userCancelPayload = {
           status: orderStatusEnum.CANCELED,
           reason: 'tpe_cancel_user',
+        };
+        axios.post(`frontend/order/change-status/${this._lastOrder.id}`, userCancelPayload, {
+          headers: buildIdempotencyHeaders(userCancelPayload),
         })
           .catch(e => console.warn('[KioskPayment] void on cancel failed:', e.message));
         this._lastOrder = null;

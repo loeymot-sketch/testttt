@@ -1,5 +1,6 @@
 import axios from 'axios'
 import appService from "../../services/appService";
+import { buildIdempotencyHeaders } from "../../helpers/idempotencyHeaders";
 
 const DEFAULT_REALTIME_POLLING_INTERVAL_MS = 30000;
 const POS_SELF_ORDER_TYPES = [15, 20];
@@ -88,19 +89,10 @@ export function normalizeRealtimeOrderEvent(event = {}) {
     };
 }
 
-// [PS-2 audit 2026-05-18] Idempotency-Key helper for mutation actions.
-// Server-side IdempotencyKeyMiddleware (routes/api.php:892-906) sits idle when
-// the header is absent (middleware returns next() with no replay protection).
-// This helper supplies a fresh per-action key so double-click + retry-on-network
-// blip are deduped at the middleware layer (defense-in-depth on top of the
-// OrderService same-status early-return + lockForUpdate).
-function buildIdempotencyHeaders(payload) {
-    const explicit = payload && typeof payload === 'object' ? payload.idempotency_key : null;
-    const key = explicit
-        || crypto.randomUUID?.()
-        || (`pos-mut-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    return { 'X-Idempotency-Key': String(key) };
-}
+// [PS-2 audit 2026-05-18 / PK-2 propagation 2026-05-18]
+// Idempotency-Key helper extracted to resources/js/helpers/idempotencyHeaders.js
+// so all 6+ Vue stores (POS + KDS + online + table + frontend) share the same
+// generator. See that file for behaviour rationale.
 
 export function shouldNotifyPosRealtimeOrder(event = {}) {
     const normalized = normalizeRealtimeOrderEvent(event);
