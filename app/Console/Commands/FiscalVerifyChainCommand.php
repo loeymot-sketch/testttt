@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Kernel as AppConsoleKernel;
 use App\Models\Branch;
 use App\Services\Fiscal\AuditLogService;
 use App\Services\Fiscal\ZReportService;
@@ -34,34 +35,73 @@ use Illuminate\Console\Command;
  * (CLAUDE.md §7) but its public API is callable from any wrapper.
  *
  * Exit codes (Wave 3 P1 FISCAL-ADV3-02 — distinct codes for monitoring):
- *   0  = chain verified intact for the given branch.
- *   1  = TAMPER detected; output names the audit_logs.id of the
- *        first broken row so the operator can pinpoint the breach.
- *   2  = INVALID arguments (branch id does not exist in branches table).
- *        Wave 3 P1 FISCAL-ADV3-01: previously `--branch=99` on a single
- *        resto returned a false-negative `CHAIN OK exit 0` because the
- *        verifier iterated an empty cursor. Now hard-fails before the
- *        service call.
+ *   0  = chain verified intact for the given branch (or every active
+ *        branch when invoked with --all).
+ *   1  = TAMPER detected; output names every audit_logs.id / z_reports.id
+ *        whose hash no longer matches so the operator can pinpoint each
+ *        breach in a single pass (Wave 2d FISCAL-ADV3C-02).
+ *   2  = INVALID arguments:
+ *          - --branch=N where N does not exist in branches table
+ *            (Wave 3 P1 FISCAL-ADV3-01: previously a false-negative
+ *            CHAIN OK exit 0 because the verifier iterated an empty
+ *            cursor; now a hard-fail before the service call), OR
+ *          - --branch=0 (Wave 2d FISCAL-ADV3C-03: reserved sentinel
+ *            for admin/global writes, not a "sweep all" alias; pass
+ *            --all for the real multi-branch sweep).
  *   3  = EXECUTION ERROR (DB outage, missing/weak secret, unexpected
  *        throw). Distinct from TAMPER so monitoring can route DB/cred
  *        incidents to ops vs. NF525 integrity breaches to compliance.
+ *
+ * Flags (Wave 2d FISCAL-ADV3C-03):
+ *   --branch=<id>  Single-branch verification (default 1 for backward
+ *                  compatibility with the daily cron). Refuses 0.
+ *   --all          Sweep every active branch returned by
+ *                  Kernel::activeBranchIds() — shared with the daily
+ *                  fiscal-chain-monitor cron so the two stay in lockstep.
+ *                  Exits 1 if any branch surfaces a tamper, 0 otherwise.
  */
 class FiscalVerifyChainCommand extends Command
 {
-    protected $signature = 'fiscal:verify-chain {--branch=1 : Branch id whose NF525 chains should be verified}';
+    protected $signature = 'fiscal:verify-chain
+        {--branch=1 : Branch id whose NF525 chains should be verified (refuses 0, use --all)}
+        {--all : Sweep every active branch (Status::ACTIVE or legacy=1), exit 1 if ANY breaches}';
 
-    protected $description = 'NF525 dual-chain integrity verification (re-walks audit_logs + z_reports HMAC chains for a branch).';
+    protected $description = 'NF525 dual-chain integrity verification (re-walks audit_logs + z_reports HMAC chains; pass --branch=<id> for single or --all for sweep).';
 
     public function handle(AuditLogService $auditService, ZReportService $zService): int
     {
+        // [Wave 2d FISCAL-ADV3C-03 2026-05-18] Explicit sweep flag.
+        //
+        // Previously `--branch=0` was treated as "cross-branch sweep" by
+        // the docstring while the underlying service calls actually filtered
+        // `branch_id = 0` (admin/global writes only). Operators following
+        // the docstring after a suspected breach got a false-negative
+        // "CHAIN OK exit 0" for any real tamper in branch_id >= 1.
+        //
+        // Now: `--branch=0` is rejected (exit 2). `--all` does the real
+        // sweep by reusing Kernel::activeBranchIds(), so the daily cron
+        // and the on-demand operator command share one definition of
+        // "every active branch" — no second source of drift.
+        if ($this->option('all')) {
+            return $this->handleAllSweep($auditService, $zService);
+        }
+
         $branchId = (int) $this->option('branch');
 
-        // [Wave 3 P1 FISCAL-ADV3-01] Validate branch existence before
-        // walking the chain. Admin/global branch_id=0 is permitted
-        // (cross-branch sweep). Any other id must resolve to a Branch
-        // row, otherwise we'd return a false-negative CHAIN OK because
-        // an empty cursor naturally short-circuits to null.
-        if ($branchId !== 0 && ! Branch::where('id', $branchId)->exists()) {
+        if ($branchId === 0) {
+            // [Wave 2d FISCAL-ADV3C-03 2026-05-18] Two short lines instead of
+            // one long one to dodge Symfony Console block-formatter wrap.
+            $this->error('Branch ID 0 is reserved (admin/global writes).');
+            $this->line('Pass --all to sweep every active branch.');
+
+            return self::INVALID; // exit code 2
+        }
+
+        // [Wave 3 P1 FISCAL-ADV3-01 / Wave 2d FISCAL-ADV3C-03] Validate branch
+        // existence before walking the chain. Any non-zero id must resolve to
+        // a Branch row, otherwise we'd return a false-negative CHAIN OK
+        // because an empty cursor naturally short-circuits to null.
+        if (! Branch::where('id', $branchId)->exists()) {
             $this->error(sprintf('Branch ID %d not found.', $branchId));
 
             return self::INVALID; // exit code 2
@@ -146,5 +186,99 @@ class FiscalVerifyChainCommand extends Command
         }
 
         return self::FAILURE;
+    }
+
+    /**
+     * [Wave 2d FISCAL-ADV3C-03 2026-05-18]
+     *
+     * Real cross-branch sweep — closes the gap that `--branch=0` used to
+     * pretend to fill. Reuses Kernel::activeBranchIds() so the operator
+     * CLI and the daily fiscal-chain-monitor cron share one definition
+     * of "active". Per-branch try/catch routes throws to exit 3 lane
+     * (consistent with single-branch semantic). Aggregate exit:
+     *   - any branch tamper  → exit 1 (TAMPER)
+     *   - any branch throw   → exit 3 (execution error) WHEN no tamper
+     *     surfaced; tamper precedes exec error in priority because
+     *     NF525 breach is the more urgent operator signal.
+     *   - all branches clean → exit 0
+     */
+    private function handleAllSweep(AuditLogService $auditService, ZReportService $zService): int
+    {
+        $branchIds = AppConsoleKernel::activeBranchIds();
+
+        if ($branchIds->isEmpty()) {
+            $this->warn('No active branches found; nothing to verify.');
+
+            return self::SUCCESS;
+        }
+
+        $tampered = [];
+        $errored = [];
+
+        foreach ($branchIds as $branchId) {
+            try {
+                $auditBrokenId = $auditService->verifyChain($branchId);
+                $zResult = $zService->verifyChain($branchId, false);
+            } catch (\Throwable $e) {
+                $errored[] = ['branch_id' => $branchId, 'message' => $e->getMessage()];
+                $this->line(sprintf('  ! branch=%d EXEC ERROR: %s', $branchId, $e->getMessage()));
+
+                continue;
+            }
+
+            $fragments = [];
+
+            if ($auditBrokenId !== null) {
+                $fragments[] = sprintf('audit_logs.id=%d', $auditBrokenId);
+            }
+
+            if (! ($zResult['valid'] ?? true)) {
+                foreach (($zResult['errors'] ?? []) as $err) {
+                    $zId  = $err['z_id'] ?? null;
+                    $kind = $err['kind'] ?? 'unknown';
+                    $fragments[] = $zId !== null
+                        ? sprintf('z_reports.id=%d (%s)', $zId, $kind)
+                        : sprintf('z_reports.chain=invalid (%s)', $kind);
+                }
+            }
+
+            if (empty($fragments)) {
+                $this->line(sprintf('  + branch=%d CHAIN OK', $branchId));
+            } else {
+                $tampered[] = ['branch_id' => $branchId, 'fragments' => $fragments];
+                $this->line(sprintf('  - branch=%d TAMPER:', $branchId));
+                foreach ($fragments as $fragment) {
+                    $this->line('      * '.$fragment);
+                }
+            }
+        }
+
+        if (! empty($tampered)) {
+            $this->error(sprintf(
+                'SWEEP COMPLETE — TAMPER detected on %d/%d branches (exec_errors=%d)',
+                count($tampered),
+                $branchIds->count(),
+                count($errored)
+            ));
+
+            return self::FAILURE; // exit 1 — tamper precedes exec error
+        }
+
+        if (! empty($errored)) {
+            $this->error(sprintf(
+                'SWEEP COMPLETE — %d/%d branches errored (no tampers observed on the rest)',
+                count($errored),
+                $branchIds->count()
+            ));
+
+            return 3; // exec error
+        }
+
+        $this->info(sprintf(
+            'SWEEP COMPLETE — CHAIN OK on every active branch (%d total)',
+            $branchIds->count()
+        ));
+
+        return self::SUCCESS;
     }
 }

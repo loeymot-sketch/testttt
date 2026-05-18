@@ -161,6 +161,88 @@ class FiscalVerifyChainCommandTest extends TestCase
     }
 
     /**
+     * [Wave 2d FISCAL-ADV3C-03 2026-05-18]
+     *
+     * `--branch=0` was a reserved sentinel for admin/global writes the
+     * docstring mislabelled as "cross-branch sweep". Real sweep is now
+     * `--all`. Operator passing 0 must get exit 2 + a directive message,
+     * never a false-negative CHAIN OK.
+     */
+    public function test_branch_zero_is_rejected_with_invalid_exit_code(): void
+    {
+        $this->artisan('fiscal:verify-chain', ['--branch' => 0])
+            ->expectsOutputToContain('Branch ID 0 is reserved')
+            ->expectsOutputToContain('--all')
+            ->assertExitCode(FiscalVerifyChainCommand::INVALID);
+    }
+
+    /**
+     * [Wave 2d FISCAL-ADV3C-03 2026-05-18]
+     *
+     * --all flag sweeps every Kernel::activeBranchIds() row. A single
+     * branch tamper must surface exit 1 with that branch named, and
+     * clean branches must show as CHAIN OK in the same output.
+     */
+    public function test_all_flag_sweeps_active_branches_and_surfaces_tamper(): void
+    {
+        // Two active branches; tamper one, leave the other clean.
+        $cleanBranch = Branch::factory()->create(['id' => 940_001, 'status' => Status::ACTIVE]);
+        $tamperBranch = Branch::factory()->create(['id' => 940_002, 'status' => 1]);
+
+        // Clean chain on cleanBranch.
+        $this->service->write([
+            'branch_id' => $cleanBranch->id, 'action' => 'order.create', 'payload' => ['id' => 1],
+        ]);
+
+        // Broken chain on tamperBranch (forged prev_hash).
+        $this->service->write([
+            'branch_id' => $tamperBranch->id, 'action' => 'order.create', 'payload' => ['id' => 99],
+        ]);
+        AuditLog::unguard();
+        try {
+            AuditLog::create([
+                'branch_id' => $tamperBranch->id,
+                'action' => 'order.admin_override',
+                'payload' => ['id' => 99, 'new_total' => 0.01],
+                'prev_hash' => str_repeat('0', 64),
+                'current_hash' => str_repeat('f', 64),
+            ]);
+        } finally {
+            AuditLog::reguard();
+        }
+
+        $this->artisan('fiscal:verify-chain', ['--all' => true])
+            ->expectsOutputToContain('branch='.$cleanBranch->id.' CHAIN OK')
+            ->expectsOutputToContain('branch='.$tamperBranch->id.' TAMPER')
+            ->expectsOutputToContain('SWEEP COMPLETE')
+            ->assertExitCode(1);
+    }
+
+    /**
+     * [Wave 2d FISCAL-ADV3C-03 2026-05-18]
+     *
+     * --all on a setup where every active branch's chain is clean must
+     * exit 0 + emit a summary naming the number of branches verified.
+     * This is the daily-cron alternative the operator can run on-demand.
+     */
+    public function test_all_flag_returns_success_when_every_branch_clean(): void
+    {
+        Branch::factory()->create(['id' => 940_010, 'status' => Status::ACTIVE]);
+        Branch::factory()->create(['id' => 940_011, 'status' => 1]);
+
+        $this->service->write([
+            'branch_id' => 940_010, 'action' => 'order.create', 'payload' => ['id' => 1],
+        ]);
+        $this->service->write([
+            'branch_id' => 940_011, 'action' => 'order.create', 'payload' => ['id' => 1],
+        ]);
+
+        $this->artisan('fiscal:verify-chain', ['--all' => true])
+            ->expectsOutputToContain('CHAIN OK on every active branch')
+            ->assertExitCode(0);
+    }
+
+    /**
      * [Wave 3 P1 FISCAL-ADV3-02]
      *
      * Exit-code collapse fix: a service-level throw (DB outage, missing
