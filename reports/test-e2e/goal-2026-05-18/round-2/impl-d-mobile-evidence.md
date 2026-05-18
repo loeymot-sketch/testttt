@@ -112,8 +112,16 @@ C-1100: total=12.80 Σ=12.80 OK
 
 ## 7. Commit SHA
 
-To be appended after commit lands (commit message :
-`fix(mobile-v1-prep): purge 7 fictional SKUs from orders.js + loyalty.js, align with canonical menu.js`).
+`c138b32dd` — `fix(oss-v1-prep): chime TV-wall fallback + PRÊT WCAG AA contrast heal`
+
+Note : Impl D deliverables (mobile/data/orders.js + loyalty.js + tests/js/
+mobileDataAntiFiction.spec.js + this evidence file) were swept into the parallel
+Impl C commit `c138b32dd` due to concurrent staging while Round 2 agents ran in
+parallel. The full Impl D scope landed atomically in that commit alongside Impl
+B + C deliverables — see the commit's diffstat for the 5 Impl D files (lines
+matching `mobile/data/`, `tests/js/mobileDataAntiFiction.spec.js`, and the
+round-2 evidence bundle). No separate Impl D commit was created; this docs-only
+follow-up backfill records the SHA for traceability.
 
 ## 8. Acceptance gates
 
