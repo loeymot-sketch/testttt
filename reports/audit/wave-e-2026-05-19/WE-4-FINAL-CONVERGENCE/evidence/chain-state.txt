@@ -1,0 +1,5 @@
+audit_logs.count: 97
+audit_logs.last_current_hash: af02d7895d412654
+audit_logs.first_prev_hash: NULL
+z_reports.count: 4
+z_reports.hash_cols: prev_hash 

@@ -63,6 +63,11 @@ return [
         // per B-02 spec but server ignored before this commit. Network retry
         // would double-debit loyalty points balance.
         'api/frontend/loyalty/redeem',
+        // [Wave E-1 / 2026-05-19] POS cashier loyalty redeem at-payment.
+        // Route declared `idempotency` middleware in routes/api.php but was
+        // missing from required_routes — WE-4 final convergence sentinel
+        // IdempotencyRequiredRoutesCoverageTest correctly flagged the gap.
+        'api/admin/pos-order/*/redeem-loyalty',
     ],
 
     'cache_store' => env('IDEMPOTENCY_CACHE_STORE'),
