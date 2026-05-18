@@ -2,6 +2,7 @@
 
 namespace App\Console;
 
+use App\Enums\Status;
 use App\Jobs\CleanupStalePendingKioskOrders;
 use App\Jobs\Observability\SloEvaluatorJob;
 use App\Models\Branch;
@@ -165,18 +166,14 @@ class Kernel extends ConsoleKernel
         // Wave 3b FISCAL-ADV3B-01: the previous single-branch cron
         // (`--branch=1` hardcoded) left branches >=2 silently unmonitored,
         // asymmetric with `fiscal:archive` (below) which iterates active
-        // branches. Pattern now mirrors fiscal:archive: status=1 +
-        // whereNull(deleted_at), per-branch Artisan::call, per-branch
-        // exit-code logging to fiscal channel (no silent swallow).
+        // branches. Pattern now uses self::activeBranchIds() — see method
+        // PHPDoc for status-drift rationale (Wave 2d FISCAL-ADV3C-01).
         //
         // 03:30 staggers between fiscal:archive (02:00) and outbox-prune
         // (04:00). onOneServer prevents duplicate runs at scale.
         $schedule->call(function () {
             try {
-                Branch::query()
-                    ->where('status', 1)
-                    ->whereNull('deleted_at')
-                    ->pluck('id')
+                self::activeBranchIds()
                     ->each(function ($branchId) {
                         try {
                             $exit = Artisan::call('fiscal:verify-chain', [
@@ -212,13 +209,14 @@ class Kernel extends ConsoleKernel
 
         // [W8.C-P2 / P-MEGA-22 Pilier 2] NF525 fiscal archive scheduling
         // D4=A 02:00 quotidien ; D5=A toutes branches actives ; D6=A local + S3 nightly géré par command env ; D7=A ZIP+JSON géré par command
+        // [Wave 2d FISCAL-ADV3C-01 2026-05-18] Mirror of fiscal-chain-monitor:
+        // both schedulers now share self::activeBranchIds() so a future
+        // status-data migration (status=1 → status=5) does not silently
+        // no-op either cron lane.
         $schedule->call(function () {
             $yesterday = now()->subDay()->format('Y-m-d');
             try {
-                Branch::query()
-                    ->where('status', 1)
-                    ->whereNull('deleted_at')
-                    ->pluck('id')
+                self::activeBranchIds()
                     ->each(function ($branchId) use ($yesterday) {
                         $exit = Artisan::call('foodking:fiscal:archive', [
                             'branch_id' => (int) $branchId,
@@ -258,5 +256,40 @@ class Kernel extends ConsoleKernel
         $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
+    }
+
+    /**
+     * [Wave 2d FISCAL-ADV3C-01 2026-05-18]
+     *
+     * Canonical "active branch" lookup for fiscal cron lanes.
+     *
+     * The branches table straddles two "active" sentinels in this codebase:
+     *  - legacy literal `1` (BranchFactory, prod seed pre-enum)
+     *  - canonical `App\Enums\Status::ACTIVE = 5` (BranchService, controllers)
+     *
+     * The owner-flagged data migration `UPDATE branches SET status=5
+     * WHERE status=1` is pending. The previous `where('status', 1)`
+     * pattern in both fiscal schedulers would have silently no-op'd
+     * every NF525 chain monitor + daily archive once that migration
+     * runs — recreating the exact "silent skip" class FISCAL-ADV3B-01
+     * was opened to close.
+     *
+     * `whereIn` accepts both literals so we're safe pre- and post-migration.
+     * Pattern mirrors PersistCatalogChangedToOutbox.php:39.
+     *
+     * Static + Collection-typed return so a future test can substitute
+     * a fake Branch model and assert iteration semantics without
+     * touching the scheduler closure (which Laravel does not run from
+     * Schedule::events() in a unit-testable way).
+     *
+     * @return \Illuminate\Support\Collection<int, int>
+     */
+    public static function activeBranchIds(): \Illuminate\Support\Collection
+    {
+        return Branch::query()
+            ->whereIn('status', [Status::ACTIVE, 1])
+            ->whereNull('deleted_at')
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id);
     }
 }

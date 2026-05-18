@@ -3,6 +3,8 @@
 namespace Tests\Feature\Fiscal;
 
 use App\Console\Commands\FiscalVerifyChainCommand;
+use App\Console\Kernel as AppConsoleKernel;
+use App\Enums\Status;
 use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\ZReport;
@@ -233,6 +235,40 @@ class FiscalVerifyChainCommandTest extends TestCase
             .'(Wave 3b FISCAL-ADV3B-01). Registered descriptions: '
             .implode(' | ', array_filter($descriptions))
         );
+    }
+
+    /**
+     * [Wave 2d FISCAL-ADV3C-01 2026-05-18]
+     *
+     * Both fiscal cron lanes (fiscal-chain-monitor + fiscal-archive)
+     * pluck their iteration list from Kernel::activeBranchIds(). It MUST
+     * accept BOTH `status=1` (legacy) and `status=Status::ACTIVE` (=5,
+     * canonical post-migration). Previously the closures used
+     * `where('status', 1)` directly, so an owner-flagged migration
+     * `UPDATE branches SET status=5 WHERE status=1` would have silently
+     * dropped every branch from the iteration → cron no-ops forever.
+     */
+    public function test_active_branch_ids_includes_both_legacy_and_canonical_status(): void
+    {
+        // Three seeded branches: one legacy (status=1), one canonical
+        // (Status::ACTIVE=5), one inactive (Status::INACTIVE=10). Plus
+        // a soft-deleted row that must be excluded regardless of status.
+        $legacy = Branch::factory()->create(['id' => 930_001, 'status' => 1]);
+        $canonical = Branch::factory()->create(['id' => 930_002, 'status' => Status::ACTIVE]);
+        $inactive = Branch::factory()->create(['id' => 930_003, 'status' => Status::INACTIVE]);
+        $deleted = Branch::factory()->create(['id' => 930_004, 'status' => Status::ACTIVE]);
+        $deleted->delete(); // soft-delete
+
+        $ids = AppConsoleKernel::activeBranchIds()->all();
+
+        $this->assertContains($legacy->id, $ids, 'Legacy status=1 branch must be included.');
+        $this->assertContains($canonical->id, $ids, 'Canonical Status::ACTIVE branch must be included.');
+        $this->assertNotContains($inactive->id, $ids, 'Status::INACTIVE branch must be excluded.');
+        $this->assertNotContains($deleted->id, $ids, 'Soft-deleted branch must be excluded.');
+
+        foreach ($ids as $id) {
+            $this->assertIsInt($id, 'IDs must be cast to int for Artisan::call --branch=<int>.');
+        }
     }
 
     /**
