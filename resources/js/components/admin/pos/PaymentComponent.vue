@@ -108,6 +108,36 @@
                 <!-- Card input -->
                 <div id="card" class="data-tab hidden"
                     :class="paymentMode === 'card' ? 'active' : ''">
+                    <!-- [2026-05-18 PR-A V1 GO-LIVE blocker heal] Terminal selector.
+                         PosOrderRequest:114-119 requires `terminal_id` on CARD
+                         payments; without this dropdown every CARD sale 422s
+                         the moment POS_SIMULATION_HARDWARE flips false in
+                         production. Pre-selects first ACTIVE terminal so the
+                         cashier-flow stays one-tap when only one TPE exists. -->
+                    <div v-if="paymentMode === 'card'" class="mb-3">
+                        <label for="terminalSelect" class="pos-v5-payment-input-label">
+                            {{ $t('label.payment_terminal') || 'Terminal de paiement (TPE)' }}
+                        </label>
+                        <select
+                            id="terminalSelect"
+                            v-model="selectedTerminalId"
+                            class="pos-v5-payment-input"
+                            data-testid="pos-payment-terminal-select"
+                            :aria-label="$t('label.payment_terminal') || 'Terminal de paiement'"
+                        >
+                            <option :value="null" disabled>
+                                {{ paymentTerminals.length === 0
+                                    ? ($t('label.no_terminal_configured') || 'Aucun TPE configuré — contactez l’admin')
+                                    : ($t('label.select_terminal') || 'Sélectionnez un TPE') }}
+                            </option>
+                            <option v-for="t in paymentTerminals" :key="t.id" :value="t.id">
+                                {{ t.name }}<span v-if="t.gateway_type"> · {{ t.gateway_type }}</span>
+                            </option>
+                        </select>
+                        <p v-if="paymentTerminals.length === 0" class="pos-v5-payment-input-hint" role="alert">
+                            {{ $t('pos.no_terminal_configured_hint') || 'Aucun TPE actif sur cette filiale. Ajoutez-en un depuis Paramètres → Terminaux de paiement avant d’encaisser par carte.' }}
+                        </p>
+                    </div>
                     <div class="mb-3">
                         <label for="cardInput" class="pos-v5-payment-input-label">{{ $t('label.enter_card_last_4_digits') }}</label>
                         <input
@@ -278,9 +308,9 @@
                 <button
                     @click="confirmOrder"
                     type="button"
-                    :disabled="loading.isActive || (paymentMode === 'multi' && !canConfirmMulti)"
+                    :disabled="loading.isActive || (paymentMode === 'multi' && !canConfirmMulti) || (paymentMode === 'card' && !canConfirmCard)"
                     :aria-busy="loading.isActive"
-                    :aria-disabled="loading.isActive || (paymentMode === 'multi' && !canConfirmMulti)"
+                    :aria-disabled="loading.isActive || (paymentMode === 'multi' && !canConfirmMulti) || (paymentMode === 'card' && !canConfirmCard)"
                     class="pos-v4-confirm-button pos-v5-payment-confirm w-full"
                     data-testid="pos-payment-confirm"
                 >
@@ -364,6 +394,14 @@ export default {
             paymentMode: 'cash',
             tranches: [],
             splitCount: 2,
+            // [2026-05-18 PR-A V1 GO-LIVE blocker heal] CARD-mode terminal
+            // selector — fetched once per modal open, reset between orders.
+            // Backend PosOrderRequest enforces `terminal_id required_if
+            // pos_payment_method=CARD`; the dropdown surfaces the user's
+            // choice and the confirm-button gate refuses to submit until set.
+            paymentTerminals: [],
+            selectedTerminalId: null,
+            terminalsLoading: false,
         };
     },
     computed: {
@@ -404,6 +442,14 @@ export default {
         canSplitEqually: function () {
             return Number(this.splitCount) >= 2 && this.totalCents > 0;
         },
+        // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Confirm-button gate for
+        // legacy single-tender CARD path. Backend PosOrderRequest:114-119
+        // rejects without `terminal_id` ⇒ surface the requirement client-side
+        // to avoid a 422 round-trip + confusing error toast.
+        canConfirmCard: function () {
+            if (this.paymentMode !== 'card') return true;
+            return this.selectedTerminalId !== null && Number(this.selectedTerminalId) > 0;
+        },
     },
     mounted() {
         // [CV1-POS-SPLIT-PAYMENT-001] Sync local paymentMode with parent's
@@ -411,6 +457,12 @@ export default {
         // doesn't show CASH-tab as aria-selected. Multi mode is local-only,
         // never inherited (single-tender re-open ⇒ never multi).
         this.syncPaymentModeFromForm();
+
+        // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Fetch ACTIVE payment
+        // terminals on modal mount. Default-pick first one so the
+        // single-TPE branch flow is one-tap. Cashier overrides via dropdown
+        // if multiple TPEs are configured.
+        this.fetchPaymentTerminals();
 
         // [iter12 2026-05-09] Auto-refresh quote every 60s while modal is
         // open. Quote TTL bumped to 300s server-side (config quote.ttl_seconds)
@@ -449,6 +501,37 @@ export default {
         },
     },
     methods: {
+        // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Fetch ACTIVE TPE terminals
+        // for the current cashier's branch. Default-selects the first one to
+        // keep single-TPE branches one-tap. Empty list = configuration gap;
+        // the dropdown surfaces a hint banner so the cashier knows to ask
+        // the admin to add a terminal (Paramètres → Terminaux de paiement).
+        fetchPaymentTerminals: async function () {
+            if (this.terminalsLoading) return;
+            this.terminalsLoading = true;
+            try {
+                const response = await axios.get('admin/payment-terminals', {
+                    params: { status: 1, per_page: 50 },
+                });
+                const rows = response?.data?.data;
+                const list = Array.isArray(rows) ? rows : (Array.isArray(rows?.data) ? rows.data : []);
+                this.paymentTerminals = list
+                    .filter((t) => t && (t.status === 1 || t.status === '1'))
+                    .map((t) => ({
+                        id: Number(t.id),
+                        name: String(t.name || ''),
+                        gateway_type: String(t.gateway_type || ''),
+                    }));
+                if (this.selectedTerminalId === null && this.paymentTerminals.length > 0) {
+                    this.selectedTerminalId = this.paymentTerminals[0].id;
+                }
+            } catch (_e) {
+                // Soft-fail: leave list empty so the hint banner surfaces.
+                this.paymentTerminals = [];
+            } finally {
+                this.terminalsLoading = false;
+            }
+        },
         currencyFormat: function (amount, decimal, currency, position) {
             return appService.currencyFormat(amount, decimal, currency, position);
         },
@@ -567,7 +650,19 @@ export default {
         updateTranche: function (index, patch) {
             if (index < 0 || index >= this.tranches.length) return;
             const current = this.tranches[index];
-            this.tranches.splice(index, 1, { ...current, ...patch });
+            const merged = { ...current, ...patch };
+            // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Auto-attach terminal_id
+            // when a tranche flips to CARD mode. Falls back to the parent's
+            // selectedTerminalId so single-TPE branches stay one-tap; cashier
+            // can override per-tranche via tranche-row dropdown (V1.0.x backlog).
+            // Without this, every multi-tender CARD tranche 422s on
+            // "A valid payment terminal is required for every CARD tranche."
+            if (Number(merged.mode) === this.posPaymentMethodEnum.CARD
+                && (merged.terminal_id === undefined || merged.terminal_id === null || Number(merged.terminal_id) <= 0)
+                && this.selectedTerminalId) {
+                merged.terminal_id = this.selectedTerminalId;
+            }
+            this.tranches.splice(index, 1, merged);
         },
         splitEquallyHandler: function () {
             const n = Math.max(2, Math.min(20, Number(this.splitCount) || 2));
@@ -745,9 +840,17 @@ export default {
                     pos_payment_note: 'multi-tender',
                 };
             }
+            // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Attach the selected
+            // terminal_id to the legacy single-tender CARD path. The split
+            // path already carries terminal_id per tranche via buildSplitPayload.
+            const terminalPatch = (! isMulti && this.paymentMode === 'card' && this.selectedTerminalId)
+                ? { terminal_id: this.selectedTerminalId }
+                : {};
+
             const preparedForm = this.currentFormSnapshot({
                 ...inputPatch,
                 ...multiPatch,
+                ...terminalPatch,
                 branch_id: branchId,
                 items: this.normalizeItemsPayload(this.paymentForm.items),
             });
@@ -755,6 +858,7 @@ export default {
             this.emitPaymentFormPatch({
                 ...inputPatch,
                 ...multiPatch,
+                ...terminalPatch,
                 branch_id: preparedForm.branch_id,
                 items: preparedForm.items,
             });
@@ -863,6 +967,16 @@ export default {
             // The :disabled on the button is the first line of defense; this is the second.
             if (this.loading.isActive) return;
             // [CV1-POS-SPLIT-PAYMENT-001] Guard: in multi mode, refuse if not balanced.
+            // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Guard CARD path
+            // before the API round-trip so the cashier gets a clear toast
+            // instead of a generic 422.
+            if (this.paymentMode === 'card' && !this.canConfirmCard) {
+                alertService.error(
+                    this.$t('pos.terminal_required_card')
+                    || 'Sélectionnez un TPE avant d’encaisser par carte.'
+                );
+                return;
+            }
             if (this.paymentMode === 'multi' && !this.canConfirmMulti) {
                 alertService.error(
                     this.$t('pos.split_not_balanced')

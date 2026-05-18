@@ -2830,15 +2830,15 @@ var _excluded = ["total", "subtotal", "discount"];
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _objectWithoutProperties(e, t) { if (null == e) return {}; var o, r, i = _objectWithoutPropertiesLoose(e, t); if (Object.getOwnPropertySymbols) { var n = Object.getOwnPropertySymbols(e); for (r = 0; r < n.length; r++) o = n[r], -1 === t.indexOf(o) && {}.propertyIsEnumerable.call(e, o) && (i[o] = e[o]); } return i; }
 function _objectWithoutPropertiesLoose(r, e) { if (null == r) return {}; var t = {}; for (var n in r) if ({}.hasOwnProperty.call(r, n)) { if (-1 !== e.indexOf(n)) continue; t[n] = r[n]; } return t; }
-function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
-function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
-function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
-function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 
 
 
@@ -2895,7 +2895,15 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       // 'multi' is fully local: tranches[] are not bubbled into props.form.
       paymentMode: 'cash',
       tranches: [],
-      splitCount: 2
+      splitCount: 2,
+      // [2026-05-18 PR-A V1 GO-LIVE blocker heal] CARD-mode terminal
+      // selector — fetched once per modal open, reset between orders.
+      // Backend PosOrderRequest enforces `terminal_id required_if
+      // pos_payment_method=CARD`; the dropdown surfaces the user's
+      // choice and the confirm-button gate refuses to submit until set.
+      paymentTerminals: [],
+      selectedTerminalId: null,
+      terminalsLoading: false
     };
   },
   computed: {
@@ -2938,6 +2946,14 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     },
     canSplitEqually: function canSplitEqually() {
       return Number(this.splitCount) >= 2 && this.totalCents > 0;
+    },
+    // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Confirm-button gate for
+    // legacy single-tender CARD path. Backend PosOrderRequest:114-119
+    // rejects without `terminal_id` ⇒ surface the requirement client-side
+    // to avoid a 422 round-trip + confusing error toast.
+    canConfirmCard: function canConfirmCard() {
+      if (this.paymentMode !== 'card') return true;
+      return this.selectedTerminalId !== null && Number(this.selectedTerminalId) > 0;
     }
   },
   mounted: function mounted() {
@@ -2947,6 +2963,12 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     // doesn't show CASH-tab as aria-selected. Multi mode is local-only,
     // never inherited (single-tender re-open ⇒ never multi).
     this.syncPaymentModeFromForm();
+
+    // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Fetch ACTIVE payment
+    // terminals on modal mount. Default-pick first one so the
+    // single-TPE branch flow is one-tap. Cashier overrides via dropdown
+    // if multiple TPEs are configured.
+    this.fetchPaymentTerminals();
 
     // [iter12 2026-05-09] Auto-refresh quote every 60s while modal is
     // open. Quote TTL bumped to 300s server-side (config quote.ttl_seconds)
@@ -2987,6 +3009,69 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     }
   },
   methods: {
+    // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Fetch ACTIVE TPE terminals
+    // for the current cashier's branch. Default-selects the first one to
+    // keep single-TPE branches one-tap. Empty list = configuration gap;
+    // the dropdown surfaces a hint banner so the cashier knows to ask
+    // the admin to add a terminal (Paramètres → Terminaux de paiement).
+    fetchPaymentTerminals: function () {
+      var _fetchPaymentTerminals = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var _response$data, response, rows, list, _t2;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              if (!this.terminalsLoading) {
+                _context.n = 1;
+                break;
+              }
+              return _context.a(2);
+            case 1:
+              this.terminalsLoading = true;
+              _context.p = 2;
+              _context.n = 3;
+              return axios__WEBPACK_IMPORTED_MODULE_1__["default"].get('admin/payment-terminals', {
+                params: {
+                  status: 1,
+                  per_page: 50
+                }
+              });
+            case 3:
+              response = _context.v;
+              rows = response === null || response === void 0 || (_response$data = response.data) === null || _response$data === void 0 ? void 0 : _response$data.data;
+              list = Array.isArray(rows) ? rows : Array.isArray(rows === null || rows === void 0 ? void 0 : rows.data) ? rows.data : [];
+              this.paymentTerminals = list.filter(function (t) {
+                return t && (t.status === 1 || t.status === '1');
+              }).map(function (t) {
+                return {
+                  id: Number(t.id),
+                  name: String(t.name || ''),
+                  gateway_type: String(t.gateway_type || '')
+                };
+              });
+              if (this.selectedTerminalId === null && this.paymentTerminals.length > 0) {
+                this.selectedTerminalId = this.paymentTerminals[0].id;
+              }
+              _context.n = 5;
+              break;
+            case 4:
+              _context.p = 4;
+              _t2 = _context.v;
+              // Soft-fail: leave list empty so the hint banner surfaces.
+              this.paymentTerminals = [];
+            case 5:
+              _context.p = 5;
+              this.terminalsLoading = false;
+              return _context.f(5);
+            case 6:
+              return _context.a(2);
+          }
+        }, _callee, this, [[2, 4, 5, 6]]);
+      }));
+      function fetchPaymentTerminals() {
+        return _fetchPaymentTerminals.apply(this, arguments);
+      }
+      return fetchPaymentTerminals;
+    }(),
     currencyFormat: function currencyFormat(amount, decimal, currency, position) {
       return _services_appService__WEBPACK_IMPORTED_MODULE_3__["default"].currencyFormat(amount, decimal, currency, position);
     },
@@ -3119,7 +3204,17 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     updateTranche: function updateTranche(index, patch) {
       if (index < 0 || index >= this.tranches.length) return;
       var current = this.tranches[index];
-      this.tranches.splice(index, 1, _objectSpread(_objectSpread({}, current), patch));
+      var merged = _objectSpread(_objectSpread({}, current), patch);
+      // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Auto-attach terminal_id
+      // when a tranche flips to CARD mode. Falls back to the parent's
+      // selectedTerminalId so single-TPE branches stay one-tap; cashier
+      // can override per-tranche via tranche-row dropdown (V1.0.x backlog).
+      // Without this, every multi-tender CARD tranche 422s on
+      // "A valid payment terminal is required for every CARD tranche."
+      if (Number(merged.mode) === this.posPaymentMethodEnum.CARD && (merged.terminal_id === undefined || merged.terminal_id === null || Number(merged.terminal_id) <= 0) && this.selectedTerminalId) {
+        merged.terminal_id = this.selectedTerminalId;
+      }
+      this.tranches.splice(index, 1, merged);
     },
     splitEquallyHandler: function splitEquallyHandler() {
       var n = Math.max(2, Math.min(20, Number(this.splitCount) || 2));
@@ -3252,47 +3347,47 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       });
     },
     confirmOrderWithAuthRetry: function () {
-      var _confirmOrderWithAuthRetry = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
-        var _t2, _t3;
-        return _regenerator().w(function (_context) {
-          while (1) switch (_context.p = _context.n) {
+      var _confirmOrderWithAuthRetry = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+        var _t3, _t4;
+        return _regenerator().w(function (_context2) {
+          while (1) switch (_context2.p = _context2.n) {
             case 0:
-              _context.p = 0;
-              _context.n = 1;
+              _context2.p = 0;
+              _context2.n = 1;
               return this.runConfirmOrderAttempt();
             case 1:
-              return _context.a(2, _context.v);
+              return _context2.a(2, _context2.v);
             case 2:
-              _context.p = 2;
-              _t2 = _context.v;
-              if (this.isUnauthorized(_t2)) {
-                _context.n = 3;
+              _context2.p = 2;
+              _t3 = _context2.v;
+              if (this.isUnauthorized(_t3)) {
+                _context2.n = 3;
                 break;
               }
-              throw _t2;
+              throw _t3;
             case 3:
-              _context.n = 4;
+              _context2.n = 4;
               return this.refreshPaymentAuth();
             case 4:
-              _context.p = 4;
-              _context.n = 5;
+              _context2.p = 4;
+              _context2.n = 5;
               return this.runConfirmOrderAttempt();
             case 5:
-              return _context.a(2, _context.v);
+              return _context2.a(2, _context2.v);
             case 6:
-              _context.p = 6;
-              _t3 = _context.v;
-              if (!this.isUnauthorized(_t3)) {
-                _context.n = 7;
+              _context2.p = 6;
+              _t4 = _context2.v;
+              if (!this.isUnauthorized(_t4)) {
+                _context2.n = 7;
                 break;
               }
               throw this.sessionExpiredError();
             case 7:
-              throw _t3;
+              throw _t4;
             case 8:
-              return _context.a(2);
+              return _context2.a(2);
           }
-        }, _callee, this, [[4, 6], [0, 2]]);
+        }, _callee2, this, [[4, 6], [0, 2]]);
       }));
       function confirmOrderWithAuthRetry() {
         return _confirmOrderWithAuthRetry.apply(this, arguments);
@@ -3300,17 +3395,17 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return confirmOrderWithAuthRetry;
     }(),
     runConfirmOrderAttempt: function () {
-      var _runConfirmOrderAttempt = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+      var _runConfirmOrderAttempt = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
         var _this5 = this;
-        var inputPatch, accessResponse, branchId, isMulti, multiPatch, _dominant$mode, breakdown, dominant, dominantMode, cashTranche, preparedForm, quotedForm, aligned, _t, _s, _d, saveForm, orderResponse;
-        return _regenerator().w(function (_context2) {
-          while (1) switch (_context2.n) {
+        var inputPatch, accessResponse, branchId, isMulti, multiPatch, _dominant$mode, breakdown, dominant, dominantMode, cashTranche, terminalPatch, preparedForm, quotedForm, aligned, _t, _s, _d, saveForm, orderResponse;
+        return _regenerator().w(function (_context3) {
+          while (1) switch (_context3.n) {
             case 0:
               inputPatch = this.collectPaymentInputPatch(this.paymentForm);
-              _context2.n = 1;
+              _context3.n = 1;
               return this.$store.dispatch("defaultAccess/show");
             case 1:
-              accessResponse = _context2.v;
+              accessResponse = _context3.v;
               branchId = (0,_helpers_posNormalizeIds__WEBPACK_IMPORTED_MODULE_11__.normalizeId)(accessResponse.data.data.branch_id) || accessResponse.data.data.branch_id; // [CV1-POS-SPLIT-PAYMENT-001] When paymentMode === 'multi', attach
               // payment_breakdown[] to the payload. The frozen-zone backend currently
               // ignores this field; once PLAN_P12 ships, it will create order_payments
@@ -3334,18 +3429,24 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                   pos_payment_note: 'multi-tender'
                 };
               }
-              preparedForm = this.currentFormSnapshot(_objectSpread(_objectSpread(_objectSpread({}, inputPatch), multiPatch), {}, {
+              // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Attach the selected
+              // terminal_id to the legacy single-tender CARD path. The split
+              // path already carries terminal_id per tranche via buildSplitPayload.
+              terminalPatch = !isMulti && this.paymentMode === 'card' && this.selectedTerminalId ? {
+                terminal_id: this.selectedTerminalId
+              } : {};
+              preparedForm = this.currentFormSnapshot(_objectSpread(_objectSpread(_objectSpread(_objectSpread({}, inputPatch), multiPatch), terminalPatch), {}, {
                 branch_id: branchId,
                 items: this.normalizeItemsPayload(this.paymentForm.items)
               }));
-              this.emitPaymentFormPatch(_objectSpread(_objectSpread(_objectSpread({}, inputPatch), multiPatch), {}, {
+              this.emitPaymentFormPatch(_objectSpread(_objectSpread(_objectSpread(_objectSpread({}, inputPatch), multiPatch), terminalPatch), {}, {
                 branch_id: preparedForm.branch_id,
                 items: preparedForm.items
               }));
-              _context2.n = 2;
+              _context3.n = 2;
               return this.refreshQuote(preparedForm);
             case 2:
-              quotedForm = _context2.v;
+              quotedForm = _context3.v;
               aligned = this.alignCashReceivedWithQuotedTotal(preparedForm, quotedForm); // [Sprint H5 POS-A6 2026-05-17] SSOT enforcement (CLAUDE.md §8) —
               // strip `total/subtotal/discount` from the POST payload. The
               // server recomputes via PricingService::calculateOrder regardless
@@ -3357,16 +3458,16 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               // Sister test: tests/Feature/Pos/PosOrderRequestNoClientTotalsTest.php
               // eslint-disable-next-line no-unused-vars
               _t = aligned.total, _s = aligned.subtotal, _d = aligned.discount, saveForm = _objectWithoutProperties(aligned, _excluded);
-              _context2.n = 3;
+              _context3.n = 3;
               return this.$store.dispatch('posOrder/save', saveForm);
             case 3:
-              orderResponse = _context2.v;
-              _context2.n = 4;
+              orderResponse = _context3.v;
+              _context3.n = 4;
               return this.handleOrderSuccess(orderResponse, aligned);
             case 4:
-              return _context2.a(2);
+              return _context3.a(2);
           }
-        }, _callee2, this);
+        }, _callee3, this);
       }));
       function runConfirmOrderAttempt() {
         return _runConfirmOrderAttempt.apply(this, arguments);
@@ -3374,10 +3475,10 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return runConfirmOrderAttempt;
     }(),
     handleOrderSuccess: function () {
-      var _handleOrderSuccess = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3(orderResponse, submittedForm) {
+      var _handleOrderSuccess = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4(orderResponse, submittedForm) {
         var raw, created;
-        return _regenerator().w(function (_context3) {
-          while (1) switch (_context3.n) {
+        return _regenerator().w(function (_context4) {
+          while (1) switch (_context4.n) {
             case 0:
               // [POS-9.1.12] Open the physical cash drawer the moment a CASH
               // payment is accepted. The hardware bridge is a no-op when no
@@ -3392,7 +3493,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               raw = orderResponse === null || orderResponse === void 0 ? void 0 : orderResponse.data;
               created = raw && _typeof(raw) === 'object' && raw.data !== undefined ? raw.data : raw;
               if (!(!created || created.id == null)) {
-                _context3.n = 1;
+                _context4.n = 1;
                 break;
               }
               _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(this.$t('message.something_wrong') || 'Réponse commande POS invalide.');
@@ -3402,7 +3503,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               if (Array.isArray(created.order_items)) {
                 this.$store.commit('posOrder/orderItems', created.order_items);
               }
-              _context3.n = 2;
+              _context4.n = 2;
               return this.$nextTick();
             case 2:
               // Intentionally no `posOrder/show` refresh: `posOrder/save` already returns `OrderDetailsResource`.
@@ -3420,9 +3521,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               // visible while the cashier reads the ticket.
               // await this.$store.dispatch('posCart/resetCart').catch(() => {});
             case 3:
-              return _context3.a(2);
+              return _context4.a(2);
           }
-        }, _callee3, this);
+        }, _callee4, this);
       }));
       function handleOrderSuccess(_x, _x2) {
         return _handleOrderSuccess.apply(this, arguments);
@@ -3465,47 +3566,54 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error((err === null || err === void 0 || (_err$response4 = err.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || (err === null || err === void 0 ? void 0 : err.message) || 'Erreur réseau. Veuillez réessayer.');
     },
     confirmOrder: function () {
-      var _confirmOrder = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
-        var paymentSucceeded, _t4;
-        return _regenerator().w(function (_context4) {
-          while (1) switch (_context4.p = _context4.n) {
+      var _confirmOrder = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
+        var paymentSucceeded, _t5;
+        return _regenerator().w(function (_context5) {
+          while (1) switch (_context5.p = _context5.n) {
             case 0:
               if (!this.loading.isActive) {
-                _context4.n = 1;
+                _context5.n = 1;
                 break;
               }
-              return _context4.a(2);
+              return _context5.a(2);
             case 1:
+              if (!(this.paymentMode === 'card' && !this.canConfirmCard)) {
+                _context5.n = 2;
+                break;
+              }
+              _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(this.$t('pos.terminal_required_card') || 'Sélectionnez un TPE avant d’encaisser par carte.');
+              return _context5.a(2);
+            case 2:
               if (!(this.paymentMode === 'multi' && !this.canConfirmMulti)) {
-                _context4.n = 2;
+                _context5.n = 3;
                 break;
               }
               _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(this.$t('pos.split_not_balanced') || 'Le paiement multi n’est pas équilibré (reste dû).');
-              return _context4.a(2);
-            case 2:
+              return _context5.a(2);
+            case 3:
               this.loading.isActive = true;
               paymentSucceeded = false;
-              _context4.p = 3;
-              _context4.n = 4;
+              _context5.p = 4;
+              _context5.n = 5;
               return this.confirmOrderWithAuthRetry();
-            case 4:
+            case 5:
               paymentSucceeded = true;
               // [POS-V5 WAVE 3 2026-05-02] Notify parent for success-flash animation
               // (overlay vert 700ms après confirm). Logique métier inchangée.
               this.$emit("order:confirmed", this.order);
-              _context4.n = 6;
+              _context5.n = 7;
               break;
-            case 5:
-              _context4.p = 5;
-              _t4 = _context4.v;
-              this.handlePaymentError(_t4);
             case 6:
-              _context4.p = 6;
-              this.loading.isActive = false;
-              return _context4.f(6);
+              _context5.p = 6;
+              _t5 = _context5.v;
+              this.handlePaymentError(_t5);
             case 7:
+              _context5.p = 7;
+              this.loading.isActive = false;
+              return _context5.f(7);
+            case 8:
               if (!paymentSucceeded) {
-                _context4.n = 12;
+                _context5.n = 13;
                 break;
               }
               // [rush-100 WB-R1-03 heal 2026-05-13] Defensive double modalHide on
@@ -3518,29 +3626,29 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               try {
                 _services_appService__WEBPACK_IMPORTED_MODULE_3__["default"].modalHide('#orderpayment');
               } catch (e) {/* no-op */}
-              _context4.n = 8;
-              return this.$nextTick();
-            case 8:
-              _context4.n = 9;
+              _context5.n = 9;
               return this.$nextTick();
             case 9:
-              _context4.n = 10;
+              _context5.n = 10;
+              return this.$nextTick();
+            case 10:
+              _context5.n = 11;
               return new Promise(function (resolve) {
                 requestAnimationFrame(function () {
                   return requestAnimationFrame(resolve);
                 });
               });
-            case 10:
-              _context4.n = 11;
+            case 11:
+              _context5.n = 12;
               return new Promise(function (resolve) {
                 return setTimeout(resolve, 50);
               });
-            case 11:
-              this.showReceiptModalFromDom();
             case 12:
-              return _context4.a(2);
+              this.showReceiptModalFromDom();
+            case 13:
+              return _context5.a(2);
           }
-        }, _callee4, this, [[3, 5, 6, 7]]);
+        }, _callee5, this, [[4, 6, 7, 8]]);
       }));
       function confirmOrder() {
         return _confirmOrder.apply(this, arguments);
@@ -10130,84 +10238,106 @@ var _hoisted_24 = {
   "class": "pos-v5-payment-change-value pos-v5-tabular"
 };
 var _hoisted_25 = {
+  key: 0,
   "class": "mb-3"
 };
 var _hoisted_26 = {
+  "for": "terminalSelect",
+  "class": "pos-v5-payment-input-label"
+};
+var _hoisted_27 = ["aria-label"];
+var _hoisted_28 = {
+  value: null,
+  disabled: ""
+};
+var _hoisted_29 = ["value"];
+var _hoisted_30 = {
+  key: 0
+};
+var _hoisted_31 = {
+  key: 0,
+  "class": "pos-v5-payment-input-hint",
+  role: "alert"
+};
+var _hoisted_32 = {
+  "class": "mb-3"
+};
+var _hoisted_33 = {
   "for": "cardInput",
   "class": "pos-v5-payment-input-label"
 };
-var _hoisted_27 = {
+var _hoisted_34 = {
   id: "cardInput",
   ref: "cardInput",
   type: "number",
   "class": "pos-v5-payment-input pos-v5-tabular",
   required: ""
 };
-var _hoisted_28 = {
+var _hoisted_35 = {
   key: 0,
   "class": "pos-v4-numpad pos-v5-payment-numpad-wrap mb-4"
 };
-var _hoisted_29 = {
+var _hoisted_36 = {
   key: 1,
   id: "multi",
   "class": "pos-v5-split-block",
   "data-testid": "pos-payment-split-block"
 };
-var _hoisted_30 = ["aria-label"];
-var _hoisted_31 = {
+var _hoisted_37 = ["aria-label"];
+var _hoisted_38 = {
   "class": "pos-v5-split-summary__row"
 };
-var _hoisted_32 = {
+var _hoisted_39 = {
   "class": "pos-v5-split-summary__label"
 };
-var _hoisted_33 = {
+var _hoisted_40 = {
   "class": "pos-v5-split-summary__value pos-v5-tabular",
   "data-testid": "pos-payment-total-covered"
 };
-var _hoisted_34 = {
+var _hoisted_41 = {
   "class": "pos-v5-split-summary__label"
 };
-var _hoisted_35 = {
+var _hoisted_42 = {
   "class": "pos-v5-split-summary__value pos-v5-tabular",
   "data-testid": "pos-payment-remaining-due"
 };
-var _hoisted_36 = {
+var _hoisted_43 = {
   key: 0,
   "class": "pos-v5-split-summary__row pos-v5-split-summary__row--change",
   role: "status",
   "aria-live": "polite"
 };
-var _hoisted_37 = {
+var _hoisted_44 = {
   "class": "pos-v5-split-summary__label"
 };
-var _hoisted_38 = {
+var _hoisted_45 = {
   "class": "pos-v5-split-summary__value pos-v5-tabular",
   "data-testid": "pos-payment-total-change"
 };
-var _hoisted_39 = {
+var _hoisted_46 = {
   "class": "pos-v5-split-divider"
 };
-var _hoisted_40 = {
+var _hoisted_47 = {
   "for": "splitCountInput",
   "class": "pos-v5-split-divider__label"
 };
-var _hoisted_41 = {
+var _hoisted_48 = {
   "class": "pos-v5-split-divider__row"
 };
-var _hoisted_42 = ["aria-label"];
-var _hoisted_43 = ["disabled"];
-var _hoisted_44 = {
+var _hoisted_49 = ["aria-label"];
+var _hoisted_50 = ["disabled"];
+var _hoisted_51 = {
   key: 0,
   "class": "pos-v5-split-divider__row"
 };
-var _hoisted_45 = ["title"];
-var _hoisted_46 = ["title"];
-var _hoisted_47 = ["aria-label"];
-var _hoisted_48 = {
+var _hoisted_52 = ["title"];
+var _hoisted_53 = ["title"];
+var _hoisted_54 = ["aria-label"];
+var _hoisted_55 = {
   key: 0,
   "class": "pos-v5-split-empty"
 };
-var _hoisted_49 = ["disabled", "aria-busy", "aria-disabled"];
+var _hoisted_56 = ["disabled", "aria-busy", "aria-disabled"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_PosV5Numpad = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PosV5Numpad");
@@ -10221,7 +10351,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.reset && $options.reset.apply($options, arguments);
     }),
     "aria-label": _ctx.$t('button.close')
-  }, _toConsumableArray(_cache[12] || (_cache[12] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, _toConsumableArray(_cache[13] || (_cache[13] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "✕", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_5)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Hero \"À encaisser\" — moment de vérité "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($props.props.form.total, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Méthode de paiement "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.select_payment_method')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "data-tab": "#cash",
@@ -10235,7 +10365,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[1] || (_cache[1] = function ($event) {
       return $options.setPaymentMode('cash');
     })
-  }, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-payment-method-icon",
     "aria-hidden": "true"
   }, "💵", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.cash")), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_14), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
@@ -10250,7 +10380,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[2] || (_cache[2] = function ($event) {
       return $options.setPaymentMode('card');
     })
-  }, [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-payment-method-icon",
     "aria-hidden": "true"
   }, "💳", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.card")) + " (TPE)", 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_16), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
@@ -10265,7 +10395,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[3] || (_cache[3] = function ($event) {
       return $options.setPaymentMode('multi');
     })
-  }, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-payment-method-icon",
     "aria-hidden": "true"
   }, "🔀", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.split_payment') || 'Multi-paiement'), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_18)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Cash input + change due "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
@@ -10282,68 +10412,81 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.onCashInput && $options.onCashInput.apply($options, arguments);
     }),
     "class": "pos-v5-payment-input pos-v5-tabular"
-  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */)]), $options.cashChange > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */)]), $options.cashChange > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "✨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.change_due") || 'Monnaie à rendre'), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.cashChange, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Card input "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     id: "card",
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["data-tab hidden", $data.paymentMode === 'card' ? 'active' : ''])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.enter_card_last_4_digits')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", _hoisted_27, null, 512 /* NEED_PATCH */)])], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  Numpad V5 — composant partagé (PosV5Numpad).\n                  Émissions @input(value) / @back / @clear sont raccordées aux\n                  méthodes existantes numpadInput / numpadBack / numpadClear.\n                "), $data.paymentMode === 'cash' || $data.paymentMode === 'card' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Numpad, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [2026-05-18 PR-A V1 GO-LIVE blocker heal] Terminal selector.\n                         PosOrderRequest:114-119 requires `terminal_id` on CARD\n                         payments; without this dropdown every CARD sale 422s\n                         the moment POS_SIMULATION_HARDWARE flips false in\n                         production. Pre-selects first ACTIVE terminal so the\n                         cashier-flow stays one-tap when only one TPE exists. "), $data.paymentMode === 'card' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_terminal') || 'Terminal de paiement (TPE)'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("select", {
+    id: "terminalSelect",
+    "onUpdate:modelValue": _cache[6] || (_cache[6] = function ($event) {
+      return $data.selectedTerminalId = $event;
+    }),
+    "class": "pos-v5-payment-input",
+    "data-testid": "pos-payment-terminal-select",
+    "aria-label": _ctx.$t('label.payment_terminal') || 'Terminal de paiement'
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.paymentTerminals.length === 0 ? _ctx.$t('label.no_terminal_configured') || 'Aucun TPE configuré — contactez l’admin' : _ctx.$t('label.select_terminal') || 'Sélectionnez un TPE'), 1 /* TEXT */), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.paymentTerminals, function (t) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("option", {
+      key: t.id,
+      value: t.id
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(t.name), 1 /* TEXT */), t.gateway_type ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_30, " · " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(t.gateway_type), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_29);
+  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_27), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelSelect, $data.selectedTerminalId]]), $data.paymentTerminals.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.no_terminal_configured_hint') || 'Aucun TPE actif sur cette filiale. Ajoutez-en un depuis Paramètres → Terminaux de paiement avant d’encaisser par carte.'), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.enter_card_last_4_digits')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", _hoisted_34, null, 512 /* NEED_PATCH */)])], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  Numpad V5 — composant partagé (PosV5Numpad).\n                  Émissions @input(value) / @back / @clear sont raccordées aux\n                  méthodes existantes numpadInput / numpadBack / numpadClear.\n                "), $data.paymentMode === 'cash' || $data.paymentMode === 'card' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_35, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Numpad, {
     "aria-label": "Pavé numérique",
     onInput: $options.numpadInput,
     onBack: $options.numpadBack,
     onClear: $options.numpadClear
-  }, null, 8 /* PROPS */, ["onInput", "onBack", "onClear"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  Multi-paiement (split) — CV1-POS-SPLIT-PAYMENT-001\n                  Tranches locales (data.tranches) ; le payload est construit\n                  uniquement au submit (submitMulti) — n'altère PAS props.form\n                  pour les modes cash/card historiques.\n                "), $data.paymentMode === 'multi' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, 8 /* PROPS */, ["onInput", "onBack", "onClear"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  Multi-paiement (split) — CV1-POS-SPLIT-PAYMENT-001\n                  Tranches locales (data.tranches) ; le payload est construit\n                  uniquement au submit (submitMulti) — n'altère PAS props.form\n                  pour les modes cash/card historiques.\n                "), $data.paymentMode === 'multi' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "pos-v5-split-summary",
     role: "group",
     "aria-label": _ctx.$t('label.split_summary') || 'Résumé multi-paiement'
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_31, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total_covered') || 'Couvert'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.totalCoveredEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total_covered') || 'Couvert'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.totalCoveredEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["pos-v5-split-summary__row pos-v5-split-summary__row--remaining", {
       'pos-v5-split-summary__row--ok': $options.remainingDueEur <= 0.01
     }]),
     role: "status",
     "aria-live": "polite",
     "data-testid": "pos-payment-remaining-due-row"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.remaining_due') || 'Reste dû'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.remainingDueEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)], 2 /* CLASS */), $options.totalChangeEur > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_37, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.remaining_due') || 'Reste dû'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.remainingDueEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)], 2 /* CLASS */), $options.totalChangeEur > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_43, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_44, [_cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
-  }, "✨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.change_due')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_38, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.totalChangeEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_30), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Diviser entre N personnes "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.split_among_n') || 'Diviser entre N personnes'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_41, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, "✨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.change_due')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.totalChangeEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_37), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Diviser entre N personnes "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_46, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_47, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.split_among_n') || 'Diviser entre N personnes'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     id: "splitCountInput",
     type: "number",
     min: "2",
     max: "20",
     step: "1",
-    "onUpdate:modelValue": _cache[6] || (_cache[6] = function ($event) {
+    "onUpdate:modelValue": _cache[7] || (_cache[7] = function ($event) {
       return $data.splitCount = $event;
     }),
     "class": "pos-v5-split-divider__input pos-v5-tabular",
     "aria-label": _ctx.$t('label.split_among_n') || 'Diviser entre N personnes',
     "data-testid": "pos-payment-split-count"
-  }, null, 8 /* PROPS */, _hoisted_42), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.splitCount, void 0, {
+  }, null, 8 /* PROPS */, _hoisted_49), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.splitCount, void 0, {
     number: true
   }]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "pos-v5-split-divider__btn",
     disabled: !$options.canSplitEqually,
-    onClick: _cache[7] || (_cache[7] = function () {
+    onClick: _cache[8] || (_cache[8] = function () {
       return $options.splitEquallyHandler && $options.splitEquallyHandler.apply($options, arguments);
     }),
     "data-testid": "pos-payment-split-equal"
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.split_equally') || 'Diviser à parts égales'), 9 /* TEXT, PROPS */, _hoisted_43)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter12 2026-05-09] Bidirectional split helpers "), $data.tranches.length >= 2 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.split_equally') || 'Diviser à parts égales'), 9 /* TEXT, PROPS */, _hoisted_50)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter12 2026-05-09] Bidirectional split helpers "), $data.tranches.length >= 2 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_51, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "pos-v5-split-divider__btn",
-    onClick: _cache[8] || (_cache[8] = function ($event) {
+    onClick: _cache[9] || (_cache[9] = function ($event) {
       return $options.autoBalanceFromIndex(0);
     }),
     "data-testid": "pos-payment-auto-balance",
     title: _ctx.$t('label.auto_balance_help') || 'Le reste s’équilibre automatiquement sur la 2ème tranche'
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.auto_balance') || 'Équilibrer le reste'), 9 /* TEXT, PROPS */, _hoisted_45), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.auto_balance') || 'Équilibrer le reste'), 9 /* TEXT, PROPS */, _hoisted_52), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "pos-v5-split-divider__btn",
-    onClick: _cache[9] || (_cache[9] = function () {
+    onClick: _cache[10] || (_cache[10] = function () {
       return $options.suggestCashTendered && $options.suggestCashTendered.apply($options, arguments);
     }),
     "data-testid": "pos-payment-suggest-tendered",
     title: _ctx.$t('label.suggest_tendered_help') || 'Arrondit les rendus monnaie au 5€ supérieur'
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.suggest_tendered') || 'Suggérer les rendus monnaie'), 9 /* TEXT, PROPS */, _hoisted_46)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Liste des tranches "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.suggest_tendered') || 'Suggérer les rendus monnaie'), 9 /* TEXT, PROPS */, _hoisted_53)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Liste des tranches "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "pos-v5-split-tranches",
     role: "list",
     "aria-label": _ctx.$t('label.split_tranches') || 'Tranches de paiement'
@@ -10360,28 +10503,28 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return $options.removeTranche(idx);
       }
     }, null, 8 /* PROPS */, ["tranche", "index", "onUpdate", "onRemove"]);
-  }), 128 /* KEYED_FRAGMENT */)), $data.tranches.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_48, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.split_empty_hint') || 'Ajoutez une tranche pour commencer.'), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_47), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }), 128 /* KEYED_FRAGMENT */)), $data.tranches.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_55, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.split_empty_hint') || 'Ajoutez une tranche pour commencer.'), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_54), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "pos-v5-split-add",
-    onClick: _cache[10] || (_cache[10] = function ($event) {
+    onClick: _cache[11] || (_cache[11] = function ($event) {
       return $options.addTranche();
     }),
     "data-testid": "pos-payment-tranche-add"
-  }, [_cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "+", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.add_tranche') || 'Ajouter une tranche'), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [AUDIT-P2] :disabled prevents a second click while the order is being submitted "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
-    onClick: _cache[11] || (_cache[11] = function () {
+    onClick: _cache[12] || (_cache[12] = function () {
       return $options.confirmOrder && $options.confirmOrder.apply($options, arguments);
     }),
     type: "button",
-    disabled: $data.loading.isActive || $data.paymentMode === 'multi' && !$options.canConfirmMulti,
+    disabled: $data.loading.isActive || $data.paymentMode === 'multi' && !$options.canConfirmMulti || $data.paymentMode === 'card' && !$options.canConfirmCard,
     "aria-busy": $data.loading.isActive,
-    "aria-disabled": $data.loading.isActive || $data.paymentMode === 'multi' && !$options.canConfirmMulti,
+    "aria-disabled": $data.loading.isActive || $data.paymentMode === 'multi' && !$options.canConfirmMulti || $data.paymentMode === 'card' && !$options.canConfirmCard,
     "class": "pos-v4-confirm-button pos-v5-payment-confirm w-full",
     "data-testid": "pos-payment-confirm"
-  }, [_cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[20] || (_cache[20] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
-  }, "✓", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_49)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-009 round-7 2026-05-10 — addendum] :clear-cart-on-close=\"true\"\n         opts THIS receipt instance into the deferred posCart/resetCart dispatch fired\n         when the cashier dismisses the modal. Re-print receipts in\n         PosOrdersTrackerComponent omit the prop (default false) and never destroy\n         a parallel cart in progress. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ReceiptComponent, {
+  }, "✓", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_56)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-009 round-7 2026-05-10 — addendum] :clear-cart-on-close=\"true\"\n         opts THIS receipt instance into the deferred posCart/resetCart dispatch fired\n         when the cashier dismisses the modal. Re-print receipts in\n         PosOrdersTrackerComponent omit the prop (default false) and never destroy\n         a parallel cart in progress. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ReceiptComponent, {
     ref: "receiptRoot",
     order: $data.order,
     "clear-cart-on-close": true
@@ -17672,13 +17815,25 @@ function serializeTranches(tranches) {
     var _t$note;
     var cents = toCents(t.amount);
     var tenderedCents = isCashMode(t.mode) ? toCents(t.tendered) : null;
-    return {
+    var out = {
       mode: Number(t.mode),
       amount: fromCents(cents),
       tendered: tenderedCents != null ? fromCents(tenderedCents) : null,
       change: isCashMode(t.mode) ? fromCents(computeChangeCents(t)) : 0,
       note: (_t$note = t.note) !== null && _t$note !== void 0 ? _t$note : null
     };
+    // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Propagate terminal_id for
+    // CARD tranches. Backend PosOrderRequest:138 +
+    // SplitPaymentService:F-SPLIT-PHANTOM-CARD-001 require this on every
+    // CARD tranche; omitting it returns 422 with "A valid payment terminal
+    // is required for every CARD tranche."
+    if (Number(t.mode) === 2 && t.terminal_id !== undefined && t.terminal_id !== null) {
+      var tid = Number(t.terminal_id);
+      if (Number.isFinite(tid) && tid > 0) {
+        out.terminal_id = tid;
+      }
+    }
+    return out;
   });
 }
 

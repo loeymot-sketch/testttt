@@ -8243,6 +8243,10 @@ input:checked + div svg {
   --tw-text-opacity: 1;
   color: rgb(0 139 186 / var(--tw-text-opacity, 1));
 }
+.text-\[\#0E7C3A\] {
+  --tw-text-opacity: 1;
+  color: rgb(14 124 58 / var(--tw-text-opacity, 1));
+}
 .text-\[\#0F766E\] {
   --tw-text-opacity: 1;
   color: rgb(15 118 110 / var(--tw-text-opacity, 1));
