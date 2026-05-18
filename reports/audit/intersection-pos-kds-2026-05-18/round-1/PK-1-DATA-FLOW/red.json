@@ -1,0 +1,122 @@
+{
+  "specialist": "red",
+  "zone": "PK-1-DATA-FLOW",
+  "scope": "Adversarial — duplicate event injection, broken cascade on listener failure, race between outbox write and broadcast, KDS sees stale/duplicate data, cross-branch broadcast leakage",
+  "verdict": "PASS_WITH_DISPUTES",
+  "evidence_root": "reports/audit/intersection-pos-kds-2026-05-18/round-1/PK-1-DATA-FLOW/",
+  "attacks_attempted": [
+    {
+      "attack": "Inject duplicate OrderCreated event for same order_id",
+      "vector": "Trigger event() twice (e.g. retry between OrderService::create and event() call, or queue retry of the listener itself).",
+      "defense_first": "PersistOrderCreatedToOutbox:22-48 — firstOrCreate keyed on sha1(event_type|aggregate_id). Second call hits UNIQUE constraint, returns existing row, wasRecentlyCreated=false. Line 57: return; — no second DispatchDomainEventsJob dispatch.",
+      "defense_second": "DispatchDomainEventsJob:65-86 — even if dispatch DID fire twice somehow, the lockForUpdate + dispatched_at guard ensures only one worker broadcasts. Test sentinel: tests/Feature/Outbox/OutboxConcurrentWorkerDedupeTest.php:46-90.",
+      "outcome": "DEFEATED — defense in depth holds."
+    },
+    {
+      "attack": "Listener throws — does cascade break SSOT?",
+      "vector": "DecrementStockOnOrderCreated throws on Throwable (line 36 — see PK1-ARCH-01).",
+      "defense_listener_order": "EventServiceProvider:147 — PersistOrderCreatedToOutbox is FIRST in OrderCreated subscribers. Outbox row WRITES before Stock listener runs.",
+      "remaining_risk": "Sibling listener SendFcmOnOrderCreated (line 150) does NOT fire if Stock throws because Laravel's default event dispatcher stops on first thrown exception. SendFcm itself is wrapped (safeDispatch :109-120) but parents-level throw skips its handle() entirely.",
+      "outcome": "PARTIAL DEFEAT — outbox SSOT safe (writes first), but FCM kitchen notification can be silently missed if Stock throws. Mitigation: PK-4 should unify listener failure isolation."
+    },
+    {
+      "attack": "Race between outbox write commit and broadcast fire",
+      "vector": "PersistOrderCreatedToOutbox writes row, then queues DispatchDomainEventsJob inline. If outer transaction rolls back, the row is gone but the job is already queued. Job runs, finds row=null at line 70, returns silently.",
+      "defense": "DispatchDomainEventsJob:70-73 — find() returns null, $skip=true, return. Logged at line 89.",
+      "outcome": "DEFEATED — orphan job is a no-op."
+    },
+    {
+      "attack": "Race in reverse — broadcast fires BEFORE outbox row commits",
+      "vector": "If DispatchDomainEventsJob::dispatch is sync (e.g. config queue.default=sync in tests), job runs immediately, lockForUpdate sees uncommitted row (READ COMMITTED isolation) and either misses it OR sees stale dispatched_at.",
+      "defense": "PersistOrderCreatedToOutbox:61 — the inline dispatch is wrapped in DB::afterCommit() (line 61). DispatchDomainEventsJob::dispatch only fires AFTER the outer transaction commits. Row is visible to the lockForUpdate at that point.",
+      "outcome": "DEFEATED — afterCommit guard is the defense."
+    },
+    {
+      "attack": "Cross-branch leakage via guessed channel name",
+      "vector": "Branch=1 staff subscribes to private-branch.2 to receive competitor orders.",
+      "defense": "routes/channels.php:41-62 — Broadcast::channel('branch.{branchId}', ...) returns false for staff whose branch_id != branchId (line 61). Admin/Tenant Admin role explicitly granted (line 56). Kiosk token name discriminator (line 45) bound to KioskMachine.branch_id.",
+      "outcome": "DEFEATED — explicit auth callback returns false."
+    },
+    {
+      "attack": "Sanctum wildcard token bypass via tokenCan",
+      "vector": "Admin token with abilities=['*'] would pass tokenCan('kiosk:order') and route through kiosk auth path → potentially subscribe to wrong branch.",
+      "defense_active": "routes/channels.php:43-44 — explicit comment + GOAL-CMS-2026-05-18 S-R3-P0-G hardening switched from tokenCan to token NAME check ('kiosk-token' exact match). Token name cannot be wildcarded.",
+      "outcome": "DEFEATED — historical R3 fix applied."
+    },
+    {
+      "attack": "Guest user (branch_id=0 default) subscribes to arbitrary branch channel",
+      "vector": "Customer signup creates User with branch_id=0 (sentinel). Old logic 'if branch_id===0 return true' would have allowed guest to subscribe to any branch.",
+      "defense": "routes/channels.php:56 — explicit Role check ('Admin' OR 'Tenant Admin'). Guests lack these roles.",
+      "outcome": "DEFEATED — R3 T-3.2.2 Sec F-SEC-W6-02 latent path closed."
+    },
+    {
+      "attack": "Stale KDS render after order cancellation",
+      "vector": "Order created → KDS renders. Order canceled. KDS still polls 5s cache.",
+      "defense_first": "OrderCanceled triggers ReleaseStockOnOrderCanceled + ReleaseAvailabilityOnOrderCanceled (EventServiceProvider:161-164). Status moves to CANCELED.",
+      "defense_second": "KdsSyncService:120-138 — includeDeleted=true returns deleted_ids including status in [DELIVERED, CANCELED, REJECTED] (line 51, 126). Frontend removes the card.",
+      "remaining_risk": "Cache TTL 5s — stale render window = max 5s before deleted_id arrives. Acceptable.",
+      "outcome": "DEFEATED — eventual consistency window is bounded."
+    },
+    {
+      "attack": "Payload tampering via channel field injection",
+      "vector": "If channel name comes from user input, could broadcast to wrong channel.",
+      "defense": "PersistOrderCreatedToOutbox:43 — channel hardcoded to ['private-branch.' . $order->branch_id]. branch_id sourced from Eloquent model (DB-trusted, BranchScope-enforced upstream).",
+      "outcome": "DEFEATED — channel not user-controllable."
+    },
+    {
+      "attack": "Envelope contract drift — listener writes payload missing required keys",
+      "vector": "Future PR adds a new listener that writes payload without 'order_id' or 'queue_number'. Cascade should reject before broadcast.",
+      "defense": "DispatchDomainEventsJob:110 — EventContract::assertEnvelopeValid runs BEFORE broadcast. REQUIRED_PAYLOAD_KEYS for ORDER_CREATED = ['order_id', 'queue_number', '_origin', 'payment_method'] (EventContract:56). Throws PayloadMismatchException, releases claim (line 161-166), retries via backoff, terminal failure stamped contract_violation: prefix.",
+      "outcome": "DEFEATED — last-line defense at broadcast time."
+    }
+  ],
+  "findings_disputed": [
+    {
+      "id": "PK1-RED-01",
+      "severity": "P1",
+      "title": "Cascade failure isolation INCONSISTENT across the 4 OrderCreated listeners",
+      "evidence": "EventServiceProvider:145-151 declares 4 listeners. Their failure behavior: (a) PersistOrderCreatedToOutbox = swallows broadcast dispatch error (line 67-78). (b) DecrementItemAvailabilityOnOrder = no try/catch, propagates throws. (c) DecrementStockOnOrderCreated = rethrows on Throwable (line 36). (d) SendFcmOnOrderCreated = isolates per-dispatch (safeDispatch :109-120).",
+      "concrete_breakage": "If (b) or (c) throws, (d) does NOT fire. Kitchen does not get FCM. Order exists in outbox/DB. Cascade is partially-applied — operator must reconcile via OSS/dashboard.",
+      "cross_validates": "PK1-ARCH-01 — same root cause (stale rollback mental model vs after-commit reality).",
+      "recommendation": "Unify all 4 listeners to catch Throwable + log + NOT rethrow once after-commit. The order is already persisted; throwing only hurts siblings. Coordinate with PK-4 RESILIENCE.",
+      "scope_minimal_fix": "1-2 line wrap on each affected listener. Defer to PK-4 for unified policy."
+    },
+    {
+      "id": "PK1-RED-02",
+      "severity": "P2",
+      "title": "DispatchDomainEventsJob success path clears last_error but never marks 'recovered'",
+      "file": "app/Jobs/DispatchDomainEventsJob.php",
+      "lines": "150-154",
+      "evidence_read": "Phase 3a clears last_error to null on success. No 'first_success_after_failure' metric or audit log row.",
+      "impact": "Forensic: if a row failed 4 times and succeeded on 5th, the previous 4 attempts are visible in attempts count (line 82) but the recovery moment is not stamped. Low impact for V1.",
+      "recommendation": "V1.0.X observability backlog — emit SyncMetricsRecorder.recordEventRecovered alongside recordEventDispatched when attempts > 1.",
+      "scope_minimal_fix": "DEFERRED V1.0.X."
+    },
+    {
+      "id": "PK1-RED-03",
+      "severity": "P2",
+      "title": "FCM dispatch in SendFcmOnOrderCreated uses SendFcmNotificationJob — separate queue chain",
+      "file": "app/Listeners/SendFcmOnOrderCreated.php",
+      "lines": "47-100",
+      "evidence_read": "SendFcmNotificationJob::dispatch (default queue) is called 3 times per OrderCreated (kitchen, POS, customer). Each is wrapped in safeDispatch (isolation good) but uses Laravel's default queue connection.",
+      "impact": "If queue connection is misconfigured (sync driver in prod by accident), FCM dispatches fail synchronously. safeDispatch catches and Logs::warning, but kitchen never gets the push.",
+      "recommendation": "Healthcheck — assert config('queue.default') !== 'sync' at boot in production. Out-of-scope for this audit.",
+      "scope_minimal_fix": "DEFERRED V1.0.X — production boot guard."
+    }
+  ],
+  "keeps_disputed_but_held": [
+    "Outbox-first listener registration (EventServiceProvider:147) — the SSOT defense is the CORRECT mitigation for the inconsistent isolation. Even with PK1-RED-01 / PK1-ARCH-01 stale comments, the OUTBOX writes BEFORE any peer can throw.",
+    "afterCommit guard on event() — DispatchableAfterCommit:30-42. Drops on rollback. Cannot be reordered or bypassed accidentally.",
+    "lockForUpdate claim in DispatchDomainEventsJob:67-83 — proven by OutboxConcurrentWorkerDedupeTest.",
+    "EventContract::assertEnvelopeValid as last-line defense before broadcast — DispatchDomainEventsJob:110. New listeners cannot silently ship a malformed payload.",
+    "Token-NAME channel auth (routes/channels.php:44-49) — immune to Sanctum '*' wildcard. R3 T-3.2.2 Sec F-SEC-W6-01 closed."
+  ],
+  "out_of_scope": [
+    "OrderService.php DIRTY — observation only.",
+    "admin-kds.js DIRTY (modified per status) — observation via grep only.",
+    "10 pre-existing KDS test failures — V1.0.X backlog, session-A.",
+    "DispatchKdsTicket parallel broadcast (status change) — PK-2 zone.",
+    "Pusher infrastructure security model — infra layer."
+  ],
+  "word_count": 1310
+}

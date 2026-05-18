@@ -1,0 +1,97 @@
+{
+  "specialist": "SRE",
+  "zone": "PK-2 Status Sync — atomicity, lock TTL, retry, broadcast resilience",
+  "mode": "read-only",
+  "scope": [
+    "DB::transaction + lockForUpdate primitives across change-status entry points",
+    "OrderStatusChanged broadcast resilience (try/catch wrappers)",
+    "PersistOrderStatusChangedToOutbox outbox pattern + afterCommit deferral",
+    "Idempotency middleware (race wait, in-flight handling)",
+    "KdsSyncService polling fallback"
+  ],
+  "findings": [
+    {
+      "id": "PK-2-SRE-01",
+      "severity": "INFO_ATTEST",
+      "title": "DB::transaction wraps lock + read + guard + write + audit at every change-status entry point",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php:176-228, app/Domain/Order/OrderStateMachine.php:208-253, app/Services/OrderService.php:1535-1599 (delivery) + 1680-1710 (self-cancel) + 1739-1852 (admin)",
+      "evidence": "All five mutation paths use the same pattern: DB::transaction(fn() => $locked = Model::whereKey()->lockForUpdate()->firstOrFail(); $from=locked->status; if ($from==$next) idempotent return; assert allows(); save; recordTransition()). The transaction ends BEFORE OrderStatusChanged::dispatch is called, ensuring listeners read post-commit state. OrderStatusChanged uses DispatchableAfterCommit trait so even if listeners are called inside a wrapping transaction, dispatch deferred until commit (or dropped on rollback).",
+      "verdict": "PASS"
+    },
+    {
+      "id": "PK-2-SRE-02",
+      "severity": "INFO_ATTEST",
+      "title": "lockForUpdate alone is the correct atomicity primitive for status transitions on an existing row (Cache::lock NOT required here)",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php:177-180, app/Domain/Order/OrderStateMachine.php:208-210",
+      "evidence": "Per CLAUDE.md §8, Cache::lock 5s + DB FOR UPDATE is required for fiscal sequence allocation (row doesn't yet exist). For status transitions on a known order, the row's PK is already determined, so `Model::whereKey()->lockForUpdate()` is sufficient — concurrent transactions serialize on the row latch.",
+      "verdict": "PASS — atomicity primitive is appropriate for the operation"
+    },
+    {
+      "id": "PK-2-SRE-03",
+      "severity": "INFO_ATTEST",
+      "title": "Optimistic conflict detection (expected_status check) layered on top of pessimistic lockForUpdate",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php:187-202",
+      "evidence": "Inside the transaction, after lockForUpdate firstOrFail: `if (fromLocked !== expectedFrom) -> Log::warning + abort(409 'Order status was updated elsewhere — please refresh the KDS.')`. This means: if two chefs at two stations both fetched the order at status=PREPARING, both send expected_status=PREPARING + status=PREPARED, the first wins the lock and writes PREPARED; the second locks, sees fromLocked=PREPARED != expectedFrom=PREPARING, aborts 409. The client store at resources/js/store/modules/kitchenDisplaySystemOrder.js:42-45 catches 409 and triggers a list refresh.",
+      "verdict": "PASS — defense-in-depth: pessimistic lock + optimistic check"
+    },
+    {
+      "id": "PK-2-SRE-04",
+      "severity": "INFO_ATTEST",
+      "title": "Broadcast failure does not block HTTP response",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php:241-245, app/Services/OrderService.php:1862-1867",
+      "evidence": "Every OrderStatusChanged::dispatch is wrapped in try/catch with Log::warning fallback. Pusher outage / DispatchDomainEventsJob failure cannot 5xx a chef bump.",
+      "verdict": "PASS — partial-degradation policy is explicit"
+    },
+    {
+      "id": "PK-2-SRE-05",
+      "severity": "INFO_ATTEST",
+      "title": "PersistOrderStatusChangedToOutbox supports replay deduplication via correlation_id-scoped firstOrCreate",
+      "file": "app/Listeners/PersistOrderStatusChangedToOutbox.php:26-87",
+      "evidence": "DomainEvent::firstOrCreate keyed on sha1(EventType|order_id|old|new|correlation_id). DispatchDomainEventsJob is only fired when wasRecentlyCreated=true (line 64-66). Sprint 5C Z8-P1-01 explicitly handles the replay case to save queue serialization noise.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "PK-2-SRE-06",
+      "severity": "P0",
+      "title": "KDS change-status MISSING X-Idempotency-Key header — and so are onlineOrder + tableOrder change-status / change-payment-status (system-wide pattern, not KDS-only)",
+      "file": "resources/js/store/modules/kitchenDisplaySystemOrder.js:38 (KDS), resources/js/store/modules/onlineOrder.js:101,111 (online), resources/js/store/modules/tableOrder.js:101,111 (table); .env:92 (IDEMPOTENCY_MIDDLEWARE_ENABLED=true); config/idempotency.php:54-58 (kds-order, online-order, table-order, pos-order all in required_routes); routes/api.php:1053-1055 + sibling -> middleware('idempotency')",
+      "evidence": "Five callsites omit headers config: \n - resources/js/store/modules/kitchenDisplaySystemOrder.js:38 — axios.post(`admin/kds-order/change-status/${payload.id}`, payload)\n - resources/js/store/modules/onlineOrder.js:101 — axios.post(`admin/online-order/change-status/${payload.id}`, payload)\n - resources/js/store/modules/onlineOrder.js:111 — axios.post(`admin/online-order/change-payment-status/${payload.id}`, payload)\n - resources/js/store/modules/tableOrder.js:101 — axios.post(`admin/table-order/change-status/${payload.id}`, payload)\n - resources/js/store/modules/tableOrder.js:111 — axios.post(`admin/table-order/change-payment-status/${payload.id}`, payload)\nMiddleware at IdempotencyKeyMiddleware:49-58: key empty + required_routes match -> MissingIdempotencyKeyException -> 422.\nIMPORTANT CONTRAST: resources/js/store/modules/posOrder.js:261-269 ALREADY sends the header via buildIdempotencyHeaders(payload) — labeled `[PS-2 audit 2026-05-18]` heal. So the pattern is partially fixed for POS but not propagated to KDS/Online/Table.",
+      "impact": "With IDEMPOTENCY_MIDDLEWARE_ENABLED=true (current .env), every chef KDS bump, every admin online-order status change, every dine-in table-order status change returns 422. KDS is the most user-visible failure (chef bump button broken on every tap). Online + table channels also non-functional from admin UI but lower V1 priority (dine-in disabled per feedback_v1_dine_in_disabled_2026-05-06; online orders volume low pre-launch). PosOrder UNAFFECTED (header sent).",
+      "recommendation": "Propagate the PS-2 buildIdempotencyHeaders helper (already imported in posOrder.js) to all four call sites. Sample diff for KDS: \n```\nimport { buildIdempotencyHeaders } from '../../helpers/idempotencyHeaders'; // or sibling util\n// ...\nchangeStatus: function (context, payload) {\n    return new Promise((resolve, reject) => {\n        axios.post(`admin/kds-order/change-status/${payload.id}`, payload, {\n            headers: buildIdempotencyHeaders(payload),\n        }).then(...)\n    });\n},\n```\nDefer to orchestrator sequential heal phase since 3 sister sub-agents run in parallel and PK-1 may also touch these files.",
+      "rollback": "Revert the four-line header injections. Risk nil — additive change matching established posOrder pattern.",
+      "verdict": "FAIL — system-wide pattern gap (KDS + Online + Table); POS already healed (PS-2)"
+    },
+    {
+      "id": "PK-2-SRE-07",
+      "severity": "P1",
+      "title": "Idempotency `IDEMPOTENCY_IN_FLIGHT` 425 response not handled by KDS Vuex store",
+      "file": "resources/js/store/modules/kitchenDisplaySystemOrder.js:36-48, app/Http/Middleware/IdempotencyKeyMiddleware.php:118-124",
+      "evidence": "If two concurrent KDS PATCHes share the same X-Idempotency-Key (e.g. flaky network triggers axios retry while the original is still mid-flight), the middleware returns 425. Vuex store has special 409 handling (line 42-44 dispatches `lists` refresh) but no 425 handling -> rejected promise hits the V2 grid catch (KitchenDisplaySystemComponent.vue:1507-1518) which only specifically handles 409 -> falls into the generic kdsErrorBanner flash with i18n label.kds_status_conflict.",
+      "impact": "Confusing UX — chef sees 'status conflict' banner when reality is a transient in-flight retry. Latent until PK-2-SRE-06 is fixed (no header today => no 425 ever).",
+      "recommendation": "On 425, dispatch `lists` refresh after `race_wait_ms` (1500ms) + retry once with the SAME key. Out of PK-2 scope (depends on -06 first).",
+      "verdict": "REVIEW — paired with SRE-06"
+    },
+    {
+      "id": "PK-2-SRE-08",
+      "severity": "INFO_ATTEST",
+      "title": "KdsSyncService polling fallback covers websocket outage",
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1759-1764, 1418-1430",
+      "evidence": "Adaptive polling: 60s when WebSocket connected, 5s when degraded (line 1759-1761). kdsSyncService.start(branchId) is called on mount (1432). On sync events, _debouncedRefresh fires only if hasFreshOrders or hasDeletes (line 1423).",
+      "verdict": "PASS — sister to Wave-3b KDS-ADV3B-01 TZ heal that mirrors KdsSyncService.php"
+    },
+    {
+      "id": "PK-2-SRE-09",
+      "severity": "INFO_ATTEST",
+      "title": "afterCommit dispatch for OrderStatusChanged via trait — listeners read committed state",
+      "file": "app/Events/OrderStatusChanged.php:14-25 + app/Events/Concerns/DispatchableAfterCommit.php (trait)",
+      "evidence": "DispatchableAfterCommit defers dispatch until DB::transaction commits, drops on rollback. PersistOrderStatusChangedToOutbox then writes the DomainEvent row + uses DB::afterCommit one more time (line 68) to fire DispatchDomainEventsJob. Two-layer afterCommit ensures: (1) listeners never observe half-written state, (2) outbox row is committed before queue job picks it up.",
+      "verdict": "PASS — KI-001 / gate C9 design intact"
+    }
+  ],
+  "attestations": [
+    "All status transitions use DB::transaction + lockForUpdate — no race-window mutations",
+    "Optimistic expected_status check is layered on top, returns 409 on conflict",
+    "Broadcast failure isolated via try/catch + Log::warning — never blocks HTTP",
+    "Outbox pattern correctly defers DispatchDomainEventsJob to afterCommit"
+  ]
+}
