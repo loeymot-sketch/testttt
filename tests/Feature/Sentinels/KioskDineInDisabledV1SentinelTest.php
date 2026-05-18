@@ -139,7 +139,7 @@ class KioskDineInDisabledV1SentinelTest extends TestCase
 
         $resp->assertStatus(422);
         $resp->assertJsonValidationErrors(['order_type']);
-        $this->assertStringContainsString('disabled in V1', $resp->json('errors.order_type.0') ?? '');
+        $this->assertStringContainsString('désactivé en V1', $resp->json('errors.order_type.0') ?? '');
     }
 
     public function test_dine_in_disabled_kiosk_token_rejects_order_type_dining_table(): void
