@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Jobs\ProcessWebhookEventJob;
 use App\Models\WebhookEvent;
+use App\Services\Fiscal\AuditLogService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -48,6 +49,8 @@ class OutboxWebhookRetryFailedCommand extends Command
             ->where('created_at', '>=', $cutoff)
             ->get();
 
+        $auditLog = app(AuditLogService::class);
+
         foreach ($events as $event) {
             // Reset to pending BEFORE dispatch so re-failure flips
             // cleanly. Attempts counter intentionally preserved.
@@ -57,6 +60,29 @@ class OutboxWebhookRetryFailedCommand extends Command
             ])->save();
 
             ProcessWebhookEventJob::dispatch($event->id);
+
+            // [Wave 1 SYNC-RED-03 — NF525-adjacent — 2026-05-18]
+            // Manual DLQ replay can re-trigger Stripe / SenangPay payment
+            // processing → fiscal sequence allocation. Append a tamper-
+            // evident audit_logs row so the financial trail survives
+            // post-incident audit. webhook_events has no branch_id column
+            // (provider webhooks are tenant-agnostic) — pin to chain 0
+            // (system/CLI) per AuditLogService contract.
+            $auditLog->write([
+                'branch_id' => 0,
+                'user_id' => null,
+                'action' => 'outbox.replay',
+                'resource' => 'webhook_event',
+                'resource_id' => (int) $event->id,
+                'payload' => [
+                    'command' => 'foodking:webhook:retry-failed',
+                    'event_id' => (int) $event->id,
+                    'webhook_id' => (string) $event->webhook_id,
+                    'provider' => (string) $event->provider,
+                    'event_type' => (string) $event->event_type,
+                    'attempts' => (int) $event->attempts,
+                ],
+            ]);
         }
 
         $msg = sprintf(

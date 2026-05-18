@@ -57,16 +57,21 @@ class KdsSyncService
             // [Sprint 2A DEL-3 2026-05-16] Mirror eager-load of address/user so
             // sync-delta payloads carry delivery info parity with the full /list
             // endpoint (KDSOrderDetailsResource::toArray reads these relations).
+            // [Wave 1 KDS Architect P1 2026-05-18] whereDate non-sargable →
+            // whereBetween + "<" tomorrow. Mirrors Wave 5F fix shipped in
+            // KitchenDisplaySystemOrderService::list:91-102 so idx_orders_datetime
+            // is used and admin polling at 50+ open orders does not regress
+            // 10x-30x. Sentinel: tests/Feature/Kds/KdsSyncSargableTest.php.
             $ordersQuery = Order::with(['orderItems', 'address', 'user'])
                 ->whereIn('status', $activeStatuses)
                 ->where('updated_at', '>=', $sinceForDb)
                 ->where(function ($q) {
                     $q->where(function ($s) {
-                        $s->whereDate('order_datetime', Carbon::today())
+                        $s->whereBetween('order_datetime', [Carbon::today(), Carbon::today()->endOfDay()])
                           ->where('is_advance_order', Ask::NO);
                     })->orWhere(function ($s) {
                         $s->where('is_advance_order', Ask::YES)
-                          ->whereDate('order_datetime', '<=', Carbon::today())
+                          ->where('order_datetime', '<', Carbon::tomorrow())
                           ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                     });
                 });

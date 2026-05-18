@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Jobs\DispatchDomainEventsJob;
 use App\Models\DomainEvent;
+use App\Services\Fiscal\AuditLogService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use InvalidArgumentException;
@@ -23,6 +24,8 @@ class OutboxRetryFailedCommand extends Command
             ->where('created_at', '>=', $cutoff)
             ->get();
 
+        $auditLog = app(AuditLogService::class);
+
         foreach ($events as $event) {
             $event->forceFill([
                 'attempts' => 0,
@@ -32,6 +35,27 @@ class OutboxRetryFailedCommand extends Command
 
             // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.
             DispatchDomainEventsJob::dispatch($event->id);
+
+            // [Wave 1 SYNC-RED-03 — NF525-adjacent — 2026-05-18]
+            // Manual DLQ replay re-broadcasts domain events (ORDER_*,
+            // PAYMENT_*) potentially triggering side-effects on KDS / OSS
+            // / fiscal flows. Append a tamper-evident audit_logs row per
+            // replayed event for post-incident traceability.
+            $auditLog->write([
+                'branch_id' => (int) ($event->branch_id ?? 0),
+                'user_id' => null,
+                'action' => 'outbox.replay',
+                'resource' => 'domain_event',
+                'resource_id' => (int) $event->id,
+                'payload' => [
+                    'command' => 'foodking:outbox:retry-failed',
+                    'event_id' => (int) $event->id,
+                    'event_type' => (string) $event->event_type,
+                    'aggregate_type' => (string) ($event->aggregate_type ?? ''),
+                    'aggregate_id' => (int) ($event->aggregate_id ?? 0),
+                    'correlation_id' => (string) ($event->correlation_id ?? ''),
+                ],
+            ]);
         }
 
         $this->info('Reset and re-queued ' . $events->count() . ' failed domain events.');
