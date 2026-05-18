@@ -22,7 +22,9 @@ class DeliveryBoyCashSessionOpenRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        // V1.0.2 BUILD-6-followup: defense-in-depth — DeliveryBoyCashSessionController::__construct
+        // enforces `permission:delivery-boys`; FormRequest doubles down at the validation boundary.
+        return $this->user()?->can('delivery-boys') ?? false;
     }
 
     /**
