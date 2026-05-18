@@ -765,7 +765,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             } catch (\Exception $exception) {
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }
-        })->middleware('throttle:pos-order-update')->name('counter-collect.confirm');
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.confirm');
         Route::post('/counter-collect/{order}/cancel', function (\App\Models\Order $order, \Illuminate\Http\Request $request) {
             abort_unless(auth()->user()?->can('pos'), 403);
 
@@ -785,7 +785,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             } catch (\Exception $exception) {
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }
-        })->middleware('throttle:pos-order-update')->name('counter-collect.cancel');
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.cancel');
         Route::post('/collect-kiosk-cash/{order}', function (\App\Models\Order $order) {
             abort_unless(auth()->user()?->can('pos'), 403);
 
@@ -796,8 +796,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             } catch (\Exception $exception) {
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }
-        })->middleware('throttle:pos-order-update')->name('collect-kiosk-cash');
-        Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->name('orders.print-receipt');
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('collect-kiosk-cash');
+        Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->middleware('idempotency')->name('orders.print-receipt');
         Route::prefix('parked-orders')->name('parked-orders.')->group(function () {
             Route::get('/', [ParkedOrderController::class, 'index'])->name('index');
             Route::post('/', [ParkedOrderController::class, 'store'])->name('store');
