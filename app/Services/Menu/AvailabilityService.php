@@ -57,7 +57,11 @@ final class AvailabilityService
                     'unavailable_reason' => $available ? null : $reason,
                     'unavailable_since' => $available ? null : now(),
                     'daily_consumed_qty' => 0,
-                    'daily_reset_at' => Carbon::today()->toDateString(),
+                    // [Wave 3c KDS-ADV3C-03 P1 2026-05-18] Explicit Paris-local
+                    // day for `daily_reset_at` (DATE column, TZ-agnostic in MySQL
+                    // but business-day-Paris by convention). Prevents drift if
+                    // PHP process inherits UTC or app.timezone is mutated.
+                    'daily_reset_at' => Carbon::today(config('app.timezone'))->toDateString(),
                 ]);
                 $row->save();
                 $this->dispatchEvent($itemId, $branchId, $available, $reason);
@@ -106,7 +110,9 @@ final class AvailabilityService
                     'branch_id' => $branchId,
                     'is_available' => true,
                     'daily_consumed_qty' => 0,
-                    'daily_reset_at' => Carbon::today()->toDateString(),
+                    // [Wave 3c KDS-ADV3C-03 P1 2026-05-18] See sibling comment
+                    // in toggle().
+                    'daily_reset_at' => Carbon::today(config('app.timezone'))->toDateString(),
                     'max_daily_qty' => $maxDailyQty,
                 ]);
                 $row->save();
@@ -279,7 +285,10 @@ final class AvailabilityService
     public function decrementForOrder(Model $order): void
     {
         $branchId = (int) $order->branch_id;
-        $today = Carbon::today()->toDateString();
+        // [Wave 3c KDS-ADV3C-03 P1 2026-05-18] Explicit Paris-local day —
+        // see toggle() comment. `daily_reset_at` is DATE column; predicate
+        // `whereDate('daily_reset_at', '<', $today)` compares plain Y-m-d.
+        $today = Carbon::today(config('app.timezone'))->toDateString();
 
         foreach ($order->orderItems as $line) {
             $qty = (int) $line->quantity;

@@ -97,7 +97,15 @@ class OrderStatusScreenOrderService
                 // until midnight rollover or manual bump). Combined with the
                 // sibling whereDate(today()) filter the effective TTL is
                 // min(today, N hours from order_datetime).
-                ->where('order_datetime', '>=', now()->subHours((int) config('oss.stale_window_hours', 8)));
+                //
+                // [Wave 3c KDS-ADV3C-04 P0 2026-05-18] `now()` resolves in
+                // app.timezone='Europe/Paris'. Eloquent binds the Carbon as
+                // 'Y-m-d H:i:s' Paris-local string vs UTC-stored TIMESTAMP
+                // column → prune window slipped by 1-2h (prunes orders 6-7h
+                // old instead of 8h in winter). Heal: instantiate now() in
+                // UTC explicitly so the bound literal matches the column's
+                // storage TZ. Sentinel: SisterServicesTzAwareV2Test.
+                ->where('order_datetime', '>=', now('UTC')->subHours((int) config('oss.stale_window_hours', 8)));
 
             // [M-09] Branch filter: only global Admin may request branch_id=0/global OSS.
             if ($branchScope !== null) {
@@ -214,7 +222,10 @@ class OrderStatusScreenOrderService
                 // [Sprint H5-B Z4-P2-03 2026-05-17] Stale prune mirror — see
                 // sibling list() comment. Keeps the public customer wall
                 // identical to the admin dashboard in shape AND in TTL.
-                ->where('order_datetime', '>=', now()->subHours((int) config('oss.stale_window_hours', 8)));
+                //
+                // [Wave 3c KDS-ADV3C-04 P0 2026-05-18] UTC binding mirror —
+                // see sibling list() comment for full rationale.
+                ->where('order_datetime', '>=', now('UTC')->subHours((int) config('oss.stale_window_hours', 8)));
 
             if ($branchId > 0) {
                 $query->where('branch_id', $branchId);

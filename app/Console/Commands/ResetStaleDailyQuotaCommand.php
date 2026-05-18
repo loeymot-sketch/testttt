@@ -33,11 +33,23 @@ class ResetStaleDailyQuotaCommand extends Command
 
     public function handle(): int
     {
-        $today = Carbon::today();
+        // [Wave 3c KDS-ADV3C-03 P1 2026-05-18] Carbon::today() resolves in
+        // app.timezone='Europe/Paris' but MySQL session TZ is UTC. The cron
+        // runs at `0 0 * * *` Paris; if Carbon resolves Paris-today midnight
+        // while the SQL session interprets that literal as UTC, the cutover
+        // creates a 1-2h window where rows are reset but the `<` predicate
+        // excludes them. Heal mirrors Wave 2b pattern (148dbebce): convert
+        // Paris-local "today" to UTC for predicate binding, store the
+        // Paris-local date (Y-m-d) for the column write because
+        // `daily_reset_at` is column TYPE DATE (no TZ context — Paris-day
+        // semantics is correct since reset is a business-day concept).
+        $appTz = config('app.timezone');
+        $todayForQuery = Carbon::today($appTz)->setTimezone('UTC');
+        $todayForWrite = Carbon::today($appTz)->toDateString();
         $dryRun = (bool) $this->option('dry-run');
 
         $query = DB::table('item_branch_availability')
-            ->whereDate('daily_reset_at', '<', $today)
+            ->whereDate('daily_reset_at', '<', $todayForQuery)
             ->whereNotNull('daily_reset_at');
 
         $count = (int) $query->count();
@@ -56,13 +68,13 @@ class ResetStaleDailyQuotaCommand extends Command
 
         $updated = $query->update([
             'daily_consumed_qty' => 0,
-            'daily_reset_at'     => $today,
+            'daily_reset_at'     => $todayForWrite,
             'updated_at'         => now(),
         ]);
 
         Log::info('foodking.availability.reset_stale_quota', [
             'rows_reset' => $updated,
-            'reset_at'   => $today->toDateString(),
+            'reset_at'   => $todayForWrite,
         ]);
 
         $this->info("Reset {$updated} stale daily quota rows.");

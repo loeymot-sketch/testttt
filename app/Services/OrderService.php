@@ -130,13 +130,24 @@ class OrderService
                 'user'
             ])->where(function ($query) use ($requests) {
                 if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
-                    $first_date = Date('Y-m-d', strtotime($requests['from_date']));
-                    $last_date = Date('Y-m-d', strtotime($requests['to_date']));
-                    $query->whereDate('order_datetime', '>=', $first_date)->whereDate(
-                        'order_datetime',
-                        '<=',
-                        $last_date
-                    );
+                    // [Wave 3c KDS-ADV3C-02 P1 2026-05-18] User-input dates are
+                    // Y-m-d Paris-local (front-end picker). whereDate compares
+                    // DATE(order_datetime) in MySQL UTC session vs the literal
+                    // → orders at [00:00-02:00 Paris]/day cross the UTC date
+                    // boundary and fall outside the requested range. Heal:
+                    // interpret the user date as Paris-local, convert to UTC
+                    // range, use whereBetween/< (sargable on idx_order_datetime).
+                    // Sentinel: SisterServicesTzAwareV2Test::test_sales_report.
+                    $appTz = config('app.timezone');
+                    $fromUtc = Carbon::parse($requests['from_date'], $appTz)
+                        ->startOfDay()
+                        ->setTimezone('UTC');
+                    $toUtcExclusive = Carbon::parse($requests['to_date'], $appTz)
+                        ->addDay()
+                        ->startOfDay()
+                        ->setTimezone('UTC');
+                    $query->where('order_datetime', '>=', $fromUtc)
+                          ->where('order_datetime', '<', $toUtcExclusive);
                 }
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {
@@ -2281,13 +2292,20 @@ class OrderService
 
             $orders = Order::with('transaction', 'orderItems')->where(function ($query) use ($requests) {
                 if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
-                    $first_date = Date('Y-m-d', strtotime($requests['from_date']));
-                    $last_date = Date('Y-m-d', strtotime($requests['to_date']));
-                    $query->whereDate('order_datetime', '>=', $first_date)->whereDate(
-                        'order_datetime',
-                        '<=',
-                        $last_date
-                    );
+                    // [Wave 3c KDS-ADV3C-02 P1 2026-05-18] TZ-aware boundary
+                    // mirror of list() — see sibling comment for full
+                    // rationale. Sales Report Overview reads same paginated
+                    // path as list/export/pdf.
+                    $appTz = config('app.timezone');
+                    $fromUtc = Carbon::parse($requests['from_date'], $appTz)
+                        ->startOfDay()
+                        ->setTimezone('UTC');
+                    $toUtcExclusive = Carbon::parse($requests['to_date'], $appTz)
+                        ->addDay()
+                        ->startOfDay()
+                        ->setTimezone('UTC');
+                    $query->where('order_datetime', '>=', $fromUtc)
+                          ->where('order_datetime', '<', $toUtcExclusive);
                 }
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {

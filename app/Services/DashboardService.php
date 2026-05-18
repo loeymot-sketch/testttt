@@ -61,26 +61,36 @@ class DashboardService
         try {
             $order = $this->orderQuery();
 
-            if ($request->first_date && $request->last_date) {
-                $first_date = Date('Y-m-d', strtotime($request->first_date));
-                $last_date = Date('Y-m-d', strtotime($request->last_date));
-            } else {
-                $first_date = Carbon::today()->toDateString();
-                $last_date = Carbon::today()->toDateString();
-            }
+            // [Wave 3c KDS-ADV3C-01 P0 2026-05-18] orders.order_datetime is a
+            // TIMESTAMP column (MySQL stores UTC). The legacy whereDate(today)
+            // pattern compared Paris-local Y-m-d against DATE(order_datetime)
+            // computed in UTC session — orders [00:00-02:00 Paris]/day fell
+            // outside the day window. Heal mirrors Wave 2b KdsSyncService
+            // (148dbebce): convert the Paris-day boundary to a full UTC
+            // TIMESTAMP and use sargable `whereBetween` (also picks up
+            // idx_orders_datetime). Sentinel: SisterServicesTzAwareV2Test.
+            [$startUtc, $endUtcExclusive] = $this->resolveDayBoundaryUtc(
+                $request->first_date,
+                $request->last_date
+            );
 
             $orderStatisticsArray = [];
 
-            $orderStatisticsArray["total_order"] = (clone $order)->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["pending_order"] = (clone $order)->pending()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["accept_order"] = (clone $order)->accept()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["preparing_order"] = (clone $order)->preparing()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["prepared_order"] = (clone $order)->prepared()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["out_for_delivery_order"] = (clone $order)->outForDelivery()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["delivered_order"] = (clone $order)->delivered()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["canceled_order"] = (clone $order)->canceled()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["returned_order"] = (clone $order)->returned()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $orderStatisticsArray["rejected_order"] = (clone $order)->rejected()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $apply = static function ($q) use ($startUtc, $endUtcExclusive) {
+                return $q->where('order_datetime', '>=', $startUtc)
+                         ->where('order_datetime', '<', $endUtcExclusive);
+            };
+
+            $orderStatisticsArray["total_order"] = $apply(clone $order)->count();
+            $orderStatisticsArray["pending_order"] = $apply((clone $order)->pending())->count();
+            $orderStatisticsArray["accept_order"] = $apply((clone $order)->accept())->count();
+            $orderStatisticsArray["preparing_order"] = $apply((clone $order)->preparing())->count();
+            $orderStatisticsArray["prepared_order"] = $apply((clone $order)->prepared())->count();
+            $orderStatisticsArray["out_for_delivery_order"] = $apply((clone $order)->outForDelivery())->count();
+            $orderStatisticsArray["delivered_order"] = $apply((clone $order)->delivered())->count();
+            $orderStatisticsArray["canceled_order"] = $apply((clone $order)->canceled())->count();
+            $orderStatisticsArray["returned_order"] = $apply((clone $order)->returned())->count();
+            $orderStatisticsArray["rejected_order"] = $apply((clone $order)->rejected())->count();
 
             return $orderStatisticsArray;
         } catch (Exception $exception) {
@@ -89,26 +99,67 @@ class DashboardService
         }
     }
 
+    /**
+     * [Wave 3c KDS-ADV3C-01 P0 2026-05-18] Convert a user-supplied (or
+     * fallback to "today") Paris-local Y-m-d pair to the UTC TIMESTAMP
+     * range [startUtc, endUtcExclusive). The upper bound is exclusive
+     * (start of day-after) to avoid double-counting the boundary instant.
+     *
+     * @return array{0:\Carbon\Carbon,1:\Carbon\Carbon}
+     */
+    private function resolveDayBoundaryUtc($firstDate, $lastDate): array
+    {
+        $appTz = config('app.timezone');
+
+        if (! empty($firstDate) && ! empty($lastDate)) {
+            $startParis = Carbon::parse($firstDate, $appTz)->startOfDay();
+            $endParis = Carbon::parse($lastDate, $appTz)->addDay()->startOfDay();
+        } else {
+            $startParis = Carbon::today($appTz);
+            $endParis = Carbon::tomorrow($appTz);
+        }
+
+        return [
+            $startParis->copy()->setTimezone('UTC'),
+            $endParis->copy()->setTimezone('UTC'),
+        ];
+    }
+
 
     public function orderSummary(Request $request)
     {
         try {
             $order = $this->orderQuery();
+            // [Wave 3c KDS-ADV3C-01 P0 2026-05-18] TZ-aware month boundary —
+            // see orderStatistics() comment. The user-supplied path uses raw
+            // Y-m-d strings; the default-month path falls back to the current
+            // Paris-local month (first day Y-m-01 .. last day Y-m-t).
+            $appTz = config('app.timezone');
             if ($request->first_date && $request->last_date) {
-                $first_date = Date('Y-m-d', strtotime($request->first_date));
-                $last_date = Date('Y-m-d', strtotime($request->last_date));
+                $firstDateParisDay = Carbon::parse($request->first_date, $appTz)->startOfDay();
+                $lastDateParisDay = Carbon::parse($request->last_date, $appTz)->startOfDay();
             } else {
-                $first_date = Date('Y-m-01', strtotime(Carbon::today()->toDateString()));
-                $last_date = Date('Y-m-t', strtotime(Carbon::today()->toDateString()));
+                $firstDateParisDay = Carbon::today($appTz)->startOfMonth();
+                $lastDateParisDay = Carbon::today($appTz)->endOfMonth()->startOfDay();
             }
+            $startUtc = $firstDateParisDay->copy()->setTimezone('UTC');
+            $endUtcExclusive = $lastDateParisDay->copy()->addDay()->setTimezone('UTC');
+
+            $first_date = $firstDateParisDay->toDateString();
+            $last_date = $lastDateParisDay->toDateString();
 
             $orderSummaryArray = [];
 
-            $total_order = (clone $order)->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $total_delivered = (clone $order)->delivered()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $total_canceled = (clone $order)->canceled()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $total_returned = (clone $order)->returned()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
-            $total_rejected = (clone $order)->rejected()->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->count();
+            $apply = static function ($q) use ($startUtc, $endUtcExclusive) {
+                return $q->where('order_datetime', '>=', $startUtc)
+                         ->where('order_datetime', '<', $endUtcExclusive);
+            };
+
+            $total_order = $apply(clone $order)->count();
+            $total_delivered = $apply((clone $order)->delivered())->count();
+            $total_canceled = $apply((clone $order)->canceled())->count();
+            $total_returned = $apply((clone $order)->returned())->count();
+            $total_rejected = $apply((clone $order)->rejected())->count();
 
 
             if ($total_order > 0) {
@@ -133,18 +184,31 @@ class DashboardService
     public function salesSummary(Request $request)
     {
         $order = $this->orderQuery();
+        // [Wave 3c KDS-ADV3C-01 P0 2026-05-18] TZ-aware month boundary — see
+        // orderStatistics() comment for full rationale.
+        $appTz = config('app.timezone');
         if ($request->first_date && $request->last_date) {
-            $first_date = Date('Y-m-d', strtotime($request->first_date));
-            $last_date = Date('Y-m-d', strtotime($request->last_date));
+            $firstDateParisDay = Carbon::parse($request->first_date, $appTz)->startOfDay();
+            $lastDateParisDay = Carbon::parse($request->last_date, $appTz)->startOfDay();
         } else {
-            $first_date = Date('Y-m-01', strtotime(Carbon::today()->toDateString()));
-            $last_date = Date('Y-m-t', strtotime(Carbon::today()->toDateString()));
+            $firstDateParisDay = Carbon::today($appTz)->startOfMonth();
+            $lastDateParisDay = Carbon::today($appTz)->endOfMonth()->startOfDay();
         }
+        $startUtc = $firstDateParisDay->copy()->setTimezone('UTC');
+        $endUtcExclusive = $lastDateParisDay->copy()->addDay()->setTimezone('UTC');
+        $first_date = $firstDateParisDay->toDateString();
+        $last_date = $lastDateParisDay->toDateString();
 
         $date = date_diff(date_create($first_date), date_create($last_date), false);
         $date_diff = (int) $date->format("%a");
 
-        $total_sales = AppLibrary::flatAmountFormat((clone $order)->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->where('payment_status', PaymentStatus::PAID)->sum('total'));
+        $total_sales = AppLibrary::flatAmountFormat(
+            (clone $order)
+                ->where('order_datetime', '>=', $startUtc)
+                ->where('order_datetime', '<', $endUtcExclusive)
+                ->where('payment_status', PaymentStatus::PAID)
+                ->sum('total')
+        );
 
         $dateRangeArray = [];
         for ($currentDate = strtotime($first_date); $currentDate <= strtotime($last_date); $currentDate += (86400)) {
@@ -155,7 +219,16 @@ class DashboardService
 
         $dateRangeValueArray = [];
         for ($i = 0; $i <= count($dateRangeArray) - 1; $i++) {
-            $per_day = AppLibrary::flatAmountFormat((clone $order)->whereDate('order_datetime', $dateRangeArray[$i])->where('payment_status', PaymentStatus::PAID)->sum('total'));
+            // Per-day Paris range, converted to UTC TIMESTAMP boundaries.
+            $dayStartUtc = Carbon::parse($dateRangeArray[$i], $appTz)->startOfDay()->setTimezone('UTC');
+            $nextDayStartUtc = $dayStartUtc->copy()->addDay();
+            $per_day = AppLibrary::flatAmountFormat(
+                (clone $order)
+                    ->where('order_datetime', '>=', $dayStartUtc)
+                    ->where('order_datetime', '<', $nextDayStartUtc)
+                    ->where('payment_status', PaymentStatus::PAID)
+                    ->sum('total')
+            );
             $dateRangeValueArray[] = floatval($per_day);
         }
 
@@ -177,13 +250,18 @@ class DashboardService
     public function customerStates(Request $request)
     {
         $order = $this->orderQuery();
+        // [Wave 3c KDS-ADV3C-01 P0 2026-05-18] TZ-aware month boundary — see
+        // orderStatistics() comment for full rationale.
+        $appTz = config('app.timezone');
         if ($request->first_date && $request->last_date) {
-            $first_date = Date('Y-m-d', strtotime($request->first_date));
-            $last_date = Date('Y-m-d', strtotime($request->last_date));
+            $firstDateParisDay = Carbon::parse($request->first_date, $appTz)->startOfDay();
+            $lastDateParisDay = Carbon::parse($request->last_date, $appTz)->startOfDay();
         } else {
-            $first_date = Date('Y-m-01', strtotime(Carbon::today()->toDateString()));
-            $last_date = Date('Y-m-t', strtotime(Carbon::today()->toDateString()));
+            $firstDateParisDay = Carbon::today($appTz)->startOfMonth();
+            $lastDateParisDay = Carbon::today($appTz)->endOfMonth()->startOfDay();
         }
+        $startUtc = $firstDateParisDay->copy()->setTimezone('UTC');
+        $endUtcExclusive = $lastDateParisDay->copy()->addDay()->setTimezone('UTC');
 
         $timeArray = ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"];
 
@@ -195,7 +273,16 @@ class DashboardService
             $first_time = date('H:i', strtotime($timeArray[$i]));
             $last_time = date('H:i', strtotime($timeArray[$i] . ' +59 minutes'));
 
-            $total_customer = (clone $order)->whereDate('order_datetime', '>=', $first_date)->whereDate('order_datetime', '<=', $last_date)->whereTime('order_datetime', '>=', Carbon::parse($first_time))->whereTime('order_datetime', '<=', Carbon::parse($last_time))->get()->count();
+            // whereTime intentionally NOT converted — admin tunes hours-of-day
+            // analytics in Paris-local clock; whereTime on a TIMESTAMP column
+            // would surface time-of-day in MySQL session UTC. This is a known
+            // V1.0.2 backlog item (KDS-ADV3C-12) — see CONVERGENCE_FINAL.md.
+            $total_customer = (clone $order)
+                ->where('order_datetime', '>=', $startUtc)
+                ->where('order_datetime', '<', $endUtcExclusive)
+                ->whereTime('order_datetime', '>=', Carbon::parse($first_time))
+                ->whereTime('order_datetime', '<=', Carbon::parse($last_time))
+                ->get()->count();
             $totalCustomerArray[] = $total_customer;
         }
 
@@ -268,16 +355,25 @@ class DashboardService
     public function realtimeReport()
     {
         try {
-            $today = Carbon::today()->toDateString();
+            // [Wave 3c KDS-ADV3C-01 P0 2026-05-18] TZ-aware boundary — see
+            // orderStatistics() comment. Paris-day range [startUtc, endUtc)
+            // bound against UTC-stored TIMESTAMP column.
+            $appTz = config('app.timezone');
+            $startUtc = Carbon::today($appTz)->setTimezone('UTC');
+            $endUtcExclusive = Carbon::tomorrow($appTz)->setTimezone('UTC');
 
             // Total CA du jour (Commandes payées)
             $daily_sales = $this->orderQuery()
-                ->whereDate('order_datetime', $today)
+                ->where('order_datetime', '>=', $startUtc)
+                ->where('order_datetime', '<', $endUtcExclusive)
                 ->where('payment_status', PaymentStatus::PAID)
                 ->sum('total');
 
             // Nombre de commandes
-            $daily_orders = $this->orderQuery()->whereDate('order_datetime', $today)->count();
+            $daily_orders = $this->orderQuery()
+                ->where('order_datetime', '>=', $startUtc)
+                ->where('order_datetime', '<', $endUtcExclusive)
+                ->count();
 
             // Ticket Moyen
             $average_ticket = $daily_orders > 0 ? ($daily_sales / $daily_orders) : 0;
@@ -323,8 +419,15 @@ class DashboardService
     public function channelStatistics()
     {
         try {
-            $today = Carbon::today()->toDateString();
-            $orders = $this->orderQuery()->whereDate('order_datetime', $today)->get();
+            // [Wave 3c KDS-ADV3C-01 P0 2026-05-18] TZ-aware Paris-day boundary
+            // — see orderStatistics() comment.
+            $appTz = config('app.timezone');
+            $startUtc = Carbon::today($appTz)->setTimezone('UTC');
+            $endUtcExclusive = Carbon::tomorrow($appTz)->setTimezone('UTC');
+            $orders = $this->orderQuery()
+                ->where('order_datetime', '>=', $startUtc)
+                ->where('order_datetime', '<', $endUtcExclusive)
+                ->get();
             $total = $orders->count();
 
             if ($total === 0) {
