@@ -2,34 +2,36 @@
 
 namespace Tests\Feature\Sentinels;
 
-use App\Domain\Events\EventContract;
 use App\Enums\EventType;
 use App\Exceptions\PayloadMismatchException;
 use App\Jobs\DispatchDomainEventsJob;
 use App\Models\DomainEvent;
+use Illuminate\Broadcasting\BroadcastManager;
+use Illuminate\Contracts\Broadcasting\Broadcaster;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
  * [F-3 SYNC P1 V1.0.1 quick win — 2026-05-19]
  *
- * Sentinel locking the DispatchDomainEventsJob behaviour on
- * PayloadMismatchException: contract violations are NOT recoverable by
- * retry (the payload itself is malformed), so we must short-circuit the
- * 6-attempt $backoff curve [1,5,15,60,300]s and route the event directly
- * to the failed_jobs lane. Without this, 1 bad payload becomes 6 'high'
- * queue messages — 1000 bad payloads = 6000 messages saturating the high
- * lane while never being recoverable.
+ * Sentinel locking DispatchDomainEventsJob behaviour on
+ * PayloadMismatchException: contract violations are NOT retry-recoverable
+ * (the payload itself is malformed) so the job MUST short-circuit the
+ * 6-attempt $backoff curve [1,5,15,60,300]s via $this->fail($e). Without
+ * this, 1 bad payload becomes 6 'high' queue messages — 1000 bad payloads
+ * = 6000 messages saturating the high lane while never being recoverable.
  *
  * Source audit: reports/audit/foundation-2026-05-18/round-1/F-3-SYNC/STATUS.md
  *               §P1 — Hardening → "PayloadMismatchException retry loop"
  *
- * Mode: behavioural — we drive the job's handle() against a fixture
- * DomainEvent and assert (a) dispatched_at is cleared, (b) last_error
- * carries the `contract_violation:` prefix, (c) the job did NOT throw
- * (because $this->fail() was called, terminating the attempt without
- * re-queue). The "no throw" assertion is the behavioural locking pin.
+ * Companion sentinel: OutboxPipelineHealthSentinelTest::test_contract_violation_preserves_pager_grade_prefix
+ * (same path, opposite-but-compatible pin: last_error prefix preserved).
+ *
+ * Mode: real PayloadMismatchException — let EventContract::assertEnvelopeValid
+ * throw against a deliberately malformed payload. NO alias-mock (incompatible
+ * with suite-wide test isolation: EventContract is autoloaded by other tests).
  */
 class PayloadMismatchFailOnceSentinelTest extends TestCase
 {
@@ -41,41 +43,43 @@ class PayloadMismatchFailOnceSentinelTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_payload_mismatch_marks_job_failed_without_rethrowing(): void
+    /**
+     * Primary invariant: PayloadMismatchException MUST be swallowed by
+     * $this->fail($e) so Laravel does NOT re-queue the job for the full
+     * $backoff curve.
+     */
+    public function test_payload_mismatch_does_not_rethrow_to_avoid_retry_curve(): void
     {
-        // Build a DomainEvent that will broadcast (channel + broadcast_as set)
-        // and force a contract violation by stubbing EventContract.
-        $event = DomainEvent::create([
-            'event_type' => EventType::ORDER_CREATED,
-            'aggregate_type' => 'Order',
-            'aggregate_id' => 1,
-            'branch_id' => 1,
-            'payload' => json_encode(['order_id' => 1]),
-            'channel' => json_encode(['orders.branch.1']),
-            'broadcast_as' => 'OrderCreated',
-            'occurred_at' => now(),
+        $event = DomainEvent::query()->create([
+            'event_type'     => EventType::MENU_ITEM_AVAILABILITY_CHANGED,
+            'aggregate_type' => 'item',
+            'aggregate_id'   => 999004,
+            'branch_id'      => 1,
+            // Intentionally malformed: missing item_id, status, type — the
+            // required keys per the V1 envelope contract.
+            'payload'        => ['malformed' => true],
+            'channel'        => json_encode(['private-branch.1']),
+            'broadcast_as'   => 'ItemAvailabilityChanged',
+            'correlation_id' => 'sentinel-fail-once-' . uniqid('', true),
+            'occurred_at'    => now(),
+            'attempts'       => 0,
+            'last_error'     => null,
+            'dispatched_at'  => null,
         ]);
 
-        // Force EventContract::assertEnvelopeValid to throw PayloadMismatchException.
-        // The class is statically called from the job; we use the alias mock pattern
-        // — supported by mockery because the class is autoloaded.
-        $mismatch = new PayloadMismatchException(
-            'envelope missing required key',
-            ['missing:order_id'],
-            (string) EventType::ORDER_CREATED
-        );
-        $mock = Mockery::mock('alias:' . EventContract::class);
-        $mock->shouldReceive('buildEnvelope')->andReturn(['stub' => true]);
-        $mock->shouldReceive('assertEnvelopeValid')->andThrow($mismatch);
+        // Broadcaster MUST NOT be reached on contract violation —
+        // assertEnvelopeValid runs before broadcast(). Pin that here so a
+        // future refactor that moves assertion AFTER broadcast surfaces here.
+        $broadcaster = Mockery::mock(Broadcaster::class);
+        $broadcaster->shouldNotReceive('broadcast');
+        $manager = Mockery::mock(BroadcastManager::class);
+        $manager->shouldReceive('connection')->andReturn($broadcaster);
+        $this->app->instance(BroadcastManager::class, $manager);
+        $this->app->instance('broadcast.manager', $manager);
 
-        $job = new DispatchDomainEventsJob($event->id);
-
-        // Behavioural invariant: the job MUST NOT rethrow a PayloadMismatchException
-        // (which would trigger Laravel queue retry). It MUST instead call
-        // $this->fail($e), which terminates the attempt without re-queue.
         $threw = false;
         try {
-            $job->handle();
+            (new DispatchDomainEventsJob($event->id))->handle();
         } catch (PayloadMismatchException $e) {
             $threw = true;
         }
@@ -83,60 +87,95 @@ class PayloadMismatchFailOnceSentinelTest extends TestCase
         $this->assertFalse(
             $threw,
             'DispatchDomainEventsJob::handle MUST NOT rethrow PayloadMismatchException — '
-                . 'contract violations are not retry-recoverable. Use $this->fail($e) instead. '
+                . 'contract violations are not retry-recoverable; $this->fail($e) routes the '
+                . 'event directly to failed_jobs and stops the 6-attempt $backoff curve. '
                 . 'See reports/audit/foundation-2026-05-18/round-1/F-3-SYNC/STATUS.md §P1 '
                 . '"PayloadMismatchException retry loop".'
         );
 
-        // Persistence invariants preserved.
+        // last_error invariants preserved (these are what the OLD sentinel
+        // OutboxPipelineHealthSentinelTest::test_contract_violation_preserves_pager_grade_prefix
+        // also pins — pager-grade grep on the prefix still works).
         $event->refresh();
         $this->assertNull(
             $event->dispatched_at,
-            'On contract violation, dispatched_at MUST be cleared so the row remains observable.'
+            'On contract violation, dispatched_at MUST be cleared (phase 3b release).'
         );
         $this->assertStringStartsWith(
             'contract_violation: ',
             (string) $event->last_error,
-            'last_error MUST carry the contract_violation prefix for monitoring grep.'
+            'last_error MUST carry the contract_violation: prefix for monitoring grep.'
         );
     }
 
     /**
      * Defense in depth: NON-PayloadMismatch exceptions MUST still rethrow so
-     * Laravel's retry curve applies (Pusher restarts etc. are recoverable).
+     * Laravel's retry curve applies (Pusher restarts, transient DB errors, etc.
+     * ARE recoverable; only contract violations are not).
+     *
+     * Without this guard, a future "simplification" that broadens the
+     * fail-fast behaviour to all Throwable would silently kill the retry
+     * curve for transient outages — and that would re-introduce the RED-R3
+     * silent-failure mode.
      */
     public function test_generic_throwable_still_rethrows_to_preserve_retry_curve(): void
     {
-        $event = DomainEvent::create([
-            'event_type' => EventType::ORDER_CREATED,
-            'aggregate_type' => 'Order',
-            'aggregate_id' => 1,
-            'branch_id' => 1,
-            'payload' => json_encode(['order_id' => 1]),
-            'channel' => json_encode(['orders.branch.1']),
-            'broadcast_as' => 'OrderCreated',
-            'occurred_at' => now(),
+        $event = DomainEvent::query()->create([
+            'event_type'     => EventType::MENU_ITEM_AVAILABILITY_CHANGED,
+            'aggregate_type' => 'item',
+            'aggregate_id'   => 999005,
+            'branch_id'      => 1,
+            'payload'        => [
+                'item_id'      => 999005,
+                'status'       => 1,
+                'price'        => 5.0,
+                'type'         => 'branch_availability',
+                'is_available' => true,
+                'branch_id'    => 1,
+                'reason'       => null,
+            ],
+            'channel'        => json_encode(['private-branch.1']),
+            'broadcast_as'   => 'ItemAvailabilityChanged',
+            'correlation_id' => 'sentinel-retain-retry-' . uniqid('', true),
+            'occurred_at'    => now(),
+            'attempts'       => 0,
+            'last_error'     => null,
+            'dispatched_at'  => null,
         ]);
 
-        $boom = new \RuntimeException('pusher_unreachable');
-        $mock = Mockery::mock('alias:' . EventContract::class);
-        $mock->shouldReceive('buildEnvelope')->andReturn(['stub' => true]);
-        $mock->shouldReceive('assertEnvelopeValid')->andThrow($boom);
-
-        $job = new DispatchDomainEventsJob($event->id);
+        // Inject a broadcaster that always throws a generic RuntimeException
+        // (simulates soketi outage / network blip). DispatchDomainEventsJob
+        // MUST rethrow so Laravel re-queues the job.
+        $failing = Mockery::mock(Broadcaster::class);
+        $failing->shouldReceive('broadcast')
+            ->once()
+            ->andThrow(new RuntimeException('simulated transient outage'));
+        $manager = Mockery::mock(BroadcastManager::class);
+        $manager->shouldReceive('connection')->andReturn($failing);
+        $this->app->instance(BroadcastManager::class, $manager);
+        $this->app->instance('broadcast.manager', $manager);
 
         $threw = false;
         try {
-            $job->handle();
-        } catch (\RuntimeException $e) {
+            (new DispatchDomainEventsJob($event->id))->handle();
+        } catch (RuntimeException $e) {
             $threw = true;
-            $this->assertSame('pusher_unreachable', $e->getMessage());
+            $this->assertSame('simulated transient outage', $e->getMessage());
         }
 
         $this->assertTrue(
             $threw,
             'Generic Throwable MUST still rethrow so Laravel applies $backoff and $tries. '
-                . 'Only PayloadMismatchException is special-cased.'
+                . 'Only PayloadMismatchException is special-cased — broadening the fail() '
+                . 'short-circuit to all exceptions would re-introduce the RED-R3 silent-failure mode.'
+        );
+
+        $event->refresh();
+        $this->assertNull($event->dispatched_at, 'Phase 3b release still applies to generic Throwable.');
+        $this->assertSame(
+            'simulated transient outage',
+            (string) $event->last_error,
+            'Generic exceptions keep their plain message (no contract_violation: prefix).'
         );
     }
 }
