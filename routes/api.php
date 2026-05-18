@@ -1284,7 +1284,12 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     });
     Route::prefix('loyalty')->name('loyalty.auth.')->middleware(['auth:sanctum'])->group(function () {
         Route::post('/add-points', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'addPoints']);
-        Route::post('/redeem', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'redeem']);
+        // [LCS-S-002 / 2026-05-19] Idempotency middleware on loyalty redeem.
+        // Mobile sends Idempotency-Key header per B-02 spec but server ignored
+        // it before this commit. Network retry = double-debit of points.
+        // Route added to config/idempotency.php required_routes simultaneously.
+        Route::post('/redeem', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'redeem'])
+            ->middleware('idempotency');
         Route::get('/balance', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'balance']);
         Route::get('/history', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'history']);
 

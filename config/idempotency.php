@@ -59,6 +59,10 @@ return [
         'api/admin/delivery-boy/cash-sessions/open',
         'api/admin/delivery-boy/cash-sessions/*/close',
         'api/admin/delivery-boy/cash-sessions/*/reconcile',
+        // [LCS-S-002 / 2026-05-19] Loyalty redeem — mobile sends Idempotency-Key
+        // per B-02 spec but server ignored before this commit. Network retry
+        // would double-debit loyalty points balance.
+        'api/frontend/loyalty/redeem',
     ],
 
     'cache_store' => env('IDEMPOTENCY_CACHE_STORE'),
