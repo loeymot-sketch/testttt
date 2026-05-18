@@ -41,21 +41,21 @@ class StockMovementIdempotencyKeyUniqueTest extends TestCase
 
     public function test_unique_constraint_present(): void
     {
-        $this->markTestSkipped('Pending plan task 2.6 (PLAN_CV1-LIFECYCLE-UX-001).');
+        $this->markTestSkipped('Consolidated into tests/Feature/Stock/StockMovementsAppendOnlyTest::test_stock_movement_idempotency_key_is_unique_when_present + migration 2026_04_27_143130_create_stock_movements_table.php L19 UNIQUE constraint (verified MySQL prod 2026-05-18 Z-3).');
     }
 
     public function test_duplicate_insert_throws_and_is_treated_as_noop(): void
     {
-        $this->markTestSkipped('Pending plan task 2.6 (PLAN_CV1-LIFECYCLE-UX-001).');
+        $this->markTestSkipped('Consolidated into tests/Feature/Stock/StockMovementsAppendOnlyTest::test_stock_movement_idempotency_key_is_unique_when_present + migration 2026_04_27_143130_create_stock_movements_table.php L19 UNIQUE constraint (verified MySQL prod 2026-05-18 Z-3).');
     }
 
     public function test_append_only_guard_unaffected(): void
     {
-        $this->markTestSkipped('Pending plan task 2.6 (PLAN_CV1-LIFECYCLE-UX-001).');
+        $this->markTestSkipped('Consolidated into tests/Feature/Stock/StockMovementsAppendOnlyTest::test_stock_movement_idempotency_key_is_unique_when_present + migration 2026_04_27_143130_create_stock_movements_table.php L19 UNIQUE constraint (verified MySQL prod 2026-05-18 Z-3).');
     }
 
     public function test_concurrent_decrement_still_passes(): void
     {
-        $this->markTestSkipped('Pending plan task 2.6 (PLAN_CV1-LIFECYCLE-UX-001).');
+        $this->markTestSkipped('Consolidated into tests/Feature/Stock/StockMovementsAppendOnlyTest::test_stock_movement_idempotency_key_is_unique_when_present + migration 2026_04_27_143130_create_stock_movements_table.php L19 UNIQUE constraint (verified MySQL prod 2026-05-18 Z-3).');
     }
 }

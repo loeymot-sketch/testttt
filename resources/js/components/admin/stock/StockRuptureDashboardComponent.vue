@@ -104,7 +104,7 @@
                         </p>
                     </div>
                     <span class="rounded bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700">
-                        {{ row.reason }}
+                        {{ reasonLabel(row.reason) }}
                     </span>
                 </li>
             </ul>
@@ -249,6 +249,22 @@ export default {
             } finally {
                 this.runningManually = false;
             }
+        },
+        // [Z-3 STOCK / Z3-UX-06 + Z3-RED-08 heal 2026-05-18]
+        // Localize raw backend reason ('stock_rupture' / 'seasonal' / etc.)
+        // through admin.stock_rupture.reason.* with safe fallback to the raw
+        // key so an unknown reason never crashes the dashboard.
+        reasonLabel(rawReason) {
+            const key = String(rawReason || '').trim();
+            if (!key) return '';
+            const i18nKey = `admin.stock_rupture.reason.${key}`;
+            const translated = this.$t(i18nKey);
+            // vue-i18n returns the key itself when missing — fall back to a
+            // humanized version of the raw key.
+            if (translated === i18nKey) {
+                return key.replace(/_/g, ' ');
+            }
+            return translated;
         },
         normalizeLastRunSummary(branches) {
             const summaries = (branches || [])

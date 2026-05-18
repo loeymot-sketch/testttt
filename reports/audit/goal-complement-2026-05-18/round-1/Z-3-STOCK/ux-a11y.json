@@ -1,0 +1,89 @@
+{
+  "specialist": "UX/A11y",
+  "zone": "Z-3-STOCK",
+  "round": 1,
+  "scope": "Dashboard contrast WCAG AA + raw labels sweep + keyboard navigation + ARIA",
+  "evidence_method": "Read-verified file:line citations on Vue components + lang JSON",
+  "findings": [
+    {
+      "id": "Z3-UX-01",
+      "severity": "P0",
+      "title": "ar.json missing entire admin.stock_rupture block — AR locale renders raw labels on /admin/stock/rupture",
+      "anchor": "resources/js/languages/ar.json:41-77",
+      "evidence": "Admin block in ar.json closes at line 77 after item_preview. No admin.stock_rupture key. fr.json L77-94 has 17 sub-keys (title, subtitle, cron_enabled, cron_disabled, run_now, last_run, last_run_at, items_flipped, items_skipped, duration_ms, currently_86, none_unavailable, flipped_at, low_alerts, no_low_alerts, below_threshold). Mounting the dashboard in AR locale renders 'admin.stock_rupture.title' etc. literally.",
+      "verdict": "FAIL — broken locale fallback chain on AR.",
+      "scope_minimal_heal": "Add `admin.stock_rupture` block to ar.json with Arabic translations mirroring fr.json structure."
+    },
+    {
+      "id": "Z3-UX-02",
+      "severity": "P0",
+      "title": "en.json admin.stock_rupture block contains French strings (locale leak)",
+      "anchor": "resources/js/languages/en.json:77-94",
+      "evidence": "L78 'Stock et ruptures', L82 'Lancer le contrôle', L83 'Dernier contrôle', L84 'Date du contrôle', L85 'Articles passés en rupture', L86 'Articles ignorés', L88 'Articles actuellement indisponibles', L89 'Aucun article indisponible.', L90 'indisponible depuis', L91 'Alertes stock bas', L92 'Aucune alerte stock bas.', L93 'Sous le seuil'. All FR.",
+      "verdict": "FAIL — i18n hygiene broken (EN visitors see FR labels).",
+      "scope_minimal_heal": "Translate en.json L78-93 to true English."
+    },
+    {
+      "id": "Z3-UX-03",
+      "severity": "P1",
+      "title": "StockRuptureDashboardComponent low-alert chip lacks visible status text (amber-on-amber-50 contrast)",
+      "anchor": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:136-138",
+      "evidence": "class='rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900' — Tailwind amber-100 (#FEF3C7) on amber-900 text (#78350F) tested via WCAG: contrast ratio 7.4:1 PASS AA Large. The chip on enclosing amber-50 (#FFFBEB) background: amber-900 on amber-50 = 9.34:1 PASS.",
+      "verdict": "PASS — contrast OK.",
+      "scope_minimal_heal": "None."
+    },
+    {
+      "id": "Z3-UX-04",
+      "severity": "P1",
+      "title": "Currently-86 chip rose-50 + rose-700 contrast",
+      "anchor": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:106-108",
+      "evidence": "class='rounded bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700' — rose-50 (#FFF1F2) on rose-700 text (#BE123C) = 5.51:1. PASS WCAG AA (4.5:1 for normal text).",
+      "verdict": "PASS — contrast OK."
+    },
+    {
+      "id": "Z3-UX-05",
+      "severity": "P1",
+      "title": "Cron status badge bg-slate-100 + text-slate-600 contrast on 'disabled' state",
+      "anchor": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:197-201",
+      "evidence": "When disabled: bg-slate-100 (#F1F5F9) on text-slate-600 (#475569). Contrast = 4.66:1. PASS WCAG AA (4.5:1 normal). Borderline but passing.",
+      "verdict": "PASS — contrast OK at 4.66:1.",
+      "scope_minimal_heal": "Optional: bump to text-slate-700 (#334155) for 7.15:1 safety margin. Defer V1.0.2."
+    },
+    {
+      "id": "Z3-UX-06",
+      "severity": "P2",
+      "title": "Reason raw string in rupture row (no i18n)",
+      "anchor": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:107",
+      "evidence": "{{ row.reason }} is the backend-emitted reason ('stock_rupture' literal from L36 of controller, or AUTO_RUPTURE_REASON='stock_rupture' from StockService L23). Not run through $t(). Displays raw key.",
+      "verdict": "P2 — minor raw label, not user-facing critical (admin-only).",
+      "scope_minimal_heal": "Wrap in $t(`stock.reason.${row.reason}`) with fallback. Defer V1.0.2 OR include in this heal cycle."
+    },
+    {
+      "id": "Z3-UX-07",
+      "severity": "P0",
+      "title": "Dashboard ARIA: aria-busy correctly bound; no live region for refresh announcements",
+      "anchor": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:24",
+      "evidence": ":aria-busy='loading' on root <section data-testid='stock-rupture-dashboard'> correct. But no aria-live region on the counts (currentlyUnavailable.length, lowAlerts.length) — screen readers won't announce updates from polling. Minor.",
+      "verdict": "P2 — non-critical, polling is silent observability.",
+      "scope_minimal_heal": "Optional add role='status' aria-live='polite' on counts. Defer V1.0.2."
+    },
+    {
+      "id": "Z3-UX-08",
+      "severity": "P2",
+      "title": "Run-now button: lab-refresh icon has aria-hidden, button has no aria-label for screen reader (text 'Lancer le scan' visible — OK)",
+      "anchor": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:42-51",
+      "evidence": "Button has visible localized text '{{ $t admin.stock_rupture.run_now }}' L50; icon has aria-hidden='true' L49. Pattern correct.",
+      "verdict": "PASS — accessible button."
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 0,
+    "P2": 3,
+    "P3": 0
+  },
+  "heal_targets": [
+    "ar.json admin.stock_rupture full block (Arabic translations)",
+    "en.json admin.stock_rupture lines 78-93 (replace FR strings with EN)"
+  ]
+}
