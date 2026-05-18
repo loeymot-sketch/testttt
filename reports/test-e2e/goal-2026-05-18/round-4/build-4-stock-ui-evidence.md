@@ -6,6 +6,15 @@
 **Scope** : Heal lowAlerts N+1, extend Vue dashboard with toggle / bulk / Echo / search / branch-filter / 26 i18n keys
 **Status** : GREEN — 21 tests pass (18 new + existing endpoint test green), 0 frozen-zone touch, 0 new routes
 **Branch** : `heal/cms-pr1-quickwins-2026-05-18` (worktree-local)
+**Commit attribution note** : BUILD-4 diff landed in `c86fabb7a` despite that commit's message referencing BUILD-6 FormRequest authz — race condition with parallel hook auto-commit grabbing the staged set before this agent's `git commit -m` ran. `git show --name-only c86fabb7a` confirms the file set is exclusively BUILD-4 :
+- `app/Http/Controllers/Admin/StockRuptureDashboardController.php`
+- `resources/js/components/admin/stock/StockRuptureDashboardComponent.vue`
+- `tests/Feature/Admin/StockRuptureDashboardLowAlertsN1Test.php`
+- `tests/js/stockRuptureDashboardComponent.spec.js`
+- `tests/js/stockRuptureDashboardMount.spec.js`
+- `reports/test-e2e/goal-2026-05-18/round-4/build-4-stock-ui-evidence.md`
+
+Verification : `git show c86fabb7a:resources/js/components/admin/stock/StockRuptureDashboardComponent.vue | wc -l` returns 709 (matches working-tree wireup, not the pre-build 145-line skeleton). Same pattern as prior commit `b837237c5 docs(build-5-evidence)` which clarified BUILD-5 attribution into `40c683f63`.
 
 ---
 
