@@ -1,0 +1,88 @@
+{
+  "zone": "Z-MOBILE-FINAL-V1",
+  "specialist": "Architect",
+  "mode": "READ-ONLY (audit)",
+  "round": "FINAL V1 production-prep re-audit",
+  "date": "2026-05-19",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "reference_baseline_commit": "cfa9ec679ef2631195dc7cb5284c7d283364a351",
+  "head_during_audit": "18a53c488 (advances during parallel agents)",
+  "scope": [
+    "mobile/screens-main.jsx (1390 LOC)",
+    "mobile/screens-onboarding.jsx (316 LOC)",
+    "mobile/screens-modals.jsx (336 LOC pre-heal, 349 LOC post-heal)",
+    "mobile/screens-item-steps.jsx (62k LOC)",
+    "mobile/data/menu.js (627 LOC, SSOT alignment check)",
+    "mobile/data/loyalty.js (V0 mock, QR sign forward-compat)",
+    "mobile/data/orders.js, dev-helpers.js, user.js, wallet-spec.js, loyaltyRewardState.js",
+    "mobile/hooks/useLoyaltyQR.js (V0 mock client)",
+    "mobile/components/LoyaltyQR.jsx, BarcodeMock.jsx, ModalShell, WizardRedeem"
+  ],
+
+  "validations": [
+    {
+      "id": "ARCH-VAL-01",
+      "title": "Menu SSOT alignment with kiosk/POS canonical catalogue",
+      "evidence_file_line": "mobile/data/menu.js:217-229 (CATEGORIES 11 cats: sandwich-cayenne, galette, sandwich-classique, burgers, tacos, bols-gourmands, frites, supplements, desserts, boissons, menu-enfant)",
+      "supporting_evidence": "mobile/data/menu.js:130-180 (MEATS 4 viandes, SAUCES 11 + spicy flag, CRUDITES 4, SUPPLEMENTS 9 @0.90€ with allergens, SUPPLEMENTS_BOLS 4 with gratinée +2€)",
+      "ssot_reference": "config/menu.php STALE per file header L13 → DB seed commands authoritative (MenuResetLeCayenneCommand.php 2026-05-13 + MenuHealLightV2Command.php 2026-05-14)",
+      "verdict": "ALIGNED — no fictional catalogue entries, no Smash/hot-dog/panini residue in live code"
+    },
+    {
+      "id": "ARCH-VAL-02",
+      "title": "Wizard 4-template parity (sandwich/tacos/custom/simple)",
+      "evidence_file_line": "mobile/data/menu.js:218-228 (wizard_template field per category) + buildBolComposerProfile mobile/data/menu.js:298-363 + buildFritesComposerProfile mobile/data/menu.js:365-388",
+      "verdict": "PARITY confirmed with kiosk KW.vue state machine via composer_profile.template + .steps[] DB-mirror shape (item_wizard_profiles + item_wizard_steps)"
+    },
+    {
+      "id": "ARCH-VAL-03",
+      "title": "composer_profile hardcoded mirroring DB shape for future API wireup",
+      "evidence_file_line": "mobile/data/menu.js:4-6 + 281-288 + 293-298",
+      "verdict": "Architecturally clean — V0 standalone now, swap-data-source path documented for Phase 6 backend wireup. Render layer reads item.composer_profile.steps[] unchanged."
+    },
+    {
+      "id": "ARCH-VAL-04",
+      "title": "Bols composer 3-step + Frites 1-step + Drink addon",
+      "evidence_file_line": "mobile/data/menu.js:312-362 (3 steps: sauce min=1, bol_supplements max=4, bol_drink optional max=1) + mobile/data/menu.js:365-388 (frites_style 1 step)",
+      "verdict": "MATCHES owner-validated wizard flow (heal-light v2 2026-05-14 + composer profile DB shape)"
+    },
+    {
+      "id": "ARCH-VAL-05",
+      "title": "Bol sauce default lookup safe fallback",
+      "evidence_file_line": "mobile/data/menu.js:302-311 (MASSIVE-LOGIC HEAL 2026-05-17 P0 — name lookup with console.warn + fallback to SAUCES[0])",
+      "verdict": "DEFENSIVE — prevents `{}` selection-less state, robust to sauce rename/delete"
+    },
+    {
+      "id": "ARCH-VAL-06",
+      "title": "Allergen aggregation per FIC 1169/2011",
+      "evidence_file_line": "mobile/data/menu.js:161 (MASSIVE-LOGIC HEAL 2026-05-17 P0 — SUPPLEMENTS pool with allergens array per item) + defaultAllergensFor mobile/data/menu.js:234-247 (cat-based default: 1-5 gluten, 9 gluten+lactose, 11 gluten)",
+      "verdict": "COMPLIANT — allergen surface per supplement + per category default; aggregation reads from this pool"
+    },
+    {
+      "id": "ARCH-VAL-07",
+      "title": "Loyalty QR forward-compat structure (V0 mock + Phase 6 ready)",
+      "evidence_file_line": "mobile/data/loyalty.js:174-196 (generateSignedQR returns {payload, signature, expires_at}) + mobile/hooks/useLoyaltyQR.js:1-113 (chained setTimeout + visibilitychange + inflight ref)",
+      "verdict": "WIRE-FORMAT-READY — V0 returns same shape Phase 6 backend /loyalty/qr/sign will return. Swap data source = single-line change."
+    },
+    {
+      "id": "ARCH-VAL-08",
+      "title": "Mobile standalone isolation — no central wiring",
+      "evidence_file_line": "mobile/data/menu.js:4-6 (mobile stays standalone for now) + WALLET_PLAN.md:51 (wire format documented)",
+      "verdict": "STANDALONE — no axios/fetch to backend, all data in window.LC namespace. Zero risk of breaking V1 central system during V1 ship."
+    }
+  ],
+
+  "findings": [],
+
+  "v1_blockers": 0,
+  "p0": 0,
+  "p1": 0,
+  "p2_carried_v1_0_2": 0,
+
+  "notes": [
+    "Z6-DEF-01 P2 (fictional fallback ScreenOrderDetail) HEALED in this audit (see RED-team finding R-H-01).",
+    "Mobile remains standalone — V1 backend changes (Loyalty QR signing, idempotency wire-up, BranchScope expansion) have zero impact on mobile until owner triggers Phase 6 wireup."
+  ],
+
+  "verdict": "PRODUCTION-READY for V1 ship as standalone artifact. Architecture intact, SSOT aligned, wizard templates DB-parity preserved, forward-compat QR signing path documented."
+}

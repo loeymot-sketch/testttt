@@ -1,0 +1,106 @@
+{
+  "specialist": "security",
+  "scope": "SpinBoost SaaS — security & compliance: token storage (Google API V1.1 deferred but encryption key still needed), wheel manipulation defense, PII handling (customer email + NPS + IP + device fingerprint), Stripe webhook integrity, MFA, RGPD",
+  "branch": "n/a — doc-only",
+  "head": "n/a",
+  "method": "read-only review of 3 spec docs, cross-check vs ULTRA_REVIEW Annexe C (Conformité & Sécurité sub-agent) + FoodKing security baseline (CLAUDE.md §9 multi-tenant, §11 idempotency, NF525 invariants) to identify what may have been missed or under-specified",
+  "findings": [
+    {
+      "id": "SPIN-SEC-01",
+      "severity": "P0",
+      "title": "Google MyBusiness OAuth token storage deferred to V1.1 — but the underlying KMS/envelope-encryption discipline (P0-6) is needed regardless",
+      "evidence": "ULTRA_PLAN §7 kill list line 211: 'Google MyBusiness OAuth + sync + IA reply → V1.1'. ULTRA_REVIEW P0-6 (L120): 'ENCRYPTION_KEY 32 bytes en env var sans KMS ni rotation'. ULTRA_PLAN §1 Sprint 0 line 47 mentions `.env.example documenté avec TOUS les secrets (avec génération openssl rand documentée pour ENCRYPTION_KEY)` — i.e. founder still ships an `ENCRYPTION_KEY` in Vercel env vars without KMS. Even WITHOUT Google OAuth in V1, this same key encrypts: Resend API key (if stored encrypted), Stripe webhook secret, eventual payment data, eventual customer phone in V2. Plaintext env var = lateral movement risk if Vercel project token leaks (Vercel breach 2022 precedent).",
+      "recommendation": "Sprint 0 task: even without KMS in V1 (cost-prohibitive solo), implement envelope encryption skeleton — store DEK encrypted under a KEK held in Vercel KV (separate scope from app), allow KEK rotation via admin endpoint. The interface should NOT change when graduating to AWS/GCP KMS in V1.x. Document the upgrade path."
+    },
+    {
+      "id": "SPIN-SEC-02",
+      "severity": "P0",
+      "title": "Wheel manipulation defense — server-authoritative spin is planned (P0-2 HMAC drawProof) but no replay-protection on the public spin endpoint beyond rate-limit",
+      "evidence": "ULTRA_PLAN §3 Sprint 2 line 96-99: HMAC drawProof + rate-limit 10 req/min/IP via Upstash. RED-team angle: an attacker scripting 9 req/min from 100 rotating IPs (cheap residential proxies ~$5/day) can mass-redeem the prize stock. ULTRA_REVIEW P1-1 (L129) lists anti-fraude (FingerprintJS + disposable detection) which mitigates SOME of this but the public endpoint has NO captcha gate. ULTRA_PLAN line 92 mentions Turnstile only on the email form, not on the spin endpoint itself. Once email is submitted, spin is gated only by rate-limit.",
+      "recommendation": "Sprint 2 add: Turnstile token validation on the `POST /api/v1/public/plays/spin` endpoint itself, not just on the email opt-in. Token issued by Turnstile widget shown at A2 (email form) is single-use against the spin POST. Server invalidates token on use. Also add Sprint 5 sentinel: 1000-spin distribution audit (already in plan line 119) MUST also assert no two spins from same emailHash within 30j cooldown."
+    },
+    {
+      "id": "SPIN-SEC-03",
+      "severity": "P0",
+      "title": "MFA TOTP for OWNER role at first login (P0-7) is planned for Sprint 5 — too late, should be Sprint 1",
+      "evidence": "ULTRA_REVIEW P0-7 (L121) flags MFA absence. ULTRA_PLAN §6 Sprint 5 line 187 places it at week 7-8 ('MFA TOTP obligatoire pour OWNER dès onboarding'). BUT Sprint 1-4 (weeks 2-6) is when the founder is dogfooding the app, when accounts are created in staging/prod, when bad habits cement. If MFA is shipped Sprint 5 it requires force-enrolling existing owners post-hoc, which patrons (non-tech, per persona Pierre) will resist.",
+      "recommendation": "Move MFA TOTP enforcement to Sprint 1 (Auth.js v5 supports `@auth/core/adapters` with TOTP via `otpauth` lib). At zero owners, the cost of shipping with MFA Day 1 is 4 extra hours. At 50 owners, retrofitting is days of churn. Auth.js Session schema needs `mfaVerifiedAt` column from Sprint 1."
+    },
+    {
+      "id": "SPIN-SEC-04",
+      "severity": "P0",
+      "title": "Joint Controller Agreement RGPD art. 26 (P0-9) is planned but SpinBoost ↔ Resto qualification is non-trivial",
+      "evidence": "ULTRA_PLAN §1 Sprint 0 line 30 commands JCA template via Legalstart. ULTRA_REVIEW P0-9 (L123): JCA absence. Pivot Option A retains marketing email opt-in collection (resto is data controller) AND fraud-detection device fingerprint storage (SpinBoost is the controller). This is the textbook art. 26 joint controller scenario. Founder solo will rubber-stamp the Legalstart template without realising the BOUNDARY definition is what matters: who responds to GDPR access/erasure requests for the marketing email vs the play log + fingerprint? If unclear, CNIL audit (post a customer complaint) finds both parties liable.",
+      "recommendation": "Sprint 0 add explicit boundary doc embedded in JCA: 'SpinBoost controls: device fingerprint, IP, technical play logs, voucher state. Resto controls: marketing email opt-in list, NPS responses linked to the resto-customer relationship. Either party processing the OTHER\\'s scope acts as processor + DPA required.' Validate with avocat 1h, not just Legalstart auto-template."
+    },
+    {
+      "id": "SPIN-SEC-05",
+      "severity": "P1",
+      "title": "Customer PII (email + fingerprint + IP + NPS) — no data minimisation review for the play event payload",
+      "evidence": "ULTRA_PLAN §3 Sprint 2 lists 'Crée Play' + 'voucher Code' + cooldown via (device fingerprint + IP + emailHash). What columns does the Play row hold? ULTRA_REVIEW P1-3 (L131): 'emailHash + email côte à côte ≠ pseudonymisation RGPD'. ULTRA_PLAN does not list the Play schema explicitly. RGPD art. 5(1)(c) requires data minimisation: storing IP + email + fingerprint + NPS together on every play increases breach impact unnecessarily. The email is the only RECOVERY identifier needed; fingerprint+IP are anti-fraud and can be SHORT-LIVED.",
+      "recommendation": "Sprint 2 schema task: split `Play` into 2 tables. (a) `Play` (long-retention: voucherCode, prizeId, orgId/venueId, redeemedAt, emailHashHMAC — NO clear email, NO IP, NO fingerprint). (b) `PlayAntiFraud` (30j-90j retention: playId FK, ipHash, fingerprintId, emailHashHMAC, createdAt) — Vercel Cron purges rows > 90j. Email itself lives in `MarketingContact` per resto, separately. Documented in JCA per SEC-04."
+    },
+    {
+      "id": "SPIN-SEC-06",
+      "severity": "P1",
+      "title": "JWT HS256 7j sliding without server revocation (P1-2) — Auth.js v5 default needs tuning",
+      "evidence": "ULTRA_REVIEW P1-2 (L130) flags 'JWT HS256 7j sliding sans révocation server'. Auth.js v5 default session strategy is JWT (cookie-encrypted). Sprint 1 'Auth.js v5 magic link (Resend)' (line 65) does NOT specify session strategy. If founder accepts defaults (JWT cookie, 30d expiry, no DB session table), revocation requires waiting expiry. For OWNER role with billing + Stripe portal access, that is unacceptable.",
+      "recommendation": "Sprint 1 explicit task: configure Auth.js v5 with `session: { strategy: 'database', maxAge: 60*60*24*7 }` so sessions live in Postgres + can be killed via row delete. Add `/account/sessions` UI with 'Sign out everywhere' button. For high-risk endpoints (Stripe portal, billing change), require MFA re-prompt within last 15 min (`mfaVerifiedAt` check)."
+    },
+    {
+      "id": "SPIN-SEC-07",
+      "severity": "P1",
+      "title": "Anti-fraude P1-1 — FingerprintJS Pro free tier is 20k IDs/month; abuse paths still open",
+      "evidence": "ULTRA_REVIEW P1-1 (L129) recommends FingerprintJS Pro + disposable detection. ULTRA_PLAN §3 Sprint 2 line 105 lists `FingerprintJS Pro free tier OU lib OSS`. FingerprintJS Pro free is 20k unique visitors/month — at 5 pilotes × 100 plays/day = 15k/month, hits the ceiling fast at scale. The OSS fallback (`@fingerprintjs/fingerprintjs`) is much weaker (browser-side, bypassable). Disposable detection lib (`disposable-email-domains`) is opt-in static list; new throwaway domains evade.",
+      "recommendation": "P1 V1.1: graduate to FingerprintJS Pro paid (~$200/mo) once MRR > €1000. V1 acceptable risk with combination: OSS FingerprintJS + disposable-email-domains + Turnstile (SEC-02) + 30j cooldown by emailHash. Add Sprint 2 sentinel: simulate same-fingerprint different-email → expect block; simulate disposable email (10minutemail.com) → expect block; document residual bypass paths."
+    },
+    {
+      "id": "SPIN-SEC-08",
+      "severity": "P1",
+      "title": "Stripe webhook signature verification (P0-3) uses SDK official — good — but webhook endpoint URL is the attack surface; needs IP allowlist consideration",
+      "evidence": "ULTRA_PLAN §5 Sprint 4 line 158 specifies 'Vérification signature avec SDK officiel (jamais HMAC custom)'. Correct. BUT the endpoint `/api/v1/webhooks/stripe` is publicly reachable. An attacker scanning Vercel deployment subdomains can identify it, even if signature verif blocks bogus payloads. The volume of failed signature checks under attack is itself a DoS vector + Sentry noise.",
+      "recommendation": "P1 Sprint 4 add: Stripe webhook IP allowlist via middleware (Stripe publishes their CIDR ranges). Reject 403 before signature verif on non-allowlisted IP. Also rate-limit the endpoint at 100 req/min/IP via Upstash (even though Stripe sends max ~10/sec). Sentry tag `stripe_webhook` for any 403 — alert if > 50/hour."
+    },
+    {
+      "id": "SPIN-SEC-09",
+      "severity": "P1",
+      "title": "Age verification for minors (P1-4) — RGPD art. 8 France: ≥16 years for consent — no checkbox in player flow A2",
+      "evidence": "ULTRA_REVIEW P1-4 (L132) lists '+ case « ≥16 ans » (RGPD art. 8 France)'. DESIGN_BRIEF §3.A A2 (line 80) specs '2 checkboxes séparées (1: « je veux mon voucher par email » obligatoire ; 2: « j\\'accepte la prospection marketing du resto » optionnel)'. NO third checkbox for age. A restaurant scanning QR for kid's menu = minor plays the wheel + email captured + marketing opt-in stored = clear RGPD art. 8 breach.",
+      "recommendation": "Sprint 2 add: third checkbox 'Je certifie avoir 16 ans ou plus' — mandatory. Below 16, voucher can still be issued (resto-controlled goodwill) but NO marketing opt-in stored, NO long-term email retention beyond voucher TTL. Add to DESIGN_BRIEF as design update."
+    },
+    {
+      "id": "SPIN-SEC-10",
+      "severity": "P1",
+      "title": "DPIA art. 35 RGPD (P1-9) — large scale + loterie commerciale + minors potential = required, not optional",
+      "evidence": "ULTRA_REVIEW P1-9 (L137): DPIA likely required given grande échelle + profilage IA soft + mineurs + loterie commerciale. ULTRA_PLAN §1 Sprint 0 line 31 lists 'Démarrer AIPD (DPIA art. 35) — template CNIL, à finaliser en sprint 5'. Good in principle. RISK: founder treats it as paperwork chore, misses the structural design changes the DPIA forces (data minimisation, retention, JCA, breach response).",
+      "recommendation": "Sprint 0 + 5: treat DPIA as a design forcing function, not paperwork. Specifically: the DPIA Section 'Mesures de sécurité' should force the SEC-05 schema split (Play vs PlayAntiFraud) and SEC-01 KMS skeleton. Get avocat review 1h at Sprint 0 (template) AND Sprint 5 (final) — total ~2h ~€600. Document mitigations as audit checklist."
+    },
+    {
+      "id": "SPIN-SEC-11",
+      "severity": "P2",
+      "title": "Pentest budget (P2-7) — €3600 in plan is light; ULTRA_REVIEW correctly flagged €6-9k realistic",
+      "evidence": "ULTRA_PLAN §6 Sprint 5 line 187 lists 'Pentest externe (budget réaliste 5-7j ~6-9k€ — voir P2-7 ; ou pentest interne avec tools OSS : nuclei, zap-baseline, semgrep + 1j freelance review = ~1500€ minimal)'. Acks the ULTRA_REVIEW finding. The €1500 self-pentest path is acceptable for MVP IF founder discipline holds.",
+      "recommendation": "V1: €1500 self-pentest path acceptable (nuclei + zap-baseline + semgrep + 1j freelance review). V1.1 once MRR > €3000: €6-9k externe (Synacktiv/Lexsi or smaller firm like Quarkslab/AlmondOffSec). Document the upgrade trigger in `docs/SECURITY_ROADMAP.md`."
+    },
+    {
+      "id": "SPIN-SEC-12",
+      "severity": "P2",
+      "title": "Disclosure / breach response — no template communication plan",
+      "evidence": "Neither doc covers what to do when a breach is detected. RGPD art. 33: 72h notification to CNIL. art. 34: notification to data subjects if high risk. With customer email + voucher + NPS in DB, a leak is moderate-to-high risk. No incident response runbook, no comms template.",
+      "recommendation": "Sprint 5 add to compliance docs: 1-page incident response runbook (detect → contain → notify CNIL within 72h → notify users via Resend mass email if high risk → post-mortem). Template Resend transactional email pre-drafted (FR + EN). Sentry alert routing → founder phone."
+    }
+  ],
+  "verdict": "GO-PIVOT with security backlog discipline. Option A pivot eliminates the highest external risk (Google policy) but does NOT eliminate the internal security debt highlighted in ULTRA_REVIEW (P0-6 KMS, P0-7 MFA, P0-9 JCA, P1-1 to P1-4 anti-fraude/RGPD). My audit adds: (a) MFA must be Sprint 1 not Sprint 5 (SEC-03), (b) age checkbox missing from design (SEC-09), (c) Play table schema split for data minimisation (SEC-05), (d) Turnstile on spin endpoint not just email (SEC-02), (e) Auth.js DB session strategy not JWT default (SEC-06), (f) age + JCA boundary + DPIA + IR runbook are linked compliance forcing functions, treat as design constraints not paperwork.",
+  "v1x_priorities_added": [
+    "SPIN-SEC-01 — Sprint 0: envelope encryption skeleton (DEK/KEK split) even pre-KMS",
+    "SPIN-SEC-02 — Sprint 2: Turnstile on /api/v1/public/plays/spin endpoint",
+    "SPIN-SEC-03 — Sprint 1 (NOT Sprint 5): MFA TOTP enforcement at first OWNER login",
+    "SPIN-SEC-04 — Sprint 0: JCA explicit boundary table SpinBoost vs Resto",
+    "SPIN-SEC-05 — Sprint 2: Play table split into Play + PlayAntiFraud (30-90j retention)",
+    "SPIN-SEC-06 — Sprint 1: Auth.js v5 DB session strategy + /account/sessions",
+    "SPIN-SEC-08 — Sprint 4: Stripe webhook IP allowlist + rate-limit",
+    "SPIN-SEC-09 — Sprint 2 + DESIGN_BRIEF: age verification checkbox in A2",
+    "SPIN-SEC-12 — Sprint 5: 1-page incident response runbook + pre-drafted Resend templates"
+  ],
+  "words": 1495
+}

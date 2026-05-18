@@ -209,7 +209,10 @@
     if (!LC || !LC.loyalty) return null;
     const entries = [];
     const surfaces = ['mobile', 'kiosk', 'pos', 'mobile_welcome'];
-    const itemNames = ['Box Nashville', 'Tacos XXL', 'Smash Cheese', 'Le Gourmet', 'Wrap Poulet', 'Frite XXL', 'Coca-Cola', 'Box Familiale'];
+    // [MOBILE FINAL V1 2026-05-19] aligned to canonical Le Cayenne catalogue
+    // (post MENU-RESET 2026-05-13). Test-only seed; was using legacy fictional
+    // names (Box Nashville/Smash/etc) → replaced with real menu items.
+    const itemNames = ['Sandwich Cayenne', 'Big Cayenne', 'Tacos M', 'Tacos L', 'Chicken Burger', 'Bowl Frites', 'Grande Frites', 'Coca-Cola'];
     let nextId = LC.loyalty.history.reduce((m, h) => Math.max(m, h.id || 0), 2000) + 1;
     const now = new Date();
     for (let i = 0; i < n; i++) {
