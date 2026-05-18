@@ -43,6 +43,36 @@
           collation-server = utf8mb4_unicode_ci
       notify: restart mysql
       tags: [mysql]
+
+    # [GOAL-CMS-2026-05-18 CVP0-1 heal — Round 1 Sec S-1 + Fiscal F-FISC-002]
+    # NF525 fiscal-table privilege-restriction. The BEFORE DELETE trigger on
+    # audit_logs + z_reports + cash_movements does NOT fire on TRUNCATE
+    # (MySQL design). Without revoking TRUNCATE/DROP/ALTER from the app DB
+    # user, an app-credential breach can wipe the entire 6-year NF525 chain
+    # in ~50 ms. Art. 1743 CGI criminal exposure. Sentinel test asserts this
+    # task's presence in the playbook (tests/Feature/Fiscal/AuditTruncate
+    # ProtectionDeployDocTest).
+    #
+    # Note: applies AFTER the DB user has been created by the operator
+    # (Ansible doesn't currently create it — see deploy README). Idempotent
+    # via MySQL's "no-op on already-revoked privilege" semantics.
+    - name: NF525 fiscal-table privilege REVOKE (CVP0-1 GOAL-CMS-2026-05-18)
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ vault_db_password | default(omit) }}"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        query:
+          - "REVOKE DROP, ALTER ON `{{ db_name }}`.`audit_logs` FROM `{{ db_user }}`@`%`"
+          - "REVOKE DROP, ALTER ON `{{ db_name }}`.`z_reports` FROM `{{ db_user }}`@`%`"
+          - "REVOKE DROP, ALTER ON `{{ db_name }}`.`cash_movements` FROM `{{ db_user }}`@`%`"
+          - "REVOKE DROP, ALTER ON `{{ db_name }}`.`cash_drawer_sessions` FROM `{{ db_user }}`@`%`"
+          - "REVOKE DROP, ALTER ON `{{ db_name }}`.`order_payments` FROM `{{ db_user }}`@`%`"
+          - "REVOKE DROP, ALTER ON `{{ db_name }}`.`domain_events` FROM `{{ db_user }}`@`%`"
+          - "REVOKE DROP, ALTER ON `{{ db_name }}`.`webhook_events` FROM `{{ db_user }}`@`%`"
+          - "FLUSH PRIVILEGES"
+      register: nf525_revoke_result
+      failed_when: false  # tolerate "no such user" on first deploy; sentinel test enforces presence in YAML
+      tags: [mysql, nf525, fiscal-protection]
     - name: Redis 7
       ansible.builtin.apt: { name: redis-server, state: present }
       tags: [redis]
