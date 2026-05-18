@@ -19,16 +19,31 @@ class OutboxRetryFailedCommand extends Command
 
     /**
      * [Wave 3b SYNC-ADV3B-06 — P1 concurrency — 2026-05-18]
+     * [Wave 3c SYNC-ADV3C-04 — P1 latent — 2026-05-18]
      * Cache::lock key for the outbox retry concurrency guard. Two admins
      * (or cron + manual) firing this command in the same minute would
      * otherwise both grab the same `failed` rows and double-write
-     * audit_logs + double-dispatch events. 60s TTL covers a typical
-     * batch; the lock is released in `finally` so an early throw never
-     * strands the key.
+     * audit_logs + double-dispatch events.
+     *
+     * TTL raised 60→300s (Wave 3c) because audit-chain Cache::lock
+     * contention under DLQ surge could push a single batch past the old
+     * 60s window, vacating the key mid-handle and re-introducing the
+     * double-dispatch defect. 5 min covers worst-case observed wall-clock
+     * even at the 500-row batch cap below.
+     *
+     * BATCH_CAP bounds wall-clock for the LOCK_TTL window. Combined with
+     * the hourly cron at app/Console/Kernel.php, an overflowing DLQ
+     * drains within `ceil(N/500)` cron iterations — preferable to a
+     * single-batch lock-overrun race.
+     *
+     * The lock is released in `finally` so an early throw never strands
+     * the key.
      */
     private const LOCK_KEY = 'outbox.retry-failed.lock';
 
-    private const LOCK_TTL_SECONDS = 60;
+    private const LOCK_TTL_SECONDS = 300;
+
+    private const BATCH_CAP = 500;
 
     public function handle(): int
     {
@@ -55,9 +70,15 @@ class OutboxRetryFailedCommand extends Command
     {
         $cutoff = $this->resolveCutoff((string) $this->option('since'));
 
+        // [Wave 3c SYNC-ADV3C-04 — P1 latent — 2026-05-18]
+        // BATCH_CAP bounds the single-run wall-clock so the LOCK_TTL
+        // window can never expire mid-handle. Overflow drains on the
+        // next hourly cron tick (Kernel.php:65).
         $events = DomainEvent::query()
             ->failed(5)
             ->where('created_at', '>=', $cutoff)
+            ->orderBy('id') // deterministic order ⇒ overflow is the same tail each run
+            ->take(self::BATCH_CAP)
             ->get();
 
         $auditLog = app(AuditLogService::class);

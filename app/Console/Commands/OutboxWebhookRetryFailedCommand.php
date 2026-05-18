@@ -43,14 +43,27 @@ class OutboxWebhookRetryFailedCommand extends Command
 
     /**
      * [Wave 3b SYNC-ADV3B-06 — P1 concurrency — 2026-05-18]
+     * [Wave 3c SYNC-ADV3C-04 — P1 latent — 2026-05-18]
      * Distinct lock key from the domain-event outbox so the two retry
-     * commands can run concurrently when scheduled together. 60s TTL +
+     * commands can run concurrently when scheduled together.
+     *
+     * TTL raised 60→300s (Wave 3c) because the default `--since=24h`
+     * cron window can sweep a Stripe-outage-backlog whose audit-chain
+     * write contention exceeds the old 60s budget. 5 min covers
+     * worst-case wall-clock even at the BATCH_CAP below.
+     *
+     * BATCH_CAP bounds the per-run row count so a 24h DLQ surge drains
+     * over `ceil(N/500)` hourly ticks instead of risking a single-batch
+     * lock overrun.
+     *
      * `finally`-released to prevent an early throw from stranding the
      * key.
      */
     private const LOCK_KEY = 'outbox.webhook-retry-failed.lock';
 
-    private const LOCK_TTL_SECONDS = 60;
+    private const LOCK_TTL_SECONDS = 300;
+
+    private const BATCH_CAP = 500;
 
     public function handle(): int
     {
@@ -77,9 +90,15 @@ class OutboxWebhookRetryFailedCommand extends Command
     {
         $cutoff = $this->resolveCutoff((string) $this->option('since'));
 
+        // [Wave 3c SYNC-ADV3C-04 — P1 latent — 2026-05-18]
+        // BATCH_CAP bounds the single-run wall-clock so the LOCK_TTL
+        // window can never expire mid-handle. Overflow drains on the
+        // next hourly cron tick (Kernel.php:77).
         $events = WebhookEvent::query()
             ->where('status', WebhookEvent::STATUS_FAILED)
             ->where('created_at', '>=', $cutoff)
+            ->orderBy('id') // deterministic order ⇒ overflow is the same tail each run
+            ->take(self::BATCH_CAP)
             ->get();
 
         $auditLog = app(AuditLogService::class);

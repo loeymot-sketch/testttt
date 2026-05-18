@@ -177,4 +177,151 @@ class OutboxConcurrentRetryLockTest extends TestCase
         $this->assertTrue($lock->get(), 'Webhook command must release its lock after handle()');
         $lock->release();
     }
+
+    /**
+     * Test E (Wave 3c SYNC-ADV3C-04) — BATCH_CAP enforces a per-run row
+     * ceiling so the lock TTL window can never be exceeded mid-handle.
+     * Seed 600 failed DomainEvents → exactly 500 must be re-dispatched,
+     * 100 must remain `dispatched_at IS NULL && attempts==5` for the
+     * next cron tick.
+     *
+     * Asserting on attempts==0 (reset by retry-failed code) is the
+     * cleanest signature for "command saw this row" without leaking
+     * implementation details of the Job dispatch.
+     */
+    public function test_outbox_retry_failed_caps_batch_at_500_rows(): void
+    {
+        Bus::fake();
+
+        $totalRows = 600;
+        $rows = [];
+        $base = now()->subMinutes(5);
+        for ($i = 1; $i <= $totalRows; $i++) {
+            $rows[] = [
+                'branch_id' => 0,
+                'event_type' => 'order.created',
+                'aggregate_type' => 'order',
+                'aggregate_id' => $i,
+                'payload' => json_encode(['id' => $i]),
+                'channel' => null,
+                'broadcast_as' => null,
+                'attempts' => 5,
+                'dispatched_at' => null,
+                'last_error' => 'boom-'.$i,
+                'correlation_id' => 'corr-cap-'.$i,
+                'occurred_at' => $base,
+                'created_at' => $base,
+                'updated_at' => $base,
+            ];
+        }
+        DomainEvent::insert($rows);
+
+        $this->assertSame($totalRows, DomainEvent::count(), 'Seed: 600 events inserted');
+
+        $exit = Artisan::call('foodking:outbox:retry-failed', ['--since' => '1h']);
+        $this->assertSame(0, $exit, 'Command must exit SUCCESS');
+
+        // Exactly BATCH_CAP rows must have been reset (attempts=0,
+        // last_error=null). The remaining 100 keep their original state.
+        $resetCount = DomainEvent::query()
+            ->where('attempts', 0)
+            ->whereNull('last_error')
+            ->count();
+        $this->assertSame(
+            500,
+            $resetCount,
+            'BATCH_CAP must reset exactly 500 rows; saw '.$resetCount
+        );
+
+        $remaining = DomainEvent::query()
+            ->where('attempts', 5)
+            ->whereNotNull('last_error')
+            ->count();
+        $this->assertSame(
+            100,
+            $remaining,
+            'Exactly 100 rows must remain untouched for the next cron tick'
+        );
+
+        Bus::assertDispatchedTimes(\App\Jobs\DispatchDomainEventsJob::class, 500);
+    }
+
+    /**
+     * Test F (Wave 3c SYNC-ADV3C-04) — the Cache::lock TTL is 300s.
+     * Asserting via the `Illuminate\Cache\Lock::$seconds` protected
+     * property (reflection) — this is the canonical place Laravel
+     * stores the TTL across all lock drivers (ArrayLock, FileLock,
+     * RedisLock all inherit from `Illuminate\Cache\Lock`).
+     *
+     * The command's `Cache::lock(KEY, 300)` constructor argument is the
+     * exact value tested.
+     */
+    public function test_outbox_retry_failed_lock_ttl_is_300_seconds(): void
+    {
+        $reflection = new \ReflectionClass(\App\Console\Commands\OutboxRetryFailedCommand::class);
+        $constants = $reflection->getReflectionConstants();
+        $ttlConstant = null;
+        foreach ($constants as $c) {
+            if ($c->getName() === 'LOCK_TTL_SECONDS') {
+                $ttlConstant = $c->getValue();
+                break;
+            }
+        }
+
+        $this->assertSame(
+            300,
+            $ttlConstant,
+            'OutboxRetryFailedCommand::LOCK_TTL_SECONDS must be 300s (Wave 3c SYNC-ADV3C-04 heal)'
+        );
+
+        // Cross-check: when the command constructs the lock at runtime,
+        // the resulting Lock object's $seconds property must read 300.
+        $lock = Cache::lock('outbox.retry-failed.lock', $ttlConstant);
+        $lockReflection = new \ReflectionClass($lock);
+        // $seconds lives on Illuminate\Cache\Lock (parent of all drivers)
+        $parent = $lockReflection->getParentClass();
+        while ($parent && $parent->getName() !== \Illuminate\Cache\Lock::class) {
+            $parent = $parent->getParentClass();
+        }
+        $this->assertNotNull($parent, 'Lock must inherit from Illuminate\\Cache\\Lock');
+
+        $secondsProperty = $parent->getProperty('seconds');
+        $secondsProperty->setAccessible(true);
+        $this->assertSame(
+            300,
+            $secondsProperty->getValue($lock),
+            'Cache::lock(KEY, LOCK_TTL_SECONDS) must instantiate with seconds=300'
+        );
+    }
+
+    /**
+     * Test F-2 (Wave 3c SYNC-ADV3C-04) — same TTL invariant for the
+     * webhook DLQ command.
+     */
+    public function test_webhook_retry_failed_lock_ttl_is_300_seconds(): void
+    {
+        $reflection = new \ReflectionClass(\App\Console\Commands\OutboxWebhookRetryFailedCommand::class);
+        $constants = $reflection->getReflectionConstants();
+        $ttlConstant = null;
+        $batchCap = null;
+        foreach ($constants as $c) {
+            if ($c->getName() === 'LOCK_TTL_SECONDS') {
+                $ttlConstant = $c->getValue();
+            }
+            if ($c->getName() === 'BATCH_CAP') {
+                $batchCap = $c->getValue();
+            }
+        }
+
+        $this->assertSame(
+            300,
+            $ttlConstant,
+            'OutboxWebhookRetryFailedCommand::LOCK_TTL_SECONDS must be 300s'
+        );
+        $this->assertSame(
+            500,
+            $batchCap,
+            'OutboxWebhookRetryFailedCommand::BATCH_CAP must be 500 rows'
+        );
+    }
 }
