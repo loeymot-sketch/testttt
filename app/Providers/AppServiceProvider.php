@@ -150,6 +150,26 @@ class AppServiceProvider extends ServiceProvider
                 );
             }
 
+            // [Foundation Audit F-3 P0 / 2026-05-18] APP_URL must be set in
+            // production. config/cors.php derives `allowed_origins` from
+            // array_filter([APP_URL, KIOSK_DOMAIN, ADMIN_DOMAIN]) — when
+            // APP_URL is empty AND the kiosk browser hits the server via a
+            // host alias (localhost vs 127.0.0.1 vs FQDN), CORS silently
+            // rejects /api/broadcasting/auth. Polling fallback masks the
+            // failure → real-time push has been silently dead. This guard
+            // catches the "forgot to set APP_URL" deploy mistake.
+            if (empty(config('app.url'))) {
+                throw new \RuntimeException(
+                    'APP_URL must be set in production (CORS allowed_origins '
+                    . 'derives from it). Empty APP_URL means /api/broadcasting/auth '
+                    . 'is silently rejected for kiosk/POS browsers when their host '
+                    . 'differs from the server\'s default. Set APP_URL=https://your-domain '
+                    . 'in your .env file then run `php artisan config:cache`. '
+                    . 'For kiosk/admin on distinct domains, also set KIOSK_DOMAIN and '
+                    . 'ADMIN_DOMAIN — config/cors.php allows all three.'
+                );
+            }
+
             if (in_array(config('broadcasting.default'), [null, 'null'], true)) {
                 throw new \RuntimeException(
                     'BROADCAST_DRIVER must be explicitly set in production (expected: pusher|redis). '
