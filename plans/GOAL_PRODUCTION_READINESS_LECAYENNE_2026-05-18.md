@@ -226,13 +226,14 @@ Kitchen Display System : ordres entrants real-time, item-level bump/recall, alle
 - T-3.2.4 Audit contrast WCAG (cf. KDS audit : 3.2:1 insuffisant, cible ≥4.5:1)
 **Acceptance** : a11y axe-core 0 critical + bump hit-area ≥44px + 18 raw labels FR fixed.
 
-#### Sub 3.3 — KDS Station Routing
-**Anchors** : `app/Listeners/DispatchKdsTicket.php`, station config in `config/kds.php` (à vérifier)
-**Tasks** :
-- T-3.3.1 Audit multi-station dispatch (grill, fryer, drinks, salads)
+#### Sub 3.3 — KDS Station Routing (DRIFT-CORRECTION 2026-05-18 Round 1)
+**Découverte Round 1** : Agent 3 a confirmé que multi-station routing est **frontend-filter vapor** — `DispatchKdsTicket` ne porte pas de `station_id`, `config/kds.php` est V2 kill-switch only, zéro `station_*` hits dans `app/`. Pour V1 Le Cayenne single-station : **acceptable**.
+**Anchors** : `app/Listeners/DispatchKdsTicket.php`, `config/kds.php`
+**Tasks (V1 scope reduced)** :
+- T-3.3.1 ~~Audit multi-station dispatch~~ → **DEFERRED V1.x** (no implementation exists; single-resto V1 doesn't need it)
 - T-3.3.2 Audit overflow flag UI (V1.0.1 backlog : KDS overflow flag UI)
-- T-3.3.3 Audit station filtering (chef sees only his station)
-**Acceptance** : DispatchKdsTicket listener test + station filter sentinel + visual per-station view GREEN.
+- T-3.3.3 ~~Audit station filtering~~ → DEFERRED V1.x
+**Acceptance V1** : `DispatchKdsTicket` listener test PASS + document "multi-station deferred" decision.
 
 #### Sub 3.4 — KDS Sync (Echo + polling)
 **Anchors** : `Admin/KdsSyncController.php`, `routes/channels.php` (branch-scoped), `Echo` + Pusher config
@@ -290,29 +291,36 @@ Customer waiting screen (TV walls fast-food) : numéros en préparation vs ready
 
 ### Décomposition en 4 sub-systèmes
 
-#### Sub 5.1 — Stock Backend (data layer)
-**Anchors** : `app/Models/StockLevel.php`, `app/Models/StockMovement.php`, `AvailabilityService` (cf. BRAIN `feedback_v1_focus_no_saas_2026-05-08.md` — 90% backend déjà existant)
+#### Sub 5.1 — Stock Backend (data layer) (DRIFT-CORRECTION 2026-05-18 Round 1)
+**Découverte Round 1** : Agent 5 a confirmé que la défense race condition est **DB-level (lockForUpdate + UNIQUE idempotency_key)**, pas Cache::lock — celui-ci vit upstream dans OrderService. Backend GREEN.
+**Anchors** : `app/Models/StockLevel.php`, `app/Models/StockMovement.php`, `AvailabilityService` (90% backend déjà existant)
 **Tasks** :
-- T-5.1.1 Audit StockLevel schema + indexes + BranchScope (13 models scoped post iter11+12)
-- T-5.1.2 Audit StockMovement append-only (no UPDATE on past movements)
-- T-5.1.3 Audit `DecrementStockOnOrderCreated` listener + race condition (Cache::lock)
+- T-5.1.1 Audit StockLevel schema + indexes + BranchScope (17 models scoped — actual count exceeds BRAIN ref of 13)
+- T-5.1.2 Audit StockMovement append-only (no UPDATE on past movements) + CHECK constraints attested
+- T-5.1.3 Audit `DecrementStockOnOrderCreated` listener — **defense = lockForUpdate + UNIQUE idempotency_key** (DB-level, Cache::lock lives in OrderService upstream)
 - T-5.1.4 Audit `BumpMenuSnapshotOnItemAvailabilityChanged` (cache invalidation chain)
-**Acceptance** : 4 stock backend sentinels PASS + DBA review GREEN.
+**Acceptance** : 4 stock backend sentinels PASS + DBA review GREEN (confirmed Round 1).
 
-#### Sub 5.2 — Stock UI (admin dashboard — V1.x backlog F-016b)
-**Anchors** : `/admin/stock-rupture-dashboard` route, BRAIN backlog "F-016b stock dashboard UI 5-7j 90% backend déjà existant"
-**Tasks** :
-- T-5.2.1 Build stock dashboard UI (5-7j-agent budget) — rupture list + manual override + bulk actions
-- T-5.2.2 Audit stock low notification (cf. `NotifyStockLowOnStockLevelChanged` listener)
-- T-5.2.3 Audit branch manager permission scope (Spatie `permission:stock`)
-**Acceptance** : UI dashboard GREEN visual 3 viewports + manual rupture flow E2E GREEN + permission sentinel.
+#### Sub 5.2 — Stock UI (admin dashboard) (DRIFT-CORRECTION 2026-05-18 Round 1)
+**Découverte Round 1** : Dashboard **EXISTE** déjà à `/admin/stock/rupture` (CLAUDE.md §6 URL drift). Vue component fonctionnel read-only + 3 endpoints + 19 tests + manual override backend déjà shippé via `AvailabilityController::toggle*`. **Budget révisé 3-4j** (au lieu de 5-7j). Permission = `items_edit` (pas `permission:stock`).
+**Anchors** : `/admin/stock/rupture` route, `AvailabilityController::toggle*`, existing Vue component, 19 stock tests
+**Tasks (révisés Round 1)** :
+- T-5.2.1 Wire manual toggle UI (backend prêt, juste UI wiring)
+- T-5.2.2 Add bulk actions (multi-select)
+- T-5.2.3 Add Pusher Echo real-time (currently polling-only)
+- T-5.2.4 Add 26 i18n keys
+- T-5.2.5 Add search + branch filters
+- T-5.2.6 N+1 heal in `lowAlerts`
+- T-5.2.7 Audit `items_edit` permission scope (pas `permission:stock`)
+**Acceptance** : UI dashboard GREEN visual 3 viewports + manual rupture toggle E2E GREEN + N+1 sentinel.
 
-#### Sub 5.3 — Stock Sync à toutes surfaces (Pusher + polling + cache invalidation)
-**Anchors** : 10 listeners `Persist*ToOutbox.php`, 25 Events (`CatalogChanged`, `ItemAvailabilityChanged`, `ItemVariationAvailabilityChanged`, `ItemExtraAvailabilityChanged`, etc.), `InvalidateKioskMenuCacheOnItemAvailabilityChanged`, `InvalidateMenuProjectionOnIngredientChange`
+#### Sub 5.3 — Stock Sync à toutes surfaces (DRIFT-CORRECTION 2026-05-18 Round 1)
+**Découverte Round 1** : **11 listeners** (pas 10 — `PersistSettingsUpdatedToOutbox` ajouté 2026-05-17). 100% `wasRecentlyCreated` coverage. `BranchScope` absent sur listeners = CORRECT (isolation via `routes/channels.php`).
+**Anchors** : 11 listeners `Persist*ToOutbox.php`, 25 Events, `InvalidateKioskMenuCacheOnItemAvailabilityChanged`, `InvalidateMenuProjectionOnIngredientChange`, `DispatchDomainEventsJob` (phase-1 atomic claim 2e couche)
 **Tasks** :
-- T-5.3.1 Audit Outbox pattern (PersistedToOutbox → drainer → Pusher emit)
-- T-5.3.2 Audit `wasRecentlyCreated` guard (cf. Wave Z 6 listeners healed)
-- T-5.3.3 Audit Outbox pruning (Wave 5E heal)
+- T-5.3.1 Audit Outbox pattern (PersistedToOutbox → drainer → Pusher emit) — GREEN
+- T-5.3.2 Audit `wasRecentlyCreated` guard — **100% coverage** GREEN
+- T-5.3.3 Audit `PruneOutboxCommand` — NF525-safe + scheduled
 - T-5.3.4 Audit polling 5s fallback per surface (Kiosk + KDS + OSS)
 **Acceptance** : Outbox sentinels + cross-surface E2E rupture cascade <2s GREEN.
 

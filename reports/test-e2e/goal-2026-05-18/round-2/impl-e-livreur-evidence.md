@@ -158,7 +158,7 @@ fix(livreur-v1-prep): 3 P0 heal — selectDeliveryBoy authz + cash escrow audit_
 
 Co-authored by Claude Opus 4.7 (1M context).
 
-Commit SHA : <to be filled post-commit>
+Commit SHA : `9b8046e9fc052c7980b81548d05476aabd61b553`
 
 ---
 
