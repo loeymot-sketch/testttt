@@ -33,6 +33,11 @@ class PaymentMethodRestrictedTest extends TestCase
 
         $this->expectException(ValidationException::class);
 
+        // [P0-POS-02 GOAL round-2] payment() requires a PaymentAbstract
+        // calling frame OR the opt-in flag. We test the pilot-restrict
+        // rejection here (not the gateway-context guard), so the flag is
+        // set to let the call reach the pilot check.
+        app()->instance('payment.service.allow_direct_call', true);
         app(PaymentService::class)->payment($order, 'stripe', 'tx-blocked-1');
     }
 
@@ -40,6 +45,8 @@ class PaymentMethodRestrictedTest extends TestCase
     {
         $order = $this->order();
 
+        // [P0-POS-02 GOAL round-2] gateway-context opt-in flag.
+        app()->instance('payment.service.allow_direct_call', true);
         $transaction = app(PaymentService::class)->payment($order, 'credit', 'tx-credit-1');
 
         $this->assertInstanceOf(Transaction::class, $transaction);

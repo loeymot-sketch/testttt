@@ -76,7 +76,14 @@
     </div>
 
     <!-- BODY -->
-    <div class="kds-card__body">
+    <!-- KDS-R1-05 heal: tabindex=0 + role=region + aria-label = Safari keyboard accessibility
+         on scrollable overflow:auto region (axe-core 'scrollable-region-focusable' serious). -->
+    <div
+      class="kds-card__body"
+      tabindex="0"
+      role="region"
+      :aria-label="$t('label.kds_card_body_aria', { queue: order.queue_number || order.id })"
+    >
       <!-- [Sprint 2A DEL-3 2026-05-16] Delivery block — only renders when
            the order is destined for delivery AND the backend has populated
            `order_address` (i.e. the eager-load was applied). Without this,
@@ -97,7 +104,7 @@
           v-if="customerPhone"
           class="kds-card__delivery-row kds-card__delivery-phone keep-latin"
           :href="`tel:${customerPhone}`"
-          :aria-label="`Appeler ${customerName || ''} ${customerPhone}`.trim()"
+          :aria-label="$t('label.kds_call_customer_aria', { name: customerName || '', phone: customerPhone })"
         >
           <span class="kds-card__delivery-icon" aria-hidden="true">&#128241;</span>
           <span class="kds-card__delivery-text">{{ customerPhone }}</span>
@@ -237,7 +244,10 @@ export default {
             return AGE_ELAPSED_COLOR[this.bucket] || AGE_ELAPSED_COLOR.fresh;
         },
         elapsedLabelColor() {
-            return this.bucket === 'fresh' ? '#9CA3AF' : this.elapsedColor;
+            // KDS-R1-02 heal: fixed dark color always (9.5:1 on white, WCAG AA-large) —
+            // bucket color stays on the BIG elapsed number for visual hierarchy.
+            // Previous bucket-tinted label hit 1.94:1 (axe-confirmed FAIL).
+            return '#374151';
         },
         borderColor() {
             // Allergen overrides age — orange regardless of how old.
@@ -277,7 +287,7 @@ export default {
         ariaLabel() {
             const m = Math.floor(this.elapsedSeconds / 60);
             const r = this.elapsedSeconds % 60;
-            return `Commande ${this.order.queue_number || this.order.id}, source ${this.sourceLabel}, ${this.stateLabel}, attente ${m} minutes ${r} secondes`;
+            return this.$t('label.kds_card_aria', { queue: this.order.queue_number || this.order.id, source: this.sourceLabel, state: this.stateLabel, minutes: m, seconds: r });
         },
         // [Sprint 2A DEL-3 2026-05-16] Delivery-context computeds.
         // Source-truth precedence: explicit source_surface === 'delivery'
@@ -377,8 +387,12 @@ export default {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #6B7280;
-    background: rgba(0, 0, 0, 0.04);
+    /* KDS-R1-03 heal: stable WCAG AA contrast regardless of bucket-tinted header.
+       Previously #6B7280 on rgba(0,0,0,0.04) gave 3.63:1 on critical bucket (red header)
+       and 4.43:1 on fresh — both FAIL AA for normal text. Now opaque gray-100 bg + gray-800
+       text = ~12.6:1 stable on every bucket. */
+    color: #1F2937;
+    background: #F3F4F6;
     min-width: 22px;
     height: 18px;
     border-radius: 4px;
@@ -448,7 +462,12 @@ export default {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
+    gap: 12px; /* KDS-R1-01 heal: prevent queue + elapsed overlap on long times */
     padding: 2px 16px 10px;
+}
+.kds-card__queue,
+.kds-card__elapsed-wrap {
+    flex-shrink: 0; /* KDS-R1-01 heal: never compress, never overlap */
 }
 .kds-card__queue {
     color: #111827;
@@ -476,7 +495,7 @@ export default {
     font-weight: 700;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    opacity: 0.75;
+    /* KDS-R1-02 heal: removed opacity:0.75 which dropped contrast below WCAG AA. */
 }
 .kds-card__elapsed {
     font-family: 'JetBrains Mono', ui-monospace, monospace;

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\SettingsUpdated;
 use App\Http\Requests\SiteRequest;
 use App\Http\Resources\SiteResource;
 use App\Services\SiteService;
@@ -31,10 +32,13 @@ class SiteController extends AdminController
     {
         try {
             if (env('DEMO')) {
-                return new SiteResource($this->siteService->update($request));
+                $resource = new SiteResource($this->siteService->update($request));
             } else {
-                    return new SiteResource($this->siteService->update($request));
+                $resource = new SiteResource($this->siteService->update($request));
             }
+            // [Wave 5G R9 heal 2026-05-17] Fan-out settings.updated -> outbox.
+            SettingsUpdated::dispatch(['site']);
+            return $resource;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

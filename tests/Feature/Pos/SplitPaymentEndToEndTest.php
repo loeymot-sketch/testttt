@@ -10,6 +10,7 @@ use App\Models\Branch;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\OrderPayment;
+use App\Models\PaymentTerminal;
 use App\Models\Tax;
 use App\Models\User;
 use App\Services\Cash\CashDrawerService;
@@ -40,6 +41,7 @@ class SplitPaymentEndToEndTest extends TestCase
     protected User $customer;
     protected User $operator;
     protected Item $item;
+    protected PaymentTerminal $terminal;
 
     protected function setUp(): void
     {
@@ -96,6 +98,17 @@ class SplitPaymentEndToEndTest extends TestCase
         // PosCashTrailTest suite covers the "no session → 422" path.
         app(CashDrawerService::class)
             ->openSession($this->branch->id, $this->operator->id, 100.00);
+
+        // [F-SPLIT-PHANTOM-CARD-001 2026-05-17] CARD tranches now require an
+        // ACTIVE terminal_id scoped to the order's branch — see PosOrderRequest.
+        $this->terminal = PaymentTerminal::create([
+            'branch_id'    => $this->branch->id,
+            'name'         => 'TPE E2E',
+            'gateway_type' => PaymentTerminal::GATEWAY_MANUAL,
+            'fee_percent'  => 0,
+            'fee_fixed'    => 0,
+            'status'       => PaymentTerminal::STATUS_ACTIVE,
+        ]);
     }
 
     private function basePayload(array $overrides = []): array
@@ -130,7 +143,8 @@ class SplitPaymentEndToEndTest extends TestCase
         $payload = $this->basePayload([
             'payment_breakdown' => [
                 ['mode' => PosPaymentMethod::CASH, 'amount' => 10.00, 'tendered' => 12.00, 'change' => 2.00],
-                ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00, 'reference' => '4242'],
+                // [F-SPLIT-PHANTOM-CARD-001] CARD tranche now requires terminal_id.
+                ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00, 'reference' => '4242', 'terminal_id' => $this->terminal->id],
             ],
         ]);
 
@@ -207,7 +221,8 @@ class SplitPaymentEndToEndTest extends TestCase
         $payload = $this->basePayload([
             'payment_breakdown' => [
                 ['mode' => PosPaymentMethod::CASH, 'amount' => 10.00, 'tendered' => 10.00, 'change' => 0],
-                ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00, 'reference' => '4242'],
+                // [F-SPLIT-PHANTOM-CARD-001] CARD tranche now requires terminal_id.
+                ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00, 'reference' => '4242', 'terminal_id' => $this->terminal->id],
             ],
         ]);
 

@@ -16,6 +16,10 @@ class Branch extends Model
         'city', 'state', 'zip_code', 'address', 'zone', 'status',
         'available_locales',
         'siret', 'vat_intra', 'register_id', 'legal_footer',
+        // [Sprint H3 DEL-5 2026-05-17] Branch-configurable delivery fee
+        'delivery_fee_base', 'delivery_fee_per_km', 'delivery_fee_minimum',
+        // [Sprint H3 DEL-8 2026-05-17] Branch-configurable delivery minimum order
+        'delivery_minimum_order',
     ];
     protected $casts = [
         'id'                 => 'integer',
@@ -36,6 +40,12 @@ class Branch extends Model
         'vat_intra'          => 'string',
         'register_id'        => 'string',
         'legal_footer'       => 'string',
+        // [Sprint H3 DEL-5 2026-05-17] decimal:2 keeps Eloquent honest about precision
+        'delivery_fee_base'    => 'decimal:2',
+        'delivery_fee_per_km'  => 'decimal:2',
+        'delivery_fee_minimum' => 'decimal:2',
+        // [Sprint H3 DEL-8 2026-05-17] decimal:2 for order-minimum threshold
+        'delivery_minimum_order' => 'decimal:2',
     ];
 
     /**

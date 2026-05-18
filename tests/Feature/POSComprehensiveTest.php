@@ -11,10 +11,11 @@ use App\Models\Tax;
 use App\Enums\TaxType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
 /**
  * Module 3: POS / Caisse (8 tests)
- * 
+ *
  * Surface: /api/admin/pos, /api/admin/pos-order/*
  * Priorité: 🔴 Critique
  */
@@ -22,6 +23,7 @@ class POSComprehensiveTest extends TestCase
 {
     use RefreshDatabase;
     use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected function setUp(): void
     {
@@ -35,6 +37,9 @@ class POSComprehensiveTest extends TestCase
         $branch = \Database\Factories\BranchFactory::new()->create();
         $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
         $admin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN
+        // CashDrawerSession before CASH-bearing POS orders can be created.
+        $this->seedOpenSessionFor($admin, $branch);
         return [$branch, $admin];
     }
 

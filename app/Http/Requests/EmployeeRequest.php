@@ -15,7 +15,16 @@ class EmployeeRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        // [Wave 1 P1 W-2 / 2026-05-18] Defense-in-depth — mirror Wave 5H pattern on
+        // AdministratorRequest. EmployeeController constructor middleware already
+        // enforces `permission:employees_create` on store and `permission:employees_edit`
+        // on update; FormRequest accepts either since rules apply to both verbs, so any
+        // future route mis-wire still authz-checks against the employees capability family.
+        $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
+        return $user->can('employees_create') || $user->can('employees_edit');
     }
 
     /**

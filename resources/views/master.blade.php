@@ -103,14 +103,41 @@
         window.foodkingConfig.kioskDefaultLocale au moment de l'initialisation du bundle.
         (config:cache OK : on utilise config() et non env() directement)
     --}}
+    @php
+        // [2026-05-18 PR-B P0 kiosk-creds-leak heal] Gate the SPA auto-login
+        // payload by (a) path filter `/kiosk*` (legacy), (b) request IP in
+        // the configured allowlist OR `APP_ENV=local` (dev bypass).
+        // Without this, any unauthenticated requester to `/kiosk/idle` could
+        // harvest the machine credentials in cleartext (curl public host →
+        // grep kioskAutoLogin → mint a `kiosk:order` Sanctum token).
+        // Production deployment MUST set KIOSK_AUTO_LOGIN_TRUSTED_IPS to the
+        // LAN IPs of the physical kiosk machines, OR set
+        // KIOSK_REQUIRE_MACHINE_LOGIN=true (shows a UI login form instead).
+        // Sister test: tests/Feature/Kiosk/KioskAutoLoginGateTest.php
+        $kioskAutoLoginPayload = null;
+        if (request()->is('kiosk*')) {
+            $payload = config('kiosk.spa_payload');
+            if ($payload !== null) {
+                $localBypass = (bool) config('kiosk.auto_login_local_bypass', false);
+                $trustedIps  = (array) config('kiosk.auto_login_trusted_ips', []);
+                $clientIp    = (string) request()->ip();
+                $ipTrusted   = ! empty($trustedIps) && in_array($clientIp, $trustedIps, true);
+                if ($localBypass || $ipTrusted) {
+                    $kioskAutoLoginPayload = $payload;
+                }
+            }
+        }
+    @endphp
     <script>
         window.foodkingConfig = {
             baseUrl: @json(rtrim((string) config('app.url'), '/')),
             apiKey: @json((string) config('app.api_key')),
             googleMapKey: @json((string) config('app.google_map_key')),
             demo: @json((bool) config('app.demo_mode')),
-            // Borne : n'injecter les credentials machine que sur les routes kiosk.
-            kioskAutoLogin: @json(request()->is('kiosk*') ? config('kiosk.spa_payload') : null),
+            // [2026-05-18 PR-B P0 heal] Machine creds gated by IP allowlist +
+            // APP_ENV=local. See @php block above. Public unauth requests now
+            // get `null` even on /kiosk/* paths.
+            kioskAutoLogin: @json($kioskAutoLoginPayload),
             // Langue UI borne : fr | ar | en (défaut fr) — évite anglais si le navigateur / localStorage était en "en"
             kioskDefaultLocale: @json((string) config('kiosk.default_locale', 'fr')),
             // [ADR-007 / Sprint 3D 2026-05-16] Kiosk runtime FR-immutable en V1.
@@ -163,6 +190,22 @@
             },
             @endif
         };
+        // [Sprint H1 K-003 2026-05-17] Externalize FRITES_INCLUDED_CATS so DB
+        // renumber/menu reset doesn't silently break wizard fries-inclusion logic.
+        // Consumed by KioskWizardComponent.vue:1029 (shouldAskStep frites_style).
+        window.FK_KIOSK_FRITES_CATS = @json(config('kiosk.frites_included_category_ids', []));
+        // [Sprint H1 K-004 2026-05-17] Wizard template aliases (Owner G3 Option B):
+        // owner-curated substring → canonical template map, consulted first by
+        // KioskWizardComponent.vue:907 detectTemplateFromName so admin renames
+        // don't silently break wizard template routing.
+        window.FK_KIOSK_WIZARD_TEMPLATE_ALIASES = @json(config('kiosk.wizard_template_aliases', []));
+        // [Sprint H4 Z3-NEW-006 2026-05-17] KDS V2 org-wide kill-switch. Defaults
+        // true (V2 is the rollout default per Wave Z 5C). Operators can rollback
+        // all devices via KDS_V2_DEFAULT_ENABLED=false in .env instead of
+        // per-tab localStorage flipping. Consumed by
+        // KitchenDisplaySystemComponent.vue::useV2Layout (config layer between
+        // localStorage and hardcoded fallback).
+        window.FK_KDS_V2_DEFAULT_ENABLED = @json((bool) config('kds.v2_default_enabled', true));
         // [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle
         // [GAP-32-6] Use config() instead of env() — env() returns null after config:cache in production
         window.__FOODKING_RUNTIME__ = {

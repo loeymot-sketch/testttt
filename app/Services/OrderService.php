@@ -1512,7 +1512,16 @@ class OrderService
             // Notifications + OrderStatusChanged broadcast are deferred to
             // afterCommit so listeners (OSS, KDS, loyalty) never observe a
             // half-written state nor fire if the transaction rolls back.
-            DB::transaction(function () use (&$order, $oldStatus, $newStatus) {
+            //
+            // [GOAL-2026-05-18 P0-LIV-02 / P0-LIV-03] Cash collection at the
+            // doorstep MUST leave an NF525 audit_log trail, and a corrupt
+            // `payment_method` MUST NOT silently flip the row to PAID (double
+            // charge risk). Both guards execute INSIDE the locked transaction
+            // so the row read is the truth-of-record and the audit row commits
+            // atomically with the status mutation.
+            $cashEscrowWritten = false;
+            $cashEscrowMeta    = null;
+            DB::transaction(function () use (&$order, $oldStatus, $newStatus, &$cashEscrowWritten, &$cashEscrowMeta) {
                 $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
                 // Idempotent: if a concurrent caller already applied the
@@ -1523,8 +1532,44 @@ class OrderService
                 }
 
                 $transaction = Transaction::where('order_id', $locked->id)->first();
-                if (!$transaction && $locked->payment_status == PaymentStatus::UNPAID) {
+                $wasUnpaidCash = (! $transaction)
+                    && (int) $locked->payment_status === (int) PaymentStatus::UNPAID;
+
+                if ($wasUnpaidCash) {
+                    // [P0-LIV-03] Guard payment_method against silent double-charge.
+                    // Only the recognised PaymentGateway constants (1..5) may
+                    // trigger the auto-flip to PAID. A corrupt / null / out-of-
+                    // range value is treated as a data-integrity failure and the
+                    // whole transition aborts (HttpException 422 so the caller
+                    // surfaces the actual problem instead of silently corrupting
+                    // financials).
+                    $pm = $locked->payment_method;
+                    $allowed = [
+                        \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
+                        \App\Enums\PaymentGateway::E_WALLET,
+                        \App\Enums\PaymentGateway::PAYPAL,
+                        \App\Enums\PaymentGateway::CARD,
+                        \App\Enums\PaymentGateway::TICKET_RESTAURANT,
+                    ];
+                    if ($pm === null || ! is_numeric($pm) || ! in_array((int) $pm, $allowed, true)) {
+                        abort(422, 'Refusing to auto-mark order PAID: payment_method is missing or out of the allowed enum range.');
+                    }
+
                     $locked->payment_status = PaymentStatus::PAID;
+                    if ((int) $pm === (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY
+                        && (int) $newStatus === (int) OrderStatus::DELIVERED) {
+                        // [P0-LIV-02] Record the cash-collection event for NF525.
+                        // The escrow row is the audit-trail anchor between
+                        // "collected at doorstep" and "deposited at branch".
+                        $cashEscrowWritten = true;
+                        $cashEscrowMeta = [
+                            'branch_id' => (int) $locked->branch_id,
+                            'order_id'  => (int) $locked->id,
+                            'driver_id' => Auth::check() ? (int) Auth::id() : null,
+                            'amount'    => round((float) $locked->total, 2),
+                            'serial'    => $locked->order_serial_no,
+                        ];
+                    }
                 }
 
                 $locked->status = $newStatus;
@@ -1541,6 +1586,40 @@ class OrderService
 
                 $order = $locked;
             });
+
+            if ($cashEscrowWritten && is_array($cashEscrowMeta)) {
+                // [P0-LIV-02] Append AFTER the transaction commits so the chain
+                // tail is read against the persisted state. AuditLogService has
+                // its own Cache::lock + DB::transaction inside write() (see
+                // POS-9-H.2.2 / F-C3 doc-block), so calling it post-commit
+                // keeps the HMAC chain ordering deterministic.
+                try {
+                    app(AuditLogService::class)->write([
+                        'branch_id'   => $cashEscrowMeta['branch_id'],
+                        'user_id'     => $cashEscrowMeta['driver_id'],
+                        'action'      => 'delivery.cash_collected_escrow',
+                        'resource'    => 'order',
+                        'resource_id' => $cashEscrowMeta['order_id'],
+                        'payload'     => [
+                            'order_id'           => $cashEscrowMeta['order_id'],
+                            'order_serial_no'    => $cashEscrowMeta['serial'],
+                            'amount_collected'   => $cashEscrowMeta['amount'],
+                            'delivery_boy_id'    => $cashEscrowMeta['driver_id'],
+                            'payment_method'     => (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
+                            'collected_at'       => now()->toIso8601String(),
+                            'event'              => 'doorstep_cash_collection',
+                        ],
+                    ]);
+                } catch (\Throwable $auditError) {
+                    // Never let an audit write error cascade into a billing
+                    // rollback — NF525 chain breakage is surfaced via
+                    // verifyChain() + ops alerting, not via a customer-facing
+                    // 5xx mid-delivery. Log + continue.
+                    Log::warning('[DeliveryBoy] cash-collection audit_log write failed: ' . $auditError->getMessage(), [
+                        'order_id' => $cashEscrowMeta['order_id'],
+                    ]);
+                }
+            }
 
             // Dispatch notifications + broadcast AFTER the transaction has
             // committed so jobs and listeners always read the persisted state.
@@ -2004,29 +2083,86 @@ class OrderService
 
     /**
      * @throws Exception
+     *
+     * [GOAL-2026-05-18 P0-LIV-01] Multi-tenant + role guard.
+     *
+     * Before any assignment, the target user is verified to (a) actually have
+     * Role::DELIVERY_BOY and (b) belong to the same branch as the order. The
+     * check runs OUTSIDE the try/catch so abort(403)/abort(422) propagate as
+     * HttpException instead of being swallowed and re-thrown as a generic 422
+     * (codebase-wide pattern, cf. selectDeliveryBoy callers PosOrderController
+     * + OnlineOrderController). Without this guard a branch-A admin could
+     * silently assign a branch-B driver, breaking BranchScope semantics on the
+     * livreur's `index` query at line 262-298.
      */
     public function selectDeliveryBoy(Order $order, Request $request, bool $auth = false): Order|array
     {
-        try {
-            if ($auth) {
-                if ($order->user_id == Auth::user()->id) {
-                    $order->delivery_boy_id = $request->delivery_boy_id;
-                    $order->save();
-                    SendOrderDeliveryBoyMail::dispatch(['order_id' => $order->id, 'status' => 101]);
-                    SendOrderDeliveryBoySms::dispatch(['order_id' => $order->id, 'status' => 101]);
-                    SendOrderDeliveryBoyPush::dispatch(['order_id' => $order->id, 'status' => 101]);
-                    return $order;
-                } else {
-                    abort(403, 'Access denied: you do not have permission to modify this order.');
-                }
-            } else {
-                $order->delivery_boy_id = $request->delivery_boy_id;
-                $order->save();
-                SendOrderDeliveryBoyMail::dispatch(['order_id' => $order->id, 'status' => 101]);
-                SendOrderDeliveryBoySms::dispatch(['order_id' => $order->id, 'status' => 101]);
-                SendOrderDeliveryBoyPush::dispatch(['order_id' => $order->id, 'status' => 101]);
-                return $order;
+        // ─── Authz preflight (HttpException must propagate, NOT be wrapped) ───
+
+        if ($auth) {
+            // Customer self-service path — ownership check first.
+            if ($order->user_id != Auth::user()?->id) {
+                abort(403, 'Access denied: you do not have permission to modify this order.');
             }
+        }
+
+        $targetId = $request->delivery_boy_id ?? null;
+        if (! is_numeric($targetId) || (int) $targetId <= 0) {
+            abort(422, 'delivery_boy_id is required and must be a positive integer.');
+        }
+
+        // Spatie role scope + branch fence. Use withoutGlobalScope so an Admin
+        // calling from branch_id=0 still sees the target row in its own branch.
+        $target = User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->role(\App\Enums\Role::DELIVERY_BOY)
+            ->where('id', (int) $targetId)
+            ->first();
+
+        if ($target === null) {
+            abort(403, 'Target user is not a delivery boy.');
+        }
+
+        if ((int) $target->branch_id !== (int) $order->branch_id) {
+            abort(403, 'Cross-branch delivery boy assignment denied.');
+        }
+
+        // ─── Mutation (wrapped — generic Exception is acceptable here) ───
+
+        try {
+            $order->delivery_boy_id = (int) $targetId;
+            $order->save();
+
+            // [P0-LIV-01 trace] Audit-log the assignment so the same chain
+            // also records WHO assigned WHICH driver to WHICH order. Mirrors
+            // the cash escrow trace symmetry. Best-effort — never cascade an
+            // audit failure into a 5xx for the operator.
+            try {
+                app(AuditLogService::class)->write([
+                    'branch_id'   => (int) $order->branch_id,
+                    'user_id'     => Auth::check() ? (int) Auth::id() : null,
+                    'action'      => 'order.delivery_boy_assigned',
+                    'resource'    => 'order',
+                    'resource_id' => (int) $order->id,
+                    'payload'     => [
+                        'order_id'        => (int) $order->id,
+                        'order_serial_no' => $order->order_serial_no,
+                        'delivery_boy_id' => (int) $targetId,
+                        'order_branch_id' => (int) $order->branch_id,
+                        'actor_id'        => Auth::check() ? (int) Auth::id() : null,
+                        'path'            => $auth ? 'customer_self_service' : 'admin_assign',
+                        'assigned_at'     => now()->toIso8601String(),
+                    ],
+                ]);
+            } catch (\Throwable $auditError) {
+                Log::warning('[DeliveryBoy] driver-assignment audit_log write failed: ' . $auditError->getMessage(), [
+                    'order_id' => $order->id,
+                ]);
+            }
+
+            SendOrderDeliveryBoyMail::dispatch(['order_id' => $order->id, 'status' => 101]);
+            SendOrderDeliveryBoySms::dispatch(['order_id' => $order->id, 'status' => 101]);
+            SendOrderDeliveryBoyPush::dispatch(['order_id' => $order->id, 'status' => 101]);
+            return $order;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

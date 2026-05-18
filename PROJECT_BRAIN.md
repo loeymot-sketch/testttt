@@ -33,7 +33,7 @@ Plateforme restaurant fast-food complète :
 - Spatie permissions 5 → 6 (track séparé)
 - ESLint v10 setup + Vue plugin
 - Saga pattern Order + Payment + Stock orchestration
-- Stripe webhook idempotency (parité SenangPay iter11)
+- ~~Stripe webhook idempotency (parité SenangPay iter11)~~ **CLOSED Sprint 3A 2026-05-16** (verified Round 2 T-3.3.1 Architect : `app/Http/PaymentGateways/Gateways/Stripe.php:166-328` + route + 6 tests at `tests/Feature/Webhooks/StripeWebhookIdempotencyTest.php`)
 
 ### Goals immuables
 - Production-grade correctness, coherence, reliability, quality
@@ -46,11 +46,22 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
-- **Branche** : `feature/mobile-app-le-cayenne-2026-05-10`
-- **HEAD** : `56204f052` (Wave Z 5D — auth token revoke on relogin, post 10-system convergence audit 2026-05-16)
-- **Backup branch** : `backup/pre-menu-reset-le-cayenne-2026-05-13` (HEAD `4937d08b2`) + tag `pre-menu-reset-2026-05-13`
-- **DB backup** : `storage/backups/menu-reset-2026-05-13/foodking-full-dump.sql` (5.4 MB)
-- **Last update** : 2026-05-16 — **WAVE Z CONVERGED ✅ GO-CONDITIONAL** (10-system parallel audit Z1-Z10, 2 rounds + Round-3 SMOKE, P0+P1=0 NEW Wave Z findings across all systems). 7 P0 NEW healed (Z9-P0-01 E.164, Z9-P0-02 sentinel-log, Z9-P0-03 GDPR phone gate, Z10-F-7 drawer pop forensic, Z1-NEW-001 EN i18n, Z1-NEW-002 + POS-A3 quote perm, Z3-NEW-004 phone wire). 14 P1 healed (6 outbox listeners wasRecentlyCreated, OSS deterministic order, Z6-01 token revoke). Frozen-zone diff = 0 over 6 heal commits (13 frozen files). NF525 chain unchanged (audit_logs 26 rows, hash `ca4ac1fdc208dae1`, triggers active). 44/44 heal-impacted tests PASS. V1 Le Cayenne SHIPPABLE; V1.0.1 backlog documented (Z3-NEW-001 Items Board owner-gate, terminal_id wire-in, webhook DLQ command, Z6-02/05/06 security, F-10/F-11/F-12 cash forensic, DEL-5/6/7/8/9 Sister Sprint 4). Wave Z commits: `7fc62c066` (5A delivery+GDPR), `7e62f7bbc` (5B cash+POS), `d424f8402` (5C outbox+OSS+EN+5B-fu), `56204f052` (5D auth) + 2 sister intercalated (`c9509b3ad`, `fe883b457`). Deliverable: `reports/test-e2e/wave-z-2026-05-16-claudemax/CONVERGENCE_FINAL.md` + 20 per-Z findings reports + AGGREGATE.md.
+- **Branche active V1.0.1** : `v1-0-1-hardening-2026-05-17` (HEAD `283594f11` post ULTRA architectural-backbone GOAL commit). 21 commits dans la mission GOAL Production Readiness (`8966881aa..6908edbde`) + 1 commit GOAL CMS architectural-backbone (`283594f11`).
+- **Mission active 2026-05-18** : `goal-ultra-central-mgmt-sync-2026-05-18` — ULTRA architectural-backbone audit across 3 systems CENTRAL × MGMT × SYNC. **Round 1 of N CLOSED** : 9 parallel sub-agents (3 specialists × 3 top-critical tasks T-1.2.1 NF525 / T-2.1.1 Catalog SSOT / T-3.1.1 Outbox lifecycle) returned ≤10 min wall-clock, **14 P0 findings total** (3 cross-validated by ≥2 agents : TRUNCATE GRANT gap + Mutator no env-gate + Outbox prune gap-lock) + **15+ P1**. Aggregate verdict **NO-GO V1 ABSOLUTE-AS-IS**. Heal scope ~22h V1-blocker path before merge; major P0s deferred V1.0.2 (JET XML DGFiP export, config/menu.php → DB SSOT migration). 0 frozen-zone touch needed for V1 heal (all in unfrozen support code/deploy/Kernel/listeners). Deliverable : `reports/test-e2e/goal-ultra-central-mgmt-sync-2026-05-18/round-1/ROUND_1_GLOBAL_VERDICT.md` (~14 KB) + 9 specialist reports (~115 KB total) + GOAL doc 42 KB + NF525 baseline. **NF525 chain baseline W0** : `count=27 | last_hash=206f9dcaa25f30354fe28da3ac5f8d980e58c52f9a08c53c7f183f3fcc6200c1` (appended +1 from prior `count=26` BRAIN snapshot — chain valid). Next decision-point : Path A heal-via-PR-split (recommended for V1 ship pressure) / Path B Round 2 audit (5 more critical tasks) / Path C handoff to next session.
+- **Prior 2026-05-18** : `goal-2026-05-18` GOAL Production Readiness mission CONVERGED ✅ GO-CONDITIONAL (HEAD `6908edbde` → ne change pas) — TAG `v1.0.2-rc1-2026-05-18` au HEAD `6908edbde`. **Backup safety net** : branche `backup/pre-goal-2026-05-18` + tag `pre-goal-2026-05-18` (HEAD `8966881aa`). 20 commits dans la mission GOAL (`8966881aa..6908edbde`).
+- **Last session GOAL** : 2026-05-18 — **MISSION GOAL CONVERGED ✅ GO-CONDITIONAL** (code-level 100% GREEN + visual gate 50% fully attested). 10 audit sub-agents Round 1 + 8 fix implementers Round 2 + 10 RED+visual Round 3 (7/10 cut by usage limit, orchestrator-direct completed missing 3 + cross-cutting re-attestation + smoke + regression heal). 13+ P0 closed (POS×4 + OSS chime + Livreur×3 + Mobile fictional×5 + idempotency 4-gap + web legal). Sister F-4 POS Featured Categories feature wrapped up in same flush (`cd50bc3ac`). NF525 chain bit-identical (`count=26 | last_hash=ca4ac1fdc208dae1`). Frozen-zone diff = 0 across 13 protected files. BranchScope 17 models. Idempotency 13→17 routes. Test count 471→479 *Test.php files + 33+ NEW test cases. 1 regression healed (`cd50bc3ac` PaymentNoopIdempotencyTest + opt-in flag pattern from Impl A). Visual attestations directes : POS login GREEN + Mobile orders (ZERO fictional, ALL canonical Big Cayenne/Tacos L/Bowl Frites Curry) + Mobile home (SANDWICH CAYENNE 7,50€ canonical). Owner gates B1-B4 PENDING (parallel). Mission ~95% complete. Pending pour `v1.0.2-production-ready` tag : 5 visual reports finalisation (~30min orchestrator) + B1-B4 owner physical actions. Deliverable : `reports/test-e2e/goal-2026-05-18/` (RESUME + FINAL_CONVERGENCE + 99_SYNTHESIS + 11 agent reports + 8 impl evidence + 4 RED Round 3 reports + 30+ PNG captures durables) + 2 NEW skills `~/.claude/skills/ultra-{architect-planify,audit-profond}/SKILL.md` hardened.
+- **Branche active V1.0.1 historique** : Wave 5G `155ddbde8` → Wave 5H `46fb4ef2d` → Wave 5I `1235e3e1a` → 5 P0 heal commits → mission GOAL 2026-05-18 (this entry).
+- **Last session** : 2026-05-18 — **V1 Cloud-Prep insights heal Round 1 LANDED ✅** (post 6-agent RED-team audit `reports/audit/v1-cloud-prep-insights-2026-05-18/INSIGHTS_FINAL.md`). Cross-validated 7 P0 + 18 P1 — almost all working-tree-uncommitted artefacts or docs drift (not technical reversals). Heals committed: P0-#1 **POS_SIMULATION_HARDWARE triad now committed** (`2477a2d05`) with production boot guard `AppServiceProvider` + NEW sentinel test (cash-drawer/TPE bypass only — pricing/composition/fiscal/audit-chain stay enforced per CLAUDE.md §8) ; P0-#2 **Stripe.php cents-truncation round-before-cast** €9.99 → 999 cents (`c0c315ef8`) ; P0-#3 **POS offline replay URL** `admin/pos/order` → `admin/pos` + P0-#4 **5 PHPUnit fixtures committed** (`31a33cd24`, CI fresh-clone now green) ; P0-#5 + P0-#6 **closed by parallel commit `59fdd279f`** (vault.yml.example NEW 53 LOC + 8 vault_* placeholders + README bootstrap + PRODUCTION_ENV_TEMPLATE +40 LOC with STRIPE_WEBHOOK_SECRET CRITICAL / CASH_MANAGER_GATE_ROUTINE_CLOSE / KDS_V2_DEFAULT_ENABLED / KIOSK_LOCALE_SWITCH_ALLOWED ; POS_SIMULATION_HARDWARE already at line 112 from Wave 5I `1235e3e1a`). P0-#7 BRAIN refresh + CONVERGENCE_FINAL.md + memory + frozen-zones reconcile + garbage cleanup (`6b8644ee0` + this follow-up correction). Frozen-zone diff = 0 (PricingService.php, PaymentComponent.vue, PosV5TrancheRow.vue, pos-wizard.js, KioskWizardComponent.vue untouched). NF525 chain bit-identical (`count=26 | last_hash=ca4ac1fdc208dae1`).
+- **Prior 2026-05-18 work integrated** : POS payment 4-scenarios green + Frites wizard aligned. Root cause "Composition #N n'appartient pas au profil" = wizard profile missing steps Vanilla JS sends — **data alignment**, not stale IDs. 2 idempotent seeders : `AlignProfile85ChickenBurgerSeeder` (+viande +crudite) + `AlignFritesWizardProfilesSeeder` (3 Frites items 361/402/403 → profiles 87/88/89 with frites_style + sauce + sauce_supp steps, +54 free sauce variations, +52 paid sauce extras, retagged 30 legacy sauce extras). + 22 i18n keys (fr.json + en.json split-payment). + `config/pos.php` simulation_hardware flag (now with production guard `2477a2d05`). Proof: `FritesWizardComposerTest` 4/4 + `PosSimulationHardware4ScenariosTest` 6/6 + `PosCashTrailTest` 6/6 + `SplitPaymentEndToEndTest` 6/6 + `SplitPaymentSentinelTest` 3/3 = **25/25 cumulative**, 0 régression. V1.0.x backlog: **republish-all sweep** to apply Frites pattern to every Item (Tacos, Bols, Burgers, etc.). Production flip: `POS_SIMULATION_HARDWARE=false` + open drawer normal workflow.
+- **Branche parallèle** : `feature/mobile-app-le-cayenne-2026-05-10` (HEAD `56204f052` Wave Z final — concurrent "Massive Logic + Image" cycle 2026-05-17 sur cette branche, séparé du V1.0.1 hardening)
+- **HEAD pre-V1-Cloud-Prep** : `4fc4c3b86` (V1.0.1 CONVERGENCE_V1_0_1 doc commit, snapshot baseline avant V1 Cloud-Prep session)
+- **HEAD pre-V1.0.1** : `56204f052` (Wave Z 5D, snapshot baseline avant le hardening cycle)
+- **Backup V1.0.1 pre-cycle** : `backup/pre-v1-0-1-hardening-2026-05-17` (HEAD `56204f052`) + tag `pre-v1-0-1-2026-05-17` + DB dump `storage/backups/v1-0-1-pre/foodking-dump-2026-05-17.sql` (5.9 MB md5 `b0aaef601e227059bf980634e22929c2`)
+- **Backup branch (menu reset)** : `backup/pre-menu-reset-le-cayenne-2026-05-13` (HEAD `4937d08b2`) + tag `pre-menu-reset-2026-05-13`
+- **DB backup (menu reset)** : `storage/backups/menu-reset-2026-05-13/foodking-full-dump.sql` (5.4 MB)
+- **Last update V1 Cloud-Prep** : 2026-05-17→18 — **V1 CLOUD-PREP CONVERGED ✅ GO-CONDITIONAL Phase D** post Wave 5G + 5H + 5I + insights heal Round 1 (9 commits Phase C local + Wave 5D-5I + 3 insights-Round-1 heals, **~9 P0 owner-claim verified + 7 P0 RED-team cross-validated and healed**). Wave 5G `155ddbde8` closed 13 P0 owner-claim (LanguageService RCE + POS IDOR + Split-payment phantom CARD + RefundCreated dispatch + cash drawer idempotency + Phase D Ansible + Outbox pruning + POS offline full stack + Settings/Branch fanout + bcrypt 10→12 + OSS wakeLock) — insights audit found ~3 mis-narrated (Wave 5F commit body items labelled `(V2)` inline but lifted as "done"). Wave 5H `46fb4ef2d` PhpSpreadsheet 1.30.0→1.30.4 (5 CVEs incl. CVE-2026-34084 CRITICAL) + FormRequest authz × 5 (Currency / Tax / Branch / Role / Administrator). Wave 5I `1235e3e1a` 3 Ultra Review FINAL heals (POS IDOR 403/404 timing + simulation_hardware env template doc + Ansible pre-migrate snapshot). Insights heal Round 1 (`c0c315ef8` / `31a33cd24` / `2477a2d05`) closed Stripe cents + POS_SIMULATION_HARDWARE production guard + offline replay URL + fixtures. 0 frozen-zone touch NEW. NF525 chain bit-identical. Vitest 1444/1447 PASS stable across waves. 1 LOCK plan owner-gate authored `LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17.md` 401 LOC. Owner-physique 10 actions checklist required before Phase D : AWS rotation + LOCK signature + OVH VPS-1 + DR drill + Certbot. Deliverable : `reports/test-e2e/v1-cloud-prep-2026-05-17/CONVERGENCE_FINAL.md` + `reports/audit/v1-cloud-prep-insights-2026-05-18/INSIGHTS_FINAL.md`.
+- **Prior update V1.0.1** : 2026-05-17 — **V1.0.1 HARDENING CONVERGED ✅ GO** (6 sprints H1-H6 sequential subagent-driven, 30/30 backlog items closed dont 4 deferred V1.0.2 avec docs, 914/914 PHPUnit broad smoke, 0 frozen-zone touch NEW + 14 LOC inline exception Owner G3 + 1 retro LOCK POS-A4, NF525 chain unchanged hash `ca4ac1fdc208dae1`, 27 pre-existing POS test failures fixed via SeedsOpenCashDrawerSession trait, 4 Owner Gates resolved G1=B/G2=B/G3=B/G4=A, ~68 new test cases + 27 production tests fixed, V1.0.1 MERGEABLE to main pending owner countersign POS-A4 LOCK). Deliverable : `reports/test-e2e/v1-0-1-2026-05-17/CONVERGENCE_V1_0_1.md` + `plans/v1-0-1-hardening/` (MASTER + OWNER_GATES + EXECUTOR_HANDOFF + LOCK POS-A4) + 3 decision docs (DEPRECATED_KDS_V2_ITEMS_BOARD, ACCEPTED_POS_WIZARD_CASH_TILE_REACTIVE_UX, DEFERRED_AUTO_DISPATCH_V1_0_2).
+- **Wave Z update (prior)** : 2026-05-16 — **WAVE Z CONVERGED ✅ GO-CONDITIONAL** (10-system parallel audit Z1-Z10, 2 rounds + Round-3 SMOKE, P0+P1=0 NEW Wave Z findings across all systems). 7 P0 NEW healed (Z9-P0-01 E.164, Z9-P0-02 sentinel-log, Z9-P0-03 GDPR phone gate, Z10-F-7 drawer pop forensic, Z1-NEW-001 EN i18n, Z1-NEW-002 + POS-A3 quote perm, Z3-NEW-004 phone wire). 14 P1 healed (6 outbox listeners wasRecentlyCreated, OSS deterministic order, Z6-01 token revoke). Frozen-zone diff = 0 over 6 heal commits (13 frozen files). NF525 chain unchanged (audit_logs 26 rows, hash `ca4ac1fdc208dae1`, triggers active). 44/44 heal-impacted tests PASS. V1 Le Cayenne SHIPPABLE; V1.0.1 backlog documented (Z3-NEW-001 Items Board owner-gate, terminal_id wire-in, webhook DLQ command, Z6-02/05/06 security, F-10/F-11/F-12 cash forensic, DEL-5/6/7/8/9 Sister Sprint 4). Wave Z commits: `7fc62c066` (5A delivery+GDPR), `7e62f7bbc` (5B cash+POS), `d424f8402` (5C outbox+OSS+EN+5B-fu), `56204f052` (5D auth) + 2 sister intercalated (`c9509b3ad`, `fe883b457`). Deliverable: `reports/test-e2e/wave-z-2026-05-16-claudemax/CONVERGENCE_FINAL.md` + 20 per-Z findings reports + AGGREGATE.md.
 - **Previous Last update** : 2026-05-13 04:36 — **ULTRA GOAL COMPLETE ✅ GO-CONDITIONAL** (11 axes audited, 16 heals applied, 0 frozen-zone touch). Test wins: PHPUnit 20→3 fails (+17 wins, 1880 passed), Vitest 6→4 fails (+2 wins, 1383 passed), Playwright smoke 14/15. Remaining failures all baseline-known (3 PHP-8.3 vendor + 1 CSP + 2 frozen audit + 1 banner) NOT regressions. NF525 FULL compliance attested (HMAC 26 rows intact, triggers active, monotonic seq, immutable snapshot). Multi-tenant 14+ models with BranchScope (+ 2 added: PosParkedOrder + OrderQuote A5 heal). 4 LOCK-deferred items (A4 POS menu addon role mirror €1.20-1.80/order, A6 drink step label) — recommend Cayenne composer migration OR backend guard for A4. **OWNER URGENT** : (1) rotate AWS keys exposed in commit a4a88df06 "up" auto-commit, (2) UPDATE branches SET status=5 WHERE status=1 + sweep cleanup, (3) A4 P0 decision. Deliverable : `reports/audit/ultra-goal-2026-05-13/FINAL_VERDICT.md`. Backup branch `backup/pre-ultra-goal-2026-05-13` + DB dump 5.5 MB md5 `8dcdb0e0dac6942359e4bb684f223ca4`.
 - **Branche release antérieure** : `cycle/PHASE2-TRAIN-A-V1-RELEASE-PREP-2026-04-27`
   (HEAD `9d9dddae1`, NO-GO V1 par audit POS adversarial 2026-05-09 — état préservé)
@@ -77,6 +88,160 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**V1 Cloud-Prep — Phase C local + Wave 5D-5I + insights heal Round 1 2026-05-17 → 18** (branche `v1-0-1-hardening-2026-05-17`, HEAD `4fc4c3b86` → `2477a2d05`, 9+ commits) :
+
+**Wave 5H (`46fb4ef2d`)** : PhpSpreadsheet 1.30.0 → 1.30.4 composer.lock (CVE-2026-34084 CRITICAL SSRF/RCE + CVE-2026-40902/40863 high DoS + CVE-2026-40296/35453 medium XSS — 5 advisories closed, total 17 → 12). FormRequest authz `return true;` → `$this->user()?->can(...)` × 5 (CurrencyRequest / TaxRequest / BranchRequest / RoleRequest / AdministratorRequest), 30 LOC net, 481/481 PASS broader. EmployeeRequest skipped (≤5 cap) → V1.0.2 backlog.
+
+**Wave 5I (`1235e3e1a`)** : 3 RED-team Ultra Review FINAL heals scope-minimal — POS IDOR 403/404 timing leak `PosOrderController:107-117` (wrap `withoutGlobalScope->findOrFail()` try/catch, unified abort(403)) ; POS_SIMULATION_HARDWARE explicit doc in `docs/cloud/PRODUCTION_ENV_TEMPLATE.env.txt` +6 LOC ; Ansible pre-migrate mysqldump task in `deploy/ansible/site.yml` +12 LOC (NF525 safety net).
+
+**Insights audit Round 1 (`reports/audit/v1-cloud-prep-insights-2026-05-18/INSIGHTS_FINAL.md`)** : 6 parallel RED sub-agents A1-A7 → verdict **NO-GO Phase D en l'état pre-heal**. 7 cross-validated P0 + 18 P1 — almost all working-tree uncommitted or docs drift. **Recalibrated owner-claim score** : ~9 P0 verified Wave 5D-5I (vs 13 narrative claim) — A3 caught 3 items in Wave 5F commit body `55edb83ba` labelled `(V2)` inline but mis-narrated as "done" (KDS bumped cross-station + kitchen printer auto-fallback + Stripe/SenangPay refund webhook handlers — all V2 backlog).
+
+**Insights heal Round 1 commits (5 total)** :
+- `c0c315ef8` P0-#2 Stripe.php round-before-cast cents conversion (€9.99 → 999, not 900) — closes NF525 receipt/payment €0.99 mismatch.
+- `31a33cd24` P0-#3 + P0-#4 POS offline replay URL `admin/pos/order` → `admin/pos` + 5 PHPUnit fixtures committed (PosCashTrailTest + SplitPaymentEndToEndTest + TerminalIdWireInTest + SplitPaymentSentinelTest + SplitPaymentServiceTest) — CI fresh-clone now green.
+- `2477a2d05` P0-#1 POS_SIMULATION_HARDWARE triad committed (config/pos.php + PosController + PaymentService + SplitPaymentService skips) + **production boot guard `AppServiceProvider`** throwing `RuntimeException` if `app()->environment('production') && config('pos.simulation_hardware')` + NEW sentinel test — closes CLAUDE.md §8 violation risk.
+- `59fdd279f` P0-#5 + P0-#6 deploy artefacts — `deploy/ansible/group_vars/vault.yml.example` NEW 53 LOC with 8 vault_* placeholders (db_password / redis_password / soketi_app_{id,key,secret} / fiscal_audit_secret / fiscal_z_report_secret / backup_alert_webhook) + 4 optional commented + cp/edit/encrypt instructions + NF525 caveats + README bootstrap section ; `docs/cloud/PRODUCTION_ENV_TEMPLATE.env.txt` +40 LOC (STRIPE_WEBHOOK_SECRET CRITICAL forge-prevention + CASH_MANAGER_GATE_ROUTINE_CLOSE H2.2 + KDS_V2_DEFAULT_ENABLED H4.5 + KIOSK_LOCALE_SWITCH_ALLOWED K-001 ADR-007). POS_SIMULATION_HARDWARE already at line 112 from Wave 5I `1235e3e1a` (untouched).
+- `6b8644ee0` + follow-up correction commit P0-#7 CONVERGENCE_FINAL refresh + BRAIN §2/§3/§7 + memory project file + frozen-zones reconcile + garbage cleanup + OWNER_GATES/LOCK XSS status notes.
+
+**Recalibrated verdict** : Phase D cloud-deploy **GO-CONDITIONAL** post-Round-1-landing (vs GO-ABSOLUTE Wave 5G initial). Frozen-zone diff = 0 over full Wave 5D→Round-1 range. NF525 chain bit-identical (`count=26 | last_hash=ca4ac1fdc208dae1`). Owner-physique 10-action checklist unchanged (AWS key rotation + LOCK signature + OVH VPS-1 + DR drill + Certbot).
+
+---
+
+**V1 Cloud-Prep original Wave 5D-5G narrative (preserved below — see §1bis of CONVERGENCE_FINAL.md for recalibration)** :
+
+- **Mission owner** : Master Plan V2 Phase C local execution + RED-team Ultra Audit Massif heal + V1.0.2 P1 closures + Phase D cloud-prep ready. Carte blanche budget, mandate "no return without convergence".
+- **Méthodologie** : `superpower-gstack` composé (GStack 7-step + Superpowers parallel subagents + RED-team adversarial). 6+ implementer sub-agents per wave, file:line anti-fabrication strict, frozen-zone discipline ABSOLUTE.
+- **13 P0 closed** : LanguageController RCE primitive `permission:settings` gate (`dec9aec5a`), POS IDOR `PosOrderController::show` cross-branch fiscal leak (withoutGlobalScope INTERNAL + abort_unless 403, `dec9aec5a`+`b680bb980` sentinel align), Phase D Ansible templates nginx+supervisor j2 (`dec9aec5a`), Outbox pruning `PruneOutboxCommand` + `PruneWebhookEventsCommand` Kernel 04:15 (`dec9aec5a`), backup procedure NF525 6y `backup-foodking-daily.sh` + `restore-foodking-from-backup.sh` + runbook (`72b078682`+`0d35b4182` gunzip-t + s3 retry), POS offline FULL stack `posOfflineQueue.js` + `posOfflineQueueDb.js` + `usePosOfflineState.js` + `PosComponent.vue` +174 LOC UI integration (`72b078682`+`55edb83ba`, NOT pos-wizard.js frozen), cash drawer idempotency middleware `routes/api.php` (`55edb83ba`), RefundCreated event ZERO production dispatch wired `RefundWithCounterEntryService.php:229` + `PaymentService.php:134` (`55edb83ba`), POS Split-payment phantom CARD cash theft `PosOrderRequest.php` terminal_id required_if + `SplitPaymentService.php` defense-in-depth + NEW sentinel (`55edb83ba`), Ansible playbook `deploy/ansible/site.yml` 160 LOC + inventory + group_vars (`0d35b4182`), QUEUE_CONNECTION sync→redis + LOG_CHANNEL daily local .env gitignored (`72b078682`), cloud env template `docs/cloud/PRODUCTION_ENV_TEMPLATE.env.txt` 142 LOC (`72b078682`).
+- **5 V1.0.2 P1 closed Wave 5G** (`155ddbde8`) : OSS wakeLock TV walls `PreparingAndReadyComponent.vue` +40 LOC visibilitychange listener, bcrypt rounds 10→12 + zero-friction auto-rehash `LoginController.php` inline `Hash::needsRehash`, Settings update fanout admin→POS/Kiosk `SettingsUpdated.php` + `PersistSettingsUpdatedToOutbox.php` + 5 controllers wired, Branch status flip revokes user tokens `BranchStatusChanged.php` + `RevokeTokensOnBranchDeactivated.php` strict scope, readiness probe `/api/health/ready` verified existing (Phase D K8s-compatible).
+- **1 LOCK plan owner-gate** : `plans/LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17.md` (401 LOC) — frozen-zone heal request POS wizard XSS escape, complete scope/rollback/safety-check override/sub-agent instructions/owner sign-off — pending owner countersign.
+- **Frozen-zone discipline ABSOLUTE** : 0 NEW touches sur 13 fichiers frozen (CLAUDE.md §7) verified via `git diff --stat 4fc4c3b86..HEAD` on full frozen-zone list.
+- **NF525 attestation** : `audit_logs` chain HMAC unchanged (last hash `ca4ac1fdc208dae1` identical pre/post-session), triggers `no_update`/`no_delete` active, `composition_snapshot` immutability 100%, `fiscal_sequence_no` monotonic. Loi de Finance France compliance maintenue.
+- **Test gate** : **Vitest 1444/1447 PASS / 0 FAIL / 3 skipped** (stable Wave 5D→5G post 2 baseline KIs fix) + **PHPUnit heal-scope 80/80** (296 assertions, stable all waves) + **Wave 5G broader 95/95** (Bcrypt 4/4 + Settings 5/5 + Branch 5/5 + Health 12/12 + Auth 101/101) + **PHPUnit POS 50/50** + **CashDrawer 45/45** + **Kitchen\|OSS\|Kds 120/121** (1 pre-existing unrelated) + **Refund\|Stock 100/100** + **E2E heal-scope 16-21/17-21 GREEN** (1 skipped déterministe) + **2 sentinels NEW PASS** (PosSplitPaymentPhantomCard + FrenchRuntimeNoBangladesh fix) + **7 visual-mandate captures GREEN** (login/POS/items/stock/KDS/OSS/kiosk-idle).
+- **Wave 5H pending (NOT done this session)** : PhpSpreadsheet RCE upgrade (1 CRITICAL composer advisory) + FormRequest authz refactor 88 endpoints — V1.0.2 hardening scope, documented in convergence backlog.
+- **Owner-physique action items pending Phase D** : (1) **AWS key rotation** (carryover commit `a4a88df06` ultra-goal 2026-05-13), (2) **POS XSS LOCK plan owner countersign** (`plans/LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17.md`), (3) **Phase D 10 actions checklist** : OVH VPS-1 + SSH passwordless sudo + ansible-vault password + .env review + DR drill staging + cron backup + Certbot --nginx SSL + smoke E2E prod baseline match.
+- **V1 ship recommendation** : Phase D cloud deploy **UNBLOCKED** technique. Phase D execution pending owner-physique 10 actions. V1 Le Cayenne single-restaurant SHIPPABLE cloud post owner gate.
+- **Deliverable** : `reports/test-e2e/v1-cloud-prep-2026-05-17/CONVERGENCE_FINAL.md` (210 LOC, 8 sections) + 7 NEW cloud infra files + 3 NEW backup/DR files + 4 POS offline files + 2 sentinels + 1 LOCK plan + 7 visual captures.
+
+---
+
+**V1.0.1 Hardening — 6-Sprint Sequential Subagent-Driven Cycle 2026-05-17** (branche `v1-0-1-hardening-2026-05-17`, HEAD `56204f052` → `4fc4c3b86`, 23+1 commits) :
+- **Mission owner** : `/goal carte blanche max intelligence` + `continue max subagent et intelligence` — exécuter V1.0.1 hardening backlog complet documenté en Wave Z `CONVERGENCE_FINAL.md` §V1.0.1 polish backlog + 4 Owner Gates G1-G4 + checkpoints inter-sprint. Mandate "no return without convergence".
+- **Méthodologie** : `superpower-gstack` + `subagent-driven-development` + `writing-plans` skills composés. 11 sub-agent dispatches séquentiels (1 par item ou cluster), TDD discipline (RED→GREEN→COMMIT chaque item), file:line citations strict anti-fabrication, frozen-zone discipline absolute (CLAUDE.md §7), NF525 chain unchanged.
+- **4 Owner Gates résolus** :
+  - G1 (V2 KDS Items Board) = **B Deprecate** → doc `DEPRECATED_KDS_V2_ITEMS_BOARD.md` (95 lines, V2 unified queue replaces batch-prep aggregation)
+  - G2 (F-12 LOCK pos-wizard CASH tile) = **B Accept reactive UX** → doc `ACCEPTED_POS_WIZARD_CASH_TILE_REACTIVE_UX.md` (49 lines, backend 422 is fiscal-grade enforcement)
+  - G3 (K-004 LOCK kiosk wizard template) = **B Config aliases** → `config/kiosk.php` + Blade global, Vue inline-edit 11 LOC (under ≤30 LOC exception)
+  - G4 (Z6-06 status revalidation aggressiveness) = **A Every-request middleware** → `EnsureUserStatusActive` on api group AFTER auth:sanctum
+- **6 sprints exécutés séquentiel** (chaque sprint = N items + smoke gate avant transition suivant) :
+  - **Sprint H1 Security + Kiosk** (6 items, commits `18cbeb4e0` → `62f748bca`) : Z6-02 guest ability scope (kiosk:order), Z6-05 mass-assignment FormRequest strip (preventive vector lock), Z6-06 status revalidation middleware Option A, K-002 OrderRequest authorize tighten (test-pattern only, not live exploit), K-003 FRITES_INCLUDED_CATS config-driven (frozen 2 LOC inline), K-004 wizard template aliases (frozen 11 LOC inline + config). Smoke 111/111.
+  - **Sprint H2 Cash + TPE** (5 items + 1 doc, commits `5438cc4d7` → `19484ce9a`) : F-10 actor columns migration, F-11 manager-gate routine close (config opt-in), P1-Z7-01 terminal_id wire-in backend Stage A (UI Stage B deferred V1.0.1.x), P2-Z10-08 recordMovement DB::transaction + lockForUpdate, F-12 doc-accept Option B. Smoke 138/138.
+  - **Sprint H3 Sync + Delivery** (6 items + 1 doc, commits `bbb29d1f9` → `7d99873c3`) : P1-Z8-02 webhook DLQ command + ProcessWebhookEventJob + hourly schedule (provider replay stubs V1.0.2), DEL-5 branch-configurable delivery fee backward-compat, DEL-6 i18n parity (6 new keys 5-lang), DEL-7 BranchService zone-missing warning, DEL-8 minimum order amount validation, DEL-9 doc-deferred V1.0.2. Smoke 153/153.
+  - **Sprint H4 KDS finalize** (5 items + 1 doc, commits `17603e41d` → `3a85df440`) : Z3-NEW-001 Items Board deprecate doc, Z3-NEW-002/003 legacy delivery on 4 lanes, Z3-NEW-005 allergens_snapshot backfill command, Z3-NEW-006 V2 kill-switch env/config, Z3-NEW-007 aria-label i18n 5-lang. Smoke 80/80.
+  - **Sprint H5 Admin + OSS + LOCK** (10 items + 1 doc, commits `c31d25c51` → `aafa8c8f1`) : 4 clusters A admin polish (13 i18n strings + ItemRequest barcode/kds_station + ItemAttribute guard) / B OSS polish (stale prune 8h + branch-scoped popular + throttle + EN/AR i18n) / C channels UI (3 channels server-side) / D POS-A4 retro LOCK 228 lines + POS-A6 PaymentComponent.vue strip. Smoke 258/258.
+  - **Sprint H6 Test debt cleanup** (3 items, commit `b5a397512`) : `SeedsOpenCashDrawerSession` trait + applied to 20 POS test classes. Baseline 27 fails → **0 fails / 1354 passed**. 0 production code diff. Sentinels runbook (263 lines) déjà accurate (NO-OP).
+- **Frozen-zone discipline ABSOLUTE** : 0 NEW touches sur 12 fichiers frozen (CLAUDE.md §7). 1 inline-exception KioskWizardComponent.vue (14 LOC total H1.5+H1.6, Owner G3 pre-approved). 1 retro LOCK doc POS-A4 (pas de NEW edit, retrospective acceptance pos-wizard.js +237 + blade +165 vs main).
+- **NF525 attestation** : audit_logs count=26 unchanged, last_hash `ca4ac1fdc208dae1` identical pre/post-V1.0.1, triggers actifs, fiscal_sequence_no monotonic preserved, composition_snapshot + allergens_snapshot immutability respectée (H4.4 backfill only NULL rows), PricingService SSOT frozen, 6-year retention intact. Loi de Finance France compliance 100% maintenue.
+- **Audit corrections sub-agents** (3 brief-stale findings caught & fixed inline) : NEW-Z4-01 en.json:971 real (pas 958), Z4-P2-06 AR i18n déjà présent (NO-OP), POS-A6 real POST site PaymentComponent.vue (pas PosComponent.vue:2722-2734).
+- **V1.0.2 backlog hints (documentés)** : P1-Z7-01 Stage B UI terminal selector, DEL-9 auto-dispatch (3 sub-sprints ~15j), webhook DLQ provider replay full refactor, channels clear-to-empty + DRY sub-component, OSS branch enum logging, POS legacy de/bn kds_* i18n 71-key parity gap, CTO P0-6 Stripe cents-truncation fix unbundled.
+- **Test outcomes** : ~68 NEW test cases + 27 production tests fixed via H6 trait. Final smoke (broad Wave Z filter) = **914/914 PASS** + 6 skipped + 2 incomplete (env-dependent).
+- **V1 ship recommendation** : V1.0.1 MERGEABLE to main pending owner countersign POS-A4 LOCK doc + git merge v1-0-1-hardening-2026-05-17 --no-ff (CLAUDE.md §10 human gate).
+- **Deliverables** : `reports/test-e2e/v1-0-1-2026-05-17/CONVERGENCE_V1_0_1.md` + `plans/v1-0-1-hardening/` (MASTER + OWNER_GATES + EXECUTOR_HANDOFF + LOCK POS-A4) + 3 decision docs.
+
+---
+
+**Massive Logic + Reasoning + Image Cycle 2026-05-17** (branche `feature/mobile-app-le-cayenne-2026-05-10`) :
+- **Mission owner** : "test-e2e et agent adversaire et gstack et superpowers deployé test
+  massive avec les sub agents et pour l'app et site web surtout logique et raisonnement et
+  ajoute les image" — massive parallel sub-agent audit + heal + image integration.
+- **Méthodologie** : superpower-gstack 4 waves M0→M4 en ~1h30 wall-clock.
+- **5 parallel sub-agents read-only audit** (M1 single message dispatch) :
+  Mobile Logic Auditor + Web Logic Auditor + Cross-Surface Parity Auditor + Adversarial
+  RED + Image/Asset Auditor. Cross-Surface Parity verdict : **100% (28/28 cases mobile ↔
+  web math identique)**.
+- **5 P0 logic bugs HEALED** :
+  - H1 Web DirectAddView qty perdu (index.html onAdd hardcoded qty:1, ignored state.qty).
+  - H2 Mobile allergen aggregation FIC 1169/2011 gap (recap only showed item.allergens,
+    dropped selected supplements/drinks). New aggregatedAllergens block iterates
+    item+supps+bol_supps+drinks → wired to AllergenBadge.
+  - H3 Bol sauce default lookup by name fragile (both surfaces) → fallback to SAUCES[0]
+    if name lookup fails + console.warn.
+  - H4 SUPPLEMENTS pool missing allergens field (both menu.js) → 9 entries now declare
+    `allergens: ['lactose'|'oeuf'|[]]` per FIC.
+  - H5 Web suppOptions ignored allergens (hardcoded []) → reads SUPPLEMENTS.allergens.
+  - +1 P1 healed : Web ItemCard image onError reveals emoji fallback (was hide → blank).
+- **4 owner photos integrated** (mirror mobile + web = +6 MB total) :
+  - Chicken Burger 746 KB (vs 10 KB placeholder).
+  - Big Burger 733 KB (vs 10 KB placeholder).
+  - Nuggets 42 KB (was 404 on mobile).
+  - Cayenne hero bg-removed 1.4 MB.
+- **10 new E2E logic edge tests** (5 per surface) :
+  - L allergen aggregation (mobile) / multi-sauce edges (web)
+  - M multi-sauce edges (mobile) / bol sauce fallback (web)
+  - N bol sauce fallback (mobile) / sandwich cayenne sauce_locked skips step (web)
+  - O sandwich cayenne sauce_locked (mobile) / Big Cayenne viande_count=2 (web)
+  - P Big Cayenne viande_count=2 (mobile) / suppOptions allergens propagation (web)
+- **E2E final tally** : **69/69 GREEN** (17 mobile en 1.2min + 52 web × 4 viewports en
+  2.6min). Up from 44/44 baseline.
+- **Frozen-zones intactes (cycle scope)** : 12 fichiers verified per-file via `git status
+  --short` → 0 ligne diff.
+- **Adversarial RED 2 cycles** (M1 + M4) : 0 P0 résiduel, 2 P1 deferred (sauce_locked dans
+  cart line summary mobile, web CartDrawer composition_summary gap).
+- **Backlog B-ML-01..B-ML-05** : sauce_locked cart summary / web cart composition /
+  drink slug rename robustness / bowl distinct images / cornichon photo.
+- **Verdict** : 🟢 **GO V1 unconditional**. Both surfaces logic+pricing+allergen
+  hardened, images upgraded, parity 100%.
+- **Doc** : `reports/audit/massive-logic-2026-05-17/FINAL_VERDICT.md`.
+
+---
+
+**GOAL LONG-TERM Le Cayenne Frontends EXECUTED Cycle 2026-05-17** (branche `feature/mobile-app-le-cayenne-2026-05-10`) :
+- **Mission owner** : owner lancé `/goal ! do it and finish with test e2e` avec carte blanche.
+  Plan source : `plans/GOAL_LONGTERM_LECAYENNE_FRONTENDS_2026-05-16.md`. Owner-gates D1-D6
+  laissés à recommandations par défaut (1:1 / 0-500-1500-5000 / port 8082 / mobile assets /
+  pickup-only / WELCOME10+CAYENNE).
+- **Méthodologie** : superpower-gstack 8 waves W0→W8 en ~2h30 wall-clock.
+- **2 surfaces complètement séparées** alignées canoniquement post menu-reset 2026-05-13 +
+  heal-light V2 2026-05-14 (11 cats / 41 items / 4 viandes / 11 sauces / 9 supps @ 0.90€ /
+  4 supps_bols / composers Bols 3-step + Frites 1-step).
+- **Surface A — App Mobile** (`foodking-web/web/testttt/mobile/`) : 12/12 E2E re-verified
+  GREEN (no regression post-cycle 2026-05-16).
+- **Surface B — Site Web** (`/Users/1millnonstop/Downloads/web/`) : 32/32 E2E GREEN sur
+  4 viewports (mobile 390 / tablet 768 / desktop 1280 / wide 1920).
+- **Total : 44/44 E2E GREEN** sur 5 viewports combinés (1 mobile + 4 web).
+- **Web code livré (cycle scope)** : NEW `web/data/menu.js` (440 LOC canonical mirror) +
+  `web/index.html` (load data first) + `web/screens.jsx` (delegate W_CATS/W_ITEMS/W_DIET +
+  ItemCard wired photo + hero/marquee/special/featured/testimonials/REWARDS/TIERS canonical +
+  About text) + REWROTE `web/wizard-v2.jsx` (510 LOC canonical-driven : buildSteps + 4
+  templates + getActiveSteps cascade + computeWizardTotal + DirectAddView + bol/frites step
+  components) + `web/orders.jsx` (PAST_ORDERS canonical) + `web/screens-v3.jsx` (FAQ + Team +
+  Press text) + `web/flows.jsx` (-344/+2 dead AccountFlow+WizardFlow+W_WIZ removed, kept
+  CartDrawer) + `web/README.md` (brand description canonical) + 190 PNG `web/assets/menu/`
+  copied from mobile.
+- **Test infra NEW** : `tests/web-e2e/playwright.config.js` (4 viewports projects, chromium) +
+  `tests/e2e/test-e2e-website-realignment-2026-05-16.spec.js` (470 LOC, 8 tests × 4 viewports
+  = 32 GREEN). Tests : G data parity / H pricing parity / A home / B menu 11 cats / D wizard
+  4 templates / E computeWizardTotal / F photos no-404 / Z visual sweep.
+- **Adversarial RED post-green (2 sub-agents parallèles)** :
+  - Web RED : 5 functional checks GREEN, 2 P1 valid (dead W_WIZ in flows.jsx + README brand
+    drift) → **both HEALED**.
+  - Mobile RED : data parity mobile↔web CONFIRMED ALIGNED, frozen-zone intact, 1 "missing
+    web/data/menu.js" finding INVALID (stale state).
+  - Pepper Club earn_ratio divergence mobile 10:1 vs web 1:1 documented INTENTIONAL (D1 default).
+  - **0 P0 résiduel.**
+- **Frozen-zones intactes** : 12 fichiers verified per-file via `git status --short` (Kiosk
+  Vue 3 / pos-wizard.js / pos-wizard.css / Fiscal 3 / BranchScope / IdempotencyKeyMiddleware /
+  PricingService / OrderStateMachine) = 0 ligne diff.
+- **Both surfaces stay STANDALONE** par instruction owner (no API/MCP wireup). Base
+  connectable Phase 6 préparée : composer_profile hardcoded mirror DB shape, swap data
+  source = wireup mécanique futur.
+- **Verdict** : 🟢 **GO V1 unconditional**. Mobile + Web production-ready démo + iteration.
+- **Backlog Phase 6** : B6-01..B6-08 (Sanctum customer:order ability, NF525 fiscal mobile+web
+  source orders, SMS provider, Stripe customer-facing, Realtime Pusher, Loyalty backend,
+  cart desync, channels filter).
+- **Doc complet** : `reports/audit/longterm-goal-2026-05-17/FINAL_VERDICT.md`.
+
+---
 
 **Wave Z — 10-System Parallel Convergence Audit 2026-05-16** (branche `feature/mobile-app-le-cayenne-2026-05-10`, HEAD `c3ba89863` → `56204f052`) :
 - **Mission owner** : `/goal carte blanche max intelligence` — auditer Wave Z (post Sister-session heal Sprint 1A-3C) sur 10 systèmes Z1-Z10, heal jusqu'à convergence P0+P1=0 sur 2 rounds consécutifs, écrire CONVERGENCE_FINAL.md + BRAIN update. Carte blanche budget, mandate "pas de retour avant validation".
@@ -750,6 +915,37 @@ Captures visuelles : kiosk idle confirmé branding intact + admin login OK.
 
 ## §4 NEXT TO DO — Auto-managed (brain-written)
 
+### 🟢 GOAL LONG-TERM Le Cayenne Frontends Excellence 2026-05-17 — **EXECUTED GO V1** (carte-blanche owner)
+
+**Status** : ✅ CYCLE COMPLETE. Owner lancé /goal avec carte blanche, agent suivi
+recommandations D1-D6 par défaut (1:1 / 0-500-1500-5000 / port 8082 / mobile assets /
+pickup-only / WELCOME10+CAYENNE). 8 waves W0→W8 exécutés en ~2h30 wall-clock.
+Détails : voir §3 LAST DONE 2026-05-17 + `reports/audit/longterm-goal-2026-05-17/FINAL_VERDICT.md`.
+
+### 📜 PLAN historique GOAL préservé pour Phase 6
+**Status** : ⏸️ PLAN livré 2026-05-16, owner-gate D1-D6 (defaults appliqués 2026-05-17).
+**Doc** : `plans/GOAL_LONGTERM_LECAYENNE_FRONTENDS_2026-05-16.md` (15 sections).
+**Scope** : 2 surfaces complètement séparées :
+- **Surface A — App Mobile** (`foodking-web/web/testttt/mobile/`) — 18 pages × 9 axes,
+  état entrée : 12/12 E2E green post-realignment cycle 2026-05-16, data parity OK,
+  Bols+Frites composer OK. Travail = polish page-by-page (P0 A-P05..P11 + P1 A-P12..P15).
+- **Surface B — Site Web** (`/Users/1millnonstop/Downloads/web/`) — 23 routes/pages × 9 axes,
+  état entrée : SPA React+Babel-standalone créé par owner, **MENU FICTIF** (Box Nashville/
+  Cheese Smash/Wraps) → P0 BLOCKER data parity. Travail = Wave 1 refit data canonique
+  (11 cats / 41 items / pools) + Wave 2 assets + Wave 3 wizards 4 templates + Wave 4
+  page-by-page parallel + Wave 6 E2E spec NEW.
+**Méthodologie** : superpower-gstack 8 waves (W0 orient → W1 web data BLOCKER → W2 assets →
+W3 wizards → W4 web pages parallel → W5 mobile polish → W6 E2E web spec → W7 RED 2 sub →
+W8 ship). Estimate ~5-6j-agent wall-clock (parallelizable Wave 4).
+**Horizontal axes (9)** : H1 data parity SSOT / H2 visual / H3 responsive (web seul) /
+H4 UX / H5 perf / H6 a11y WCAG AA / H7 tests E2E / H8 sync connectable / H9 doc.
+**Discipline** : mobile + web restent STANDALONE (no API wireup — instruction owner
+explicite). Préparer base connectable Phase 6 (composer_profile hardcoded mirror DB,
+docs/INTEGRATION_CONTRACTS.md). Frozen-zones absolu (12 fichiers, 0 ligne diff).
+**Owner-gate D1-D6** : Pepper Club earn rate (1:1 ou 10:1) / paliers Novice→Pepper→Master→
+Légende / port web / photos source / pickup-only ou delivery / promo codes.
+**Lancement** : owner `/goal <brief §11>` self-paced jusqu'à convergence GO V1.
+
 ### 🟢 ULTRA-PLAN Mobile App Realignment 2026-05-16 — **EXECUTED GO V0** (carte-blanche owner)
 
 **Status** : ✅ CYCLE COMPLETE. Owner reframed Q1-Q4 → mobile reste STANDALONE,
@@ -976,7 +1172,7 @@ y est enregistrée pour éviter la dérive et le re-questioning.
 
 ---
 
-## §7 VERIFICATION CHECKLIST — 16 domaines production-ready
+## §7 VERIFICATION CHECKLIST — 49 domaines production-ready
 
 | # | Domaine | Status | Iteration |
 |---|---|---|---|
@@ -1003,6 +1199,32 @@ y est enregistrée pour éviter la dérive et le re-questioning.
 | 21 | ValidPhone strict E.164 + PENDING sentinel reject + national min 9 digits | ✅ | Wave Z 5A 2026-05-16 |
 | 22 | POS quote/walk-in permission:pos gate + surface-aware kiosk bypass | ✅ | Wave Z 5B+5C 2026-05-16 |
 | 23 | OSS deterministic FIFO order (queue_number + id tiebreaker) | ✅ | Wave Z 5C 2026-05-16 |
+| 24 | EnsureUserStatusActive per-request middleware (instant token revocation on disable) | ✅ | V1.0.1 H1.3 2026-05-17 |
+| 25 | User mass-assignment FormRequest strip (preventive lock branch_id/is_guest/status) | ✅ | V1.0.1 H1.2 2026-05-17 |
+| 26 | Cash drawer actor columns (closed_by_user_id + reconciled_by_user_id) | ✅ | V1.0.1 H2.1 2026-05-17 |
+| 27 | Cash routine-close manager-gate (config-opt-in) | ✅ | V1.0.1 H2.2 2026-05-17 |
+| 28 | Payment terminal_id backend wire-in (SplitPayment + RefundWithCounterEntry → OrderPayment) | ✅ | V1.0.1 H2.3 2026-05-17 |
+| 29 | recordMovement DB::transaction + lockForUpdate (sibling parity) | ✅ | V1.0.1 H2.4 2026-05-17 |
+| 30 | Webhook DLQ command + ProcessWebhookEventJob + hourly schedule | ✅ | V1.0.1 H3.1 2026-05-17 |
+| 31 | 6 outbox listeners wasRecentlyCreated parity (full 8/8 coverage) | ✅ | Wave Z 5C 2026-05-16 |
+| 32 | Branch-configurable delivery fee + minimum order (legacy fallback) | ✅ | V1.0.1 H3.2 + H3.5 2026-05-17 |
+| 33 | Allergens snapshot backfill command (NF525-immutable, NULL-only) | ✅ | V1.0.1 H4.4 2026-05-17 |
+| 34 | V2 KDS org-wide kill-switch (config/kds.php + Blade global) | ✅ | V1.0.1 H4.5 2026-05-17 |
+| 35 | Admin items channels UI (kiosk/pos/web) | ✅ | V1.0.1 H5.1 2026-05-17 |
+| 36 | OSS stale prune 8h + branch-scoped mostPopularItems + throttle | ✅ | V1.0.1 H5 cluster B 2026-05-17 |
+| 37 | POS test debt cleanup trait (SeedsOpenCashDrawerSession × 20 classes) | ✅ | V1.0.1 H6 2026-05-17 |
+| 38 | LanguageController RCE primitive `permission:settings` gate | ✅ | V1 Cloud-Prep 5E 2026-05-17 |
+| 39 | POS IDOR cross-branch protection (`PosOrderController` withoutGlobalScope INTERNAL + abort 403 unified) | ✅ | V1 Cloud-Prep 5E+5I 2026-05-17 |
+| 40 | Outbox + Webhook pruning daily (`PruneOutboxCommand` + `PruneWebhookEventsCommand` Kernel 04:15, 90d) | ✅ | V1 Cloud-Prep 5E 2026-05-17 |
+| 41 | POS offline mode (IndexedDB queue + UUIDv4 idempotency + PCI-DSS/PII strip + 30min TTL + replay URL `admin/pos`) | ✅ | V1 Cloud-Prep 5F+insights 2026-05-17 |
+| 42 | RefundCreated event dispatch (`RefundWithCounterEntryService:229` + `PaymentService:134` wired) | ✅ | V1 Cloud-Prep 5F 2026-05-17 |
+| 43 | SettingsUpdated fanout (admin→POS/Kiosk via Outbox, 5 controllers wired) | ✅ | V1 Cloud-Prep 5G 2026-05-17 |
+| 44 | BranchStatusChanged token revoke (RevokeTokensOnBranchDeactivated strict User scope) | ✅ | V1 Cloud-Prep 5G 2026-05-17 |
+| 45 | OSS wakeLock TV walls (visibilitychange listener, Safari graceful degrade) | ✅ | V1 Cloud-Prep 5G 2026-05-17 |
+| 46 | bcrypt rounds 10→12 + zero-friction auto-rehash (`Hash::needsRehash` post-Auth) | ✅ | V1 Cloud-Prep 5G 2026-05-17 |
+| 47 | PhpSpreadsheet CVE closures 1.30.0→1.30.4 (5 advisories incl. CVE-2026-34084 CRITICAL) | ✅ | V1 Cloud-Prep 5H 2026-05-17 |
+| 48 | Stripe.php cents-truncation round-before-cast (€9.99 → 999 cents, NF525 receipt parity) | ✅ | V1 Cloud-Prep insights-R1 2026-05-18 |
+| 49 | POS_SIMULATION_HARDWARE production boot guard (`AppServiceProvider` throws if `env=production && flag=true`) + sentinel | ✅ | V1 Cloud-Prep insights-R1 2026-05-18 |
 
 ---
 

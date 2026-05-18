@@ -73,9 +73,11 @@ class PaymentNoopIdempotencyTest extends TestCase
         $orderB = $this->orderForPayment($customer, $branch);
 
         $service = app(PaymentService::class);
+        app()->instance('payment.service.allow_direct_call', true);
         $service->payment($orderA, 'credit', 'GATEWAY-DUP-1');
 
         try {
+            app()->instance('payment.service.allow_direct_call', true);
             $service->payment($orderB, 'credit', 'GATEWAY-DUP-1');
             $this->fail('Expected duplicate transaction reference to be rejected.');
         } catch (ValidationException $exception) {

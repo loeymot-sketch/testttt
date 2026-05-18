@@ -57,16 +57,38 @@ class KdsSyncService
             // [Sprint 2A DEL-3 2026-05-16] Mirror eager-load of address/user so
             // sync-delta payloads carry delivery info parity with the full /list
             // endpoint (KDSOrderDetailsResource::toArray reads these relations).
+            // [Wave 1 KDS Architect P1 2026-05-18] whereDate non-sargable →
+            // whereBetween + "<" tomorrow. Mirrors Wave 5F fix shipped in
+            // KitchenDisplaySystemOrderService::list:91-102 so idx_orders_datetime
+            // is used and admin polling at 50+ open orders does not regress
+            // 10x-30x. Sentinel: tests/Feature/Kds/KdsSyncSargableTest.php.
+            //
+            // [Wave 3 KDS Adversarial P0 2026-05-18 KDS-ADV3-01] Carbon::today()
+            // / Carbon::tomorrow() resolve in app.timezone='Europe/Paris' but
+            // config/database.php mysql connection has NO `timezone` key →
+            // MySQL session TZ defaults to UTC. orders.order_datetime is a
+            // TIMESTAMP column (UTC-stored). Binding Paris-local midnight
+            // as-is shifted the active window by 1-2h (depending on DST),
+            // silently dropping nightly orders [00:00-02:00 Paris] from KDS
+            // sync. Heal: convert Paris-local day bounds → UTC before binding,
+            // surgical at the query level (does NOT mutate config/database.php
+            // mysql.timezone which would affect every query in the app).
+            // Sentinel: tests/Feature/Kds/KdsSyncTzAwareTest.php.
+            $appTz = config('app.timezone');
+            $parisTodayStartUtc = Carbon::today($appTz)->setTimezone('UTC');
+            $parisTodayEndUtc = Carbon::today($appTz)->endOfDay()->setTimezone('UTC');
+            $parisTomorrowStartUtc = Carbon::tomorrow($appTz)->setTimezone('UTC');
+
             $ordersQuery = Order::with(['orderItems', 'address', 'user'])
                 ->whereIn('status', $activeStatuses)
                 ->where('updated_at', '>=', $sinceForDb)
-                ->where(function ($q) {
-                    $q->where(function ($s) {
-                        $s->whereDate('order_datetime', Carbon::today())
+                ->where(function ($q) use ($parisTodayStartUtc, $parisTodayEndUtc, $parisTomorrowStartUtc) {
+                    $q->where(function ($s) use ($parisTodayStartUtc, $parisTodayEndUtc) {
+                        $s->whereBetween('order_datetime', [$parisTodayStartUtc, $parisTodayEndUtc])
                           ->where('is_advance_order', Ask::NO);
-                    })->orWhere(function ($s) {
+                    })->orWhere(function ($s) use ($parisTomorrowStartUtc) {
                         $s->where('is_advance_order', Ask::YES)
-                          ->whereDate('order_datetime', '<=', Carbon::today())
+                          ->where('order_datetime', '<', $parisTomorrowStartUtc)
                           ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                     });
                 });

@@ -24,11 +24,19 @@ describe('CSP — migration <meta> → HTTP header (RED-R2 §1 P2)', () => {
         expect(kernel).toMatch(/App\\Http\\Middleware\\ContentSecurityPolicyHeader::class/);
     });
 
-    it('master.blade.php still embeds the <meta> CSP (rollback fallback retained)', () => {
-        expect(master).toMatch(/<meta\s+http-equiv="Content-Security-Policy-Report-Only"/);
+    it('master.blade.php no longer renders an active <meta> CSP (only documented in a Blade comment block)', () => {
+        // iter15-mega-fix C-007 2026-05-10 removed the runtime <meta>.
+        // A historical reference may survive inside a {{-- ... --}} Blade comment block.
+        // We assert any surviving reference is inside that documented removal comment.
+        const matches = master.match(/<meta\s+http-equiv="Content-Security-Policy/g) || [];
+        expect(matches.length).toBeLessThanOrEqual(1);
+        if (matches.length === 1) {
+            expect(master).toMatch(/removed meta-CSP[\s\S]{0,400}<meta\s+http-equiv="Content-Security-Policy/);
+        }
     });
 
-    it('master.blade.php marks the <meta> CSP as fallback-only (transition guard)', () => {
-        expect(master).toMatch(/FALLBACK ONLY/);
+    it('master.blade.php documents the CSP migration history (audit trail)', () => {
+        // Surface a non-binding comment trail so future devs know meta was removed deliberately.
+        expect(master).toMatch(/removed meta-CSP|middleware emits HTTP header/);
     });
 });

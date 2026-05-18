@@ -1,0 +1,17 @@
+{
+  "debug": false,
+  "host": "127.0.0.1",
+  "port": 6001,
+  "appManager.driver": "array",
+  "appManager.array.apps": [
+    {
+      "id": "{{ soketi_app_id }}",
+      "key": "{{ soketi_app_key }}",
+      "secret": "{{ soketi_app_secret }}",
+      "maxConnections": {{ soketi_max_connections | default(500) }},
+      "enableClientMessages": false,
+      "enabled": true,
+      "webhooks": []
+    }
+  ]
+}

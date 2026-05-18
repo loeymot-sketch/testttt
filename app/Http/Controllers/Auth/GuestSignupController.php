@@ -137,7 +137,13 @@ class GuestSignupController extends Controller
             // [GAP-20-5] Guest tokens expire after 30 days. Without expiry, a token issued
             // to a kiosk customer or anonymous web visitor remains valid indefinitely,
             // creating a growing attack surface. 30 days matches typical session expectations.
-            $this->token = $user->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
+            // [Sprint H1 Z6-02 2026-05-17] Scope ability to `kiosk:order` only — not
+            // wildcard. CLAUDE.md §9 + Wave Z RED-team: a leaked guest token must not
+            // be replayable against admin endpoints. Guest UI consumes only
+            // `/api/frontend/order/*` which requires `tokenCan('kiosk:order')`
+            // (see OrderRequest.php:46-47: both `['*']` and `['kiosk:order']`
+            // satisfy that check — the narrow scope is strictly sufficient).
+            $this->token = $user->createToken('auth_token', ['kiosk:order'], now()->addDays(30))->plainTextToken;
 
             // [FIX] Guard against user with no roles (should not happen, but defensive)
             $firstRole = $user->roles->first();

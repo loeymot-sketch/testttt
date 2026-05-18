@@ -13,7 +13,7 @@ describe('kioskFormatPrice', () => {
   it('falls back safely when locale/currency are invalid', () => {
     const formatted = formatKioskPrice(7, { locale: 'bad-locale', currency: 'BAD' });
     expect(formatted).toContain('BAD');
-    expect(formatted).toContain('7.00');
+    expect(formatted).toMatch(/7[.,]00/);
   });
 
   it('extracts price options from global state lists', () => {

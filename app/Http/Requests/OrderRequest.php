@@ -59,7 +59,23 @@ class OrderRequest extends FormRequest
         // PersonalAccessToken path where the ability check bites.
         $token = $user->currentAccessToken();
         if (! $token) {
-            return true;
+            // [Sprint H1 K-002 2026-05-17] Tighten the tokenless fallback.
+            // Production HTTP never reaches this branch — Sanctum's Guard
+            // __invoke wraps web-guard session-auth with TransientToken
+            // (non-null). The branch only fires for test fixtures using
+            // `$this->actingAs($user, 'sanctum')`. Wave Z RED-team flagged
+            // the prior `return true` as too broad: a hypothetical future
+            // reuse of OrderRequest at a non-frontend.order endpoint would
+            // inherit the fail-open. Now we require BOTH:
+            //   - the request is genuinely guard-authenticated (web for
+            //     session SPA, sanctum for the test-fixture path), and
+            //   - the route is in the `frontend.order.*` namespace — the
+            //     only legitimate mount point of this FormRequest.
+            // CLAUDE.md §9 (multi-tenant + auth invariants).
+            $guardAuthenticated = auth()->guard('web')->check()
+                || auth()->guard('sanctum')->check();
+            $routeName = (string) ($this->route()?->getName() ?? '');
+            return $guardAuthenticated && str_starts_with($routeName, 'frontend.order.');
         }
 
         return (bool) $user->tokenCan('kiosk:order');
@@ -195,9 +211,12 @@ class OrderRequest extends FormRequest
             if ($isKioskToken
                 && ! (bool) Settings::group('pos')->get('pos_dine_in_enabled', false)
                 && in_array($orderTypeInt, [OrderType::KIOSK, OrderType::DINING_TABLE], true)) {
+                // [BORNE-001 heal] FR string — kiosk path is FR-locked per ADR-007.
+                // Previously hardcoded EN surfaced on a French UI when a client bypassed
+                // the frontend gate (UI bypass / legacy device / replay attack).
                 $validator->errors()->add(
                     'order_type',
-                    'Dine-in is disabled in V1 — kiosk orders must use TAKEAWAY (à emporter).'
+                    'Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.'
                 );
                 return;
             }
@@ -225,10 +244,46 @@ class OrderRequest extends FormRequest
             // require an off-site phone callback.
             if ($orderTypeInt === OrderType::DELIVERY) {
                 $this->validateAuthenticatedUserPhoneForDelivery($validator);
+                $this->validateDeliveryMinimumOrder($validator);
             }
 
             $this->validateOrderItemVariationsAfter($validator);
         });
+    }
+
+    /**
+     * [Sprint H3 DEL-8 2026-05-17] Reject DELIVERY orders whose subtotal is
+     * below the branch's configured `delivery_minimum_order` threshold.
+     * NULL threshold = no minimum (V1 legacy behavior). When set, the rule
+     * fires AFTER PricingService SSOT recomputes server-side — we trust the
+     * subtotal posted by the client only for the floor check, and the
+     * production pipeline already rejects forged totals separately.
+     * CLAUDE.md §9.
+     */
+    private function validateDeliveryMinimumOrder($validator): void
+    {
+        $branchId = (int) $this->input('branch_id', 0);
+        if ($branchId <= 0) {
+            return;
+        }
+        $branch = \App\Models\Branch::find($branchId);
+        if (! $branch || $branch->delivery_minimum_order === null) {
+            return;
+        }
+
+        $minimum = (float) $branch->delivery_minimum_order;
+        $subtotal = (float) $this->input('subtotal', 0);
+
+        if ($subtotal < $minimum) {
+            $validator->errors()->add(
+                'subtotal',
+                sprintf(
+                    'Le montant minimum pour la livraison est de %.2f€ (sous-total actuel : %.2f€).',
+                    $minimum,
+                    $subtotal
+                )
+            );
+        }
     }
 
     /**

@@ -1,38 +1,20 @@
 [
   {
-    "step": "CY6-01",
-    "slug": "login-success",
-    "state": "ok",
-    "severity": "OK",
-    "note": "URL=http://localhost:8000/admin/dashboard",
-    "screenshot": "tests/e2e/screenshots/audit-coupons-2026-05-06/01-login-success-after.png",
-    "ts": "2026-05-06T19:24:03.037Z"
-  },
-  {
-    "step": "CY6-02",
-    "slug": "coupons-list",
-    "state": "loaded",
-    "severity": "OK",
-    "note": "URL=http://localhost:8000/admin/coupons hasError=false",
-    "screenshot": "tests/e2e/screenshots/audit-coupons-2026-05-06/02-coupons-list-loaded.png",
-    "ts": "2026-05-06T19:24:12.635Z"
-  },
-  {
     "step": "CY6-03",
     "slug": "create-drawer",
-    "state": "opened-stale-bundle",
-    "severity": "P2",
-    "note": "Advanced section absent — webpack-mix bundle (public/js/app.js) is stale and predates the cycle-6 Vue edits. Rebuild required (npm run prod / npx mix --production) to surface the new section in production. PHP-side controller behaviour is fully covered by CouponCrudTest.",
-    "screenshot": "tests/e2e/screenshots/audit-coupons-2026-05-06/03-create-drawer-opened-no-advanced.png",
-    "ts": "2026-05-06T19:24:23.288Z"
+    "state": "opened-advanced-visible",
+    "severity": "OK",
+    "note": "Advanced section data-section=advanced-promo-fields visible in drawer.",
+    "screenshot": "tests/e2e/screenshots/audit-coupons-2026-05-06/03-create-drawer-opened-advanced-visible.png",
+    "ts": "2026-05-16T16:58:44.175Z"
   },
   {
     "step": "CY6-04",
     "slug": "create-api-roundtrip",
     "state": "created",
     "severity": "OK",
-    "note": "HTTP 201; result={\"status\":201,\"code\":\"CY6E2E386966\"}",
+    "note": "HTTP 201; result={\"status\":201,\"code\":\"CY6E2E760012\"}",
     "screenshot": "tests/e2e/screenshots/audit-coupons-2026-05-06/04-after-api-create-http-201.png",
-    "ts": "2026-05-06T19:24:32.490Z"
+    "ts": "2026-05-16T16:58:52.789Z"
   }
 ]

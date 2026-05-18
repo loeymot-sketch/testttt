@@ -24,6 +24,30 @@ ___CSS_LOADER_EXPORT___.push([module.id, ":root {\n  /* Color */\n  --vc-clr-pri
 
 /***/ }),
 
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=style&index=0&id=46d66467&scoped=true&lang=css":
+/*!********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=style&index=0&id=46d66467&scoped=true&lang=css ***!
+  \********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.cash-session-overlay[data-v-46d66467] {\n    position: fixed;\n    inset: 0;\n    z-index: 1100;\n    background: rgba(26, 26, 26, 0.55);\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    padding: 16px;\n}\n.cash-session-dialog[data-v-46d66467] {\n    width: min(520px, 100%);\n    max-height: 90vh;\n    overflow-y: auto;\n    background: #ffffff;\n    border-radius: 14px;\n    border: 1px solid #eee6d9;\n    box-shadow: 0 24px 48px -16px rgba(26, 26, 26, 0.45);\n    display: flex;\n    flex-direction: column;\n}\n.cash-session-dialog__head[data-v-46d66467] {\n    display: flex;\n    align-items: flex-start;\n    justify-content: space-between;\n    padding: 20px 24px 12px;\n    border-bottom: 1px solid #f1ebe0;\n}\n.cash-session-dialog__eyebrow[data-v-46d66467] {\n    font-size: 0.75rem;\n    font-weight: 600;\n    text-transform: uppercase;\n    letter-spacing: 0.04em;\n    color: #8a8278;\n    margin: 0;\n}\n.cash-session-dialog__title[data-v-46d66467] {\n    margin: 4px 0 0;\n    font-size: 1.25rem;\n    font-weight: 700;\n    color: #1a1a1a;\n    line-height: 1.2;\n}\n.cash-session-dialog__close[data-v-46d66467] {\n    background: transparent;\n    border: 0;\n    font-size: 1.5rem;\n    line-height: 1;\n    color: #5a5a5a;\n    cursor: pointer;\n    padding: 4px 8px;\n    border-radius: 8px;\n}\n.cash-session-dialog__close[data-v-46d66467]:hover {\n    background: #f7f3ec;\n    color: #1a1a1a;\n}\n.cash-session-dialog__error[data-v-46d66467] {\n    background: #fef2f2;\n    border: 1px solid rgba(194, 30, 47, 0.35);\n    color: #9c1727;\n    padding: 10px 16px;\n    margin: 12px 24px 0;\n    border-radius: 8px;\n    font-size: 0.875rem;\n    font-weight: 500;\n}\n.cash-session-dialog__body[data-v-46d66467] {\n    padding: 20px 24px 24px;\n    display: flex;\n    flex-direction: column;\n    gap: 16px;\n}\n.cash-session-dialog__body--list[data-v-46d66467] {\n    gap: 12px;\n}\n.cash-session-dialog__intro[data-v-46d66467] {\n    margin: 0;\n    color: #5a5a5a;\n    font-size: 0.95rem;\n}\n.cash-session-dialog__field-label[data-v-46d66467] {\n    display: block;\n    font-size: 0.875rem;\n    font-weight: 600;\n    color: #1a1a1a;\n}\n.cash-session-dialog__amount-display[data-v-46d66467] {\n    font-size: 2rem;\n    font-weight: 800;\n    color: #1a1a1a;\n    background: #fff4ee;\n    border: 1px solid #f4501e;\n    border-radius: 12px;\n    padding: 12px 16px;\n    font-variant-numeric: tabular-nums;\n    text-align: right;\n}\n.cash-session-dialog__increments[data-v-46d66467] {\n    display: grid;\n    grid-template-columns: repeat(5, 1fr);\n    gap: 8px;\n}\n.cash-session-dialog__chip[data-v-46d66467] {\n    background: #f7f3ec;\n    border: 1px solid #eee6d9;\n    border-radius: 10px;\n    padding: 10px 8px;\n    font-size: 0.9rem;\n    font-weight: 600;\n    color: #1a1a1a;\n    cursor: pointer;\n    transition: background 120ms ease, border-color 120ms ease;\n    min-height: 44px;\n}\n.cash-session-dialog__chip[data-v-46d66467]:hover {\n    background: #fff4ee;\n    border-color: #f4501e;\n    color: #f4501e;\n}\n.cash-session-dialog__chip--reset[data-v-46d66467] {\n    background: #ffffff;\n    color: #5a5a5a;\n}\n.cash-session-dialog__input[data-v-46d66467],\n.cash-session-dialog__textarea[data-v-46d66467] {\n    border: 1px solid #d9c9b8;\n    border-radius: 10px;\n    padding: 10px 12px;\n    font-size: 1rem;\n    color: #1a1a1a;\n    width: 100%;\n}\n.cash-session-dialog__input[data-v-46d66467]:focus,\n.cash-session-dialog__textarea[data-v-46d66467]:focus {\n    outline: none;\n    border-color: #f4501e;\n    box-shadow: 0 0 0 3px rgba(244, 80, 30, 0.18);\n}\n.cash-session-dialog__stats[data-v-46d66467] {\n    display: grid;\n    grid-template-columns: repeat(2, 1fr);\n    gap: 12px;\n    margin: 0;\n}\n.cash-session-dialog__stat[data-v-46d66467] {\n    background: #f7f3ec;\n    border-radius: 10px;\n    padding: 10px 12px;\n}\n.cash-session-dialog__stat dt[data-v-46d66467] {\n    margin: 0;\n    font-size: 0.75rem;\n    font-weight: 600;\n    text-transform: uppercase;\n    color: #8a8278;\n    letter-spacing: 0.03em;\n}\n.cash-session-dialog__stat dd[data-v-46d66467] {\n    margin: 4px 0 0;\n    font-size: 1.1rem;\n    font-weight: 700;\n    color: #1a1a1a;\n    font-variant-numeric: tabular-nums;\n}\n.cash-session-dialog__stat--accent[data-v-46d66467] {\n    background: #fff4ee;\n    border: 1px solid #f4501e;\n}\n.cash-session-dialog__stat--accent dd[data-v-46d66467] {\n    color: #f4501e;\n}\n.cash-session-dialog__variance-block[data-v-46d66467] {\n    display: grid;\n    grid-template-columns: repeat(2, 1fr);\n    gap: 12px;\n    margin: 8px 0 0;\n}\n.cash-session-dialog__stat--variance-positive[data-v-46d66467] {\n    background: #ecfdf5;\n    border: 1px solid rgba(27, 138, 58, 0.35);\n}\n.cash-session-dialog__stat--variance-positive dd[data-v-46d66467] {\n    color: #126b2a;\n}\n.cash-session-dialog__stat--variance-negative[data-v-46d66467] {\n    background: #fef2f2;\n    border: 1px solid rgba(194, 30, 47, 0.35);\n}\n.cash-session-dialog__stat--variance-negative dd[data-v-46d66467] {\n    color: #9c1727;\n}\n.cash-session-dialog__variance-reason[data-v-46d66467] {\n    display: flex;\n    flex-direction: column;\n    gap: 6px;\n}\n.cash-session-dialog__hint[data-v-46d66467] {\n    margin: 0;\n    font-size: 0.8rem;\n    color: #5a5a5a;\n}\n.cash-session-dialog__hint--error[data-v-46d66467] {\n    color: #9c1727;\n}\n.cash-session-dialog__actions[data-v-46d66467] {\n    display: flex;\n    justify-content: flex-end;\n    gap: 10px;\n}\n.cash-session-dialog__actions--column[data-v-46d66467] {\n    flex-direction: column;\n}\n.cash-session-dialog__btn[data-v-46d66467] {\n    min-height: 44px;\n    padding: 10px 18px;\n    border-radius: 10px;\n    font-size: 0.95rem;\n    font-weight: 700;\n    cursor: pointer;\n    border: 1px solid transparent;\n    transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n}\n.cash-session-dialog__btn[data-v-46d66467]:disabled {\n    opacity: 0.55;\n    cursor: not-allowed;\n}\n.cash-session-dialog__btn--primary[data-v-46d66467] {\n    background: #f4501e;\n    color: #ffffff;\n    border-color: #f4501e;\n}\n.cash-session-dialog__btn--primary[data-v-46d66467]:hover:not(:disabled) {\n    background: #dc4517;\n    border-color: #dc4517;\n}\n.cash-session-dialog__btn--secondary[data-v-46d66467] {\n    background: #ffffff;\n    color: #1a1a1a;\n    border-color: #d9c9b8;\n}\n.cash-session-dialog__btn--secondary[data-v-46d66467]:hover:not(:disabled) {\n    background: #f7f3ec;\n}\n.cash-session-dialog__btn--ghost[data-v-46d66467] {\n    background: transparent;\n    color: #5a5a5a;\n    border-color: #eee6d9;\n}\n.cash-session-dialog__btn--ghost[data-v-46d66467]:hover:not(:disabled) {\n    color: #1a1a1a;\n    border-color: #d9c9b8;\n}\n.cash-session-dialog__btn--danger[data-v-46d66467] {\n    background: #c21e2f;\n    color: #ffffff;\n    border-color: #c21e2f;\n}\n.cash-session-dialog__btn--danger[data-v-46d66467]:hover:not(:disabled) {\n    background: #9c1727;\n    border-color: #9c1727;\n}\n.cash-session-dialog__table[data-v-46d66467] {\n    width: 100%;\n    border-collapse: collapse;\n    font-size: 0.875rem;\n}\n.cash-session-dialog__table th[data-v-46d66467],\n.cash-session-dialog__table td[data-v-46d66467] {\n    text-align: left;\n    padding: 8px 10px;\n    border-bottom: 1px solid #f1ebe0;\n}\n.cash-session-dialog__th--right[data-v-46d66467],\n.cash-session-dialog__td--right[data-v-46d66467] {\n    text-align: right;\n    font-variant-numeric: tabular-nums;\n}\n.cash-session-dialog__empty[data-v-46d66467] {\n    text-align: center;\n    color: #8a8278;\n    padding: 20px 0;\n    margin: 0;\n}\n\n/* Transition */\n.cash-session-dialog-enter-active[data-v-46d66467],\n.cash-session-dialog-leave-active[data-v-46d66467] {\n    transition: opacity 180ms ease;\n}\n.cash-session-dialog-enter-from[data-v-46d66467],\n.cash-session-dialog-leave-to[data-v-46d66467] {\n    opacity: 0;\n}\n@media (max-width: 480px) {\n.cash-session-dialog__increments[data-v-46d66467] {\n        grid-template-columns: repeat(3, 1fr);\n}\n.cash-session-dialog__stats[data-v-46d66467],\n    .cash-session-dialog__variance-block[data-v-46d66467] {\n        grid-template-columns: 1fr;\n}\n.cash-session-dialog__actions[data-v-46d66467] {\n        flex-direction: column-reverse;\n}\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
 /***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/FloorplanComponent.vue?vue&type=style&index=0&id=75f08be4&scoped=true&lang=css":
 /*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/FloorplanComponent.vue?vue&type=style&index=0&id=75f08be4&scoped=true&lang=css ***!
@@ -137,7 +161,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n/* =============================================================================\n   PosComponent — POS V5 Design Convergence (refonte 2026-05-02)\n   -----------------------------------------------------------------------------\n   Mission : CV1-POS-DESIGN-CONVERGENCE-001\n   Doc plan : plans/PLAN_POS_V5_DESIGN_CONVERGENCE_2026-05-02.md\n   -----------------------------------------------------------------------------\n   - Le wizard kiosk (`KioskWizardComponent`) reste FROZEN.\n   - Les classes `.pos-v5-*` partagées vivent dans `resources/css/pos-v5.css`\n     (importé via app.css). Ce fichier scoped ne contient que :\n       1. Neutralisation des anciens styles `.fk-pos-v4` / `.pos-v4-*` qui\n          combattraient les nouvelles classes V5 (gradient sombre operator bar,\n          tickets head, total row, item tile :deep, etc.).\n       2. Styles UNIQUES à PosComponent : kiosk-cash-panel inline drawer,\n          add-customer modal inline.\n   - Rollback : poser `[data-pos-v4-disabled]` sur le shell désactive tout.\n   ============================================================================= */\n\n/* === 1. SHELL — laisser pos-v5-shell prendre le relais === */\n.fk-pos-v4.pos-v5-shell[data-v-7a8fd462] {\n  /* On supprime l'ancien gradient gris/froid hérité de pos-v4 ; le bg crème\n     warm vient de .pos-v5-shell (foundations/pos-v5-tokens.css). */\n  background: var(--pos-v5-bg-app);\n  color: var(--pos-v5-ink);\n  min-height: calc(100dvh - 64px);\n  margin: -4px -8px 0 -8px;\n  padding: 4px 10px 12px 8px;\n  box-sizing: border-box;\n  max-width: 100vw;\n  overflow-x: hidden;\n}\n\n/* Rollback kill-switch (héritage doctrine pos-v4.css §9) */\n[data-pos-v4-disabled].fk-pos-v4[data-v-7a8fd462] { all: revert;\n}\n.pos-v4-main[data-v-7a8fd462] {\n  padding: 0 8px 16px 0;\n  min-height: 0;\n}\n\n/* === 2. NEUTRALISATION ancien gradient operator bar ===\n   La nouvelle classe .pos-v5-operator-bar (pos-v5.css) gère tout. On laisse\n   les anciennes classes legacy (.pos-v4-operator-bar, .pos-v4-eyebrow,\n   .pos-v4-title, .pos-v4-status-row) en passe-plat — pas de redéfinition. */\n.pos-v4-operator-bar[data-v-7a8fd462] {\n  /* Reset : le V5 prend le relais */\n  background: transparent;\n  color: inherit;\n  border: 0;\n  min-height: 0;\n}\n.pos-v4-eyebrow[data-v-7a8fd462],\n.pos-v4-title[data-v-7a8fd462],\n.pos-v4-status-row[data-v-7a8fd462],\n.pos-v4-status-row span[data-v-7a8fd462] {\n  /* Reset legacy : les V5 classes prennent le relais */\n  color: inherit;\n  background: transparent;\n}\n\n/* === 3. SEARCH — déjà géré par PosV5SearchInput, neutralisation legacy === */\n.pos-v4-search[data-v-7a8fd462] { background: transparent; border: 0; box-shadow: none; height: auto;\n}\n.pos-v4-search input[data-v-7a8fd462],\n.pos-v4-search button[type=\"submit\"][data-v-7a8fd462] { all: unset;\n}\n\n/* === 4. CART HEAD — neutralisation legacy === */\n.pos-v4-cart-head[data-v-7a8fd462] {\n  background: transparent;\n}\n.pos-v4-cart-table thead[data-v-7a8fd462] {\n  background: transparent !important;\n}\n\n/* === 5. CART FOOTER — neutralisation legacy === */\n.pos-v4-cart-footer[data-v-7a8fd462] {\n  background: transparent !important;\n  box-shadow: none !important;\n}\n.pos-v4-total-row[data-v-7a8fd462] {\n  /* Le hero V5 prend le relais */\n  background: transparent !important;\n  border: 0 !important;\n  min-height: 0 !important;\n}\n\n/* === 6. PRODUCT TILES ===\n   [POS-V5 R2 2026-05-02] Les tiles produits (.pos-item-tile / .pos-v5-tile) sont\n   désormais entièrement gérées par le styling scoped d'ItemComponent.vue (photo\n   hero 4/3, body name+price+add, hover lift+scale image). On supprime les\n   :deep() overrides ici pour éviter une bataille de spécificité avec le\n   composant enfant — single source of truth = ItemComponent.vue. */\n\n/* === 7. RESPONSIVE === */\n@media (max-width: 767px) {\n.fk-pos-v4.pos-v5-shell[data-v-7a8fd462] {\n    margin: -8px;\n    padding: 10px;\n    padding-bottom: 76px;\n}\n.pos-v4-main[data-v-7a8fd462] { padding-right: 0;\n}\n}\n\n/* =============================================================================\n   8. KIOSK CASH PANEL drawer (inline dans PosComponent — restyle V5)\n   -----------------------------------------------------------------------------\n   Refonte avec tokens V5 — palette warm cohérente, typo Inter, ombres warm.\n   ============================================================================= */\n.kiosk-cash-panel-overlay[data-v-7a8fd462] {\n  position: fixed;\n  inset: 0;\n  z-index: var(--pos-v5-z-modal);\n  background: rgba(26, 26, 26, 0.42);\n  display: flex;\n  align-items: flex-end;\n  justify-content: flex-end;\n  backdrop-filter: blur(2px);\n}\n.kiosk-cash-panel[data-v-7a8fd462] {\n  background: var(--pos-v5-bg-panel);\n  width: 420px;\n  max-width: 100vw;\n  height: 100vh;\n  display: flex;\n  flex-direction: column;\n  box-shadow: -20px 0 48px rgba(26, 26, 26, 0.20);\n  border-top-left-radius: var(--pos-v5-radius-xl);\n  border-bottom-left-radius: var(--pos-v5-radius-xl);\n  font-family: var(--pos-v5-font-sans);\n}\n.kiosk-cash-panel-header[data-v-7a8fd462] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: var(--pos-v5-space-4) var(--pos-v5-space-5);\n  border-bottom: 1px solid var(--pos-v5-border);\n  background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 70%);\n  font-weight: var(--pos-v5-weight-extrabold);\n  font-size: var(--pos-v5-text-h6);\n  color: var(--pos-v5-ink);\n}\n.kiosk-cash-panel-header-actions[data-v-7a8fd462] {\n  display: inline-flex;\n  align-items: center;\n  gap: var(--pos-v5-space-2);\n}\n.kiosk-cash-panel-history-link[data-v-7a8fd462] {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 5px 10px;\n  border-radius: var(--pos-v5-radius-sm);\n  border: 1px solid var(--pos-v5-border);\n  background: var(--pos-v5-bg-panel);\n  color: var(--pos-v5-ink);\n  font-size: var(--pos-v5-text-caption);\n  font-weight: var(--pos-v5-weight-bold);\n  text-decoration: none;\n  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.kiosk-cash-panel-history-link[data-v-7a8fd462]:hover {\n  background: var(--pos-v5-brand-red-soft);\n  border-color: var(--pos-v5-brand-red);\n  color: var(--pos-v5-brand-red);\n}\n.kiosk-cash-panel-close[data-v-7a8fd462] {\n  width: 36px;\n  height: 36px;\n  border: 0;\n  border-radius: var(--pos-v5-radius-pill);\n  background: var(--pos-v5-bg-subtle);\n  color: var(--pos-v5-ink-soft);\n  cursor: pointer;\n  font-size: 14px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.kiosk-cash-panel-close[data-v-7a8fd462]:hover {\n  background: var(--pos-v5-danger-soft);\n  color: var(--pos-v5-danger);\n}\n.kiosk-cash-detail-btn[data-v-7a8fd462] {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 5px 10px;\n  border-radius: var(--pos-v5-radius-sm);\n  border: 1px solid var(--pos-v5-border);\n  background: var(--pos-v5-bg-panel);\n  color: var(--pos-v5-ink);\n  font-size: var(--pos-v5-text-caption);\n  font-weight: var(--pos-v5-weight-semibold);\n  text-decoration: none;\n  white-space: nowrap;\n  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.kiosk-cash-detail-btn[data-v-7a8fd462]:hover {\n  background: var(--pos-v5-brand-red-soft);\n  border-color: var(--pos-v5-brand-red);\n  color: var(--pos-v5-brand-red);\n}\n.kiosk-cash-panel-body[data-v-7a8fd462] {\n  flex: 1;\n  overflow-y: auto;\n  padding: var(--pos-v5-space-4);\n  display: flex;\n  flex-direction: column;\n  gap: var(--pos-v5-space-3);\n  background: var(--pos-v5-bg-app);\n}\n.kiosk-cash-loading[data-v-7a8fd462],\n.kiosk-cash-empty[data-v-7a8fd462] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: var(--pos-v5-space-8);\n  color: var(--pos-v5-ink-muted);\n  font-size: var(--pos-v5-text-body);\n  text-align: center;\n}\n.kiosk-cash-spinner[data-v-7a8fd462] {\n  width: 32px;\n  height: 32px;\n  border: 3px solid var(--pos-v5-bg-subtle);\n  border-top-color: var(--pos-v5-brand-red);\n  border-radius: 50%;\n  animation: kiosk-cash-spin-7a8fd462 0.8s linear infinite;\n}\n@keyframes kiosk-cash-spin-7a8fd462 {\nto { transform: rotate(360deg);\n}\n}\n@media (prefers-reduced-motion: reduce) {\n.kiosk-cash-spinner[data-v-7a8fd462] { animation: none;\n}\n}\n.kiosk-cash-order-card[data-v-7a8fd462] {\n  background: var(--pos-v5-bg-panel);\n  border: 1px solid var(--pos-v5-border);\n  border-left: 4px solid var(--pos-v5-brand-red);\n  border-radius: var(--pos-v5-radius-md);\n  padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  box-shadow: var(--pos-v5-shadow-sm);\n  transition: box-shadow var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.kiosk-cash-order-card[data-v-7a8fd462]:hover {\n  box-shadow: var(--pos-v5-shadow-md);\n}\n.kiosk-cash-order-head[data-v-7a8fd462] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n}\n.kiosk-cash-order-num[data-v-7a8fd462] {\n  font-weight: var(--pos-v5-weight-extrabold);\n  font-size: var(--pos-v5-text-body-lg);\n  color: var(--pos-v5-ink);\n}\n.kiosk-cash-order-total[data-v-7a8fd462] {\n  font-weight: var(--pos-v5-weight-extrabold);\n  color: var(--pos-v5-brand-red);\n  font-size: var(--pos-v5-text-body-lg);\n  font-feature-settings: \"tnum\";\n  font-variant-numeric: tabular-nums;\n}\n.kiosk-cash-order-items[data-v-7a8fd462] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n}\n.kiosk-cash-item-pill[data-v-7a8fd462] {\n  background: var(--pos-v5-bg-subtle);\n  border-radius: var(--pos-v5-radius-pill);\n  padding: 2px 8px;\n  font-size: 11px;\n  font-weight: var(--pos-v5-weight-semibold);\n  color: var(--pos-v5-ink-soft);\n}\n.kiosk-cash-item-pill.more[data-v-7a8fd462] {\n  background: var(--pos-v5-brand-red-soft);\n  color: var(--pos-v5-brand-red);\n}\n/* [GAP-25-2] Bouton Encaisser (kiosk-cash) */\n.kiosk-cash-collect-btn[data-v-7a8fd462] {\n  padding: 8px 14px;\n  border-radius: var(--pos-v5-radius-sm);\n  border: 0;\n  background: var(--pos-v5-success);\n  color: var(--pos-v5-ink-on-dark);\n  font-size: var(--pos-v5-text-caption);\n  font-weight: var(--pos-v5-weight-extrabold);\n  cursor: pointer;\n  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n  white-space: nowrap;\n  box-shadow: var(--pos-v5-shadow-success);\n}\n.kiosk-cash-collect-btn[data-v-7a8fd462]:hover { background: var(--pos-v5-success-dark);\n}\n.kiosk-cash-collect-btn[data-v-7a8fd462]:disabled,\n.kiosk-cash-cancel-btn[data-v-7a8fd462]:disabled { opacity: 0.5; cursor: not-allowed;\n}\n.kiosk-cash-cancel-btn[data-v-7a8fd462] {\n  border: 0;\n  background: var(--pos-v5-danger-soft);\n  color: var(--pos-v5-danger-dark);\n  border-radius: var(--pos-v5-radius-pill);\n  padding: 6px 12px;\n  font-size: 11px;\n  font-weight: var(--pos-v5-weight-extrabold);\n  cursor: pointer;\n  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.kiosk-cash-cancel-btn[data-v-7a8fd462]:hover { background: var(--pos-v5-danger-ghost);\n}\n.kiosk-cash-order-foot[data-v-7a8fd462] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  font-size: var(--pos-v5-text-caption);\n  color: var(--pos-v5-ink-muted);\n}\n.kiosk-cash-order-status[data-v-7a8fd462] {\n  color: var(--pos-v5-success-dark);\n  font-weight: var(--pos-v5-weight-semibold);\n}\n.kiosk-cash-panel-footer[data-v-7a8fd462] {\n  padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n  border-top: 1px solid var(--pos-v5-border);\n  background: var(--pos-v5-bg-panel);\n}\n.kiosk-cash-refresh-btn[data-v-7a8fd462] {\n  width: 100%;\n  padding: 10px;\n  background: var(--pos-v5-bg-subtle);\n  border: 1px solid var(--pos-v5-border);\n  border-radius: var(--pos-v5-radius-md);\n  font-size: var(--pos-v5-text-body);\n  font-weight: var(--pos-v5-weight-semibold);\n  cursor: pointer;\n  color: var(--pos-v5-ink);\n  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.kiosk-cash-refresh-btn[data-v-7a8fd462]:hover {\n  background: var(--pos-v5-brand-red-soft);\n  border-color: var(--pos-v5-brand-red);\n  color: var(--pos-v5-brand-red);\n}\n\n/* Slide-in panel transitions */\n.slide-panel-enter-active[data-v-7a8fd462],\n.slide-panel-leave-active[data-v-7a8fd462] { transition: opacity var(--pos-v5-duration-base);\n}\n.slide-panel-enter-from[data-v-7a8fd462],\n.slide-panel-leave-to[data-v-7a8fd462] { opacity: 0;\n}\n.slide-panel-enter-active .kiosk-cash-panel[data-v-7a8fd462],\n.slide-panel-leave-active .kiosk-cash-panel[data-v-7a8fd462] { transition: transform var(--pos-v5-duration-slow) var(--pos-v5-ease-standard);\n}\n.slide-panel-enter-from .kiosk-cash-panel[data-v-7a8fd462],\n.slide-panel-leave-to .kiosk-cash-panel[data-v-7a8fd462] { transform: translateX(100%);\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n/* =============================================================================\n   PosComponent — POS V5 Design Convergence (refonte 2026-05-02)\n   -----------------------------------------------------------------------------\n   Mission : CV1-POS-DESIGN-CONVERGENCE-001\n   Doc plan : plans/PLAN_POS_V5_DESIGN_CONVERGENCE_2026-05-02.md\n   -----------------------------------------------------------------------------\n   - Le wizard kiosk (`KioskWizardComponent`) reste FROZEN.\n   - Les classes `.pos-v5-*` partagées vivent dans `resources/css/pos-v5.css`\n     (importé via app.css). Ce fichier scoped ne contient que :\n       1. Neutralisation des anciens styles `.fk-pos-v4` / `.pos-v4-*` qui\n          combattraient les nouvelles classes V5 (gradient sombre operator bar,\n          tickets head, total row, item tile :deep, etc.).\n       2. Styles UNIQUES à PosComponent : kiosk-cash-panel inline drawer,\n          add-customer modal inline.\n   - Rollback : poser `[data-pos-v4-disabled]` sur le shell désactive tout.\n   ============================================================================= */\n\n/* === 1. SHELL — laisser pos-v5-shell prendre le relais === */\n.fk-pos-v4.pos-v5-shell[data-v-7a8fd462] {\n  /* On supprime l'ancien gradient gris/froid hérité de pos-v4 ; le bg crème\n     warm vient de .pos-v5-shell (foundations/pos-v5-tokens.css). */\n  background: var(--pos-v5-bg-app);\n  color: var(--pos-v5-ink);\n  min-height: calc(100dvh - 64px);\n  margin: -4px -8px 0 -8px;\n  padding: 4px 10px 12px 8px;\n  box-sizing: border-box;\n  max-width: 100vw;\n  overflow-x: hidden;\n}\n\n/* Rollback kill-switch (héritage doctrine pos-v4.css §9) */\n[data-pos-v4-disabled].fk-pos-v4[data-v-7a8fd462] { all: revert;\n}\n.pos-v4-main[data-v-7a8fd462] {\n  padding: 0 8px 16px 0;\n  min-height: 0;\n}\n\n/* === 2. NEUTRALISATION ancien gradient operator bar ===\n   La nouvelle classe .pos-v5-operator-bar (pos-v5.css) gère tout. On laisse\n   les anciennes classes legacy (.pos-v4-operator-bar, .pos-v4-eyebrow,\n   .pos-v4-title, .pos-v4-status-row) en passe-plat — pas de redéfinition. */\n.pos-v4-operator-bar[data-v-7a8fd462] {\n  /* Reset : le V5 prend le relais */\n  background: transparent;\n  color: inherit;\n  border: 0;\n  min-height: 0;\n}\n.pos-v4-eyebrow[data-v-7a8fd462],\n.pos-v4-title[data-v-7a8fd462],\n.pos-v4-status-row[data-v-7a8fd462],\n.pos-v4-status-row span[data-v-7a8fd462] {\n  /* Reset legacy : les V5 classes prennent le relais */\n  color: inherit;\n  background: transparent;\n}\n\n/* === 3. SEARCH — déjà géré par PosV5SearchInput, neutralisation legacy === */\n.pos-v4-search[data-v-7a8fd462] { background: transparent; border: 0; box-shadow: none; height: auto;\n}\n.pos-v4-search input[data-v-7a8fd462],\n.pos-v4-search button[type=\"submit\"][data-v-7a8fd462] { all: unset;\n}\n\n/* === 4. CART HEAD — neutralisation legacy === */\n.pos-v4-cart-head[data-v-7a8fd462] {\n  background: transparent;\n}\n.pos-v4-cart-table thead[data-v-7a8fd462] {\n  background: transparent !important;\n}\n\n/* === 5. CART FOOTER — neutralisation legacy === */\n.pos-v4-cart-footer[data-v-7a8fd462] {\n  background: transparent !important;\n  box-shadow: none !important;\n}\n.pos-v4-total-row[data-v-7a8fd462] {\n  /* Le hero V5 prend le relais */\n  background: transparent !important;\n  border: 0 !important;\n  min-height: 0 !important;\n}\n\n/* === 6. PRODUCT TILES ===\n   [POS-V5 R2 2026-05-02] Les tiles produits (.pos-item-tile / .pos-v5-tile) sont\n   désormais entièrement gérées par le styling scoped d'ItemComponent.vue (photo\n   hero 4/3, body name+price+add, hover lift+scale image). On supprime les\n   :deep() overrides ici pour éviter une bataille de spécificité avec le\n   composant enfant — single source of truth = ItemComponent.vue. */\n\n/* === 7. RESPONSIVE === */\n@media (max-width: 767px) {\n.fk-pos-v4.pos-v5-shell[data-v-7a8fd462] {\n    margin: -8px;\n    padding: 10px;\n    padding-bottom: 76px;\n}\n.pos-v4-main[data-v-7a8fd462] { padding-right: 0;\n}\n}\n\n/* =============================================================================\n   8. KIOSK CASH PANEL drawer (inline dans PosComponent — restyle V5)\n   -----------------------------------------------------------------------------\n   Refonte avec tokens V5 — palette warm cohérente, typo Inter, ombres warm.\n   ============================================================================= */\n.kiosk-cash-panel-overlay[data-v-7a8fd462] {\n  position: fixed;\n  inset: 0;\n  z-index: var(--pos-v5-z-modal);\n  background: rgba(26, 26, 26, 0.42);\n  display: flex;\n  align-items: flex-end;\n  justify-content: flex-end;\n  backdrop-filter: blur(2px);\n}\n.kiosk-cash-panel[data-v-7a8fd462] {\n  background: var(--pos-v5-bg-panel);\n  width: 420px;\n  max-width: 100vw;\n  height: 100vh;\n  display: flex;\n  flex-direction: column;\n  box-shadow: -20px 0 48px rgba(26, 26, 26, 0.20);\n  border-top-left-radius: var(--pos-v5-radius-xl);\n  border-bottom-left-radius: var(--pos-v5-radius-xl);\n  font-family: var(--pos-v5-font-sans);\n}\n.kiosk-cash-panel-header[data-v-7a8fd462] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: var(--pos-v5-space-4) var(--pos-v5-space-5);\n  border-bottom: 1px solid var(--pos-v5-border);\n  background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 70%);\n  font-weight: var(--pos-v5-weight-extrabold);\n  font-size: var(--pos-v5-text-h6);\n  color: var(--pos-v5-ink);\n}\n.kiosk-cash-panel-header-actions[data-v-7a8fd462] {\n  display: inline-flex;\n  align-items: center;\n  gap: var(--pos-v5-space-2);\n}\n.kiosk-cash-panel-history-link[data-v-7a8fd462] {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 5px 10px;\n  border-radius: var(--pos-v5-radius-sm);\n  border: 1px solid var(--pos-v5-border);\n  background: var(--pos-v5-bg-panel);\n  color: var(--pos-v5-ink);\n  font-size: var(--pos-v5-text-caption);\n  font-weight: var(--pos-v5-weight-bold);\n  text-decoration: none;\n  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.kiosk-cash-panel-history-link[data-v-7a8fd462]:hover {\n  background: var(--pos-v5-brand-red-soft);\n  border-color: var(--pos-v5-brand-red);\n  color: var(--pos-v5-brand-red);\n}\n.kiosk-cash-panel-close[data-v-7a8fd462] {\n  width: 36px;\n  height: 36px;\n  border: 0;\n  border-radius: var(--pos-v5-radius-pill);\n  background: var(--pos-v5-bg-subtle);\n  color: var(--pos-v5-ink-soft);\n  cursor: pointer;\n  font-size: 14px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.kiosk-cash-panel-close[data-v-7a8fd462]:hover {\n  background: var(--pos-v5-danger-soft);\n  color: var(--pos-v5-danger);\n}\n.kiosk-cash-detail-btn[data-v-7a8fd462] {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 5px 10px;\n  border-radius: var(--pos-v5-radius-sm);\n  border: 1px solid var(--pos-v5-border);\n  background: var(--pos-v5-bg-panel);\n  color: var(--pos-v5-ink);\n  font-size: var(--pos-v5-text-caption);\n  font-weight: var(--pos-v5-weight-semibold);\n  text-decoration: none;\n  white-space: nowrap;\n  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.kiosk-cash-detail-btn[data-v-7a8fd462]:hover {\n  background: var(--pos-v5-brand-red-soft);\n  border-color: var(--pos-v5-brand-red);\n  color: var(--pos-v5-brand-red);\n}\n.kiosk-cash-panel-body[data-v-7a8fd462] {\n  flex: 1;\n  overflow-y: auto;\n  padding: var(--pos-v5-space-4);\n  display: flex;\n  flex-direction: column;\n  gap: var(--pos-v5-space-3);\n  background: var(--pos-v5-bg-app);\n}\n.kiosk-cash-loading[data-v-7a8fd462],\n.kiosk-cash-empty[data-v-7a8fd462] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: var(--pos-v5-space-8);\n  color: var(--pos-v5-ink-muted);\n  font-size: var(--pos-v5-text-body);\n  text-align: center;\n}\n.kiosk-cash-spinner[data-v-7a8fd462] {\n  width: 32px;\n  height: 32px;\n  border: 3px solid var(--pos-v5-bg-subtle);\n  border-top-color: var(--pos-v5-brand-red);\n  border-radius: 50%;\n  animation: kiosk-cash-spin-7a8fd462 0.8s linear infinite;\n}\n@keyframes kiosk-cash-spin-7a8fd462 {\nto { transform: rotate(360deg);\n}\n}\n@media (prefers-reduced-motion: reduce) {\n.kiosk-cash-spinner[data-v-7a8fd462] { animation: none;\n}\n}\n.kiosk-cash-order-card[data-v-7a8fd462] {\n  background: var(--pos-v5-bg-panel);\n  border: 1px solid var(--pos-v5-border);\n  border-left: 4px solid var(--pos-v5-brand-red);\n  border-radius: var(--pos-v5-radius-md);\n  padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  box-shadow: var(--pos-v5-shadow-sm);\n  transition: box-shadow var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.kiosk-cash-order-card[data-v-7a8fd462]:hover {\n  box-shadow: var(--pos-v5-shadow-md);\n}\n.kiosk-cash-order-head[data-v-7a8fd462] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n}\n.kiosk-cash-order-num[data-v-7a8fd462] {\n  font-weight: var(--pos-v5-weight-extrabold);\n  font-size: var(--pos-v5-text-body-lg);\n  color: var(--pos-v5-ink);\n}\n.kiosk-cash-order-total[data-v-7a8fd462] {\n  font-weight: var(--pos-v5-weight-extrabold);\n  color: var(--pos-v5-brand-red);\n  font-size: var(--pos-v5-text-body-lg);\n  font-feature-settings: \"tnum\";\n  font-variant-numeric: tabular-nums;\n}\n.kiosk-cash-order-items[data-v-7a8fd462] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n}\n.kiosk-cash-item-pill[data-v-7a8fd462] {\n  background: var(--pos-v5-bg-subtle);\n  border-radius: var(--pos-v5-radius-pill);\n  padding: 2px 8px;\n  font-size: 11px;\n  font-weight: var(--pos-v5-weight-semibold);\n  color: var(--pos-v5-ink-soft);\n}\n.kiosk-cash-item-pill.more[data-v-7a8fd462] {\n  background: var(--pos-v5-brand-red-soft);\n  color: var(--pos-v5-brand-red);\n}\n/* [GAP-25-2] Bouton Encaisser (kiosk-cash) */\n.kiosk-cash-collect-btn[data-v-7a8fd462] {\n  padding: 8px 14px;\n  border-radius: var(--pos-v5-radius-sm);\n  border: 0;\n  background: var(--pos-v5-success);\n  color: var(--pos-v5-ink-on-dark);\n  font-size: var(--pos-v5-text-caption);\n  font-weight: var(--pos-v5-weight-extrabold);\n  cursor: pointer;\n  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n  white-space: nowrap;\n  box-shadow: var(--pos-v5-shadow-success);\n}\n.kiosk-cash-collect-btn[data-v-7a8fd462]:hover { background: var(--pos-v5-success-dark);\n}\n.kiosk-cash-collect-btn[data-v-7a8fd462]:disabled,\n.kiosk-cash-cancel-btn[data-v-7a8fd462]:disabled { opacity: 0.5; cursor: not-allowed;\n}\n.kiosk-cash-cancel-btn[data-v-7a8fd462] {\n  border: 0;\n  background: var(--pos-v5-danger-soft);\n  color: var(--pos-v5-danger-dark);\n  border-radius: var(--pos-v5-radius-pill);\n  padding: 6px 12px;\n  font-size: 11px;\n  font-weight: var(--pos-v5-weight-extrabold);\n  cursor: pointer;\n  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.kiosk-cash-cancel-btn[data-v-7a8fd462]:hover { background: var(--pos-v5-danger-ghost);\n}\n.kiosk-cash-order-foot[data-v-7a8fd462] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  font-size: var(--pos-v5-text-caption);\n  color: var(--pos-v5-ink-muted);\n}\n.kiosk-cash-order-status[data-v-7a8fd462] {\n  color: var(--pos-v5-success-dark);\n  font-weight: var(--pos-v5-weight-semibold);\n}\n.kiosk-cash-panel-footer[data-v-7a8fd462] {\n  padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n  border-top: 1px solid var(--pos-v5-border);\n  background: var(--pos-v5-bg-panel);\n}\n.kiosk-cash-refresh-btn[data-v-7a8fd462] {\n  width: 100%;\n  padding: 10px;\n  background: var(--pos-v5-bg-subtle);\n  border: 1px solid var(--pos-v5-border);\n  border-radius: var(--pos-v5-radius-md);\n  font-size: var(--pos-v5-text-body);\n  font-weight: var(--pos-v5-weight-semibold);\n  cursor: pointer;\n  color: var(--pos-v5-ink);\n  transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.kiosk-cash-refresh-btn[data-v-7a8fd462]:hover {\n  background: var(--pos-v5-brand-red-soft);\n  border-color: var(--pos-v5-brand-red);\n  color: var(--pos-v5-brand-red);\n}\n\n/* Slide-in panel transitions */\n.slide-panel-enter-active[data-v-7a8fd462],\n.slide-panel-leave-active[data-v-7a8fd462] { transition: opacity var(--pos-v5-duration-base);\n}\n.slide-panel-enter-from[data-v-7a8fd462],\n.slide-panel-leave-to[data-v-7a8fd462] { opacity: 0;\n}\n.slide-panel-enter-active .kiosk-cash-panel[data-v-7a8fd462],\n.slide-panel-leave-active .kiosk-cash-panel[data-v-7a8fd462] { transition: transform var(--pos-v5-duration-slow) var(--pos-v5-ease-standard);\n}\n.slide-panel-enter-from .kiosk-cash-panel[data-v-7a8fd462],\n.slide-panel-leave-to .kiosk-cash-panel[data-v-7a8fd462] { transform: translateX(100%);\n}\n\n/* =============================================================================\n   POS OFFLINE — banner + queue-depth badge ([POS-OFFLINE-WIRE 2026-05-17])\n   -----------------------------------------------------------------------------\n   Banner sticks at the top of the POS shell while !isOnline. Yellow (#FFD700)\n   matches \"warning / degraded\" semantics and contrasts the warm cream V5 bg.\n   Queue-depth badge is shown discreetly in the operator status row even when\n   online if pending replays remain (post-flush trickle).\n   ============================================================================= */\n.pos-offline-banner[data-v-7a8fd462] {\n  position: sticky;\n  top: 0;\n  z-index: 9999;\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  padding: 12px 16px;\n  background: #FFD700;\n  color: #1A1A1A;\n  font-weight: 700;\n  font-size: 14px;\n  line-height: 1.3;\n  border-bottom: 2px solid #B8860B;\n  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);\n}\n.pos-offline-banner__label[data-v-7a8fd462] { letter-spacing: 0.5px;\n}\n.pos-offline-banner__detail[data-v-7a8fd462] { flex: 1;\n}\n.pos-offline-banner__sync[data-v-7a8fd462] {\n  padding: 6px 14px;\n  background: #1A1A1A;\n  color: #FFD700;\n  border: 0;\n  border-radius: 999px;\n  font-size: 13px;\n  font-weight: 700;\n  cursor: pointer;\n  transition: background 120ms ease;\n}\n.pos-offline-banner__sync[data-v-7a8fd462]:hover:not(:disabled) { background: #333;\n}\n.pos-offline-banner__sync[data-v-7a8fd462]:disabled { opacity: 0.5; cursor: not-allowed;\n}\n.pos-queue-depth-badge[data-v-7a8fd462] {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 8px;\n  background: rgba(255, 215, 0, 0.18);\n  color: #8B6F00;\n  border: 1px solid rgba(184, 134, 11, 0.4);\n  border-radius: 999px;\n  font-size: 12px;\n  font-weight: 700;\n  margin-left: 6px;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -453,6 +477,323 @@ ___CSS_LOADER_EXPORT___.push([module.id, "\n.pos-v5-tranche-row[data-v-4428e74e]
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
+
+/***/ }),
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=script&lang=js":
+/*!********************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=script&lang=js ***!
+  \********************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _services_CashDrawerService__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../services/CashDrawerService */ "./resources/js/services/CashDrawerService.js");
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+/**
+ * PosCashDrawerSessionDialog.vue — Sprint 1A.
+ *
+ * UI complète pour la gestion de la session caisse :
+ *   - aucun OPEN → modal "Ouvrir la caisse" (numpad-like quick increments + input)
+ *   - OPEN existante → vue active (stats + bouton clôturer / mouvements)
+ *   - clôture → numpad closing + variance display + reason si écart
+ *   - mouvements → tableau cash_movements
+ *
+ * SSOT : `cashDrawer` Vuex module (resources/js/store/modules/cashDrawer.js).
+ *
+ * Le composant écoute `props.open` pour s'afficher. Il émet `close` quand le
+ * caissier ferme manuellement, et `session-opened` / `session-closed` après
+ * action réussie (utile au parent pour rafraîchir le state ou tracker).
+ *
+ * Variance reason: capturée côté UI uniquement — le controller actuel ne
+ * persiste pas la raison (TODO Sprint 1B: whitelist `variance_reason` dans
+ * `CashDrawerSessionController::close()`).
+ */
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'PosCashDrawerSessionDialog',
+  props: {
+    open: {
+      type: Boolean,
+      "default": false
+    },
+    // Override mode externally (e.g. PosComponent auto-open). Defaults
+    // to 'auto' which picks 'open' or 'active' based on store session.
+    initialMode: {
+      type: String,
+      "default": 'auto',
+      validator: function validator(v) {
+        return ['auto', 'open', 'active', 'close', 'movements'].includes(v);
+      }
+    }
+  },
+  emits: ['close', 'session-opened', 'session-closed'],
+  data: function data() {
+    return {
+      mode: 'auto',
+      openingAmount: 50,
+      closingAmount: 0,
+      varianceReason: '',
+      varianceReasonTouched: false,
+      increments: [5, 10, 20, 50],
+      errorMessage: ''
+    };
+  },
+  computed: {
+    session: function session() {
+      return this.$store.getters['cashDrawer/session'];
+    },
+    loading: function loading() {
+      return this.$store.getters['cashDrawer/loading'];
+    },
+    movements: function movements() {
+      return this.$store.getters['cashDrawer/movements'] || [];
+    },
+    movementsCount: function movementsCount() {
+      return this.movements.length;
+    },
+    sessionOpeningAmount: function sessionOpeningAmount() {
+      return this.session ? Number(this.session.opening_amount) || 0 : 0;
+    },
+    expectedTotal: function expectedTotal() {
+      // Live recompute mirror of backend reconcile math.
+      // For UI freshness we recompute from current movements snapshot.
+      return _services_CashDrawerService__WEBPACK_IMPORTED_MODULE_0__["default"].computeExpected(this.sessionOpeningAmount, this.movements);
+    },
+    liveVariance: function liveVariance() {
+      var diff = Number(this.closingAmount) - this.expectedTotal;
+      return Math.round(diff * 100) / 100;
+    },
+    varianceRequiresReason: function varianceRequiresReason() {
+      return this.mode === 'close' && Math.abs(this.liveVariance) > 0.005;
+    },
+    varianceReasonMissing: function varianceReasonMissing() {
+      if (!this.varianceRequiresReason) return false;
+      var trimmed = (this.varianceReason || '').trim();
+      return trimmed.length < 3;
+    },
+    canOpen: function canOpen() {
+      return Number(this.openingAmount) >= 0 && Number.isFinite(Number(this.openingAmount));
+    },
+    formattedOpenedAt: function formattedOpenedAt() {
+      if (!this.session || !this.session.opened_at) return '—';
+      try {
+        var d = new Date(this.session.opened_at);
+        if (Number.isNaN(d.getTime())) return this.session.opened_at;
+        return d.toLocaleString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (_e) {
+        return this.session.opened_at;
+      }
+    },
+    headerTitle: function headerTitle() {
+      switch (this.mode) {
+        case 'open':
+          return this.$t('label.cash_session_open');
+        case 'close':
+          return this.$t('label.cash_session_close');
+        case 'movements':
+          return this.$t('label.cash_session_movements');
+        case 'active':
+        default:
+          return this.$t('label.cash_session_active');
+      }
+    }
+  },
+  watch: {
+    open: function open(newVal) {
+      if (newVal) {
+        this.errorMessage = '';
+        this.resolveMode();
+      }
+    },
+    session: function session(newSession) {
+      // External session change (e.g. PosComponent loaded session) — re-resolve mode.
+      if (this.open) this.resolveMode();
+    },
+    initialMode: function initialMode(newVal) {
+      if (this.open) this.resolveMode();
+    }
+  },
+  mounted: function mounted() {
+    if (this.open) this.resolveMode();
+  },
+  methods: {
+    resolveMode: function resolveMode() {
+      if (this.initialMode && this.initialMode !== 'auto') {
+        this.mode = this.initialMode;
+        return;
+      }
+      this.mode = this.session && this.session.status === 'open' ? 'active' : 'open';
+    },
+    emitClose: function emitClose() {
+      this.errorMessage = '';
+      this.$emit('close');
+    },
+    onBackdrop: function onBackdrop() {
+      this.emitClose();
+    },
+    addToOpening: function addToOpening(amount) {
+      var cur = Number(this.openingAmount) || 0;
+      this.openingAmount = Math.round((cur + Number(amount)) * 100) / 100;
+    },
+    addToClosing: function addToClosing(amount) {
+      var cur = Number(this.closingAmount) || 0;
+      this.closingAmount = Math.round((cur + Number(amount)) * 100) / 100;
+    },
+    submitOpen: function submitOpen() {
+      var _this = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var session, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              if (_this.canOpen) {
+                _context.n = 1;
+                break;
+              }
+              return _context.a(2);
+            case 1:
+              _this.errorMessage = '';
+              _context.p = 2;
+              _context.n = 3;
+              return _this.$store.dispatch('cashDrawer/openSession', _this.openingAmount);
+            case 3:
+              session = _context.v;
+              _this.$emit('session-opened', session);
+              _this.mode = 'active';
+              _context.n = 5;
+              break;
+            case 4:
+              _context.p = 4;
+              _t = _context.v;
+              _this.errorMessage = _this._extractError(_t);
+            case 5:
+              return _context.a(2);
+          }
+        }, _callee, null, [[2, 4]]);
+      }))();
+    },
+    openMovements: function openMovements() {
+      var _this2 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+        var _t2;
+        return _regenerator().w(function (_context2) {
+          while (1) switch (_context2.p = _context2.n) {
+            case 0:
+              _this2.errorMessage = '';
+              _context2.p = 1;
+              _context2.n = 2;
+              return _this2.$store.dispatch('cashDrawer/loadMovements');
+            case 2:
+              _this2.mode = 'movements';
+              _context2.n = 4;
+              break;
+            case 3:
+              _context2.p = 3;
+              _t2 = _context2.v;
+              _this2.errorMessage = _this2._extractError(_t2);
+            case 4:
+              return _context2.a(2);
+          }
+        }, _callee2, null, [[1, 3]]);
+      }))();
+    },
+    submitClose: function submitClose() {
+      var _this3 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+        var result, _t3;
+        return _regenerator().w(function (_context3) {
+          while (1) switch (_context3.p = _context3.n) {
+            case 0:
+              if (!_this3.varianceReasonMissing) {
+                _context3.n = 1;
+                break;
+              }
+              _this3.varianceReasonTouched = true;
+              return _context3.a(2);
+            case 1:
+              _this3.errorMessage = '';
+              _context3.p = 2;
+              _context3.n = 3;
+              return _this3.$store.dispatch('cashDrawer/closeSession', {
+                closingAmount: _this3.closingAmount,
+                varianceReason: _this3.varianceReason || null
+              });
+            case 3:
+              result = _context3.v;
+              _this3.$emit('session-closed', result);
+              // After close+reconcile, the session is gone; reset local fields
+              // and close the dialog so the parent shows the "no session" state.
+              _this3.closingAmount = 0;
+              _this3.varianceReason = '';
+              _this3.emitClose();
+              _context3.n = 5;
+              break;
+            case 4:
+              _context3.p = 4;
+              _t3 = _context3.v;
+              _this3.errorMessage = _this3._extractError(_t3);
+            case 5:
+              return _context3.a(2);
+          }
+        }, _callee3, null, [[2, 4]]);
+      }))();
+    },
+    formatMoney: function formatMoney(value) {
+      var n = Number(value) || 0;
+      try {
+        return n.toLocaleString('fr-FR', {
+          style: 'currency',
+          currency: 'EUR',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      } catch (_e) {
+        return "".concat(n.toFixed(2), " \u20AC");
+      }
+    },
+    formatVariance: function formatVariance(value) {
+      var n = Number(value) || 0;
+      var formatted = this.formatMoney(Math.abs(n));
+      if (n > 0) return "+".concat(formatted);
+      if (n < 0) return "-".concat(formatted);
+      return formatted;
+    },
+    formatTimestamp: function formatTimestamp(iso) {
+      if (!iso) return '—';
+      try {
+        var d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return iso;
+        return d.toLocaleString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      } catch (_e) {
+        return iso;
+      }
+    },
+    _extractError: function _extractError(err) {
+      var fromResponse = err && err.response && err.response.data && err.response.data.message;
+      if (fromResponse) return fromResponse;
+      if (err && err.message) return err.message;
+      return this.$t('label.cash_session_failure');
+    }
+  }
+});
 
 /***/ }),
 
@@ -2485,16 +2826,19 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _v5_PosV5Numpad_vue__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./v5/PosV5Numpad.vue */ "./resources/js/components/admin/pos/v5/PosV5Numpad.vue");
 /* harmony import */ var _v5_PosV5TrancheRow_vue__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ./v5/PosV5TrancheRow.vue */ "./resources/js/components/admin/pos/v5/PosV5TrancheRow.vue");
 /* harmony import */ var _helpers_posSplitPayment__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../../../helpers/posSplitPayment */ "./resources/js/helpers/posSplitPayment.js");
+var _excluded = ["total", "subtotal", "discount"];
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
-function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
-function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
-function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
-function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function _objectWithoutProperties(e, t) { if (null == e) return {}; var o, r, i = _objectWithoutPropertiesLoose(e, t); if (Object.getOwnPropertySymbols) { var n = Object.getOwnPropertySymbols(e); for (r = 0; r < n.length; r++) o = n[r], -1 === t.indexOf(o) && {}.propertyIsEnumerable.call(e, o) && (i[o] = e[o]); } return i; }
+function _objectWithoutPropertiesLoose(r, e) { if (null == r) return {}; var t = {}; for (var n in r) if ({}.hasOwnProperty.call(r, n)) { if (-1 !== e.indexOf(n)) continue; t[n] = r[n]; } return t; }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 
 
 
@@ -2551,7 +2895,15 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       // 'multi' is fully local: tranches[] are not bubbled into props.form.
       paymentMode: 'cash',
       tranches: [],
-      splitCount: 2
+      splitCount: 2,
+      // [2026-05-18 PR-A V1 GO-LIVE blocker heal] CARD-mode terminal
+      // selector — fetched once per modal open, reset between orders.
+      // Backend PosOrderRequest enforces `terminal_id required_if
+      // pos_payment_method=CARD`; the dropdown surfaces the user's
+      // choice and the confirm-button gate refuses to submit until set.
+      paymentTerminals: [],
+      selectedTerminalId: null,
+      terminalsLoading: false
     };
   },
   computed: {
@@ -2594,6 +2946,14 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     },
     canSplitEqually: function canSplitEqually() {
       return Number(this.splitCount) >= 2 && this.totalCents > 0;
+    },
+    // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Confirm-button gate for
+    // legacy single-tender CARD path. Backend PosOrderRequest:114-119
+    // rejects without `terminal_id` ⇒ surface the requirement client-side
+    // to avoid a 422 round-trip + confusing error toast.
+    canConfirmCard: function canConfirmCard() {
+      if (this.paymentMode !== 'card') return true;
+      return this.selectedTerminalId !== null && Number(this.selectedTerminalId) > 0;
     }
   },
   mounted: function mounted() {
@@ -2603,6 +2963,12 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     // doesn't show CASH-tab as aria-selected. Multi mode is local-only,
     // never inherited (single-tender re-open ⇒ never multi).
     this.syncPaymentModeFromForm();
+
+    // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Fetch ACTIVE payment
+    // terminals on modal mount. Default-pick first one so the
+    // single-TPE branch flow is one-tap. Cashier overrides via dropdown
+    // if multiple TPEs are configured.
+    this.fetchPaymentTerminals();
 
     // [iter12 2026-05-09] Auto-refresh quote every 60s while modal is
     // open. Quote TTL bumped to 300s server-side (config quote.ttl_seconds)
@@ -2643,6 +3009,69 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     }
   },
   methods: {
+    // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Fetch ACTIVE TPE terminals
+    // for the current cashier's branch. Default-selects the first one to
+    // keep single-TPE branches one-tap. Empty list = configuration gap;
+    // the dropdown surfaces a hint banner so the cashier knows to ask
+    // the admin to add a terminal (Paramètres → Terminaux de paiement).
+    fetchPaymentTerminals: function () {
+      var _fetchPaymentTerminals = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var _response$data, response, rows, list, _t2;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              if (!this.terminalsLoading) {
+                _context.n = 1;
+                break;
+              }
+              return _context.a(2);
+            case 1:
+              this.terminalsLoading = true;
+              _context.p = 2;
+              _context.n = 3;
+              return axios__WEBPACK_IMPORTED_MODULE_1__["default"].get('admin/payment-terminals', {
+                params: {
+                  status: 1,
+                  per_page: 50
+                }
+              });
+            case 3:
+              response = _context.v;
+              rows = response === null || response === void 0 || (_response$data = response.data) === null || _response$data === void 0 ? void 0 : _response$data.data;
+              list = Array.isArray(rows) ? rows : Array.isArray(rows === null || rows === void 0 ? void 0 : rows.data) ? rows.data : [];
+              this.paymentTerminals = list.filter(function (t) {
+                return t && (t.status === 1 || t.status === '1');
+              }).map(function (t) {
+                return {
+                  id: Number(t.id),
+                  name: String(t.name || ''),
+                  gateway_type: String(t.gateway_type || '')
+                };
+              });
+              if (this.selectedTerminalId === null && this.paymentTerminals.length > 0) {
+                this.selectedTerminalId = this.paymentTerminals[0].id;
+              }
+              _context.n = 5;
+              break;
+            case 4:
+              _context.p = 4;
+              _t2 = _context.v;
+              // Soft-fail: leave list empty so the hint banner surfaces.
+              this.paymentTerminals = [];
+            case 5:
+              _context.p = 5;
+              this.terminalsLoading = false;
+              return _context.f(5);
+            case 6:
+              return _context.a(2);
+          }
+        }, _callee, this, [[2, 4, 5, 6]]);
+      }));
+      function fetchPaymentTerminals() {
+        return _fetchPaymentTerminals.apply(this, arguments);
+      }
+      return fetchPaymentTerminals;
+    }(),
     currencyFormat: function currencyFormat(amount, decimal, currency, position) {
       return _services_appService__WEBPACK_IMPORTED_MODULE_3__["default"].currencyFormat(amount, decimal, currency, position);
     },
@@ -2775,7 +3204,17 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     updateTranche: function updateTranche(index, patch) {
       if (index < 0 || index >= this.tranches.length) return;
       var current = this.tranches[index];
-      this.tranches.splice(index, 1, _objectSpread(_objectSpread({}, current), patch));
+      var merged = _objectSpread(_objectSpread({}, current), patch);
+      // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Auto-attach terminal_id
+      // when a tranche flips to CARD mode. Falls back to the parent's
+      // selectedTerminalId so single-TPE branches stay one-tap; cashier
+      // can override per-tranche via tranche-row dropdown (V1.0.x backlog).
+      // Without this, every multi-tender CARD tranche 422s on
+      // "A valid payment terminal is required for every CARD tranche."
+      if (Number(merged.mode) === this.posPaymentMethodEnum.CARD && (merged.terminal_id === undefined || merged.terminal_id === null || Number(merged.terminal_id) <= 0) && this.selectedTerminalId) {
+        merged.terminal_id = this.selectedTerminalId;
+      }
+      this.tranches.splice(index, 1, merged);
     },
     splitEquallyHandler: function splitEquallyHandler() {
       var n = Math.max(2, Math.min(20, Number(this.splitCount) || 2));
@@ -2908,47 +3347,47 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       });
     },
     confirmOrderWithAuthRetry: function () {
-      var _confirmOrderWithAuthRetry = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
-        var _t, _t2;
-        return _regenerator().w(function (_context) {
-          while (1) switch (_context.p = _context.n) {
+      var _confirmOrderWithAuthRetry = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+        var _t3, _t4;
+        return _regenerator().w(function (_context2) {
+          while (1) switch (_context2.p = _context2.n) {
             case 0:
-              _context.p = 0;
-              _context.n = 1;
+              _context2.p = 0;
+              _context2.n = 1;
               return this.runConfirmOrderAttempt();
             case 1:
-              return _context.a(2, _context.v);
+              return _context2.a(2, _context2.v);
             case 2:
-              _context.p = 2;
-              _t = _context.v;
-              if (this.isUnauthorized(_t)) {
-                _context.n = 3;
+              _context2.p = 2;
+              _t3 = _context2.v;
+              if (this.isUnauthorized(_t3)) {
+                _context2.n = 3;
                 break;
               }
-              throw _t;
+              throw _t3;
             case 3:
-              _context.n = 4;
+              _context2.n = 4;
               return this.refreshPaymentAuth();
             case 4:
-              _context.p = 4;
-              _context.n = 5;
+              _context2.p = 4;
+              _context2.n = 5;
               return this.runConfirmOrderAttempt();
             case 5:
-              return _context.a(2, _context.v);
+              return _context2.a(2, _context2.v);
             case 6:
-              _context.p = 6;
-              _t2 = _context.v;
-              if (!this.isUnauthorized(_t2)) {
-                _context.n = 7;
+              _context2.p = 6;
+              _t4 = _context2.v;
+              if (!this.isUnauthorized(_t4)) {
+                _context2.n = 7;
                 break;
               }
               throw this.sessionExpiredError();
             case 7:
-              throw _t2;
+              throw _t4;
             case 8:
-              return _context.a(2);
+              return _context2.a(2);
           }
-        }, _callee, this, [[4, 6], [0, 2]]);
+        }, _callee2, this, [[4, 6], [0, 2]]);
       }));
       function confirmOrderWithAuthRetry() {
         return _confirmOrderWithAuthRetry.apply(this, arguments);
@@ -2956,17 +3395,17 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return confirmOrderWithAuthRetry;
     }(),
     runConfirmOrderAttempt: function () {
-      var _runConfirmOrderAttempt = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+      var _runConfirmOrderAttempt = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
         var _this5 = this;
-        var inputPatch, accessResponse, branchId, isMulti, multiPatch, _dominant$mode, breakdown, dominant, dominantMode, cashTranche, preparedForm, quotedForm, saveForm, orderResponse;
-        return _regenerator().w(function (_context2) {
-          while (1) switch (_context2.n) {
+        var inputPatch, accessResponse, branchId, isMulti, multiPatch, _dominant$mode, breakdown, dominant, dominantMode, cashTranche, terminalPatch, preparedForm, quotedForm, aligned, _t, _s, _d, saveForm, orderResponse;
+        return _regenerator().w(function (_context3) {
+          while (1) switch (_context3.n) {
             case 0:
               inputPatch = this.collectPaymentInputPatch(this.paymentForm);
-              _context2.n = 1;
+              _context3.n = 1;
               return this.$store.dispatch("defaultAccess/show");
             case 1:
-              accessResponse = _context2.v;
+              accessResponse = _context3.v;
               branchId = (0,_helpers_posNormalizeIds__WEBPACK_IMPORTED_MODULE_11__.normalizeId)(accessResponse.data.data.branch_id) || accessResponse.data.data.branch_id; // [CV1-POS-SPLIT-PAYMENT-001] When paymentMode === 'multi', attach
               // payment_breakdown[] to the payload. The frozen-zone backend currently
               // ignores this field; once PLAN_P12 ships, it will create order_payments
@@ -2990,29 +3429,45 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                   pos_payment_note: 'multi-tender'
                 };
               }
-              preparedForm = this.currentFormSnapshot(_objectSpread(_objectSpread(_objectSpread({}, inputPatch), multiPatch), {}, {
+              // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Attach the selected
+              // terminal_id to the legacy single-tender CARD path. The split
+              // path already carries terminal_id per tranche via buildSplitPayload.
+              terminalPatch = !isMulti && this.paymentMode === 'card' && this.selectedTerminalId ? {
+                terminal_id: this.selectedTerminalId
+              } : {};
+              preparedForm = this.currentFormSnapshot(_objectSpread(_objectSpread(_objectSpread(_objectSpread({}, inputPatch), multiPatch), terminalPatch), {}, {
                 branch_id: branchId,
                 items: this.normalizeItemsPayload(this.paymentForm.items)
               }));
-              this.emitPaymentFormPatch(_objectSpread(_objectSpread(_objectSpread({}, inputPatch), multiPatch), {}, {
+              this.emitPaymentFormPatch(_objectSpread(_objectSpread(_objectSpread(_objectSpread({}, inputPatch), multiPatch), terminalPatch), {}, {
                 branch_id: preparedForm.branch_id,
                 items: preparedForm.items
               }));
-              _context2.n = 2;
+              _context3.n = 2;
               return this.refreshQuote(preparedForm);
             case 2:
-              quotedForm = _context2.v;
-              saveForm = this.alignCashReceivedWithQuotedTotal(preparedForm, quotedForm);
-              _context2.n = 3;
+              quotedForm = _context3.v;
+              aligned = this.alignCashReceivedWithQuotedTotal(preparedForm, quotedForm); // [Sprint H5 POS-A6 2026-05-17] SSOT enforcement (CLAUDE.md §8) —
+              // strip `total/subtotal/discount` from the POST payload. The
+              // server recomputes via PricingService::calculateOrder regardless
+              // of what we send, and `PosOrderRequest` made these nullable in
+              // POS-9.1.8 / POS-GA-F-47. Sending them was redundant wire bytes
+              // AND a (now-defused) tampering surface. We keep the values on
+              // the local form for UX (badge, change calculation, parking
+              // snapshot) and only omit them from the network payload.
+              // Sister test: tests/Feature/Pos/PosOrderRequestNoClientTotalsTest.php
+              // eslint-disable-next-line no-unused-vars
+              _t = aligned.total, _s = aligned.subtotal, _d = aligned.discount, saveForm = _objectWithoutProperties(aligned, _excluded);
+              _context3.n = 3;
               return this.$store.dispatch('posOrder/save', saveForm);
             case 3:
-              orderResponse = _context2.v;
-              _context2.n = 4;
-              return this.handleOrderSuccess(orderResponse, saveForm);
+              orderResponse = _context3.v;
+              _context3.n = 4;
+              return this.handleOrderSuccess(orderResponse, aligned);
             case 4:
-              return _context2.a(2);
+              return _context3.a(2);
           }
-        }, _callee2, this);
+        }, _callee3, this);
       }));
       function runConfirmOrderAttempt() {
         return _runConfirmOrderAttempt.apply(this, arguments);
@@ -3020,10 +3475,10 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return runConfirmOrderAttempt;
     }(),
     handleOrderSuccess: function () {
-      var _handleOrderSuccess = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3(orderResponse, submittedForm) {
+      var _handleOrderSuccess = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4(orderResponse, submittedForm) {
         var raw, created;
-        return _regenerator().w(function (_context3) {
-          while (1) switch (_context3.n) {
+        return _regenerator().w(function (_context4) {
+          while (1) switch (_context4.n) {
             case 0:
               // [POS-9.1.12] Open the physical cash drawer the moment a CASH
               // payment is accepted. The hardware bridge is a no-op when no
@@ -3038,7 +3493,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               raw = orderResponse === null || orderResponse === void 0 ? void 0 : orderResponse.data;
               created = raw && _typeof(raw) === 'object' && raw.data !== undefined ? raw.data : raw;
               if (!(!created || created.id == null)) {
-                _context3.n = 1;
+                _context4.n = 1;
                 break;
               }
               _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(this.$t('message.something_wrong') || 'Réponse commande POS invalide.');
@@ -3048,7 +3503,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               if (Array.isArray(created.order_items)) {
                 this.$store.commit('posOrder/orderItems', created.order_items);
               }
-              _context3.n = 2;
+              _context4.n = 2;
               return this.$nextTick();
             case 2:
               // Intentionally no `posOrder/show` refresh: `posOrder/save` already returns `OrderDetailsResource`.
@@ -3066,9 +3521,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               // visible while the cashier reads the ticket.
               // await this.$store.dispatch('posCart/resetCart').catch(() => {});
             case 3:
-              return _context3.a(2);
+              return _context4.a(2);
           }
-        }, _callee3, this);
+        }, _callee4, this);
       }));
       function handleOrderSuccess(_x, _x2) {
         return _handleOrderSuccess.apply(this, arguments);
@@ -3111,47 +3566,54 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error((err === null || err === void 0 || (_err$response4 = err.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || (err === null || err === void 0 ? void 0 : err.message) || 'Erreur réseau. Veuillez réessayer.');
     },
     confirmOrder: function () {
-      var _confirmOrder = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
-        var paymentSucceeded, _t3;
-        return _regenerator().w(function (_context4) {
-          while (1) switch (_context4.p = _context4.n) {
+      var _confirmOrder = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
+        var paymentSucceeded, _t5;
+        return _regenerator().w(function (_context5) {
+          while (1) switch (_context5.p = _context5.n) {
             case 0:
               if (!this.loading.isActive) {
-                _context4.n = 1;
+                _context5.n = 1;
                 break;
               }
-              return _context4.a(2);
+              return _context5.a(2);
             case 1:
+              if (!(this.paymentMode === 'card' && !this.canConfirmCard)) {
+                _context5.n = 2;
+                break;
+              }
+              _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(this.$t('pos.terminal_required_card') || 'Sélectionnez un TPE avant d’encaisser par carte.');
+              return _context5.a(2);
+            case 2:
               if (!(this.paymentMode === 'multi' && !this.canConfirmMulti)) {
-                _context4.n = 2;
+                _context5.n = 3;
                 break;
               }
               _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(this.$t('pos.split_not_balanced') || 'Le paiement multi n’est pas équilibré (reste dû).');
-              return _context4.a(2);
-            case 2:
+              return _context5.a(2);
+            case 3:
               this.loading.isActive = true;
               paymentSucceeded = false;
-              _context4.p = 3;
-              _context4.n = 4;
+              _context5.p = 4;
+              _context5.n = 5;
               return this.confirmOrderWithAuthRetry();
-            case 4:
+            case 5:
               paymentSucceeded = true;
               // [POS-V5 WAVE 3 2026-05-02] Notify parent for success-flash animation
               // (overlay vert 700ms après confirm). Logique métier inchangée.
               this.$emit("order:confirmed", this.order);
-              _context4.n = 6;
+              _context5.n = 7;
               break;
-            case 5:
-              _context4.p = 5;
-              _t3 = _context4.v;
-              this.handlePaymentError(_t3);
             case 6:
-              _context4.p = 6;
-              this.loading.isActive = false;
-              return _context4.f(6);
+              _context5.p = 6;
+              _t5 = _context5.v;
+              this.handlePaymentError(_t5);
             case 7:
+              _context5.p = 7;
+              this.loading.isActive = false;
+              return _context5.f(7);
+            case 8:
               if (!paymentSucceeded) {
-                _context4.n = 12;
+                _context5.n = 13;
                 break;
               }
               // [rush-100 WB-R1-03 heal 2026-05-13] Defensive double modalHide on
@@ -3164,29 +3626,29 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               try {
                 _services_appService__WEBPACK_IMPORTED_MODULE_3__["default"].modalHide('#orderpayment');
               } catch (e) {/* no-op */}
-              _context4.n = 8;
-              return this.$nextTick();
-            case 8:
-              _context4.n = 9;
+              _context5.n = 9;
               return this.$nextTick();
             case 9:
-              _context4.n = 10;
+              _context5.n = 10;
+              return this.$nextTick();
+            case 10:
+              _context5.n = 11;
               return new Promise(function (resolve) {
                 requestAnimationFrame(function () {
                   return requestAnimationFrame(resolve);
                 });
               });
-            case 10:
-              _context4.n = 11;
+            case 11:
+              _context5.n = 12;
               return new Promise(function (resolve) {
                 return setTimeout(resolve, 50);
               });
-            case 11:
-              this.showReceiptModalFromDom();
             case 12:
-              return _context4.a(2);
+              this.showReceiptModalFromDom();
+            case 13:
+              return _context5.a(2);
           }
-        }, _callee4, this, [[3, 5, 6, 7]]);
+        }, _callee5, this, [[4, 6, 7, 8]]);
       }));
       function confirmOrder() {
         return _confirmOrder.apply(this, arguments);
@@ -3248,6 +3710,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _v5_PosV5TotalRow_vue__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! ./v5/PosV5TotalRow.vue */ "./resources/js/components/admin/pos/v5/PosV5TotalRow.vue");
 /* harmony import */ var _v5_PosV5QtyStepper_vue__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! ./v5/PosV5QtyStepper.vue */ "./resources/js/components/admin/pos/v5/PosV5QtyStepper.vue");
 /* harmony import */ var _v5_PosV5SearchInput_vue__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! ./v5/PosV5SearchInput.vue */ "./resources/js/components/admin/pos/v5/PosV5SearchInput.vue");
+/* harmony import */ var _cash_PosCashDrawerSessionDialog_vue__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! ../cash/PosCashDrawerSessionDialog.vue */ "./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue");
+/* harmony import */ var _composables_usePosOfflineState__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! ../../../composables/usePosOfflineState */ "./resources/js/composables/usePosOfflineState.js");
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
@@ -3301,6 +3765,14 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
 
 
 
+// [Sprint 1A 2026-05-16] Dialog session caisse (fond de caisse, mouvements, clôture).
+
+// [POS-OFFLINE-WIRE 2026-05-17] Offline replay queue (helper + composable landed
+// in V1.0.2 with 16/16 unit-test coverage; this commit wires it into the Caisse
+// shell so the cashier sees MODE DÉGRADÉ + queue depth + manual flush. Server
+// remains SSOT for fiscal_sequence_no (NF525 CLAUDE.md §8) — we only stash
+// item_id / quantity / option_ids / total_cents until reconnect.
+
 
 // [Phase-6 / T10–T12] Recherche menu, lecteur code-barres + F-keys, debounce,
 // `SkeletonGrid` sur chargement grille — perçu perfo (spinners discrets) ; pas de
@@ -3326,7 +3798,33 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     PosV5StatChip: _v5_PosV5StatChip_vue__WEBPACK_IMPORTED_MODULE_34__["default"],
     PosV5TotalRow: _v5_PosV5TotalRow_vue__WEBPACK_IMPORTED_MODULE_35__["default"],
     PosV5QtyStepper: _v5_PosV5QtyStepper_vue__WEBPACK_IMPORTED_MODULE_36__["default"],
-    PosV5SearchInput: _v5_PosV5SearchInput_vue__WEBPACK_IMPORTED_MODULE_37__["default"]
+    PosV5SearchInput: _v5_PosV5SearchInput_vue__WEBPACK_IMPORTED_MODULE_37__["default"],
+    // [Sprint 1A] Cash drawer session dialog (admin/cash/).
+    PosCashDrawerSessionDialog: _cash_PosCashDrawerSessionDialog_vue__WEBPACK_IMPORTED_MODULE_38__["default"]
+  },
+  // [POS-OFFLINE-WIRE 2026-05-17] Composition-API bridge: expose the offline
+  // composable refs (isOnline, queueDepth) and helpers (enqueueOrder,
+  // tryFlush, bindAutoFlush) so the Options API template + methods can
+  // consume them as `this.isOnline`, `this.queueDepth`, etc.
+  // onScopeDispose inside the composable handles window-listener cleanup.
+  setup: function setup() {
+    var _usePosOfflineState = (0,_composables_usePosOfflineState__WEBPACK_IMPORTED_MODULE_39__.usePosOfflineState)(),
+      isOnline = _usePosOfflineState.isOnline,
+      queueDepth = _usePosOfflineState.queueDepth,
+      isFlushing = _usePosOfflineState.isFlushing,
+      enqueueOrder = _usePosOfflineState.enqueueOrder,
+      refresh = _usePosOfflineState.refresh,
+      tryFlush = _usePosOfflineState.tryFlush,
+      bindAutoFlush = _usePosOfflineState.bindAutoFlush;
+    return {
+      isOnline: isOnline,
+      queueDepth: queueDepth,
+      isFlushing: isFlushing,
+      enqueueOrder: enqueueOrder,
+      refreshOfflineQueue: refresh,
+      tryFlush: tryFlush,
+      bindAutoFlush: bindAutoFlush
+    };
   },
   data: function data() {
     return {
@@ -3343,6 +3841,14 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       kioskCashLoading: false,
       showKioskCashPanel: false,
       showParkedOrders: false,
+      // [Sprint 1A 2026-05-16] Cash drawer session dialog state.
+      // Auto-opened in mounted() after branch_id is resolved if no OPEN
+      // session is found for the current user. Cashier can also manually
+      // open via the "Caisse" button in the operator bar header.
+      showCashSessionDialog: false,
+      cashSessionInitialMode: 'auto',
+      // 'auto' | 'open' | 'active' | 'close' | 'movements'
+      _cashSessionAutoChecked: false,
       expandedKioskCashOrders: {},
       // [POS-V4-ORDERS-TRACKER 2026-05-02] Stats discrètes pour le bouton "Suivi
       // commandes" : `active` = ACCEPT+PREPARING+PREPARED (badge), `ready` =
@@ -3356,6 +3862,12 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       // no-sale button while the hardware bridge resolves (real till can
       // take ~200-500ms to physically open).
       noSaleBusy: false,
+      // [2026-05-18 F-4] POS first-page filter. False (default) = strip
+      // shows only featured categories per `config('pos.featured_category_ids')`.
+      // Toggled true via the "Toutes" pill (escape hatch). Persists for
+      // the lifetime of the SPA instance only — resets on reload so the
+      // cashier always lands on the curated set.
+      showAllCategories: false,
       parkingInFlight: false,
       // [POS-V5 WAVE 3 2026-05-02] Flags pour animations cart-bump et
       // total-flash. Toggled via watcher sur totalItems()/subtotal et
@@ -3506,6 +4018,15 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     setting: function setting() {
       return this.$store.getters['frontendSetting/lists'];
     },
+    // [Sprint 1A 2026-05-16] Indicateur visuel — bouton "Caisse" en tone "ready"
+    // si une session est OPEN pour le caissier courant.
+    cashSessionActive: function cashSessionActive() {
+      try {
+        return !!this.$store.getters['cashDrawer/isOpen'];
+      } catch (_e) {
+        return false;
+      }
+    },
     // [iter15-mega-fix D-003 2026-05-10] Reactive list of currently
     // unavailable catalog items used by the persistent rupture banner.
     // Reads from itemsRaw (the canonical POS catalog cache); survives
@@ -3584,8 +4105,54 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     categories: function categories() {
       return this.$store.getters["posCategory/lists"];
     },
+    // [2026-05-18 F-4] First-page filter: when `showAllCategories=false`
+    // (default), render only categories the backend marked `featured===true`.
+    // The 'all-items' sentinel (id=0) carries `featured=true` so it always
+    // stays in front. Backend treats an empty allowlist as "no filter" and
+    // marks every category featured — strip then renders identical to the
+    // legacy unfiltered shape, preserving the safe default.
+    displayedCategories: function displayedCategories() {
+      var all = this.$store.getters["posCategory/lists"] || [];
+      if (this.showAllCategories) return all;
+      var featured = all.filter(function (c) {
+        return c && c.featured === true;
+      });
+      // Defensive fallback — if every entry is unfeatured (misconfig),
+      // fall back to showing all so the cashier is never stranded.
+      return featured.length > 0 ? featured : all;
+    },
+    hasNonFeaturedCategories: function hasNonFeaturedCategories() {
+      var all = this.$store.getters["posCategory/lists"] || [];
+      return all.some(function (c) {
+        return c && c.featured === false;
+      });
+    },
     items: function items() {
       return this.$store.getters["item/lists"];
+    },
+    // [2026-05-18 F-4] First-page item grid filter — when the cashier
+    // is on the "Toutes les ..." sentinel (no explicit category selected)
+    // AND `showAllCategories=false`, show ONLY items belonging to
+    // featured categories. Search input continues to query the full
+    // catalogue (search.name flows through the backend, unaffected).
+    // Picking a specific category pill (featured or hidden via Toutes
+    // toggle) bypasses this filter — the cashier sees that category's
+    // full item list.
+    displayedItems: function displayedItems() {
+      var allItems = this.$store.getters["item/lists"] || [];
+      var onLanding = (this.props.search.item_category_id === '' || Number(this.props.search.item_category_id) === 0) && !this.props.search.name;
+      if (!onLanding || this.showAllCategories) return allItems;
+      var allCats = this.$store.getters["posCategory/lists"] || [];
+      var featuredIds = new Set(allCats.filter(function (c) {
+        return c && c.featured === true && Number(c.id) > 0;
+      }).map(function (c) {
+        return Number(c.id);
+      }));
+      if (featuredIds.size === 0) return allItems;
+      return allItems.filter(function (it) {
+        var cid = Number(it && (it.item_category_id != null ? it.item_category_id : it.category_id));
+        return featuredIds.has(cid);
+      });
     },
     // [iter15-mega-fix Vue-warn-cluster round-7 2026-05-10]
     // Alias `itemsRaw` -> same store-backed catalog list. The D-003 rupture
@@ -3770,6 +4337,13 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       clearTimeout(this._successFlashTimer);
       this._successFlashTimer = null;
     }
+    // [POS-OFFLINE-WIRE 2026-05-17] Stop periodic flush attempt. Window
+    // online/offline listeners are owned by the composable and disposed
+    // via onScopeDispose() — nothing to clean up here for them.
+    if (this._posOfflineFlushTimer) {
+      clearInterval(this._posOfflineFlushTimer);
+      this._posOfflineFlushTimer = null;
+    }
     _services_PosSyncService__WEBPACK_IMPORTED_MODULE_12__["default"].stop();
     this._posSyncBranchId = null;
     this._unsubscribeEcho();
@@ -3782,6 +4356,22 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
         overlay: false
       });
     }, 150);
+    // [POS-OFFLINE-WIRE 2026-05-17] Bind axios.post as the replay transport
+    // and run an opportunistic flush every 30s while the page is open. The
+    // composable also auto-flushes on the `online` event — interval covers
+    // the case where network came back without a clean offline→online edge
+    // (e.g. flaky DNS, captive portal) and gives an upper bound on stale
+    // cash sales sitting in IndexedDB.
+    this.bindAutoFlush(axios__WEBPACK_IMPORTED_MODULE_0__["default"].post);
+    this._posOfflineFlushTimer = setInterval(function () {
+      try {
+        _this2.tryFlush(axios__WEBPACK_IMPORTED_MODULE_0__["default"].post);
+      } catch (_e) {/* defensive */}
+    }, 30000);
+    // Initial flush attempt at mount (covers reload-while-offline-queue-pending).
+    try {
+      this.refreshOfflineQueue && this.refreshOfflineQueue();
+    } catch (_e) {/* defensive */}
     this._stopBarcode = (0,_helpers_posBarcode__WEBPACK_IMPORTED_MODULE_29__.createBarcodeDetector)(function (code) {
       return _this2.onBarcodeScanned(code);
     });
@@ -3828,6 +4418,10 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
           _this2.applyPosBranchScope(branchId);
           _this2.loadBranchLocation(branchId);
           _this2._startPosSyncFallback();
+          // [Sprint 1A 2026-05-16] Auto-check cash drawer session AFTER
+          // branch scope is resolved (controller derives branch_id from
+          // auth user — branch must be in scope before /current fires).
+          _this2.autoLoadCashSession();
           if (previousBranchId !== branchId) {
             _this2.itemList();
           } else {
@@ -3842,6 +4436,8 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
         if (fallbackBranchId) {
           _this2.applyPosBranchScope(fallbackBranchId);
           _this2._startPosSyncFallback();
+          // [Sprint 1A 2026-05-16] Auto-check même en fallback path.
+          _this2.autoLoadCashSession();
           if (previousBranchId !== fallbackBranchId) {
             _this2.itemList();
           }
@@ -3911,32 +4507,81 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     }
   },
   methods: {
+    // [Sprint 1A 2026-05-16] Cash drawer session — handlers UI ──────────────
+    /**
+     * Charge la session OPEN du caissier courant et auto-ouvre le dialog
+     * en mode "open" si aucune session n'existe. Appelé après que
+     * `applyPosBranchScope` ait résolu le branch_id, garantissant que
+     * la requête `/cash-drawer/sessions/current` est authentifiée avec
+     * le contexte branche correct.
+     */
+    autoLoadCashSession: function autoLoadCashSession() {
+      var _this3 = this;
+      if (this._cashSessionAutoChecked) return;
+      this._cashSessionAutoChecked = true;
+      try {
+        this.$store.dispatch('cashDrawer/loadCurrentSession').then(function (session) {
+          if (!session) {
+            // No session open → prompt cashier immediately.
+            _this3.cashSessionInitialMode = 'open';
+            _this3.showCashSessionDialog = true;
+          }
+        })["catch"](function () {
+          // Fail-soft: don't block POS bootstrap on a network blip.
+          // Cashier can still open via the header button.
+        });
+      } catch (_e) {
+        /* defensive */
+      }
+    },
+    openCashSessionDialog: function openCashSessionDialog() {
+      this.cashSessionInitialMode = 'auto';
+      this.showCashSessionDialog = true;
+    },
+    closeCashSessionDialog: function closeCashSessionDialog() {
+      this.showCashSessionDialog = false;
+    },
+    onCashSessionOpened: function onCashSessionOpened(session) {
+      // Session OPEN successfully — leave dialog open in "active" view
+      // so cashier sees the live stats. They can close manually.
+      // (Vuex store already updated by the action.)
+    },
+    onCashSessionClosed: function onCashSessionClosed(_result) {
+      // Reconciled — refresh store state to reflect "no session" state.
+      this._cashSessionAutoChecked = false;
+      // Optionally re-load (not auto-open) so badge updates without
+      // forcing the cashier into a new "open" flow immediately.
+      try {
+        this.$store.dispatch('cashDrawer/loadCurrentSession')["catch"](function () {});
+      } catch (_e) {/* defensive */}
+    },
+    // ────────────────────────────────────────────────────────────────────
     // [POS-V5 WAVE 3 2026-05-02] Animations triggers ─────────────────────
     triggerCartBump: function triggerCartBump() {
-      var _this3 = this;
+      var _this4 = this;
       if (this._cartBumpTimer) clearTimeout(this._cartBumpTimer);
       this.cartBumping = true;
       this._cartBumpTimer = setTimeout(function () {
-        _this3.cartBumping = false;
-        _this3._cartBumpTimer = null;
+        _this4.cartBumping = false;
+        _this4._cartBumpTimer = null;
       }, 360);
     },
     triggerTotalFlash: function triggerTotalFlash() {
-      var _this4 = this;
+      var _this5 = this;
       if (this._totalFlashTimer) clearTimeout(this._totalFlashTimer);
       this.totalFlashing = true;
       this._totalFlashTimer = setTimeout(function () {
-        _this4.totalFlashing = false;
-        _this4._totalFlashTimer = null;
+        _this5.totalFlashing = false;
+        _this5._totalFlashTimer = null;
       }, 360);
     },
     triggerSuccessFlash: function triggerSuccessFlash() {
-      var _this5 = this;
+      var _this6 = this;
       if (this._successFlashTimer) clearTimeout(this._successFlashTimer);
       this.successFlashing = true;
       this._successFlashTimer = setTimeout(function () {
-        _this5.successFlashing = false;
-        _this5._successFlashTimer = null;
+        _this6.successFlashing = false;
+        _this6._successFlashTimer = null;
       }, 720);
     },
     // ────────────────────────────────────────────────────────────────────
@@ -3984,13 +4629,13 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       return value;
     },
     loadBranchLocation: function loadBranchLocation(branchId) {
-      var _this6 = this;
+      var _this7 = this;
       var value = parseInt(branchId, 10);
       if (!Number.isFinite(value) || value <= 0) {
         return;
       }
       this.$store.dispatch("frontendBranch/show", value).then(function (res) {
-        _this6.location = {
+        _this7.location = {
           lat: res.data.data.latitude,
           lng: res.data.data.longitude
         };
@@ -4017,13 +4662,13 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
      * before mounted()'s user/lists resolves). Avoids orderSubmit stalling on walk-in.
      */
     ensureCustomersHydratedForCheckout: function ensureCustomersHydratedForCheckout() {
-      var _this7 = this;
+      var _this8 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
         var have, _t;
         return _regenerator().w(function (_context) {
           while (1) switch (_context.p = _context.n) {
             case 0:
-              have = Array.isArray(_this7.customers) ? _this7.customers.length : 0;
+              have = Array.isArray(_this8.customers) ? _this8.customers.length : 0;
               if (!(have > 0)) {
                 _context.n = 1;
                 break;
@@ -4032,7 +4677,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
             case 1:
               _context.p = 1;
               _context.n = 2;
-              return _this7.$store.dispatch('user/lists', {
+              return _this8.$store.dispatch('user/lists', {
                 order_column: 'id',
                 order_type: 'asc',
                 status: _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_9__["default"].ACTIVE,
@@ -4049,20 +4694,20 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       }))();
     },
     ensureWalkInCustomer: function ensureWalkInCustomer() {
-      var _this8 = this;
+      var _this9 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
         var existing, _res$data, res, row, countryCode, _t2;
         return _regenerator().w(function (_context2) {
           while (1) switch (_context2.p = _context2.n) {
             case 0:
-              if (!_this8.checkoutProps.form.customer_id) {
+              if (!_this9.checkoutProps.form.customer_id) {
                 _context2.n = 1;
                 break;
               }
               return _context2.a(2, true);
             case 1:
-              existing = _this8.findWalkInCustomer(_this8.customers);
-              if (!_this8.assignWalkInCustomer(existing)) {
+              existing = _this9.findWalkInCustomer(_this9.customers);
+              if (!_this9.assignWalkInCustomer(existing)) {
                 _context2.n = 2;
                 break;
               }
@@ -4074,7 +4719,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
             case 3:
               res = _context2.v;
               row = (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data;
-              if (!(row && row.id && _this8.assignWalkInCustomer(row))) {
+              if (!(row && row.id && _this9.assignWalkInCustomer(row))) {
                 _context2.n = 4;
                 break;
               }
@@ -4086,14 +4731,14 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               _context2.p = 5;
               _t2 = _context2.v;
             case 6:
-              if (!_this8._walkInCustomerPromise) {
+              if (!_this9._walkInCustomerPromise) {
                 _context2.n = 7;
                 break;
               }
-              return _context2.a(2, _this8._walkInCustomerPromise);
+              return _context2.a(2, _this9._walkInCustomerPromise);
             case 7:
-              countryCode = _this8.customerProps.form.country_code || _this8.country_code || '+33';
-              _this8._walkInCustomerPromise = axios__WEBPACK_IMPORTED_MODULE_0__["default"].post('/admin/users', {
+              countryCode = _this9.customerProps.form.country_code || _this9.country_code || '+33';
+              _this9._walkInCustomerPromise = axios__WEBPACK_IMPORTED_MODULE_0__["default"].post('/admin/users', {
                 name: 'Client Comptoir',
                 email: 'walkingcustomer@example.com',
                 phone: null,
@@ -4104,10 +4749,10 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               }).then(function (res) {
                 var _res$data2;
                 var customer = ((_res$data2 = res.data) === null || _res$data2 === void 0 ? void 0 : _res$data2.data) || null;
-                _this8.assignWalkInCustomer(customer);
+                _this9.assignWalkInCustomer(customer);
                 return true;
               })["catch"](function () {
-                return _this8.$store.dispatch('user/lists', {
+                return _this9.$store.dispatch('user/lists', {
                   paginate: 0,
                   order_column: 'id',
                   order_type: 'asc',
@@ -4117,15 +4762,15 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
                   vuex: true
                 }).then(function (res) {
                   var _res$data3;
-                  var fallback = _this8.findWalkInCustomer(((_res$data3 = res.data) === null || _res$data3 === void 0 ? void 0 : _res$data3.data) || []);
-                  return _this8.assignWalkInCustomer(fallback);
+                  var fallback = _this9.findWalkInCustomer(((_res$data3 = res.data) === null || _res$data3 === void 0 ? void 0 : _res$data3.data) || []);
+                  return _this9.assignWalkInCustomer(fallback);
                 })["catch"](function () {
                   return false;
                 });
               })["finally"](function () {
-                _this8._walkInCustomerPromise = null;
+                _this9._walkInCustomerPromise = null;
               });
-              return _context2.a(2, _this8._walkInCustomerPromise);
+              return _context2.a(2, _this9._walkInCustomerPromise);
           }
         }, _callee2, null, [[2, 5]]);
       }))();
@@ -4148,21 +4793,21 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       });
     },
     _bindWsService: function _bindWsService() {
-      var _this9 = this;
+      var _this0 = this;
       var ws = window._wsService;
       if (!ws) return;
       this._onWsConnected = function () {
-        _this9.loadKioskCashOrders();
-        _this9._restartKioskPolling();
+        _this0.loadKioskCashOrders();
+        _this0._restartKioskPolling();
         // [V1.5C R2] Refresh catalogue after reconnect — Echo may have skipped pushes during outage.
         try {
-          _this9.itemList(1, {
+          _this0.itemList(1, {
             overlay: false
           });
         } catch (e) {/* defensive */}
       };
       this._onWsDisconnected = function () {
-        _this9._restartKioskPolling();
+        _this0._restartKioskPolling();
       };
       ws.on('connected', this._onWsConnected);
       ws.on('disconnected', this._onWsDisconnected);
@@ -4178,11 +4823,11 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       return (_window$_wsService = window._wsService) !== null && _window$_wsService !== void 0 && _window$_wsService.isConnected() ? 60000 : 5000;
     },
     _startKioskPolling: function _startKioskPolling() {
-      var _this0 = this;
+      var _this1 = this;
       this._kioskPollTimer = setInterval(function () {
-        _this0.loadKioskCashOrders();
+        _this1.loadKioskCashOrders();
         // [POS-V4-ORDERS-TRACKER 2026-05-02] Polling unifié pour le badge tracker.
-        _this0.loadActiveOrdersStats();
+        _this1.loadActiveOrdersStats();
       }, this._kioskPollingInterval());
     },
     _restartKioskPolling: function _restartKioskPolling() {
@@ -4191,7 +4836,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     },
     // ── Echo real-time subscription for kiosk cash orders ─────────────
     _subscribeEcho: function _subscribeEcho() {
-      var _this1 = this;
+      var _this10 = this;
       if (!window.Echo) return;
       var branchId = this.authBranchId();
       if (branchId <= 0) return;
@@ -4202,22 +4847,22 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
             // [POS-9.1.11] Audible + visual notification for new POS orders.
             // Audit POS-GA-F-55 — cashier had zero feedback on new
             // kiosk-cash / online orders, only a silent list refresh.
-            _this1._notifyNewOrder(event);
-            _this1.loadKioskCashOrders();
+            _this10._notifyNewOrder(event);
+            _this10.loadKioskCashOrders();
             // [POS-V4-ORDERS-TRACKER 2026-05-02] sync badge tracker
-            _this1.loadActiveOrdersStats();
+            _this10.loadActiveOrdersStats();
           }
         }, {
           broadcastAs: 'OrderStatusChanged',
           handler: function handler() {
-            _this1.loadKioskCashOrders();
-            _this1.loadActiveOrdersStats();
+            _this10.loadKioskCashOrders();
+            _this10.loadActiveOrdersStats();
           }
         }, {
           broadcastAs: 'OrderPaidAtCounter',
           handler: function handler() {
-            _this1.loadKioskCashOrders();
-            _this1.loadActiveOrdersStats();
+            _this10.loadKioskCashOrders();
+            _this10.loadActiveOrdersStats();
           }
         },
         // [POS-9.1.10] React live to admin 86 (item availability change)
@@ -4226,12 +4871,12 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
         {
           broadcastAs: 'ItemAvailabilityChanged',
           handler: function handler(event) {
-            return _this1._onItemAvailabilityChanged(event);
+            return _this10._onItemAvailabilityChanged(event);
           }
         }, {
           broadcastAs: 'CatalogChanged',
           handler: function handler(event) {
-            return _this1._onCatalogChanged(event);
+            return _this10._onCatalogChanged(event);
           }
         }]);
       } catch (e) {
@@ -4349,7 +4994,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
      * Throttled per item id to ~1s to absorb rapid duplicate broadcasts.
      */
     _announceAvailabilityChange: function _announceAvailabilityChange(itemId, itemName, isAvailable, reason) {
-      var _this10 = this;
+      var _this11 = this;
       var idKey = String(itemId || '');
       if (!this._availabilityToastTimers) {
         this._availabilityToastTimers = Object.create(null);
@@ -4374,7 +5019,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
         if (idKey) {
           this._availabilityToastTimers[idKey] = true;
           setTimeout(function () {
-            delete _this10._availabilityToastTimers[idKey];
+            delete _this11._availabilityToastTimers[idKey];
           }, 1000);
         }
         try {
@@ -4395,7 +5040,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
      * [T11] One toast per item per ~1s (rapid duplicate broadcasts).
      */
     _maybeToastItemUnavailableLost: function _maybeToastItemUnavailableLost(itemId, itemName) {
-      var _this11 = this;
+      var _this12 = this;
       if (!this._availabilityToastTimers) {
         this._availabilityToastTimers = Object.create(null);
       }
@@ -4403,7 +5048,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       if (this._availabilityToastTimers[key]) return;
       this._availabilityToastTimers[key] = true;
       setTimeout(function () {
-        delete _this11._availabilityToastTimers[key];
+        delete _this12._availabilityToastTimers[key];
       }, 1000);
       try {
         var label = this.$t ? this.$t('pos.item_no_longer_available', {
@@ -4502,7 +5147,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     // badge total, et PREPARED seul pour le halo vert. En cas d'erreur on retombe
     // silencieusement à 0/0 — le tracker plein écran reste accessible quand même.
     loadActiveOrdersStats: function loadActiveOrdersStats() {
-      var _this12 = this;
+      var _this13 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
         var _res$data4, res, list, active, ready, i, _ref4, _list$i$status, s, _t3;
         return _regenerator().w(function (_context3) {
@@ -4510,10 +5155,10 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
             case 0:
               _context3.p = 0;
               _context3.n = 1;
-              return _this12.$store.dispatch('orderStatusScreenOrder/lists');
+              return _this13.$store.dispatch('orderStatusScreenOrder/lists');
             case 1:
               res = _context3.v;
-              list = (res === null || res === void 0 || (_res$data4 = res.data) === null || _res$data4 === void 0 ? void 0 : _res$data4.data) || _this12.$store.getters['orderStatusScreenOrder/lists'] || [];
+              list = (res === null || res === void 0 || (_res$data4 = res.data) === null || _res$data4 === void 0 ? void 0 : _res$data4.data) || _this13.$store.getters['orderStatusScreenOrder/lists'] || [];
               active = 0;
               ready = 0;
               for (i = 0; i < list.length; i++) {
@@ -4523,7 +5168,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
                   ready += 1;
                 }
               }
-              _this12.activeOrdersStats = {
+              _this13.activeOrdersStats = {
                 active: active,
                 ready: ready
               };
@@ -4533,7 +5178,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               _context3.p = 2;
               _t3 = _context3.v;
               // Silencieux — pas de toast (le caissier n'a pas besoin de bruit ici).
-              _this12.activeOrdersStats = {
+              _this13.activeOrdersStats = {
                 active: 0,
                 ready: 0
               };
@@ -4545,20 +5190,20 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     },
     // ── Kiosk cash orders ──────────────────────────────────────────────
     loadKioskCashOrders: function loadKioskCashOrders() {
-      var _this13 = this;
+      var _this14 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
         var _res$data5, res, all, _t4;
         return _regenerator().w(function (_context4) {
           while (1) switch (_context4.p = _context4.n) {
             case 0:
-              _this13.kioskCashLoading = true;
+              _this14.kioskCashLoading = true;
               _context4.p = 1;
               _context4.n = 2;
               return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get('admin/pos/counter-collect/pending');
             case 2:
               res = _context4.v;
               all = (res === null || res === void 0 || (_res$data5 = res.data) === null || _res$data5 === void 0 ? void 0 : _res$data5.data) || [];
-              _this13.kioskCashOrders = all.sort(function (a, b) {
+              _this14.kioskCashOrders = all.sort(function (a, b) {
                 return new Date(a.created_at) - new Date(b.created_at);
               });
               _context4.n = 4;
@@ -4566,10 +5211,10 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
             case 3:
               _context4.p = 3;
               _t4 = _context4.v;
-              _this13.kioskCashOrders = [];
+              _this14.kioskCashOrders = [];
             case 4:
               _context4.p = 4;
-              _this13.kioskCashLoading = false;
+              _this14.kioskCashLoading = false;
               return _context4.f(4);
             case 5:
               return _context4.a(2);
@@ -4584,7 +5229,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       return !!this.expandedKioskCashOrders[orderId];
     },
     collectKioskCashOrder: function collectKioskCashOrder(order) {
-      var _this14 = this;
+      var _this15 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
         var _ref5, _order$total, _err$response, msg, _t5;
         return _regenerator().w(function (_context5) {
@@ -4606,7 +5251,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               });
             case 3:
               _context5.n = 4;
-              return _this14.loadKioskCashOrders();
+              return _this15.loadKioskCashOrders();
             case 4:
               _context5.n = 6;
               break;
@@ -4623,7 +5268,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       }))();
     },
     cancelKioskCashOrder: function cancelKioskCashOrder(order) {
-      var _this15 = this;
+      var _this16 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
         var _err$response2, msg, _t6;
         return _regenerator().w(function (_context6) {
@@ -4643,7 +5288,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               });
             case 3:
               _context6.n = 4;
-              return _this15.loadKioskCashOrders();
+              return _this16.loadKioskCashOrders();
             case 4:
               _context6.n = 6;
               break;
@@ -4750,26 +5395,26 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       this.$store.dispatch('posParked/fetchList').then()["catch"](function () {});
     },
     promptParkOrder: function promptParkOrder() {
-      var _this16 = this;
+      var _this17 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7() {
         var promptLabel, label, _t7;
         return _regenerator().w(function (_context7) {
           while (1) switch (_context7.p = _context7.n) {
             case 0:
-              if (!_this16.parkingInFlight) {
+              if (!_this17.parkingInFlight) {
                 _context7.n = 1;
                 break;
               }
               return _context7.a(2);
             case 1:
-              if (!(!Array.isArray(_this16.carts) || _this16.carts.length === 0)) {
+              if (!(!Array.isArray(_this17.carts) || _this17.carts.length === 0)) {
                 _context7.n = 2;
                 break;
               }
-              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info(_this16.$t('pos.park_requires_items'));
+              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info(_this17.$t('pos.park_requires_items'));
               return _context7.a(2);
             case 2:
-              promptLabel = _this16.$t('pos.park_label_prompt');
+              promptLabel = _this17.$t('pos.park_label_prompt');
               label = window.prompt(promptLabel, '');
               if (!(label === null)) {
                 _context7.n = 3;
@@ -4777,30 +5422,30 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               }
               return _context7.a(2);
             case 3:
-              _this16.parkingInFlight = true;
+              _this17.parkingInFlight = true;
               _context7.p = 4;
               _context7.n = 5;
-              return _this16.$store.dispatch('posParked/park', {
+              return _this17.$store.dispatch('posParked/park', {
                 label: label.trim() || null,
-                snapshot: _this16.currentParkSnapshot()
+                snapshot: _this17.currentParkSnapshot()
               });
             case 5:
               _context7.n = 6;
-              return _this16.$store.dispatch('posCart/resetCart');
+              return _this17.$store.dispatch('posCart/resetCart');
             case 6:
-              _this16.checkoutProps.form.token = "";
-              _this16.selectedAddress = {};
-              _this16.resetDeliveryInline();
-              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].success(_this16.$t('pos.park_success'));
+              _this17.checkoutProps.form.token = "";
+              _this17.selectedAddress = {};
+              _this17.resetDeliveryInline();
+              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].success(_this17.$t('pos.park_success'));
               _context7.n = 8;
               break;
             case 7:
               _context7.p = 7;
               _t7 = _context7.v;
-              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(_this16.$t('pos.park_save_error'));
+              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(_this17.$t('pos.park_save_error'));
             case 8:
               _context7.p = 8;
-              _this16.parkingInFlight = false;
+              _this17.parkingInFlight = false;
               return _context7.f(8);
             case 9:
               return _context7.a(2);
@@ -4811,7 +5456,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     applyParkedSnapshot: function applyParkedSnapshot(payload) {
       var _savedForm$order_type,
         _savedForm$customer_i,
-        _this17 = this;
+        _this18 = this;
       var savedForm = (payload === null || payload === void 0 ? void 0 : payload.checkout_form) || {};
       var savedOrderType = (_savedForm$order_type = savedForm.order_type) !== null && _savedForm$order_type !== void 0 ? _savedForm$order_type : _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_6__["default"].TAKEAWAY;
       var savedCustomerId = (_savedForm$customer_i = savedForm.customer_id) !== null && _savedForm$customer_i !== void 0 ? _savedForm$customer_i : null;
@@ -4826,35 +5471,35 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       this.$nextTick(function () {
         var _savedForm$branch_id, _savedForm$dining_tab, _savedForm$address_id, _savedForm$delivery_c, _savedForm$delivery_d, _savedForm$loyalty_cu, _savedForm$pos_paymen, _savedForm$pos_paymen2;
         if (savedOrderType === _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_6__["default"].DELIVERY) {
-          _this17.deliveryOrder();
-        } else if (savedOrderType === _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_6__["default"].DINING_TABLE && _this17.dineInEnabled) {
-          _this17.dineInOrder();
+          _this18.deliveryOrder();
+        } else if (savedOrderType === _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_6__["default"].DINING_TABLE && _this18.dineInEnabled) {
+          _this18.dineInOrder();
         } else {
-          _this17.takeAwayOrder();
+          _this18.takeAwayOrder();
         }
-        _this17.checkoutProps.form.branch_id = (_savedForm$branch_id = savedForm.branch_id) !== null && _savedForm$branch_id !== void 0 ? _savedForm$branch_id : _this17.checkoutProps.form.branch_id;
-        _this17.checkoutProps.form.customer_id = savedCustomerId;
-        _this17.checkoutProps.form.order_type = savedOrderType;
-        _this17.checkoutProps.form.dining_table_id = (_savedForm$dining_tab = savedForm.dining_table_id) !== null && _savedForm$dining_tab !== void 0 ? _savedForm$dining_tab : null;
-        _this17.checkoutProps.form.address_id = (_savedForm$address_id = savedForm.address_id) !== null && _savedForm$address_id !== void 0 ? _savedForm$address_id : null;
-        _this17.checkoutProps.form.delivery_charge = (_savedForm$delivery_c = savedForm.delivery_charge) !== null && _savedForm$delivery_c !== void 0 ? _savedForm$delivery_c : 0;
-        _this17.checkoutProps.form.delivery_distance_km = (_savedForm$delivery_d = savedForm.delivery_distance_km) !== null && _savedForm$delivery_d !== void 0 ? _savedForm$delivery_d : null;
-        _this17.checkoutProps.form.loyalty_customer_code = (_savedForm$loyalty_cu = savedForm.loyalty_customer_code) !== null && _savedForm$loyalty_cu !== void 0 ? _savedForm$loyalty_cu : null;
-        _this17.checkoutProps.form.pos_payment_method = (_savedForm$pos_paymen = savedForm.pos_payment_method) !== null && _savedForm$pos_paymen !== void 0 ? _savedForm$pos_paymen : _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_19__["default"].CASH;
-        _this17.checkoutProps.form.pos_payment_note = (_savedForm$pos_paymen2 = savedForm.pos_payment_note) !== null && _savedForm$pos_paymen2 !== void 0 ? _savedForm$pos_paymen2 : '';
-        _this17.address.form.user_id = savedCustomerId;
-        _this17.selectedAddress = savedSelectedAddress;
+        _this18.checkoutProps.form.branch_id = (_savedForm$branch_id = savedForm.branch_id) !== null && _savedForm$branch_id !== void 0 ? _savedForm$branch_id : _this18.checkoutProps.form.branch_id;
+        _this18.checkoutProps.form.customer_id = savedCustomerId;
+        _this18.checkoutProps.form.order_type = savedOrderType;
+        _this18.checkoutProps.form.dining_table_id = (_savedForm$dining_tab = savedForm.dining_table_id) !== null && _savedForm$dining_tab !== void 0 ? _savedForm$dining_tab : null;
+        _this18.checkoutProps.form.address_id = (_savedForm$address_id = savedForm.address_id) !== null && _savedForm$address_id !== void 0 ? _savedForm$address_id : null;
+        _this18.checkoutProps.form.delivery_charge = (_savedForm$delivery_c = savedForm.delivery_charge) !== null && _savedForm$delivery_c !== void 0 ? _savedForm$delivery_c : 0;
+        _this18.checkoutProps.form.delivery_distance_km = (_savedForm$delivery_d = savedForm.delivery_distance_km) !== null && _savedForm$delivery_d !== void 0 ? _savedForm$delivery_d : null;
+        _this18.checkoutProps.form.loyalty_customer_code = (_savedForm$loyalty_cu = savedForm.loyalty_customer_code) !== null && _savedForm$loyalty_cu !== void 0 ? _savedForm$loyalty_cu : null;
+        _this18.checkoutProps.form.pos_payment_method = (_savedForm$pos_paymen = savedForm.pos_payment_method) !== null && _savedForm$pos_paymen !== void 0 ? _savedForm$pos_paymen : _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_19__["default"].CASH;
+        _this18.checkoutProps.form.pos_payment_note = (_savedForm$pos_paymen2 = savedForm.pos_payment_note) !== null && _savedForm$pos_paymen2 !== void 0 ? _savedForm$pos_paymen2 : '';
+        _this18.address.form.user_id = savedCustomerId;
+        _this18.selectedAddress = savedSelectedAddress;
         if (savedDeliveryInline) {
-          _this17.deliveryInline = savedDeliveryInline;
+          _this18.deliveryInline = savedDeliveryInline;
         } else {
-          _this17.resetDeliveryInline();
+          _this18.resetDeliveryInline();
         }
         if (savedCustomerId) {
-          _this17.clearAddresses = false;
-          _this17.gettingUserAddress(savedCustomerId);
-          _this17._loadCustomerLoyalty(savedCustomerId);
+          _this18.clearAddresses = false;
+          _this18.gettingUserAddress(savedCustomerId);
+          _this18._loadCustomerLoyalty(savedCustomerId);
         } else {
-          _this17.clearAddresses = true;
+          _this18.clearAddresses = true;
         }
       });
     },
@@ -4872,18 +5517,18 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       this._debouncedListRefresh();
     },
     onBarcodeScanned: function onBarcodeScanned(code) {
-      var _this18 = this;
+      var _this19 = this;
       this.$store.dispatch("item/lookupByBarcode", code).then(function (item) {
         if (item) {
-          var _this18$$refs$posItem;
-          (_this18$$refs$posItem = _this18.$refs.posItemComponent) === null || _this18$$refs$posItem === void 0 || _this18$$refs$posItem.variationModalShow(item);
+          var _this19$$refs$posItem;
+          (_this19$$refs$posItem = _this19.$refs.posItemComponent) === null || _this19$$refs$posItem === void 0 || _this19$$refs$posItem.variationModalShow(item);
         } else {
-          _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(_this18.$t("pos.barcode_not_found", {
+          _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(_this19.$t("pos.barcode_not_found", {
             code: code
           }));
         }
       })["catch"](function () {
-        _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(_this18.$t("pos.barcode_not_found", {
+        _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(_this19.$t("pos.barcode_not_found", {
           code: code
         }));
       });
@@ -4915,6 +5560,12 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
         overlay: false
       });
     },
+    // [2026-05-18 F-4] Toggle the "Toutes les catégories" escape hatch.
+    // Showing all does NOT auto-clear the active category selection — the
+    // cashier can still keep their current pill active or pick a new one.
+    toggleShowAllCategories: function toggleShowAllCategories() {
+      this.showAllCategories = !this.showAllCategories;
+    },
     closeSidebar: function closeSidebar() {
       var _document, _document2;
       this.$store.dispatch("globalState/set", {
@@ -4934,7 +5585,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
      * fullscreen spinner is not shown; the previous grid stays visible until the new list arrives.
      */
     itemList: function itemList() {
-      var _this19 = this;
+      var _this20 = this;
       var page = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1;
       var opts = arguments.length > 1 ? arguments[1] : undefined;
       var options = opts != null && _typeof(opts) === 'object' ? opts : {};
@@ -4946,12 +5597,12 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       this.posItemsFetchPending = true;
       this.props.search.page = page;
       var finish = function finish() {
-        _this19._itemListFetchDepth = Math.max(0, (_this19._itemListFetchDepth || 1) - 1);
-        if (_this19._itemListFetchDepth === 0) {
-          _this19.posItemsFetchPending = false;
+        _this20._itemListFetchDepth = Math.max(0, (_this20._itemListFetchDepth || 1) - 1);
+        if (_this20._itemListFetchDepth === 0) {
+          _this20.posItemsFetchPending = false;
         }
         if (showOverlay) {
-          _this19.loading.isActive = false;
+          _this20.loading.isActive = false;
         }
       };
       this.$store.dispatch("item/lists", this.props.search).then(function () {
@@ -4999,7 +5650,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     // [POS-V4-CASHIER-OPS 2026-05-02] Cancel the most recently added cart line.
     // Reuses the existing deleteCartItem mutation; no new store contract needed.
     cancelLastCartLine: function cancelLastCartLine() {
-      var _this20 = this;
+      var _this21 = this;
       var lines = this.$store.getters['posCart/lists'] || [];
       if (lines.length === 0) {
         return;
@@ -5011,11 +5662,11 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
         status: 'decrement'
       }).then(function () {
         var label = lastLine && lastLine.name ? lastLine.name : '';
-        _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info(label ? _this20.$t('pos.cancel_last_line_done_named', {
+        _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info(label ? _this21.$t('pos.cancel_last_line_done_named', {
           name: label
-        }) : _this20.$t('pos.cancel_last_line_done'));
+        }) : _this21.$t('pos.cancel_last_line_done'));
       })["catch"](function () {
-        _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(_this20.$t('pos.cancel_last_line_error'));
+        _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(_this21.$t('pos.cancel_last_line_error'));
       });
     },
     // [POS-V4-CASHIER-OPS 2026-05-02] No-sale / open drawer.
@@ -5095,11 +5746,11 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       }
     },
     resetCart: function resetCart() {
-      var _this21 = this;
+      var _this22 = this;
       this.$store.dispatch('posCart/resetCart').then(function (res) {
-        _this21.checkoutProps.form.token = "";
-        _this21.resetDeliveryInline();
-        _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].success(_this21.$t('message.cart_reset') || 'Panier vidé.');
+        _this22.checkoutProps.form.token = "";
+        _this22.resetDeliveryInline();
+        _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].success(_this22.$t('message.cart_reset') || 'Panier vidé.');
       })["catch"]();
     },
     /** Délègue au helper (même formule que store / checkout) */
@@ -5170,10 +5821,10 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     },
     orderSubmit: function () {
       var _orderSubmit = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee9() {
-        var _this22 = this;
-        var walkInReady, isDelivery, today, seqKey, seq, ok, _branchId;
+        var _this23 = this;
+        var walkInReady, isDelivery, today, seqKey, seq, ok, _branchId, queued, _t9;
         return _regenerator().w(function (_context9) {
-          while (1) switch (_context9.n) {
+          while (1) switch (_context9.p = _context9.n) {
             case 0:
               if (!(!this.carts || this.carts.length === 0)) {
                 _context9.n = 1;
@@ -5217,7 +5868,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               _.forEach(this.carts, function (item) {
                 var mainQty = (0,_helpers_posCartLineMath__WEBPACK_IMPORTED_MODULE_23__.parsePositiveInt)(item.quantity, 1);
                 var mainLineTotal = (0,_helpers_posCartLineMath__WEBPACK_IMPORTED_MODULE_23__.mainOrderLineTotal)(item, mainQty);
-                _this22.checkoutProps.form.items.push(_this22.buildPosCheckoutOrderRow(item, mainQty, mainLineTotal));
+                _this23.checkoutProps.form.items.push(_this23.buildPosCheckoutOrderRow(item, mainQty, mainLineTotal));
                 var addons = Array.isArray(item.pos_line_addons) ? item.pos_line_addons : [];
                 _.forEach(addons, function (b) {
                   // [C2 FIX] Skip bundled addons with no resolvable item_id to avoid backend 422
@@ -5228,7 +5879,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
                   var _bundledOrderQuantity = (0,_helpers_posCartLineMath__WEBPACK_IMPORTED_MODULE_23__.bundledOrderQuantityAndTotal)(b, mainQty),
                     orderQty = _bundledOrderQuantity.orderQty,
                     lineTotal = _bundledOrderQuantity.lineTotal;
-                  _this22.checkoutProps.form.items.push(_this22.buildPosCheckoutOrderRow(b, orderQty, lineTotal));
+                  _this23.checkoutProps.form.items.push(_this23.buildPosCheckoutOrderRow(b, orderQty, lineTotal));
                 });
               });
               this.checkoutProps.form.items = JSON.stringify(this.checkoutProps.form.items);
@@ -5283,17 +5934,90 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               return _context9.a(2, _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(this.$t("message.branch_required") || "Branche requise pour valider la commande."));
             case 8:
               this.checkoutProps.form.idempotency_key = "".concat(Date.now(), "_").concat(Math.random().toString(36).substr(2, 9), "_").concat(_branchId);
+
+              // [POS-OFFLINE-WIRE 2026-05-17] Pre-modal network gate. If the
+              // browser reports offline (navigator.onLine === false), do NOT
+              // open the payment modal — server-side capture is impossible and
+              // PaymentComponent would loop on its own axios.post failing.
+              // Instead, enqueue the assembled checkout payload (idempotency_key
+              // stamped above is harmless — composable replay generates its own
+              // stable X-Idempotency-Key per entry, server is SSOT on fiscal seq
+              // at replay time per NF525 CLAUDE.md §8) and toast soft so the
+              // cashier knows the order will sync when network returns.
+              if (!(typeof navigator !== 'undefined' && navigator.onLine === false)) {
+                _context9.n = 13;
+                break;
+              }
+              _context9.p = 9;
+              _context9.n = 10;
+              return this.enqueueOrder(_objectSpread({}, this.checkoutProps.form));
+            case 10:
+              queued = _context9.v;
+              this.loading.isActive = false;
+              if (queued) {
+                _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info("Commande mise en file d'attente (".concat(this.queueDepth, "). Synchronisation auto au retour r\xE9seau."));
+              } else {
+                _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].warning('File d\'attente offline pleine. Réessayez à la reconnexion.');
+              }
+              _context9.n = 12;
+              break;
+            case 11:
+              _context9.p = 11;
+              _t9 = _context9.v;
+              this.loading.isActive = false;
+              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error('Impossible de mettre la commande en file d\'attente offline.');
+            case 12:
+              return _context9.a(2);
+            case 13:
               this.loading.isActive = false;
               _services_appService__WEBPACK_IMPORTED_MODULE_11__["default"].modalShow('#orderpayment');
-            case 9:
+            case 14:
               return _context9.a(2);
           }
-        }, _callee9, this);
+        }, _callee9, this, [[9, 11]]);
       }));
       function orderSubmit() {
         return _orderSubmit.apply(this, arguments);
       }
       return orderSubmit;
+    }(),
+    // [POS-OFFLINE-WIRE 2026-05-17] Manual flush trigger bound to the
+    // banner "Synchroniser" button. Delegates to the composable which
+    // is the single source of truth for replay logic + idempotency.
+    tryManualFlush: function () {
+      var _tryManualFlush = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee0() {
+        var res, _t0;
+        return _regenerator().w(function (_context0) {
+          while (1) switch (_context0.p = _context0.n) {
+            case 0:
+              _context0.p = 0;
+              _context0.n = 1;
+              return this.tryFlush(axios__WEBPACK_IMPORTED_MODULE_0__["default"].post);
+            case 1:
+              res = _context0.v;
+              if (res && !res.skipped) {
+                if (res.synced > 0) {
+                  _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].success("".concat(res.synced, " commande(s) synchronis\xE9e(s)."));
+                }
+                if (res.failed > 0) {
+                  _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].warning("".concat(res.failed, " commande(s) en \xE9chec, retent\xE9e(s) plus tard."));
+                }
+              }
+              _context0.n = 3;
+              break;
+            case 2:
+              _context0.p = 2;
+              _t0 = _context0.v;
+              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error('Erreur lors de la synchronisation manuelle.');
+            case 3:
+              return _context0.a(2);
+          }
+        }, _callee0, this, [[0, 2]]);
+      }));
+      function tryManualFlush() {
+        return _tryManualFlush.apply(this, arguments);
+      }
+      return tryManualFlush;
     }(),
     totalItems: function totalItems() {
       if (this.carts.length > 0) {
@@ -5326,40 +6050,40 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       };
     },
     saveCustomer: function saveCustomer() {
-      var _this23 = this;
+      var _this24 = this;
       try {
         this.loading.isActive = true;
         this.$store.dispatch("user/save", this.customerProps).then(function (res) {
           _services_appService__WEBPACK_IMPORTED_MODULE_11__["default"].modalHide("#addCustomer");
-          _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].successFlip(0, _this23.$t("menu.customers"));
-          _this23.$store.dispatch("user/lists", {
+          _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].successFlip(0, _this24.$t("menu.customers"));
+          _this24.$store.dispatch("user/lists", {
             order_column: "id",
             order_type: "asc",
             status: _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_9__["default"].ACTIVE,
             role_id: 2,
             vuex: true
           }).then(function (customerResponse) {
-            _this23.loading.isActive = false;
-            _this23.checkoutProps.form.customer_id = res.data.data.id;
-            _this23.address.form.user_id = res.data.data.id;
-            _this23.selectedAddress = {};
-            _this23.gettingUserAddress(_this23.checkoutProps.form.customer_id);
+            _this24.loading.isActive = false;
+            _this24.checkoutProps.form.customer_id = res.data.data.id;
+            _this24.address.form.user_id = res.data.data.id;
+            _this24.selectedAddress = {};
+            _this24.gettingUserAddress(_this24.checkoutProps.form.customer_id);
           })["catch"](function (err) {
-            _this23.loading.isActive = false;
+            _this24.loading.isActive = false;
           });
-          _this23.customerProps.form = {
+          _this24.customerProps.form = {
             name: "",
             email: "",
             phone: "",
             password: "123456",
             password_confirmation: "123456",
             status: _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_9__["default"].ACTIVE,
-            country_code: _this23.country_code
+            country_code: _this24.country_code
           };
-          _this23.errors = {};
+          _this24.errors = {};
         })["catch"](function (err) {
-          _this23.loading.isActive = false;
-          _this23.errors = err.response.data.errors;
+          _this24.loading.isActive = false;
+          _this24.errors = err.response.data.errors;
         });
       } catch (err) {
         this.loading.isActive = false;
@@ -5408,7 +6132,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       (_this$$refs$takeAway2 = this.$refs.takeAway) === null || _this$$refs$takeAway2 === void 0 || _this$$refs$takeAway2.classList.remove('active');
     },
     _loadCustomerLoyalty: function _loadCustomerLoyalty(customerId) {
-      var _this24 = this;
+      var _this25 = this;
       var customer = this.customers.find(function (c) {
         return c.id === customerId;
       });
@@ -5447,21 +6171,21 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
         var _res$data6, _res$data7;
         if ((_res$data6 = res.data) !== null && _res$data6 !== void 0 && _res$data6.status && (_res$data7 = res.data) !== null && _res$data7 !== void 0 && (_res$data7 = _res$data7.data) !== null && _res$data7 !== void 0 && _res$data7.loyalty_code) {
           var _res$data$data$points;
-          _this24.selectedCustomerLoyalty = {
+          _this25.selectedCustomerLoyalty = {
             points: (_res$data$data$points = res.data.data.points) !== null && _res$data$data$points !== void 0 ? _res$data$data$points : 0,
             code: res.data.data.loyalty_code,
             loading: false
           };
-          _this24.checkoutProps.form.loyalty_customer_code = res.data.data.loyalty_code;
+          _this25.checkoutProps.form.loyalty_customer_code = res.data.data.loyalty_code;
         } else {
-          _this24.selectedCustomerLoyalty = {
+          _this25.selectedCustomerLoyalty = {
             points: null,
             code: null,
             loading: false
           };
         }
       })["catch"](function () {
-        _this24.selectedCustomerLoyalty = {
+        _this25.selectedCustomerLoyalty = {
           points: null,
           code: null,
           loading: false
@@ -5480,13 +6204,13 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       _services_appService__WEBPACK_IMPORTED_MODULE_11__["default"].modalShow('#addressModal');
     },
     editAddressModal: function editAddressModal(address) {
-      var _this25 = this;
+      var _this26 = this;
       _services_appService__WEBPACK_IMPORTED_MODULE_11__["default"].modalShow("#addressModal");
       this.loading.isActive = true;
       this.$store.dispatch("user/editAddress", address.id).then(function (res) {
-        _this25.loading.isActive = false;
-        _this25.address.isMap = true;
-        _this25.address.form = {
+        _this26.loading.isActive = false;
+        _this26.address.isMap = true;
+        _this26.address.form = {
           address: address.address,
           apartment: address.apartment,
           latitude: address.latitude,
@@ -5494,19 +6218,19 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
           label: address.label,
           user_id: address.user_id
         };
-        _this25.checkoutProps.form.address_id = null;
-        _this25.checkoutProps.form.delivery_charge = 0;
-        _this25.checkoutProps.form.delivery_distance_km = null;
-        _this25.selectedAddress = {};
-        if (_this25.address.form.label === _this25.$t("label.home")) {
-          _this25.address.status = false;
-          _this25.address.switchLabel = _enums_modules_labelEnum__WEBPACK_IMPORTED_MODULE_22__["default"].HOME;
-        } else if (_this25.address.form.label === _this25.$t("label.work")) {
-          _this25.address.status = false;
-          _this25.address.switchLabel = _enums_modules_labelEnum__WEBPACK_IMPORTED_MODULE_22__["default"].WORK;
+        _this26.checkoutProps.form.address_id = null;
+        _this26.checkoutProps.form.delivery_charge = 0;
+        _this26.checkoutProps.form.delivery_distance_km = null;
+        _this26.selectedAddress = {};
+        if (_this26.address.form.label === _this26.$t("label.home")) {
+          _this26.address.status = false;
+          _this26.address.switchLabel = _enums_modules_labelEnum__WEBPACK_IMPORTED_MODULE_22__["default"].HOME;
+        } else if (_this26.address.form.label === _this26.$t("label.work")) {
+          _this26.address.status = false;
+          _this26.address.switchLabel = _enums_modules_labelEnum__WEBPACK_IMPORTED_MODULE_22__["default"].WORK;
         } else {
-          _this25.address.status = true;
-          _this25.address.switchLabel = _enums_modules_labelEnum__WEBPACK_IMPORTED_MODULE_22__["default"].OTHER;
+          _this26.address.status = true;
+          _this26.address.switchLabel = _enums_modules_labelEnum__WEBPACK_IMPORTED_MODULE_22__["default"].OTHER;
         }
       })["catch"](function (err) {
         _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(err.response.data.message);
@@ -5531,9 +6255,9 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       this.checkoutProps.form.delivery_charge = null;
     },
     updateSelectedAddress: function updateSelectedAddress() {
-      var _this26 = this;
+      var _this27 = this;
       var address = this.customerAddresses.find(function (item) {
-        return item.id === _this26.checkoutProps.form.address_id;
+        return item.id === _this27.checkoutProps.form.address_id;
       });
       this.selectedAddress = address || {};
       this.deliveryChargeCalculation();
@@ -5557,59 +6281,59 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       }
     },
     applyDeliveryChargeFromCoordinates: function applyDeliveryChargeFromCoordinates(latitude, longitude) {
-      var _this27 = this;
-      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee0() {
-        var lat, lng, branchRes, distance, _err$response3, _t9;
-        return _regenerator().w(function (_context0) {
-          while (1) switch (_context0.p = _context0.n) {
+      var _this28 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee1() {
+        var lat, lng, branchRes, distance, _err$response3, _t1;
+        return _regenerator().w(function (_context1) {
+          while (1) switch (_context1.p = _context1.n) {
             case 0:
               lat = parseFloat(latitude);
               lng = parseFloat(longitude);
               if (!(!Number.isFinite(lat) || !Number.isFinite(lng))) {
-                _context0.n = 1;
+                _context1.n = 1;
                 break;
               }
-              _this27.checkoutProps.form.delivery_distance_km = null;
-              _this27.checkoutProps.form.delivery_charge = 0;
-              _this27.showDeliveryGeocodeError();
-              return _context0.a(2, false);
+              _this28.checkoutProps.form.delivery_distance_km = null;
+              _this28.checkoutProps.form.delivery_charge = 0;
+              _this28.showDeliveryGeocodeError();
+              return _context1.a(2, false);
             case 1:
-              _context0.p = 1;
-              _this27.clearDeliveryGeocodeError();
-              _context0.n = 2;
-              return _this27.$store.dispatch("branch/showByLatLong", {
-                branch_id: _this27.checkoutProps.form.branch_id,
+              _context1.p = 1;
+              _this28.clearDeliveryGeocodeError();
+              _context1.n = 2;
+              return _this28.$store.dispatch("branch/showByLatLong", {
+                branch_id: _this28.checkoutProps.form.branch_id,
                 latitude: lat,
                 longitude: lng
               });
             case 2:
-              branchRes = _context0.v;
+              branchRes = _context1.v;
               distance = _services_appService__WEBPACK_IMPORTED_MODULE_11__["default"].distance(lat, lng, parseFloat(branchRes.data.data.latitude), parseFloat(branchRes.data.data.longitude));
               if (!(!Number.isFinite(distance) || distance < 0)) {
-                _context0.n = 3;
+                _context1.n = 3;
                 break;
               }
-              _this27.checkoutProps.form.delivery_distance_km = null;
-              _this27.checkoutProps.form.delivery_charge = 0;
-              _this27.showDeliveryGeocodeError();
-              return _context0.a(2, false);
+              _this28.checkoutProps.form.delivery_distance_km = null;
+              _this28.checkoutProps.form.delivery_charge = 0;
+              _this28.showDeliveryGeocodeError();
+              return _context1.a(2, false);
             case 3:
-              _this27.checkoutProps.form.delivery_distance_km = distance;
-              _this27.checkoutProps.form.delivery_charge = (0,_helpers_deliveryCharge__WEBPACK_IMPORTED_MODULE_30__.calculateDeliveryChargeFromDistance)(_this27.checkoutProps.form.delivery_distance_km);
-              return _context0.a(2, true);
+              _this28.checkoutProps.form.delivery_distance_km = distance;
+              _this28.checkoutProps.form.delivery_charge = (0,_helpers_deliveryCharge__WEBPACK_IMPORTED_MODULE_30__.calculateDeliveryChargeFromDistance)(_this28.checkoutProps.form.delivery_distance_km);
+              return _context1.a(2, true);
             case 4:
-              _context0.p = 4;
-              _t9 = _context0.v;
-              _this27.loading.isActive = false;
-              _this27.selectedAddress = {};
-              _this27.checkoutProps.form.address_id = null;
-              _this27.checkoutProps.form.delivery_distance_km = null;
-              _this27.checkoutProps.form.delivery_charge = 0;
-              _this27.showDeliveryGeocodeError();
-              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info(((_err$response3 = _t9.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || _this27.deliveryGeocodeError);
-              return _context0.a(2, false);
+              _context1.p = 4;
+              _t1 = _context1.v;
+              _this28.loading.isActive = false;
+              _this28.selectedAddress = {};
+              _this28.checkoutProps.form.address_id = null;
+              _this28.checkoutProps.form.delivery_distance_km = null;
+              _this28.checkoutProps.form.delivery_charge = 0;
+              _this28.showDeliveryGeocodeError();
+              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info(((_err$response3 = _t1.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || _this28.deliveryGeocodeError);
+              return _context1.a(2, false);
           }
-        }, _callee0, null, [[1, 4]]);
+        }, _callee1, null, [[1, 4]]);
       }))();
     },
     clearDeliveryGeocodeError: function clearDeliveryGeocodeError() {
@@ -5620,9 +6344,9 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       this.focusDeliveryAddressField();
     },
     focusDeliveryAddressField: function focusDeliveryAddressField() {
-      var _this28 = this;
+      var _this29 = this;
       this.$nextTick(function () {
-        var input = _this28.$refs.deliveryAddressInput;
+        var input = _this29.$refs.deliveryAddressInput;
         if (input && typeof input.focus === 'function') {
           input.focus();
         }
@@ -5630,7 +6354,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     },
     // ─── [P4] Inline delivery autocomplete ───────────────────────────────────
     onDeliveryAddressInput: function onDeliveryAddressInput() {
-      var _this29 = this;
+      var _this30 = this;
       this.clearDeliveryGeocodeError();
       this.deliveryInline.confirmed = false;
       this.deliveryInline.latitude = '';
@@ -5643,7 +6367,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
         return;
       }
       this._deliveryAcTimer = setTimeout(function () {
-        return _this29._fetchDeliverySuggestions(q);
+        return _this30._fetchDeliverySuggestions(q);
       }, 300);
     },
     _getDeliveryAcService: function _getDeliveryAcService() {
@@ -5655,7 +6379,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       return null;
     },
     _fetchDeliverySuggestions: function _fetchDeliverySuggestions(query) {
-      var _this30 = this;
+      var _this31 = this;
       var svc = this._getDeliveryAcService();
       if (!svc) {
         // Fallback: no Google Maps loaded — skip suggestions
@@ -5673,16 +6397,16 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
         req.radius = 50000;
       }
       svc.getPlacePredictions(req, function (predictions, status) {
-        _this30.deliveryInline.loading = false;
+        _this31.deliveryInline.loading = false;
         if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-          _this30.deliveryInline.suggestions = predictions.slice(0, 6);
+          _this31.deliveryInline.suggestions = predictions.slice(0, 6);
         } else {
-          _this30.deliveryInline.suggestions = [];
+          _this31.deliveryInline.suggestions = [];
         }
       });
     },
     selectDeliverySuggestion: function selectDeliverySuggestion(suggestion) {
-      var _this31 = this;
+      var _this32 = this;
       this.deliveryInline.suggestions = [];
       this.deliveryInline.addressText = suggestion.description;
       this.deliveryInline.loading = true;
@@ -5692,17 +6416,17 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
         geocoder.geocode({
           placeId: suggestion.place_id
         }, function (results, status) {
-          _this31.deliveryInline.loading = false;
+          _this32.deliveryInline.loading = false;
           if (status === 'OK' && results && results[0]) {
             var loc = results[0].geometry.location;
-            _this31.deliveryInline.latitude = loc.lat();
-            _this31.deliveryInline.longitude = loc.lng();
-            _this31.deliveryInline.address = suggestion.description;
-            _this31.deliveryInline.confirmed = true;
+            _this32.deliveryInline.latitude = loc.lat();
+            _this32.deliveryInline.longitude = loc.lng();
+            _this32.deliveryInline.address = suggestion.description;
+            _this32.deliveryInline.confirmed = true;
           } else {
-            _this31.deliveryInline.address = '';
-            _this31.deliveryInline.confirmed = false;
-            _this31.showDeliveryGeocodeError();
+            _this32.deliveryInline.address = '';
+            _this32.deliveryInline.confirmed = false;
+            _this32.showDeliveryGeocodeError();
           }
         });
       } else {
@@ -5742,97 +6466,97 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       this.clearDeliveryGeocodeError();
     },
     ensureDeliveryCustomerAndAddress: function ensureDeliveryCustomerAndAddress() {
-      var _this32 = this;
-      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee1() {
-        var deliveryAddress, customerId, customerRes, addrRes, _err$response4, msg, _t0;
-        return _regenerator().w(function (_context1) {
-          while (1) switch (_context1.p = _context1.n) {
+      var _this33 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee10() {
+        var deliveryAddress, customerId, customerRes, addrRes, _err$response4, msg, _t10;
+        return _regenerator().w(function (_context10) {
+          while (1) switch (_context10.p = _context10.n) {
             case 0:
-              if (!_this32.checkoutProps.form.address_id) {
-                _context1.n = 1;
+              if (!_this33.checkoutProps.form.address_id) {
+                _context10.n = 1;
                 break;
               }
-              return _context1.a(2, true);
+              return _context10.a(2, true);
             case 1:
               // Inline form must have at minimum an address
-              deliveryAddress = (_this32.deliveryInline.address || _this32.deliveryInline.addressText || '').trim();
+              deliveryAddress = (_this33.deliveryInline.address || _this33.deliveryInline.addressText || '').trim();
               if (deliveryAddress) {
-                _context1.n = 2;
+                _context10.n = 2;
                 break;
               }
               _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error('Veuillez saisir une adresse de livraison.');
-              return _context1.a(2, false);
+              return _context10.a(2, false);
             case 2:
-              if (!(!_this32.deliveryInline.latitude || !_this32.deliveryInline.longitude)) {
-                _context1.n = 3;
+              if (!(!_this33.deliveryInline.latitude || !_this33.deliveryInline.longitude)) {
+                _context10.n = 3;
                 break;
               }
-              _this32.showDeliveryGeocodeError();
-              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(_this32.deliveryGeocodeError);
-              return _context1.a(2, false);
+              _this33.showDeliveryGeocodeError();
+              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(_this33.deliveryGeocodeError);
+              return _context10.a(2, false);
             case 3:
-              _context1.p = 3;
-              _this32.loading.isActive = true;
+              _context10.p = 3;
+              _this33.loading.isActive = true;
               // 1. Create or reuse customer
-              customerId = _this32.checkoutProps.form.customer_id;
+              customerId = _this33.checkoutProps.form.customer_id;
               if (customerId) {
-                _context1.n = 5;
+                _context10.n = 5;
                 break;
               }
-              _context1.n = 4;
+              _context10.n = 4;
               return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post('/admin/users', {
-                name: _this32.deliveryInline.name || 'Client livraison',
-                phone: _this32.deliveryInline.phone || null,
+                name: _this33.deliveryInline.name || 'Client livraison',
+                phone: _this33.deliveryInline.phone || null,
                 email: "delivery_".concat(Date.now(), "@pos.local"),
                 password: 'delivery123',
                 password_confirmation: 'delivery123',
                 status: _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_9__["default"].ACTIVE,
-                country_code: _this32.customerProps.form.country_code || _this32.country_code || '+33'
+                country_code: _this33.customerProps.form.country_code || _this33.country_code || '+33'
               });
             case 4:
-              customerRes = _context1.v;
+              customerRes = _context10.v;
               customerId = customerRes.data.data.id;
-              _this32.checkoutProps.form.customer_id = customerId;
+              _this33.checkoutProps.form.customer_id = customerId;
             case 5:
-              _context1.n = 6;
+              _context10.n = 6;
               return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("/admin/users/address/".concat(customerId), {
                 address: deliveryAddress,
                 apartment: '',
-                latitude: _this32.deliveryInline.latitude || '',
-                longitude: _this32.deliveryInline.longitude || '',
+                latitude: _this33.deliveryInline.latitude || '',
+                longitude: _this33.deliveryInline.longitude || '',
                 label: 'Livraison'
               });
             case 6:
-              addrRes = _context1.v;
-              _this32.checkoutProps.form.address_id = addrRes.data.data.id;
+              addrRes = _context10.v;
+              _this33.checkoutProps.form.address_id = addrRes.data.data.id;
               // Update delivery charge if lat/lng available
-              _this32.selectedAddress = {
+              _this33.selectedAddress = {
                 id: addrRes.data.data.id,
                 address: deliveryAddress,
-                latitude: _this32.deliveryInline.latitude,
-                longitude: _this32.deliveryInline.longitude
+                latitude: _this33.deliveryInline.latitude,
+                longitude: _this33.deliveryInline.longitude
               };
-              _context1.n = 7;
-              return _this32.applyDeliveryChargeFromCoordinates(_this32.deliveryInline.latitude, _this32.deliveryInline.longitude);
+              _context10.n = 7;
+              return _this33.applyDeliveryChargeFromCoordinates(_this33.deliveryInline.latitude, _this33.deliveryInline.longitude);
             case 7:
-              if (_context1.v) {
-                _context1.n = 8;
+              if (_context10.v) {
+                _context10.n = 8;
                 break;
               }
-              _this32.loading.isActive = false;
-              return _context1.a(2, false);
+              _this33.loading.isActive = false;
+              return _context10.a(2, false);
             case 8:
-              _this32.loading.isActive = false;
-              return _context1.a(2, true);
+              _this33.loading.isActive = false;
+              return _context10.a(2, true);
             case 9:
-              _context1.p = 9;
-              _t0 = _context1.v;
-              _this32.loading.isActive = false;
-              msg = ((_err$response4 = _t0.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || 'Erreur lors de la sauvegarde de l\'adresse.';
+              _context10.p = 9;
+              _t10 = _context10.v;
+              _this33.loading.isActive = false;
+              msg = ((_err$response4 = _t10.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || 'Erreur lors de la sauvegarde de l\'adresse.';
               _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(msg);
-              return _context1.a(2, false);
+              return _context10.a(2, false);
           }
-        }, _callee1, null, [[3, 9]]);
+        }, _callee10, null, [[3, 9]]);
       }))();
     } // ─────────────────────────────────────────────────────────────────────────
   },
@@ -5842,7 +6566,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     },
     carts: {
       handler: function handler(newCarts, oldCarts) {
-        var _this33 = this;
+        var _this34 = this;
         // [POS-V5 WAVE 3] Trigger cart-bump animation quand un item est ajouté.
         // - Ne se déclenche QUE si la quantité totale a augmenté (pas sur retrait/édition)
         // - Auto-reset après 320ms (durée de l'animation CSS pos-v5-bump).
@@ -5862,9 +6586,9 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
           this.discountReason = '';
           this.checkoutProps.form.discount_reason = null;
           this.$nextTick(function () {
-            if (_this33.$refs.takeAway) {
-              _this33.$refs.takeAway.click();
-              _this33.ensureWalkInCustomer();
+            if (_this34.$refs.takeAway) {
+              _this34.$refs.takeAway.click();
+              _this34.ensureWalkInCustomer();
             }
           });
         }
@@ -7803,6 +8527,356 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ }),
 
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=template&id=46d66467&scoped=true":
+/*!************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=template&id=46d66467&scoped=true ***!
+  \************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = ["aria-label"];
+var _hoisted_2 = ["data-mode"];
+var _hoisted_3 = {
+  "class": "cash-session-dialog__head"
+};
+var _hoisted_4 = {
+  "class": "cash-session-dialog__title-wrap"
+};
+var _hoisted_5 = {
+  "class": "cash-session-dialog__eyebrow"
+};
+var _hoisted_6 = {
+  "class": "cash-session-dialog__title",
+  "data-testid": "cash-session-title"
+};
+var _hoisted_7 = ["aria-label"];
+var _hoisted_8 = {
+  key: 0,
+  "class": "cash-session-dialog__error",
+  role: "alert",
+  "data-testid": "cash-session-error"
+};
+var _hoisted_9 = {
+  key: 1,
+  "class": "cash-session-dialog__body",
+  "data-testid": "cash-session-open-form"
+};
+var _hoisted_10 = {
+  "class": "cash-session-dialog__intro"
+};
+var _hoisted_11 = {
+  "class": "cash-session-dialog__field-label",
+  "for": "cash-session-opening"
+};
+var _hoisted_12 = {
+  "class": "cash-session-dialog__amount-display",
+  "data-testid": "cash-session-opening-display"
+};
+var _hoisted_13 = {
+  "class": "cash-session-dialog__increments",
+  role: "group",
+  "aria-label": "Incréments rapides"
+};
+var _hoisted_14 = ["data-testid", "onClick"];
+var _hoisted_15 = ["aria-label"];
+var _hoisted_16 = {
+  "class": "cash-session-dialog__actions"
+};
+var _hoisted_17 = ["disabled"];
+var _hoisted_18 = {
+  "class": "cash-session-dialog__body",
+  "data-testid": "cash-session-active-view"
+};
+var _hoisted_19 = {
+  "class": "cash-session-dialog__stats"
+};
+var _hoisted_20 = {
+  "class": "cash-session-dialog__stat"
+};
+var _hoisted_21 = {
+  "data-testid": "cash-session-stat-opening"
+};
+var _hoisted_22 = {
+  "class": "cash-session-dialog__stat"
+};
+var _hoisted_23 = {
+  "class": "cash-session-dialog__stat"
+};
+var _hoisted_24 = {
+  "data-testid": "cash-session-stat-mvt-count"
+};
+var _hoisted_25 = {
+  "class": "cash-session-dialog__stat cash-session-dialog__stat--accent"
+};
+var _hoisted_26 = {
+  "data-testid": "cash-session-stat-expected"
+};
+var _hoisted_27 = {
+  "class": "cash-session-dialog__actions cash-session-dialog__actions--column"
+};
+var _hoisted_28 = {
+  "class": "cash-session-dialog__body",
+  "data-testid": "cash-session-close-form"
+};
+var _hoisted_29 = {
+  "class": "cash-session-dialog__field-label",
+  "for": "cash-session-closing"
+};
+var _hoisted_30 = {
+  "class": "cash-session-dialog__amount-display",
+  "data-testid": "cash-session-closing-display"
+};
+var _hoisted_31 = {
+  "class": "cash-session-dialog__increments",
+  role: "group",
+  "aria-label": "Incréments rapides"
+};
+var _hoisted_32 = ["data-testid", "onClick"];
+var _hoisted_33 = ["aria-label"];
+var _hoisted_34 = {
+  "class": "cash-session-dialog__variance-block"
+};
+var _hoisted_35 = {
+  "class": "cash-session-dialog__stat"
+};
+var _hoisted_36 = {
+  "data-testid": "cash-session-close-expected"
+};
+var _hoisted_37 = {
+  "data-testid": "cash-session-close-variance"
+};
+var _hoisted_38 = {
+  key: 0,
+  "class": "cash-session-dialog__variance-reason"
+};
+var _hoisted_39 = {
+  "class": "cash-session-dialog__field-label",
+  "for": "cash-session-reason"
+};
+var _hoisted_40 = ["aria-label"];
+var _hoisted_41 = {
+  key: 0,
+  "class": "cash-session-dialog__hint cash-session-dialog__hint--error",
+  "data-testid": "cash-session-reason-required"
+};
+var _hoisted_42 = {
+  "class": "cash-session-dialog__actions"
+};
+var _hoisted_43 = ["disabled"];
+var _hoisted_44 = {
+  "class": "cash-session-dialog__body cash-session-dialog__body--list",
+  "data-testid": "cash-session-movements-view"
+};
+var _hoisted_45 = {
+  key: 0,
+  "class": "cash-session-dialog__table"
+};
+var _hoisted_46 = {
+  scope: "col"
+};
+var _hoisted_47 = {
+  scope: "col"
+};
+var _hoisted_48 = {
+  scope: "col",
+  "class": "cash-session-dialog__th--right"
+};
+var _hoisted_49 = {
+  scope: "col",
+  "class": "cash-session-dialog__th--right"
+};
+var _hoisted_50 = {
+  scope: "col"
+};
+var _hoisted_51 = {
+  "class": "cash-session-dialog__td--right"
+};
+var _hoisted_52 = {
+  "class": "cash-session-dialog__td--right"
+};
+var _hoisted_53 = {
+  key: 1,
+  "class": "cash-session-dialog__empty",
+  "data-testid": "cash-session-movements-empty"
+};
+var _hoisted_54 = {
+  "class": "cash-session-dialog__actions"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+    name: "cash-session-dialog"
+  }, {
+    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [$props.open ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        key: 0,
+        "class": "cash-session-overlay",
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-label": _ctx.$t('label.cash_session_dialog_title'),
+        "data-testid": "cash-session-overlay",
+        onClick: _cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+          return $options.onBackdrop && $options.onBackdrop.apply($options, arguments);
+        }, ["self"]))
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("section", {
+        "class": "cash-session-dialog",
+        "data-mode": $data.mode
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_header_btn')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.headerTitle), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "cash-session-dialog__close",
+        "aria-label": _ctx.$t('button.close'),
+        "data-testid": "cash-session-close",
+        onClick: _cache[0] || (_cache[0] = function () {
+          return $options.emitClose && $options.emitClose.apply($options, arguments);
+        })
+      }, " ✕ ", 8 /* PROPS */, _hoisted_7)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Error band "), $data.errorMessage ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errorMessage), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" ============================================================\n                  MODE 1 — NO SESSION : prompt to open\n                  ============================================================ "), $data.mode === 'open' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_9, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_no_session')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_opening_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney($data.openingAmount)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.increments, function (inc) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+          key: "open-inc-".concat(inc),
+          type: "button",
+          "class": "cash-session-dialog__chip",
+          "data-testid": "cash-session-open-inc-".concat(inc),
+          onClick: function onClick($event) {
+            return $options.addToOpening(inc);
+          }
+        }, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(inc) + " € ", 9 /* TEXT, PROPS */, _hoisted_14);
+      }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "cash-session-dialog__chip cash-session-dialog__chip--reset",
+        "data-testid": "cash-session-open-reset",
+        onClick: _cache[1] || (_cache[1] = function ($event) {
+          return $data.openingAmount = 0;
+        })
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.clear') || 'Effacer'), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+        id: "cash-session-opening",
+        ref: "openingInput",
+        "onUpdate:modelValue": _cache[2] || (_cache[2] = function ($event) {
+          return $data.openingAmount = $event;
+        }),
+        type: "number",
+        step: "0.01",
+        min: "0",
+        "class": "cash-session-dialog__input",
+        "data-testid": "cash-session-opening-input",
+        "aria-label": _ctx.$t('label.cash_session_opening_amount')
+      }, null, 8 /* PROPS */, _hoisted_15), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.openingAmount, void 0, {
+        number: true
+      }]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "cash-session-dialog__btn cash-session-dialog__btn--ghost",
+        onClick: _cache[3] || (_cache[3] = function () {
+          return $options.emitClose && $options.emitClose.apply($options, arguments);
+        })
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.cancel')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "cash-session-dialog__btn cash-session-dialog__btn--primary",
+        "data-testid": "cash-session-open-submit",
+        disabled: $options.loading || !$options.canOpen,
+        onClick: _cache[4] || (_cache[4] = function () {
+          return $options.submitOpen && $options.submitOpen.apply($options, arguments);
+        })
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.loading ? '...' : _ctx.$t('label.cash_session_open')), 9 /* TEXT, PROPS */, _hoisted_17)])])) : $data.mode === 'active' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+        key: 2
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" ============================================================\n                  MODE 2 — ACTIVE SESSION view (default when session is open)\n                  ============================================================ "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dl", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_opening_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dd", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney($options.sessionOpeningAmount)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_opened_at')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dd", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formattedOpenedAt), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_23, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_movements_count')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dd", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.movementsCount), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_expected_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dd", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney($options.expectedTotal)), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_27, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "cash-session-dialog__btn cash-session-dialog__btn--secondary",
+        "data-testid": "cash-session-view-movements",
+        onClick: _cache[5] || (_cache[5] = function () {
+          return $options.openMovements && $options.openMovements.apply($options, arguments);
+        })
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_view_movements')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "cash-session-dialog__btn cash-session-dialog__btn--danger",
+        "data-testid": "cash-session-go-close",
+        onClick: _cache[6] || (_cache[6] = function ($event) {
+          return $data.mode = 'close';
+        })
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_close')), 1 /* TEXT */)])])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)) : $data.mode === 'close' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+        key: 3
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" ============================================================\n                  MODE 3 — CLOSE form (closing amount + variance reason)\n                  ============================================================ "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_closing_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney($data.closingAmount)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_31, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.increments, function (inc) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+          key: "close-inc-".concat(inc),
+          type: "button",
+          "class": "cash-session-dialog__chip",
+          "data-testid": "cash-session-close-inc-".concat(inc),
+          onClick: function onClick($event) {
+            return $options.addToClosing(inc);
+          }
+        }, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(inc) + " € ", 9 /* TEXT, PROPS */, _hoisted_32);
+      }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "cash-session-dialog__chip cash-session-dialog__chip--reset",
+        onClick: _cache[7] || (_cache[7] = function ($event) {
+          return $data.closingAmount = 0;
+        })
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.clear') || 'Effacer'), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+        id: "cash-session-closing",
+        "onUpdate:modelValue": _cache[8] || (_cache[8] = function ($event) {
+          return $data.closingAmount = $event;
+        }),
+        type: "number",
+        step: "0.01",
+        min: "0",
+        "class": "cash-session-dialog__input",
+        "data-testid": "cash-session-closing-input",
+        "aria-label": _ctx.$t('label.cash_session_closing_amount')
+      }, null, 8 /* PROPS */, _hoisted_33), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.closingAmount, void 0, {
+        number: true
+      }]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dl", _hoisted_34, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_35, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_expected_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dd", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney($options.expectedTotal)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+        "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["cash-session-dialog__stat cash-session-dialog__stat--variance", {
+          'cash-session-dialog__stat--variance-positive': $options.liveVariance > 0,
+          'cash-session-dialog__stat--variance-negative': $options.liveVariance < 0
+        }])
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_variance')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dd", _hoisted_37, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatVariance($options.liveVariance)), 1 /* TEXT */)], 2 /* CLASS */)]), $options.varianceRequiresReason ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_variance_reason')) + " ", 1 /* TEXT */), _cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+        "aria-hidden": "true"
+      }, "*", -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("textarea", {
+        id: "cash-session-reason",
+        "onUpdate:modelValue": _cache[9] || (_cache[9] = function ($event) {
+          return $data.varianceReason = $event;
+        }),
+        rows: "2",
+        "class": "cash-session-dialog__textarea",
+        "data-testid": "cash-session-reason-input",
+        "aria-label": _ctx.$t('label.cash_session_variance_reason')
+      }, null, 8 /* PROPS */, _hoisted_40), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.varianceReason]]), $options.varianceReasonMissing ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_required_reason')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "cash-session-dialog__btn cash-session-dialog__btn--ghost",
+        onClick: _cache[10] || (_cache[10] = function ($event) {
+          return $data.mode = 'active';
+        })
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_back')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "cash-session-dialog__btn cash-session-dialog__btn--danger",
+        "data-testid": "cash-session-close-submit",
+        disabled: $options.loading || $options.varianceReasonMissing,
+        onClick: _cache[11] || (_cache[11] = function () {
+          return $options.submitClose && $options.submitClose.apply($options, arguments);
+        })
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.loading ? '...' : _ctx.$t('label.cash_session_confirm_close')), 9 /* TEXT, PROPS */, _hoisted_43)])])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)) : $data.mode === 'movements' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+        key: 4
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" ============================================================\n                  MODE 4 — MOVEMENTS list\n                  ============================================================ "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_44, [$options.movements.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("table", _hoisted_45, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("thead", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.date') || 'Date'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_47, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.type') || 'Type'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_48, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_49, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_variance') || 'Sens'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_50, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.notes') || 'Notes'), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tbody", null, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.movements, function (movement) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tr", {
+          key: movement.id,
+          "data-testid": "cash-session-movement-row"
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatTimestamp(movement.created_at)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(movement.type), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_51, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney(movement.amount)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_52, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(movement.direction === 'in' ? '↑ IN' : '↓ OUT'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(movement.notes || '—'), 1 /* TEXT */)]);
+      }), 128 /* KEYED_FRAGMENT */))])])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_53, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_no_movements')), 1 /* TEXT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_54, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "cash-session-dialog__btn cash-session-dialog__btn--ghost",
+        onClick: _cache[12] || (_cache[12] = function ($event) {
+          return $data.mode = 'active';
+        })
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_back')), 1 /* TEXT */)])])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_2)], 8 /* PROPS */, _hoisted_1)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
+    }),
+    _: 1 /* STABLE */
+  });
+}
+
+/***/ }),
+
 /***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/components/buttons/SmModalCreateComponent.vue?vue&type=template&id=1af8e23a":
 /*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/components/buttons/SmModalCreateComponent.vue?vue&type=template&id=1af8e23a ***!
@@ -9164,84 +10238,106 @@ var _hoisted_24 = {
   "class": "pos-v5-payment-change-value pos-v5-tabular"
 };
 var _hoisted_25 = {
+  key: 0,
   "class": "mb-3"
 };
 var _hoisted_26 = {
+  "for": "terminalSelect",
+  "class": "pos-v5-payment-input-label"
+};
+var _hoisted_27 = ["aria-label"];
+var _hoisted_28 = {
+  value: null,
+  disabled: ""
+};
+var _hoisted_29 = ["value"];
+var _hoisted_30 = {
+  key: 0
+};
+var _hoisted_31 = {
+  key: 0,
+  "class": "pos-v5-payment-input-hint",
+  role: "alert"
+};
+var _hoisted_32 = {
+  "class": "mb-3"
+};
+var _hoisted_33 = {
   "for": "cardInput",
   "class": "pos-v5-payment-input-label"
 };
-var _hoisted_27 = {
+var _hoisted_34 = {
   id: "cardInput",
   ref: "cardInput",
   type: "number",
   "class": "pos-v5-payment-input pos-v5-tabular",
   required: ""
 };
-var _hoisted_28 = {
+var _hoisted_35 = {
   key: 0,
   "class": "pos-v4-numpad pos-v5-payment-numpad-wrap mb-4"
 };
-var _hoisted_29 = {
+var _hoisted_36 = {
   key: 1,
   id: "multi",
   "class": "pos-v5-split-block",
   "data-testid": "pos-payment-split-block"
 };
-var _hoisted_30 = ["aria-label"];
-var _hoisted_31 = {
+var _hoisted_37 = ["aria-label"];
+var _hoisted_38 = {
   "class": "pos-v5-split-summary__row"
 };
-var _hoisted_32 = {
+var _hoisted_39 = {
   "class": "pos-v5-split-summary__label"
 };
-var _hoisted_33 = {
+var _hoisted_40 = {
   "class": "pos-v5-split-summary__value pos-v5-tabular",
   "data-testid": "pos-payment-total-covered"
 };
-var _hoisted_34 = {
+var _hoisted_41 = {
   "class": "pos-v5-split-summary__label"
 };
-var _hoisted_35 = {
+var _hoisted_42 = {
   "class": "pos-v5-split-summary__value pos-v5-tabular",
   "data-testid": "pos-payment-remaining-due"
 };
-var _hoisted_36 = {
+var _hoisted_43 = {
   key: 0,
   "class": "pos-v5-split-summary__row pos-v5-split-summary__row--change",
   role: "status",
   "aria-live": "polite"
 };
-var _hoisted_37 = {
+var _hoisted_44 = {
   "class": "pos-v5-split-summary__label"
 };
-var _hoisted_38 = {
+var _hoisted_45 = {
   "class": "pos-v5-split-summary__value pos-v5-tabular",
   "data-testid": "pos-payment-total-change"
 };
-var _hoisted_39 = {
+var _hoisted_46 = {
   "class": "pos-v5-split-divider"
 };
-var _hoisted_40 = {
+var _hoisted_47 = {
   "for": "splitCountInput",
   "class": "pos-v5-split-divider__label"
 };
-var _hoisted_41 = {
+var _hoisted_48 = {
   "class": "pos-v5-split-divider__row"
 };
-var _hoisted_42 = ["aria-label"];
-var _hoisted_43 = ["disabled"];
-var _hoisted_44 = {
+var _hoisted_49 = ["aria-label"];
+var _hoisted_50 = ["disabled"];
+var _hoisted_51 = {
   key: 0,
   "class": "pos-v5-split-divider__row"
 };
-var _hoisted_45 = ["title"];
-var _hoisted_46 = ["title"];
-var _hoisted_47 = ["aria-label"];
-var _hoisted_48 = {
+var _hoisted_52 = ["title"];
+var _hoisted_53 = ["title"];
+var _hoisted_54 = ["aria-label"];
+var _hoisted_55 = {
   key: 0,
   "class": "pos-v5-split-empty"
 };
-var _hoisted_49 = ["disabled", "aria-busy", "aria-disabled"];
+var _hoisted_56 = ["disabled", "aria-busy", "aria-disabled"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_PosV5Numpad = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PosV5Numpad");
@@ -9255,7 +10351,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.reset && $options.reset.apply($options, arguments);
     }),
     "aria-label": _ctx.$t('button.close')
-  }, _toConsumableArray(_cache[12] || (_cache[12] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, _toConsumableArray(_cache[13] || (_cache[13] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "✕", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_5)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Hero \"À encaisser\" — moment de vérité "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($props.props.form.total, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Méthode de paiement "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.select_payment_method')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "data-tab": "#cash",
@@ -9269,7 +10365,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[1] || (_cache[1] = function ($event) {
       return $options.setPaymentMode('cash');
     })
-  }, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-payment-method-icon",
     "aria-hidden": "true"
   }, "💵", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.cash")), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_14), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
@@ -9284,7 +10380,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[2] || (_cache[2] = function ($event) {
       return $options.setPaymentMode('card');
     })
-  }, [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-payment-method-icon",
     "aria-hidden": "true"
   }, "💳", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.card")) + " (TPE)", 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_16), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
@@ -9299,7 +10395,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[3] || (_cache[3] = function ($event) {
       return $options.setPaymentMode('multi');
     })
-  }, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-payment-method-icon",
     "aria-hidden": "true"
   }, "🔀", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.split_payment') || 'Multi-paiement'), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_18)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Cash input + change due "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
@@ -9316,68 +10412,81 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.onCashInput && $options.onCashInput.apply($options, arguments);
     }),
     "class": "pos-v5-payment-input pos-v5-tabular"
-  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */)]), $options.cashChange > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */)]), $options.cashChange > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "✨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.change_due") || 'Monnaie à rendre'), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.cashChange, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Card input "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     id: "card",
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["data-tab hidden", $data.paymentMode === 'card' ? 'active' : ''])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.enter_card_last_4_digits')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", _hoisted_27, null, 512 /* NEED_PATCH */)])], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  Numpad V5 — composant partagé (PosV5Numpad).\n                  Émissions @input(value) / @back / @clear sont raccordées aux\n                  méthodes existantes numpadInput / numpadBack / numpadClear.\n                "), $data.paymentMode === 'cash' || $data.paymentMode === 'card' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Numpad, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [2026-05-18 PR-A V1 GO-LIVE blocker heal] Terminal selector.\n                         PosOrderRequest:114-119 requires `terminal_id` on CARD\n                         payments; without this dropdown every CARD sale 422s\n                         the moment POS_SIMULATION_HARDWARE flips false in\n                         production. Pre-selects first ACTIVE terminal so the\n                         cashier-flow stays one-tap when only one TPE exists. "), $data.paymentMode === 'card' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_terminal') || 'Terminal de paiement (TPE)'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("select", {
+    id: "terminalSelect",
+    "onUpdate:modelValue": _cache[6] || (_cache[6] = function ($event) {
+      return $data.selectedTerminalId = $event;
+    }),
+    "class": "pos-v5-payment-input",
+    "data-testid": "pos-payment-terminal-select",
+    "aria-label": _ctx.$t('label.payment_terminal') || 'Terminal de paiement'
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.paymentTerminals.length === 0 ? _ctx.$t('label.no_terminal_configured') || 'Aucun TPE configuré — contactez l’admin' : _ctx.$t('label.select_terminal') || 'Sélectionnez un TPE'), 1 /* TEXT */), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.paymentTerminals, function (t) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("option", {
+      key: t.id,
+      value: t.id
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(t.name), 1 /* TEXT */), t.gateway_type ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_30, " · " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(t.gateway_type), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_29);
+  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_27), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelSelect, $data.selectedTerminalId]]), $data.paymentTerminals.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.no_terminal_configured_hint') || 'Aucun TPE actif sur cette filiale. Ajoutez-en un depuis Paramètres → Terminaux de paiement avant d’encaisser par carte.'), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.enter_card_last_4_digits')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", _hoisted_34, null, 512 /* NEED_PATCH */)])], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  Numpad V5 — composant partagé (PosV5Numpad).\n                  Émissions @input(value) / @back / @clear sont raccordées aux\n                  méthodes existantes numpadInput / numpadBack / numpadClear.\n                "), $data.paymentMode === 'cash' || $data.paymentMode === 'card' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_35, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Numpad, {
     "aria-label": "Pavé numérique",
     onInput: $options.numpadInput,
     onBack: $options.numpadBack,
     onClear: $options.numpadClear
-  }, null, 8 /* PROPS */, ["onInput", "onBack", "onClear"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  Multi-paiement (split) — CV1-POS-SPLIT-PAYMENT-001\n                  Tranches locales (data.tranches) ; le payload est construit\n                  uniquement au submit (submitMulti) — n'altère PAS props.form\n                  pour les modes cash/card historiques.\n                "), $data.paymentMode === 'multi' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, 8 /* PROPS */, ["onInput", "onBack", "onClear"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  Multi-paiement (split) — CV1-POS-SPLIT-PAYMENT-001\n                  Tranches locales (data.tranches) ; le payload est construit\n                  uniquement au submit (submitMulti) — n'altère PAS props.form\n                  pour les modes cash/card historiques.\n                "), $data.paymentMode === 'multi' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "pos-v5-split-summary",
     role: "group",
     "aria-label": _ctx.$t('label.split_summary') || 'Résumé multi-paiement'
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_31, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total_covered') || 'Couvert'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.totalCoveredEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total_covered') || 'Couvert'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.totalCoveredEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["pos-v5-split-summary__row pos-v5-split-summary__row--remaining", {
       'pos-v5-split-summary__row--ok': $options.remainingDueEur <= 0.01
     }]),
     role: "status",
     "aria-live": "polite",
     "data-testid": "pos-payment-remaining-due-row"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.remaining_due') || 'Reste dû'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.remainingDueEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)], 2 /* CLASS */), $options.totalChangeEur > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_37, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.remaining_due') || 'Reste dû'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.remainingDueEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)], 2 /* CLASS */), $options.totalChangeEur > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_43, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_44, [_cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
-  }, "✨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.change_due')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_38, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.totalChangeEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_30), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Diviser entre N personnes "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.split_among_n') || 'Diviser entre N personnes'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_41, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, "✨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.change_due')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.totalChangeEur, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_37), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Diviser entre N personnes "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_46, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_47, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.split_among_n') || 'Diviser entre N personnes'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     id: "splitCountInput",
     type: "number",
     min: "2",
     max: "20",
     step: "1",
-    "onUpdate:modelValue": _cache[6] || (_cache[6] = function ($event) {
+    "onUpdate:modelValue": _cache[7] || (_cache[7] = function ($event) {
       return $data.splitCount = $event;
     }),
     "class": "pos-v5-split-divider__input pos-v5-tabular",
     "aria-label": _ctx.$t('label.split_among_n') || 'Diviser entre N personnes',
     "data-testid": "pos-payment-split-count"
-  }, null, 8 /* PROPS */, _hoisted_42), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.splitCount, void 0, {
+  }, null, 8 /* PROPS */, _hoisted_49), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.splitCount, void 0, {
     number: true
   }]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "pos-v5-split-divider__btn",
     disabled: !$options.canSplitEqually,
-    onClick: _cache[7] || (_cache[7] = function () {
+    onClick: _cache[8] || (_cache[8] = function () {
       return $options.splitEquallyHandler && $options.splitEquallyHandler.apply($options, arguments);
     }),
     "data-testid": "pos-payment-split-equal"
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.split_equally') || 'Diviser à parts égales'), 9 /* TEXT, PROPS */, _hoisted_43)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter12 2026-05-09] Bidirectional split helpers "), $data.tranches.length >= 2 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.split_equally') || 'Diviser à parts égales'), 9 /* TEXT, PROPS */, _hoisted_50)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter12 2026-05-09] Bidirectional split helpers "), $data.tranches.length >= 2 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_51, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "pos-v5-split-divider__btn",
-    onClick: _cache[8] || (_cache[8] = function ($event) {
+    onClick: _cache[9] || (_cache[9] = function ($event) {
       return $options.autoBalanceFromIndex(0);
     }),
     "data-testid": "pos-payment-auto-balance",
     title: _ctx.$t('label.auto_balance_help') || 'Le reste s’équilibre automatiquement sur la 2ème tranche'
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.auto_balance') || 'Équilibrer le reste'), 9 /* TEXT, PROPS */, _hoisted_45), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.auto_balance') || 'Équilibrer le reste'), 9 /* TEXT, PROPS */, _hoisted_52), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "pos-v5-split-divider__btn",
-    onClick: _cache[9] || (_cache[9] = function () {
+    onClick: _cache[10] || (_cache[10] = function () {
       return $options.suggestCashTendered && $options.suggestCashTendered.apply($options, arguments);
     }),
     "data-testid": "pos-payment-suggest-tendered",
     title: _ctx.$t('label.suggest_tendered_help') || 'Arrondit les rendus monnaie au 5€ supérieur'
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.suggest_tendered') || 'Suggérer les rendus monnaie'), 9 /* TEXT, PROPS */, _hoisted_46)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Liste des tranches "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.suggest_tendered') || 'Suggérer les rendus monnaie'), 9 /* TEXT, PROPS */, _hoisted_53)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Liste des tranches "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "pos-v5-split-tranches",
     role: "list",
     "aria-label": _ctx.$t('label.split_tranches') || 'Tranches de paiement'
@@ -9394,28 +10503,28 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return $options.removeTranche(idx);
       }
     }, null, 8 /* PROPS */, ["tranche", "index", "onUpdate", "onRemove"]);
-  }), 128 /* KEYED_FRAGMENT */)), $data.tranches.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_48, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.split_empty_hint') || 'Ajoutez une tranche pour commencer.'), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_47), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }), 128 /* KEYED_FRAGMENT */)), $data.tranches.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_55, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.split_empty_hint') || 'Ajoutez une tranche pour commencer.'), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_54), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "pos-v5-split-add",
-    onClick: _cache[10] || (_cache[10] = function ($event) {
+    onClick: _cache[11] || (_cache[11] = function ($event) {
       return $options.addTranche();
     }),
     "data-testid": "pos-payment-tranche-add"
-  }, [_cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "+", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.add_tranche') || 'Ajouter une tranche'), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [AUDIT-P2] :disabled prevents a second click while the order is being submitted "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
-    onClick: _cache[11] || (_cache[11] = function () {
+    onClick: _cache[12] || (_cache[12] = function () {
       return $options.confirmOrder && $options.confirmOrder.apply($options, arguments);
     }),
     type: "button",
-    disabled: $data.loading.isActive || $data.paymentMode === 'multi' && !$options.canConfirmMulti,
+    disabled: $data.loading.isActive || $data.paymentMode === 'multi' && !$options.canConfirmMulti || $data.paymentMode === 'card' && !$options.canConfirmCard,
     "aria-busy": $data.loading.isActive,
-    "aria-disabled": $data.loading.isActive || $data.paymentMode === 'multi' && !$options.canConfirmMulti,
+    "aria-disabled": $data.loading.isActive || $data.paymentMode === 'multi' && !$options.canConfirmMulti || $data.paymentMode === 'card' && !$options.canConfirmCard,
     "class": "pos-v4-confirm-button pos-v5-payment-confirm w-full",
     "data-testid": "pos-payment-confirm"
-  }, [_cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[20] || (_cache[20] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
-  }, "✓", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_49)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-009 round-7 2026-05-10 — addendum] :clear-cart-on-close=\"true\"\n         opts THIS receipt instance into the deferred posCart/resetCart dispatch fired\n         when the cashier dismisses the modal. Re-print receipts in\n         PosOrdersTrackerComponent omit the prop (default false) and never destroy\n         a parallel cart in progress. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ReceiptComponent, {
+  }, "✓", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_56)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-009 round-7 2026-05-10 — addendum] :clear-cart-on-close=\"true\"\n         opts THIS receipt instance into the deferred posCart/resetCart dispatch fired\n         when the cashier dismisses the modal. Re-print receipts in\n         PosOrdersTrackerComponent omit the prop (default false) and never destroy\n         a parallel cart in progress. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ReceiptComponent, {
     ref: "receiptRoot",
     order: $data.order,
     "clear-cart-on-close": true
@@ -9449,18 +10558,32 @@ var _hoisted_1 = {
   "data-pos-v5-shell": ""
 };
 var _hoisted_2 = {
+  key: 0,
+  "class": "pos-offline-banner",
+  role: "alert",
+  "aria-live": "polite",
+  "data-testid": "pos-offline-banner"
+};
+var _hoisted_3 = {
+  "class": "pos-offline-banner__detail"
+};
+var _hoisted_4 = {
+  "data-testid": "pos-offline-queue-depth"
+};
+var _hoisted_5 = ["disabled"];
+var _hoisted_6 = {
   href: "#pos-cart",
   "class": "pos-v5-skip-link sr-only focus:not-sr-only"
 };
-var _hoisted_3 = {
+var _hoisted_7 = {
   id: "pos-a11y-live",
   "class": "sr-only pos-v5-sr-only",
   "aria-live": "polite",
   "aria-atomic": "true",
   "data-testid": "pos-availability-live"
 };
-var _hoisted_4 = {
-  key: 0,
+var _hoisted_8 = {
+  key: 1,
   role: "alert",
   "aria-live": "polite",
   "class": "pos-availability-banner",
@@ -9480,464 +10603,479 @@ var _hoisted_4 = {
     "line-height": "1.3"
   }
 };
-var _hoisted_5 = {
+var _hoisted_9 = {
   "class": "pos-availability-banner__label"
 };
-var _hoisted_6 = ["aria-label"];
-var _hoisted_7 = {
+var _hoisted_10 = ["aria-label"];
+var _hoisted_11 = {
   "class": "pos-v4-main md:w-[calc(100%-316px)] lg:w-[calc(100%-302px)] xl:w-[calc(100%-376px)]"
 };
-var _hoisted_8 = {
+var _hoisted_12 = {
   "class": "pos-v5-operator-bar pos-v4-operator-bar",
   role: "banner"
 };
-var _hoisted_9 = {
+var _hoisted_13 = {
   "class": "pos-v5-operator-bar__brand"
 };
-var _hoisted_10 = {
+var _hoisted_14 = {
   "class": "pos-v5-operator-bar__identity min-w-0 flex-1"
 };
-var _hoisted_11 = {
+var _hoisted_15 = {
   "class": "pos-v5-operator-bar__live pos-v4-status-row"
 };
-var _hoisted_12 = {
+var _hoisted_16 = ["title"];
+var _hoisted_17 = {
   "class": "pos-v5-operator-bar__actions pos-v4-operator-actions",
   "aria-label": "Actions caisse"
 };
-var _hoisted_13 = {
-  "class": "hidden lg:inline"
-};
-var _hoisted_14 = {
-  "class": "hidden lg:inline"
-};
-var _hoisted_15 = {
-  "class": "hidden lg:inline"
-};
-var _hoisted_16 = {
-  "class": "hidden lg:inline"
-};
-var _hoisted_17 = {
-  "class": "hidden lg:inline"
-};
 var _hoisted_18 = {
+  "class": "hidden lg:inline"
+};
+var _hoisted_19 = {
+  "class": "hidden lg:inline"
+};
+var _hoisted_20 = {
+  "class": "hidden lg:inline"
+};
+var _hoisted_21 = {
+  "class": "hidden lg:inline"
+};
+var _hoisted_22 = {
+  "class": "hidden lg:inline"
+};
+var _hoisted_23 = {
+  "class": "hidden lg:inline"
+};
+var _hoisted_24 = {
   key: 0,
   "class": "pos-v5-category-strip pos-menu-category-scroll pos-v4-category-strip",
   ref: "categoryScrollStrip",
   role: "tablist",
   "aria-label": "Catégories"
 };
-var _hoisted_19 = ["aria-selected", "aria-label", "title", "onClick"];
-var _hoisted_20 = {
+var _hoisted_25 = ["aria-selected", "aria-label", "title", "onClick"];
+var _hoisted_26 = {
   "class": "pos-v5-category__visual"
 };
-var _hoisted_21 = ["src", "alt"];
-var _hoisted_22 = {
+var _hoisted_27 = ["src", "alt"];
+var _hoisted_28 = {
   key: 1,
   "class": "pos-v5-category__visual-fallback",
   "aria-hidden": "true"
 };
-var _hoisted_23 = {
+var _hoisted_29 = {
   "class": "pos-v5-category__label"
 };
-var _hoisted_24 = ["aria-busy"];
-var _hoisted_25 = {
+var _hoisted_30 = ["aria-pressed", "title"];
+var _hoisted_31 = {
+  "class": "pos-v5-category__visual"
+};
+var _hoisted_32 = {
+  "class": "pos-v5-category__visual-fallback",
+  "aria-hidden": "true"
+};
+var _hoisted_33 = {
+  "class": "pos-v5-category__label"
+};
+var _hoisted_34 = ["aria-busy"];
+var _hoisted_35 = {
   key: 0,
   "class": "my-12"
 };
-var _hoisted_26 = {
+var _hoisted_36 = {
   "class": "max-w-[350px] mx-auto"
 };
-var _hoisted_27 = ["src"];
-var _hoisted_28 = {
+var _hoisted_37 = ["src"];
+var _hoisted_38 = {
   "class": "w-full mb-4 text-center text-black"
 };
-var _hoisted_29 = {
+var _hoisted_39 = {
   key: 1,
   "class": "my-12"
 };
-var _hoisted_30 = {
+var _hoisted_40 = {
   "class": "max-w-[250px] mx-auto"
 };
-var _hoisted_31 = ["src"];
-var _hoisted_32 = {
+var _hoisted_41 = ["src"];
+var _hoisted_42 = {
   "class": "w-full mb-4 text-center text-black"
 };
-var _hoisted_33 = ["aria-label"];
-var _hoisted_34 = {
+var _hoisted_43 = ["aria-label"];
+var _hoisted_44 = {
   "class": "md:hidden text-right p-3 pb-0"
 };
-var _hoisted_35 = ["aria-label"];
-var _hoisted_36 = {
+var _hoisted_45 = ["aria-label"];
+var _hoisted_46 = {
   "class": "pos-v5-cart__head pos-v4-cart-head flex-shrink-0"
 };
-var _hoisted_37 = {
+var _hoisted_47 = {
   "class": "pos-v5-stack-3 mt-3"
 };
-var _hoisted_38 = {
+var _hoisted_48 = {
   "class": "flex items-center w-full gap-2"
 };
-var _hoisted_39 = {
+var _hoisted_49 = {
   "class": "db-field flex-grow"
 };
-var _hoisted_40 = {
+var _hoisted_50 = {
   "class": "grid grid-cols-2 gap-2"
 };
-var _hoisted_41 = {
+var _hoisted_51 = {
   key: 0,
   "class": "mt-3"
 };
-var _hoisted_42 = {
+var _hoisted_52 = {
   key: 1,
   "class": "pos-v5-loyalty mt-3",
   role: "status"
 };
-var _hoisted_43 = {
+var _hoisted_53 = {
   key: 0
 };
-var _hoisted_44 = {
+var _hoisted_54 = {
   "class": "pos-v5-loyalty__points"
 };
-var _hoisted_45 = {
+var _hoisted_55 = {
   "class": "opacity-80 ml-1"
 };
-var _hoisted_46 = {
+var _hoisted_56 = {
   "class": "mt-3"
 };
-var _hoisted_47 = {
+var _hoisted_57 = {
   "class": "pos-v5-cart__eyebrow mb-2"
 };
-var _hoisted_48 = {
+var _hoisted_58 = {
   "class": "pos-v5-segmented",
   role: "radiogroup"
 };
-var _hoisted_49 = ["value"];
-var _hoisted_50 = ["value"];
-var _hoisted_51 = ["value"];
-var _hoisted_52 = {
+var _hoisted_59 = ["value"];
+var _hoisted_60 = ["value"];
+var _hoisted_61 = ["value"];
+var _hoisted_62 = {
   ref: "deliveryOrderDiv",
   id: "orderdelivery",
   "class": "h-auto hidden transition"
 };
-var _hoisted_53 = {
+var _hoisted_63 = {
   "class": "mt-3 flex flex-col gap-2"
 };
-var _hoisted_54 = {
+var _hoisted_64 = {
   "class": "flex gap-2"
 };
-var _hoisted_55 = {
+var _hoisted_65 = {
   "class": "flex-1"
 };
-var _hoisted_56 = {
+var _hoisted_66 = {
   "class": "flex-1"
 };
-var _hoisted_57 = {
+var _hoisted_67 = {
   "class": "relative"
 };
-var _hoisted_58 = {
+var _hoisted_68 = {
   "class": "flex items-center gap-2"
 };
-var _hoisted_59 = {
+var _hoisted_69 = {
   "class": "relative flex-1"
 };
-var _hoisted_60 = {
+var _hoisted_70 = {
   key: 0,
   "class": "fa-solid fa-circle-check absolute right-3 top-1/2 -translate-y-1/2 text-green-500 text-sm"
 };
-var _hoisted_61 = {
+var _hoisted_71 = {
   key: 1,
   "class": "fa-solid fa-spinner fa-spin absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"
 };
-var _hoisted_62 = {
+var _hoisted_72 = {
   key: 0,
   "class": "absolute z-50 w-full mt-1 bg-white border border-[#D9DBE9] rounded-lg shadow-lg max-h-48 overflow-y-auto"
 };
-var _hoisted_63 = ["onMousedown"];
-var _hoisted_64 = {
+var _hoisted_73 = ["onMousedown"];
+var _hoisted_74 = {
   "class": "leading-tight"
 };
-var _hoisted_65 = {
+var _hoisted_75 = {
   key: 1,
   "class": "mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700",
   role: "alert"
 };
-var _hoisted_66 = {
+var _hoisted_76 = {
   key: 0,
   ref: "dineInDiv",
   id: "dine",
   "class": "h-auto hidden transition"
 };
-var _hoisted_67 = {
+var _hoisted_77 = {
   "class": "mt-3"
 };
-var _hoisted_68 = {
+var _hoisted_78 = {
   "class": "db-field flex-grow"
 };
-var _hoisted_69 = ["aria-label"];
-var _hoisted_70 = ["onClick", "title", "aria-label"];
-var _hoisted_71 = ["src", "alt"];
-var _hoisted_72 = {
+var _hoisted_79 = ["aria-label"];
+var _hoisted_80 = ["onClick", "title", "aria-label"];
+var _hoisted_81 = ["src", "alt"];
+var _hoisted_82 = {
   key: 1,
   "class": "pos-v5-cart-item__visual-fallback",
   "aria-hidden": "true"
 };
-var _hoisted_73 = {
+var _hoisted_83 = {
   "class": "pos-v5-cart-item__body"
 };
-var _hoisted_74 = {
+var _hoisted_84 = {
   "class": "pos-v5-cart-item__name"
 };
-var _hoisted_75 = ["onClick", "title", "aria-label"];
-var _hoisted_76 = {
+var _hoisted_85 = ["onClick", "title", "aria-label"];
+var _hoisted_86 = {
   key: 0,
   "class": "pos-v5-cart-item__detail"
 };
-var _hoisted_77 = {
+var _hoisted_87 = {
   key: 0,
   "class": "pos-v5-cart-item__detail"
 };
-var _hoisted_78 = {
+var _hoisted_88 = {
   key: 1,
   "class": "pos-v5-cart-item__detail"
 };
-var _hoisted_79 = {
+var _hoisted_89 = {
   key: 2,
   "class": "pos-v5-cart-item__bundled"
 };
-var _hoisted_80 = {
+var _hoisted_90 = {
   key: 0,
   "class": "pos-v5-tabular"
 };
-var _hoisted_81 = {
+var _hoisted_91 = {
   key: 1,
   "class": "w-full m-0 p-0 list-none ml-3 mt-0.5"
 };
-var _hoisted_82 = {
+var _hoisted_92 = {
   "class": "pos-v5-cart-item__price pos-v5-tabular"
 };
-var _hoisted_83 = {
+var _hoisted_93 = {
   "class": "pos-v5-cart-item__qty"
 };
-var _hoisted_84 = {
+var _hoisted_94 = {
   key: 0,
   "class": "pos-v5-cart__empty"
 };
-var _hoisted_85 = {
+var _hoisted_95 = {
   "class": "pos-v5-cart__foot pos-v4-cart-footer flex-shrink-0"
 };
-var _hoisted_86 = {
+var _hoisted_96 = {
   key: 0,
   "class": "flex h-9 mb-2"
 };
-var _hoisted_87 = {
+var _hoisted_97 = {
   "class": "dropdown-group"
 };
-var _hoisted_88 = {
+var _hoisted_98 = {
   type: "button",
   "class": "flex items-center justify-start w-[100px] h-full text-xs font-medium rounded-l-md appearance-none border pl-3 text-[var(--pos-v5-ink)] border-[var(--pos-v5-border)] bg-[var(--pos-v5-bg-subtle)] dropdown-btn"
 };
-var _hoisted_89 = {
+var _hoisted_99 = {
   key: 0,
   "class": "flex-1 text-start"
 };
-var _hoisted_90 = {
+var _hoisted_100 = {
   key: 1,
   "class": "flex-1 text-start"
 };
-var _hoisted_91 = {
+var _hoisted_101 = {
   "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
 };
-var _hoisted_92 = ["onClick"];
-var _hoisted_93 = {
+var _hoisted_102 = ["onClick"];
+var _hoisted_103 = {
   "class": "text-[var(--pos-v5-ink)] capitalize text-sm"
 };
-var _hoisted_94 = ["placeholder"];
-var _hoisted_95 = ["disabled", "aria-disabled"];
-var _hoisted_96 = {
+var _hoisted_104 = ["placeholder"];
+var _hoisted_105 = ["disabled", "aria-disabled"];
+var _hoisted_106 = {
   key: 1,
   "class": "mb-3"
 };
-var _hoisted_97 = {
+var _hoisted_107 = {
   "for": "pos-discount-reason",
   "class": "flex items-center justify-between mb-1 text-[11px] font-bold uppercase tracking-wider text-[var(--pos-v5-ink-soft)]"
 };
-var _hoisted_98 = {
+var _hoisted_108 = {
   key: 0,
   "class": "ml-1 text-[10px] font-bold text-[var(--pos-v5-danger)] normal-case",
   "data-testid": "pos-discount-reason-required-flag"
 };
-var _hoisted_99 = {
+var _hoisted_109 = {
   "class": "text-[10px] font-medium text-[var(--pos-v5-ink-muted)] normal-case"
 };
-var _hoisted_100 = ["placeholder"];
-var _hoisted_101 = {
+var _hoisted_110 = ["placeholder"];
+var _hoisted_111 = {
   key: 0,
   "class": "mt-1 text-[11px] font-medium text-[var(--pos-v5-danger)]",
   role: "alert",
   "data-testid": "pos-discount-reason-invalid"
 };
-var _hoisted_102 = {
+var _hoisted_112 = {
   role: "status",
   "aria-live": "polite",
   "aria-atomic": "true",
   "class": "mb-3"
 };
-var _hoisted_103 = {
+var _hoisted_113 = {
   key: 2,
   "class": "flex flex-col gap-2"
 };
-var _hoisted_104 = {
+var _hoisted_114 = {
   id: "addCustomer",
   "class": "modal"
 };
-var _hoisted_105 = {
+var _hoisted_115 = {
   "class": "modal-dialog"
 };
-var _hoisted_106 = {
+var _hoisted_116 = {
   "class": "modal-header pb-3 border-b border-[#D9DBE9]"
 };
-var _hoisted_107 = {
+var _hoisted_117 = {
   "class": "capitalize font-medium"
 };
-var _hoisted_108 = ["aria-label"];
-var _hoisted_109 = {
+var _hoisted_118 = ["aria-label"];
+var _hoisted_119 = {
   "class": "modal-body"
 };
-var _hoisted_110 = {
+var _hoisted_120 = {
   "class": "row mb-3"
 };
-var _hoisted_111 = {
+var _hoisted_121 = {
   "class": "col-12 sm:col-6"
 };
-var _hoisted_112 = {
+var _hoisted_122 = {
   "class": "db-field-title required"
 };
-var _hoisted_113 = {
+var _hoisted_123 = {
   key: 0,
   "class": "db-field-alert"
 };
-var _hoisted_114 = {
+var _hoisted_124 = {
   "class": "col-12 sm:col-6"
 };
-var _hoisted_115 = {
+var _hoisted_125 = {
   "for": "phone",
   "class": "db-field-title"
 };
-var _hoisted_116 = {
+var _hoisted_126 = {
   "class": "w-fit flex-shrink-0 dropdown-group"
 };
-var _hoisted_117 = {
+var _hoisted_127 = {
   type: "button",
   "class": "flex items-center gap-1 dropdown-btn"
 };
-var _hoisted_118 = {
+var _hoisted_128 = {
   "class": "whitespace-nowrap flex-shrink-0 text-xs"
 };
-var _hoisted_119 = {
+var _hoisted_129 = {
   key: 0,
   "class": "db-field-alert"
 };
-var _hoisted_120 = {
+var _hoisted_130 = {
   "class": "col-12 sm:col-6"
 };
-var _hoisted_121 = {
+var _hoisted_131 = {
   "class": "db-field-title required"
 };
-var _hoisted_122 = {
+var _hoisted_132 = {
   key: 0,
   "class": "db-field-alert"
 };
-var _hoisted_123 = {
+var _hoisted_133 = {
   "class": "col-12 sm:col-6"
 };
-var _hoisted_124 = {
+var _hoisted_134 = {
   "for": "password",
   "class": "db-field-title required"
 };
-var _hoisted_125 = {
+var _hoisted_135 = {
   key: 0,
   "class": "db-field-alert"
 };
-var _hoisted_126 = {
+var _hoisted_136 = {
   type: "submit",
   "class": "rounded-3xl text-base py-3 px-3 font-medium w-full text-white bg-primary"
 };
-var _hoisted_127 = {
-  key: 1,
+var _hoisted_137 = {
+  key: 2,
   "class": "pos-v5-success-flash",
   "aria-hidden": "true"
 };
-var _hoisted_128 = {
+var _hoisted_138 = {
   "class": "text-base font-medium font-rubik text-white"
 };
-var _hoisted_129 = {
+var _hoisted_139 = {
   "class": "kiosk-cash-panel"
 };
-var _hoisted_130 = {
+var _hoisted_140 = {
   "class": "kiosk-cash-panel-header"
 };
-var _hoisted_131 = {
+var _hoisted_141 = {
   "class": "kiosk-cash-panel-header-actions"
 };
-var _hoisted_132 = {
+var _hoisted_142 = {
   "class": "kiosk-cash-panel-body"
 };
-var _hoisted_133 = {
+var _hoisted_143 = {
   key: 0,
   "class": "kiosk-cash-loading"
 };
-var _hoisted_134 = {
+var _hoisted_144 = {
   key: 1,
   "class": "kiosk-cash-empty"
 };
-var _hoisted_135 = {
+var _hoisted_145 = {
   "class": "kiosk-cash-order-head"
 };
-var _hoisted_136 = {
+var _hoisted_146 = {
   "class": "kiosk-cash-order-num"
 };
-var _hoisted_137 = {
+var _hoisted_147 = {
   "class": "kiosk-cash-order-head-actions"
 };
-var _hoisted_138 = ["aria-expanded", "data-testid", "onClick"];
-var _hoisted_139 = {
+var _hoisted_148 = ["aria-expanded", "data-testid", "onClick"];
+var _hoisted_149 = {
   "class": "kiosk-cash-order-total"
 };
-var _hoisted_140 = {
+var _hoisted_150 = {
   "class": "kiosk-cash-order-items"
 };
-var _hoisted_141 = {
+var _hoisted_151 = {
   key: 0,
   "class": "kiosk-cash-item-pill more"
 };
-var _hoisted_142 = ["data-testid"];
-var _hoisted_143 = {
+var _hoisted_152 = ["data-testid"];
+var _hoisted_153 = {
   "class": "kiosk-cash-order-detail-title"
 };
-var _hoisted_144 = {
+var _hoisted_154 = {
   key: 0,
   "class": "kiosk-cash-order-detail-line"
 };
-var _hoisted_145 = {
+var _hoisted_155 = {
   key: 1,
   "class": "kiosk-cash-order-detail-line"
 };
-var _hoisted_146 = {
+var _hoisted_156 = {
   key: 2,
   "class": "kiosk-cash-order-detail-line"
 };
-var _hoisted_147 = {
+var _hoisted_157 = {
   key: 3,
   "class": "kiosk-cash-order-detail-line"
 };
-var _hoisted_148 = {
+var _hoisted_158 = {
   "class": "kiosk-cash-order-foot"
 };
-var _hoisted_149 = {
+var _hoisted_159 = {
   "class": "kiosk-cash-order-time"
 };
-var _hoisted_150 = ["disabled", "onClick"];
-var _hoisted_151 = ["disabled", "onClick"];
-var _hoisted_152 = {
+var _hoisted_160 = ["disabled", "onClick"];
+var _hoisted_161 = ["disabled", "onClick"];
+var _hoisted_162 = {
   "class": "kiosk-cash-panel-footer"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
@@ -9954,17 +11092,28 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_PosV5QtyStepper = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PosV5QtyStepper");
   var _component_PosV5TotalRow = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PosV5TotalRow");
   var _component_ParkedOrdersComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("ParkedOrdersComponent");
+  var _component_PosCashDrawerSessionDialog = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PosCashDrawerSessionDialog");
   var _component_PaymentComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PaymentComponent");
   var _component_CreateCustomerAddressComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("CreateCustomerAddressComponent");
   var _component_router_link = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("router-link");
-  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Refonte design POS V5 \"warm premium\".\n      - Conserve la classe `fk-pos-v4` pour rollback éventuel via [data-pos-v4-disabled].\n      - Ajoute la classe `pos-v5-shell` qui active la typo Inter, le bg crème warm\n        et le système de tokens unifié défini dans foundations/pos-v5-tokens.css.\n      - Le wizard kiosk reste FROZEN (KioskWizardComponent + kiosk-wizard.css).\n      - Aucune logique métier touchée : pricing, OrderStatus, branch_id, dispatch\n        intacts. Cf. plans/PLAN_POS_V5_DESIGN_CONVERGENCE_2026-05-02.md.\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("section", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("a", _hoisted_2, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('a11y.skip_to_cart')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix D-003 2026-05-10] aria-live region now reflects the\n         latest availability change so screen readers announce rupture broadcasts\n         without depending on the item being in cart. data-testid lets E2E specs\n         identify it unambiguously in dom.html. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.availabilityAnnouncement), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix D-003 2026-05-10] Persistent visible chip listing\n         currently ruptured items in the active branch. Driven by itemsRaw so\n         it survives a page reload (the broadcast-only toast does not). "), $options.availabilityBannerVisible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_4, [_cache[38] || (_cache[38] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Refonte design POS V5 \"warm premium\".\n      - Conserve la classe `fk-pos-v4` pour rollback éventuel via [data-pos-v4-disabled].\n      - Ajoute la classe `pos-v5-shell` qui active la typo Inter, le bg crème warm\n        et le système de tokens unifié défini dans foundations/pos-v5-tokens.css.\n      - Le wizard kiosk reste FROZEN (KioskWizardComponent + kiosk-wizard.css).\n      - Aucune logique métier touchée : pricing, OrderStatus, branch_id, dispatch\n        intacts. Cf. plans/PLAN_POS_V5_DESIGN_CONVERGENCE_2026-05-02.md.\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("section", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [POS-OFFLINE-WIRE 2026-05-17] Visible degraded-mode banner driven by the\n      `usePosOfflineState` composable (helper landed in V1.0.2, wired here).\n      Renders ABOVE the operator header so the cashier cannot miss the state.\n      role=\"alert\" + aria-live=\"polite\" → screen-reader announce on transition.\n      data-testid stable hooks for Playwright/Vitest. Does not touch frozen-zone\n      (PaymentComponent / pos-wizard.js / admin-pos-v4.blade.php untouched).\n    "), !$setup.isOnline ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_2, [_cache[42] || (_cache[42] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", {
+    "class": "pos-offline-banner__label"
+  }, "⚠ MODE DÉGRADÉ", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_3, [_cache[40] || (_cache[40] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Commandes en file d'attente (", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($setup.queueDepth), 1 /* TEXT */), _cache[41] || (_cache[41] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(") ", -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "pos-offline-banner__sync",
+    disabled: $setup.queueDepth === 0,
+    "data-testid": "pos-offline-sync",
+    onClick: _cache[0] || (_cache[0] = function () {
+      return $options.tryManualFlush && $options.tryManualFlush.apply($options, arguments);
+    })
+  }, "Synchroniser", 8 /* PROPS */, _hoisted_5)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("a", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('a11y.skip_to_cart')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix D-003 2026-05-10] aria-live region now reflects the\n         latest availability change so screen readers announce rupture broadcasts\n         without depending on the item being in cart. data-testid lets E2E specs\n         identify it unambiguously in dom.html. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.availabilityAnnouncement), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix D-003 2026-05-10] Persistent visible chip listing\n         currently ruptured items in the active branch. Driven by itemsRaw so\n         it survives a page reload (the broadcast-only toast does not). "), $options.availabilityBannerVisible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_8, [_cache[43] || (_cache[43] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "fa-solid fa-circle-exclamation",
     "aria-hidden": "true"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.availabilityBannerLabel), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.availabilityBannerLabel), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "pos-availability-banner__dismiss",
     "aria-label": _ctx.$t('button.close') || 'Fermer',
-    onClick: _cache[0] || (_cache[0] = function () {
+    onClick: _cache[1] || (_cache[1] = function () {
       return $options.dismissAvailabilityBanner && $options.dismissAvailabilityBanner.apply($options, arguments);
     }),
     style: {
@@ -9976,19 +11125,19 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "line-height": "1",
       "cursor": "pointer"
     }
-  }, "×", 8 /* PROPS */, _hoisted_6)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ConnectionStatusBanner, {
+  }, "×", 8 /* PROPS */, _hoisted_10)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ConnectionStatusBanner, {
     "suppress-transient": "",
     "suppress-session-invalid": ""
   }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingComponent, {
     props: $data.loading
-  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_9, [_cache[41] || (_cache[41] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [_cache[46] || (_cache[46] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "pos-v5-operator-bar__crown",
     "aria-hidden": "true"
-  }, "👑", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [_cache[39] || (_cache[39] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", {
+  }, "👑", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [_cache[44] || (_cache[44] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", {
     "class": "pos-v5-operator-bar__eyebrow pos-v4-eyebrow"
-  }, "Caisse FoodKing", -1 /* CACHED */)), _cache[40] || (_cache[40] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", {
+  }, "Caisse FoodKing", -1 /* CACHED */)), _cache[45] || (_cache[45] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", {
     "class": "pos-v5-operator-bar__title pos-v4-title"
-  }, "Commande rapide", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [$data.checkoutProps.form.branch_id ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5StatChip, {
+  }, "Commande rapide", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, [$data.checkoutProps.form.branch_id ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5StatChip, {
     key: 0,
     label: _ctx.$t('label.branch'),
     value: "#".concat($data.checkoutProps.form.branch_id),
@@ -10005,22 +11154,27 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       'is-bumping': $data.cartBumping
     }),
     "data-testid": "pos-cart-stat-chip"
-  }, null, 8 /* PROPS */, ["label", "value", "tone", "class"])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", _hoisted_12, [$data.kioskCashOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5Button, {
+  }, null, 8 /* PROPS */, ["label", "value", "tone", "class"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                          [POS-OFFLINE-WIRE 2026-05-17] Discreet queue-depth chip\n                          shown even when online if there are pending replays\n                          (e.g. after a brief disconnect during cash close).\n                        "), $setup.queueDepth > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+    key: 2,
+    "class": "pos-queue-depth-badge",
+    title: "".concat($setup.queueDepth, " commande(s) en attente de synchronisation"),
+    "data-testid": "pos-queue-depth-badge"
+  }, "📦 " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($setup.queueDepth), 9 /* TEXT, PROPS */, _hoisted_16)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", _hoisted_17, [$data.kioskCashOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5Button, {
     key: 0,
     variant: "kiosk-cash",
     size: "md",
     "data-testid": "kiosk-cash-open",
     badge: $data.kioskCashOrders.length,
     title: _ctx.$t('pos.kiosk_counter_collect_hint'),
-    onClick: _cache[1] || (_cache[1] = function ($event) {
+    onClick: _cache[2] || (_cache[2] = function ($event) {
       return $data.showKioskCashPanel = true;
     })
   }, {
     icon: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return _toConsumableArray(_cache[42] || (_cache[42] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("🖥️", -1 /* CACHED */)]));
+      return _toConsumableArray(_cache[47] || (_cache[47] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("🖥️", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.kiosk_counter_collect_short')), 1 /* TEXT */)];
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.kiosk_counter_collect_short')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
   }, 8 /* PROPS */, ["badge", "title"])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V5] Bouton suivi commandes — variant tracker.\n                  Tone \"ready\" = halo vert pulsant dès qu'une commande passe à PREPARED.\n                  Aucun popup, aucun son — juste un signal visuel pour le caissier.\n                  [POS-V5 R2] Label visible dès lg (1024px) au lieu de xl (1280px) pour\n                  réduire le risque d'icônes orphelines sur écrans tablet/laptop courants.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
@@ -10036,10 +11190,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     title: _ctx.$t('pos.tracker.button_hint')
   }, {
     icon: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return _toConsumableArray(_cache[43] || (_cache[43] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("📋", -1 /* CACHED */)]));
+      return _toConsumableArray(_cache[48] || (_cache[48] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("📋", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.button_label')), 1 /* TEXT */)];
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.button_label')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
   }, 8 /* PROPS */, ["tone", "badge", "title"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
@@ -10054,10 +11208,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     title: _ctx.$t('pos.tracker.customer_screen_hint')
   }, {
     icon: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return _toConsumableArray(_cache[44] || (_cache[44] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("🖥️", -1 /* CACHED */)]));
+      return _toConsumableArray(_cache[49] || (_cache[49] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("🖥️", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.customer_screen')), 1 /* TEXT */)];
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.customer_screen')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
   }, 8 /* PROPS */, ["title"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
@@ -10071,10 +11225,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     title: _ctx.$t('label.floorplan')
   }, {
     icon: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return _toConsumableArray(_cache[45] || (_cache[45] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("🪑", -1 /* CACHED */)]));
+      return _toConsumableArray(_cache[50] || (_cache[50] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("🪑", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.floorplan')), 1 /* TEXT */)];
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.floorplan')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
   }, 8 /* PROPS */, ["title"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V5] No-sale / open drawer — variant ghost neutral (pas de halo).\n                  Discoverable mais ne compete jamais avec paiement / tracker.\n                  Backend bridge kioskHardware.openDrawer() inchangé.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
@@ -10088,13 +11242,29 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: $options.triggerNoSaleOpenDrawer
   }, {
     icon: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return _toConsumableArray(_cache[46] || (_cache[46] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("💵", -1 /* CACHED */)]));
+      return _toConsumableArray(_cache[51] || (_cache[51] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("💵", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.no_sale')), 1 /* TEXT */)];
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.no_sale')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["title", "disabled", "loading", "onClick"])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-V5] Search V5 — input large unifié, soumission par Enter. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5SearchInput, {
+  }, 8 /* PROPS */, ["title", "disabled", "loading", "onClick"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [Sprint 1A 2026-05-16] Bouton \"Caisse\" — ouvre le dialog de\n                  gestion de session caisse (fond de caisse, mouvements, clôture).\n                  Variant ghost + tone \"ready\" quand session active = halo subtil\n                  pour signaler au caissier qu'une session est ouverte.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
+    variant: "ghost",
+    size: "md",
+    "class": "pos-v4-cash-session-btn",
+    "data-testid": "pos-cash-session-open",
+    tone: $options.cashSessionActive ? 'ready' : 'neutral',
+    title: _ctx.$t('label.cash_session_dialog_title'),
+    onClick: $options.openCashSessionDialog
+  }, {
+    icon: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return _toConsumableArray(_cache[52] || (_cache[52] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("🏦", -1 /* CACHED */)]));
+    }),
+    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_header_btn')), 1 /* TEXT */)];
+    }),
+    _: 1 /* STABLE */
+  }, 8 /* PROPS */, ["tone", "title", "onClick"])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-V5] Search V5 — input large unifié, soumission par Enter. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5SearchInput, {
     "class": "pos-v4-search",
     "model-value": $data.props.search.name,
     placeholder: _ctx.$t('label.search_by_menu_item'),
@@ -10103,7 +11273,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onInput: $options.onSearchInput,
     onSubmit: $options.search,
     onClear: $options.resetName
-  }, null, 8 /* PROPS */, ["model-value", "placeholder", "aria-label", "clear-aria-label", "onInput", "onSubmit", "onClear"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n          [POS-V5] Categories strip warm — pills avec photos rondes 56px\n          (mirror direct du stepper visual du wizard kiosk). L'active est marquée\n          par un anneau rouge brand 2px + ring soft 4px (mirror exact wizard).\n        "), $options.categories.length > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("nav", _hoisted_18, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.categories, function (category, index) {
+  }, null, 8 /* PROPS */, ["model-value", "placeholder", "aria-label", "clear-aria-label", "onInput", "onSubmit", "onClear"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n          [POS-V5] Categories strip warm — pills avec photos rondes 56px\n          (mirror direct du stepper visual du wizard kiosk). L'active est marquée\n          par un anneau rouge brand 2px + ring soft 4px (mirror exact wizard).\n          [2026-05-18 F-4] First-page filter: by default, only featured\n          categories render. The trailing \"Toutes les catégories\" pill\n          toggles the strip to full view. Backend signals featured via\n          `category.featured === true` on the /admin/pos-category response.\n        "), $options.displayedCategories.length > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("nav", _hoisted_24, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.displayedCategories, function (category, index) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: category.id || index,
       type: "button",
@@ -10117,13 +11287,25 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onClick: function onClick($event) {
         return index === 0 ? $options.allCategory() : $options.setCategory(category.id);
       }
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, [category.thumb ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_26, [category.thumb ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
       key: 0,
       src: category.thumb,
       alt: category.name || '',
       loading: "lazy"
-    }, null, 8 /* PROPS */, _hoisted_21)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)((category.name || '?').charAt(0).toUpperCase()), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [rush-100 WB-R1-02 heal 2026-05-13] aria-label + title above\n                         so \"Sandwich Cayenne\" vs \"Sandwich Classique\" stay distinguishable\n                         when the visible label truncates to \"Sandwich...\" in the pill. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(category.name), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_19);
-  }), 128 /* KEYED_FRAGMENT */))], 512 /* NEED_PATCH */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    }, null, 8 /* PROPS */, _hoisted_27)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)((category.name || '?').charAt(0).toUpperCase()), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [rush-100 WB-R1-02 heal 2026-05-13] aria-label + title above\n                         so \"Sandwich Cayenne\" vs \"Sandwich Classique\" stay distinguishable\n                         when the visible label truncates to \"Sandwich...\" in the pill. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(category.name), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_25);
+  }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [2026-05-18 F-4] Escape hatch: reveal all categories. Only\n                 shown when the backend marked some as non-featured (i.e.\n                 the allowlist is active). "), $options.hasNonFeaturedCategories ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    key: 0,
+    type: "button",
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["pos-v5-category pos-v4-category-pill pos-v5-category--toggle", {
+      'is-active': $data.showAllCategories
+    }]),
+    "aria-pressed": $data.showAllCategories ? 'true' : 'false',
+    title: $data.showAllCategories ? 'Masquer les catégories non-essentielles' : 'Voir toutes les catégories',
+    "data-testid": "pos-category-toggle-all",
+    onClick: _cache[3] || (_cache[3] = function () {
+      return $options.toggleShowAllCategories && $options.toggleShowAllCategories.apply($options, arguments);
+    })
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_31, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.showAllCategories ? '➖' : '➕'), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.showAllCategories ? 'Réduire' : 'Toutes'), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_30)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 512 /* NEED_PATCH */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "aria-live": "polite",
     "aria-relevant": "additions",
     "aria-busy": $options.loadingItems ? 'true' : 'false',
@@ -10135,37 +11317,37 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     key: 1
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ItemComponent, {
     ref: "posItemComponent",
-    items: $options.items,
+    items: $options.displayedItems,
     "drinks-catalog": $options.drinksCatalog
-  }, null, 8 /* PROPS */, ["items", "drinks-catalog"]), $options.items.length === 0 && !$data.props.search.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+  }, null, 8 /* PROPS */, ["items", "drinks-catalog"]), $options.items.length === 0 && !$data.props.search.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_35, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "w-full mb-8",
     src: $options.setting.image_order_not_found,
     alt: "image_order_not_found"
-  }, null, 8 /* PROPS */, _hoisted_27)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_data_available')), 1 /* TEXT */)])) : $options.items.length === 0 && $data.props.search.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+  }, null, 8 /* PROPS */, _hoisted_37)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_38, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_data_available')), 1 /* TEXT */)])) : $options.items.length === 0 && $data.props.search.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_40, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "w-full mb-8",
     src: $options.setting.item_not_found,
     alt: "item_not_found"
-  }, null, 8 /* PROPS */, _hoisted_31)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_items_found')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 64 /* STABLE_FRAGMENT */))], 8 /* PROPS */, _hoisted_24)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [POS-V5] Cart panel \"ticket vivant\" — segments verticaux clairs, header\n      avec eyebrow rouge brand + titre Inter Black, customer select + add CTA,\n      shortcuts park/parked, loyalty badge optionnel, type de commande en\n      segmented control, items list en cards verticales, footer avec totals\n      + CTA principal \"Encaisser X €\" (montant intégré au bouton, Q3 plan).\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("aside", {
+  }, null, 8 /* PROPS */, _hoisted_41)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_items_found')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 64 /* STABLE_FRAGMENT */))], 8 /* PROPS */, _hoisted_34)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [POS-V5] Cart panel \"ticket vivant\" — segments verticaux clairs, header\n      avec eyebrow rouge brand + titre Inter Black, customer select + add CTA,\n      shortcuts park/parked, loyalty badge optionnel, type de commande en\n      segmented control, items list en cards verticales, footer avec totals\n      + CTA principal \"Encaisser X €\" (montant intégré au bouton, Q3 plan).\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("aside", {
     id: "pos-cart",
     role: "region",
     "aria-label": _ctx.$t('a11y.cart_region'),
     "class": "db-pos-cartDiv pos-v4-cart-panel pos-v5-cart fixed top-0 ltr:right-0 rtl:left-0 w-full h-screen rounded-none z-50 md:z-10 md:top-[64px] ltr:md:right-3 rtl:md:left-3 md:w-[340px] lg:w-[360px] xl:w-[400px] md:h-[calc(100dvh-64px)] md:rounded-lg flex flex-col overflow-hidden bg-white"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Mobile-only close button "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_34, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Mobile-only close button "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "db-pos-cartCls pos-v5-modal__close",
-    onClick: _cache[2] || (_cache[2] = function ($event) {
+    onClick: _cache[4] || (_cache[4] = function ($event) {
       return $options.closeCanvas('pos-cart');
     }),
     "aria-label": _ctx.$t('button.close')
-  }, _toConsumableArray(_cache[47] || (_cache[47] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, _toConsumableArray(_cache[53] || (_cache[53] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
-  }, "✕", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_35)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Cart header "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_36, [_cache[60] || (_cache[60] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, "✕", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_45)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Cart header "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_46, [_cache[66] || (_cache[66] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "pos-v5-cart__head-titles"
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", {
     "class": "pos-v5-cart__eyebrow"
   }, "Ticket caisse"), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", {
     "class": "pos-v5-cart__title"
-  }, "Commande en cours")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_37, [$options.totalItems() > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5Pill, {
+  }, "Commande en cours")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_47, [$options.totalItems() > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5Pill, {
     key: 0,
     variant: "brand",
     size: "md"
@@ -10174,11 +11356,11 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.totalItems()) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.items')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
-  })) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Customer selector + add CTA "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_vue_select, {
+  })) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Customer selector + add CTA "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_49, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_vue_select, {
     "class": "db-field-control text-sm rounded-lg appearance-none text-heading border-[#D9DBE9]",
     id: "customer",
     modelValue: $data.checkoutProps.form.customer_id,
-    "onUpdate:modelValue": [_cache[3] || (_cache[3] = function ($event) {
+    "onUpdate:modelValue": [_cache[5] || (_cache[5] = function ($event) {
       return $data.checkoutProps.form.customer_id = $event;
     }), $options.changingUser],
     options: $options.customers,
@@ -10197,10 +11379,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)($options.addCustomers, ["prevent"])
   }, {
     icon: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return _toConsumableArray(_cache[48] || (_cache[48] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("+", -1 /* CACHED */)]));
+      return _toConsumableArray(_cache[54] || (_cache[54] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("+", -1 /* CACHED */)]));
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["aria-label", "onClick"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Park / Parked shortcuts "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_40, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
+  }, 8 /* PROPS */, ["aria-label", "onClick"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Park / Parked shortcuts "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_50, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
     variant: "secondary",
     size: "md",
     disabled: $data.parkingInFlight,
@@ -10208,7 +11390,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: $options.promptParkOrder
   }, {
     icon: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return _toConsumableArray(_cache[49] || (_cache[49] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("⏸", -1 /* CACHED */)]));
+      return _toConsumableArray(_cache[55] || (_cache[55] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("⏸", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.park')), 1 /* TEXT */)];
@@ -10221,13 +11403,13 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: $options.openParkedOrders
   }, {
     icon: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return _toConsumableArray(_cache[50] || (_cache[50] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("📦", -1 /* CACHED */)]));
+      return _toConsumableArray(_cache[56] || (_cache[56] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("📦", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.parked_orders')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["badge", "onClick"])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n              [POS-V5] Cancel last cart line — undo subtil, pas destructif.\n              \"Oops\" en un tap (cf. POS-V4-CASHIER-OPS 2026-05-02 doctrine).\n            "), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_41, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
+  }, 8 /* PROPS */, ["badge", "onClick"])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n              [POS-V5] Cancel last cart line — undo subtil, pas destructif.\n              \"Oops\" en un tap (cf. POS-V4-CASHIER-OPS 2026-05-02 doctrine).\n            "), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_51, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
     variant: "ghost",
     size: "sm",
     block: "",
@@ -10235,18 +11417,18 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: $options.cancelLastCartLine
   }, {
     icon: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return _toConsumableArray(_cache[51] || (_cache[51] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("↻", -1 /* CACHED */)]));
+      return _toConsumableArray(_cache[57] || (_cache[57] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("↻", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.cancel_last_line')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["onClick"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-V5] Loyalty badge — warm gold/amber chaleureux. "), $data.selectedCustomerLoyalty.code ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_42, [_cache[53] || (_cache[53] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, 8 /* PROPS */, ["onClick"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-V5] Loyalty badge — warm gold/amber chaleureux. "), $data.selectedCustomerLoyalty.code ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_52, [_cache[59] || (_cache[59] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-loyalty__icon",
     "aria-hidden": "true"
-  }, "⭐", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [$data.selectedCustomerLoyalty.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_43, "...")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, "⭐", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [$data.selectedCustomerLoyalty.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_53, "...")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_44, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)((_$data$selectedCustom = $data.selectedCustomerLoyalty.points) !== null && _$data$selectedCustom !== void 0 ? _$data$selectedCustom : 0), 1 /* TEXT */), _cache[52] || (_cache[52] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" pts fidélité ", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_45, "(" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.selectedCustomerLoyalty.code) + ")", 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n              [POS-V5] Order type — segmented control V5 (mirror du wizard\n              \"Sur place / À emporter\" pattern). Le delivery inline form reste\n              identique pour ne pas casser la logique d'autocomplete d'adresse.\n            "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("fieldset", _hoisted_46, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("legend", _hoisted_47, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.select_order_type')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-9.1.6] Dine-In gated by feature flag `pos.dine_in_enabled` (default false). "), $options.dineInEnabled ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("label", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)((_$data$selectedCustom = $data.selectedCustomerLoyalty.points) !== null && _$data$selectedCustom !== void 0 ? _$data$selectedCustom : 0), 1 /* TEXT */), _cache[58] || (_cache[58] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" pts fidélité ", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_55, "(" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.selectedCustomerLoyalty.code) + ")", 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n              [POS-V5] Order type — segmented control V5 (mirror du wizard\n              \"Sur place / À emporter\" pattern). Le delivery inline form reste\n              identique pour ne pas casser la logique d'autocomplete d'adresse.\n            "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("fieldset", _hoisted_56, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("legend", _hoisted_57, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.select_order_type')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_58, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-9.1.6] Dine-In gated by feature flag `pos.dine_in_enabled` (default false). "), $options.dineInEnabled ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("label", {
     key: 0,
     ref: "dineIn",
     "for": "dinein",
@@ -10254,7 +11436,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['pos-v5-segmented__item', {
       'is-active': $data.checkoutProps.form.order_type === $data.orderTypeEnums.dineIn
     }]),
-    onClick: _cache[5] || (_cache[5] = function () {
+    onClick: _cache[7] || (_cache[7] = function () {
       return $options.dineInOrder && $options.dineInOrder.apply($options, arguments);
     })
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
@@ -10263,10 +11445,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     id: "dinein",
     name: "orderType",
     value: $data.orderTypeEnums.dineIn,
-    "onUpdate:modelValue": _cache[4] || (_cache[4] = function ($event) {
+    "onUpdate:modelValue": _cache[6] || (_cache[6] = function ($event) {
       return $data.checkoutProps.form.order_type = $event;
     })
-  }, null, 8 /* PROPS */, _hoisted_49), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelRadio, $data.checkoutProps.form.order_type]]), _cache[54] || (_cache[54] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, null, 8 /* PROPS */, _hoisted_59), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelRadio, $data.checkoutProps.form.order_type]]), _cache[60] || (_cache[60] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "🍽️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.dine_in')), 1 /* TEXT */)], 2 /* CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", {
     ref: "takeAway",
@@ -10274,7 +11456,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['pos-v5-segmented__item', {
       'is-active': $data.checkoutProps.form.order_type === $data.orderTypeEnums.takeAway
     }]),
-    onClick: _cache[7] || (_cache[7] = function () {
+    onClick: _cache[9] || (_cache[9] = function () {
       return $options.takeAwayOrder && $options.takeAwayOrder.apply($options, arguments);
     })
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
@@ -10283,10 +11465,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     id: "takeway",
     name: "orderType",
     value: $data.orderTypeEnums.takeAway,
-    "onUpdate:modelValue": _cache[6] || (_cache[6] = function ($event) {
+    "onUpdate:modelValue": _cache[8] || (_cache[8] = function ($event) {
       return $data.checkoutProps.form.order_type = $event;
     })
-  }, null, 8 /* PROPS */, _hoisted_50), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelRadio, $data.checkoutProps.form.order_type]]), _cache[55] || (_cache[55] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, null, 8 /* PROPS */, _hoisted_60), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelRadio, $data.checkoutProps.form.order_type]]), _cache[61] || (_cache[61] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "🥡", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.takeaway')), 1 /* TEXT */)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", {
     ref: "deliveryOrderLabel",
@@ -10295,7 +11477,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['pos-v5-segmented__item', {
       'is-active': $data.checkoutProps.form.order_type === $data.orderTypeEnums.delivery
     }]),
-    onClick: _cache[9] || (_cache[9] = function () {
+    onClick: _cache[11] || (_cache[11] = function () {
       return $options.deliveryOrder && $options.deliveryOrder.apply($options, arguments);
     })
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
@@ -10304,74 +11486,74 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     id: "delivery",
     name: "orderType",
     value: $data.orderTypeEnums.delivery,
-    "onUpdate:modelValue": _cache[8] || (_cache[8] = function ($event) {
+    "onUpdate:modelValue": _cache[10] || (_cache[10] = function ($event) {
       return $data.checkoutProps.form.order_type = $event;
     })
-  }, null, 8 /* PROPS */, _hoisted_51), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelRadio, $data.checkoutProps.form.order_type]]), _cache[56] || (_cache[56] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, null, 8 /* PROPS */, _hoisted_61), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelRadio, $data.checkoutProps.form.order_type]]), _cache[62] || (_cache[62] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
-  }, "🛵", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery')), 1 /* TEXT */)], 2 /* CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [P4] Inline delivery form — no separate modal, no map tab "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_52, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_53, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Row 1: Nom + Téléphone "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_54, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_55, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, "🛵", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery')), 1 /* TEXT */)], 2 /* CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [P4] Inline delivery form — no separate modal, no map tab "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_62, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_63, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Row 1: Nom + Téléphone "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_64, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_65, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     type: "text",
-    "onUpdate:modelValue": _cache[10] || (_cache[10] = function ($event) {
+    "onUpdate:modelValue": _cache[12] || (_cache[12] = function ($event) {
       return $data.deliveryInline.name = $event;
     }),
     placeholder: "Nom du client",
     "class": "w-full h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
-  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.deliveryInline.name]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_56, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.deliveryInline.name]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_66, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     type: "tel",
-    "onUpdate:modelValue": _cache[11] || (_cache[11] = function ($event) {
+    "onUpdate:modelValue": _cache[13] || (_cache[13] = function ($event) {
       return $data.deliveryInline.phone = $event;
     }),
     placeholder: "Téléphone",
     "class": "w-full h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
-  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.deliveryInline.phone]])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Row 2: Adresse autocomplete "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_57, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_58, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_59, [_cache[57] || (_cache[57] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.deliveryInline.phone]])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Row 2: Adresse autocomplete "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_67, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_68, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_69, [_cache[63] || (_cache[63] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "fa-solid fa-location-dot absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     ref: "deliveryAddressInput",
     type: "text",
-    "onUpdate:modelValue": _cache[12] || (_cache[12] = function ($event) {
+    "onUpdate:modelValue": _cache[14] || (_cache[14] = function ($event) {
       return $data.deliveryInline.addressText = $event;
     }),
-    onInput: _cache[13] || (_cache[13] = function () {
+    onInput: _cache[15] || (_cache[15] = function () {
       return $options.onDeliveryAddressInput && $options.onDeliveryAddressInput.apply($options, arguments);
     }),
-    onKeydown: [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+    onKeydown: [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.deliveryNavDown && $options.deliveryNavDown.apply($options, arguments);
-    }, ["prevent"]), ["down"])), _cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+    }, ["prevent"]), ["down"])), _cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.deliveryNavUp && $options.deliveryNavUp.apply($options, arguments);
-    }, ["prevent"]), ["up"])), _cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+    }, ["prevent"]), ["up"])), _cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.deliveryNavSelect && $options.deliveryNavSelect.apply($options, arguments);
-    }, ["prevent"]), ["enter"])), _cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)(function ($event) {
+    }, ["prevent"]), ["enter"])), _cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)(function ($event) {
       return $data.deliveryInline.suggestions = [];
     }, ["esc"]))],
     placeholder: "Adresse de livraison...",
     autocomplete: "off",
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["w-full h-10 text-sm rounded-lg border pl-8 pr-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none", $data.deliveryInline.confirmed ? 'border-green-400 bg-green-50' : ''])
-  }, null, 34 /* CLASS, NEED_HYDRATION */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.deliveryInline.addressText]]), $data.deliveryInline.confirmed ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("i", _hoisted_60)) : $data.deliveryInline.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("i", _hoisted_61)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $data.deliveryInline.confirmed ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+  }, null, 34 /* CLASS, NEED_HYDRATION */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.deliveryInline.addressText]]), $data.deliveryInline.confirmed ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("i", _hoisted_70)) : $data.deliveryInline.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("i", _hoisted_71)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $data.deliveryInline.confirmed ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
     key: 0,
-    onClick: _cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+    onClick: _cache[20] || (_cache[20] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.resetDeliveryInline && $options.resetDeliveryInline.apply($options, arguments);
     }, ["prevent"])),
     type: "button",
     "class": "h-10 w-10 flex items-center justify-center rounded-lg border border-red-200 text-red-400 hover:bg-red-50 transition flex-shrink-0",
     title: "Effacer"
-  }, _toConsumableArray(_cache[58] || (_cache[58] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, _toConsumableArray(_cache[64] || (_cache[64] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "fa-solid fa-xmark text-sm"
-  }, null, -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Suggestions dropdown "), $data.deliveryInline.suggestions.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_62, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.deliveryInline.suggestions, function (s, idx) {
+  }, null, -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Suggestions dropdown "), $data.deliveryInline.suggestions.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_72, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.deliveryInline.suggestions, function (s, idx) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
       key: s.place_id,
       onMousedown: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
         return $options.selectDeliverySuggestion(s);
       }, ["prevent"]),
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["flex items-start gap-2 px-3 py-2 cursor-pointer hover:bg-[#FFE8DD] text-sm text-heading transition", idx === $data.deliveryInline.activeIdx ? 'bg-[#FFE8DD]' : ''])
-    }, [_cache[59] || (_cache[59] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, [_cache[65] || (_cache[65] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "fa-solid fa-location-dot text-primary mt-0.5 flex-shrink-0 text-xs"
-    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_64, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(s.description), 1 /* TEXT */)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_63);
-  }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.deliveryGeocodeError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_65, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.deliveryGeocodeError), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 512 /* NEED_PATCH */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-9.1.6] Table selector gated by the same `pos.dine_in_enabled` flag "), $options.dineInEnabled ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_66, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_67, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_68, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_vue_select, {
+    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_74, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(s.description), 1 /* TEXT */)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_73);
+  }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.deliveryGeocodeError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_75, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.deliveryGeocodeError), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 512 /* NEED_PATCH */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-9.1.6] Table selector gated by the same `pos.dine_in_enabled` flag "), $options.dineInEnabled ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_76, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_77, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_78, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_vue_select, {
     "class": "db-field-control text-sm rounded-lg appearance-none text-heading border-[#D9DBE9]",
     id: "diningtables",
     options: $options.diningtables,
     modelValue: $data.checkoutProps.form.dining_table_id,
-    "onUpdate:modelValue": _cache[19] || (_cache[19] = function ($event) {
+    "onUpdate:modelValue": _cache[21] || (_cache[21] = function ($event) {
       return $data.checkoutProps.form.dining_table_id = $event;
     }),
     "value-by": "id",
@@ -10401,7 +11583,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       key: 0,
       src: cart.image,
       alt: cart.name
-    }, null, 8 /* PROPS */, _hoisted_71)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_72, "🍴"))], 8 /* PROPS */, _hoisted_70), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_73, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_74, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(cart.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, null, 8 /* PROPS */, _hoisted_81)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_82, "🍴"))], 8 /* PROPS */, _hoisted_80), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_83, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_84, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(cart.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       "class": "pos-v5-cart-item__edit",
       onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
@@ -10409,24 +11591,24 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }, ["prevent"]),
       title: _ctx.$t('button.edit') || 'Modifier',
       "aria-label": _ctx.$t('button.edit')
-    }, _toConsumableArray(_cache[61] || (_cache[61] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, _toConsumableArray(_cache[67] || (_cache[67] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "aria-hidden": "true"
-    }, "✎", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_75)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Wizard cart_display: clean summary (Viandes, Crudités, Sauce, Suppléments) "), cart.cart_display && cart.cart_display.trim() ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_76, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(cart.cart_display), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    }, "✎", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_85)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Wizard cart_display: clean summary (Viandes, Crudités, Sauce, Suppléments) "), cart.cart_display && cart.cart_display.trim() ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_86, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(cart.cart_display), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
       key: 1
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Fallback for non-wizard products: variations + extras "), $options.formatCartVariationSummary(cart) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_77, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatCartVariationSummary(cart)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.formatCartExtraSummary(cart) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_78, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatCartExtraSummary(cart)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 64 /* STABLE_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Menu bundled + extras menu (formules) "), cart.pos_line_addons && cart.pos_line_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_79, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(cart.pos_line_addons, function (bundled, bi) {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Fallback for non-wizard products: variations + extras "), $options.formatCartVariationSummary(cart) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_87, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatCartVariationSummary(cart)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.formatCartExtraSummary(cart) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_88, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatCartExtraSummary(cart)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 64 /* STABLE_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Menu bundled + extras menu (formules) "), cart.pos_line_addons && cart.pos_line_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_89, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(cart.pos_line_addons, function (bundled, bi) {
       return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         key: 'b-' + index + '-' + bi,
         "class": "pos-v5-cart-item__bundled-line"
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, "+ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(bundled.name), 1 /* TEXT */), $options.bundledLineUnitTotal(bundled) > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_80, " (+" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.bundledLineUnitTotal(bundled) * (parseInt(bundled.quantity, 10) || 1) * cart.quantity, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)) + ") ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), bundled.menu_extras && bundled.menu_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_81, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(bundled.menu_extras, function (extra, ei) {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, "+ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(bundled.name), 1 /* TEXT */), $options.bundledLineUnitTotal(bundled) > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_90, " (+" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.bundledLineUnitTotal(bundled) * (parseInt(bundled.quantity, 10) || 1) * cart.quantity, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)) + ") ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), bundled.menu_extras && bundled.menu_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_91, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(bundled.menu_extras, function (extra, ei) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
           key: 'me-' + index + '-' + bi + '-' + ei,
           "class": "text-[10px] leading-snug text-[var(--pos-v5-ink-muted)] flex items-center gap-1"
-        }, [_cache[62] || (_cache[62] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+        }, [_cache[68] || (_cache[68] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
           "class": "text-[color:var(--pos-v5-success)] font-bold",
           "aria-hidden": "true"
         }, "↳", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra), 1 /* TEXT */)]);
       }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-    }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_82, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat(cart.total, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_83, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5QtyStepper, {
+    }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_92, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat(cart.total, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_93, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5QtyStepper, {
       size: "sm",
       "model-value": cart.quantity,
       "show-trash": cart.quantity === 1,
@@ -10450,12 +11632,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return $options.cartQuantityDecrement(index);
       }
     }, null, 8 /* PROPS */, ["model-value", "show-trash", "aria-label", "increment-aria-label", "decrement-aria-label", "remove-aria-label", "onIncrement", "onDecrement", "onRemove"])])]);
-  }), 128 /* KEYED_FRAGMENT */)), $options.carts.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_84, _toConsumableArray(_cache[63] || (_cache[63] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }), 128 /* KEYED_FRAGMENT */)), $options.carts.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_94, _toConsumableArray(_cache[69] || (_cache[69] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-cart__empty-icon",
     "aria-hidden": "true"
-  }, "🍽️", -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, "Aucun article. Sélectionnez un produit dans la grille.", -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_69), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n          [POS-V5] Cart footer — discount block + totals (PosV5TotalRow) +\n          CTA principal \"Encaisser X €\" (Q3 plan : montant intégré au bouton).\n        "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("footer", _hoisted_85, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Discount block "), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_86, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_87, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_88, [$data.discountType === $data.discountTypeEnum.PERCENTAGE ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_89, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.percentage")), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_90, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.fixed")), 1 /* TEXT */)), _cache[64] || (_cache[64] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, "🍽️", -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, "Aucun article. Sélectionnez un produit dans la grille.", -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_79), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n          [POS-V5] Cart footer — discount block + totals (PosV5TotalRow) +\n          CTA principal \"Encaisser X €\" (Q3 plan : montant intégré au bouton).\n        "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("footer", _hoisted_95, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Discount block "), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_96, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_97, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_98, [$data.discountType === $data.discountTypeEnum.PERCENTAGE ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_99, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.percentage")), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_100, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.fixed")), 1 /* TEXT */)), _cache[70] || (_cache[70] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-arrow-down-2 lab-font-size-17 mx-1"
-  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_91, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)([{
+  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_101, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)([{
     name: _ctx.$t('label.percentage'),
     value: $data.discountTypeEnum.PERCENTAGE
   }, {
@@ -10468,20 +11650,20 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onClick: function onClick($event) {
         return $options.selectDiscount(option.value);
       }
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_93, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(option.name), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_92);
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_103, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(option.name), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_102);
   }), 128 /* KEYED_FRAGMENT */))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
-    onKeypress: _cache[20] || (_cache[20] = function ($event) {
+    onKeypress: _cache[22] || (_cache[22] = function ($event) {
       return $options.floatNumber($event);
     }),
-    "onUpdate:modelValue": _cache[21] || (_cache[21] = function ($event) {
+    "onUpdate:modelValue": _cache[23] || (_cache[23] = function ($event) {
       return $data.discount = $event;
     }),
     type: "text",
     placeholder: _ctx.$t('label.add_discount'),
     "data-testid": "pos-discount-input",
     "class": "w-full h-full border-t border-b px-3 text-sm border-[var(--pos-v5-border)] focus:outline-none focus:border-[var(--pos-v5-brand-red)]"
-  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_94), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.discount]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V4-CASHIER-OPS 2026-05-02] Apply button disabled when a\n                  positive discount is set without a 3+ char reason. Backend\n                  enforces this (OrderService L2007-2011) — mirror client-side.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
-    onClick: _cache[22] || (_cache[22] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_104), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.discount]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V4-CASHIER-OPS 2026-05-02] Apply button disabled when a\n                  positive discount is set without a 3+ char reason. Backend\n                  enforces this (OrderService L2007-2011) — mirror client-side.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    onClick: _cache[24] || (_cache[24] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.applyDiscount && $options.applyDiscount.apply($options, arguments);
     }, ["prevent"])),
     type: "button",
@@ -10489,9 +11671,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "aria-disabled": !$options.isDiscountApplyable,
     "data-testid": "pos-discount-apply",
     "class": "flex-shrink-0 w-16 h-full text-xs font-bold uppercase rounded-r-md text-white bg-[var(--pos-v5-info)] disabled:opacity-50 disabled:cursor-not-allowed transition"
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.apply')), 9 /* TEXT, PROPS */, _hoisted_95)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_96, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_97, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.reason')) + " ", 1 /* TEXT */), $options.discountReasonRequired ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_98, "(" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.reason_required_short')) + ")", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_99, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(($data.discountReason || '').length) + "/255", 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.apply')), 9 /* TEXT, PROPS */, _hoisted_105)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_106, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_107, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.reason')) + " ", 1 /* TEXT */), $options.discountReasonRequired ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_108, "(" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.reason_required_short')) + ")", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_109, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(($data.discountReason || '').length) + "/255", 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     id: "pos-discount-reason",
-    "onUpdate:modelValue": _cache[23] || (_cache[23] = function ($event) {
+    "onUpdate:modelValue": _cache[25] || (_cache[25] = function ($event) {
       return $data.discountReason = $event;
     }),
     type: "text",
@@ -10499,7 +11681,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     placeholder: _ctx.$t('pos.reason_required_placeholder'),
     "data-testid": "pos-discount-reason",
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['w-full h-9 text-sm rounded-md border px-3 text-[var(--pos-v5-ink)] transition focus:outline-none focus:border-[var(--pos-v5-brand-red)]', $options.discountReasonInvalid ? 'border-[var(--pos-v5-danger)] bg-[var(--pos-v5-danger-soft)]' : 'border-[var(--pos-v5-border)]'])
-  }, null, 10 /* CLASS, PROPS */, _hoisted_100), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.discountReason]]), $options.discountReasonInvalid ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_101, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.reason_required_hint')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Totals block "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_102, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5TotalRow, {
+  }, null, 10 /* CLASS, PROPS */, _hoisted_110), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.discountReason]]), $options.discountReasonInvalid ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_111, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.reason_required_hint')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Totals block "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_112, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5TotalRow, {
     label: _ctx.$t('label.sub_total'),
     value: $options.subtotalDisplay
   }, null, 8 /* PROPS */, ["label", "value"]), $options.posDiscount ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5TotalRow, {
@@ -10522,7 +11704,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       'is-flashing': $data.totalFlashing
     }]),
     "data-testid": "pos-grand-total"
-  }, null, 8 /* PROPS */, ["label", "value", "class"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Action CTAs "), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_103, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
+  }, null, 8 /* PROPS */, ["label", "value", "class"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Action CTAs "), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_113, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
     variant: "primary-pay",
     size: "xl",
     block: "",
@@ -10531,7 +11713,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "pos-v4-action-pay"
   }, {
     icon: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return _toConsumableArray(_cache[65] || (_cache[65] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("💳", -1 /* CACHED */)]));
+      return _toConsumableArray(_cache[71] || (_cache[71] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("💳", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.order')) + " · " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.grandTotalDisplay), 1 /* TEXT */)];
@@ -10545,89 +11727,95 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "pos-v4-action-cancel"
   }, {
     icon: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return _toConsumableArray(_cache[66] || (_cache[66] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("↻", -1 /* CACHED */)]));
+      return _toConsumableArray(_cache[72] || (_cache[72] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("↻", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.cancel')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["onClick"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 8 /* PROPS */, _hoisted_33), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n        ADD CUSTOMER MODAL PART START\n====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_104, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_105, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_106, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_107, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.add_customer')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, 8 /* PROPS */, ["onClick"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 8 /* PROPS */, _hoisted_43), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n        ADD CUSTOMER MODAL PART START\n====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_114, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_115, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_116, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_117, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.add_customer')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
-    onClick: _cache[24] || (_cache[24] = function () {
+    onClick: _cache[26] || (_cache[26] = function () {
       return $options.resetCustomer && $options.resetCustomer.apply($options, arguments);
     }),
     "class": "modal-close fa-regular fa-circle-xmark",
     "aria-label": _ctx.$t('button.close')
-  }, null, 8 /* PROPS */, _hoisted_108)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_109, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("form", {
-    onSubmit: _cache[32] || (_cache[32] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+  }, null, 8 /* PROPS */, _hoisted_118)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_119, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("form", {
+    onSubmit: _cache[34] || (_cache[34] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.saveCustomer && $options.saveCustomer.apply($options, arguments);
     }, ["prevent"]))
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_110, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_111, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_112, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.name")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_120, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_121, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_122, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.name")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     type: "text",
-    "onUpdate:modelValue": _cache[25] || (_cache[25] = function ($event) {
+    "onUpdate:modelValue": _cache[27] || (_cache[27] = function ($event) {
       return $data.customerProps.form.name = $event;
     }),
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.errors.name ? 'invalid' : '', "w-full h-12 text-sm rounded-lg border px-4 text-heading border-[#D9DBE9]"]),
     id: "name"
-  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.name]]), $data.errors.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_113, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.name[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_114, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_115, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.phone")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.name]]), $data.errors.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_123, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.name[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_124, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_125, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.phone")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.errors.phone ? 'invalid' : '', "w-full h-12 rounded-lg border px-4 flex items-center border-[#D9DBE9]"])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_116, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_117, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.flag) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_118, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.customerProps.form.country_code), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_126, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_127, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.flag) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_128, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.customerProps.form.country_code), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     type: "hidden",
-    "onUpdate:modelValue": _cache[26] || (_cache[26] = function ($event) {
+    "onUpdate:modelValue": _cache[28] || (_cache[28] = function ($event) {
       return $data.customerProps.form.country_code = $event;
     })
   }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.country_code]])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
-    "onUpdate:modelValue": _cache[27] || (_cache[27] = function ($event) {
+    "onUpdate:modelValue": _cache[29] || (_cache[29] = function ($event) {
       return $data.customerProps.form.phone = $event;
     }),
-    onKeypress: _cache[28] || (_cache[28] = function ($event) {
+    onKeypress: _cache[30] || (_cache[30] = function ($event) {
       return $options.phoneNumber($event);
     }),
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.errors.phone ? 'invalid' : '', "pl-2 text-sm w-full h-full"]),
     type: "text",
     id: "phone"
-  }, null, 34 /* CLASS, NEED_HYDRATION */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.phone]])], 2 /* CLASS */), $data.errors.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_119, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.phone[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_120, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_121, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.email")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, null, 34 /* CLASS, NEED_HYDRATION */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.phone]])], 2 /* CLASS */), $data.errors.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_129, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.phone[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_130, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_131, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.email")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     type: "email",
     id: "email",
-    "onUpdate:modelValue": _cache[29] || (_cache[29] = function ($event) {
+    "onUpdate:modelValue": _cache[31] || (_cache[31] = function ($event) {
       return $data.customerProps.form.email = $event;
     }),
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.errors.email ? 'invalid' : '', "w-full h-12 text-sm rounded-lg border px-4 text-heading border-[#D9DBE9]"])
-  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.email]]), $data.errors.email ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_122, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.email[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_123, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_124, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.password")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [W11 FIX] type=\"password\" to prevent shoulder-surfing on shared POS terminals "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
-    "onUpdate:modelValue": _cache[30] || (_cache[30] = function ($event) {
+  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.email]]), $data.errors.email ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_132, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.email[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_133, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_134, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.password")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [W11 FIX] type=\"password\" to prevent shoulder-surfing on shared POS terminals "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    "onUpdate:modelValue": _cache[32] || (_cache[32] = function ($event) {
       return $data.customerProps.form.password = $event;
     }),
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.errors.password ? 'invalid' : '', "w-full h-12 text-sm rounded-lg border px-4 text-heading border-[#D9DBE9]"]),
     type: "password",
     id: "password",
     autocomplete: "new-password"
-  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.password]]), $data.errors.password ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_125, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.password[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.password]]), $data.errors.password ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_135, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.password[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     type: "hidden",
-    "onUpdate:modelValue": _cache[31] || (_cache[31] = function ($event) {
+    "onUpdate:modelValue": _cache[33] || (_cache[33] = function ($event) {
       return $data.customerProps.form.password_confirmation = $event;
     })
-  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.password_confirmation]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_126, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.add_customer')), 1 /* TEXT */)], 32 /* NEED_HYDRATION */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n          ADD CUSTOMER MODAL PART END\n    ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n      PAYMENT MODAL PART START\n  ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ParkedOrdersComponent, {
+  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.password_confirmation]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_136, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.add_customer')), 1 /* TEXT */)], 32 /* NEED_HYDRATION */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n          ADD CUSTOMER MODAL PART END\n    ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n      PAYMENT MODAL PART START\n  ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ParkedOrdersComponent, {
     open: $data.showParkedOrders,
-    onClose: _cache[33] || (_cache[33] = function ($event) {
+    onClose: _cache[35] || (_cache[35] = function ($event) {
       return $data.showParkedOrders = false;
     }),
     onRestored: $options.applyParkedSnapshot
-  }, null, 8 /* PROPS */, ["open", "onRestored"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PaymentComponent, {
+  }, null, 8 /* PROPS */, ["open", "onRestored"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [Sprint 1A 2026-05-16] Dialog session caisse.\n      Auto-ouvert au démarrage si aucune session OPEN n'existe sur la branche\n      du caissier (cf. mounted hook → loadCurrentSession après applyPosBranchScope).\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosCashDrawerSessionDialog, {
+    open: $data.showCashSessionDialog,
+    "initial-mode": $data.cashSessionInitialMode,
+    onClose: $options.closeCashSessionDialog,
+    onSessionOpened: $options.onCashSessionOpened,
+    onSessionClosed: $options.onCashSessionClosed
+  }, null, 8 /* PROPS */, ["open", "initial-mode", "onClose", "onSessionOpened", "onSessionClosed"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PaymentComponent, {
     props: $data.checkoutProps,
     "onPaymentForm:patch": $options.patchPaymentForm,
     "onPaymentForm:reset": $options.resetPaymentForm,
     "onOrder:confirmed": $options.triggerSuccessFlash
-  }, null, 8 /* PROPS */, ["props", "onPaymentForm:patch", "onPaymentForm:reset", "onOrder:confirmed"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-V5 WAVE 3] Overlay success flash après confirm payment (700ms) "), $data.successFlashing ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_127)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n          PAYMENT MODAL PART END\n      ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n      ADDRESS MODAL PART START\n  ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_CreateCustomerAddressComponent, {
+  }, null, 8 /* PROPS */, ["props", "onPaymentForm:patch", "onPaymentForm:reset", "onOrder:confirmed"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-V5 WAVE 3] Overlay success flash après confirm payment (700ms) "), $data.successFlashing ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_137)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n          PAYMENT MODAL PART END\n      ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n      ADDRESS MODAL PART START\n  ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_CreateCustomerAddressComponent, {
     props: $data.address
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n          ADDRESS MODAL PART END\n      ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
-    onClick: _cache[34] || (_cache[34] = function ($event) {
+    onClick: _cache[36] || (_cache[36] = function ($event) {
       return $options.openCanvas('pos-cart');
     }),
     type: "button",
     "class": "db-pos-cartBtn pos-v4-mobile-cart fixed md:hidden bottom-0 z-10 left-0 w-full h-14 py-4 text-center flex items-center justify-center shadow-xl-top gap-3 bg-primary"
-  }, [_cache[67] || (_cache[67] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, [_cache[73] || (_cache[73] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-bag-2 lab-font-size-13 text-white"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_128, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.totalItems()) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.items')) + " - " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_138, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.totalItems()) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.items')) + " - " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(
   // [BUG-A3 FIX] Include delivery_charge in mobile total (match cart panel)
   $options.currencyFormat($options.subtotal + $data.checkoutProps.form.delivery_charge - $options.posDiscount, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Panel commandes borne cash (ouvert depuis la barre du haut) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
     name: "slide-panel"
@@ -10636,10 +11824,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return [$data.showKioskCashPanel ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         key: 0,
         "class": "kiosk-cash-panel-overlay",
-        onClick: _cache[37] || (_cache[37] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        onClick: _cache[39] || (_cache[39] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $data.showKioskCashPanel = false;
         }, ["self"]))
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_129, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_130, [_cache[69] || (_cache[69] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", null, "🖥️ Commandes borne — à encaisser", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_131, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V4-ORDERS-ACCESS 2026-05-02] Accès direct depuis la caisse vers\n                  la liste filtrée historique (status / date / N° / client) sans passer\n                  par le menu admin latéral.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_router_link, {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_139, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_140, [_cache[75] || (_cache[75] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", null, "🖥️ Commandes borne — à encaisser", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_141, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V4-ORDERS-ACCESS 2026-05-02] Accès direct depuis la caisse vers\n                  la liste filtrée historique (status / date / N° / client) sans passer\n                  par le menu admin latéral.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_router_link, {
         to: {
           name: 'admin.pos-orders.list'
         },
@@ -10648,7 +11836,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         "data-testid": "kiosk-cash-panel-history"
       }, {
         "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-          return [_cache[68] || (_cache[68] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+          return [_cache[74] || (_cache[74] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
             "class": "fa-solid fa-list-ul",
             "aria-hidden": "true"
           }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.orders.history')), 1 /* TEXT */)];
@@ -10656,17 +11844,17 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         _: 1 /* STABLE */
       }, 8 /* PROPS */, ["title"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         "class": "kiosk-cash-panel-close",
-        onClick: _cache[35] || (_cache[35] = function ($event) {
+        onClick: _cache[37] || (_cache[37] = function ($event) {
           return $data.showKioskCashPanel = false;
         })
-      }, "✕")])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_132, [$data.kioskCashLoading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_133, _toConsumableArray(_cache[70] || (_cache[70] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      }, "✕")])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_142, [$data.kioskCashLoading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_143, _toConsumableArray(_cache[76] || (_cache[76] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-cash-spinner"
-      }, null, -1 /* CACHED */)])))) : $data.kioskCashOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_134, " Aucune commande borne en attente. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.kioskCashOrders, function (order) {
+      }, null, -1 /* CACHED */)])))) : $data.kioskCashOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_144, " Aucune commande borne en attente. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.kioskCashOrders, function (order) {
         var _order$total;
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
           key: order.id,
           "class": "kiosk-cash-order-card"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_135, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_136, "N° " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number || order.order_serial_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_137, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_145, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_146, "N° " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number || order.order_serial_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_147, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
           type: "button",
           "class": "kiosk-cash-expand-btn",
           "aria-expanded": $options.isKioskCashOrderExpanded(order.id) ? 'true' : 'false',
@@ -10678,12 +11866,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["fa-solid fa-chevron-down", {
             'kiosk-cash-expand-btn-rotated': $options.isKioskCashOrderExpanded(order.id)
           }])
-        }, null, 2 /* CLASS */)], 8 /* PROPS */, _hoisted_138), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_139, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskPrice((_order$total = order.total) !== null && _order$total !== void 0 ? _order$total : order.order_amount)), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_140, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)((order.order_items || []).slice(0, 3), function (item, i) {
+        }, null, 2 /* CLASS */)], 8 /* PROPS */, _hoisted_148), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_149, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskPrice((_order$total = order.total) !== null && _order$total !== void 0 ? _order$total : order.order_amount)), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_150, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)((order.order_items || []).slice(0, 3), function (item, i) {
           return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
             key: i,
             "class": "kiosk-cash-item-pill"
           }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "× " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name || item.name), 1 /* TEXT */);
-        }), 128 /* KEYED_FRAGMENT */)), (order.order_items || []).length > 3 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_141, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_items.length - 3) + " autres ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $options.isKioskCashOrderExpanded(order.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        }), 128 /* KEYED_FRAGMENT */)), (order.order_items || []).length > 3 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_151, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_items.length - 3) + " autres ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $options.isKioskCashOrderExpanded(order.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
           key: 0,
           "class": "kiosk-cash-order-details",
           "data-testid": "kiosk-cash-details-".concat(order.id)
@@ -10691,12 +11879,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
             key: item.id || "".concat(order.id, "-").concat(itemIdx),
             "class": "kiosk-cash-order-detail-item"
-          }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_143, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "× " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name || item.name), 1 /* TEXT */), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_144, [_cache[71] || (_cache[71] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Variations:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_variations.map(function (variation) {
+          }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_153, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "× " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name || item.name), 1 /* TEXT */), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_154, [_cache[77] || (_cache[77] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Variations:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_variations.map(function (variation) {
             return "".concat(variation.variation_name || 'Option', ": ").concat(variation.name);
-          }).join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_145, [_cache[72] || (_cache[72] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Extras:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_extras.map(function (extra) {
+          }).join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_155, [_cache[78] || (_cache[78] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Extras:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_extras.map(function (extra) {
             return extra.name;
-          }).join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), item.instruction ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_146, [_cache[73] || (_cache[73] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Instructions:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_147, [_cache[74] || (_cache[74] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Allergenes:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.allergens_snapshot.join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-        }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_142)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_148, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_149, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskTime(order.created_at)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V4-ORDERS-ACCESS 2026-05-02] Lien direct vers le détail de la\n                  commande (lignes, statut, ticket fiscal) — accessible sans quitter\n                  l'écran caisse pour vérification ou réimpression.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_router_link, {
+          }).join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), item.instruction ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_156, [_cache[79] || (_cache[79] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Instructions:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_157, [_cache[80] || (_cache[80] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Allergenes:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.allergens_snapshot.join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+        }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_152)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_158, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_159, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskTime(order.created_at)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V4-ORDERS-ACCESS 2026-05-02] Lien direct vers le détail de la\n                  commande (lignes, statut, ticket fiscal) — accessible sans quitter\n                  l'écran caisse pour vérification ou réimpression.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_router_link, {
           to: {
             name: 'admin.pos-orders.show',
             params: {
@@ -10708,7 +11896,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           "data-testid": "kiosk-cash-detail-".concat(order.id)
         }, {
           "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-            return [_cache[75] || (_cache[75] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+            return [_cache[81] || (_cache[81] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
               "class": "fa-solid fa-eye",
               "aria-hidden": "true"
             }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.orders.detail_short')), 1 /* TEXT */)];
@@ -10720,16 +11908,16 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           onClick: function onClick($event) {
             return $options.collectKioskCashOrder(order);
           }
-        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order._collecting ? '…' : '✓ Encaisser'), 9 /* TEXT, PROPS */, _hoisted_150), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order._collecting ? '…' : '✓ Encaisser'), 9 /* TEXT, PROPS */, _hoisted_160), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
           "class": "kiosk-cash-cancel-btn",
           disabled: order._collecting || order._canceling,
           onClick: function onClick($event) {
             return $options.cancelKioskCashOrder(order);
           }
-        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order._canceling ? '…' : 'Annuler'), 9 /* TEXT, PROPS */, _hoisted_151)])]);
-      }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_152, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order._canceling ? '…' : 'Annuler'), 9 /* TEXT, PROPS */, _hoisted_161)])]);
+      }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_162, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         "class": "kiosk-cash-refresh-btn",
-        onClick: _cache[36] || (_cache[36] = function () {
+        onClick: _cache[38] || (_cache[38] = function () {
           return $options.loadKioskCashOrders && $options.loadKioskCashOrders.apply($options, arguments);
         })
       }, "↻ Actualiser")])])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
@@ -12898,6 +14086,36 @@ module.exports = toNumber;
 
 /***/ }),
 
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=style&index=0&id=46d66467&scoped=true&lang=css":
+/*!************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=style&index=0&id=46d66467&scoped=true&lang=css ***!
+  \************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCashDrawerSessionDialog_vue_vue_type_style_index_0_id_46d66467_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosCashDrawerSessionDialog.vue?vue&type=style&index=0&id=46d66467&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=style&index=0&id=46d66467&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCashDrawerSessionDialog_vue_vue_type_style_index_0_id_46d66467_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCashDrawerSessionDialog_vue_vue_type_style_index_0_id_46d66467_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
 /***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/FloorplanComponent.vue?vue&type=style&index=0&id=75f08be4&scoped=true&lang=css":
 /*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/FloorplanComponent.vue?vue&type=style&index=0&id=75f08be4&scoped=true&lang=css ***!
@@ -13465,6 +14683,83 @@ var update = _style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMP
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_carousel_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue":
+/*!***************************************************************************!*\
+  !*** ./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue ***!
+  \***************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _PosCashDrawerSessionDialog_vue_vue_type_template_id_46d66467_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./PosCashDrawerSessionDialog.vue?vue&type=template&id=46d66467&scoped=true */ "./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=template&id=46d66467&scoped=true");
+/* harmony import */ var _PosCashDrawerSessionDialog_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./PosCashDrawerSessionDialog.vue?vue&type=script&lang=js */ "./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=script&lang=js");
+/* harmony import */ var _PosCashDrawerSessionDialog_vue_vue_type_style_index_0_id_46d66467_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./PosCashDrawerSessionDialog.vue?vue&type=style&index=0&id=46d66467&scoped=true&lang=css */ "./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=style&index=0&id=46d66467&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_PosCashDrawerSessionDialog_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_PosCashDrawerSessionDialog_vue_vue_type_template_id_46d66467_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-46d66467"],['__file',"resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=script&lang=js":
+/*!***************************************************************************************************!*\
+  !*** ./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=script&lang=js ***!
+  \***************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCashDrawerSessionDialog_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCashDrawerSessionDialog_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosCashDrawerSessionDialog.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=script&lang=js");
+ 
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=style&index=0&id=46d66467&scoped=true&lang=css":
+/*!***********************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=style&index=0&id=46d66467&scoped=true&lang=css ***!
+  \***********************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCashDrawerSessionDialog_vue_vue_type_style_index_0_id_46d66467_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosCashDrawerSessionDialog.vue?vue&type=style&index=0&id=46d66467&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=style&index=0&id=46d66467&scoped=true&lang=css");
+
+
+/***/ }),
+
+/***/ "./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=template&id=46d66467&scoped=true":
+/*!*********************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=template&id=46d66467&scoped=true ***!
+  \*********************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCashDrawerSessionDialog_vue_vue_type_template_id_46d66467_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCashDrawerSessionDialog_vue_vue_type_template_id_46d66467_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosCashDrawerSessionDialog.vue?vue&type=template&id=46d66467&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue?vue&type=template&id=46d66467&scoped=true");
+
 
 /***/ }),
 
@@ -15037,6 +16332,205 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ }),
 
+/***/ "./resources/js/composables/usePosOfflineState.js":
+/*!********************************************************!*\
+  !*** ./resources/js/composables/usePosOfflineState.js ***!
+  \********************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   usePosOfflineState: () => (/* binding */ usePosOfflineState)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+/* harmony import */ var _helpers_posOfflineQueue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../helpers/posOfflineQueue */ "./resources/js/helpers/posOfflineQueue.js");
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+/**
+ * usePosOfflineState — Vue 3 composable: POS offline status + queue (V1).
+ * ---------------------------------------------------------------------------
+ * Reactive refs the cashier UI binds to a VISIBLE "MODE DÉGRADÉ" banner
+ * (D1 UX decision) and a "n commande(s) en attente" counter.
+ *
+ * tryFlush(postFn) replays queued orders with a stable X-Idempotency-Key per
+ * entry. [Wave 5F SHIPPED 2026-05-17, commit 55edb83ba] PosComponent.vue
+ * integration is now live (see PosComponent.vue:1104 / :1148 / :1626) — the
+ * "deferred to V1.0.2" claim from Wave H3.6 was stale and corrected as part
+ * of the P1 V1 Cloud-Prep insights heal (2026-05-18).
+ */
+
+
+function usePosOfflineState() {
+  var initialOnline = typeof navigator !== 'undefined' ? navigator.onLine !== false : true;
+  var isOnline = (0,vue__WEBPACK_IMPORTED_MODULE_0__.ref)(initialOnline);
+  var queueDepth = (0,vue__WEBPACK_IMPORTED_MODULE_0__.ref)((0,_helpers_posOfflineQueue__WEBPACK_IMPORTED_MODULE_1__.getQueueDepth)());
+  var isFlushing = (0,vue__WEBPACK_IMPORTED_MODULE_0__.ref)(false);
+  var _boundPostFn = null;
+  var _onOnline = null;
+  var _onOffline = null;
+  function refresh() {
+    return _refresh.apply(this, arguments);
+  }
+  function _refresh() {
+    _refresh = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+      var pending;
+      return _regenerator().w(function (_context) {
+        while (1) switch (_context.n) {
+          case 0:
+            _context.n = 1;
+            return (0,_helpers_posOfflineQueue__WEBPACK_IMPORTED_MODULE_1__.listPending)();
+          case 1:
+            pending = _context.v;
+            queueDepth.value = pending.length;
+            return _context.a(2, pending);
+        }
+      }, _callee);
+    }));
+    return _refresh.apply(this, arguments);
+  }
+  function tryFlush(_x) {
+    return _tryFlush.apply(this, arguments);
+  } // Eager state listeners: isOnline must reflect navigator.onLine even when
+  // no postFn is bound yet (banner renders before tryFlush wiring).
+  function _tryFlush() {
+    _tryFlush = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(postFn) {
+      var synced, failed, _iterator, _step, entry, config, _t, _t2, _t3;
+      return _regenerator().w(function (_context2) {
+        while (1) switch (_context2.p = _context2.n) {
+          case 0:
+            if (!(typeof postFn !== 'function' || isFlushing.value)) {
+              _context2.n = 1;
+              break;
+            }
+            return _context2.a(2, {
+              synced: 0,
+              failed: 0,
+              skipped: true
+            });
+          case 1:
+            isFlushing.value = true;
+            synced = 0;
+            failed = 0;
+            _context2.p = 2;
+            _t = _createForOfIteratorHelper;
+            _context2.n = 3;
+            return (0,_helpers_posOfflineQueue__WEBPACK_IMPORTED_MODULE_1__.listPending)();
+          case 3:
+            _iterator = _t(_context2.v);
+            _context2.p = 4;
+            _iterator.s();
+          case 5:
+            if ((_step = _iterator.n()).done) {
+              _context2.n = 12;
+              break;
+            }
+            entry = _step.value;
+            config = {
+              headers: {
+                'X-Idempotency-Key': entry.idempotencyKey
+              }
+            };
+            _context2.p = 6;
+            _context2.n = 7;
+            return postFn('admin/pos', entry.payload, config);
+          case 7:
+            _context2.n = 8;
+            return (0,_helpers_posOfflineQueue__WEBPACK_IMPORTED_MODULE_1__.markSynced)(entry.idempotencyKey);
+          case 8:
+            synced += 1;
+            _context2.n = 11;
+            break;
+          case 9:
+            _context2.p = 9;
+            _t2 = _context2.v;
+            _context2.n = 10;
+            return (0,_helpers_posOfflineQueue__WEBPACK_IMPORTED_MODULE_1__.markFailed)(entry.idempotencyKey, (_t2 === null || _t2 === void 0 ? void 0 : _t2.response) || _t2);
+          case 10:
+            failed += 1;
+          case 11:
+            _context2.n = 5;
+            break;
+          case 12:
+            _context2.n = 14;
+            break;
+          case 13:
+            _context2.p = 13;
+            _t3 = _context2.v;
+            _iterator.e(_t3);
+          case 14:
+            _context2.p = 14;
+            _iterator.f();
+            return _context2.f(14);
+          case 15:
+            _context2.n = 16;
+            return refresh();
+          case 16:
+            _context2.p = 16;
+            isFlushing.value = false;
+            return _context2.f(16);
+          case 17:
+            return _context2.a(2, {
+              synced: synced,
+              failed: failed,
+              skipped: false
+            });
+        }
+      }, _callee2, null, [[6, 9], [4, 13, 14, 15], [2,, 16, 17]]);
+    }));
+    return _tryFlush.apply(this, arguments);
+  }
+  if (typeof window !== 'undefined') {
+    _onOnline = function _onOnline() {
+      isOnline.value = true;
+      if (typeof _boundPostFn === 'function') {
+        Promise.resolve().then(function () {
+          return tryFlush(_boundPostFn);
+        })["catch"](function () {});
+      }
+    };
+    _onOffline = function _onOffline() {
+      isOnline.value = false;
+    };
+    window.addEventListener('online', _onOnline);
+    window.addEventListener('offline', _onOffline);
+  }
+  function bindAutoFlush(postFn) {
+    _boundPostFn = typeof postFn === 'function' ? postFn : null;
+  }
+  function unbindAutoFlush() {
+    if (typeof window === 'undefined') return;
+    if (_onOnline) window.removeEventListener('online', _onOnline);
+    if (_onOffline) window.removeEventListener('offline', _onOffline);
+    _onOnline = null;
+    _onOffline = null;
+    _boundPostFn = null;
+  }
+
+  // Only register dispose hook inside a Vue effect scope (component setup).
+  // Outside (e.g. unit tests), caller invokes unbindAutoFlush() manually.
+  if ((0,vue__WEBPACK_IMPORTED_MODULE_0__.getCurrentScope)()) (0,vue__WEBPACK_IMPORTED_MODULE_0__.onScopeDispose)(function () {
+    return unbindAutoFlush();
+  });
+  return {
+    isOnline: isOnline,
+    queueDepth: queueDepth,
+    isFlushing: isFlushing,
+    enqueueOrder: _helpers_posOfflineQueue__WEBPACK_IMPORTED_MODULE_1__.enqueueOrder,
+    refresh: refresh,
+    tryFlush: tryFlush,
+    bindAutoFlush: bindAutoFlush,
+    unbindAutoFlush: unbindAutoFlush
+  };
+}
+
+/***/ }),
+
 /***/ "./resources/js/enums/modules/discountTypeEnum.js":
 /*!********************************************************!*\
   !*** ./resources/js/enums/modules/discountTypeEnum.js ***!
@@ -15144,6 +16638,583 @@ function createFKeyShortcuts(onShortcut) {
   return function () {
     return window.removeEventListener('keydown', handler);
   };
+}
+
+/***/ }),
+
+/***/ "./resources/js/helpers/posOfflineQueue.js":
+/*!*************************************************!*\
+  !*** ./resources/js/helpers/posOfflineQueue.js ***!
+  \*************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   MAX_ENTRIES: () => (/* binding */ MAX_ENTRIES),
+/* harmony export */   TTL_MS: () => (/* binding */ TTL_MS),
+/* harmony export */   __unsafeGetCacheForTests: () => (/* binding */ __unsafeGetCacheForTests),
+/* harmony export */   clearQueue: () => (/* binding */ clearQueue),
+/* harmony export */   enqueueOrder: () => (/* binding */ enqueueOrder),
+/* harmony export */   getQueueDepth: () => (/* binding */ getQueueDepth),
+/* harmony export */   listPending: () => (/* binding */ listPending),
+/* harmony export */   markFailed: () => (/* binding */ markFailed),
+/* harmony export */   markSynced: () => (/* binding */ markSynced),
+/* harmony export */   purgeExpired: () => (/* binding */ purgeExpired)
+/* harmony export */ });
+/* harmony import */ var _posOfflineQueueDb__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./posOfflineQueueDb */ "./resources/js/helpers/posOfflineQueueDb.js");
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+/**
+ * posOfflineQueue — POS Caisse offline replay queue (V1, server-authoritative).
+ * ---------------------------------------------------------------------------
+ * Path A: queue pending orders in IndexedDB while network is down, replay on
+ * reconnect via tryFlush() with stable X-Idempotency-Key per entry. Server
+ * decides accept (2xx → markSynced) or conflict (409 → markFailed, retained).
+ *
+ * NF525 (CLAUDE.md §8): NEVER allocate fiscal_sequence_no locally — server is
+ * SSOT. We queue only item_id / quantity / option_ids / total_cents. Server
+ * allocates fiscal_sequence_no at replay time (cash-only or pre-paid).
+ *
+ * PCI-DSS + PII: PAN / CVV / customer_email / customer_phone STRIPPED on enqueue.
+ * Frozen-zone-safe: no touch to pos-wizard.js / admin-pos-v4.blade.php.
+ *
+ * [Wave 5F SHIPPED 2026-05-17, commit 55edb83ba] PosComponent.vue integration
+ * is now live (see PosComponent.vue:1104 / :1148 / :1626). The V1.0.2 deferral
+ * note from the original Wave H3.6 was superseded by Wave 5F; this header was
+ * lying about the shipped status until the P1 V1 Cloud-Prep insights heal
+ * (2026-05-18). The helper + the Vue integration both ship in V1.0.1.
+ */
+
+var QUEUE_KEY = 'pos:offline-queue:v1';
+var TTL_MS = 30 * 60 * 1000; // 30 min — owner D1 decision
+var MAX_ENTRIES = 50; // reject-new at cap (preserve earliest cash sales)
+
+var FORBIDDEN_FIELDS = ['card_number', 'cvv', 'pan', 'customer_email', 'customer_phone', 'cardholder_name'];
+var _cache = [];
+var _bootPromise = null;
+function uuidv4() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    var r = Math.random() * 16 | 0;
+    var v = c === 'x' ? r : r & 0x3 | 0x8;
+    return v.toString(16);
+  });
+}
+function sanitize(payload) {
+  var clean = _objectSpread({}, payload || {});
+  FORBIDDEN_FIELDS.forEach(function (k) {
+    delete clean[k];
+  });
+  return clean;
+}
+function ensureLoaded() {
+  if (!_bootPromise) {
+    _bootPromise = (0,_posOfflineQueueDb__WEBPACK_IMPORTED_MODULE_0__.getQueueEntry)(QUEUE_KEY).then(function (stored) {
+      if (Array.isArray(stored)) _cache = stored;
+      return _cache;
+    })["catch"](function () {
+      return _cache;
+    });
+  }
+  return _bootPromise;
+}
+function persist() {
+  return _persist.apply(this, arguments);
+}
+/** Enqueue an order. Returns the entry, or null when capacity reached (reject-new). */
+function _persist() {
+  _persist = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+    var _t;
+    return _regenerator().w(function (_context) {
+      while (1) switch (_context.p = _context.n) {
+        case 0:
+          _context.p = 0;
+          _context.n = 1;
+          return (0,_posOfflineQueueDb__WEBPACK_IMPORTED_MODULE_0__.setQueueEntry)(QUEUE_KEY, _cache.map(function (e) {
+            return _objectSpread({}, e);
+          }));
+        case 1:
+          _context.n = 3;
+          break;
+        case 2:
+          _context.p = 2;
+          _t = _context.v;
+        case 3:
+          return _context.a(2);
+      }
+    }, _callee, null, [[0, 2]]);
+  }));
+  return _persist.apply(this, arguments);
+}
+function enqueueOrder(_x) {
+  return _enqueueOrder.apply(this, arguments);
+}
+function _enqueueOrder() {
+  _enqueueOrder = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(rawPayload) {
+    var entry;
+    return _regenerator().w(function (_context2) {
+      while (1) switch (_context2.n) {
+        case 0:
+          _context2.n = 1;
+          return ensureLoaded();
+        case 1:
+          if (!(_cache.length >= MAX_ENTRIES)) {
+            _context2.n = 2;
+            break;
+          }
+          return _context2.a(2, null);
+        case 2:
+          entry = {
+            idempotencyKey: uuidv4(),
+            payload: sanitize(rawPayload),
+            savedAt: Date.now(),
+            attempts: 1,
+            lastFailedAt: null
+          };
+          _cache.push(entry);
+          _context2.n = 3;
+          return persist();
+        case 3:
+          return _context2.a(2, _objectSpread({}, entry));
+      }
+    }, _callee2);
+  }));
+  return _enqueueOrder.apply(this, arguments);
+}
+function listPending() {
+  return _listPending.apply(this, arguments);
+}
+function _listPending() {
+  _listPending = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+    return _regenerator().w(function (_context3) {
+      while (1) switch (_context3.n) {
+        case 0:
+          _context3.n = 1;
+          return ensureLoaded();
+        case 1:
+          return _context3.a(2, _cache.map(function (e) {
+            return _objectSpread({}, e);
+          }));
+      }
+    }, _callee3);
+  }));
+  return _listPending.apply(this, arguments);
+}
+function getQueueDepth() {
+  return _cache.length;
+}
+function markSynced(_x2) {
+  return _markSynced.apply(this, arguments);
+}
+
+/** Bump attempts + lastFailedAt. Entry retained until markSynced() or purgeExpired(). */
+function _markSynced() {
+  _markSynced = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4(idempotencyKey) {
+    var before;
+    return _regenerator().w(function (_context4) {
+      while (1) switch (_context4.n) {
+        case 0:
+          _context4.n = 1;
+          return ensureLoaded();
+        case 1:
+          before = _cache.length;
+          _cache = _cache.filter(function (e) {
+            return e.idempotencyKey !== idempotencyKey;
+          });
+          if (!(_cache.length !== before)) {
+            _context4.n = 2;
+            break;
+          }
+          _context4.n = 2;
+          return persist();
+        case 2:
+          return _context4.a(2, _cache.length !== before);
+      }
+    }, _callee4);
+  }));
+  return _markSynced.apply(this, arguments);
+}
+function markFailed(_x3) {
+  return _markFailed.apply(this, arguments);
+}
+function _markFailed() {
+  _markFailed = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5(idempotencyKey) {
+    var _error,
+      touched,
+      _args5 = arguments;
+    return _regenerator().w(function (_context5) {
+      while (1) switch (_context5.n) {
+        case 0:
+          _error = _args5.length > 1 && _args5[1] !== undefined ? _args5[1] : null;
+          _context5.n = 1;
+          return ensureLoaded();
+        case 1:
+          touched = false;
+          _cache = _cache.map(function (e) {
+            if (e.idempotencyKey !== idempotencyKey) return e;
+            touched = true;
+            return _objectSpread(_objectSpread({}, e), {}, {
+              attempts: e.attempts + 1,
+              lastFailedAt: Date.now()
+            });
+          });
+          if (!touched) {
+            _context5.n = 2;
+            break;
+          }
+          _context5.n = 2;
+          return persist();
+        case 2:
+          return _context5.a(2, touched);
+      }
+    }, _callee5);
+  }));
+  return _markFailed.apply(this, arguments);
+}
+function purgeExpired() {
+  return _purgeExpired.apply(this, arguments);
+}
+function _purgeExpired() {
+  _purgeExpired = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
+    var cutoff, before, dropped;
+    return _regenerator().w(function (_context6) {
+      while (1) switch (_context6.n) {
+        case 0:
+          _context6.n = 1;
+          return ensureLoaded();
+        case 1:
+          cutoff = Date.now() - TTL_MS;
+          before = _cache.length;
+          _cache = _cache.filter(function (e) {
+            return e.savedAt >= cutoff;
+          });
+          dropped = before - _cache.length;
+          if (!(dropped > 0)) {
+            _context6.n = 2;
+            break;
+          }
+          _context6.n = 2;
+          return persist();
+        case 2:
+          return _context6.a(2, dropped);
+      }
+    }, _callee6);
+  }));
+  return _purgeExpired.apply(this, arguments);
+}
+function clearQueue() {
+  return _clearQueue.apply(this, arguments);
+}
+function _clearQueue() {
+  _clearQueue = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7() {
+    var _t2;
+    return _regenerator().w(function (_context7) {
+      while (1) switch (_context7.p = _context7.n) {
+        case 0:
+          _cache = [];
+          _bootPromise = null;
+          _context7.p = 1;
+          _context7.n = 2;
+          return (0,_posOfflineQueueDb__WEBPACK_IMPORTED_MODULE_0__.clearQueueEntries)();
+        case 2:
+          _context7.n = 4;
+          break;
+        case 3:
+          _context7.p = 3;
+          _t2 = _context7.v;
+        case 4:
+          return _context7.a(2);
+      }
+    }, _callee7, null, [[1, 3]]);
+  }));
+  return _clearQueue.apply(this, arguments);
+}
+function __unsafeGetCacheForTests() {
+  return _cache.map(function (e) {
+    return _objectSpread({}, e);
+  });
+}
+
+/***/ }),
+
+/***/ "./resources/js/helpers/posOfflineQueueDb.js":
+/*!***************************************************!*\
+  !*** ./resources/js/helpers/posOfflineQueueDb.js ***!
+  \***************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   clearQueueEntries: () => (/* binding */ clearQueueEntries),
+/* harmony export */   delQueueEntry: () => (/* binding */ delQueueEntry),
+/* harmony export */   getQueueEntry: () => (/* binding */ getQueueEntry),
+/* harmony export */   isIndexedDbReady: () => (/* binding */ isIndexedDbReady),
+/* harmony export */   setQueueEntry: () => (/* binding */ setQueueEntry)
+/* harmony export */ });
+/* harmony import */ var idb_keyval__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! idb-keyval */ "./node_modules/idb-keyval/dist/index.js");
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+/**
+ * posOfflineQueueDb — IndexedDB wrapper for POS offline queue.
+ * Mirrors kioskOfflineQueueDb pattern with a distinct DB name so kiosk + POS
+ * queues never collide on a shared device. Falls back to localStorage if
+ * IndexedDB is unavailable (private browsing, Safari ITP). Pure helper, no
+ * Vue/Vuex dependency — frozen-zone-safe.
+ */
+
+var DB_NAME = 'foodking-pos-offline-queue';
+var STORE_NAME = 'queue';
+var OP_TIMEOUT_MS = 5000;
+var LS_PREFIX = '__pos_idb_fallback__:';
+var idbStore = typeof idb_keyval__WEBPACK_IMPORTED_MODULE_0__.createStore === 'function' ? (0,idb_keyval__WEBPACK_IMPORTED_MODULE_0__.createStore)(DB_NAME, STORE_NAME) : null;
+function canUseIndexedDb() {
+  return !!idbStore && typeof indexedDB !== 'undefined';
+}
+function hasLocalStorage() {
+  try {
+    return typeof window !== 'undefined' && !!window.localStorage;
+  } catch (_) {
+    return false;
+  }
+}
+function withTimeout(promise, label) {
+  return Promise.race([promise, new Promise(function (_, reject) {
+    setTimeout(function () {
+      return reject(new Error("".concat(label, " timed out")));
+    }, OP_TIMEOUT_MS);
+  })]);
+}
+function shouldFallback(error) {
+  var msg = String((error === null || error === void 0 ? void 0 : error.message) || '');
+  return !canUseIndexedDb() || /indexeddb|not implemented|timed out/i.test(msg);
+}
+function fbGet(_x) {
+  return _fbGet.apply(this, arguments);
+}
+function _fbGet() {
+  _fbGet = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(key) {
+    var raw, _t;
+    return _regenerator().w(function (_context) {
+      while (1) switch (_context.p = _context.n) {
+        case 0:
+          if (hasLocalStorage()) {
+            _context.n = 1;
+            break;
+          }
+          return _context.a(2, null);
+        case 1:
+          _context.p = 1;
+          raw = window.localStorage.getItem("".concat(LS_PREFIX).concat(key));
+          return _context.a(2, raw ? JSON.parse(raw) : null);
+        case 2:
+          _context.p = 2;
+          _t = _context.v;
+          return _context.a(2, null);
+      }
+    }, _callee, null, [[1, 2]]);
+  }));
+  return _fbGet.apply(this, arguments);
+}
+function fbSet(_x2, _x3) {
+  return _fbSet.apply(this, arguments);
+}
+function _fbSet() {
+  _fbSet = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2(key, value) {
+    return _regenerator().w(function (_context2) {
+      while (1) switch (_context2.n) {
+        case 0:
+          if (hasLocalStorage()) {
+            _context2.n = 1;
+            break;
+          }
+          return _context2.a(2, value);
+        case 1:
+          window.localStorage.setItem("".concat(LS_PREFIX).concat(key), JSON.stringify(value));
+          return _context2.a(2, value);
+      }
+    }, _callee2);
+  }));
+  return _fbSet.apply(this, arguments);
+}
+function fbDel(_x4) {
+  return _fbDel.apply(this, arguments);
+}
+function _fbDel() {
+  _fbDel = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3(key) {
+    return _regenerator().w(function (_context3) {
+      while (1) switch (_context3.n) {
+        case 0:
+          if (hasLocalStorage()) {
+            _context3.n = 1;
+            break;
+          }
+          return _context3.a(2);
+        case 1:
+          window.localStorage.removeItem("".concat(LS_PREFIX).concat(key));
+        case 2:
+          return _context3.a(2);
+      }
+    }, _callee3);
+  }));
+  return _fbDel.apply(this, arguments);
+}
+function fbClear() {
+  return _fbClear.apply(this, arguments);
+}
+function _fbClear() {
+  _fbClear = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+    return _regenerator().w(function (_context4) {
+      while (1) switch (_context4.n) {
+        case 0:
+          if (hasLocalStorage()) {
+            _context4.n = 1;
+            break;
+          }
+          return _context4.a(2);
+        case 1:
+          Object.keys(window.localStorage).filter(function (k) {
+            return k.startsWith(LS_PREFIX);
+          }).forEach(function (k) {
+            return window.localStorage.removeItem(k);
+          });
+        case 2:
+          return _context4.a(2);
+      }
+    }, _callee4);
+  }));
+  return _fbClear.apply(this, arguments);
+}
+function run(_x5, _x6) {
+  return _run.apply(this, arguments);
+}
+function _run() {
+  _run = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5(op, fallback) {
+    var _t2;
+    return _regenerator().w(function (_context5) {
+      while (1) switch (_context5.p = _context5.n) {
+        case 0:
+          if (canUseIndexedDb()) {
+            _context5.n = 1;
+            break;
+          }
+          return _context5.a(2, fallback());
+        case 1:
+          _context5.p = 1;
+          _context5.n = 2;
+          return op();
+        case 2:
+          return _context5.a(2, _context5.v);
+        case 3:
+          _context5.p = 3;
+          _t2 = _context5.v;
+          if (shouldFallback(_t2)) {
+            _context5.n = 4;
+            break;
+          }
+          throw _t2;
+        case 4:
+          return _context5.a(2, fallback());
+      }
+    }, _callee5, null, [[1, 3]]);
+  }));
+  return _run.apply(this, arguments);
+}
+function getQueueEntry(_x7) {
+  return _getQueueEntry.apply(this, arguments);
+}
+function _getQueueEntry() {
+  _getQueueEntry = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6(key) {
+    return _regenerator().w(function (_context6) {
+      while (1) switch (_context6.n) {
+        case 0:
+          return _context6.a(2, run(function () {
+            return withTimeout((0,idb_keyval__WEBPACK_IMPORTED_MODULE_0__.get)(key, idbStore), "pos-idb:get:".concat(key));
+          }, function () {
+            return fbGet(key);
+          }));
+      }
+    }, _callee6);
+  }));
+  return _getQueueEntry.apply(this, arguments);
+}
+function setQueueEntry(_x8, _x9) {
+  return _setQueueEntry.apply(this, arguments);
+}
+function _setQueueEntry() {
+  _setQueueEntry = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee8(key, value) {
+    return _regenerator().w(function (_context8) {
+      while (1) switch (_context8.n) {
+        case 0:
+          return _context8.a(2, run(/*#__PURE__*/_asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7() {
+            return _regenerator().w(function (_context7) {
+              while (1) switch (_context7.n) {
+                case 0:
+                  _context7.n = 1;
+                  return withTimeout((0,idb_keyval__WEBPACK_IMPORTED_MODULE_0__.set)(key, value, idbStore), "pos-idb:set:".concat(key));
+                case 1:
+                  return _context7.a(2, value);
+              }
+            }, _callee7);
+          })), function () {
+            return fbSet(key, value);
+          }));
+      }
+    }, _callee8);
+  }));
+  return _setQueueEntry.apply(this, arguments);
+}
+function delQueueEntry(_x0) {
+  return _delQueueEntry.apply(this, arguments);
+}
+function _delQueueEntry() {
+  _delQueueEntry = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee9(key) {
+    return _regenerator().w(function (_context9) {
+      while (1) switch (_context9.n) {
+        case 0:
+          return _context9.a(2, run(function () {
+            return withTimeout((0,idb_keyval__WEBPACK_IMPORTED_MODULE_0__.del)(key, idbStore), "pos-idb:del:".concat(key));
+          }, function () {
+            return fbDel(key);
+          }));
+      }
+    }, _callee9);
+  }));
+  return _delQueueEntry.apply(this, arguments);
+}
+function clearQueueEntries() {
+  return _clearQueueEntries.apply(this, arguments);
+}
+function _clearQueueEntries() {
+  _clearQueueEntries = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee0() {
+    return _regenerator().w(function (_context0) {
+      while (1) switch (_context0.n) {
+        case 0:
+          return _context0.a(2, run(function () {
+            return withTimeout((0,idb_keyval__WEBPACK_IMPORTED_MODULE_0__.clear)(idbStore), 'pos-idb:clear');
+          }, function () {
+            return fbClear();
+          }));
+      }
+    }, _callee0);
+  }));
+  return _clearQueueEntries.apply(this, arguments);
+}
+function isIndexedDbReady() {
+  return canUseIndexedDb();
 }
 
 /***/ }),
@@ -15744,13 +17815,25 @@ function serializeTranches(tranches) {
     var _t$note;
     var cents = toCents(t.amount);
     var tenderedCents = isCashMode(t.mode) ? toCents(t.tendered) : null;
-    return {
+    var out = {
       mode: Number(t.mode),
       amount: fromCents(cents),
       tendered: tenderedCents != null ? fromCents(tenderedCents) : null,
       change: isCashMode(t.mode) ? fromCents(computeChangeCents(t)) : 0,
       note: (_t$note = t.note) !== null && _t$note !== void 0 ? _t$note : null
     };
+    // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Propagate terminal_id for
+    // CARD tranches. Backend PosOrderRequest:138 +
+    // SplitPaymentService:F-SPLIT-PHANTOM-CARD-001 require this on every
+    // CARD tranche; omitting it returns 422 with "A valid payment terminal
+    // is required for every CARD tranche."
+    if (Number(t.mode) === 2 && t.terminal_id !== undefined && t.terminal_id !== null) {
+      var tid = Number(t.terminal_id);
+      if (Number.isFinite(tid) && tid > 0) {
+        out.terminal_id = tid;
+      }
+    }
+    return out;
   });
 }
 

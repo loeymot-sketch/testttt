@@ -6,7 +6,7 @@
     "severity": "OK",
     "note": "Page rendered. Card=false, Cash=false, TR=true (kiosk redirect to cart if cart empty is normal)",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle4/01-payment-screen-rendered.png",
-    "ts": "2026-05-06T23:57:40.077Z"
+    "ts": "2026-05-16T17:02:09.370Z"
   },
   {
     "step": "K4-02",
@@ -15,7 +15,7 @@
     "severity": "OK",
     "note": "Order POST idempotency=true, payment-confirm idempotency=true",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle4/02-idempotency-routes-wired.png",
-    "ts": "2026-05-06T23:57:41.009Z"
+    "ts": "2026-05-16T17:02:09.923Z"
   },
   {
     "step": "K4-03",
@@ -24,7 +24,7 @@
     "severity": "OK",
     "note": "GET /api/admin/pos/counter-collect/pending status=401",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle4/03-pos-counter-collect-panel-view.png",
-    "ts": "2026-05-06T23:57:49.463Z"
+    "ts": "2026-05-16T17:02:18.714Z"
   },
   {
     "step": "K4-04",
@@ -33,7 +33,7 @@
     "severity": "OK",
     "note": "frontend/order route in required_routes=true, payment-confirm=true",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle4/04-sentinel-idempotency-config-configured.png",
-    "ts": "2026-05-06T23:57:50.174Z"
+    "ts": "2026-05-16T17:02:19.311Z"
   },
   {
     "step": "K4-05",
@@ -42,6 +42,6 @@
     "severity": "OK",
     "note": "CouponService.validateCouponForOrder calls isUsableNow=true, branch+surface signature=true",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle4/05-kr2-coupon-svc-wiring-ok.png",
-    "ts": "2026-05-06T23:57:50.841Z"
+    "ts": "2026-05-16T17:02:19.836Z"
   }
 ]

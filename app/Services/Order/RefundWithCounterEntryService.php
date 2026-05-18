@@ -4,6 +4,7 @@ namespace App\Services\Order;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Events\RefundCreated;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderPayment;
@@ -165,10 +166,19 @@ class RefundWithCounterEntryService
 
             foreach ($parentPayments as $payment) {
                 /** @var OrderPayment $payment */
+                // [Sprint H2 P1-Z7-01 2026-05-17] Carry forward terminal_id from the
+                // parent payment being mirrored. Semantically the refund debits fees
+                // through the SAME physical TPE that processed the original sale,
+                // so Z-report TPE breakdown stays balanced (parent +N, mirror -N
+                // on the same terminal bucket). NULL parent_id stays NULL on the
+                // mirror — preserves legacy / COUNTER_DEFERRED contract.
                 OrderPayment::create([
                     'order_id'      => $mirror->id,
                     'branch_id'     => $branchId,
                     'mode'          => (int) $payment->mode,
+                    'terminal_id'   => $payment->terminal_id !== null
+                        ? (int) $payment->terminal_id
+                        : null,
                     'amount'        => -1 * (float) ($payment->amount ?? 0),
                     'tendered'      => $payment->tendered !== null
                         ? -1 * (float) $payment->tendered
@@ -210,6 +220,13 @@ class RefundWithCounterEntryService
             } catch (\Throwable) {
                 // best-effort log
             }
+
+            // [REFUND-EVENT-WIRE] Fire RefundCreated for stock + availability release.
+            // Pass PARENT (positive qty) — listeners iterate $order->orderItems and use
+            // qty as a positive release amount; the mirror order has NEGATED qty which
+            // would no-op / corrupt the released_qty ledger. DispatchableAfterCommit
+            // ensures the event fires only after this DB::transaction commits.
+            RefundCreated::dispatch($parent);
 
             return $mirror->refresh();
         });

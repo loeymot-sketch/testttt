@@ -42,7 +42,7 @@
       <transition-group name="oss-pop" tag="ul"
         class="[&_li]:mb-6 [&_li]:text-[40px] [&_li]:font-semibold [&_li]:leading-10 w-full text-center text-[#1F1F39] mb-20">
         <li v-for="item in preparedItems" :key="item.id"
-          class="text-[#2AC769] font-extrabold"
+          class="text-[#0E7C3A] font-extrabold"
           :class="newReadyIds.has(item.id) ? 'oss-new-ready' : ''">
           {{ item.queue_number ? 'N°' + item.queue_number : item.token }}
         </li>
@@ -53,6 +53,13 @@
 </template>
 
 <script>
+// [RED-team R4 V1.0.2 2026-05-17] wakeLock screen for TV wall surfaces.
+// Customer TV idles long between order events; without `navigator.wakeLock.request('screen')`
+// the OS screen-saver sleeps the display, making the green flash + chime invisible/inaudible
+// when a new order moves to PREPARED. Acquire on mount, re-acquire on `visibilitychange`
+// (browsers auto-release on tab switch / OS lock), release on unmount. Graceful degrade on
+// browsers without API (Safari iOS <16.4); feature-flag `window.foodkingConfig.ossWakeLockEnabled`
+// (default true). No external deps — native browser API.
 import LoadingContentComponent from "../components/LoadingContentComponent";
 import orderStatusEnum from "../../../enums/modules/orderStatusEnum";
 import alertService from "../../../services/alertService";
@@ -82,6 +89,9 @@ export default {
       // session) because Chrome blocks AudioContext until a user gesture.
       _audioCtx: null,
       _audioInitListener: null,
+      // [RED-team R4 V1.0.2 2026-05-17] wakeLock sentinel + visibility handler refs
+      _wakeLockSentinel: null,
+      _onVisibilityChange: null,
     };
   },
   computed: {},
@@ -101,10 +111,31 @@ export default {
         if (Ctor) this._audioCtx = new Ctor();
       } catch (_) { this._audioCtx = null; }
     };
-    try {
-      window.addEventListener('pointerdown', this._audioInitListener, { once: true, passive: true });
-      window.addEventListener('keydown', this._audioInitListener, { once: true, passive: true });
-    } catch (_) { /* never block mount on listener wiring */ }
+    // [GOAL Round 2 Impl C — P0-OSS-01 2026-05-18] Skip audio-unlock listener
+    // wiring on the public customer wall. A public TV wall (`authBranchId() === 0`)
+    // never receives a `pointerdown` / `keydown` gesture, so the `{ once: true }`
+    // listeners would sit forever and `_playReadySound()` would silently no-op
+    // (Agent 4 finding `[OSS-B-02]` — chime dead on the only surface that
+    // needs it). Mirror the `subscribeEcho()` early-return idiom (line ~233:
+    // `if (branchId <= 0) return`). Operator-attended surfaces (admin /
+    // branch staff sessions) keep the original lazy-init pattern: the
+    // operator clicks Vue routes on mount, which unlocks AudioContext and
+    // allows the 3-tone chime to play on PREPARED transitions. Visual
+    // notification (`.oss-ready-flash` + `.oss-new-ready` bounce) remains the
+    // sole feedback channel on the public wall and was attested working by
+    // Agent 4 §3 — no degradation.
+    if (this.authBranchId() > 0) {
+      try {
+        window.addEventListener('pointerdown', this._audioInitListener, { once: true, passive: true });
+        window.addEventListener('keydown', this._audioInitListener, { once: true, passive: true });
+      } catch (_) { /* never block mount on listener wiring */ }
+    }
+    // [RED-team R4 V1.0.2 2026-05-17] Acquire screen wakeLock + re-acquire on visibilitychange.
+    this._acquireWakeLock();
+    this._onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') this._acquireWakeLock();
+    };
+    try { document.addEventListener('visibilitychange', this._onVisibilityChange); } catch (_) { /* noop */ }
   },
   beforeUnmount() {
     window.removeEventListener('realtime-order-update', this.list);
@@ -123,6 +154,12 @@ export default {
     try { this._audioCtx?.close?.(); } catch (_) { /* noop */ }
     this._audioCtx = null;
     this._audioInitListener = null;
+    // [RED-team R4 V1.0.2 2026-05-17] Release wakeLock + drop visibility listener.
+    try {
+      if (this._onVisibilityChange) document.removeEventListener('visibilitychange', this._onVisibilityChange);
+    } catch (_) { /* noop */ }
+    this._onVisibilityChange = null;
+    this._releaseWakeLock();
   },
   methods: {
     authBranchId() {
@@ -144,6 +181,24 @@ export default {
       }
 
       return 0;
+    },
+    // [RED-team R4 V1.0.2 2026-05-17] Best-effort screen wakeLock for TV walls.
+    async _acquireWakeLock() {
+      const flag = window?.foodkingConfig?.ossWakeLockEnabled;
+      if (flag === false) return;
+      if (!('wakeLock' in navigator) || typeof navigator.wakeLock?.request !== 'function') return;
+      if (this._wakeLockSentinel) return;
+      try {
+        const sentinel = await navigator.wakeLock.request('screen');
+        this._wakeLockSentinel = sentinel;
+        try { sentinel.addEventListener?.('release', () => { this._wakeLockSentinel = null; }); } catch (_) { /* noop */ }
+      } catch (_) { this._wakeLockSentinel = null; /* graceful degrade */ }
+    },
+    _releaseWakeLock() {
+      const sentinel = this._wakeLockSentinel;
+      this._wakeLockSentinel = null;
+      if (!sentinel) return;
+      try { sentinel.release?.(); } catch (_) { /* noop */ }
     },
     _bindWsService() {
       const ws = window._wsService;
@@ -251,6 +306,15 @@ export default {
     },
     // Splash-inspired: 3-tone ascending chime when order is ready
     _playReadySound() {
+      // [GOAL Round 2 Impl C — P0-OSS-01 2026-05-18] Public-wall gate.
+      // `authBranchId() <= 0` indicates the unauthenticated customer wall
+      // (Vuex `authStatus=false` branch in `orderStatusScreenOrder.js`).
+      // That surface has no operator and no audio-unlock gesture, so the
+      // chime is structurally inaudible — early-return graceful skip
+      // (visual `.oss-ready-flash` continues to fire from `_markNewReady()`,
+      // which is the documented `[OSS-B-02]` heal path Option C). Operator-
+      // attended surfaces (`authBranchId() > 0`) keep full chime behaviour.
+      if (this.authBranchId() <= 0) return;
       // [iter15-mega-fix C-034 round-7 2026-05-10] Lazy-init pattern: bail out
       // silently if the user has not yet interacted with the screen. We do
       // NOT create a fresh AudioContext per call (that was flooding the

@@ -19,6 +19,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Smartisan\Settings\Facades\Settings;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
 /**
@@ -35,6 +36,7 @@ class PosOrderBL1WireInTest extends TestCase
 {
     use RefreshDatabase;
     use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected Branch $branch;
     protected User $admin;
@@ -93,6 +95,8 @@ class PosOrderBL1WireInTest extends TestCase
             'branch_id' => $this->branch->id,
         ]);
         $this->admin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($this->admin, $this->branch);
     }
 
     public function test_pos_order_receives_fiscal_sequence_no_monotonic_per_branch(): void
@@ -128,6 +132,8 @@ class PosOrderBL1WireInTest extends TestCase
 
         $otherAdmin = \Database\Factories\UserFactory::new()->create(['branch_id' => $otherBranch->id]);
         $otherAdmin->assignRole('Admin');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($otherAdmin, $otherBranch);
 
         $ownA = $this->placePosOrder();
         $ownB = $this->placePosOrder();

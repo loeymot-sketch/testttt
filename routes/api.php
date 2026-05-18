@@ -765,7 +765,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             } catch (\Exception $exception) {
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }
-        })->middleware('throttle:pos-order-update')->name('counter-collect.confirm');
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.confirm');
         Route::post('/counter-collect/{order}/cancel', function (\App\Models\Order $order, \Illuminate\Http\Request $request) {
             abort_unless(auth()->user()?->can('pos'), 403);
 
@@ -785,7 +785,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             } catch (\Exception $exception) {
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }
-        })->middleware('throttle:pos-order-update')->name('counter-collect.cancel');
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.cancel');
         Route::post('/collect-kiosk-cash/{order}', function (\App\Models\Order $order) {
             abort_unless(auth()->user()?->can('pos'), 403);
 
@@ -796,8 +796,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             } catch (\Exception $exception) {
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }
-        })->middleware('throttle:pos-order-update')->name('collect-kiosk-cash');
-        Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->name('orders.print-receipt');
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('collect-kiosk-cash');
+        Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->middleware('idempotency')->name('orders.print-receipt');
         Route::prefix('parked-orders')->name('parked-orders.')->group(function () {
             Route::get('/', [ParkedOrderController::class, 'index'])->name('index');
             Route::post('/', [ParkedOrderController::class, 'store'])->name('store');
@@ -810,16 +810,18 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::post('/{tableId}/assign', [FloorplanController::class, 'assign'])->name('assign');
             Route::post('/{tableId}/release', [FloorplanController::class, 'release'])->name('release');
         });
-        Route::post('/cash-drawer/open', [CashDrawerController::class, 'open'])->name('cash-drawer.open');
+        Route::post('/cash-drawer/open', [CashDrawerController::class, 'open'])->middleware('idempotency')->name('cash-drawer.open');
         // [AUDIT-F-003] Cash drawer SESSION management — distinct du hardware open above.
         Route::prefix('cash-drawer/sessions')->name('cash-drawer.sessions.')->group(function () {
             Route::get('/current', [CashDrawerSessionController::class, 'current'])->name('current');
-            Route::post('/open', [CashDrawerSessionController::class, 'open'])->name('open');
+            Route::post('/open', [CashDrawerSessionController::class, 'open'])->middleware('idempotency')->name('open');
             Route::post('/{session}/close', [CashDrawerSessionController::class, 'close'])
                 ->whereNumber('session')
+                ->middleware('idempotency')
                 ->name('close');
             Route::post('/{session}/reconcile', [CashDrawerSessionController::class, 'reconcile'])
                 ->whereNumber('session')
+                ->middleware('idempotency')
                 ->name('reconcile');
             Route::get('/{session}/movements', [CashDrawerSessionController::class, 'movements'])
                 ->whereNumber('session')
@@ -1096,11 +1098,14 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     // status — no PII) scoped to a branch resolved from `?branch_id=` or
     // the first active branch. Throttle 120/min/IP: customer screens poll
     // every 5–60s and a fleet of walls behind one NAT must not 429.
+    // [Sprint H5-B Z4-P2-05 2026-05-17] Throttle moved to named limiter
+    // `oss-public` (60/min/IP). See App\Providers\RouteServiceProvider for
+    // rationale (anti branch_id enumeration on unauthenticated wall feed).
     Route::get('/oss-order', [\App\Http\Controllers\Admin\OrderStatusScreenController::class, 'publicIndex'])
-        ->middleware('throttle:120,1')
+        ->middleware('throttle:oss-public')
         ->name('oss-order.public');
     Route::get('/oss-order/popular-items', [\App\Http\Controllers\Admin\OrderStatusScreenController::class, 'publicMostPopularItems'])
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:oss-public')
         ->name('oss-order.popular-items.public');
 
     Route::prefix('language')->name('language.')->group(function () {

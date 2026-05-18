@@ -4,8 +4,11 @@ namespace App\Console\Commands;
 
 use App\Jobs\DispatchDomainEventsJob;
 use App\Models\DomainEvent;
+use App\Services\Fiscal\AuditLogService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 class OutboxRetryFailedCommand extends Command
@@ -14,7 +17,41 @@ class OutboxRetryFailedCommand extends Command
 
     protected $description = 'Reset and retry failed domain events';
 
+    /**
+     * [Wave 3b SYNC-ADV3B-06 — P1 concurrency — 2026-05-18]
+     * Cache::lock key for the outbox retry concurrency guard. Two admins
+     * (or cron + manual) firing this command in the same minute would
+     * otherwise both grab the same `failed` rows and double-write
+     * audit_logs + double-dispatch events. 60s TTL covers a typical
+     * batch; the lock is released in `finally` so an early throw never
+     * strands the key.
+     */
+    private const LOCK_KEY = 'outbox.retry-failed.lock';
+
+    private const LOCK_TTL_SECONDS = 60;
+
     public function handle(): int
+    {
+        $lock = Cache::lock(self::LOCK_KEY, self::LOCK_TTL_SECONDS);
+
+        if (! $lock->get()) {
+            $this->warn('Another outbox:retry-failed run in progress. Skipping.');
+            Log::channel('fiscal')->info('outbox.retry_failed.lock_contended', [
+                'event' => 'outbox_retry_failed_lock_contended',
+                'lock_key' => self::LOCK_KEY,
+            ]);
+
+            return self::SUCCESS;
+        }
+
+        try {
+            return $this->runHandle();
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function runHandle(): int
     {
         $cutoff = $this->resolveCutoff((string) $this->option('since'));
 
@@ -23,15 +60,56 @@ class OutboxRetryFailedCommand extends Command
             ->where('created_at', '>=', $cutoff)
             ->get();
 
-        foreach ($events as $event) {
-            $event->forceFill([
-                'attempts' => 0,
-                'last_error' => null,
-                'dispatched_at' => null,
-            ])->save();
+        $auditLog = app(AuditLogService::class);
 
-            // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.
-            DispatchDomainEventsJob::dispatch($event->id);
+        foreach ($events as $event) {
+            // [Wave 3 SYNC-ADV3-04 — NF525-adjacent — 2026-05-18]
+            // Write-then-dispatch ordering: the tamper-evident audit row
+            // MUST exist before we re-broadcast the event. If audit write
+            // throws (chain-lock timeout, UNIQUE violation, secret
+            // misconfig), we skip THIS event but `continue` so the rest
+            // of the batch still replays. Guarantees: audit row exists
+            // IFF dispatch was attempted, AND batch continuity is preserved.
+            try {
+                $auditLog->write([
+                    'branch_id' => (int) ($event->branch_id ?? 0),
+                    'user_id' => null,
+                    'action' => 'outbox.replay',
+                    'resource' => 'domain_event',
+                    'resource_id' => (int) $event->id,
+                    'payload' => [
+                        'command' => 'foodking:outbox:retry-failed',
+                        'event_id' => (int) $event->id,
+                        'event_type' => (string) $event->event_type,
+                        'aggregate_type' => (string) ($event->aggregate_type ?? ''),
+                        'aggregate_id' => (int) ($event->aggregate_id ?? 0),
+                        'correlation_id' => (string) ($event->correlation_id ?? ''),
+                    ],
+                ]);
+            } catch (\Throwable $e) {
+                Log::channel('fiscal')->error('Outbox replay audit_log write failed', [
+                    'event_id' => (int) $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+                continue; // skip this event — do NOT dispatch without audit trail
+            }
+
+            try {
+                $event->forceFill([
+                    'attempts' => 0,
+                    'last_error' => null,
+                    'dispatched_at' => null,
+                ])->save();
+
+                // [Audit Claude NEW-03 B7] Queue lane SSOT = job constructor.
+                DispatchDomainEventsJob::dispatch($event->id);
+            } catch (\Throwable $e) {
+                Log::channel('fiscal')->error('Outbox replay dispatch failed (audit row exists)', [
+                    'event_id' => (int) $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+                continue;
+            }
         }
 
         $this->info('Reset and re-queued ' . $events->count() . ' failed domain events.');

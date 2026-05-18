@@ -18,6 +18,7 @@ use App\Models\ZReport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Smartisan\Settings\Facades\Settings;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
+use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
 /**
@@ -28,6 +29,7 @@ class PosOrderBL3DestroyAfterZTest extends TestCase
 {
     use RefreshDatabase;
     use HasPosQuoteBinding;
+    use SeedsOpenCashDrawerSession;
 
     protected Branch $branch;
     protected User $admin;
@@ -89,6 +91,8 @@ class PosOrderBL3DestroyAfterZTest extends TestCase
         ]);
         $this->admin->assignRole('Admin');
         $this->admin->givePermissionTo('pos-destroy-paid');
+        // [Sprint H6 TEST-DEBT-001 2026-05-17] Sprint 1B requires an OPEN cash session for CASH.
+        $this->seedOpenSessionFor($this->admin, $this->branch);
     }
 
     public function test_destroy_rejected_409_when_sealed_by_closed_z(): void

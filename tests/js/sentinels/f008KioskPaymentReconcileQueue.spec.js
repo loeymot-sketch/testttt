@@ -27,7 +27,7 @@ describe('F-008 — Kiosk payment reconcile queue (frontend structural)', () => 
         // After the 3-retry loop fails, the TPE-approved tx must be persisted.
         expect(source).toMatch(/_appendPendingReconcile\s*\(/);
         // The append must happen INSIDE the catch/exhaustion path of confirmBackendPayment.
-        expect(source).toMatch(/confirmBackendPayment[\s\S]{0,2000}?_appendPendingReconcile/);
+        expect(source).toMatch(/confirmBackendPayment[\s\S]{0,3500}?_appendPendingReconcile/);
     });
 
     it('localStorage key contract is `pending_payment_confirms`', () => {

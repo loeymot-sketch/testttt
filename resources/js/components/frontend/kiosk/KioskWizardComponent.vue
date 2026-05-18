@@ -909,7 +909,16 @@ export default {
       if (!item) return 'simple';
       const name = (item.name || '').toLowerCase();
       const category = (item.category_name || '').toLowerCase();
-      
+      // [Sprint H1 K-004 2026-05-17] Owner-curated alias map consulted first
+      // so admin renames don't silently break template inference. Fallback
+      // to legacy substring branches below if no alias hits.
+      const aliases = (typeof window !== 'undefined') ? window.FK_KIOSK_WIZARD_TEMPLATE_ALIASES : null;
+      if (aliases && typeof aliases === 'object') {
+        const haystack = `${name} ${category}`;
+        for (const needle of Object.keys(aliases)) {
+          if (haystack.includes(String(needle).toLowerCase())) return aliases[needle];
+        }
+      }
       if (name.includes('tacos') || category.includes('tacos')) return 'tacos';
       if (name.includes('sandwich') || category.includes('sandwich')) return 'sandwich';
       if (name.includes('burger') || category.includes('burger')) return 'burger';
@@ -1026,7 +1035,8 @@ export default {
         const extras = Array.isArray(item.extras) ? item.extras : [];
         const hasFritesStyleExtras = extras.some((e) => e?.group_label === 'frites_style');
         if (!hasFritesStyleExtras) return false;
-        const FRITES_INCLUDED_CATS = new Set([309, 310, 311, 314]);
+        // [Sprint H1 K-003 2026-05-17] Externalized to config/kiosk.php — injected via master.blade.php as window.FK_KIOSK_FRITES_CATS. Hardcoded fallback preserved for SSR/test safety.
+        const FRITES_INCLUDED_CATS = new Set(Array.isArray(window.FK_KIOSK_FRITES_CATS) ? window.FK_KIOSK_FRITES_CATS : [309, 310, 311, 314]);
         const catId = parseInt(item.item_category_id, 10);
         if (FRITES_INCLUDED_CATS.has(catId)) return false;
         // Si l'item a un menu choice : conditionner sur la sélection actuelle.

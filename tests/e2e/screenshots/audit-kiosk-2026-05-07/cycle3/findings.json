@@ -6,7 +6,7 @@
     "severity": "P2",
     "note": "0 cards/buttons détectés via heuristique",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle3/01-categories-rendered.png",
-    "ts": "2026-05-06T23:55:17.638Z"
+    "ts": "2026-05-16T17:01:45.792Z"
   },
   {
     "step": "K3-02",
@@ -15,7 +15,7 @@
     "severity": "OK",
     "note": "Premier élément clicable cliqué",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle3/02-categories-after-click.png",
-    "ts": "2026-05-06T23:55:24.078Z"
+    "ts": "2026-05-16T17:01:52.078Z"
   },
   {
     "step": "K3-03",
@@ -24,7 +24,7 @@
     "severity": "P1",
     "note": "Wizard route /kiosk/wizard/1: text length=44",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle3/03-wizard-item-1.png",
-    "ts": "2026-05-06T23:55:28.880Z"
+    "ts": "2026-05-16T17:01:57.063Z"
   },
   {
     "step": "K3-04",
@@ -33,7 +33,7 @@
     "severity": "OK",
     "note": "Cart length=118, hasError=false",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle3/04-cart-state.png",
-    "ts": "2026-05-06T23:55:33.422Z"
+    "ts": "2026-05-16T17:02:01.372Z"
   },
   {
     "step": "K3-05",
@@ -42,7 +42,7 @@
     "severity": "OK",
     "note": "CouponChanged broadcastAs=true, handler=true, KR2 ref=true",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle3/05-kr2-sentinel-wired.png",
-    "ts": "2026-05-06T23:55:34.312Z"
+    "ts": "2026-05-16T17:02:01.966Z"
   },
   {
     "step": "K3-06",
@@ -51,6 +51,6 @@
     "severity": "OK",
     "note": "_normalizeBranchId=true, _getActiveBranchId=true",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle3/06-kr2-branch-isolation-enforced.png",
-    "ts": "2026-05-06T23:55:35.291Z"
+    "ts": "2026-05-16T17:02:02.504Z"
   }
 ]

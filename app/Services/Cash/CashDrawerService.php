@@ -129,6 +129,36 @@ class CashDrawerService
             throw new HttpException(422, 'closing_amount must be >= 0');
         }
 
+        // [Sprint H2 F-11 — 2026-05-17] Manager-gate routine close (config opt-in).
+        //
+        // When config('cash.manager_gate_routine_close') is true, ANY close
+        // (variance OR no-variance) requires the actor to hold the same
+        // `cash.reconcile.variance.override` permission used by the Sprint 1D
+        // variance gate (reuses actorCanOverrideVariance — no duplicate
+        // permission-resolution path).
+        //
+        // Default false: single-cashier deploys keep the "POS Operator
+        // self-closes own drawer" UX intact. Multi-cashier / SaaS deploys
+        // flip CASH_MANAGER_GATE_ROUTINE_CLOSE=true to enforce manager
+        // approval on ALL closes (second pair of eyes).
+        //
+        // Gate runs BEFORE the DB::transaction so refused closes leave the
+        // session in OPEN state untouched (fail-closed; no partial mutation).
+        // Idempotent replay of an already-closed session by a non-permitted
+        // actor will also 403 by design — config flips mid-session are an
+        // operator action that must be repeated by a permitted actor.
+        // CLAUDE.md §9 (multi-tenant + auth).
+        if (Config::get('cash.manager_gate_routine_close', false)) {
+            $actor = Auth::user() instanceof User ? Auth::user() : null;
+            $permission = (string) Config::get('cash.variance_override_permission', 'cash.reconcile.variance.override');
+            if ($actor === null || ! $this->actorCanOverrideVariance($actor, $permission)) {
+                throw new HttpException(
+                    403,
+                    sprintf('Routine cash drawer close requires `%s` permission (manager gate enabled)', $permission)
+                );
+            }
+        }
+
         $result = DB::transaction(function () use ($sessionId, $closingAmount) {
             try {
                 $session = CashDrawerSession::query()
@@ -151,6 +181,11 @@ class CashDrawerService
             $session->closing_amount = $closingAmount;
             $session->closed_at      = now();
             $session->status         = CashDrawerSession::STATUS_CLOSED;
+            // [Sprint H2 F-10 2026-05-17] Persist closing actor for forensics.
+            // Audit HMAC chain (F-8) remains the authoritative actor source;
+            // this column is a query-convenience. Null if no auth context
+            // (console commands, system tasks) — column is nullable.
+            $session->closed_by_user_id = Auth::check() ? (int) Auth::id() : null;
             $session->save();
 
             return ['session' => $session->refresh(), 'transitioned' => true];
@@ -283,6 +318,10 @@ class CashDrawerService
             if ($trimmedReason !== null) {
                 $session->variance_reason = $trimmedReason;
             }
+            // [Sprint H2 F-10 2026-05-17] Persist reconciliation actor for
+            // forensics — uses the same resolved $actor that backs the
+            // variance gate + audit log payload. Null-safe if no auth context.
+            $session->reconciled_by_user_id = $actor?->id;
             $session->status                  = CashDrawerSession::STATUS_RECONCILED;
             $session->save();
 
@@ -367,46 +406,67 @@ class CashDrawerService
             return null;
         }
 
-        $session = CashDrawerSession::query()->find($sessionId);
-        if (! $session) {
-            $msg = "Cash drawer session {$sessionId} not found";
-            if ($strict) {
-                throw new HttpException(404, $msg);
+        // [Sprint H2 P2-Z10-08 2026-05-17] Race-resistant session reload +
+        // movement insertion. Mirror the openSession / closeSession /
+        // reconcileSession discipline: SELECT FOR UPDATE inside a
+        // DB::transaction blocks concurrent recordMovement calls on the
+        // same session row, AND prevents a concurrent close() from
+        // flipping the session between our status check and our INSERT
+        // (which would silently corrupt Z-report aggregates by writing
+        // a movement onto a CLOSED session).
+        //
+        // Validation guards above (type / direction / amount) stay OUTSIDE
+        // the transaction — they fail-fast on bad input without acquiring
+        // a row lock. Audit-log write STAYS INSIDE so the audit_logs row
+        // and the cash_movements row commit atomically (NF525 evidence).
+        return DB::transaction(function () use ($sessionId, $type, $amount, $direction, $orderId, $notes, $strict) {
+            $session = CashDrawerSession::query()
+                ->whereKey($sessionId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $session) {
+                $msg = "Cash drawer session {$sessionId} not found";
+                if ($strict) {
+                    throw new HttpException(404, $msg);
+                }
+                Log::warning('[F-003] '.$msg);
+                return null;
             }
-            Log::warning('[F-003] '.$msg);
-            return null;
-        }
 
-        if ($session->status !== CashDrawerSession::STATUS_OPEN) {
-            $msg = "Cannot record movement on a {$session->status} session ({$sessionId})";
-            if ($strict) {
-                throw new HttpException(422, $msg);
+            if ($session->status !== CashDrawerSession::STATUS_OPEN) {
+                $msg = "Cannot record movement on a {$session->status} session ({$sessionId})";
+                if ($strict) {
+                    throw new HttpException(422, $msg);
+                }
+                Log::warning('[F-003] '.$msg);
+                return null;
             }
-            Log::warning('[F-003] '.$msg);
-            return null;
-        }
 
-        $movement = CashMovement::create([
-            'cash_drawer_session_id' => $session->id,
-            'branch_id'              => $session->branch_id,
-            'order_id'               => $orderId,
-            'type'                   => $type,
-            'amount'                 => $amount,
-            'direction'              => $direction,
-            'notes'                  => $notes,
-        ]);
+            $movement = CashMovement::create([
+                'cash_drawer_session_id' => $session->id,
+                'branch_id'              => $session->branch_id,
+                'order_id'               => $orderId,
+                'type'                   => $type,
+                'amount'                 => $amount,
+                'direction'              => $direction,
+                'notes'                  => $notes,
+            ]);
 
-        // [Sprint 1D / F-8] Audit cash.movement.recorded — NF525 evidence.
-        $this->writeAuditLog('cash.movement.recorded', $session, [
-            'session_id' => $session->id,
-            'movement_id'=> $movement->id,
-            'order_id'   => $orderId,
-            'type'       => $type,
-            'amount'     => (float) $movement->amount,
-            'direction'  => $direction,
-        ]);
+            // [Sprint 1D / F-8] Audit cash.movement.recorded — NF525 evidence.
+            // Stays inside the transaction so the audit row and the movement
+            // row commit atomically (no partial audit chain on failure).
+            $this->writeAuditLog('cash.movement.recorded', $session, [
+                'session_id' => $session->id,
+                'movement_id'=> $movement->id,
+                'order_id'   => $orderId,
+                'type'       => $type,
+                'amount'     => (float) $movement->amount,
+                'direction'  => $direction,
+            ]);
 
-        return $movement;
+            return $movement;
+        });
     }
 
     /**

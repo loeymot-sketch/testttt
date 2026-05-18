@@ -15,7 +15,15 @@ class AdministratorRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        // V1.0.1 R7 heal: defense-in-depth — AdministratorController middleware enforces
+        // `permission:administrators_create` on store and `permission:administrators_edit`
+        // on update; FormRequest accepts either since rules apply to both verbs, so any
+        // future route bypass still authz-checks against the administrators capability family.
+        $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
+        return $user->can('administrators_create') || $user->can('administrators_edit');
     }
 
     /**

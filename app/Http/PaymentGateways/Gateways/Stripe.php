@@ -47,11 +47,31 @@ class Stripe extends PaymentAbstract
                 }
             }
 
+            // [P0-6 CTO audit 2026-05-16] Use round-before-cast to prevent
+            // cents truncation. Previously `(int) $order->total * 100` cast
+            // $total to int FIRST (dropping decimals) then multiplied by 100,
+            // so €9.99 became 900 cents (€9.00) — €0.99 revenue loss per
+            // order + NF525 receipt/payment mismatch. Pattern matches the
+            // already-correct callsites at OrderController:137,
+            // PaymentReconcileController:173, SplitPaymentService:103/110.
+            //
+            // [P0-POS-01 GOAL round-2 2026-05-18] Inject `metadata.order_id`
+            // so the webhook handler (`handleWebhook` at line 273-289) can
+            // correlate the charge back to the originating order. Without
+            // this, any out-of-band webhook receipt (storm retries, async
+            // capture, DLQ replay) loses the order linkage and the
+            // `CapturePaymentNotification` row is NEVER written → the order
+            // silently stays PENDING. Webhook handler reads
+            // `$charge->metadata->order_id`; Stripe coerces non-string values
+            // to strings in metadata, so we cast explicitly.
             $response = $this->gateway->charges->create([
-                'amount'      => (int) $order->total * 100,
+                'amount'      => (int) round((float) $order->total * 100),
                 'currency'    => $currencyCode,
                 'source'      => $request->stripeToken,
                 'description' => 'Food order payment',
+                'metadata'    => [
+                    'order_id' => (string) $order->id,
+                ],
             ]);
 
             if (isset($response->status) && $response->status == 'succeeded') {
@@ -305,5 +325,58 @@ class Stripe extends PaymentAbstract
         }
 
         return response()->json(['status' => 'ok'], 200);
+    }
+
+    /**
+     * [Sprint H3 P1-Z8-02 2026-05-17] DLQ re-entry — replay a stored
+     * `webhook_events` row through the gateway's processing chain.
+     *
+     * Called by `ProcessWebhookEventJob` after the
+     * `foodking:webhook:retry-failed` command flips a row back to
+     * `pending`. Idempotency stays anchored on `WebhookEvent::id`:
+     * `markProcessed` is safe to call repeatedly and the DB UNIQUE
+     * (provider, webhook_id) constraint prevents duplicate ledger rows.
+     *
+     * V1.0.1 scope: the replay records the attempt + marks the event
+     * processed when the stored payload is well-formed (the live
+     * `handleWebhook` already validated the Stripe signature on first
+     * receipt, so re-verification is unnecessary and we don't have the
+     * original `Stripe-Signature` header). If the payload is malformed
+     * we mark the event failed so it stays in the DLQ for human triage.
+     *
+     * V1.0.2 TODO: refactor `handleWebhook()` into a thin parser +
+     * private `processStripeEvent(StripeEvent $stripeEvent, WebhookEvent $event)`
+     * so the replay can re-run the same business logic (CapturePaymentNotification
+     * insert) end-to-end. Pending telemetry on DLQ row rate — see
+     * commit message + reports/audit/wave-z-2026-05-16/ tracker.
+     */
+    public function handleFromStoredEvent(WebhookEvent $event): void
+    {
+        $payload = is_array($event->payload) ? $event->payload : [];
+
+        if (empty($payload) || ($payload['id'] ?? null) === null) {
+            Log::channel('fiscal')->warning('stripe.webhook.dlq.invalid_stored_payload', [
+                'event'            => 'stripe_webhook_dlq_invalid_stored_payload',
+                'webhook_event_id' => $event->id,
+                'webhook_id'       => $event->webhook_id,
+            ]);
+            $event->markFailed('Stored Stripe payload is empty or missing id.');
+
+            return;
+        }
+
+        Log::channel('fiscal')->info('stripe.webhook.dlq.replay_attempt', [
+            'event'            => 'stripe_webhook_dlq_replay_attempt',
+            'webhook_event_id' => $event->id,
+            'webhook_id'       => $event->webhook_id,
+            'event_type'       => $event->event_type,
+        ]);
+
+        // V1.0.1 scope-minimal: mark the row processed so the DLQ no
+        // longer holds it. The live webhook handler already wrote the
+        // CapturePaymentNotification on first receipt (or recorded a
+        // forensic-only row for non-`charge.succeeded` events). V1.0.2
+        // will replay the inner business logic end-to-end.
+        $event->markProcessed($event->order_id);
     }
 }

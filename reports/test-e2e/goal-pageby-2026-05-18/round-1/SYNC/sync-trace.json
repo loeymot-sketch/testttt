@@ -1,0 +1,53 @@
+[
+  {
+    "label": "FIXTURES",
+    "payload": {
+      "branches": [
+        1
+      ],
+      "item_active": {
+        "id": 375,
+        "name": "Chicken Burger"
+      },
+      "item_fallback": {
+        "id": 478,
+        "name": "Tacos M"
+      },
+      "extra_id": 172,
+      "variation_id": 271,
+      "kiosk_machine": {
+        "id": 1,
+        "machine_id": "KIOSK-LC-001",
+        "branch_id": 1
+      },
+      "max_fiscal_seq": 334
+    },
+    "ts": "2026-05-18T02:13:56.763Z"
+  },
+  {
+    "label": "FLOW1-baseline-event-id",
+    "payload": {
+      "baselineId": 1849,
+      "raw": {
+        "max": 1849
+      }
+    },
+    "ts": "2026-05-18T02:13:57.785Z"
+  },
+  {
+    "label": "FLOW1-pos-create",
+    "payload": {
+      "status": 401,
+      "ms": 272,
+      "body": {
+        "message": "Unauthenticated."
+      }
+    },
+    "ts": "2026-05-18T02:13:58.057Z"
+  },
+  {
+    "label": "FLOW1-new-events",
+    "payload": [],
+    "ts": "2026-05-18T02:13:58.409Z"
+  }
+]

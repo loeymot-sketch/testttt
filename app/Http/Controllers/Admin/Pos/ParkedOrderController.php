@@ -77,6 +77,26 @@ class ParkedOrderController extends AdminController
         abort_unless($requestUser !== null && $authId !== null, 401);
         abort_unless((int) $requestUser->id === (int) $authId, 403);
 
-        return [(int) $authId, (int) $requestUser->branch_id];
+        // [P0-POS-04 GOAL round-2 2026-05-18] Branch-isolation guard for
+        // parked orders. Pre-fix, an Admin user with branch_id=0 (the
+        // org-wide "no branch" role) would resolve to a context of
+        // (authId, 0) and `PosParkedOrderService::listForOperator` would
+        // be queried with branch_id=0 — exposing every branch's parked
+        // orders to the Admin even though the org-wide role is not a
+        // branch operator.
+        //
+        // Parked orders are a per-branch cashier workflow. An Admin who
+        // wants to operate the POS register must do so from a real branch
+        // login (acting as a Branch Manager / POS Operator with
+        // branch_id > 0). This guard makes the failure explicit (403)
+        // rather than silently leaking cross-branch data.
+        $branchId = (int) $requestUser->branch_id;
+        abort_unless(
+            $branchId > 0,
+            403,
+            'Parked orders require a branch-scoped user (branch_id > 0). Admins must operate POS from a branch login.'
+        );
+
+        return [(int) $authId, $branchId];
     }
 }

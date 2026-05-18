@@ -4,9 +4,9 @@
     "slug": "tokens",
     "state": "check",
     "severity": "OK",
-    "note": "Tokens: primary=#E8001C, bgPrimary=MISSING, bold=NOT_SET",
+    "note": "Tokens: primary=#F4501E, bgPrimary=MISSING, bold=NOT_SET",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle2/01-surface-1080x1920-idle.png",
-    "ts": "2026-05-06T23:52:29.993Z"
+    "ts": "2026-05-16T17:01:15.387Z"
   },
   {
     "step": "K2-01",
@@ -15,16 +15,16 @@
     "severity": "OK",
     "note": "Violations a11y: 0 (critical+serious=0, passes=18)",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle2/01-surface-1080x1920-idle.png",
-    "ts": "2026-05-06T23:52:30.587Z"
+    "ts": "2026-05-16T17:01:16.133Z"
   },
   {
     "step": "K2-01",
     "slug": "monitoring-idle",
     "state": "capture",
     "severity": "INFO",
-    "note": "JS errors=0, console errors=3, network 4xx/5xx=0",
+    "note": "JS errors=0, console errors=2, network 4xx/5xx=0",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle2/01-surface-1080x1920-idle.png",
-    "ts": "2026-05-06T23:52:30.587Z"
+    "ts": "2026-05-16T17:01:16.133Z"
   },
   {
     "step": "K2-02",
@@ -33,16 +33,16 @@
     "severity": "OK",
     "note": "Violations: 0 (crit+seri=0)",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle2/02-surface-1920x1080-categories.png",
-    "ts": "2026-05-06T23:52:37.586Z"
+    "ts": "2026-05-16T17:01:23.256Z"
   },
   {
     "step": "K2-02",
     "slug": "monitoring",
     "state": "capture",
     "severity": "INFO",
-    "note": "JS=0, console=6, network=0",
+    "note": "JS=0, console=4, network=0",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle2/02-surface-1920x1080-categories.png",
-    "ts": "2026-05-06T23:52:37.587Z"
+    "ts": "2026-05-16T17:01:23.256Z"
   },
   {
     "step": "K2-03",
@@ -51,7 +51,7 @@
     "severity": "OK",
     "note": "Shell kiosk visible at 768×1024: true",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle2/03-tablet-768x1024-idle.png",
-    "ts": "2026-05-06T23:52:41.313Z"
+    "ts": "2026-05-16T17:01:27.207Z"
   },
   {
     "step": "K2-04",
@@ -60,7 +60,7 @@
     "severity": "OK",
     "note": "Page catégories chargée",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle2/04-screen-categories.png",
-    "ts": "2026-05-06T23:52:47.196Z"
+    "ts": "2026-05-16T17:01:33.275Z"
   },
   {
     "step": "K2-04",
@@ -69,7 +69,7 @@
     "severity": "OK",
     "note": "Page cart chargée (peut être empty fallback)",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle2/04-screen-cart.png",
-    "ts": "2026-05-06T23:52:49.516Z"
+    "ts": "2026-05-16T17:01:35.451Z"
   },
   {
     "step": "K2-04",
@@ -78,7 +78,7 @@
     "severity": "OK",
     "note": "Page error/network chargée",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle2/04-screen-error-network.png",
-    "ts": "2026-05-06T23:52:51.266Z"
+    "ts": "2026-05-16T17:01:37.144Z"
   },
   {
     "step": "K2-05",
@@ -87,6 +87,6 @@
     "severity": "INFO",
     "note": "KR3 sentinel — env validated par parent agent (KioskMachine #1 branch_id=1, pas 0). Vrai test côté Feature PHP backend.",
     "screenshot": "tests/e2e/screenshots/audit-kiosk-2026-05-07/cycle2/05-kr3-channel-isolation-env-check.png",
-    "ts": "2026-05-06T23:52:51.959Z"
+    "ts": "2026-05-16T17:01:38.209Z"
   }
 ]

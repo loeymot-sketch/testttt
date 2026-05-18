@@ -87,7 +87,8 @@ describe('createKioskPricingPreview — debounce + SSOT', () => {
         });
         const preview = createKioskPricingPreview({ axios: axiosMock });
 
-        preview.request({ items: [{ item_id: 1, quantity: 1 }] });
+        // heal rush-100 WA-R1-05/06: preview skipped when no modifiers — include one to trigger the call.
+        preview.request({ items: [{ item_id: 1, quantity: 1, item_variations: [{ id: 9, quantity: 1 }] }] });
         expect(axiosMock.post).not.toHaveBeenCalled();
         vi.advanceTimersByTime(399);
         expect(axiosMock.post).not.toHaveBeenCalled();
@@ -112,9 +113,10 @@ describe('createKioskPricingPreview — debounce + SSOT', () => {
         });
         const preview = createKioskPricingPreview({ axios: axiosMock });
 
-        preview.request({ items: [{ item_id: 1 }] });
+        // heal rush-100: include modifier to bypass no-modifier skip path.
+        preview.request({ items: [{ item_id: 1, item_extras: [{ id: 7, quantity: 1 }] }] });
         vi.advanceTimersByTime(200);
-        preview.request({ items: [{ item_id: 2 }] });
+        preview.request({ items: [{ item_id: 2, item_extras: [{ id: 7, quantity: 1 }] }] });
         vi.advanceTimersByTime(200);
         expect(axiosMock.post).not.toHaveBeenCalled();
         vi.advanceTimersByTime(500);
@@ -137,7 +139,8 @@ describe('createKioskPricingPreview — debounce + SSOT', () => {
             },
         });
         const preview = createKioskPricingPreview({ axios: axiosMock });
-        const p = preview.request({ items: [{ item_id: 7, quantity: 1 }] });
+        // heal rush-100: include modifier to bypass no-modifier skip path.
+        const p = preview.request({ items: [{ item_id: 7, quantity: 1, item_addons: [{ id: 3, quantity: 1 }] }] });
         vi.advanceTimersByTime(500);
         const res = await p;
         expect(res.total).toBe(12.3);

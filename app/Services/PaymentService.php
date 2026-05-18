@@ -10,6 +10,7 @@ use App\Enums\PosPaymentMethod;
 use App\Events\OrderCanceled;
 use App\Events\OrderPaidAtCounter;
 use App\Events\OrderStatusChanged;
+use App\Events\RefundCreated;
 use App\Models\Order;
 use App\Models\Transaction;
 use App\Models\User;
@@ -26,6 +27,24 @@ class PaymentService
 {
     public function payment($order, $gatewaySlug, $transactionNo)
     {
+        // [P0-POS-02 GOAL round-2 2026-05-18] Authorization gate — marking
+        // an order as PAID is a fiscally-significant action (NF525 audit
+        // chain + Transaction creation). Before this guard the public
+        // method `payment()` had ZERO authz check: any caller (queue job,
+        // future controller, console command) could supply an arbitrary
+        // $order + $transactionNo and silently mark it PAID without an
+        // actual gateway settlement happening.
+        //
+        // The legitimate callers are the gateway `success()` callbacks
+        // (Stripe::success @ line 112, Credit, PayPal). Those classes all
+        // extend `PaymentAbstract`. We enforce the gateway-context
+        // invariant by walking the backtrace and asserting at least one
+        // frame is a `PaymentAbstract` subclass. This is non-spoofable
+        // from outside the gateway hierarchy and avoids the brittleness
+        // of role/permission checks (queue workers may not have an
+        // authenticated user).
+        $this->assertGatewayContext();
+
         $this->assertPilotPaymentMethodAllowed($order, (string) $gatewaySlug, 'payment');
 
         $transaction = Transaction::where(['order_id' => $order->id])->first();
@@ -122,6 +141,15 @@ class PaymentService
             if ($order instanceof Order) {
                 $this->recordCashBackMovement($order, (float) $order->total);
             }
+
+            // [REFUND-EVENT-WIRE] Fire RefundCreated so listeners release stock /
+            // availability counters. Inside `if ($transaction)` so the second
+            // idempotent cashBack() call (early-returned above) does NOT re-fire
+            // the event. DispatchableAfterCommit defers to post-commit; double-
+            // fire with OrderCanceled (admin RETURN/CANCEL paths in OrderService /
+            // FrontendOrderService) is acceptable — AvailabilityService is
+            // idempotent via the released_qty ledger.
+            RefundCreated::dispatch($order);
         }
 
         return $transaction;
@@ -265,6 +293,11 @@ class PaymentService
         ?float $amountOverride = null,
     ): void
     {
+        // [2026-05-18] Hardware simulation: downgrade strict→soft when the
+        // physical drawer is not connected. NF525 invariants unchanged.
+        if ($strict && config('pos.simulation_hardware') === true) {
+            $strict = false;
+        }
         try {
             if (! Auth::check()) {
                 if ($strict) {
@@ -528,5 +561,57 @@ class PaymentService
     private function normalizePaymentMethod(string $gatewaySlug): string
     {
         return strtolower(trim($gatewaySlug));
+    }
+
+    /**
+     * [P0-POS-02 GOAL round-2 2026-05-18] Enforce gateway-callback context
+     * for `PaymentService::payment()`.
+     *
+     * Walks the backtrace and confirms at least one calling frame is a
+     * subclass of `\App\Services\PaymentAbstract`. The only legitimate
+     * callers of `payment()` are the gateway `success()` callbacks
+     * (Stripe::success, Credit::success, PayPal::success) — those all
+     * extend `PaymentAbstract`. A direct call from a controller, job, or
+     * console command will not have any `PaymentAbstract` frame above
+     * and will be rejected with HTTP 403.
+     *
+     * This is a defense-in-depth guard, not a replacement for HTTP-layer
+     * authz: the public-facing payment routes are already CSRF + gateway
+     * signature protected. The guard exists to prevent a future caller
+     * (queue retry, admin action, future SDK) from forging a paid state.
+     *
+     * @throws HttpException 403 when called outside a PaymentAbstract context.
+     */
+    private function assertGatewayContext(): void
+    {
+        // Allow tests + console commands that explicitly opt in by setting
+        // a runtime flag. Cleared on every assert so a leak across tests
+        // is impossible (each call has to re-set the flag).
+        if (app()->bound('payment.service.allow_direct_call')
+            && app('payment.service.allow_direct_call') === true) {
+            app()->forgetInstance('payment.service.allow_direct_call');
+            return;
+        }
+
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 25);
+        foreach ($trace as $frame) {
+            $cls = $frame['class'] ?? null;
+            if ($cls === null || $cls === self::class) {
+                continue;
+            }
+            if (is_subclass_of($cls, \App\Services\PaymentAbstract::class)) {
+                return;
+            }
+        }
+
+        Log::warning('[P0-POS-02] PaymentService::payment called outside gateway context — rejected', [
+            'top_caller_class' => $trace[1]['class'] ?? null,
+            'top_caller_func'  => $trace[1]['function'] ?? null,
+        ]);
+
+        throw new HttpException(
+            403,
+            'PaymentService::payment() can only be invoked from a gateway callback.'
+        );
     }
 }

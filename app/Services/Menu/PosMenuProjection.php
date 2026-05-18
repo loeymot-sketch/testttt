@@ -194,6 +194,12 @@ class PosMenuProjection
                 'status'      => (int) ($meta?->status ?? Status::ACTIVE),
                 'thumb'       => $meta?->thumb,
                 'cover'       => $meta?->cover,
+                // [2026-05-18 RED R-1 heal] Preserve the additive `featured`
+                // flag through the unified-projection adapter. The legacy
+                // PosCategoryController response carries it (F-4 fix); without
+                // this copy the POS first-page filter silently disappears the
+                // moment `FK_CATALOG_UNIFIED_PROJECTION_ENABLED=true` flips on.
+                'featured'    => (bool) ($category['featured'] ?? false),
             ];
         })
             ->filter()
@@ -259,6 +265,9 @@ class PosMenuProjection
             'slug' => 'all-items',
             'thumb' => asset('images/default/all-category.png'),
             'cover' => asset('images/default/all-category.png'),
+            // [2026-05-18 RED R-1 heal] Sentinel always featured-true so the
+            // POS strip never hides the "Toutes les ..." entry.
+            'featured' => true,
         ];
     }
 

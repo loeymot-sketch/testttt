@@ -15,7 +15,12 @@ class Kernel extends HttpKernel
      * @var array<int, class-string|string>
      */
     protected $middleware = [
-        // \App\Http\Middleware\TrustHosts::class,
+        // [Wave 2c P1 SYNC-ADV3B-01 2026-05-18] Defense vs Host spoof —
+        // TrustProxies::$proxies='*' (Wave 2b) trusts X-Forwarded-Host /
+        // X-Forwarded-Proto from any upstream. TrustHosts pins host to
+        // APP_URL subdomains + 127.0.0.1 + localhost to prevent URL
+        // generation poisoning. No-op under runningUnitTests() / local.
+        \App\Http\Middleware\TrustHosts::class,
         \App\Http\Middleware\TrustProxies::class,
         \Illuminate\Http\Middleware\HandleCors::class,
         \App\Http\Middleware\PreventRequestsDuringMaintenance::class,
@@ -51,7 +56,44 @@ class Kernel extends HttpKernel
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\JsonMiddleware::class,
             \App\Http\Middleware\CorrelationIdMiddleware::class,
+            // [Sprint H1 Z6-06 2026-05-17] Per-request user status revalidation.
+            // MUST run AFTER auth:sanctum so $request->user() is populated.
+            // See local $middlewarePriority below — it inserts this entry just
+            // after AuthenticatesRequests in the sort order. CLAUDE.md §9.
+            \App\Http\Middleware\EnsureUserStatusActive::class,
         ],
+    ];
+
+    /**
+     * The priority-sorted list of middleware.
+     *
+     * Forces the listed middleware into this order regardless of their
+     * group/route order. Laravel's parent default lists
+     * AuthenticatesRequests before SubstituteBindings; we extend it to
+     * place EnsureUserStatusActive AFTER AuthenticatesRequests so
+     * $request->user() is populated when our status gate runs.
+     *
+     * Without this explicit override, Kernel::sortMiddleware() would
+     * `array_unshift` EnsureUserStatusActive to position 0 (line 410 of
+     * Foundation\Http\Kernel) — running it before Sanctum resolves the
+     * user, causing every authenticated request to bypass our gate.
+     *
+     * [Sprint H1 Z6-06 2026-05-17]
+     *
+     * @var array<int, class-string>
+     */
+    protected $middlewarePriority = [
+        \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
+        \Illuminate\Cookie\Middleware\EncryptCookies::class,
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+        \App\Http\Middleware\EnsureUserStatusActive::class,
+        \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class,
+        \Illuminate\Contracts\Session\Middleware\AuthenticatesSessions::class,
+        \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        \Illuminate\Auth\Middleware\Authorize::class,
     ];
 
     /**

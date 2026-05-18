@@ -67,6 +67,18 @@ class Kernel extends ConsoleKernel
             ->name('outbox-retry-failed')
             ->description('Retry domain events failed after 5 attempts within last 24h');
 
+        // [Sprint H3 P1-Z8-02 2026-05-17] Webhook DLQ — re-run failed
+        // webhook_events whose provider retry window expired. Hourly
+        // cadence matches outbox:retry-failed (operationally consistent).
+        // Wave Z 5C scheduled this command but it didn't exist — the
+        // implementation lands in this sprint. See CLAUDE.md §9.
+        $schedule->command('foodking:webhook:retry-failed --since=24h')
+            ->hourly()
+            ->withoutOverlapping(10)
+            ->onOneServer()
+            ->name('webhook-retry-failed')
+            ->description('Retry failed webhook_events (Stripe/SenangPay) within last 24h');
+
         $schedule->job(new CleanupStalePendingKioskOrders())
             ->everyFiveMinutes()
             ->withoutOverlapping()
@@ -77,6 +89,37 @@ class Kernel extends ConsoleKernel
             ->dailyAt('03:15')
             ->withoutOverlapping()
             ->onOneServer();
+
+        // [RED-team P0 / Outbox unbounded growth — 2026-05-17]
+        // domain_events grows unbounded without this prune. NF525 6y retention
+        // applies to audit_logs + z_reports ONLY (CLAUDE.md §8), NOT to this
+        // operational outbox. 90d default = far past the staleness monitor /
+        // retry-failed window (24h), so any row matched here is provably
+        // terminal. Daily cadence at 04:00 (off-peak, after fiscal archive
+        // 02:00). Mutex + onOneServer mirror the outbox:rescue/monitor lanes.
+        $schedule->command('foodking:outbox:prune --older-than-days=90')
+            ->dailyAt('04:00')
+            ->name('outbox-prune')
+            ->description('Prune dispatched + terminally-failed domain_events older than 90d')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->runInBackground();
+
+        // [RED-team P0 / webhook_events unbounded growth — 2026-05-17]
+        // Mirror of outbox:prune for the payment-provider webhook ledger.
+        // Only processed + duplicate rows are eligible; pending/failed are
+        // owned by the DLQ retry lane (foodking:webhook:retry-failed). 04:15
+        // staggers the lock window vs outbox:prune.
+        // [P1 V1 Cloud-Prep insights 2026-05-18] 90d → 180d bump matches the
+        // command default (PCI dispute lookback window). See command class
+        // PruneWebhookEventsCommand docblock for rationale.
+        $schedule->command('foodking:webhook:prune --older-than-days=180')
+            ->dailyAt('04:15')
+            ->name('webhook-prune')
+            ->description('Prune processed + duplicate webhook_events older than 180d (PCI dispute window)')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->runInBackground();
 
         $schedule->job(new SloEvaluatorJob())
             ->everyFiveMinutes()
@@ -112,6 +155,58 @@ class Kernel extends ConsoleKernel
         $schedule->command('foodking:availability:reset-stale-quota')
             ->dailyAt('00:05')
             ->name('availability-reset-stale-quota')
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        // [Wave 3 P1 FISCAL-ADV3-03 2026-05-18 / Wave 3b FISCAL-ADV3B-01]
+        // NF525 dual-chain monitor — re-walks audit_logs + z_reports
+        // HMAC chains daily for EVERY active branch (not just branch=1).
+        //
+        // Wave 3b FISCAL-ADV3B-01: the previous single-branch cron
+        // (`--branch=1` hardcoded) left branches >=2 silently unmonitored,
+        // asymmetric with `fiscal:archive` (below) which iterates active
+        // branches. Pattern now mirrors fiscal:archive: status=1 +
+        // whereNull(deleted_at), per-branch Artisan::call, per-branch
+        // exit-code logging to fiscal channel (no silent swallow).
+        //
+        // 03:30 staggers between fiscal:archive (02:00) and outbox-prune
+        // (04:00). onOneServer prevents duplicate runs at scale.
+        $schedule->call(function () {
+            try {
+                Branch::query()
+                    ->where('status', 1)
+                    ->whereNull('deleted_at')
+                    ->pluck('id')
+                    ->each(function ($branchId) {
+                        try {
+                            $exit = Artisan::call('fiscal:verify-chain', [
+                                '--branch' => (int) $branchId,
+                            ]);
+                            if ($exit !== 0) {
+                                Log::channel('fiscal')->error('NF525 chain verify non-zero exit', [
+                                    'event'     => 'fiscal.chain.monitor.failure',
+                                    'branch_id' => (int) $branchId,
+                                    'exit_code' => $exit,
+                                ]);
+                            }
+                        } catch (\Throwable $e) {
+                            Log::channel('fiscal')->error('NF525 chain verify branch crashed', [
+                                'event'     => 'fiscal.chain.monitor.branch_error',
+                                'branch_id' => (int) $branchId,
+                                'message'   => $e->getMessage(),
+                            ]);
+                        }
+                    });
+            } catch (\Throwable $e) {
+                Log::channel('fiscal')->error('NF525 chain verify scheduler crashed', [
+                    'event'   => 'fiscal.chain.monitor.scheduler_error',
+                    'message' => $e->getMessage(),
+                    'trace'   => substr($e->getTraceAsString(), 0, 1000),
+                ]);
+            }
+        })
+            ->dailyAt('03:30')
+            ->name('fiscal-chain-monitor-all-branches')
             ->withoutOverlapping()
             ->onOneServer();
 

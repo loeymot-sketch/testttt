@@ -309,6 +309,34 @@
                       dineinOrder.token : $t("label.online")
                       }}</span>
                   </p>
+                  <!-- [Sprint H4 Z3-NEW-002/003 2026-05-17] Legacy delivery
+                       block mirrored from onlineOrder lane. Helper gates on
+                       order_type === DELIVERY so this only renders for
+                       misclassified delivery orders that landed in the
+                       dine-in lane — defensive UX so chef + courier never
+                       miss a delivery on the ?v2=0 rollback path. -->
+                  <div
+                    v-if="kdsLegacyShouldShowDelivery(dineinOrder)"
+                    class="mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]"
+                    data-testid="kds-legacy-delivery"
+                  >
+                    <p v-if="kdsLegacyDeliveryAddress(dineinOrder)" class="text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1">
+                      <span aria-hidden="true">&#128205;</span>
+                      <span class="break-words">{{ kdsLegacyDeliveryAddress(dineinOrder) }}</span>
+                    </p>
+                    <p v-if="dineinOrder.customer && dineinOrder.customer.name" class="text-xs leading-snug text-[#115E59] flex items-center gap-1">
+                      <span aria-hidden="true">&#128100;</span>
+                      <span>{{ dineinOrder.customer.name }}</span>
+                    </p>
+                    <a
+                      v-if="dineinOrder.customer && dineinOrder.customer.phone"
+                      :href="`tel:${dineinOrder.customer.phone}`"
+                      class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+                    >
+                      <span aria-hidden="true">&#128241;</span>
+                      <span>{{ dineinOrder.customer.phone }}</span>
+                    </a>
+                  </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] Chevron now exposes
                        aria-expanded so assistive tech can announce the
                        collapse state. The state-transition CTAs (Démarrer /
@@ -643,6 +671,33 @@
                   <p v-if="takeawayOrder.queue_number" class="text-sm font-normal leading-6 font-client text-[#6E7191]">
                     N° file: <span class="text-heading font-medium">{{ takeawayOrder.queue_number }}</span>
                   </p>
+                  <!-- [Sprint H4 Z3-NEW-002/003 2026-05-17] Legacy delivery
+                       block mirrored from onlineOrder lane. Helper gates on
+                       order_type === DELIVERY so this only renders for
+                       misclassified delivery orders that landed in the
+                       takeaway lane — defensive UX for ?v2=0 rollback. -->
+                  <div
+                    v-if="kdsLegacyShouldShowDelivery(takeawayOrder)"
+                    class="mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]"
+                    data-testid="kds-legacy-delivery"
+                  >
+                    <p v-if="kdsLegacyDeliveryAddress(takeawayOrder)" class="text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1">
+                      <span aria-hidden="true">&#128205;</span>
+                      <span class="break-words">{{ kdsLegacyDeliveryAddress(takeawayOrder) }}</span>
+                    </p>
+                    <p v-if="takeawayOrder.customer && takeawayOrder.customer.name" class="text-xs leading-snug text-[#115E59] flex items-center gap-1">
+                      <span aria-hidden="true">&#128100;</span>
+                      <span>{{ takeawayOrder.customer.name }}</span>
+                    </p>
+                    <a
+                      v-if="takeawayOrder.customer && takeawayOrder.customer.phone"
+                      :href="`tel:${takeawayOrder.customer.phone}`"
+                      class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+                    >
+                      <span aria-hidden="true">&#128241;</span>
+                      <span>{{ takeawayOrder.customer.phone }}</span>
+                    </a>
+                  </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. -->
                   <button type="button" @click="openFilterSlide($event)"
                     class="filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full"
@@ -785,6 +840,33 @@
                   </span>
                 </div>
                 <div class="w-full pt-2 pb-3 px-3">
+                  <!-- [Sprint H4 Z3-NEW-002/003 2026-05-17] Legacy delivery
+                       block mirrored from onlineOrder lane. Helper gates on
+                       order_type === DELIVERY so this only renders for
+                       misclassified delivery orders that landed in the
+                       kiosk lane — defensive UX for ?v2=0 rollback. -->
+                  <div
+                    v-if="kdsLegacyShouldShowDelivery(kioskOrder)"
+                    class="mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]"
+                    data-testid="kds-legacy-delivery"
+                  >
+                    <p v-if="kdsLegacyDeliveryAddress(kioskOrder)" class="text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1">
+                      <span aria-hidden="true">&#128205;</span>
+                      <span class="break-words">{{ kdsLegacyDeliveryAddress(kioskOrder) }}</span>
+                    </p>
+                    <p v-if="kioskOrder.customer && kioskOrder.customer.name" class="text-xs leading-snug text-[#115E59] flex items-center gap-1">
+                      <span aria-hidden="true">&#128100;</span>
+                      <span>{{ kioskOrder.customer.name }}</span>
+                    </p>
+                    <a
+                      v-if="kioskOrder.customer && kioskOrder.customer.phone"
+                      :href="`tel:${kioskOrder.customer.phone}`"
+                      class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+                    >
+                      <span aria-hidden="true">&#128241;</span>
+                      <span>{{ kioskOrder.customer.phone }}</span>
+                    </a>
+                  </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. -->
                   <button type="button" @click="openFilterSlide($event)"
                     class="filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full"
@@ -1085,19 +1167,23 @@ export default {
     direction() {
       return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
     },
-    // [kds/sprint-2 V-5 / Sprint 3C 2026-05-16] V2 layout = PRODUCTION DEFAULT
-    // since 2026-05-16. The original gated rollout (default false, ?v2=1 opt-in)
-    // left the V2 P0 fixes (consolidated banner, fixed-height card, allergen
-    // pill, age stripe, single-FIFO grid) inert in production — kitchen still
-    // saw the legacy 4-column UI with the accordion-closed-by-default bug + 5
-    // stacked banners eating ~10% screen height.
+    // [kds/sprint-2 V-5 / Sprint 3C 2026-05-16 / Sprint H4 Z3-NEW-006 2026-05-17]
+    // V2 layout = PRODUCTION DEFAULT since 2026-05-16. The original gated rollout
+    // (default false, ?v2=1 opt-in) left the V2 P0 fixes (consolidated banner,
+    // fixed-height card, allergen pill, age stripe, single-FIFO grid) inert in
+    // production — kitchen still saw the legacy 4-column UI with the
+    // accordion-closed-by-default bug + 5 stacked banners eating ~10% screen height.
     //
-    // New order of precedence (inverted):
+    // Order of precedence (Z3-NEW-006 added the org config layer so operators
+    // can rollback the whole org via KDS_V2_DEFAULT_ENABLED=false in .env
+    // instead of per-tab localStorage flipping each device):
     //   1. URL param ?v2=0           — emergency rollback to legacy (per-tab)
     //   2. URL param ?v2=1           — explicit V2 (per-tab)
     //   3. localStorage kds.v2_enabled === '0' — per-device legacy opt-out
     //   4. localStorage kds.v2_enabled === '1' — per-device V2 force-on (legacy)
-    //   5. Default                   — V2 (new behaviour)
+    //   5. window.FK_KDS_V2_DEFAULT_ENABLED — org config (Blade-injected from
+    //      config('kds.v2_default_enabled') / KDS_V2_DEFAULT_ENABLED env)
+    //   6. Default true              — V2 (Wave Z 5C rollout default)
     //
     // The legacy 4-column path remains intact in the v-else branch so
     // operators in the kitchen can revert in one URL keystroke if a
@@ -1120,7 +1206,15 @@ export default {
         if (stored === '0') {
           return false;
         }
-        // null / '1' / any other value → V2 default.
+        if (stored === '1') {
+          return true;
+        }
+        // [Z3-NEW-006] Org-wide config layer between localStorage and hardcoded
+        // fallback. Lets ops flip KDS_V2_DEFAULT_ENABLED=false in .env to
+        // rollback the whole fleet without touching each device.
+        if (typeof window.FK_KDS_V2_DEFAULT_ENABLED === 'boolean') {
+          return window.FK_KDS_V2_DEFAULT_ENABLED;
+        }
         return true;
       } catch (_e) {
         // Fail-safe: if storage is denied, still render the modern UI.
@@ -1340,6 +1434,27 @@ export default {
     this._kdsSyncStampTimer = setInterval(() => { this.syncNowTick = Date.now(); }, 1000);
   },
   methods: {
+    // [2026-05-18 PR-C T2 reframe heal] JS-side filter for OrderStatusChanged.
+    // Mirrors `KitchenReleaseRule::visibleStatuses` (ACCEPT / PREPARING /
+    // PREPARED). A status change affects the KDS board when EITHER the
+    // previous OR the next status is in that set:
+    //   - Entry transitions (PENDING→ACCEPT, ACCEPT→PREPARING, etc.)
+    //   - Exit transitions  (PREPARED→DELIVERED, ACCEPT→CANCELED)
+    //   - Same-board mutations (ACCEPT→PREPARING bump)
+    // Pure transitions outside the KDS board (e.g. DELIVERED→REFUNDED,
+    // CANCELED→RETURNED) no longer trigger an unnecessary debounced refresh.
+    _statusChangeAffectsKds(parsed) {
+      const KDS_VISIBLE = [4, 7, 8]; // ACCEPT, PREPARING, PREPARED (mirror KitchenReleaseRule)
+      const payload = parsed && parsed.payload ? parsed.payload : (parsed || {});
+      const oldStatus = Number(payload.old_status);
+      const newStatus = Number(payload.new_status);
+      // Missing payload (legacy / unparsed event) → fall back to refresh
+      // rather than risk swallowing a real transition.
+      if (!Number.isFinite(oldStatus) && !Number.isFinite(newStatus)) {
+        return true;
+      }
+      return KDS_VISIBLE.includes(oldStatus) || KDS_VISIBLE.includes(newStatus);
+    },
     // [Sprint 2A DEL-3 2026-05-16] Legacy template delivery-block helpers.
     // Mirror the V2 KdsOrderCard `isDeliveryOrder` + `deliveryAddressLine`
     // computed logic for the rollback path (?v2=0 / kds.v2_enabled='0').
@@ -1665,7 +1780,17 @@ export default {
       this.unsubscribeEcho();
       try {
         this._eventSub = onEvents(branchId, [
-          { broadcastAs: 'OrderStatusChanged', handler: () => { this._debouncedRefresh(); } },
+          // [2026-05-18 PR-C T2 reframe heal] Filter OrderStatusChanged JS-side:
+          // refresh only when from OR to is in the KDS-visible status set
+          // (ACCEPT=4 / PREPARING=7 / PREPARED=8 — mirror KitchenReleaseRule).
+          // Before this guard, every status flip (DELIVERED→REFUNDED, CANCELED,
+          // RETURNED, etc.) triggered a debounced full refresh even though
+          // none of those affect the KDS board → wasted backend calls + flicker.
+          { broadcastAs: 'OrderStatusChanged', handler: (parsed) => {
+              if (this._statusChangeAffectsKds(parsed)) {
+                this._debouncedRefresh();
+              }
+          } },
           { broadcastAs: 'OrderCreated', handler: () => { this._debouncedRefresh(); } },
           { broadcastAs: 'OrderPaidAtCounter', handler: () => { this._debouncedRefresh(); } },
           // [SYNC-001 + CV1-KDS-INFLIGHT-OOS-MARKER-001] KDS now also receives

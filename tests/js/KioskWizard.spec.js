@@ -1218,7 +1218,12 @@ describe('KioskWizardComponent — active wizard UX fixes', () => {
       },
     });
 
-    expect(wrapper.text()).toContain('Votre tacos comprend 2 portions');
+    // Heal 2026-05-17: copy was rewritten by commit 7322940a3 (kiosk-i18n
+    // rush-100 VS-A-01) — "Votre tacos comprend" was tacos-specific copy
+    // leaking across templates (sandwich/galette/bols). New neutral copy
+    // is `instruction_many` = "Choisissez {n} portions de viande : ...".
+    // i18n JSON is exempt from the wizard frozen-zone (component untouched).
+    expect(wrapper.text()).toContain('Choisissez 2 portions de viande');
     expect(wrapper.text()).not.toContain('Inclus');
     expect(wrapper.text()).toContain('Supplément');
 

@@ -158,16 +158,17 @@
   ];
 
   // 9 suppléments génériques (heal-light v2 2026-05-14 — Bacon supprimé, Boursin ajouté, prix 0.90€)
+  // [MASSIVE-LOGIC HEAL 2026-05-17 P0] allergens added per FIC 1169/2011 — aggregation reads from this pool
   const SUPPLEMENTS = [
-    { id: 'sup-cheddar',        name: 'Cheddar',        price: 0.90, image: ASSET_BASE + 'generated_fromage-supplementaire.png' },
-    { id: 'sup-raclette',       name: 'Raclette',       price: 0.90, image: ASSET_BASE + 'supplement_raclette.png' },
-    { id: 'sup-emmental',       name: 'Emmental',       price: 0.90, image: ASSET_BASE + 'supplement_fromage.png' },
-    { id: 'sup-oeuf',           name: 'Œuf',            price: 0.90, image: ASSET_BASE + 'supplement_oeuf.png' },
-    { id: 'sup-boursin',        name: 'Boursin',        price: 0.90, image: ASSET_BASE + 'supplement_boursin.png' },
-    { id: 'sup-legumes-sautes', name: 'Légumes sautés', price: 0.90, image: ASSET_BASE + 'generated_salade-verte.png' },
-    { id: 'sup-jambon',         name: 'Jambon',         price: 0.90, image: ASSET_BASE + 'supplement_jambon_dinde.png' },
-    { id: 'sup-oignon-frais',   name: 'Oignon frais',   price: 0.90, image: ASSET_BASE + 'crudite_oignon.png' },
-    { id: 'sup-champignons',    name: 'Champignons',    price: 0.90, image: ASSET_BASE + 'generated_omelette-champignons-fromage.png' },
+    { id: 'sup-cheddar',        name: 'Cheddar',        price: 0.90, image: ASSET_BASE + 'generated_fromage-supplementaire.png', allergens: ['lactose'] },
+    { id: 'sup-raclette',       name: 'Raclette',       price: 0.90, image: ASSET_BASE + 'supplement_raclette.png',                allergens: ['lactose'] },
+    { id: 'sup-emmental',       name: 'Emmental',       price: 0.90, image: ASSET_BASE + 'supplement_fromage.png',                 allergens: ['lactose'] },
+    { id: 'sup-oeuf',           name: 'Œuf',            price: 0.90, image: ASSET_BASE + 'supplement_oeuf.png',                    allergens: ['oeuf'] },
+    { id: 'sup-boursin',        name: 'Boursin',        price: 0.90, image: ASSET_BASE + 'supplement_boursin.png',                 allergens: ['lactose'] },
+    { id: 'sup-legumes-sautes', name: 'Légumes sautés', price: 0.90, image: ASSET_BASE + 'generated_salade-verte.png',             allergens: [] },
+    { id: 'sup-jambon',         name: 'Jambon',         price: 0.90, image: ASSET_BASE + 'supplement_jambon_dinde.png',            allergens: [] },
+    { id: 'sup-oignon-frais',   name: 'Oignon frais',   price: 0.90, image: ASSET_BASE + 'crudite_oignon.png',                     allergens: [] },
+    { id: 'sup-champignons',    name: 'Champignons',    price: 0.90, image: ASSET_BASE + 'generated_omelette-champignons-fromage.png', allergens: [] },
   ];
 
   // Suppléments spécifiques aux bols (heal-light v2 2026-05-14 — gratiné +2€ bol-specific)
@@ -252,7 +253,10 @@
       thumb: 'item-' + slug,
       image: imgFor(slug),
       hero: heroFor(slug),
-      kiosk_emoji: opts.emoji || '',
+      kiosk_emoji: opts.emoji || '', // legacy field used by screens-item-steps.jsx:841
+      // [ULTRA-FRONTENDS HEAL 2026-05-18 P1] also expose `emoji` for web parity (consumers
+      // expecting item.emoji per web mkItem shape — mobile consumers may use either field).
+      emoji: opts.emoji || '',
       time: opts.time !== undefined ? opts.time : 8,
       tags: opts.tags || [],
       is_featured: !!opts.is_featured,
@@ -292,10 +296,19 @@
   //         source_type, position, min_select, max_select, addon_role?, choices[] }] }
   // -------------------------------------------------------------------------
   function buildBolComposerProfile(item, opts) {
-    // Sauce default ID resolved from name (bol_sauce_default = "Curry" → 's-curry')
-    const defaultSauce = opts.bol_sauce_default
-      ? (SAUCES.find(s => s.name === opts.bol_sauce_default) || {})
-      : {};
+    // [MASSIVE-LOGIC HEAL 2026-05-17 P0] Bol sauce default lookup with safe fallback :
+    // if name lookup fails (sauce renamed/deleted), fall back to first SAUCE rather
+    // than `{}` which leaves user with no pre-selection + no error feedback.
+    let defaultSauce = null;
+    if (opts.bol_sauce_default) {
+      defaultSauce = SAUCES.find(s => s.name === opts.bol_sauce_default);
+      if (!defaultSauce) {
+        console.warn('[buildBolComposerProfile] bol_sauce_default "' + opts.bol_sauce_default + '" not found in SAUCES for item ' + item.slug + ' — falling back to first sauce');
+        defaultSauce = SAUCES[0];
+      }
+    } else {
+      defaultSauce = SAUCES[0];
+    }
     return {
       template: 'bol',
       version: 1,
@@ -310,10 +323,10 @@
           max_select: 1,
           allow_repeat: false,
           addon_role: null,
-          default_choice_id: defaultSauce.id || null,
+          default_choice_id: (defaultSauce && defaultSauce.id) || null,
           choices: SAUCES.map(s => ({
             id: s.id, name: s.name, price: 0, image: s.image,
-            is_default: s.id === defaultSauce.id,
+            is_default: !!(defaultSauce && s.id === defaultSauce.id),
             is_spicy: !!s.is_spicy,
           })),
         },

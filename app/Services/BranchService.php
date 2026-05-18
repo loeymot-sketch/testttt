@@ -129,7 +129,22 @@ class BranchService
     public function showByLatLong(Request $request)
     {
         try {
+            // [Sprint H3 DEL-7 2026-05-17] Silent whereNotNull('zone') excluded
+            // branches without a polygon from delivery resolution entirely —
+            // out-of-service-area errors were a permanent dead-end for any
+            // mis-configured branch. Now we log the exclusion count so ops
+            // can surface "branch has no zone polygon" as a config defect
+            // instead of a customer-facing 422. CLAUDE.md §9.
+            $totalActive = Branch::where('status', Status::ACTIVE)->count();
             $branches = Branch::whereNotNull('zone')->where('status', Status::ACTIVE)->get();
+            $excluded = $totalActive - $branches->count();
+            if ($excluded > 0) {
+                Log::warning('[DEL-7] Active branches excluded from zone-resolution (no zone polygon)', [
+                    'event'           => 'branch.zone.missing_polygon',
+                    'excluded_count'  => $excluded,
+                    'with_zone_count' => $branches->count(),
+                ]);
+            }
             $userLatitude = $request->input('latitude');
             $userLongitude = $request->input('longitude');
 

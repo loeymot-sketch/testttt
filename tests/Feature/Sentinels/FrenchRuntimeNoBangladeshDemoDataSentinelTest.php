@@ -22,6 +22,11 @@ class FrenchRuntimeNoBangladeshDemoDataSentinelTest extends TestCase
             'username' => 'legacy-user',
             'password' => bcrypt('secret'),
             'country_code' => '+880',
+            // [Sprint H6 TEST-DEBT-002 2026-05-17] Sprint 2B/DEL-4 migration
+            // (2026_05_16_140100_make_user_phone_required) made users.phone NOT NULL.
+            // This sentinel test predates that migration; add a Bangladesh-shaped phone
+            // value so the legacy-row insert still reflects pre-cleanup demo data.
+            'phone' => '+8801257654433',
             'is_guest' => Ask::NO,
             'status' => Status::ACTIVE,
             'created_at' => now(),

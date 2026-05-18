@@ -20,5 +20,10 @@ use App\Http\PaymentGateways\Gateways\Stripe;
 */
 
 Route::prefix('payment')->name('payment.')->middleware(['installed'])->group(function () {
-    Route::post('/stripe-webhook/', [Stripe::class, 'handleWebhook'])->name('stripe.webhook');
+    // [Wave 1 P1 SYNC-RED-01 2026-05-18] throttle:60,1 → mitigates LAN HMAC-CPU DoS
+    // (invalid-signature spam burning CPU + filling `fiscal` log channel).
+    // Stripe in production sends ~5/s burst max → 60/min is generous + safe.
+    Route::post('/stripe-webhook/', [Stripe::class, 'handleWebhook'])
+        ->middleware(['throttle:60,1'])
+        ->name('stripe.webhook');
 });

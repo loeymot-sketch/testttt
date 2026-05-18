@@ -7,6 +7,7 @@ use App\Exceptions\CashDrawerSessionNotOpenException;
 use App\Models\CashMovement;
 use App\Models\Order;
 use App\Models\OrderPayment;
+use App\Models\PaymentTerminal;
 use App\Services\Cash\CashDrawerService;
 use App\Services\Fiscal\AuditLogService;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -107,6 +108,34 @@ final class SplitPaymentService
                 }
             }
 
+            // [F-SPLIT-PHANTOM-CARD-001 2026-05-17] Defense-in-depth — CARD
+            // tranches MUST carry a valid terminal_id scoped to the order's
+            // branch + ACTIVE status. Mirrors PosOrderRequest withValidator;
+            // catches non-HTTP callers (queue jobs, direct service use).
+            // BranchScope is bypassed for the lookup, branch_id is checked
+            // explicitly to prevent cross-branch terminal leakage.
+            if ($mode === PosPaymentMethod::CARD) {
+                $terminalIdRaw = $t['terminal_id'] ?? null;
+                $terminalId = ($terminalIdRaw !== null && $terminalIdRaw !== '' && (int) $terminalIdRaw > 0)
+                    ? (int) $terminalIdRaw
+                    : 0;
+                if ($terminalId <= 0) {
+                    throw ValidationException::withMessages([
+                        "payment_breakdown.{$idx}.terminal_id" => 'CARD tranche requires a valid terminal_id.',
+                    ]);
+                }
+                $terminalOk = PaymentTerminal::withoutGlobalScopes()
+                    ->where('id', $terminalId)
+                    ->where('branch_id', $branchId)
+                    ->where('status', PaymentTerminal::STATUS_ACTIVE)
+                    ->exists();
+                if (! $terminalOk) {
+                    throw ValidationException::withMessages([
+                        "payment_breakdown.{$idx}.terminal_id" => 'CARD terminal_id is not active on this branch.',
+                    ]);
+                }
+            }
+
             $totalCents += (int) round($amount * 100);
         }
 
@@ -171,7 +200,11 @@ final class SplitPaymentService
         }
 
         $cashSession = null;
-        if ($hasCashTranche) {
+        // [2026-05-18] Hardware simulation: when no physical drawer is wired,
+        // CASH tranches are still recorded (OrderPayment row + audit log) but
+        // no cash_movement is written (handled below via $cashSession===null).
+        $simulating = config('pos.simulation_hardware') === true;
+        if ($hasCashTranche && ! $simulating) {
             if (! Auth::check()) {
                 throw new CashDrawerSessionNotOpenException();
             }
@@ -199,10 +232,21 @@ final class SplitPaymentService
                     $reference = substr($reference, 0, 64);
                 }
 
+                // [Sprint H2 P1-Z7-01 2026-05-17] Forward terminal_id from tranche
+                // payload so the Z-report TPE breakdown (Sprint 1C) gets per-terminal
+                // aggregation. Pre-fix the column was always NULL → ZReportCashEnrichment
+                // ::aggregateByTerminal returned a single "Sans TPE" bucket with
+                // fees_total=0. Nullable for legacy callers / UI Stage B not yet shipped.
+                $terminalIdRaw = $t['terminal_id'] ?? null;
+                $terminalId = ($terminalIdRaw !== null && $terminalIdRaw !== '' && (int) $terminalIdRaw > 0)
+                    ? (int) $terminalIdRaw
+                    : null;
+
                 $row = OrderPayment::create([
                     'order_id'      => (int) $order->id,
                     'branch_id'     => (int) $order->branch_id,
                     'mode'          => $mode,
+                    'terminal_id'   => $terminalId,
                     'amount'        => $amount,
                     'tendered'      => $tendered,
                     'change_amount' => $change,

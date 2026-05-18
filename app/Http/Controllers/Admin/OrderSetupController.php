@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\SettingsUpdated;
 use App\Http\Requests\OrderSetupRequest;
 use App\Http\Resources\OrderSetupResource;
 use App\Services\OrderSetupService;
@@ -31,7 +32,10 @@ class OrderSetupController extends AdminController
     public function update(OrderSetupRequest $request
     ) : \Illuminate\Http\Response | OrderSetupResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory {
         try {
-            return new OrderSetupResource($this->orderSetupService->update($request));
+            $resource = new OrderSetupResource($this->orderSetupService->update($request));
+            // [Wave 5G R9 heal 2026-05-17] Fan-out settings.updated -> outbox.
+            SettingsUpdated::dispatch(['order_setup']);
+            return $resource;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

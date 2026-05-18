@@ -10,6 +10,7 @@ use App\Models\Branch;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\OrderPayment;
+use App\Models\PaymentTerminal;
 use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,6 +37,7 @@ class SplitPaymentSentinelTest extends TestCase
     protected User $cashierA;
     protected User $customerA;
     protected Item $itemA;
+    protected PaymentTerminal $terminalA;
 
     protected function setUp(): void
     {
@@ -92,6 +94,17 @@ class SplitPaymentSentinelTest extends TestCase
             'price' => 25.00,
             'status' => Status::ACTIVE,
         ]);
+
+        // [F-SPLIT-PHANTOM-CARD-001 2026-05-17] Active TPE on branchA so
+        // CARD tranches can pass the new mandatory terminal_id check.
+        $this->terminalA = PaymentTerminal::create([
+            'branch_id'    => $this->branchA->id,
+            'name'         => 'TPE Sentinel',
+            'gateway_type' => PaymentTerminal::GATEWAY_MANUAL,
+            'fee_percent'  => 0,
+            'fee_fixed'    => 0,
+            'status'       => PaymentTerminal::STATUS_ACTIVE,
+        ]);
     }
 
     private function basePayload(int $branchId, int $customerId, int $itemId, array $overrides = []): array
@@ -144,7 +157,8 @@ class SplitPaymentSentinelTest extends TestCase
         $payload = $this->basePayload($this->branchA->id, $this->customerA->id, $this->itemA->id, [
             'payment_breakdown' => [
                 ['mode' => PosPaymentMethod::CASH, 'amount' => 10.00, 'tendered' => 10.00, 'change' => 0],
-                ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00, 'reference' => '4242'],
+                // [F-SPLIT-PHANTOM-CARD-001] CARD tranche now requires terminal_id.
+                ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00, 'reference' => '4242', 'terminal_id' => $this->terminalA->id],
             ],
         ]);
 

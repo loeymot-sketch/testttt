@@ -17,7 +17,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-card[data-v-151558cb] {\n    position: relative;\n    display: flex;\n    flex-direction: column;\n    background: #FFFFFF;\n    border-radius: 12px;\n    overflow: hidden;\n    transition: transform 250ms ease-out, box-shadow 150ms ease, opacity 200ms ease;\n    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);\n}\n.kds-card[data-v-151558cb]:hover {\n    transform: translateY(-1px);\n    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);\n}\n.kds-card[data-v-151558cb]:focus-visible {\n    outline: 4px solid #EA580C;\n    outline-offset: 4px;\n}\n.kds-card__stripe[data-v-151558cb] {\n    height: 6px;\n    flex-shrink: 0;\n}\n.kds-card__header[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    border-bottom: 1px solid #F3F4F6;\n}\n.kds-card__meta[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    height: 26px;\n    padding: 6px 12px 0;\n}\n.kds-card__shortcut[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    color: #6B7280;\n    background: rgba(0, 0, 0, 0.04);\n    min-width: 22px;\n    height: 18px;\n    border-radius: 4px;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.04em;\n}\n.kds-card__shortcut-spacer[data-v-151558cb],\n.kds-card__allergen-spacer[data-v-151558cb] {\n    width: 22px;\n}\n.kds-card__state-source[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n}\n.kds-card__state-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 8px;\n    height: 24px;\n    border-radius: 9999px;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n}\n.kds-card__state-dot[data-v-151558cb] {\n    display: inline-block;\n    width: 6px;\n    height: 6px;\n    border-radius: 9999px;\n}\n.kds-card__source-chip[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 10px;\n    height: 28px;\n    border-radius: 6px;\n    font-size: 13px;\n    font-weight: 700;\n    letter-spacing: 0.1em;\n    text-transform: uppercase;\n}\n.kds-card__allergen-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 4px;\n    padding: 0 8px;\n    height: 20px;\n    border-radius: 4px;\n    background: #EA580C;\n    color: #FFFFFF;\n    font-size: 10px;\n    font-weight: 800;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.30);\n}\n.kds-card__main[data-v-151558cb] {\n    display: flex;\n    align-items: flex-end;\n    justify-content: space-between;\n    padding: 2px 16px 10px;\n}\n.kds-card__queue[data-v-151558cb] {\n    color: #111827;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 52px;\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.03em;\n    font-variant-numeric: tabular-nums;\n}\n.kds-card__queue-prefix[data-v-151558cb] {\n    font-size: 26px;\n    font-weight: 700;\n    opacity: 0.55;\n    margin-inline-end: 2px;\n}\n.kds-card__elapsed-wrap[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    align-items: flex-end;\n    gap: 2px;\n}\n.kds-card__elapsed-label[data-v-151558cb] {\n    font-size: 10px;\n    font-weight: 700;\n    letter-spacing: 0.15em;\n    text-transform: uppercase;\n    opacity: 0.75;\n}\n.kds-card__elapsed[data-v-151558cb] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 34px;\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.02em;\n    font-variant-numeric: tabular-nums;\n}\n.kds-card__body[data-v-151558cb] {\n    flex: 1;\n    overflow-y: auto;\n    padding: 4px 16px;\n    position: relative;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar {\n    width: 4px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-thumb {\n    background: #D1D5DB;\n    border-radius: 2px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-track {\n    background: transparent;\n}\n.kds-card__item-block[data-v-151558cb] {\n    border-top: 1px solid #F3F4F6;\n}\n.kds-card__item-block[data-v-151558cb]:first-child {\n    border-top: none;\n}\n.kds-card__body-fade[data-v-151558cb] {\n    position: sticky;\n    bottom: 0;\n    height: 0;\n    pointer-events: none;\n}\n.kds-card__body-fade[data-v-151558cb]::before {\n    content: '';\n    position: absolute;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    height: 16px;\n    background: linear-gradient(to top, #FFFFFF, rgba(255, 255, 255, 0));\n}\n.kds-card__cta[data-v-151558cb] {\n    margin: 4px 8px 8px;\n    height: 52px;\n    background: #1F2937;\n    color: #FFFFFF;\n    border: 0;\n    border-radius: 12px;\n    font-size: 22px;\n    font-weight: 700;\n    letter-spacing: 0.01em;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    gap: 14px;\n    transition: transform 100ms ease;\n}\n.kds-card__cta[data-v-151558cb]:active {\n    transform: translateY(1px);\n}\n.kds-card__cta[data-v-151558cb]:focus-visible {\n    outline: 4px solid #4B5563;\n    outline-offset: 2px;\n}\n\n/* age critical pulse on time digit (1Hz) */\n@keyframes kds-card-pulse-digit-151558cb {\n0%, 100% { opacity: 1;\n}\n50%      { opacity: 0.55;\n}\n}\n.kds-pulse-digit[data-v-151558cb] {\n    animation: kds-card-pulse-digit-151558cb 1s ease-in-out infinite;\n}\n.kds-card--ready[data-v-151558cb] {\n    opacity: 0.7;\n}\n.kds-card--cancelled[data-v-151558cb] {\n    background: rgba(254, 226, 226, 0.5);\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-card[data-v-151558cb],\n    .kds-pulse-digit[data-v-151558cb],\n    .kds-card__cta[data-v-151558cb] {\n        transition: none !important;\n        animation: none !important;\n}\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-card[data-v-151558cb] {\n    position: relative;\n    display: flex;\n    flex-direction: column;\n    background: #FFFFFF;\n    border-radius: 12px;\n    overflow: hidden;\n    transition: transform 250ms ease-out, box-shadow 150ms ease, opacity 200ms ease;\n    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);\n}\n.kds-card[data-v-151558cb]:hover {\n    transform: translateY(-1px);\n    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);\n}\n.kds-card[data-v-151558cb]:focus-visible {\n    outline: 4px solid #EA580C;\n    outline-offset: 4px;\n}\n.kds-card__stripe[data-v-151558cb] {\n    height: 6px;\n    flex-shrink: 0;\n}\n.kds-card__header[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    border-bottom: 1px solid #F3F4F6;\n}\n.kds-card__meta[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    height: 26px;\n    padding: 6px 12px 0;\n}\n.kds-card__shortcut[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    /* KDS-R1-03 heal: stable WCAG AA contrast regardless of bucket-tinted header.\n       Previously #6B7280 on rgba(0,0,0,0.04) gave 3.63:1 on critical bucket (red header)\n       and 4.43:1 on fresh — both FAIL AA for normal text. Now opaque gray-100 bg + gray-800\n       text = ~12.6:1 stable on every bucket. */\n    color: #1F2937;\n    background: #F3F4F6;\n    min-width: 22px;\n    height: 18px;\n    border-radius: 4px;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.04em;\n}\n.kds-card__shortcut-spacer[data-v-151558cb],\n.kds-card__allergen-spacer[data-v-151558cb] {\n    width: 22px;\n}\n.kds-card__state-source[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n}\n.kds-card__state-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 8px;\n    height: 24px;\n    border-radius: 9999px;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n}\n.kds-card__state-dot[data-v-151558cb] {\n    display: inline-block;\n    width: 6px;\n    height: 6px;\n    border-radius: 9999px;\n}\n.kds-card__source-chip[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 10px;\n    height: 28px;\n    border-radius: 6px;\n    font-size: 13px;\n    font-weight: 700;\n    letter-spacing: 0.1em;\n    text-transform: uppercase;\n}\n.kds-card__allergen-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 4px;\n    padding: 0 8px;\n    height: 20px;\n    border-radius: 4px;\n    background: #EA580C;\n    color: #FFFFFF;\n    font-size: 10px;\n    font-weight: 800;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.30);\n}\n.kds-card__main[data-v-151558cb] {\n    display: flex;\n    align-items: flex-end;\n    justify-content: space-between;\n    gap: 12px; /* KDS-R1-01 heal: prevent queue + elapsed overlap on long times */\n    padding: 2px 16px 10px;\n}\n.kds-card__queue[data-v-151558cb],\n.kds-card__elapsed-wrap[data-v-151558cb] {\n    flex-shrink: 0; /* KDS-R1-01 heal: never compress, never overlap */\n}\n.kds-card__queue[data-v-151558cb] {\n    color: #111827;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 52px;\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.03em;\n    font-variant-numeric: tabular-nums;\n}\n.kds-card__queue-prefix[data-v-151558cb] {\n    font-size: 26px;\n    font-weight: 700;\n    opacity: 0.55;\n    margin-inline-end: 2px;\n}\n.kds-card__elapsed-wrap[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    align-items: flex-end;\n    gap: 2px;\n}\n.kds-card__elapsed-label[data-v-151558cb] {\n    font-size: 10px;\n    font-weight: 700;\n    letter-spacing: 0.15em;\n    text-transform: uppercase;\n    /* KDS-R1-02 heal: removed opacity:0.75 which dropped contrast below WCAG AA. */\n}\n.kds-card__elapsed[data-v-151558cb] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 34px;\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.02em;\n    font-variant-numeric: tabular-nums;\n}\n.kds-card__body[data-v-151558cb] {\n    flex: 1;\n    overflow-y: auto;\n    padding: 4px 16px;\n    position: relative;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar {\n    width: 4px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-thumb {\n    background: #D1D5DB;\n    border-radius: 2px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-track {\n    background: transparent;\n}\n.kds-card__item-block[data-v-151558cb] {\n    border-top: 1px solid #F3F4F6;\n}\n.kds-card__item-block[data-v-151558cb]:first-child {\n    border-top: none;\n}\n\n/* [Sprint 2A DEL-3 2026-05-16] Delivery block — sits at the top of the\n   card body, quiet teal accent (matches KDS_SOURCE.DELIVERY palette in\n   helpers/kdsSource.js). Never out-screams the queue number or timer. */\n.kds-card__delivery[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    gap: 4px;\n    padding: 8px 10px;\n    margin: 4px 0 6px;\n    border-radius: 8px;\n    background: #F0FDFA;\n    border-left: 3px solid #0F766E;\n}\n.kds-card__delivery-row[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n    font-size: 13px;\n    line-height: 1.3;\n    color: #0F766E;\n    font-weight: 600;\n    text-decoration: none;\n}\n.kds-card__delivery-row--muted[data-v-151558cb] {\n    color: #115E59;\n    font-weight: 500;\n}\n.kds-card__delivery-icon[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    width: 16px;\n    font-size: 14px;\n    flex-shrink: 0;\n}\n.kds-card__delivery-text[data-v-151558cb] {\n    min-width: 0;\n    overflow-wrap: anywhere;\n}\n.kds-card__delivery-phone[data-v-151558cb] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-weight: 700;\n    letter-spacing: 0.02em;\n    cursor: pointer;\n}\n.kds-card__delivery-phone[data-v-151558cb]:hover {\n    text-decoration: underline;\n}\n.kds-card__delivery-phone[data-v-151558cb]:focus-visible {\n    outline: 2px solid #0F766E;\n    outline-offset: 2px;\n    border-radius: 4px;\n}\n.kds-card__body-fade[data-v-151558cb] {\n    position: sticky;\n    bottom: 0;\n    height: 0;\n    pointer-events: none;\n}\n.kds-card__body-fade[data-v-151558cb]::before {\n    content: '';\n    position: absolute;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    height: 16px;\n    background: linear-gradient(to top, #FFFFFF, rgba(255, 255, 255, 0));\n}\n.kds-card__cta[data-v-151558cb] {\n    margin: 4px 8px 8px;\n    height: 52px;\n    background: #1F2937;\n    color: #FFFFFF;\n    border: 0;\n    border-radius: 12px;\n    font-size: 22px;\n    font-weight: 700;\n    letter-spacing: 0.01em;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    gap: 14px;\n    transition: transform 100ms ease;\n}\n.kds-card__cta[data-v-151558cb]:active {\n    transform: translateY(1px);\n}\n.kds-card__cta[data-v-151558cb]:focus-visible {\n    outline: 4px solid #4B5563;\n    outline-offset: 2px;\n}\n\n/* age critical pulse on time digit (1Hz) */\n@keyframes kds-card-pulse-digit-151558cb {\n0%, 100% { opacity: 1;\n}\n50%      { opacity: 0.55;\n}\n}\n.kds-pulse-digit[data-v-151558cb] {\n    animation: kds-card-pulse-digit-151558cb 1s ease-in-out infinite;\n}\n.kds-card--ready[data-v-151558cb] {\n    opacity: 0.7;\n}\n.kds-card--cancelled[data-v-151558cb] {\n    background: rgba(254, 226, 226, 0.5);\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-card[data-v-151558cb],\n    .kds-pulse-digit[data-v-151558cb],\n    .kds-card__cta[data-v-151558cb] {\n        transition: none !important;\n        animation: none !important;\n}\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -251,7 +251,10 @@ var AGE_BORDER = {
       return AGE_ELAPSED_COLOR[this.bucket] || AGE_ELAPSED_COLOR.fresh;
     },
     elapsedLabelColor: function elapsedLabelColor() {
-      return this.bucket === 'fresh' ? '#9CA3AF' : this.elapsedColor;
+      // KDS-R1-02 heal: fixed dark color always (9.5:1 on white, WCAG AA-large) —
+      // bucket color stays on the BIG elapsed number for visual hierarchy.
+      // Previous bucket-tinted label hit 1.94:1 (axe-confirmed FAIL).
+      return '#374151';
     },
     borderColor: function borderColor() {
       // Allergen overrides age — orange regardless of how old.
@@ -291,7 +294,61 @@ var AGE_BORDER = {
     ariaLabel: function ariaLabel() {
       var m = Math.floor(this.elapsedSeconds / 60);
       var r = this.elapsedSeconds % 60;
-      return "Commande ".concat(this.order.queue_number || this.order.id, ", source ").concat(this.sourceLabel, ", ").concat(this.stateLabel, ", attente ").concat(m, " minutes ").concat(r, " secondes");
+      return this.$t('label.kds_card_aria', {
+        queue: this.order.queue_number || this.order.id,
+        source: this.sourceLabel,
+        state: this.stateLabel,
+        minutes: m,
+        seconds: r
+      });
+    },
+    // [Sprint 2A DEL-3 2026-05-16] Delivery-context computeds.
+    // Source-truth precedence: explicit source_surface === 'delivery'
+    // (set by Order.php boot creating hook) OR legacy order_type === 5
+    // (OrderType::DELIVERY) — backwards-compatible with rows created
+    // before the source_surface column was added.
+    isDeliveryOrder: function isDeliveryOrder() {
+      var _this$order, _this$order2;
+      var surface = String(((_this$order = this.order) === null || _this$order === void 0 ? void 0 : _this$order.source_surface) || '').toLowerCase();
+      if (surface === 'delivery') {
+        return true;
+      }
+      // OrderType::DELIVERY === 5 (app/Enums/OrderType.php).
+      return Number((_this$order2 = this.order) === null || _this$order2 === void 0 ? void 0 : _this$order2.order_type) === 5;
+    },
+    deliveryAddress: function deliveryAddress() {
+      var _this$order3;
+      return ((_this$order3 = this.order) === null || _this$order3 === void 0 ? void 0 : _this$order3.order_address) || null;
+    },
+    deliveryAddressLine: function deliveryAddressLine() {
+      var a = this.deliveryAddress;
+      if (!a) {
+        return '';
+      }
+      var parts = [];
+      if (a.apartment) {
+        parts.push(a.apartment);
+      }
+      if (a.address) {
+        parts.push(a.address);
+      }
+      return parts.join(' — ');
+    },
+    customerName: function customerName() {
+      var _this$order4;
+      return ((_this$order4 = this.order) === null || _this$order4 === void 0 || (_this$order4 = _this$order4.customer) === null || _this$order4 === void 0 ? void 0 : _this$order4.name) || '';
+    },
+    customerPhone: function customerPhone() {
+      var _this$order5;
+      // [Sprint 5A Z9-P1-03] Hide Sprint 2B legacy sentinels from the
+      // tel: link / on-card display — `PENDING_<id>` / `PENDING_CREATE_*`
+      // are placeholders injected by User::creating for legacy paths
+      // and produce a broken `tel:PENDING_*` href otherwise.
+      var phone = ((_this$order5 = this.order) === null || _this$order5 === void 0 || (_this$order5 = _this$order5.customer) === null || _this$order5 === void 0 ? void 0 : _this$order5.phone) || '';
+      if (typeof phone === 'string' && phone.startsWith('PENDING_')) {
+        return '';
+      }
+      return phone;
     }
   },
   methods: {
@@ -873,26 +930,59 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     direction: function direction() {
       return this.$store.getters['frontendLanguage/show'].display_mode === _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_6__["default"].RTL ? 'rtl' : 'ltr';
     },
-    // [kds/sprint-2 V-5] Feature flag for the new V2 layout. Order of precedence:
-    //   1. URL param ?v2=1 (preview without touching localStorage)
-    //   2. localStorage 'kds.v2_enabled' === '1' (per-device opt-in)
-    //   3. Default false → legacy 4-column layout stays
+    // [kds/sprint-2 V-5 / Sprint 3C 2026-05-16 / Sprint H4 Z3-NEW-006 2026-05-17]
+    // V2 layout = PRODUCTION DEFAULT since 2026-05-16. The original gated rollout
+    // (default false, ?v2=1 opt-in) left the V2 P0 fixes (consolidated banner,
+    // fixed-height card, allergen pill, age stripe, single-FIFO grid) inert in
+    // production — kitchen still saw the legacy 4-column UI with the
+    // accordion-closed-by-default bug + 5 stacked banners eating ~10% screen height.
+    //
+    // Order of precedence (Z3-NEW-006 added the org config layer so operators
+    // can rollback the whole org via KDS_V2_DEFAULT_ENABLED=false in .env
+    // instead of per-tab localStorage flipping each device):
+    //   1. URL param ?v2=0           — emergency rollback to legacy (per-tab)
+    //   2. URL param ?v2=1           — explicit V2 (per-tab)
+    //   3. localStorage kds.v2_enabled === '0' — per-device legacy opt-out
+    //   4. localStorage kds.v2_enabled === '1' — per-device V2 force-on (legacy)
+    //   5. window.FK_KDS_V2_DEFAULT_ENABLED — org config (Blade-injected from
+    //      config('kds.v2_default_enabled') / KDS_V2_DEFAULT_ENABLED env)
+    //   6. Default true              — V2 (Wave Z 5C rollout default)
+    //
+    // The legacy 4-column path remains intact in the v-else branch so
+    // operators in the kitchen can revert in one URL keystroke if a
+    // regression surfaces during the rollout window.
     useV2Layout: function useV2Layout() {
       try {
         var _window$localStorage;
         if (typeof window === 'undefined') {
-          return false;
-        }
-        var params = new URLSearchParams(window.location.search || '');
-        if (params.get('v2') === '1') {
+          // SSR or unit tests without window: default to V2 unchanged.
           return true;
         }
-        if (params.get('v2') === '0') {
+        var params = new URLSearchParams(window.location.search || '');
+        var urlV2 = params.get('v2');
+        if (urlV2 === '0') {
           return false;
         }
-        return ((_window$localStorage = window.localStorage) === null || _window$localStorage === void 0 ? void 0 : _window$localStorage.getItem('kds.v2_enabled')) === '1';
+        if (urlV2 === '1') {
+          return true;
+        }
+        var stored = (_window$localStorage = window.localStorage) === null || _window$localStorage === void 0 ? void 0 : _window$localStorage.getItem('kds.v2_enabled');
+        if (stored === '0') {
+          return false;
+        }
+        if (stored === '1') {
+          return true;
+        }
+        // [Z3-NEW-006] Org-wide config layer between localStorage and hardcoded
+        // fallback. Lets ops flip KDS_V2_DEFAULT_ENABLED=false in .env to
+        // rollback the whole fleet without touching each device.
+        if (typeof window.FK_KDS_V2_DEFAULT_ENABLED === 'boolean') {
+          return window.FK_KDS_V2_DEFAULT_ENABLED;
+        }
+        return true;
       } catch (_e) {
-        return false;
+        // Fail-safe: if storage is denied, still render the modern UI.
+        return true;
       }
     },
     // [iter15-mega-fix C-008 run-3 2026-05-10] Supersedes the run-1/run-2
@@ -1124,6 +1214,57 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     }, 1000);
   },
   methods: {
+    // [2026-05-18 PR-C T2 reframe heal] JS-side filter for OrderStatusChanged.
+    // Mirrors `KitchenReleaseRule::visibleStatuses` (ACCEPT / PREPARING /
+    // PREPARED). A status change affects the KDS board when EITHER the
+    // previous OR the next status is in that set:
+    //   - Entry transitions (PENDING→ACCEPT, ACCEPT→PREPARING, etc.)
+    //   - Exit transitions  (PREPARED→DELIVERED, ACCEPT→CANCELED)
+    //   - Same-board mutations (ACCEPT→PREPARING bump)
+    // Pure transitions outside the KDS board (e.g. DELIVERED→REFUNDED,
+    // CANCELED→RETURNED) no longer trigger an unnecessary debounced refresh.
+    _statusChangeAffectsKds: function _statusChangeAffectsKds(parsed) {
+      var KDS_VISIBLE = [4, 7, 8]; // ACCEPT, PREPARING, PREPARED (mirror KitchenReleaseRule)
+      var payload = parsed && parsed.payload ? parsed.payload : parsed || {};
+      var oldStatus = Number(payload.old_status);
+      var newStatus = Number(payload.new_status);
+      // Missing payload (legacy / unparsed event) → fall back to refresh
+      // rather than risk swallowing a real transition.
+      if (!Number.isFinite(oldStatus) && !Number.isFinite(newStatus)) {
+        return true;
+      }
+      return KDS_VISIBLE.includes(oldStatus) || KDS_VISIBLE.includes(newStatus);
+    },
+    // [Sprint 2A DEL-3 2026-05-16] Legacy template delivery-block helpers.
+    // Mirror the V2 KdsOrderCard `isDeliveryOrder` + `deliveryAddressLine`
+    // computed logic for the rollback path (?v2=0 / kds.v2_enabled='0').
+    // Source-truth precedence identical to V2 to avoid drift between the
+    // two UIs the kitchen could switch between in a single shift.
+    kdsLegacyShouldShowDelivery: function kdsLegacyShouldShowDelivery(order) {
+      if (!order) {
+        return false;
+      }
+      var surface = String(order.source_surface || '').toLowerCase();
+      if (surface === 'delivery') {
+        return true;
+      }
+      // OrderType::DELIVERY === 5 (app/Enums/OrderType.php).
+      return Number(order.order_type) === 5;
+    },
+    kdsLegacyDeliveryAddress: function kdsLegacyDeliveryAddress(order) {
+      var a = order && order.order_address;
+      if (!a) {
+        return '';
+      }
+      var parts = [];
+      if (a.apartment) {
+        parts.push(a.apartment);
+      }
+      if (a.address) {
+        parts.push(a.address);
+      }
+      return parts.join(' — ');
+    },
     // [kds/sprint-2 V-5] V2 grid event handlers — both delegate to the same
     // store action `kitchenDisplaySystemOrder/changeStatus` used by the
     // legacy 4-column layout. KDSOrderStateMachine on the server stays the
@@ -1446,10 +1587,19 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       // [AUDIT-P51-BUG2] Always unsubscribe first to prevent duplicate listeners on re-mount
       this.unsubscribeEcho();
       try {
-        this._eventSub = (0,_services_eventContract__WEBPACK_IMPORTED_MODULE_9__.onEvents)(branchId, [{
+        this._eventSub = (0,_services_eventContract__WEBPACK_IMPORTED_MODULE_9__.onEvents)(branchId, [
+        // [2026-05-18 PR-C T2 reframe heal] Filter OrderStatusChanged JS-side:
+        // refresh only when from OR to is in the KDS-visible status set
+        // (ACCEPT=4 / PREPARING=7 / PREPARED=8 — mirror KitchenReleaseRule).
+        // Before this guard, every status flip (DELIVERED→REFUNDED, CANCELED,
+        // RETURNED, etc.) triggered a debounced full refresh even though
+        // none of those affect the KDS board → wasted backend calls + flicker.
+        {
           broadcastAs: 'OrderStatusChanged',
-          handler: function handler() {
-            _this8._debouncedRefresh();
+          handler: function handler(parsed) {
+            if (_this8._statusChangeAffectsKds(parsed)) {
+              _this8._debouncedRefresh();
+            }
           }
         }, {
           broadcastAs: 'OrderCreated',
@@ -2052,10 +2202,31 @@ var _hoisted_10 = {
 var _hoisted_11 = {
   "class": "kds-card__elapsed-wrap"
 };
-var _hoisted_12 = {
-  "class": "kds-card__body"
+var _hoisted_12 = ["aria-label"];
+var _hoisted_13 = {
+  key: 0,
+  "class": "kds-card__delivery",
+  "data-testid": "kds-card-delivery"
 };
-var _hoisted_13 = ["aria-label"];
+var _hoisted_14 = {
+  key: 0,
+  "class": "kds-card__delivery-row"
+};
+var _hoisted_15 = {
+  "class": "kds-card__delivery-text"
+};
+var _hoisted_16 = {
+  key: 1,
+  "class": "kds-card__delivery-row kds-card__delivery-row--muted"
+};
+var _hoisted_17 = {
+  "class": "kds-card__delivery-text"
+};
+var _hoisted_18 = ["href", "aria-label"];
+var _hoisted_19 = {
+  "class": "kds-card__delivery-text"
+};
+var _hoisted_20 = ["aria-label"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_KdsOrderLine = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsOrderLine");
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
@@ -2105,7 +2276,31 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
       color: $options.elapsedColor
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.elapsedFormatted), 7 /* TEXT, CLASS, STYLE */)])])], 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" BODY "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($props.order.order_items, function (item, idx) {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.elapsedFormatted), 7 /* TEXT, CLASS, STYLE */)])])], 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" BODY "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" KDS-R1-05 heal: tabindex=0 + role=region + aria-label = Safari keyboard accessibility\n         on scrollable overflow:auto region (axe-core 'scrollable-region-focusable' serious). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-card__body",
+    tabindex: "0",
+    role: "region",
+    "aria-label": _ctx.$t('label.kds_card_body_aria', {
+      queue: $props.order.queue_number || $props.order.id
+    })
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint 2A DEL-3 2026-05-16] Delivery block — only renders when\n           the order is destined for delivery AND the backend has populated\n           `order_address` (i.e. the eager-load was applied). Without this,\n           the livreur sees a token + delivery_time and literally cannot\n           deliver. Kept visually quiet (border-left accent, monospace\n           latin digits for the phone) so it never out-screams the queue\n           number or the elapsed timer. "), $options.isDeliveryOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_13, [$options.deliveryAddressLine ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_14, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__delivery-icon",
+    "aria-hidden": "true"
+  }, "📍", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.deliveryAddressLine), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.customerName ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_16, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__delivery-icon",
+    "aria-hidden": "true"
+  }, "👤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerName), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.customerPhone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", {
+    key: 2,
+    "class": "kds-card__delivery-row kds-card__delivery-phone keep-latin",
+    href: "tel:".concat($options.customerPhone),
+    "aria-label": _ctx.$t('label.kds_call_customer_aria', {
+      name: $options.customerName || '',
+      phone: $options.customerPhone
+    })
+  }, [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-card__delivery-icon",
+    "aria-hidden": "true"
+  }, "📱", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerPhone), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_18)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($props.order.order_items, function (item, idx) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       key: item.id || idx,
       "class": "kds-card__item-block"
@@ -2115,16 +2310,16 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         line: line
       }, null, 8 /* PROPS */, ["line"]);
     }), 128 /* KEYED_FRAGMENT */))]);
-  }), 128 /* KEYED_FRAGMENT */)), _cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }), 128 /* KEYED_FRAGMENT */)), _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "kds-card__body-fade"
-  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" FOOTER CTA "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, -1 /* CACHED */))], 8 /* PROPS */, _hoisted_12), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" FOOTER CTA "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kds-card__cta",
     onClick: _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.onCta && $options.onCta.apply($options, arguments);
     }, ["prevent"])),
     "aria-label": _ctx.$t('label.kds_card_cta_ready')
-  }, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+  }, [_cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
     width: "22",
     height: "22",
     viewBox: "0 0 24 24",
@@ -2136,7 +2331,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "aria-hidden": "true"
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
     d: "M5 12l5 5L20 7"
-  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_card_cta_ready')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_13)], 46 /* CLASS, STYLE, PROPS, NEED_HYDRATION */, _hoisted_1);
+  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_card_cta_ready')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_20)], 46 /* CLASS, STYLE, PROPS, NEED_HYDRATION */, _hoisted_1);
 }
 
 /***/ }),
@@ -2721,405 +2916,473 @@ var _hoisted_76 = {
 var _hoisted_77 = {
   "class": "text-heading font-medium"
 };
-var _hoisted_78 = ["aria-label"];
+var _hoisted_78 = {
+  key: 0,
+  "class": "mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]",
+  "data-testid": "kds-legacy-delivery"
+};
 var _hoisted_79 = {
-  style: {
-    "height": "0px"
-  },
-  "class": "overflow-hidden transition-all duration-500"
+  key: 0,
+  "class": "text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1"
 };
 var _hoisted_80 = {
-  "class": "text-sm font-medium shrink-0"
+  "class": "break-words"
 };
 var _hoisted_81 = {
-  "class": "flex-1 min-w-0"
-};
-var _hoisted_82 = {
-  "class": "text-sm font-medium mb-1"
-};
-var _hoisted_83 = {
-  key: 0,
-  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
-};
-var _hoisted_84 = {
-  key: 0
-};
-var _hoisted_85 = {
   key: 1,
-  "class": "flex gap-1"
+  "class": "text-xs leading-snug text-[#115E59] flex items-center gap-1"
 };
-var _hoisted_86 = {
-  "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
-};
-var _hoisted_87 = {
-  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
-};
-var _hoisted_88 = {
-  key: 0
-};
-var _hoisted_89 = {
-  key: 2,
-  "class": "flex gap-1"
-};
-var _hoisted_90 = {
-  "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
-};
-var _hoisted_91 = {
-  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
-};
-var _hoisted_92 = {
-  key: 0
-};
-var _hoisted_93 = {
-  key: 1
-};
-var _hoisted_94 = {
-  "class": "flex flex-col items-end gap-1 shrink-0 pt-0.5"
-};
-var _hoisted_95 = ["title", "aria-label", "onClick"];
-var _hoisted_96 = ["onClick"];
-var _hoisted_97 = ["onClick"];
-var _hoisted_98 = {
-  "class": "kds-card-cta mt-2",
-  "data-testid": "kds-card-cta"
-};
-var _hoisted_99 = ["onClick"];
-var _hoisted_100 = ["onClick"];
-var _hoisted_101 = {
-  "class": "db-card rounded-[10px] h-fit"
-};
-var _hoisted_102 = {
-  "class": "text-lg font-semibold"
-};
-var _hoisted_103 = {
-  key: 0,
-  "class": "p-3 text-sm text-[#6E7191]"
-};
-var _hoisted_104 = ["aria-labelledby"];
-var _hoisted_105 = ["title", "aria-label"];
-var _hoisted_106 = ["onClick", "aria-label"];
-var _hoisted_107 = {
-  "class": "py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF6EE]"
-};
-var _hoisted_108 = {
-  "class": "flex items-center gap-1 text-[#FF8C1A]"
-};
-var _hoisted_109 = ["id"];
-var _hoisted_110 = {
-  key: 0,
-  "class": "kds-source-pill kds-source-pill--queue"
-};
-var _hoisted_111 = {
-  "class": "w-full pt-2 pb-3 px-3"
-};
-var _hoisted_112 = {
-  "class": "text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"
-};
-var _hoisted_113 = {
-  key: 0,
-  "class": "text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"
-};
-var _hoisted_114 = {
-  "class": "text-heading font-medium"
-};
-var _hoisted_115 = ["aria-label"];
-var _hoisted_116 = {
+var _hoisted_82 = ["href"];
+var _hoisted_83 = ["aria-label"];
+var _hoisted_84 = {
   style: {
     "height": "0px"
   },
   "class": "overflow-hidden transition-all duration-500"
 };
-var _hoisted_117 = {
+var _hoisted_85 = {
   "class": "text-sm font-medium shrink-0"
 };
-var _hoisted_118 = {
+var _hoisted_86 = {
   "class": "flex-1 min-w-0"
 };
-var _hoisted_119 = {
+var _hoisted_87 = {
   "class": "text-sm font-medium mb-1"
 };
-var _hoisted_120 = {
+var _hoisted_88 = {
   key: 0,
   "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
 };
-var _hoisted_121 = {
+var _hoisted_89 = {
   key: 0
 };
-var _hoisted_122 = {
+var _hoisted_90 = {
   key: 1,
   "class": "flex gap-1"
 };
-var _hoisted_123 = {
+var _hoisted_91 = {
   "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
 };
-var _hoisted_124 = {
+var _hoisted_92 = {
   "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
 };
-var _hoisted_125 = {
+var _hoisted_93 = {
   key: 0
 };
-var _hoisted_126 = {
+var _hoisted_94 = {
   key: 2,
   "class": "flex gap-1"
 };
-var _hoisted_127 = {
+var _hoisted_95 = {
   "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
 };
-var _hoisted_128 = {
+var _hoisted_96 = {
   "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
 };
-var _hoisted_129 = {
+var _hoisted_97 = {
   key: 0
 };
-var _hoisted_130 = {
+var _hoisted_98 = {
   key: 1
 };
-var _hoisted_131 = {
+var _hoisted_99 = {
   "class": "flex flex-col items-end gap-1 shrink-0 pt-0.5"
 };
-var _hoisted_132 = ["title", "aria-label", "onClick"];
-var _hoisted_133 = ["onClick"];
-var _hoisted_134 = ["onClick"];
-var _hoisted_135 = {
+var _hoisted_100 = ["title", "aria-label", "onClick"];
+var _hoisted_101 = ["onClick"];
+var _hoisted_102 = ["onClick"];
+var _hoisted_103 = {
   "class": "kds-card-cta mt-2",
   "data-testid": "kds-card-cta"
 };
-var _hoisted_136 = ["onClick"];
-var _hoisted_137 = ["onClick"];
-var _hoisted_138 = {
+var _hoisted_104 = ["onClick"];
+var _hoisted_105 = ["onClick"];
+var _hoisted_106 = {
   "class": "db-card rounded-[10px] h-fit"
 };
-var _hoisted_139 = {
+var _hoisted_107 = {
   "class": "text-lg font-semibold"
 };
-var _hoisted_140 = {
+var _hoisted_108 = {
   key: 0,
   "class": "p-3 text-sm text-[#6E7191]"
 };
-var _hoisted_141 = ["aria-labelledby"];
-var _hoisted_142 = ["title", "aria-label"];
-var _hoisted_143 = ["onClick", "aria-label"];
-var _hoisted_144 = {
-  "class": "py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#F7F0FF]"
+var _hoisted_109 = ["aria-labelledby"];
+var _hoisted_110 = ["title", "aria-label"];
+var _hoisted_111 = ["onClick", "aria-label"];
+var _hoisted_112 = {
+  "class": "py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF6EE]"
 };
-var _hoisted_145 = {
-  "class": "kds-card-header-meta text-[#2D1263]"
+var _hoisted_113 = {
+  "class": "flex items-center gap-1 text-[#FF8C1A]"
 };
-var _hoisted_146 = ["id"];
-var _hoisted_147 = {
+var _hoisted_114 = ["id"];
+var _hoisted_115 = {
   key: 0,
   "class": "kds-source-pill kds-source-pill--queue"
 };
+var _hoisted_116 = {
+  "class": "w-full pt-2 pb-3 px-3"
+};
+var _hoisted_117 = {
+  "class": "text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"
+};
+var _hoisted_118 = {
+  key: 0,
+  "class": "text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"
+};
+var _hoisted_119 = {
+  "class": "text-heading font-medium"
+};
+var _hoisted_120 = {
+  key: 1,
+  "class": "mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]",
+  "data-testid": "kds-legacy-delivery"
+};
+var _hoisted_121 = {
+  key: 0,
+  "class": "text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1"
+};
+var _hoisted_122 = {
+  "class": "break-words"
+};
+var _hoisted_123 = {
+  key: 1,
+  "class": "text-xs leading-snug text-[#115E59] flex items-center gap-1"
+};
+var _hoisted_124 = ["href"];
+var _hoisted_125 = ["aria-label"];
+var _hoisted_126 = {
+  style: {
+    "height": "0px"
+  },
+  "class": "overflow-hidden transition-all duration-500"
+};
+var _hoisted_127 = {
+  "class": "text-sm font-medium shrink-0"
+};
+var _hoisted_128 = {
+  "class": "flex-1 min-w-0"
+};
+var _hoisted_129 = {
+  "class": "text-sm font-medium mb-1"
+};
+var _hoisted_130 = {
+  key: 0,
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_131 = {
+  key: 0
+};
+var _hoisted_132 = {
+  key: 1,
+  "class": "flex gap-1"
+};
+var _hoisted_133 = {
+  "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
+};
+var _hoisted_134 = {
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_135 = {
+  key: 0
+};
+var _hoisted_136 = {
+  key: 2,
+  "class": "flex gap-1"
+};
+var _hoisted_137 = {
+  "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
+};
+var _hoisted_138 = {
+  "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
+};
+var _hoisted_139 = {
+  key: 0
+};
+var _hoisted_140 = {
+  key: 1
+};
+var _hoisted_141 = {
+  "class": "flex flex-col items-end gap-1 shrink-0 pt-0.5"
+};
+var _hoisted_142 = ["title", "aria-label", "onClick"];
+var _hoisted_143 = ["onClick"];
+var _hoisted_144 = ["onClick"];
+var _hoisted_145 = {
+  "class": "kds-card-cta mt-2",
+  "data-testid": "kds-card-cta"
+};
+var _hoisted_146 = ["onClick"];
+var _hoisted_147 = ["onClick"];
 var _hoisted_148 = {
+  "class": "db-card rounded-[10px] h-fit"
+};
+var _hoisted_149 = {
+  "class": "text-lg font-semibold"
+};
+var _hoisted_150 = {
+  key: 0,
+  "class": "p-3 text-sm text-[#6E7191]"
+};
+var _hoisted_151 = ["aria-labelledby"];
+var _hoisted_152 = ["title", "aria-label"];
+var _hoisted_153 = ["onClick", "aria-label"];
+var _hoisted_154 = {
+  "class": "py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#F7F0FF]"
+};
+var _hoisted_155 = {
+  "class": "kds-card-header-meta text-[#2D1263]"
+};
+var _hoisted_156 = ["id"];
+var _hoisted_157 = {
+  key: 0,
+  "class": "kds-source-pill kds-source-pill--queue"
+};
+var _hoisted_158 = {
   key: 1,
   "class": "kds-counter-payment-badge"
 };
-var _hoisted_149 = {
+var _hoisted_159 = {
   "class": "w-full pt-2 pb-3 px-3"
 };
-var _hoisted_150 = {
+var _hoisted_160 = {
   "class": "text-sm font-normal leading-6 font-client capitalize text-[#6E7191]"
 };
-var _hoisted_151 = {
+var _hoisted_161 = {
   "class": "text-heading font-medium"
 };
-var _hoisted_152 = {
+var _hoisted_162 = {
   key: 0,
   "class": "text-sm font-normal leading-6 font-client text-[#6E7191]"
 };
-var _hoisted_153 = {
+var _hoisted_163 = {
   "class": "text-heading font-medium"
 };
-var _hoisted_154 = ["aria-label"];
-var _hoisted_155 = {
+var _hoisted_164 = {
+  key: 1,
+  "class": "mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]",
+  "data-testid": "kds-legacy-delivery"
+};
+var _hoisted_165 = {
+  key: 0,
+  "class": "text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1"
+};
+var _hoisted_166 = {
+  "class": "break-words"
+};
+var _hoisted_167 = {
+  key: 1,
+  "class": "text-xs leading-snug text-[#115E59] flex items-center gap-1"
+};
+var _hoisted_168 = ["href"];
+var _hoisted_169 = ["aria-label"];
+var _hoisted_170 = {
   style: {
     "height": "0px"
   },
   "class": "overflow-hidden transition-all duration-500"
 };
-var _hoisted_156 = {
+var _hoisted_171 = {
   "class": "text-sm font-medium shrink-0"
 };
-var _hoisted_157 = {
+var _hoisted_172 = {
   "class": "flex-1 min-w-0"
 };
-var _hoisted_158 = {
+var _hoisted_173 = {
   "class": "text-sm font-medium mb-1"
 };
-var _hoisted_159 = {
+var _hoisted_174 = {
   key: 0,
   "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
 };
-var _hoisted_160 = {
+var _hoisted_175 = {
   key: 0
 };
-var _hoisted_161 = {
+var _hoisted_176 = {
   key: 1,
   "class": "flex gap-1"
 };
-var _hoisted_162 = {
+var _hoisted_177 = {
   "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
 };
-var _hoisted_163 = {
+var _hoisted_178 = {
   "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
 };
-var _hoisted_164 = {
+var _hoisted_179 = {
   key: 0
 };
-var _hoisted_165 = {
+var _hoisted_180 = {
   key: 2,
   "class": "flex gap-1"
 };
-var _hoisted_166 = {
+var _hoisted_181 = {
   "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
 };
-var _hoisted_167 = {
+var _hoisted_182 = {
   "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
 };
-var _hoisted_168 = {
+var _hoisted_183 = {
   key: 0
 };
-var _hoisted_169 = {
+var _hoisted_184 = {
   key: 1
 };
-var _hoisted_170 = {
+var _hoisted_185 = {
   "class": "flex flex-col items-end gap-1 shrink-0 pt-0.5"
 };
-var _hoisted_171 = ["title", "aria-label", "onClick"];
-var _hoisted_172 = ["onClick"];
-var _hoisted_173 = ["onClick"];
-var _hoisted_174 = {
+var _hoisted_186 = ["title", "aria-label", "onClick"];
+var _hoisted_187 = ["onClick"];
+var _hoisted_188 = ["onClick"];
+var _hoisted_189 = {
   "class": "kds-card-cta mt-2",
   "data-testid": "kds-card-cta"
 };
-var _hoisted_175 = ["onClick"];
-var _hoisted_176 = ["onClick"];
-var _hoisted_177 = {
+var _hoisted_190 = ["onClick"];
+var _hoisted_191 = ["onClick"];
+var _hoisted_192 = {
   "class": "db-card rounded-[10px] h-fit"
 };
-var _hoisted_178 = {
+var _hoisted_193 = {
   key: 0,
   "class": "inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#991B1B] text-white text-[11px] font-bold"
 };
-var _hoisted_179 = {
+var _hoisted_194 = {
   key: 0,
   "class": "p-3 text-sm text-[#6E7191]"
 };
-var _hoisted_180 = ["aria-labelledby"];
-var _hoisted_181 = ["title", "aria-label"];
-var _hoisted_182 = ["onClick", "aria-label"];
-var _hoisted_183 = {
+var _hoisted_195 = ["aria-labelledby"];
+var _hoisted_196 = ["title", "aria-label"];
+var _hoisted_197 = ["onClick", "aria-label"];
+var _hoisted_198 = {
   "class": "py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#FFF0EE]"
 };
-var _hoisted_184 = {
+var _hoisted_199 = {
   "class": "kds-card-header-meta text-[#991B1B]"
 };
-var _hoisted_185 = ["id"];
-var _hoisted_186 = {
+var _hoisted_200 = ["id"];
+var _hoisted_201 = {
   key: 0,
   "class": "kds-source-pill kds-source-pill--queue"
 };
-var _hoisted_187 = {
+var _hoisted_202 = {
   key: 1,
   "class": "kds-counter-payment-badge"
 };
-var _hoisted_188 = {
+var _hoisted_203 = {
   "class": "w-full pt-2 pb-3 px-3"
 };
-var _hoisted_189 = ["aria-label"];
-var _hoisted_190 = {
+var _hoisted_204 = {
+  key: 0,
+  "class": "mt-1 mb-2 p-2 rounded-lg bg-[#F0FDFA] border-l-[3px] border-[#0F766E]",
+  "data-testid": "kds-legacy-delivery"
+};
+var _hoisted_205 = {
+  key: 0,
+  "class": "text-xs leading-snug text-[#0F766E] font-semibold flex items-start gap-1"
+};
+var _hoisted_206 = {
+  "class": "break-words"
+};
+var _hoisted_207 = {
+  key: 1,
+  "class": "text-xs leading-snug text-[#115E59] flex items-center gap-1"
+};
+var _hoisted_208 = ["href"];
+var _hoisted_209 = ["aria-label"];
+var _hoisted_210 = {
   key: 0,
   "class": "text-xs font-medium text-heading"
 };
-var _hoisted_191 = {
+var _hoisted_211 = {
   style: {
     "height": "0px"
   },
   "class": "overflow-hidden transition-all duration-500"
 };
-var _hoisted_192 = {
+var _hoisted_212 = {
   "class": "text-sm font-medium shrink-0"
 };
-var _hoisted_193 = {
+var _hoisted_213 = {
   "class": "flex-1 min-w-0"
 };
-var _hoisted_194 = {
+var _hoisted_214 = {
   "class": "text-sm font-medium mb-1"
 };
-var _hoisted_195 = {
+var _hoisted_215 = {
   key: 0,
   "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
 };
-var _hoisted_196 = {
+var _hoisted_216 = {
   key: 0
 };
-var _hoisted_197 = {
+var _hoisted_217 = {
   key: 1,
   "class": "flex gap-1"
 };
-var _hoisted_198 = {
+var _hoisted_218 = {
   "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
 };
-var _hoisted_199 = {
+var _hoisted_219 = {
   "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
 };
-var _hoisted_200 = {
+var _hoisted_220 = {
   key: 0
 };
-var _hoisted_201 = {
+var _hoisted_221 = {
   key: 2,
   "class": "flex gap-1"
 };
-var _hoisted_202 = {
+var _hoisted_222 = {
   "class": "capitalize text-xs w-fit whitespace-nowrap font-medium"
 };
-var _hoisted_203 = {
+var _hoisted_223 = {
   "class": "text-xs font-normal font-client capitalize text-[#6E7191]"
 };
-var _hoisted_204 = {
+var _hoisted_224 = {
   key: 0
 };
-var _hoisted_205 = {
+var _hoisted_225 = {
   key: 1
 };
-var _hoisted_206 = {
+var _hoisted_226 = {
   key: 3,
   "class": "mt-2 flex flex-wrap gap-1"
 };
-var _hoisted_207 = {
+var _hoisted_227 = {
   "class": "flex flex-col items-end gap-1 shrink-0 pt-0.5"
 };
-var _hoisted_208 = ["title", "aria-label", "onClick"];
-var _hoisted_209 = ["onClick"];
-var _hoisted_210 = ["onClick"];
-var _hoisted_211 = {
+var _hoisted_228 = ["title", "aria-label", "onClick"];
+var _hoisted_229 = ["onClick"];
+var _hoisted_230 = ["onClick"];
+var _hoisted_231 = {
   "class": "kds-card-cta mt-2",
   "data-testid": "kds-card-cta"
 };
-var _hoisted_212 = ["onClick"];
-var _hoisted_213 = ["onClick"];
-var _hoisted_214 = {
+var _hoisted_232 = ["onClick"];
+var _hoisted_233 = ["onClick"];
+var _hoisted_234 = {
   "class": "sr-only kds-aria-live",
   "data-testid": "kds-aria-live",
   role: "status",
   "aria-live": "polite",
   "aria-atomic": "true"
 };
-var _hoisted_215 = {
+var _hoisted_235 = {
   "class": "kds-sync-footer"
 };
-var _hoisted_216 = ["title"];
-var _hoisted_217 = ["aria-label"];
-var _hoisted_218 = {
+var _hoisted_236 = ["title"];
+var _hoisted_237 = ["aria-label"];
+var _hoisted_238 = {
   "class": "kds-allergens-modal-content"
 };
-var _hoisted_219 = {
+var _hoisted_239 = {
   "class": "kds-allergens-modal-header"
 };
-var _hoisted_220 = {
+var _hoisted_240 = {
   "class": "kds-allergens-modal-intro"
 };
-var _hoisted_221 = {
+var _hoisted_241 = {
   "class": "kds-allergens-modal-list"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
@@ -3368,7 +3631,17 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "class": "text-sm font-normal"
     }, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.order_serial_no), 9 /* TEXT, PROPS */, _hoisted_71), dineinOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_72, " N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize", $options.orderStatusBadgeClasses(dineinOrder.status)])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.status === $data.enums.orderStatusEnum.PREPARED ? _ctx.$t("label.done") : dineinOrder.status === $data.enums.orderStatusEnum.ACCEPT ? _ctx.$t("label.confirmed") : dineinOrder.status_name), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_73, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_74, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.table_no")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_75, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.table_name), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_76, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.token_no")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_77, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.token ? dineinOrder.token : _ctx.$t("label.online")), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] Chevron now exposes\n                       aria-expanded so assistive tech can announce the\n                       collapse state. The state-transition CTAs (Démarrer /\n                       Prêt) have been hoisted OUT of this accordion below so\n                       a chef in gloves can reach them in one tap without\n                       expanding line items first. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.status === $data.enums.orderStatusEnum.PREPARED ? _ctx.$t("label.done") : dineinOrder.status === $data.enums.orderStatusEnum.ACCEPT ? _ctx.$t("label.confirmed") : dineinOrder.status_name), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_73, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_74, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.table_no")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_75, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.table_name), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_76, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.token_no")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_77, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.token ? dineinOrder.token : _ctx.$t("label.online")), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint H4 Z3-NEW-002/003 2026-05-17] Legacy delivery\n                       block mirrored from onlineOrder lane. Helper gates on\n                       order_type === DELIVERY so this only renders for\n                       misclassified delivery orders that landed in the\n                       dine-in lane — defensive UX so chef + courier never\n                       miss a delivery on the ?v2=0 rollback path. "), $options.kdsLegacyShouldShowDelivery(dineinOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_78, [$options.kdsLegacyDeliveryAddress(dineinOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_79, [_cache[29] || (_cache[29] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📍", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_80, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsLegacyDeliveryAddress(dineinOrder)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), dineinOrder.customer && dineinOrder.customer.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_81, [_cache[30] || (_cache[30] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "👤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.customer.name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), dineinOrder.customer && dineinOrder.customer.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", {
+      key: 2,
+      href: "tel:".concat(dineinOrder.customer.phone),
+      "class": "text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+    }, [_cache[31] || (_cache[31] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📱", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dineinOrder.customer.phone), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_82)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] Chevron now exposes\n                       aria-expanded so assistive tech can announce the\n                       collapse state. The state-transition CTAs (Démarrer /\n                       Prêt) have been hoisted OUT of this accordion below so\n                       a chef in gloves can reach them in one tap without\n                       expanding line items first. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       onClick: _cache[18] || (_cache[18] = function ($event) {
         return $options.openFilterSlide($event);
@@ -3376,36 +3649,36 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "class": "filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full",
       "aria-expanded": false,
       "aria-label": _ctx.$t('label.kds_toggle_items') || 'Afficher les articles'
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsDisplayDateTime(dineinOrder.order_datetime)), 1 /* TEXT */), _cache[29] || (_cache[29] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsDisplayDateTime(dineinOrder.order_datetime)), 1 /* TEXT */), _cache[32] || (_cache[32] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
       "class": "flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]"
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "icon text-[#F4501E] fa-solid fa-chevron-down"
-    })], -1 /* CACHED */))], 8 /* PROPS */, _hoisted_78), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_79, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(dineinOrder.order_items, function (item, iIdx) {
+    })], -1 /* CACHED */))], 8 /* PROPS */, _hoisted_83), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_84, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(dineinOrder.order_items, function (item, iIdx) {
       return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         key: item.id || iIdx,
         "class": "flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none"
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_80, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "x", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_81, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_82, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_variations "), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_83, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_85, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "x", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_86, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_87, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_variations "), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_88, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
           key: index,
           "class": "text-heading"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.variation_name) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_84, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-      }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [N4 FIX] Was <li> without <ul> — replaced with <div> "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_extras "), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_85, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_86, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_87, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.variation_name) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_89, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [N4 FIX] Was <li> without <ul> — replaced with <div> "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_extras "), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_90, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_91, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_92, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
           key: index,
           "class": "text-heading"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_88, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_addons) && item.item_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_89, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_90, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_91, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_addons, function (addon, index) {
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_93, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_addons) && item.item_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_94, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_95, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_96, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_addons, function (addon, index) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
           key: index,
           "class": "text-heading"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsAddonDisplayName(addon)), 1 /* TEXT */), Number(addon.quantity || 1) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_92, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(Number(addon.quantity || 1)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), index + 1 < item.item_addons.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_93, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsAddonDisplayName(addon)), 1 /* TEXT */), Number(addon.quantity || 1) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_97, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(Number(addon.quantity || 1)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), index + 1 < item.item_addons.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_98, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
       }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [P3-1 FIX] Show instruction on dine-in cards "), item.instruction && item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         key: 3,
         "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$options.kdsInstructionClass(item.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']),
         style: {
           "white-space": "pre-line"
         }
-      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_94, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(dineinOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_99, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(dineinOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 0,
         type: "button",
         "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5",
@@ -3414,43 +3687,43 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $options.kdsBump(dineinOrder, item);
         }, ["prevent", "stop"])
-      }, _toConsumableArray(_cache[30] || (_cache[30] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      }, _toConsumableArray(_cache[33] || (_cache[33] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
         "class": "fa-solid fa-arrow-right",
         "aria-hidden": "true"
-      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_95)) : $options.kdsCanRecall(dineinOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_100)) : $options.kdsCanRecall(dineinOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 1,
         type: "button",
         "class": "text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50",
         onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $options.kdsRecall(dineinOrder, item);
         }, ["prevent", "stop"])
-      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_recall')), 9 /* TEXT, PROPS */, _hoisted_96)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]);
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_recall')), 9 /* TEXT, PROPS */, _hoisted_101)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]);
     }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [AUDIT-P2] Print kitchen ticket button "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       onClick: function onClick($event) {
         return $options.printKitchenTicket(dineinOrder);
       },
       "class": "rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]"
-    }, _toConsumableArray(_cache[31] || (_cache[31] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, _toConsumableArray(_cache[34] || (_cache[34] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "fa-solid fa-print text-xs"
-    }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Imprimer ticket ", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_97)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] State-transition CTAs\n                       moved OUT of the accordion. Always rendered so the chef\n                       reaches them in 1 tap on a busy kitchen tablet. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix C-041 round-8 2026-05-10] Tailwind\n                       theme.colors.primary resolves to rgb(255 0 107) (=\n                       #FF006B, hot pink/magenta) and clashes with the owner's\n                       Cayenne brand palette. Replace with arbitrary hex\n                       `bg-[#F4501E]` (Cayenne orange-red, matches mobile app\n                       and `--kiosk-bold-primary` token) on the KDS surface\n                       only, scoped to this iter15-mega Wave C round-8 fix —\n                       global Tailwind override is out of scope for this\n                       round. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_98, [dineinOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Imprimer ticket ", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_102)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] State-transition CTAs\n                       moved OUT of the accordion. Always rendered so the chef\n                       reaches them in 1 tap on a busy kitchen tablet. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix C-041 round-8 2026-05-10] Tailwind\n                       theme.colors.primary resolves to rgb(255 0 107) (=\n                       #FF006B, hot pink/magenta) and clashes with the owner's\n                       Cayenne brand palette. Replace with arbitrary hex\n                       `bg-[#F4501E]` (Cayenne orange-red, matches mobile app\n                       and `--kiosk-bold-primary` token) on the KDS surface\n                       only, scoped to this iter15-mega Wave C round-8 fix —\n                       global Tailwind override is out of scope for this\n                       round. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_103, [dineinOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 0,
       type: "button",
       onClick: function onClick($event) {
         return $options.orderStatus(dineinOrder, $data.enums.orderStatusEnum.PREPARING);
       },
       "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white"
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.start_preparing")), 9 /* TEXT, PROPS */, _hoisted_99)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), dineinOrder.status === $data.enums.orderStatusEnum.PREPARING ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.start_preparing")), 9 /* TEXT, PROPS */, _hoisted_104)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), dineinOrder.status === $data.enums.orderStatusEnum.PREPARING ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 1,
       type: "button",
       onClick: function onClick($event) {
         return $options.orderStatus(dineinOrder, $data.enums.orderStatusEnum.PREPARED);
       },
       "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white"
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.mark_done")), 9 /* TEXT, PROPS */, _hoisted_100)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_66)], 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vShow, !$data.groupByTable || $options.isTableGroupOpen($options.dineinTableKey(dineinOrder))]])], 64 /* STABLE_FRAGMENT */);
-  }), 128 /* KEYED_FRAGMENT */))]))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_101, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.mark_done")), 9 /* TEXT, PROPS */, _hoisted_105)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_66)], 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vShow, !$data.groupByTable || $options.isTableGroupOpen($options.dineinTableKey(dineinOrder))]])], 64 /* STABLE_FRAGMENT */);
+  }), 128 /* KEYED_FRAGMENT */))]))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_106, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["p-3 pb-2", $options.filteredOnlineOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_102, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.online_orders")), 1 /* TEXT */)], 2 /* CLASS */), $options.filteredOnlineOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_103, " Aucune commande en ligne en cours. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredOnlineOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_107, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.online_orders")), 1 /* TEXT */)], 2 /* CLASS */), $options.filteredOnlineOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_108, " Aucune commande en ligne en cours. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredOnlineOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.filteredOnlineOrders, function (onlineOrder) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
@@ -3468,7 +3741,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       title: _ctx.$t('label.kds_oos_warning_tooltip'),
       "aria-label": _ctx.$t('label.kds_oos_warning_aria'),
       role: "img"
-    }, "⚠ OOS", 8 /* PROPS */, _hoisted_105)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.orderHasAllergens(onlineOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, "⚠ OOS", 8 /* PROPS */, _hoisted_110)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.orderHasAllergens(onlineOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 1,
       type: "button",
       "class": "kds-allergens-badge",
@@ -3476,16 +3749,26 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return $options.openAllergensModal(onlineOrder);
       }, ["prevent", "stop"]),
       "aria-label": _ctx.$t('label.kds_allergens_badge_aria')
-    }, "⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_badge')), 9 /* TEXT, PROPS */, _hoisted_106)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_107, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_108, [_cache[32] || (_cache[32] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, "⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_badge')), 9 /* TEXT, PROPS */, _hoisted_111)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_112, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_113, [_cache[35] || (_cache[35] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "lab lab-processing lab-font-size-16 text-[#FF8C1A]"
     }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       id: 'order-' + onlineOrder.id + '-title',
       "class": "text-sm font-normal"
-    }, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.order_serial_no), 9 /* TEXT, PROPS */, _hoisted_109), onlineOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_110, " N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.order_serial_no), 9 /* TEXT, PROPS */, _hoisted_114), onlineOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_115, " N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize", $options.orderStatusBadgeClasses(onlineOrder.status)])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.status === $data.enums.orderStatusEnum.PREPARED ? _ctx.$t("label.done") : onlineOrder.status === $data.enums.orderStatusEnum.ACCEPT ? _ctx.$t("label.confirmed") : onlineOrder.status_name), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_111, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_112, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.schedule")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.status === $data.enums.orderStatusEnum.PREPARED ? _ctx.$t("label.done") : onlineOrder.status === $data.enums.orderStatusEnum.ACCEPT ? _ctx.$t("label.confirmed") : onlineOrder.status_name), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_116, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_117, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.schedule")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["text-heading font-medium", onlineOrder.is_advance_order === $data.enums.askEnum.YES ? '!text-[#008BBA]' : ''])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.delivery_time), 3 /* TEXT, CLASS */)]), onlineOrder.token ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_113, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.token_no")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_114, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.token), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.delivery_time), 3 /* TEXT, CLASS */)]), onlineOrder.token ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_118, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.token_no")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_119, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.token), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint 2A DEL-3 2026-05-16] Legacy delivery block —\n                       online lane = DELIVERY orders only (filter at line\n                       1690 below). Even if the operator falls back to\n                       ?v2=0, the livreur must still see address + phone +\n                       name. Backend KDSOrderDetailsResource now provides\n                       order_address + customer on every payload. "), $options.kdsLegacyShouldShowDelivery(onlineOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_120, [$options.kdsLegacyDeliveryAddress(onlineOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_121, [_cache[36] || (_cache[36] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📍", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_122, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsLegacyDeliveryAddress(onlineOrder)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), onlineOrder.customer && onlineOrder.customer.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_123, [_cache[37] || (_cache[37] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "👤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.customer.name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), onlineOrder.customer && onlineOrder.customer.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", {
+      key: 2,
+      href: "tel:".concat(onlineOrder.customer.phone),
+      "class": "text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+    }, [_cache[38] || (_cache[38] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📱", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(onlineOrder.customer.phone), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_124)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       onClick: _cache[19] || (_cache[19] = function ($event) {
         return $options.openFilterSlide($event);
@@ -3493,36 +3776,36 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["filter group text-xs font-[300] flex justify-between items-center w-full", onlineOrder.is_advance_order === $data.enums.askEnum.YES ? 'text-[#008BBA]' : 'text-[#6E7191]']),
       "aria-expanded": false,
       "aria-label": _ctx.$t('label.kds_toggle_items') || 'Afficher les articles'
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsDisplayDateTime(onlineOrder.order_datetime)), 1 /* TEXT */), _cache[33] || (_cache[33] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsDisplayDateTime(onlineOrder.order_datetime)), 1 /* TEXT */), _cache[39] || (_cache[39] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
       "class": "flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]"
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "icon text-[#F4501E] fa-solid fa-chevron-down"
-    })], -1 /* CACHED */))], 10 /* CLASS, PROPS */, _hoisted_115), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_116, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(onlineOrder.order_items, function (item, iIdx) {
+    })], -1 /* CACHED */))], 10 /* CLASS, PROPS */, _hoisted_125), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_126, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(onlineOrder.order_items, function (item, iIdx) {
       return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         key: item.id || iIdx,
         "class": "flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none"
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_117, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "x", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_118, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_119, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_variations "), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_120, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_127, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "x", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_128, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_129, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_variations "), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_130, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
           key: index,
           "class": "text-heading"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.variation_name) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_121, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-      }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [N4 FIX] Was <li> without <ul> — replaced with <div> "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_extras "), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_122, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_123, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_124, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.variation_name) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_131, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [N4 FIX] Was <li> without <ul> — replaced with <div> "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_extras "), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_132, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_133, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_134, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
           key: index,
           "class": "text-heading"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_125, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_addons) && item.item_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_126, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_127, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_128, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_addons, function (addon, index) {
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_135, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_addons) && item.item_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_136, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_137, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_138, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_addons, function (addon, index) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
           key: index,
           "class": "text-heading"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsAddonDisplayName(addon)), 1 /* TEXT */), Number(addon.quantity || 1) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_129, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(Number(addon.quantity || 1)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), index + 1 < item.item_addons.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_130, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsAddonDisplayName(addon)), 1 /* TEXT */), Number(addon.quantity || 1) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_139, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(Number(addon.quantity || 1)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), index + 1 < item.item_addons.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_140, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
       }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), item.instruction && item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         key: 3,
         "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$options.kdsInstructionClass(item.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']),
         style: {
           "white-space": "pre-line"
         }
-      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_131, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(onlineOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_141, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(onlineOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 0,
         type: "button",
         "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5",
@@ -3531,43 +3814,43 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $options.kdsBump(onlineOrder, item);
         }, ["prevent", "stop"])
-      }, _toConsumableArray(_cache[34] || (_cache[34] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      }, _toConsumableArray(_cache[40] || (_cache[40] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
         "class": "fa-solid fa-arrow-right",
         "aria-hidden": "true"
-      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_132)) : $options.kdsCanRecall(onlineOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_142)) : $options.kdsCanRecall(onlineOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 1,
         type: "button",
         "class": "text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50",
         onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $options.kdsRecall(onlineOrder, item);
         }, ["prevent", "stop"])
-      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_recall')), 9 /* TEXT, PROPS */, _hoisted_133)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]);
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_recall')), 9 /* TEXT, PROPS */, _hoisted_143)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]);
     }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [AUDIT-P2] Print kitchen ticket button "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       onClick: function onClick($event) {
         return $options.printKitchenTicket(onlineOrder);
       },
       "class": "rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]"
-    }, _toConsumableArray(_cache[35] || (_cache[35] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, _toConsumableArray(_cache[41] || (_cache[41] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "fa-solid fa-print text-xs"
-    }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Imprimer ticket ", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_134)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_135, [onlineOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Imprimer ticket ", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_144)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_145, [onlineOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 0,
       type: "button",
       onClick: function onClick($event) {
         return $options.orderStatus(onlineOrder, $data.enums.orderStatusEnum.PREPARING);
       },
       "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white"
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.start_preparing")), 9 /* TEXT, PROPS */, _hoisted_136)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), onlineOrder.status === $data.enums.orderStatusEnum.PREPARING ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.start_preparing")), 9 /* TEXT, PROPS */, _hoisted_146)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), onlineOrder.status === $data.enums.orderStatusEnum.PREPARING ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 1,
       type: "button",
       onClick: function onClick($event) {
         return $options.orderStatus(onlineOrder, $data.enums.orderStatusEnum.PREPARED);
       },
       "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white"
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.mark_done")), 9 /* TEXT, PROPS */, _hoisted_137)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_104)]);
-  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_138, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.mark_done")), 9 /* TEXT, PROPS */, _hoisted_147)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_109)]);
+  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_148, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["p-3 pb-2", $options.filteredTakeawayOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_139, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.takeaway")), 1 /* TEXT */)], 2 /* CLASS */), $options.filteredTakeawayOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_140, " Aucune commande à emporter en cours. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredTakeawayOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_149, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.takeaway")), 1 /* TEXT */)], 2 /* CLASS */), $options.filteredTakeawayOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_150, " Aucune commande à emporter en cours. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredTakeawayOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.filteredTakeawayOrders, function (takeawayOrder) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
@@ -3585,7 +3868,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       title: _ctx.$t('label.kds_oos_warning_tooltip'),
       "aria-label": _ctx.$t('label.kds_oos_warning_aria'),
       role: "img"
-    }, "⚠ OOS", 8 /* PROPS */, _hoisted_142)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.orderHasAllergens(takeawayOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, "⚠ OOS", 8 /* PROPS */, _hoisted_152)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.orderHasAllergens(takeawayOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 1,
       type: "button",
       "class": "kds-allergens-badge",
@@ -3593,14 +3876,24 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return $options.openAllergensModal(takeawayOrder);
       }, ["prevent", "stop"]),
       "aria-label": _ctx.$t('label.kds_allergens_badge_aria')
-    }, "⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_badge')), 9 /* TEXT, PROPS */, _hoisted_143)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_144, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_145, [_cache[36] || (_cache[36] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, "⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_badge')), 9 /* TEXT, PROPS */, _hoisted_153)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_154, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_155, [_cache[42] || (_cache[42] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "lab lab-processing lab-font-size-16 text-[#2D1263]"
     }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       id: 'order-' + takeawayOrder.id + '-title',
       "class": "text-sm font-normal"
-    }, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.order_serial_no), 9 /* TEXT, PROPS */, _hoisted_146), takeawayOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_147, " N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.isPaymentPendingCounter(takeawayOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_148, " PAIEMENT COMPTOIR - NON REGLE ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.order_serial_no), 9 /* TEXT, PROPS */, _hoisted_156), takeawayOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_157, " N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.isPaymentPendingCounter(takeawayOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_158, " PAIEMENT COMPTOIR - NON REGLE ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize", $options.orderStatusBadgeClasses(takeawayOrder.status)])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.status === $data.enums.orderStatusEnum.PREPARED ? _ctx.$t("label.done") : takeawayOrder.status === $data.enums.orderStatusEnum.ACCEPT ? _ctx.$t("label.confirmed") : takeawayOrder.status_name), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_149, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_150, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.token_no")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_151, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.token ? takeawayOrder.token : _ctx.$t("label.online")), 1 /* TEXT */)]), takeawayOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_152, [_cache[37] || (_cache[37] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" N° file: ", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_153, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.queue_number), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.status === $data.enums.orderStatusEnum.PREPARED ? _ctx.$t("label.done") : takeawayOrder.status === $data.enums.orderStatusEnum.ACCEPT ? _ctx.$t("label.confirmed") : takeawayOrder.status_name), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_159, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_160, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.token_no")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_161, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.token ? takeawayOrder.token : _ctx.$t("label.online")), 1 /* TEXT */)]), takeawayOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_162, [_cache[43] || (_cache[43] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" N° file: ", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_163, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.queue_number), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint H4 Z3-NEW-002/003 2026-05-17] Legacy delivery\n                       block mirrored from onlineOrder lane. Helper gates on\n                       order_type === DELIVERY so this only renders for\n                       misclassified delivery orders that landed in the\n                       takeaway lane — defensive UX for ?v2=0 rollback. "), $options.kdsLegacyShouldShowDelivery(takeawayOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_164, [$options.kdsLegacyDeliveryAddress(takeawayOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_165, [_cache[44] || (_cache[44] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📍", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_166, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsLegacyDeliveryAddress(takeawayOrder)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), takeawayOrder.customer && takeawayOrder.customer.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_167, [_cache[45] || (_cache[45] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "👤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.customer.name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), takeawayOrder.customer && takeawayOrder.customer.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", {
+      key: 2,
+      href: "tel:".concat(takeawayOrder.customer.phone),
+      "class": "text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+    }, [_cache[46] || (_cache[46] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📱", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(takeawayOrder.customer.phone), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_168)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       onClick: _cache[20] || (_cache[20] = function ($event) {
         return $options.openFilterSlide($event);
@@ -3608,36 +3901,36 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "class": "filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full",
       "aria-expanded": false,
       "aria-label": _ctx.$t('label.kds_toggle_items') || 'Afficher les articles'
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsDisplayDateTime(takeawayOrder.order_datetime)), 1 /* TEXT */), _cache[38] || (_cache[38] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsDisplayDateTime(takeawayOrder.order_datetime)), 1 /* TEXT */), _cache[47] || (_cache[47] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
       "class": "flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]"
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "icon text-[#F4501E] fa-solid fa-chevron-down"
-    })], -1 /* CACHED */))], 8 /* PROPS */, _hoisted_154), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_155, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(takeawayOrder.order_items, function (item, iIdx) {
+    })], -1 /* CACHED */))], 8 /* PROPS */, _hoisted_169), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_170, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(takeawayOrder.order_items, function (item, iIdx) {
       return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         key: item.id || iIdx,
         "class": "flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none"
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_156, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "x", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_157, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_158, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_variations "), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_159, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_171, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "x", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_172, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_173, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_variations "), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_174, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
           key: index,
           "class": "text-heading"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.variation_name) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_160, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-      }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [N4 FIX] Was <li> without <ul> — replaced with <div> "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_extras "), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_161, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_162, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_163, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.variation_name) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_175, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [N4 FIX] Was <li> without <ul> — replaced with <div> "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_extras "), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_176, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_177, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_178, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
           key: index,
           "class": "text-heading"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_164, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_addons) && item.item_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_165, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_166, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_167, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_addons, function (addon, index) {
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_179, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_addons) && item.item_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_180, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_181, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_182, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_addons, function (addon, index) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
           key: index,
           "class": "text-heading"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsAddonDisplayName(addon)), 1 /* TEXT */), Number(addon.quantity || 1) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_168, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(Number(addon.quantity || 1)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), index + 1 < item.item_addons.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_169, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsAddonDisplayName(addon)), 1 /* TEXT */), Number(addon.quantity || 1) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_183, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(Number(addon.quantity || 1)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), index + 1 < item.item_addons.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_184, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
       }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [P3-1 FIX] Show instruction on takeaway cards "), item.instruction && item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         key: 3,
         "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$options.kdsInstructionClass(item.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']),
         style: {
           "white-space": "pre-line"
         }
-      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_170, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(takeawayOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_185, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(takeawayOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 0,
         type: "button",
         "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5",
@@ -3646,45 +3939,45 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $options.kdsBump(takeawayOrder, item);
         }, ["prevent", "stop"])
-      }, _toConsumableArray(_cache[39] || (_cache[39] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      }, _toConsumableArray(_cache[48] || (_cache[48] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
         "class": "fa-solid fa-arrow-right",
         "aria-hidden": "true"
-      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_171)) : $options.kdsCanRecall(takeawayOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_186)) : $options.kdsCanRecall(takeawayOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 1,
         type: "button",
         "class": "text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50",
         onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $options.kdsRecall(takeawayOrder, item);
         }, ["prevent", "stop"])
-      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_recall')), 9 /* TEXT, PROPS */, _hoisted_172)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]);
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_recall')), 9 /* TEXT, PROPS */, _hoisted_187)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]);
     }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [AUDIT-P2] Print kitchen ticket button "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       onClick: function onClick($event) {
         return $options.printKitchenTicket(takeawayOrder);
       },
       "class": "rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]"
-    }, _toConsumableArray(_cache[40] || (_cache[40] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, _toConsumableArray(_cache[49] || (_cache[49] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "fa-solid fa-print text-xs"
-    }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Imprimer ticket ", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_173)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_174, [takeawayOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Imprimer ticket ", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_188)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_189, [takeawayOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 0,
       type: "button",
       onClick: function onClick($event) {
         return $options.orderStatus(takeawayOrder, $data.enums.orderStatusEnum.PREPARING);
       },
       "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white"
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.start_preparing")), 9 /* TEXT, PROPS */, _hoisted_175)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), takeawayOrder.status === $data.enums.orderStatusEnum.PREPARING ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.start_preparing")), 9 /* TEXT, PROPS */, _hoisted_190)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), takeawayOrder.status === $data.enums.orderStatusEnum.PREPARING ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 1,
       type: "button",
       onClick: function onClick($event) {
         return $options.orderStatus(takeawayOrder, $data.enums.orderStatusEnum.PREPARED);
       },
       "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white"
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.mark_done")), 9 /* TEXT, PROPS */, _hoisted_176)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_141)]);
-  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Borne (Kiosk) orders column "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_177, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.mark_done")), 9 /* TEXT, PROPS */, _hoisted_191)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_151)]);
+  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Borne (Kiosk) orders column "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_192, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["p-3 pb-2 flex items-center gap-2", $options.filteredKioskOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''])
-  }, [_cache[41] || (_cache[41] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", {
+  }, [_cache[50] || (_cache[50] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", {
     "class": "text-lg font-semibold"
-  }, "🖥️ Borne", -1 /* CACHED */)), $options.filteredKioskOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_178, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.filteredKioskOrders.length), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), $options.filteredKioskOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_179, " Aucune commande borne en cours. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredKioskOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, "🖥️ Borne", -1 /* CACHED */)), $options.filteredKioskOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_193, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.filteredKioskOrders.length), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), $options.filteredKioskOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_194, " Aucune commande borne en cours. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredKioskOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.filteredKioskOrders, function (kioskOrder) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
@@ -3702,7 +3995,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       title: _ctx.$t('label.kds_oos_warning_tooltip'),
       "aria-label": _ctx.$t('label.kds_oos_warning_aria'),
       role: "img"
-    }, "⚠ OOS", 8 /* PROPS */, _hoisted_181)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.orderHasAllergens(kioskOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, "⚠ OOS", 8 /* PROPS */, _hoisted_196)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.orderHasAllergens(kioskOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 1,
       type: "button",
       "class": "kds-allergens-badge",
@@ -3710,14 +4003,24 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return $options.openAllergensModal(kioskOrder);
       }, ["prevent", "stop"]),
       "aria-label": _ctx.$t('label.kds_allergens_badge_aria')
-    }, "⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_badge')), 9 /* TEXT, PROPS */, _hoisted_182)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_183, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_184, [_cache[42] || (_cache[42] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, "⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_badge')), 9 /* TEXT, PROPS */, _hoisted_197)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_198, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_199, [_cache[51] || (_cache[51] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "lab lab-processing lab-font-size-16 text-[#991B1B]"
     }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       id: 'order-' + kioskOrder.id + '-title',
       "class": "text-sm font-normal"
-    }, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.order_serial_no), 9 /* TEXT, PROPS */, _hoisted_185), kioskOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_186, " N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.isPaymentPendingCounter(kioskOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_187, " PAIEMENT COMPTOIR - NON REGLE ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.order_serial_no), 9 /* TEXT, PROPS */, _hoisted_200), kioskOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_201, " N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.isPaymentPendingCounter(kioskOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_202, " PAIEMENT COMPTOIR - NON REGLE ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize", $options.orderStatusBadgeClasses(kioskOrder.status)])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.status === $data.enums.orderStatusEnum.PREPARED ? _ctx.$t('label.done') : kioskOrder.status === $data.enums.orderStatusEnum.ACCEPT ? _ctx.$t('label.confirmed') : kioskOrder.status_name), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_188, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.status === $data.enums.orderStatusEnum.PREPARED ? _ctx.$t('label.done') : kioskOrder.status === $data.enums.orderStatusEnum.ACCEPT ? _ctx.$t('label.confirmed') : kioskOrder.status_name), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_203, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint H4 Z3-NEW-002/003 2026-05-17] Legacy delivery\n                       block mirrored from onlineOrder lane. Helper gates on\n                       order_type === DELIVERY so this only renders for\n                       misclassified delivery orders that landed in the\n                       kiosk lane — defensive UX for ?v2=0 rollback. "), $options.kdsLegacyShouldShowDelivery(kioskOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_204, [$options.kdsLegacyDeliveryAddress(kioskOrder) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_205, [_cache[52] || (_cache[52] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📍", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_206, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsLegacyDeliveryAddress(kioskOrder)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), kioskOrder.customer && kioskOrder.customer.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_207, [_cache[53] || (_cache[53] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "👤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.customer.name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), kioskOrder.customer && kioskOrder.customer.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", {
+      key: 2,
+      href: "tel:".concat(kioskOrder.customer.phone),
+      "class": "text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
+    }, [_cache[54] || (_cache[54] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "aria-hidden": "true"
+    }, "📱", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.customer.phone), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_208)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       onClick: _cache[21] || (_cache[21] = function ($event) {
         return $options.openFilterSlide($event);
@@ -3725,30 +4028,30 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "class": "filter group text-[#6E7191] text-xs font-[300] flex justify-between items-center w-full",
       "aria-expanded": false,
       "aria-label": _ctx.$t('label.kds_toggle_items') || 'Afficher les articles'
-    }, [kioskOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_190, "N° file: " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsDisplayDateTime(kioskOrder.order_datetime)), 1 /* TEXT */), _cache[43] || (_cache[43] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    }, [kioskOrder.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_210, "N° file: " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(kioskOrder.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsDisplayDateTime(kioskOrder.order_datetime)), 1 /* TEXT */), _cache[55] || (_cache[55] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
       "class": "flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE8DD] text-base font-semibold transition-all duration-500 group-hover:text-[#F4501E]"
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "icon text-[#F4501E] fa-solid fa-chevron-down"
-    })], -1 /* CACHED */))], 8 /* PROPS */, _hoisted_189), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_191, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(kioskOrder.order_items, function (item, iIdx) {
+    })], -1 /* CACHED */))], 8 /* PROPS */, _hoisted_209), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_211, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(kioskOrder.order_items, function (item, iIdx) {
       return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         key: item.id || iIdx,
         "class": "flex items-start gap-2 py-3 border-b border-dashed border-[#EFF0F6] last:border-none"
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_192, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "x", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_193, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_194, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_variations "), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_195, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_212, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "x", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_213, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_214, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_variations "), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_215, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
           key: index,
           "class": "text-heading"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.variation_name) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_196, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-      }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_extras "), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_197, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_198, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_199, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.variation_name) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_216, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Y2 FIX] Guard item_extras "), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_217, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_218, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_219, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
           key: index,
           "class": "text-heading"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_200, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_addons) && item.item_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_201, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_202, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_203, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_addons, function (addon, index) {
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_220, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_addons) && item.item_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_221, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_222, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_223, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_addons, function (addon, index) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
           key: index,
           "class": "text-heading"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsAddonDisplayName(addon)), 1 /* TEXT */), Number(addon.quantity || 1) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_204, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(Number(addon.quantity || 1)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), index + 1 < item.item_addons.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_205, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_206, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.allergens_snapshot, function (allergen, allergenIdx) {
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.kdsAddonDisplayName(addon)), 1 /* TEXT */), Number(addon.quantity || 1) > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_224, " ×" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(Number(addon.quantity || 1)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), index + 1 < item.item_addons.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_225, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+      }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_226, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.allergens_snapshot, function (allergen, allergenIdx) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
           key: "".concat(item.id || iIdx, "-allergen-").concat(allergenIdx),
           "class": "rounded-full bg-[#FFF3E8] px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.02em] text-[#C25D1B]"
@@ -3759,7 +4062,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         style: {
           "white-space": "pre-line"
         }
-      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_207, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(kioskOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_227, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-007 round-7 2026-05-10] Icon-only Prêt button needs aria-label for touch tablets / SR "), !$options.kdsIsBumped(kioskOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 0,
         type: "button",
         "class": "w-8 h-8 rounded-lg border border-[#D9DBE9] flex items-center justify-center text-[#F4501E] hover:bg-[#F4501E]/5",
@@ -3768,46 +4071,46 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $options.kdsBump(kioskOrder, item);
         }, ["prevent", "stop"])
-      }, _toConsumableArray(_cache[44] || (_cache[44] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      }, _toConsumableArray(_cache[56] || (_cache[56] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
         "class": "fa-solid fa-arrow-right",
         "aria-hidden": "true"
-      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_208)) : $options.kdsCanRecall(kioskOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_228)) : $options.kdsCanRecall(kioskOrder.id, item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 1,
         type: "button",
         "class": "text-[11px] font-semibold text-[#F4501E] underline decoration-[#F4501E]/50",
         onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $options.kdsRecall(kioskOrder, item);
         }, ["prevent", "stop"])
-      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_recall')), 9 /* TEXT, PROPS */, _hoisted_209)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]);
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_recall')), 9 /* TEXT, PROPS */, _hoisted_229)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]);
     }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [AUDIT-P2] Print kitchen ticket button "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       onClick: function onClick($event) {
         return $options.printKitchenTicket(kioskOrder);
       },
       "class": "rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]"
-    }, _toConsumableArray(_cache[45] || (_cache[45] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, _toConsumableArray(_cache[57] || (_cache[57] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "fa-solid fa-print text-xs"
-    }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Imprimer ticket ", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_210)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_211, [kioskOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Imprimer ticket ", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_230)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_231, [kioskOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 0,
       type: "button",
       onClick: function onClick($event) {
         return $options.orderStatus(kioskOrder, $data.enums.orderStatusEnum.PREPARING);
       },
       "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#F4501E] text-white"
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.start_preparing')), 9 /* TEXT, PROPS */, _hoisted_212)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), kioskOrder.status === $data.enums.orderStatusEnum.PREPARING ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.start_preparing')), 9 /* TEXT, PROPS */, _hoisted_232)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), kioskOrder.status === $data.enums.orderStatusEnum.PREPARING ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 1,
       type: "button",
       onClick: function onClick($event) {
         return $options.orderStatus(kioskOrder, $data.enums.orderStatusEnum.PREPARED);
       },
       "class": "rounded-lg w-full h-9 flex justify-center items-center text-sm font-medium bg-[#1AB759] text-white"
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.mark_done')), 9 /* TEXT, PROPS */, _hoisted_213)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_180)]);
-  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [CV1-KDS-A11Y-RICH-001] Off-screen aria-live region for transition\n         announcements (ACCEPT → PREPARING → PREPARED). Polite politeness so\n         it does not interrupt the cuisinier's current focus, and visually\n         hidden so it never reflows the kitchen layout. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_214, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.kdsAriaLiveMessage), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [F-03 / Lot 1.C] Adaptive sync badge: reassures the kitchen that the\n         board is up to date even when WebSocket is degraded. Color shifts to\n         orange after 30s without sync. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_215, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.mark_done')), 9 /* TEXT, PROPS */, _hoisted_233)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_195)]);
+  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [CV1-KDS-A11Y-RICH-001] Off-screen aria-live region for transition\n         announcements (ACCEPT → PREPARING → PREPARED). Polite politeness so\n         it does not interrupt the cuisinier's current focus, and visually\n         hidden so it never reflows the kitchen layout. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_234, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.kdsAriaLiveMessage), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [F-03 / Lot 1.C] Adaptive sync badge: reassures the kitchen that the\n         board is up to date even when WebSocket is degraded. Color shifts to\n         orange after 30s without sync. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_235, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kds-sync-stamp", {
       'kds-sync-stamp--stale': $options.syncBadgeIsStale
     }]),
     title: $options.syncBadgeText
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.syncBadgeText), 11 /* TEXT, CLASS, PROPS */, _hoisted_216)]), $data.allergensModal.open ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.syncBadgeText), 11 /* TEXT, CLASS, PROPS */, _hoisted_236)]), $data.allergensModal.open ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
     key: 0,
     ref: "allergensModalRoot",
     "class": "kds-allergens-modal-overlay",
@@ -3825,7 +4128,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, ["esc"])), _cache[26] || (_cache[26] = function () {
       return $options.onAllergensModalKeydown && $options.onAllergensModalKeydown.apply($options, arguments);
     })]
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_218, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_219, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_modal_title', {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_238, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_239, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_modal_title', {
     order_id: $data.allergensModal.order && $data.allergensModal.order.id ? $data.allergensModal.order.id : ''
   })), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     ref: "allergensModalCloseButton",
@@ -3834,12 +4137,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[23] || (_cache[23] = function () {
       return $options.closeAllergensModal && $options.closeAllergensModal.apply($options, arguments);
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_allergens_modal_close')), 513 /* TEXT, NEED_PATCH */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_220, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_modal_intro')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_221, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.allergensModalItems, function (orderItem, allergenIndex) {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_allergens_modal_close')), 513 /* TEXT, NEED_PATCH */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_240, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_modal_intro')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_241, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.allergensModalItems, function (orderItem, allergenIndex) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
       key: (orderItem.id || orderItem.item_id || allergenIndex) + '-' + allergenIndex,
       "class": "kds-allergens-modal-list-item"
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(orderItem.item_name || orderItem.name || orderItem.item && orderItem.item.name || '-'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sortedAllergens(orderItem.allergens_snapshot).length ? $options.sortedAllergens(orderItem.allergens_snapshot).join(" \xB7 ") : _ctx.$t('label.kds_allergens_modal_none')), 1 /* TEXT */)]);
-  }), 128 /* KEYED_FRAGMENT */))])])], 40 /* PROPS, NEED_HYDRATION */, _hoisted_217)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 64 /* STABLE_FRAGMENT */))], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);
+  }), 128 /* KEYED_FRAGMENT */))])])], 40 /* PROPS, NEED_HYDRATION */, _hoisted_237)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 64 /* STABLE_FRAGMENT */))], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);
 }
 
 /***/ }),
@@ -5509,6 +5812,14 @@ var WS_RECONNECTING = 'RECONNECTING';
 var WS_DEGRADED = 'DEGRADED';
 var WS_DISCONNECTED = 'DISCONNECTED';
 var WS_SESSION_INVALID = 'SESSION_INVALID';
+// [Wave 3 P1 / KDS-RED-09 2026-05-18] Safe cadence floor — 4 req/s max per
+// station. Mirrors config/catalog_v15.php clamp; protects against owner
+// misconfig (FK_CATALOG_KDS_*=10 → ~80 req/s/station DoS).
+// [Wave 3b P1 / KDS-ADV3B-04 2026-05-18] Upper cap 60_000ms base / 30_000ms
+// jitter protects against silent-blind misconfig (e.g. =999999999 → 11.5d).
+var CADENCE_FLOOR_MS = 250;
+var CADENCE_CEILING_MS = 60000;
+var JITTER_CEILING_MS = 30000;
 var DEFAULT_CADENCE_OPTIONS = Object.freeze({
   highActivityBaseMs: 3000,
   highActivityJitterMs: 1000,
@@ -6010,17 +6321,35 @@ var KdsSyncService = /*#__PURE__*/function () {
     value: function _runtimeCadenceOptions() {
       var _window$foodkingConfi;
       var cfg = typeof window !== 'undefined' && (_window$foodkingConfi = window.foodkingConfig) !== null && _window$foodkingConfi !== void 0 && _window$foodkingConfi.kdsFallbackPolling ? window.foodkingConfig.kdsFallbackPolling : {};
-      var toInt = function toInt(value, fallback) {
+
+      // [Wave 3 P1 / KDS-RED-09 2026-05-18] Base cadences are clamped to
+      // CADENCE_FLOOR_MS (250ms = 4 req/s) so an owner-misconfig like
+      // window.foodkingConfig.kdsFallbackPolling.disconnectedBaseMs=10 cannot
+      // weaponize the polling loop into PHP-FPM saturation. Jitters keep a
+      // 0 floor since they widen — never shorten — the wait.
+      // [Wave 3b P1 / KDS-ADV3B-04 2026-05-18] Upper cap CADENCE_CEILING_MS
+      // (60_000ms = 1 poll/min minimum) and JITTER_CEILING_MS (30_000ms)
+      // prevent the symmetric silent-blind misconfig where a runaway value
+      // (e.g. disconnectedBaseMs=999999999) would stall KDS for ~11.5 days.
+      var clampBase = function clampBase(value, fallback) {
         var parsed = parseInt(value, 10);
-        return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+        var candidate = Number.isFinite(parsed) ? parsed : fallback;
+        var floored = candidate >= CADENCE_FLOOR_MS ? candidate : CADENCE_FLOOR_MS;
+        return floored <= CADENCE_CEILING_MS ? floored : CADENCE_CEILING_MS;
+      };
+      var clampJitter = function clampJitter(value, fallback) {
+        var parsed = parseInt(value, 10);
+        var candidate = Number.isFinite(parsed) ? parsed : fallback;
+        var floored = candidate >= 0 ? candidate : 0;
+        return floored <= JITTER_CEILING_MS ? floored : JITTER_CEILING_MS;
       };
       return {
-        highActivityBaseMs: toInt(cfg.highActivityBaseMs, DEFAULT_CADENCE_OPTIONS.highActivityBaseMs),
-        highActivityJitterMs: toInt(cfg.highActivityJitterMs, DEFAULT_CADENCE_OPTIONS.highActivityJitterMs),
-        degradedBaseMs: toInt(cfg.degradedBaseMs, DEFAULT_CADENCE_OPTIONS.degradedBaseMs),
-        degradedJitterMs: toInt(cfg.degradedJitterMs, DEFAULT_CADENCE_OPTIONS.degradedJitterMs),
-        disconnectedBaseMs: toInt(cfg.disconnectedBaseMs, DEFAULT_CADENCE_OPTIONS.disconnectedBaseMs),
-        disconnectedJitterMs: toInt(cfg.disconnectedJitterMs, DEFAULT_CADENCE_OPTIONS.disconnectedJitterMs)
+        highActivityBaseMs: clampBase(cfg.highActivityBaseMs, DEFAULT_CADENCE_OPTIONS.highActivityBaseMs),
+        highActivityJitterMs: clampJitter(cfg.highActivityJitterMs, DEFAULT_CADENCE_OPTIONS.highActivityJitterMs),
+        degradedBaseMs: clampBase(cfg.degradedBaseMs, DEFAULT_CADENCE_OPTIONS.degradedBaseMs),
+        degradedJitterMs: clampJitter(cfg.degradedJitterMs, DEFAULT_CADENCE_OPTIONS.degradedJitterMs),
+        disconnectedBaseMs: clampBase(cfg.disconnectedBaseMs, DEFAULT_CADENCE_OPTIONS.disconnectedBaseMs),
+        disconnectedJitterMs: clampJitter(cfg.disconnectedJitterMs, DEFAULT_CADENCE_OPTIONS.disconnectedJitterMs)
       };
     }
   }]);
