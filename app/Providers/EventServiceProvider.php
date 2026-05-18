@@ -242,8 +242,12 @@ class EventServiceProvider extends ServiceProvider
         // [Wave 5G R10 heal 2026-05-17] Branch status flip -> revoke Sanctum
         // tokens for users of that branch when new status === INACTIVE.
         // Closes the 480-min TTL hole flagged by RED-team R10.
+        // [T-6.4 GOAL Phase 2 2026-05-18] + PersistBranchStatusChangedToOutbox
+        // (Z7-V1.0.2-P2-01). Order: RevokeTokens FIRST (sync DB delete),
+        // PersistToOutbox SECOND (async broadcast via DispatchDomainEventsJob).
         BranchStatusChanged::class => [
             RevokeTokensOnBranchDeactivated::class,
+            \App\Listeners\PersistBranchStatusChangedToOutbox::class,
         ],
     ];
 
