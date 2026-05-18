@@ -6,9 +6,12 @@ use Exception;
 use App\Http\Requests\Kiosk\LoyaltyOptInRequest;
 use App\Models\LoyaltyConsent;
 use App\Models\User;
+use App\Services\Loyalty\LoyaltyQrInvalidException;
+use App\Services\Loyalty\LoyaltyQrSigner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -606,32 +609,94 @@ class LoyaltyController extends Controller
                 ], 200);
             }
 
-            // -- QR : parsing robuste (préfixe FK: tolérant) -------------
-            $code = $raw;
-            if (stripos($raw, 'FK:') === 0) {
-                $code = substr($raw, 3);
-            }
-            // Normalisation
-            $code = trim($code);
-
-            // Recherche loyalty_code d'abord, puis phone E.164 si non trouvé.
+            // -- QR : parsing robuste -----------------------------------
+            // Priority 1 : signed token "lqr.<payload>.<hmac>" (LCS-S-001 heal).
+            //   - HMAC verified server-side, exp + nonce checked.
+            //   - On any failure → HTTP 200 + error_code (invariant §12).
+            // Priority 2 : legacy plaintext "FK:<code>" or bare "<code>".
+            //   - Accepted while LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT=true so
+            //     pre-heal mobile clients keep working. Each call is logged
+            //     (channel : loyalty.qr.legacy_plaintext) so V1.0.X retirement
+            //     can be evidence-driven. X-Loyalty-QR-Status: legacy header
+            //     surfaces the deprecation without changing the JSON contract.
+            // ---------------------------------------------------------------
+            $signer = app(LoyaltyQrSigner::class);
             $target = null;
-            if ($code !== '') {
-                $target = User::where('loyalty_code', strtoupper($code))->first();
-                if (!$target) {
-                    $phone = preg_replace('/[\s\-]/', '', $code);
-                    if ($phone && preg_match('/^\+?\d{6,15}$/', $phone)) {
-                        $target = User::where('phone', $phone)->first();
+            $deprecationHeader = null;
+
+            if ($signer->isSignedToken($raw)) {
+                try {
+                    $payload = $signer->verifyAndConsume($raw, 'kiosk');
+                    $code = strtoupper(trim((string) ($payload['code'] ?? '')));
+                    if ($code !== '') {
+                        $target = User::where('loyalty_code', $code)->first();
+                    }
+                    if (! $target || (int) ($target->status ?? 1) !== 1) {
+                        // Signed payload was valid but the customer row vanished
+                        // (rotation / deletion). Still HTTP 200, parcours continues.
+                        return response()->json([
+                            'status' => true,
+                            'data'   => $this->emptyLoyaltyScanResponse('customer_not_found'),
+                        ], 200);
+                    }
+                } catch (LoyaltyQrInvalidException $e) {
+                    // Stable machine-readable error_code surfaces to kiosk JS so
+                    // it can decide UX (show "QR expired, please regenerate"
+                    // for `qr_expired` etc). HTTP stays 200 per §12.
+                    Log::info('[loyalty.qr.signed_reject] ' . $e->errorCode, [
+                        'surface'    => 'kiosk',
+                        'error_code' => $e->errorCode,
+                    ]);
+                    return response()->json([
+                        'status' => true,
+                        'data'   => $this->emptyLoyaltyScanResponse($e->errorCode),
+                    ], 200);
+                }
+            } else {
+                // Legacy plaintext path (deprecated, gated by config flag).
+                $acceptLegacy = (bool) Config::get('loyalty.qr.accept_legacy_plaintext', true);
+                if (! $acceptLegacy) {
+                    Log::warning('[loyalty.qr.legacy_plaintext_rejected]', [
+                        'surface' => 'kiosk',
+                    ]);
+                    return response()->json([
+                        'status' => true,
+                        'data'   => $this->emptyLoyaltyScanResponse('qr_legacy_rejected'),
+                    ], 200);
+                }
+
+                $deprecationHeader = 'legacy-plaintext';
+
+                $code = $raw;
+                if (stripos($raw, 'FK:') === 0) {
+                    $code = substr($raw, 3);
+                }
+                $code = trim($code);
+
+                Log::info('[loyalty.qr.legacy_plaintext]', [
+                    'surface'  => 'kiosk',
+                    'code_len' => strlen($code),
+                    'has_fk_prefix' => stripos($raw, 'FK:') === 0,
+                ]);
+
+                // Recherche loyalty_code d'abord, puis phone E.164 si non trouvé.
+                if ($code !== '') {
+                    $target = User::where('loyalty_code', strtoupper($code))->first();
+                    if (! $target) {
+                        $phone = preg_replace('/[\s\-]/', '', $code);
+                        if ($phone && preg_match('/^\+?\d{6,15}$/', $phone)) {
+                            $target = User::where('phone', $phone)->first();
+                        }
                     }
                 }
-            }
 
-            if (!$target || (int) ($target->status ?? 1) !== 1) {
-                // Ne jamais renvoyer 404 → parcours doit continuer (invariant §12).
-                return response()->json([
-                    'status' => true,
-                    'data'   => $this->emptyLoyaltyScanResponse('customer_not_found'),
-                ], 200);
+                if (! $target || (int) ($target->status ?? 1) !== 1) {
+                    // Ne jamais renvoyer 404 → parcours doit continuer (invariant §12).
+                    return response()->json([
+                        'status' => true,
+                        'data'   => $this->emptyLoyaltyScanResponse('customer_not_found'),
+                    ], 200)->header('X-Loyalty-QR-Status', $deprecationHeader);
+                }
             }
 
             // -- Token opaque éphémère (pas d'id exposé) ------------------
@@ -649,7 +714,7 @@ class LoyaltyController extends Controller
             $points = (int) ($target->loyalty_points ?? 0);
             $declaredAllergens = $this->readDeclaredAllergens($target);
 
-            return response()->json([
+            $response = response()->json([
                 'status' => true,
                 'data'   => [
                     'ok'                     => true,
@@ -661,12 +726,83 @@ class LoyaltyController extends Controller
                     'error_code'             => null,
                 ],
             ], 200);
+
+            // [LCS-S-001] Surface the legacy-plaintext deprecation via response
+            // header so observability + kiosk JS can track migration progress
+            // without changing the JSON shape (frontend remains compatible).
+            if ($deprecationHeader !== null) {
+                $response->header('X-Loyalty-QR-Status', $deprecationHeader);
+            } else {
+                $response->header('X-Loyalty-QR-Status', 'signed');
+            }
+
+            return $response;
         } catch (\Throwable $e) {
             Log::error('[LoyaltyScan] '.$e->getMessage());
             return response()->json([
                 'status' => true,
                 'data'   => $this->emptyLoyaltyScanResponse('scan_error'),
             ], 200);
+        }
+    }
+
+    /**
+     * [LCS-S-001 / 2026-05-19] Mint a fresh signed QR token for the
+     * authenticated customer.
+     *
+     * POST /api/frontend/loyalty/qr (auth:sanctum, NOT kiosk:order).
+     *
+     * The mobile / web client calls this on a 5-min interval (matches the
+     * UI rotation pace already in place — see mobile/components/LoyaltyQR.jsx
+     * comments). The returned token is opaque to the client and MUST be
+     * presented as `raw_data` to /loyalty/scan.
+     *
+     * No mobile-side change is required for this endpoint to ship — the
+     * deferred mobile cycle (V1.0.X) will wire it. Until then, the legacy
+     * plaintext `FK:<code>` path stays accepted (gated by
+     * LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT).
+     */
+    public function generateQr(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            if (! $user) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Authentification requise.',
+                ], 401);
+            }
+
+            $loyaltyCode = (string) ($user->loyalty_code ?? '');
+            if ($loyaltyCode === '') {
+                // Mint one on-demand so the response is never empty for an
+                // authenticated customer. Same upper-8 hex pattern as
+                // LoyaltyController::check (line 82).
+                $loyaltyCode = strtoupper(substr(md5(uniqid()), 0, 8));
+                $user->loyalty_code = $loyaltyCode;
+                $user->save();
+            }
+
+            $signed = app(LoyaltyQrSigner::class)->sign(
+                (int) $user->id,
+                $loyaltyCode,
+            );
+
+            return response()->json([
+                'status' => true,
+                'data'   => [
+                    'token'        => $signed['token'],
+                    'expires_at'   => $signed['expires_at'],
+                    'ttl_seconds'  => (int) Config::get('loyalty.qr.ttl_seconds', 300),
+                    'loyalty_code' => $loyaltyCode, // for UI display only
+                ],
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('[LoyaltyQrGenerate] ' . $e->getMessage());
+            return response()->json([
+                'status'  => false,
+                'message' => 'Impossible de générer le QR. Réessayez.',
+            ], 500);
         }
     }
 

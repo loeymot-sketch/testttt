@@ -150,6 +150,26 @@ class AppServiceProvider extends ServiceProvider
                 );
             }
 
+            // [LCS-S-001 / 2026-05-19] Loyalty QR signing secret must be set
+            // in production. Without it, LoyaltyQrSigner::sign / verify cannot
+            // produce/validate a signed token — falling back to legacy plaintext
+            // `FK:<code>` permanently, defeating the cross-surface fraud heal.
+            // Mirrors the FISCAL_*_SECRET / POS_SIMULATION_HARDWARE guard pattern.
+            // dev_sentinels + min_secret_length are enforced lazily by the signer
+            // itself; this boot guard catches the "forgot to rotate" deploy mistake
+            // at startup rather than at first QR mint.
+            $loyaltyQrSecret = (string) config('loyalty.qr.secret', '');
+            if ($loyaltyQrSecret === '') {
+                throw new \RuntimeException(
+                    'LOYALTY_QR_SECRET must be set in production (LCS-S-001). Without it, '
+                    . 'the loyalty QR scan endpoint cannot verify signed tokens — every scan '
+                    . 'falls back to the legacy plaintext FK:<code> path which is the '
+                    . 'cross-surface fraud vector being healed. Generate with `openssl rand -hex 32` '
+                    . 'and set LOYALTY_QR_SECRET=<value> in your .env file then '
+                    . 'run `php artisan config:cache`. See config/loyalty.php for the rotation policy.'
+                );
+            }
+
             // [Foundation Audit F-3 P0 / 2026-05-18] APP_URL must be set in
             // production. config/cors.php derives `allowed_origins` from
             // array_filter([APP_URL, KIOSK_DOMAIN, ADMIN_DOMAIN]) — when
