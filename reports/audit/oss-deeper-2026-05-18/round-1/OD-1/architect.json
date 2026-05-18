@@ -1,0 +1,75 @@
+{
+  "specialist": "Architect",
+  "zone": "OSS-deeper-Wave-C",
+  "mode": "AUDIT-ONLY-READ",
+  "scope": "OSS as its own system — aspects NOT covered by Z-2 fullsys or PO intersection: multi-screen orchestration, offline/network-blip LAN-only resilience, customer-pickup-confirmation flow (greenfield), public-wall PII surface final attest from architecture lens.",
+  "anchors_inspected": [
+    "app/Http/Controllers/Admin/OrderStatusScreenController.php",
+    "app/Http/Resources/CDSOrderDetailsResource.php",
+    "resources/js/services/OssSyncService.js",
+    "resources/js/store/modules/orderStatusScreenOrder.js",
+    "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+    "resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue",
+    "resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue",
+    "routes/api.php (lines 1080..1158)",
+    "app/Providers/RouteServiceProvider.php (oss-public rate limiter lines 145..153)",
+    "routes/channels.php (branch-channel auth)",
+    "public/js/admin-oss.js (DIRTY — read-only)"
+  ],
+  "out_of_scope": "Already-attested invariants (Z-2/PO): TZ-aware bounds, fail-closed allowlist, cadence clamp [250..60_000]ms, public-chime structural skip, wake-lock acquire/release, channel-auth token-name discriminator, Echo+poll dedupe, CDSOrderDetailsResource minimal payload.",
+  "findings": [
+    {
+      "id": "OD-ARC-01",
+      "severity": "P2",
+      "title": "Multi-screen orchestration has no inter-tab coordination — twin chime + double-poll on same branch",
+      "context": "FoodKing supports operator-attended OSS (admin laptop, authBranchId>0) AND public TV wall (unauthenticated, authBranchId=0) opened simultaneously for the same branch. Both subscribe to `private-branch.{branchId}` via `onEvents(branchId, [...])` (PreparingAndReadyComponent.vue:252-273) and run their own `OssSyncService` instance. On a PREPARED transition: (a) both Echo subscribers fire `_markNewReady()` independently — public wall does visual flash only (chime gated off by P0-OSS-01 heal line 317), operator wall fires the full 3-tone chime + flash. (b) On tab-visibility return after a multi-tab focus event, both `_burstPoll()` paths fire one XHR each within their own 1s throttle window; aggregate is 2 XHRs to `frontend/oss-order` or `admin/oss-order`. (c) No `BroadcastChannel`, no `navigator.locks`, no `localStorage` tab-coord exists in OssSyncService.js (confirmed by grep on lines 1..452).",
+      "evidence": "OssSyncService.js:37-451 — no `BroadcastChannel(`, no `navigator.locks.`, no `localStorage.setItem` lookups. Each instance is fully independent. `start()` (line 57) takes a `ctx.store` reference and binds its own visibility listener (line 214-226) — no cross-instance coordination.",
+      "real_world_impact": "Operator-attended-only: minimal (chime fires twice if same operator opens 2 OSS tabs — UX annoyance, not a defect). Public wall: ZERO impact because chime gate blocks audio output. POS supervisor + customer wall combination on same branch: ZERO impact because public wall chime is gated. The double-poll (60req/min cap per IP per route, oss-public limiter line 145) at worst doubles the request load: 2 tabs × 1 req/60s connected cadence = 2 req/60s, well under the 60/min cap.",
+      "heal_recommendation": "V1.0.2 backlog: when multi-operator restaurant becomes common, add `BroadcastChannel('foodking-oss-coord')` to elect a leader tab per branch_id; followers skip chime and reuse the leader's XHR via a localStorage cache. Not blocking for V1 Le Cayenne (single-restaurant, max 1 operator wall + 1 customer wall).",
+      "verdict": "P2 — design limitation, not a defect. Backlog only.",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "OD-ARC-02",
+      "severity": "P3",
+      "title": "OssSyncService does not gate on navigator.onLine — silent failure storm on LAN-only outage",
+      "context": "Restaurant LAN occasionally drops the WAN uplink (DSL/4G/cable maintenance). When `navigator.onLine === false`, `OssSyncService._poll()` still fires `store.dispatch('orderStatusScreenOrder/lists')` which falls through to axios → DNS/TCP error → caught in `catch` block (line 302-314) → `_statusFromError` returns 0 (no response) → status NOT in [500..599] range → falls into `this._state = STATE.POLLING; this._emit('error', { status, error }); this._scheduleNormalCadence()`. Net effect: silent error stream every 2000ms (disconnected cadence) until the link recovers, with no operator-visible signal beyond the global `ConnectionStatusBanner` (which is suppressed-transient on OSS per OrderStatusScreenComponent.vue:9). Backoff path is gated to 5xx only (line 292) so even a hard offline doesn't engage exponential backoff.",
+      "evidence": "OssSyncService.js:276-321 `_poll()` body — no `if (!navigator.onLine) { ...; return; }` short-circuit. `_handle5xx()` (line 323-332) only triggers on 5xx; non-2xx, non-5xx (including network-level errors with status=0) re-schedule normal cadence. No `window.addEventListener('offline', ...)` / `window.addEventListener('online', ...)` listeners in the file.",
+      "real_world_impact": "Wave 3c devWarnAfterDisconnectMs (10s threshold, dev-only console.warn line 254-274) surfaces sustained WS disconnect but does NOT cover `navigator.onLine=false`. Effect: a 60-second LAN outage = ~30 silent failed XHRs (2000ms disconnected cadence). Backend never sees these (LAN-blocked). Battery/CPU drain on customer-wall tablet is real but minor.",
+      "heal_recommendation": "V1.0.2 backlog: add `if (typeof navigator !== 'undefined' && navigator.onLine === false) { this._scheduleNext(this._opts.intervalMsWhenDisconnected); return; }` at the top of `_poll()`. Also bind `window.addEventListener('online', () => this._burstPoll('online'))` in `start()` to catch link-restore. Symmetric with the visibility-resume burst pattern already in place.",
+      "verdict": "P3 — minor inefficiency, no data integrity impact. Backlog only.",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "OD-ARC-03",
+      "severity": "INFO",
+      "title": "PII surface final attest — CDSOrderDetailsResource payload bit-clean for public wall",
+      "context": "Z-1 KDS audit found `customer.name` exposed on KDS screen (operator surface, RBAC-gated — minor concern). OSS public-wall is unauthenticated and visible to all customers in the restaurant — PII exposure would be a GDPR breach. Wave C must final-attest the public payload.",
+      "evidence": "CDSOrderDetailsResource.php:17-24 returns exactly 6 fields: `id`, `order_serial_no`, `token`, `queue_number`, `order_type`, `status`. No `name`, no `phone`, no `email`, no `address`, no `total_amount`, no `payment_method`. The controller `publicIndex` (OrderStatusScreenController.php:75-100) wraps the service via `listForBranch($branchId)` which uses the same Eloquent query as the admin path (verified in Z-2 fullsys); the resource is the gate, not the query. CDSPopularItemResource similarly exposes only `id`, `name` (item name, not customer), `currency_price`, `thumb` (item image URL) — all data-equivalent to the existing `/api/frontend/item/popular-items` public endpoint (controller docblock line 109-110 explicitly attests this).",
+      "real_world_impact": "Zero PII exposure on public OSS. ATTESTED.",
+      "verdict": "GREEN — KEEP-AS-IS.",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "OD-ARC-04",
+      "severity": "RECOMMENDATION",
+      "title": "Customer-pickup-confirmation flow — greenfield design note for V1.0.2+",
+      "context": "Mission scope mentions 'Future expansion: customer-pickup-confirmation flow' — confirmed greenfield. No code today: grep on `pickup-confirmation|customer-pickup|PICKUP` in OSS components returns zero. The current PRÊT column shows `N°{queue_number}` or `{token}` (PreparingAndReadyComponent.vue:47) — customer sees their number, walks to counter, staff hands them the order. No explicit confirmation handshake.",
+      "design_note_for_owner": "Two architecturally clean paths: (a) BUTTON-LESS: keep current flow, add an 'opacity-fade-after-2min' visual cue on PRÊT items not picked up (forces staff to call), implemented client-side in `_hydrateFromRows` with a `picked_up_warn_at = now + 2min` per item. (b) BUTTON: add a `POST /api/frontend/oss-order/{order}/picked-up` endpoint gated by knowing the order `token` (acts as a low-entropy bearer), which transitions DONE→PICKED_UP (new status enum). Staff scans a QR on the bag, customer confirms on a small kiosk panel. Path (a) is V1.0.2-light (no backend churn); path (b) is V1.1.0+ (status-machine extension + receipt re-print).",
+      "verdict": "RECOMMENDATION — backlog ticket V1.0.2-OSS-PICKUP-FADE or V1.1.0-OSS-PICKUP-CONFIRM.",
+      "frozen_zone_touch": false
+    }
+  ],
+  "keep_as_is": [
+    "CDSOrderDetailsResource.php:17-24 minimal public payload (PII-clean)",
+    "OssSyncService.js:34-35 + 122-134 + 430-435 cadence clamp [250..60_000]ms",
+    "OrderStatusScreenController.php:75-100 publicIndex branch resolution (?branch_id query, fallback to first ACTIVE)",
+    "routes/api.php:1152-1157 oss-public rate-limit middleware on both endpoints",
+    "PreparingAndReadyComponent.vue:317 chime structural-skip when authBranchId() <= 0",
+    "PreparingAndReadyComponent.vue:186-202 wake-lock acquire/release",
+    "OrderStatusScreenComponent.vue:9 ConnectionStatusBanner suppress-transient on OSS"
+  ],
+  "wordcount": 1180,
+  "verdict_overall": "GREEN — no V1 blockers. 1 P2 (multi-screen coord) + 1 P3 (navigator.onLine gate) + 1 INFO + 1 RECOMMENDATION (greenfield pickup-confirm). All findings deferrable to V1.0.2.",
+  "frozen_zone_touch": false
+}

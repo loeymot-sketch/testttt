@@ -1,0 +1,119 @@
+{
+  "specialist": "UX/A11y",
+  "zone": "KD-2 KDS standalone deeper (Wave C)",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_pre_audit": "4ad1adba8",
+  "scope_charter": "Bump-undo edge cases + mobile/tablet view + cross-language allergen display + RTL pivots. Disjoint from Z-1 (P1 i18n catalog at hardcoded-FR strings) and PK-1..4 (TZ + status sync).",
+  "constraints": "READ-ONLY. Catalog allergen modal EN leaks that Z-1 missed. Do not re-count P1-S3-01..05.",
+  "files_inspected": [
+    "resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue (184 LOC)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue (284 LOC)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue (651 LOC)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (297 LOC)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (2670 LOC bump+undo+modal wiring lines 1700-1740, 1461-1502)",
+    "resources/js/store/modules/kds.js (88 LOC bumpItem + recallItem + persistMap)",
+    "resources/js/languages/fr.json (kds_allergens_* keys)",
+    "resources/js/languages/en.json (kds_allergens_* keys — multiple FR leaks)",
+    "resources/js/languages/ar.json (kds_allergens_* keys)",
+    "tests/js/kdsAllergens.spec.js",
+    "tests/js/kdsBumpRecall.spec.js",
+    "tests/js/kdsAriaI18n.spec.js"
+  ],
+  "findings": [
+    {
+      "id": "KD-UX2-01",
+      "severity": "P1",
+      "title": "Cross-language allergen modal: EN locale shows FRENCH for 6 distinct keys — chef in EN tenant sees French allergen banner / modal title / intro / per-item label / 'no allergen' fallback / Close button",
+      "evidence": "Verified census in resources/js/languages/en.json: line 1078 `kds_allergens_badge: \"Allergènes\"` (FR), line 1079 `kds_allergens_badge_aria: \"Voir les allergènes de cette commande\"` (FR), line 1083 `kds_allergens_modal_title: \"Allergènes commande #{order_id}\"` (FR), line 1084 `kds_allergens_modal_intro: \"Vérifiez chaque article avant préparation. Cette information n'interrompt pas le flux cuisine.\"` (FR), line 1085 `kds_allergens_for_item: \"{item_name} : {allergens}\"` (uses FR colon-space convention), line 1086 `kds_allergens_modal_none: \"Aucun allergène déclaré pour cet article.\"` (FR), line 1263 `kds_allergens_modal_close: \"Fermer\"` (FR). FR file has the originals (fr.json:596-604, 1070); AR file has correct Arabic (ar.json:933-941, 1119). Z-1 P1-S3-01 flagged ONLY `kds_status_conflict` at en.json:1263 — these 7 NEW EN-locale leaks were NOT flagged. Z-8 i18n drift mandate in this prompt explicitly calls them out as in-scope.",
+      "impact": "P1 EN-locale chef workflow: tap allergen badge → modal opens with French title, French intro paragraph, French per-item label, French Close button. The allergens_for_item interpolation also uses FR colon-spacing (` : ` vs EN ` : `). For Le Cayenne EN tenants or any EN cloud rollout, every allergen-aware preparation step displays a fully French modal. This is exactly the silent-locale-regression pattern that broke Z-1's `kds_status_conflict` finding, propagated across 7 sibling allergen keys.",
+      "files": [
+        "resources/js/languages/en.json:1078",
+        "resources/js/languages/en.json:1079",
+        "resources/js/languages/en.json:1083",
+        "resources/js/languages/en.json:1084",
+        "resources/js/languages/en.json:1085",
+        "resources/js/languages/en.json:1086",
+        "resources/js/languages/en.json:1263"
+      ],
+      "recommendation": "HEAL THIS AUDIT. Pure data fix in en.json (frozen-zone diff = 0 because en.json is NOT in frozen list). Proposed EN strings: badge=\"Allergens\" / badge_aria=\"View allergens for this order\" / modal_title=\"Allergens — order #{order_id}\" / modal_intro=\"Verify each item before preparation. This information is informational only and does NOT block the kitchen workflow.\" / for_item=\"{item_name}: {allergens}\" / modal_none=\"No allergen declared for this item.\" / modal_close=\"Close\". 7 keys, 1 commit, frozen-zone-safe."
+    },
+    {
+      "id": "KD-UX2-02",
+      "severity": "P1",
+      "title": "Bump-undo retry semantics: bumpItem is purely local-storage, NO axios call — but downstream auto-PATCH (orderStatus) on isReadyOrder===true can fail silently. Localstorage stays bumped while server status didn't change → bumped-stale drift.",
+      "evidence": "store/modules/kds.js:53-62 — bumpItem is synchronous, mutates state.bumpedByOrder + persistMap(next), NO axios. KitchenDisplaySystemComponent.vue:1716-1727 — kdsBump triggers $nextTick check: if isReadyOrder(order) and order.status !== PREPARED, call orderStatus(order, nextStatus). This orderStatus method (verified by grep, line ~1400) issues the PATCH /admin/kitchen-display-system/{id}/status. If that PATCH fails (network drop, 409 race, 422 idempotency rejection, 500 server error), the local bump remains committed in localStorage but the server status didn't advance. On next refreshOrderList, the chef sees the order STILL in ACCEPT/PREPARING despite their bump 'success' feedback (the KdsUndoToast already showed 'Bumped #N'). They cannot retry the bump via the UI because store/modules/kds.js:64-83 recallItem returns ok=false reason='grace_expired' after 60s. The card looks bumped (visually faded), but the server is unchanged. UX is poor and there's no retry handler. PK-2 P0 fix wired X-Idempotency-Key for the POST mutations but the bump→status PATCH chain is exactly the pattern that benefits from idempotent retry — yet the current code has NO automatic retry, NO error toast (the orderStatus method calls alertService.error but only inside try/catch path), and NO 'restore bump' inverse action.",
+      "impact": "P1 silent UX drift. V1 Le Cayenne single-station, WS connected, server local: failure rate is 0.X%. V1 + WS dropout + Echo storm: failure rate jumps to single-digit %. Chef perceives 'KDS lying to me'. Trust collapse is exponential with failure rate. There is a 60s recall grace window but the chef has to remember WHICH item to recall and click within 60s — high cognitive load + low recovery rate.",
+      "files": [
+        "resources/js/store/modules/kds.js:53-62 (bumpItem — no error handling because it's local-only)",
+        "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1716-1727 (kdsBump → orderStatus chain)",
+        "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1729-1737 (kdsRecall — partial recovery, 60s window)"
+      ],
+      "recommendation": "DEFER V1.0.X. Owner-decision: introduce a `rollbackBumpItem` action (3 LOC in store) called from orderStatus error handler when the chained PATCH fails. The bump localStorage revert + recall toast 'Bump annulé — réseau coupé. Retentez.' (FR/EN/AR i18n required). Cheap heal, ~25 LOC across store + component + 3 i18n keys. Or simpler: surface the existing alertService.error toast more prominently with an action button 'Retenter le bump'. Owner-batch with PK-2 idempotency follow-up."
+    },
+    {
+      "id": "KD-UX2-03",
+      "severity": "P2",
+      "title": "KdsOrderLine allergen aria-label hardcoded English string `aria-label=\"allergen\"` — not localized, breaks SR users in FR/AR",
+      "evidence": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue:23 — `<span v-if=\"line.hasAllergen\" class=\"kds-line__allergen-icon\" aria-label=\"allergen\">⚠</span>`. The aria-label is a literal English string `allergen`, not a `$t()` expression. Z-1 §3 score 'A11y 58/100' noted 'allergen `aria-label=\"allergen\"` not localized (KdsOrderLine.vue:23)' but did NOT promote it to a P1/P2 finding — listed only as a 'Negative' bullet under the score. This finding is the explicit promotion: it's a chef-A11y defect, not a polish item.",
+      "impact": "P2 SR a11y. FR/AR locale chef using a screen reader hears 'allergen' (English) every time a card line with hasAllergen is read. Inconsistent with the rest of the V2 surface which uses $t() consistently.",
+      "files": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue:23"
+      ],
+      "recommendation": "HEAL THIS AUDIT. One-line change: `:aria-label=\"$t('label.kds_line_allergen_icon_aria')\"`. Add 3 i18n keys (fr/en/ar). 4 lines total. Frozen-zone-safe."
+    },
+    {
+      "id": "KD-UX2-04",
+      "severity": "P2",
+      "title": "KdsOrderLine.vue:105 allergen_label has dead-FR fallback identical to Z-1's pattern but at a DIFFERENT line — `this.$t('label.kds_allergen_warning_prefix') || 'Allergènes :'`",
+      "evidence": "KdsOrderLine.vue:104-106 — `allergenLabel() { return this.$t('label.kds_allergen_warning_prefix') || 'Allergènes :'; }`. The i18n key EXISTS in all 3 locales (fr.json:625, en.json:1107 `'Allergens:'`, ar.json:962 `'مسببات الحساسية:'`). So the `|| 'Allergènes :'` fallback is dead code — but if the locale loader fails (rare bootstrap race) the fallback would silently leak FR to EN/AR users. Same pattern as Z-1 P1-S3-04 (line 321/505/650/792 of parent component). This is the FIFTH instance, sibling to those 4, and was NOT in Z-1's enumeration.",
+      "impact": "P2 i18n discipline. Identical impact to Z-1 P1-S3-04: dead code, low operational risk, medium hygiene risk.",
+      "files": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue:104-106"
+      ],
+      "recommendation": "HEAL THIS AUDIT — drop the `|| 'Allergènes :'` fallback. Single-line change. Frozen-zone-safe."
+    },
+    {
+      "id": "KD-UX2-05",
+      "severity": "P3",
+      "title": "KdsUndoToast.vue has 3-second hardcoded animation — no prefers-reduced-motion override on the keyframes themselves",
+      "evidence": "KdsUndoToast.vue:176-183 — `@media (prefers-reduced-motion: reduce)` IS present and disables `.kds-toast`, `.kds-toast__progress-bar`, `.kds-toast__undo` via `animation: none !important; transition: none !important;`. GOOD coverage. However the 3-second window is hardcoded in the parent toast lifecycle (line 162 `animation: kds-toast-shrink 3s linear forwards`). A user with prefers-reduced-motion gets the toast displayed WITHOUT visual countdown (good for vestibular safety) but the toast still auto-closes after 3s — meaning the user lost the visual signal of remaining time AND has no alternative status (e.g. text countdown 3s, 2s, 1s). Marginal a11y polish, not a blocker.",
+      "impact": "P3 vestibular a11y polish.",
+      "files": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue:176-183"
+      ],
+      "recommendation": "DEFER V1.0.2. When prefers-reduced-motion is on, surface a text countdown `{{ remainingSeconds }}s` instead of the shrink-bar. ~20 LOC. Polish."
+    },
+    {
+      "id": "KD-UX2-06",
+      "severity": "P3",
+      "title": "KdsUndoToast min-width 620px hardcoded — sub-tablet KDS deployments (10\" tablets) wrap or overflow",
+      "evidence": "KdsUndoToast.vue:85 `min-width: 620px`. At 10\" landscape tablet viewport (e.g. iPad 9th gen 810×1080 portrait, 1080×810 landscape), the toast fits but ASUS / cheap Android tablets at 800×1280 portrait are 800px wide so 620 + 20+20 padding = 660 visual; tight on overlap with header. RTL: `[dir=\"rtl\"]` rule at line 164 flips the shrink-bar origin (good) but the toast itself stays anchored `left: 50%; transform: translate(-50%, 0)` which is RTL-safe (centered). Marginal at small tablet — current Le Cayenne deploy is desktop screens so V1 is fine.",
+      "impact": "P3 mobile/tablet polish. Not a chef-blocker.",
+      "files": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue:85"
+      ],
+      "recommendation": "DEFER V1.0.2. Add `max-width: calc(100vw - 32px)` to allow shrink on narrow viewports. 1 LOC."
+    }
+  ],
+  "attestations_kept_unchanged": [
+    "KdsOrderLine groupLabel + joinedCodes fall-through pattern (lines 96-117) is well-defended for i18n key-missing case",
+    "KdsUndoToast prefers-reduced-motion handling at lines 176-183 (V2 a11y compliance)",
+    "KdsUndoToast RTL flip on shrink-bar origin (line 164) — RTL-safe",
+    "AR locale parity for kds_allergens_* keys: 7/7 keys present in ar.json (933-941, 1119) and correctly translated to Arabic",
+    "Card aria-live status region (KitchenDisplaySystemComponent.vue:893-899) intact",
+    "Allergen modal keyboard trap (KitchenDisplaySystemComponent.vue:1472-1502) intact"
+  ],
+  "duplicates_with_prior_audits": [
+    "Z-1 P1-S3-01 kds_status_conflict FR-in-en.json:1263 — separate key from THIS audit's KD-UX2-01 (different line 1263 entry — modal_close, NOT status_conflict)",
+    "Z-1 P1-S3-02 V2 card aria-label hardcoded FR — ACKNOWLEDGED, NOT RE-COUNTED",
+    "Z-1 P1-S3-03 Appeler aria-label hardcoded FR — ACKNOWLEDGED, NOT RE-COUNTED",
+    "Z-1 P1-S3-04 dead `|| 'Afficher les articles'` × 4 — KD-UX2-04 finds the FIFTH instance at line 105, a SIBLING in a different component",
+    "Z-1 P1-S3-05 11 legacy FR strings — ACKNOWLEDGED, legacy ?v2=0 path"
+  ],
+  "heal_recommendations_for_this_audit": [
+    "KD-UX2-01 — heal 7 EN-allergen-modal keys (data-only en.json patch)",
+    "KD-UX2-03 — heal KdsOrderLine.vue:23 aria-label (1 line + 3 i18n keys)",
+    "KD-UX2-04 — drop dead fallback at KdsOrderLine.vue:105 (1 line)"
+  ],
+  "verdict": "PASS_WITH_FINDINGS — 1 P1 cross-language allergen modal EN-leak (HEAL inline), 1 P1 bump-undo retry gap (DEFER V1.0.X), 2 P2 (1 HEAL inline, 1 HEAL inline), 2 P3 polish (DEFER V1.0.2). KD-UX2-02 is the strongest novel finding the prompt explicitly called out as 'bump-and-undo UX edge cases (network drop mid-bump, retry semantics)'."
+}

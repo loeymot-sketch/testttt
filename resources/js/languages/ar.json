@@ -960,6 +960,7 @@
         "kds_attente": "الانتظار",
         "kds_allergie": "حساسية",
         "kds_allergen_warning_prefix": "مسببات الحساسية:",
+        "kds_line_allergen_icon_aria": "صنف يحتوي على مسببات حساسية",
         "kds_card_cta_ready": "جاهز",
         "kds_undo_bump": "تراجع",
         "kds_undo_bump_aria": "تراجع عن آخر طلب تم تجهيزه",

@@ -623,6 +623,7 @@
         "kds_attente": "Attente",
         "kds_allergie": "Allergie",
         "kds_allergen_warning_prefix": "Allergènes :",
+        "kds_line_allergen_icon_aria": "Article contenant des allergènes",
         "kds_card_cta_ready": "Prêt",
         "kds_undo_bump": "Annuler",
         "kds_undo_bump_aria": "Annuler la dernière commande marquée prête",

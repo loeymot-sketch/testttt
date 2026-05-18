@@ -1,0 +1,61 @@
+{
+  "specialist": "uxa11y",
+  "scope": "Admin delivery panel (DeliveryBoy* admin Vue pages) + admin cash session UI (3 new components 2026-05-18) + driver-facing surface + receipts on delivery",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "4ad1adba8",
+  "method": "read-only audit, Vue templates only (no runtime axe-results — limited to static markup review). 6 admin Vue components inspected.",
+  "findings": [
+    {
+      "id": "LIV-UX-01",
+      "severity": "INFO",
+      "title": "Admin cash session UI ships with WCAG-friendly form patterns",
+      "evidence": "resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue L17-44 — explicit `<label for>` paired with `<input id>` for deliveryBoyId + openingAmount. Required-indicator marked `<span aria-hidden=\"true\">*</span>` (correct: screen reader skips, sighted users see). 7 aria-/role hits across 268 lines. Submit handler uses `@submit.prevent`. data-testid attributes present for E2E.",
+      "recommendation": "Maintain. No P0/P1 a11y issue."
+    },
+    {
+      "id": "LIV-UX-02",
+      "severity": "P3",
+      "title": "ListComponent displays delivery_boy_id and branch_id as raw integers — usability gap not a11y",
+      "evidence": "DeliveryBoyCashSessionListComponent.vue L52-53 — `<td>{{ session.delivery_boy_id }}</td>` and `<td>{{ session.branch_id }}</td>`. Operator sees '#12' rather than 'Driver Pierre Martin (Branch Le Cayenne)'. DeliveryBoyCashSessionResource likely returns IDs only; the resource does not eager-load deliveryBoy.name + branch.name.",
+      "recommendation": "P3 V1.0.2: enrich DeliveryBoyCashSessionResource with deliveryBoy {id, name} + branch {id, name}. Update list rendering to show 'Pierre Martin' instead of '12'. Pure ergonomics fix — no a11y blocker."
+    },
+    {
+      "id": "LIV-UX-03",
+      "severity": "P2",
+      "title": "Empty state ('no_data_available') exists but no loading-state ARIA-live",
+      "evidence": "ListComponent L83-92 — empty-state row with data-testid='delivery-cash-empty-state' and i18n key. LoadingComponent at L1 toggles via `:props=\"loading\"`. No `aria-live=\"polite\"` region on the table — when filter changes ('@change=\"list(1)\"'), screen reader does not announce 'updated' or 'X results found'.",
+      "recommendation": "P2 V1.0.2: add `aria-live=\"polite\" aria-busy=\"loading\"` to the `<table>` or its wrapping div, and an `aria-label` on the table. Otherwise dynamic filter changes are silent to AT users."
+    },
+    {
+      "id": "LIV-UX-04",
+      "severity": "P2",
+      "title": "Variance presentation has color cue (varianceClass) but no semantic role for visually-impaired",
+      "evidence": "ListComponent L62-66 — `:class=\"varianceClass(session.variance)\"` (positive vs negative coloring). The visual is the only signal. screen-reader-only text such as 'sur-encaissé' / 'manquant' would make the financial polarity perceivable.",
+      "recommendation": "P2 V1.0.2: wrap variance in `<span class=\"sr-only\">{{ varianceLabel(session.variance) }}</span>` alongside the formatted number. NF525 audit-trail consequence: an a11y consumer should not need the color to understand a variance."
+    },
+    {
+      "id": "LIV-UX-05",
+      "severity": "P1",
+      "title": "BUILD-1 ships admin cash UI but NO driver-facing UI — gap blocks doorstep workflow",
+      "evidence": "DeliveryBoyCashSessionController.php L21 docblock declares 'livreur self-service surface (`/api/frontend/delivery-boy-shift/*`) is a separate controller (Wave 6b-1.3b)'. Routes confirm: no /api/frontend/delivery-boy-shift/* path registered. Driver-facing Vue under resources/js/components — DeliveryBoy* are admin-only. The mobile/screens-main.jsx (driver mobile app per CLAUDE.md) does not yet have a 'open shift / record collection / close shift' screen. Without it the doorstep cash flow is admin-only mediated (admin opens session on behalf of livreur).",
+      "recommendation": "P1 V1.0.2: complete Wave 6b-1.3b — driver-facing endpoints (open self, record self movement on DELIVERED, close self, request reconcile by manager) + mobile screens. Today's admin-only flow is workable for single-restaurant Le Cayenne (manager opens for each driver at shift start) but is friction-heavy."
+    },
+    {
+      "id": "LIV-UX-06",
+      "severity": "P2",
+      "title": "Doorstep cash receipt — no printable artifact for the customer",
+      "evidence": "OrderService.php L1572-1583 — cash escrow audit row written on DELIVERED transition with payment_method=CASH_ON_DELIVERY. The audit row anchors NF525 chain (good) but no customer-facing receipt is generated/sent for cash-on-delivery completion. POS path (CashDrawerSession) emits a printable Z report and per-order ticket. Delivery path emits no consumer artifact unless email/SMS templates are explicitly configured in NotificationAlert.",
+      "recommendation": "P2 V1.0.2: extend the SendOrderMail::dispatch at L1637 to attach a 'cash collected receipt' template when payment_method=CASH_ON_DELIVERY and status transitions to DELIVERED. Already extensible via NotificationAlert table — needs template + delivery-cash flag. NF525 doesn't mandate consumer receipt, but FR consumer law expects one for cash >€15."
+    },
+    {
+      "id": "LIV-UX-07",
+      "severity": "INFO",
+      "title": "i18n keys for delivery cash UI are namespaced and present in en.json",
+      "evidence": "ListComponent uses keys: `label.delivery_cash_sessions`, `label.delivery_cash_status_open|closed|reconciled`, `label.cash_session_opening_amount`, `label.cash_session_variance`, etc. Resources/js/languages/en.json confirms delivery_boy_* keys present (lines 290, 291, 609, 856, 1198, 1342). Risk: French translations for the cash-specific keys may not all be present — but this is i18n, not core a11y.",
+      "recommendation": "Verify resources/js/languages/fr.json + ar.json contain the new `delivery_cash_*` keys. Not in scope this round."
+    }
+  ],
+  "summary": "Static markup review confirms WCAG-friendly form labels, table structure, and i18n. No P0. P1: missing driver-facing UI (Wave 6b-1.3b) is a workflow gap, not a11y. P2: aria-live on filtered list, sr-only variance polarity, customer-facing cash receipt template. P3: enrich list with names rather than IDs.",
+  "verdict": "GO V1 — admin UI is shippable for single-restaurant Le Cayenne workflow. V1.0.2 backlog: LIV-UX-03 (aria-live), LIV-UX-04 (sr-only variance polarity), LIV-UX-05 (driver self-service UI), LIV-UX-06 (consumer cash receipt).",
+  "word_count_approx": 1050
+}

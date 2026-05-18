@@ -1,0 +1,141 @@
+{
+  "role": "RED-team adversarial",
+  "zone": "LOYALTY cross-surface attack chains",
+  "scope": "Concrete exploit walkthroughs against current implementation",
+  "timestamp": "2026-05-18",
+  "framing": "Hostile auditor. Assume malicious actor with mobile app installed, occasional access to a victim's phone, basic OSINT (phone number lookup), and a willing accomplice with a kiosk:order token. No special tools beyond browser DevTools, screenshot, and HTTP client.",
+  "exploit_chains": [
+    {
+      "id": "LCS-R-001",
+      "name": "Cross-surface QR replay — drain victim balance via screenshot",
+      "severity": "P0",
+      "preconditions": ["Attacker has visual access to victim's mobile loyalty screen (over-shoulder, screenshot via shared cloud, family-phone access)", "Attacker can present QR at any participating kiosk"],
+      "step_by_step": [
+        "1. Victim opens Mobile -> Loyalty tab. LoyaltyQR component shows FK:A1B2C3D4 with 5-min countdown chip.",
+        "2. Attacker screenshots the QR (or uses OCR on victim's screen). The payload is FK:A1B2C3D4 — STATIC for the victim's entire account lifetime (loyalty_code is set once at register).",
+        "3. Attacker waits 10 minutes (mobile QR has rotated UI-side, victim closes app).",
+        "4. Attacker walks to kiosk, scans the screenshot via kiosk camera. Kiosk POSTs /api/frontend/loyalty/scan { method: 'qr', raw_data: 'FK:A1B2C3D4' }.",
+        "5. LoyaltyController::scan strips FK: prefix, matches loyalty_code, returns { customer_token: lt_<hash>, loyalty_balance_points: 347, display_name: 'Ikyes' }.",
+        "6. Kiosk wizard presents 'Bonjour Ikyes, 347 points disponibles' and offers redeem.",
+        "7. Attacker selects 'Utiliser 300 points' (3€ discount). Kiosk POSTs /loyalty/redeem { code: 'A1B2C3D4', points: 300 }.",
+        "8. Controller decrements users.loyalty_points by 300, writes ledger row type=redeem, source_surface='kiosk'. Returns success.",
+        "9. Attacker completes order with 3€ off. Victim notified next time they open mobile app — but points already spent."
+      ],
+      "blast_radius": "Any user whose QR has been photographed. Per CRM data: ~100% of opt-in users have at least one screenshot exposure event over 6mo (estimate based on industry baseline).",
+      "current_defenses_evaded": [
+        "Throttle 20/min on scan — irrelevant (only 1 scan needed)",
+        "DB transaction on redeem — irrelevant (single legitimate transaction from attacker's POV)",
+        "Mobile QR 5min rotation — irrelevant (server ignores)",
+        "Idempotency on redeem — N/A (attacker wants to succeed, not retry)"
+      ],
+      "evidence_paths": [
+        "app/Http/Controllers/Frontend/LoyaltyController.php:609-635 (scan accepts any FK:code)",
+        "app/Http/Controllers/Frontend/LoyaltyController.php:255-339 (redeem on accepted code)",
+        "mobile/data/loyalty.js:166-168 (V0 ignores signature)"
+      ],
+      "cross_specialist_link": "Mirrors LCS-S-001 from Security. Architect LCS-A-001 (no service SSOT) means fix touches 3 files instead of 1."
+    },
+    {
+      "id": "LCS-R-002",
+      "name": "Double-redeem via network retry (mobile)",
+      "severity": "P1",
+      "preconditions": ["Mobile on flaky network", "User initiates redeem; first response times out client-side; user does NOT manually retry but axios retry-interceptor or service worker retries automatically"],
+      "step_by_step": [
+        "1. User has 500 points. Initiates 'Use 200 points' via mobile redeem modal.",
+        "2. Mobile POST /loyalty/redeem { code: 'A1B2C3D4', points: 200, Idempotency-Key: 'mob-12345' }.",
+        "3. Server processes: lockForUpdate, decrement 500 -> 300, write ledger row 1. Response delayed in transit.",
+        "4. Mobile axios timeout fires at 10s. Service worker / retry interceptor re-fires same request (same Idempotency-Key).",
+        "5. Route /loyalty/redeem has middleware: ['auth:sanctum'] ONLY. NO idempotency middleware. Request flows to controller.",
+        "6. Server processes: lockForUpdate, decrement 300 -> 100, write ledger row 2. Both rows visible in ledger.",
+        "7. User sees balance 100 instead of expected 300. Two redeem rows in history. Customer complaint, refund required."
+      ],
+      "blast_radius": "Any redeem on unstable mobile network. Estimated 1-3% of redeem attempts per week.",
+      "current_defenses_evaded": [
+        "DB lockForUpdate — serializes but does not deduplicate",
+        "Multiple-of-rate validation — both requests pass (same legitimate amount)",
+        "Mobile-side Idempotency-Key — sent but never read by server"
+      ],
+      "evidence_paths": [
+        "routes/api.php:1278 — Route::post('/redeem', ...)->middleware(['auth:sanctum'])",
+        "mobile/data/loyalty.js:24 — comment 'Idempotency-Key header on /loyalty/redeem (B-02)'"
+      ],
+      "fix_complexity": "Trivial — add 'idempotency' middleware to route. Existing IdempotencyKeyMiddleware handles dedup."
+    },
+    {
+      "id": "LCS-R-003",
+      "name": "Earn-redeem race across POS and Kiosk",
+      "severity": "P2",
+      "preconditions": ["Customer is mid-order at POS while a friend/accomplice has their loyalty QR at a kiosk a few meters away"],
+      "step_by_step": [
+        "1. Customer A initiates POS order for 50€. PosOrderRequest carries loyalty_customer_code='A1B2C3D4'. Order created with source_surface='pos', user_id=cashier-account, loyalty_customer_code='A1B2C3D4', loyalty_points_awarded=NULL.",
+        "2. Cashier marks order DELIVERED. OrderStatusChanged event fires. AwardLoyaltyPointsOnDelivery listener: UPDATE orders SET loyalty_points_awarded=-1 WHERE id=X AND loyalty_points_awarded IS NULL — sentinel claimed.",
+        "3. SIMULTANEOUSLY accomplice on kiosk B scans victim's QR. /loyalty/scan returns balance 347 (pre-earn).",
+        "4. Listener (background queue worker) finishes: increments users.loyalty_points 347 -> 847 (assuming 50€ * 10 = 500 pts earned), writes ledger row earn 500, sets loyalty_points_awarded=500.",
+        "5. Accomplice on kiosk B selects 'Use 300 pts' before step 4 commits. /loyalty/redeem: lockForUpdate on User row. If kiosk redeem starts BEFORE listener's DB::transaction in step 4, kiosk waits on lock. Listener finishes, balance now 847. Kiosk redeem proceeds: 847 -> 547. Both write to ledger. Customer sees: earn +500, redeem -300, balance 547.",
+        "6. Outcome NOT a security violation (all amounts correct, ledger consistent). But UX confusion: customer expects 347+500=847, not 547. They didn't authorize the kiosk redeem.",
+        "7. The REAL exploit overlaps with LCS-R-001: kiosk redeem is unauthorized because QR scan accepts replayed code. So R-003 reduces to R-001 in practical exploitation."
+      ],
+      "blast_radius": "Same as R-001 — gated by QR replay vulnerability.",
+      "verdict": "Not an independent finding once R-001 is fixed. DB lock + sentinel correctly serialize earn-redeem races AT THE DATA LAYER. The fraud surface is QR auth, not concurrency."
+    },
+    {
+      "id": "LCS-R-004",
+      "name": "Browser-back mid-kiosk-wizard after redeem",
+      "severity": "P2",
+      "preconditions": ["Customer redeems points at kiosk, then abandons order via back-button before payment commit"],
+      "step_by_step": [
+        "1. Kiosk wizard step Loyalty: customer presents QR, scan returns balance 500. Wizard step Redeem: customer chooses 200 pts redeem. Kiosk POST /loyalty/redeem — server decrements 500 -> 300, writes ledger redeem -200, source_surface='kiosk'.",
+        "2. Customer reaches Payment step. Decides cart is wrong. Hits ← Back to modify menu.",
+        "3. Wizard rolls back to menu step. Kiosk SPA state still shows 300 balance + active discount.",
+        "4. Customer abandons order entirely (walks away). Order never created. No FrontendOrder row.",
+        "5. Server already debited 200 points. No order means no refund trigger. LoyaltyService::refundPoints requires order_id with redeem ledger rows; the redeem row has order_id=NULL (line 312 'redemption is pre-order, no order_id yet').",
+        "6. Customer next opens mobile -> balance 300 instead of expected 500. NO redemption visible in order history (no order). UX: 'where did my 200 points go?' Customer complaint."
+      ],
+      "blast_radius": "All kiosk redeem-then-abandon flows. Estimated 5-10% based on industry kiosk abandon rates.",
+      "current_defenses_evaded": [
+        "DB transaction on redeem — irrelevant (legitimate single transaction)",
+        "Ledger row written — but with order_id=NULL, can't be refunded via existing LoyaltyService::refundPoints"
+      ],
+      "evidence_paths": [
+        "app/Http/Controllers/Frontend/LoyaltyController.php:312 — 'order_id' => null on redeem ledger row",
+        "app/Services/LoyaltyService.php:27 — refundPoints requires LoyaltyTransaction::where('order_id', $order->id)"
+      ],
+      "recommendation": "Add wizard-abandon hook: on kiosk wizard timeout/back-to-menu after redeem step, POST /loyalty/refund-pending (new endpoint) that reverses the pre-order redemption. Alternatively: defer redeem to commit-time (preview only, decrement on order confirmation). Architecturally cleaner — matches DiscountCalculator preview pattern."
+    },
+    {
+      "id": "LCS-R-005",
+      "name": "Wallet-pass forgery (future state, when Wallet implemented)",
+      "severity": "P3 (future P0 if shipped wrong)",
+      "preconditions": ["Wallet integration ships using FK:<code> as Apple/Google barcode message per WALLET_PLAN.md:51"],
+      "step_by_step": [
+        "1. Per WALLET_PLAN.md spec: barcode.message = 'FK:<loyalty_code>'. The pass is saved permanently in user's Wallet.",
+        "2. User adds pass. Apple Wallet/Google Wallet stores message string indefinitely.",
+        "3. Adversarial coworker takes user's phone (locked, lock-screen Wallet shortcut shows the pass barcode without unlock on many configs).",
+        "4. Coworker screenshots the lock-screen-visible barcode. Same exploit as R-001 — but now even no-mobile-app users (Wallet-only users) are exposed forever.",
+        "5. Pass cannot be revoked because server has no notion of pass-id. WalletUpdateService.php (per plan) only pushes balance updates, not revocation."
+      ],
+      "blast_radius": "100% of Wallet-enrolled users, lifetime exposure.",
+      "recommendation": "When implementing Wallet (Phase 7): barcode.message MUST be a server-issued JWT bound to (user_id, pass_id, version), refreshed via Wallet update API on each balance change. Server scan accepts JWT, verifies signature + version. Pass_id stored in wallet_apple_registrations / wallet_google_registrations tables (per plan §10). Revocation = bump version + push update + reject old version."
+    }
+  ],
+  "test_coverage_gaps": [
+    {
+      "gap": "No replay test simulating: snapshot QR -> wait 10min -> scan same payload -> expect 401/403",
+      "fixture": "Mobile spec loyalty-03-qr-refresh.spec.js asserts UI rotation, NOT server rejection of stale payload",
+      "recommendation": "Add tests/Feature/LoyaltyQrReplayRejectedTest.php once /loyalty/qr/sign endpoint exists"
+    },
+    {
+      "gap": "No idempotency test: POST /loyalty/redeem twice with same Idempotency-Key produces 1 ledger row",
+      "recommendation": "Add tests/Feature/LoyaltyRedeemIdempotencyTest.php after route middleware fix"
+    },
+    {
+      "gap": "No wizard-abandon test for kiosk pre-order redeem reversal",
+      "recommendation": "Add tests/Feature/KioskLoyaltyAbandonRefundTest.php"
+    },
+    {
+      "gap": "No cross-surface chain integration test (POS earn -> Mobile balance -> Kiosk redeem -> Web visibility)",
+      "recommendation": "Add tests/Feature/LoyaltyCrossSurfaceChainTest.php as a single test asserting end-to-end ledger + balance consistency"
+    }
+  ],
+  "verdict": "RED: 1 P0 chain (LCS-R-001 QR replay) + 1 P1 chain (LCS-R-002 double-redeem via retry) + 1 P2 chain (LCS-R-004 redeem-then-abandon UX-fraud edge). LCS-R-003 (earn-redeem race) reduces to R-001 in practice. LCS-R-005 is a future-state P0 if Wallet ships with the current spec — must be fixed BEFORE Wallet GA. Strongest recommendation: V1 must NOT ship Wallet without R-001 fix; V1 should fix R-002 (idempotency) and R-004 (abandon-refund) as quick wins."
+}
