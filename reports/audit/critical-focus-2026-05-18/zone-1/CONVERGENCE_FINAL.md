@@ -1,7 +1,8 @@
 # Zone 1 NF525 Convergence Orchestrator — Final Verdict
 
 **Date:** 2026-05-18
-**Branch:** `v1-0-1-hardening-2026-05-17`
+**Working branch (deliverable + heal tip):** `heal/cms-pr1-quickwins-2026-05-18`
+**Brief reference branch:** `v1-0-1-hardening-2026-05-17` (parent line; same Le Cayenne V1 stream — worktree fan-out)
 **Plan ref:** `plans/ULTRA_PLAN_V1_CRITICAL_FOCUS_2026-05-18.md` §2 Zone 1
 **Prior waves:** Wave 1 / Wave 3 / Wave 3b / Wave 3c
 **Pipeline:** GStack + Superpowers + self-Adversarial + test-e2e (Playwright + CLI)
@@ -234,9 +235,27 @@ Also captured (process notes, not P1):
 7eeb8a04b  fix(fiscal): loop all z_reports errors in verify-chain output (Wave 2d FISCAL-ADV3C-02)
 7da06d641  fix(fiscal): activeBranchIds() honors Status::ACTIVE drift (Wave 2d FISCAL-ADV3C-01)
 c07acb16a  fix(fiscal): --branch=0 rejected + --all sweep flag (Wave 2d FISCAL-ADV3C-03)
+ff308fe5d  docs(zone-1): CONVERGENCE_FINAL + e2e spec for NF525 fiscal Wave 2d
 ```
 
-All three with `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`. No `--no-verify`. No frozen edit. No push.
+All four with `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`. No `--no-verify`. No frozen edit. No push.
+
+### Integration note (branch containment)
+
+Verified via `git branch --contains <sha>`:
+
+| Commit | Reachable from |
+|---|---|
+| `7eeb8a04b` (HEAL 2) | `heal/cms-pr1-quickwins-2026-05-18` (current tip) + `pr/mobile-app-real-e2e-heal-2026-05-18` |
+| `7da06d641` (HEAL 1) | `heal/cms-pr1-quickwins-2026-05-18` (current tip) + `pr/mobile-app-real-e2e-heal-2026-05-18` |
+| `c07acb16a` (HEAL 3) | `heal/cms-pr1-quickwins-2026-05-18` (current tip) + `pr/mobile-app-real-e2e-heal-2026-05-18` |
+| `ff308fe5d` (deliverable + E2E spec) | `heal/cms-pr1-quickwins-2026-05-18` ONLY |
+
+All four commits are reachable from the current working branch `heal/cms-pr1-quickwins-2026-05-18`. The three heal commits are ALSO carried by `pr/mobile-app-real-e2e-heal-2026-05-18` from a parallel zone worktree. When merging this work to `v1-0-1-hardening-2026-05-17`, owner can cherry-pick all 4 SHAs together from `heal/cms-pr1-quickwins-2026-05-18` — they form one logical Zone 1 unit.
+
+### Side-effect verification (advisor follow-up)
+
+`tests/Feature/Fiscal/FiscalArchiveScheduledTest` — the only test outside `FiscalVerifyChainCommandTest` that introspects `Schedule::events()` for fiscal cron names — passes (2/2). The closure refactor on line 219 (fiscal-archive scheduler) preserves schedule registration semantics (name, expression `0 2 * * *`, mutex, onOneServer). Refactor only changed how branch ids are plucked inside the closure body, which the existing test does not assert against.
 
 ---
 
