@@ -374,3 +374,94 @@ test('Z — Visual sweep home + menu screenshot', async ({ page }, testInfo) => 
   }
   await page.screenshot({ path: path.join(SCREEN_DIR, `${testInfo.project.name}-Z02-menu.png`), fullPage: false });
 });
+
+// ============================================================================
+// LEGAL — [W.7.1 LCEN heal 2026-05-18] 5 legal pages exist + footer wireup
+// LCEN art. 6 III (mentions) · L221-5 C.conso (CGV) · RGPD/CNIL (privacy/cookies)
+// · INCO 1169/2011 (allergens) — public-launch BLOCKER closure
+// ============================================================================
+
+// Map URL → required text fragments (case-sensitive contains; mix of FR + legal references)
+const LEGAL_PAGES = [
+  {
+    name: 'mentions',
+    url: '/legal/mentions.html',
+    requiredText: ['Mentions légales', 'LCEN', 'Éditeur du site', 'Hébergeur', 'SIREN', 'Hénin-Beaumont', 'Directeur de la publication'],
+    title: /Mentions légales/i,
+  },
+  {
+    name: 'cgv',
+    url: '/legal/cgv.html',
+    requiredText: ['Conditions Générales de Vente', 'L221', 'droit de rétractation', 'Médiation', 'Pepper Club', 'Retrait des commandes'],
+    title: /Conditions Générales de Vente/i,
+  },
+  {
+    name: 'privacy',
+    url: '/legal/privacy.html',
+    requiredText: ['Politique de confidentialité', 'RGPD', 'Informatique et Libertés', 'CNIL', "Droit d'accès", 'Responsable de traitement', 'Délégué à la protection des données'],
+    title: /Politique de confidentialité/i,
+  },
+  {
+    name: 'cookies',
+    url: '/legal/cookies.html',
+    requiredText: ['Politique de cookies', 'article 82', 'consentement', 'CNIL', 'Cookies strictement nécessaires'],
+    title: /Politique de cookies/i,
+  },
+  {
+    name: 'allergens',
+    url: '/legal/allergens.html',
+    requiredText: ['Allergènes', '1169/2011', 'INCO', '14', 'Gluten', 'lactose', 'contamination croisée'],
+    title: /Allergènes/i,
+  },
+];
+
+for (const lp of LEGAL_PAGES) {
+  test(`LEGAL.${lp.name.toUpperCase()} — page renders required sections`, async ({ page }, testInfo) => {
+    const errors = [];
+    page.on('pageerror', err => errors.push(err.message));
+    page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
+    const response = await page.goto(lp.url, { waitUntil: 'networkidle' });
+    expect(response, `${lp.name} → response object`).not.toBeNull();
+    expect(response.status(), `${lp.name} → HTTP status`).toBe(200);
+
+    // Title (case-insensitive)
+    await expect(page).toHaveTitle(lp.title);
+
+    // Body text contains required FR legal markers
+    const text = await page.evaluate(() => document.body.textContent);
+    const missing = lp.requiredText.filter(t => !text.includes(t));
+    expect(missing, `${lp.name} missing required text: ${missing.join(', ')}`).toHaveLength(0);
+
+    // Footer cross-links to the 4 other legal pages (at least 4 links to /legal/*.html besides self)
+    const legalLinkHrefs = await page.evaluate(() => {
+      const anchors = Array.from(document.querySelectorAll('a[href*="legal/"], a[href$=".html"]'));
+      return anchors.map(a => a.getAttribute('href')).filter(Boolean);
+    });
+    const distinctLegal = new Set(legalLinkHrefs.filter(h => /(mentions|cgv|privacy|cookies|allergens)\.html$/.test(h)));
+    expect(distinctLegal.size, `${lp.name} cross-legal links found: [${[...distinctLegal].join(', ')}]`).toBeGreaterThanOrEqual(4);
+
+    // No JS console errors (except favicon/CDN noise)
+    const real = errors.filter(e => !/favicon|image-slots|net::ERR/i.test(e));
+    expect(real, `${lp.name} console errors: ${real.join('\n')}`).toHaveLength(0);
+
+    // Screenshot evidence
+    await page.screenshot({
+      path: path.join(SCREEN_DIR, `${testInfo.project.name}-LEGAL-${lp.name}.png`),
+      fullPage: false,
+    });
+  });
+}
+
+// Footer of the SPA homepage must expose anchor links to all 5 legal pages
+test('LEGAL.FOOTER — index.html footer links to all 5 legal pages', async ({ page }, testInfo) => {
+  await bootWeb(page, testInfo.project.name);
+  // Allow React to fully render the WebFooter component
+  await page.waitForSelector('footer.lc-footer', { timeout: 10000 });
+  const legalHrefs = await page.evaluate(() => {
+    const anchors = Array.from(document.querySelectorAll('footer.lc-footer a[href*="legal/"]'));
+    return anchors.map(a => a.getAttribute('href'));
+  });
+  const required = ['legal/mentions.html', 'legal/cgv.html', 'legal/privacy.html', 'legal/cookies.html', 'legal/allergens.html'];
+  const missing = required.filter(r => !legalHrefs.some(h => h && h.includes(r)));
+  expect(missing, `Footer missing legal page links: [${missing.join(', ')}] · found=[${legalHrefs.join(', ')}]`).toHaveLength(0);
+});
