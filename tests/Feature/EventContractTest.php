@@ -244,8 +244,40 @@ class EventContractTest extends TestCase
         $this->app->instance(BroadcastManager::class, $manager);
         $this->app->instance('broadcast.manager', $manager);
 
+        // [F-3 SYNC P1 V1.0.1 update — 2026-05-19]
+        // PayloadMismatchException behaviour changed from "rethrow" to
+        // "$this->fail($e) then return" (commit 5452e556d). Contract
+        // violations are NOT retry-recoverable so the job is routed
+        // directly to failed_jobs via $this->fail() instead of consuming
+        // the 6-attempt $backoff curve. The exception-detail assertions
+        // below (eventType + errors) were originally checked on the caught
+        // exception; we now drive them through the EventContract directly
+        // (single-source-of-truth — the very assertion the job invokes).
+        // Source: reports/audit/foundation-2026-05-18/round-1/F-3-SYNC/STATUS.md §P1
+        // Companion sentinel: tests/Feature/Sentinels/PayloadMismatchFailOnceSentinelTest.php
+
+        $threw = false;
         try {
             (new DispatchDomainEventsJob($domainEvent->id))->handle();
+        } catch (PayloadMismatchException $exception) {
+            $threw = true;
+        }
+
+        $this->assertFalse(
+            $threw,
+            'DispatchDomainEventsJob::handle MUST NOT rethrow PayloadMismatchException — '
+                . '$this->fail($e) short-circuits the retry curve. See '
+                . 'reports/audit/foundation-2026-05-18/round-1/F-3-SYNC/STATUS.md §P1.'
+        );
+
+        // Drive the contract assertion directly so the exception detail
+        // pins are preserved (eventType, errors). This is what the job
+        // itself calls.
+        try {
+            \App\Domain\Events\EventContract::assertEnvelopeValid(
+                \App\Domain\Events\EventContract::buildEnvelope($domainEvent->fresh()),
+                $domainEvent->event_type
+            );
             $this->fail('Expected PayloadMismatchException for invalid envelope.');
         } catch (PayloadMismatchException $exception) {
             $this->assertSame(EventType::ORDER_STATUS_CHANGED, $exception->eventType);
