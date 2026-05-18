@@ -54,11 +54,24 @@ class Stripe extends PaymentAbstract
             // order + NF525 receipt/payment mismatch. Pattern matches the
             // already-correct callsites at OrderController:137,
             // PaymentReconcileController:173, SplitPaymentService:103/110.
+            //
+            // [P0-POS-01 GOAL round-2 2026-05-18] Inject `metadata.order_id`
+            // so the webhook handler (`handleWebhook` at line 273-289) can
+            // correlate the charge back to the originating order. Without
+            // this, any out-of-band webhook receipt (storm retries, async
+            // capture, DLQ replay) loses the order linkage and the
+            // `CapturePaymentNotification` row is NEVER written → the order
+            // silently stays PENDING. Webhook handler reads
+            // `$charge->metadata->order_id`; Stripe coerces non-string values
+            // to strings in metadata, so we cast explicitly.
             $response = $this->gateway->charges->create([
                 'amount'      => (int) round((float) $order->total * 100),
                 'currency'    => $currencyCode,
                 'source'      => $request->stripeToken,
                 'description' => 'Food order payment',
+                'metadata'    => [
+                    'order_id' => (string) $order->id,
+                ],
             ]);
 
             if (isset($response->status) && $response->status == 'succeeded') {
