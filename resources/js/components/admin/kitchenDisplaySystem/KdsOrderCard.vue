@@ -380,8 +380,12 @@ export default {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #6B7280;
-    background: rgba(0, 0, 0, 0.04);
+    /* KDS-R1-03 heal: stable WCAG AA contrast regardless of bucket-tinted header.
+       Previously #6B7280 on rgba(0,0,0,0.04) gave 3.63:1 on critical bucket (red header)
+       and 4.43:1 on fresh — both FAIL AA for normal text. Now opaque gray-100 bg + gray-800
+       text = ~12.6:1 stable on every bucket. */
+    color: #1F2937;
+    background: #F3F4F6;
     min-width: 22px;
     height: 18px;
     border-radius: 4px;
