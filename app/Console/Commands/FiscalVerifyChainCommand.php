@@ -98,14 +98,29 @@ class FiscalVerifyChainCommand extends Command
         // ZReportService::verifyChain returns:
         //   ['valid' => bool, 'first_z_id' => ?int, 'last_z_id' => ?int,
         //    'count' => int, 'errors' => [['z_id' => int, 'kind' => str, ...], ...]]
-        // Report the FIRST broken z_id (errors[0]) — last_z_id advances
-        // on every iteration including the broken row, so it would
-        // mislabel which row was breached.
+        //
+        // [Wave 2d FISCAL-ADV3C-02 2026-05-18] Loop ALL errors, not just
+        // errors[0]. ZReportService::verifyChain accumulates three breach
+        // kinds (chain_break, sequence_gap, signature_mismatch) into the
+        // errors[] array (see ZReportService.php:486-544). Previously the
+        // command surfaced only the first row, forcing operators to run
+        // N-1 cron passes to fully enumerate a coordinated tamper — and
+        // worse, opened a window where a re-imported archive could re-sign
+        // over a still-corrupted prev_hash. Now every breach is named in
+        // a single stdout line.
         if (! ($zResult['valid'] ?? true)) {
-            $firstZId = $zResult['errors'][0]['z_id'] ?? null;
-            $tamperFragments[] = $firstZId !== null
-                ? sprintf('z_reports.id=%d', $firstZId)
-                : 'z_reports.chain=invalid';
+            $zErrors = $zResult['errors'] ?? [];
+            if (empty($zErrors)) {
+                $tamperFragments[] = 'z_reports.chain=invalid';
+            } else {
+                foreach ($zErrors as $err) {
+                    $zId  = $err['z_id'] ?? null;
+                    $kind = $err['kind'] ?? 'unknown';
+                    $tamperFragments[] = $zId !== null
+                        ? sprintf('z_reports.id=%d (%s)', $zId, $kind)
+                        : sprintf('z_reports.chain=invalid (%s)', $kind);
+                }
+            }
         }
 
         if (empty($tamperFragments)) {
@@ -114,11 +129,21 @@ class FiscalVerifyChainCommand extends Command
             return self::SUCCESS;
         }
 
+        // [Wave 2d FISCAL-ADV3C-02 2026-05-18] Symfony Console's block
+        // formatter ($this->error) wraps long single lines and can split
+        // a fragment across rows, breaking substring-match assertions
+        // when multiple breaches are reported. Emit the header via
+        // $this->error then each fragment via $this->line so every id
+        // stays on its own row + still passes operator parsing
+        // (`grep z_reports.id=` enumerates all).
         $this->error(sprintf(
-            'TAMPER detected at %s (branch=%d)',
-            implode(', ', $tamperFragments),
-            $branchId
+            'TAMPER detected (branch=%d, breaches=%d)',
+            $branchId,
+            count($tamperFragments)
         ));
+        foreach ($tamperFragments as $fragment) {
+            $this->line('  - '.$fragment);
+        }
 
         return self::FAILURE;
     }

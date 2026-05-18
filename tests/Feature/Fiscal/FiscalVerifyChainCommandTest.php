@@ -96,8 +96,12 @@ class FiscalVerifyChainCommandTest extends TestCase
             $this->reinstallImmutabilityTriggers();
         }
 
+        // [Wave 2d FISCAL-ADV3C-02 2026-05-18] Output format now multi-line:
+        // header + one fragment per row. Operator parsing (`grep audit_logs.id=`)
+        // unaffected; substring assertions split into header + fragment row.
         $this->artisan('fiscal:verify-chain', ['--branch' => self::BR_TAMPER])
-            ->expectsOutputToContain('TAMPER detected at audit_logs.id='.$mid->id)
+            ->expectsOutputToContain('TAMPER detected (branch='.self::BR_TAMPER)
+            ->expectsOutputToContain('audit_logs.id='.$mid->id)
             ->assertExitCode(1);
     }
 
@@ -318,6 +322,76 @@ class FiscalVerifyChainCommandTest extends TestCase
         $this->artisan('fiscal:verify-chain', ['--branch' => $branchId])
             ->expectsOutputToContain('z_reports.id='.$z2->id)
             ->assertExitCode(1);
+    }
+
+    /**
+     * [Wave 2d FISCAL-ADV3C-02 2026-05-18]
+     *
+     * Verifier MUST report ALL z_reports breaches in one pass — not just
+     * errors[0]. ZReportService::verifyChain accumulates three breach
+     * kinds (chain_break, sequence_gap, signature_mismatch) into errors[].
+     * Previously this command extracted only errors[0]['z_id'], forcing
+     * operators to run the cron N-1 times to enumerate a coordinated tamper
+     * and opening a re-signing window over still-corrupted prev_hash.
+     */
+    public function test_multiple_z_report_tampers_reported_in_single_pass(): void
+    {
+        $branchId = 920_607;
+        Branch::factory()->create(['id' => $branchId]);
+        Config::set('fiscal.verify_chain_strict', false);
+
+        $zService = app(ZReportService::class);
+
+        ZReport::unguard();
+        try {
+            $genesis = (string) config('fiscal.genesis_prev_hash', str_repeat('0', 64));
+
+            // Three chain-valid Z reports.
+            $z1 = $this->buildValidZ($branchId, 1, $genesis, $zService);
+            $z2 = $this->buildValidZ($branchId, 2, $z1->signature, $zService);
+            $z3 = $this->buildValidZ($branchId, 3, $z2->signature, $zService);
+
+            // Tamper #1: rewrite total_ttc on z2 → signature_mismatch.
+            DB::table('z_reports')->where('id', $z2->id)->update([
+                'total_ttc' => 999.99,
+            ]);
+            // Tamper #2: rewrite total_ttc on z3 → signature_mismatch as well.
+            DB::table('z_reports')->where('id', $z3->id)->update([
+                'total_ttc' => 1234.56,
+            ]);
+        } finally {
+            ZReport::reguard();
+        }
+
+        // Both ids must appear in the stdout — not just z2.
+        $this->artisan('fiscal:verify-chain', ['--branch' => $branchId])
+            ->expectsOutputToContain('z_reports.id='.$z2->id)
+            ->expectsOutputToContain('z_reports.id='.$z3->id)
+            ->assertExitCode(1);
+    }
+
+    private function buildValidZ(int $branchId, int $seq, string $prevHash, ZReportService $zService): ZReport
+    {
+        $z = new ZReport([
+            'branch_id'         => $branchId,
+            'sequence_no'       => $seq,
+            'opened_at'         => now()->subDays(4 - $seq),
+            'closed_at'         => now()->subDays(4 - $seq),
+            'total_ht'          => 0,
+            'total_ttc'         => 0,
+            'total_tva'         => 0,
+            'total_by_method'   => [],
+            'total_by_tax_rate' => [],
+            'order_count'       => 0,
+            'cancel_count'      => 0,
+            'refund_count'      => 0,
+            'status'            => ZReport::STATUS_CLOSED,
+            'prev_hash'         => $prevHash,
+        ]);
+        $z->signature = $this->callServiceSignature($zService, $z, $prevHash);
+        $z->save();
+
+        return $z;
     }
 
     /**
