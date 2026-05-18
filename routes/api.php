@@ -571,7 +571,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     });
 
     Route::prefix('my-order')->name('my-order.')->group(function () {
-        Route::get('/show/{user}/{order}', [MyOrderDetailsController::class, 'orderDetails']);
+        // [Admin S-1 P0 IDOR heal — 2026-05-18] MyOrderDetailsController has
+        // ZERO permission middleware at the controller level (unlike its 6
+        // consumer SPA peers Customer/Waiter/DeliveryBoy/Chef/Administrator/
+        // Employee, each of which gates `*_show`). Pre-heal, any authenticated
+        // user who guessed a valid (user_id, order_id) pair could read the
+        // full order payload (PII, addresses, payment). Apply alternation
+        // OR-gate covering ALL 6 consumer SPA flows. Sentinel:
+        // tests/Feature/Sentinels/MyOrderDetailsAuthzSentinelTest.php
+        Route::get('/show/{user}/{order}', [MyOrderDetailsController::class, 'orderDetails'])
+            ->middleware('permission:customers_show|waiters_show|delivery-boys_show|chefs_show|administrators_show|employees_show');
     });
 
     Route::prefix('employee')->name('employee.')->group(function () {
@@ -1278,6 +1287,15 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::post('/redeem', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'redeem']);
         Route::get('/balance', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'balance']);
         Route::get('/history', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'history']);
+
+        // [LCS-S-001 / 2026-05-19] Signed QR generation — authenticated customer
+        // mints a fresh `lqr.<payload>.<hmac>` token (5-min TTL + anti-replay
+        // nonce). Replaces the unsigned plaintext FK:<code> previously generated
+        // client-side. Throttle:30/min/user matches the natural 12 mints/hour
+        // (one every 5 min) with healthy retry headroom.
+        Route::post('/qr', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'generateQr'])
+            ->middleware('throttle:30,1')
+            ->name('qr.generate');
     });
 
     // [C6] Kiosk observability — structured event logging for operators
