@@ -207,6 +207,19 @@ class OutboxProductionLikeSimulationTest extends TestCase
 
     public function test_contract_violation_never_reaches_broadcaster_and_remains_retriable(): void
     {
+        // [F-3 SYNC P1 V1.0.1 update — 2026-05-19]
+        // PayloadMismatchException behaviour changed from "rethrow" to
+        // "$this->fail($e) then return". The "remains retriable" wording in
+        // this test name is now misleading: contract violations are NOT
+        // retry-recoverable and are routed directly to failed_jobs via
+        // $this->fail(). DB invariants (claim released, last_error prefix,
+        // broadcaster bypassed) are unchanged. Test renamed conceptually
+        // but kept name for git-blame continuity; the docblock and
+        // assertions reflect the new semantics.
+        //
+        // Source: reports/audit/foundation-2026-05-18/round-1/F-3-SYNC/STATUS.md §P1
+        // Companion sentinel: tests/Feature/Sentinels/PayloadMismatchFailOnceSentinelTest.php
+
         $event = $this->domainEvent([
             'aggregate_id' => 401,
             'payload' => ['missing_required_keys' => true],
@@ -216,16 +229,23 @@ class OutboxProductionLikeSimulationTest extends TestCase
         $broadcaster->shouldNotReceive('broadcast');
         $this->mockBroadcastManager($broadcaster);
 
-        $this->expectException(PayloadMismatchException::class);
-
+        $threw = false;
         try {
             (new DispatchDomainEventsJob($event->id))->handle();
-        } finally {
-            $event->refresh();
-            $this->assertNull($event->dispatched_at);
-            $this->assertSame(1, (int) $event->attempts);
-            $this->assertStringStartsWith('contract_violation:', (string) $event->last_error);
+        } catch (PayloadMismatchException $e) {
+            $threw = true;
         }
+
+        $this->assertFalse(
+            $threw,
+            'PayloadMismatchException MUST NOT be rethrown — $this->fail() short-circuits the retry curve. '
+                . 'See reports/audit/foundation-2026-05-18/round-1/F-3-SYNC/STATUS.md §P1.'
+        );
+
+        $event->refresh();
+        $this->assertNull($event->dispatched_at);
+        $this->assertSame(1, (int) $event->attempts);
+        $this->assertStringStartsWith('contract_violation:', (string) $event->last_error);
     }
 
     private function domainEvent(array $overrides = []): DomainEvent
