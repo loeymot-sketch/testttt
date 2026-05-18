@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Rules\ValidPhone;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Foundation\Http\FormRequest;
 
 class EmployeeRequest extends FormRequest
@@ -42,12 +43,13 @@ class EmployeeRequest extends FormRequest
                 'max:190',
                 Rule::unique("users", "email")->ignore($this->route('employee.id'))
             ],
+            // [2026-05-18 PR-D T5 heal] V1 GO-LIVE staff password policy.
             'password'              => [
                 $this->route('employee.id') ? 'nullable' : 'required',
                 'string',
-                'min:6'
+                Password::min(12)->letters()->numbers(),
             ],
-            'password_confirmation' => [$this->route('employee.id') ? 'nullable' : 'required', 'string', 'min:6'],
+            'password_confirmation' => [$this->route('employee.id') ? 'nullable' : 'required', 'string', 'min:12'],
             'username'              => [
                 'nullable',
                 'max:190',

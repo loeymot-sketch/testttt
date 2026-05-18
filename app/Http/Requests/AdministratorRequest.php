@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Rules\ValidPhone;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AdministratorRequest extends FormRequest
@@ -41,12 +42,15 @@ class AdministratorRequest extends FormRequest
                 'max:190',
                 Rule::unique("users", "email")->ignore($this->route('administrator.id'))
             ],
+            // [2026-05-18 PR-D T5 heal] V1 GO-LIVE staff password policy per
+            // CLAUDE.md §1: min:12 + letters + numbers. Update path stays
+            // nullable so admins can edit profile without rotating creds.
             'password'              => [
                 $this->route('administrator.id') ? 'nullable' : 'required',
                 'string',
-                'min:6'
+                Password::min(12)->letters()->numbers(),
             ],
-            'password_confirmation' => [$this->route('administrator.id') ? 'nullable' : 'required', 'string', 'min:6'],
+            'password_confirmation' => [$this->route('administrator.id') ? 'nullable' : 'required', 'string', 'min:12'],
             'phone'                 => [
                 'nullable',
                 'string',
