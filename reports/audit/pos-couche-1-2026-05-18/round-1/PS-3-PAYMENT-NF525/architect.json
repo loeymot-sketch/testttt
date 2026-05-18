@@ -1,0 +1,83 @@
+{
+  "specialist": "Architect",
+  "zone": "PS-3-PAYMENT-NF525",
+  "date": "2026-05-18",
+  "scope": "10.6 Payment + 10.7 Cash drawer + Z-reports + 10.8 Refunds — read-only audit",
+  "anchors_read": [
+    "app/Services/PaymentService.php (617 lines)",
+    "app/Services/Payments/SplitPaymentService.php (305 lines)",
+    "app/Services/Order/RefundWithCounterEntryService.php (234 lines)",
+    "app/Http/PaymentGateways/Gateways/Stripe.php (382 lines)",
+    "app/Http/PaymentGateways/Gateways/Senangpay.php (252 lines)",
+    "app/Services/OrderService.php (POS wire-up lines 927-1045)"
+  ],
+  "summary": "Payment composition flow is layered correctly: the POS-side OrderService is the orchestrator (lines 920-1045), which delegates fiscal allocation (FiscalSequenceService) BEFORE persistence, then either single-tender via PaymentService::recordCashOrderMovement (strict mode for direct CASH) or multi-tender via SplitPaymentService::persistTranches. Refund flow is bifurcated cleanly between pre-Z (standard OrderStateMachine RETURNED) and post-Z (RefundWithCounterEntryService mirror order with SealedOrderGuard). The PaymentAbstract gateway hierarchy + the P0-POS-02 backtrace gate on PaymentService::payment() form a defense-in-depth chain that prevents non-gateway callers from forging PAID state. All composition snapshot writes flow through PricingService (SSOT) on Order create; the refund path uses copy-forward (snapshot duplicated negated on the mirror Order via RefundWithCounterEntryService:122-142 with `composition_snapshot` carried over verbatim from parent OrderItem). Cash drawer hook is uniformly best-effort except in the explicit Sprint 1B strict path (POS direct CASH + split CASH tranche). Recently added hardware-simulation downgrade (PaymentService:296-300 + SplitPaymentService:204-218) is correctly scoped: it ONLY weakens the cash-drawer-session requirement, NEVER the audit-log write or fiscal-sequence allocation.",
+  "patterns_observed": [
+    {
+      "pattern": "Single writer for audit chain",
+      "evidence": "45 callsites of AuditLogService across app/Services. No direct AuditLog::create() outside the service. HMAC chain integrity is computed at one place (AuditLogService::computeHash) — verified by FiscalChainValidator and CLI verify-chain command.",
+      "verdict": "HEALTHY"
+    },
+    {
+      "pattern": "Cache::lock + DB FOR UPDATE for fiscal hot paths",
+      "evidence": "FiscalSequenceService::next uses Cache::lock(fiscal_seq_b{N}, 5s) + Order::lockForUpdate(). AuditLogService::write uses Cache::lock(audit_chain_b{N}, 10s) + DB::transaction. ZReportService::open/close uses Cache::lock(z_report_b{N}, 10s). Same triple-defense pattern repeated consistently.",
+      "verdict": "HEALTHY"
+    },
+    {
+      "pattern": "Refund mirror order pattern (NF525-compliant)",
+      "evidence": "RefundWithCounterEntryService creates a separate Order with parent_order_id FK, NEGATED financial fields, NEGATED order_items, NEGATED order_payments, fresh fiscal_sequence_no, audit-log 'order.refund.counter_entry'. Parent stays immutable. This is the canonical NF525 'écriture de contrepasse' pattern.",
+      "verdict": "HEALTHY"
+    },
+    {
+      "pattern": "Idempotent gateway success",
+      "evidence": "Stripe::success wraps payment-service call inside DB::transaction; CapturePaymentNotification is deleted before insert (early dedup); PaymentService::payment is idempotent via Transaction::where(order_id)->first() check. Counter-payment confirmCounterPayment is idempotent on PAID via PaymentStateMachine + early return.",
+      "verdict": "HEALTHY"
+    },
+    {
+      "pattern": "Bypass auditing on confirmCounterPayment",
+      "evidence": "PaymentService:162-166 calls BypassAuditLogger::paymentBypassed unconditionally even on the legitimate counter-collect path. Side note: the term 'bypass' here refers to the kiosk→counter handoff, NOT a security bypass. The audit row gives a forensic trail of all counter-collect events.",
+      "verdict": "HEALTHY"
+    }
+  ],
+  "findings": [
+    {
+      "id": "ARCH-PS3-01",
+      "severity": "P3",
+      "title": "RefundCreated dispatched on PARENT not MIRROR — comment-only follow-up",
+      "evidence": "RefundWithCounterEntryService:229 fires RefundCreated::dispatch($parent) (positive qty for stock release), while PaymentService::cashBack:152 also fires RefundCreated::dispatch($order). Both pass the PARENT, both rely on AvailabilityService idempotency via released_qty ledger. The contract is correct but only discoverable by reading 30 lines of inline comments. V1.1 could codify the contract on the RefundCreated event class itself (PHPDoc on the event payload type).",
+      "files": ["app/Services/Order/RefundWithCounterEntryService.php:229", "app/Services/PaymentService.php:152", "app/Events/RefundCreated.php (not read in this audit)"],
+      "verdict": "V1.1-BACKLOG"
+    },
+    {
+      "id": "ARCH-PS3-02",
+      "severity": "P3",
+      "title": "PaymentAbstract::__construct in Stripe creates a fresh PaymentService — DI bypass",
+      "evidence": "Stripe.php:28 `$paymentService = new PaymentService(); parent::__construct($paymentService);`. The container-managed PaymentService is bypassed when the gateway is instantiated. This is fine functionally (PaymentService has no constructor deps), but it would silently mask any future container binding override (e.g., for testing or runtime tracing). PayPal + Credit + Senangpay all share this pattern.",
+      "files": ["app/Http/PaymentGateways/Gateways/Stripe.php:26-36"],
+      "verdict": "V1.1-BACKLOG"
+    },
+    {
+      "id": "ARCH-PS3-03",
+      "severity": "P3",
+      "title": "DLQ replay V1.0.1 scope-minimal — `markProcessed` without re-running business logic",
+      "evidence": "Stripe::handleFromStoredEvent and Senangpay::handleFromStoredEvent both ack the row but do NOT re-run the CapturePaymentNotification insert. V1.0.2 TODO is documented inline (Stripe.php:347-352, Senangpay.php:219-222). For V1 this is acceptable because the live webhook handler already wrote the capture row on first receipt — the DLQ row only represents a downstream processing hiccup. Re-running would risk double-fire of OrderPaidAtCounter.",
+      "files": ["app/Http/PaymentGateways/Gateways/Stripe.php:353-381", "app/Http/PaymentGateways/Gateways/Senangpay.php:224-251"],
+      "verdict": "V1.1-BACKLOG (refactor handleWebhook into thin parser + processStripeEvent method)"
+    }
+  ],
+  "frozen_files_touched": [],
+  "recommendations": {
+    "keep_as_is": [
+      "PaymentService backtrace gate (P0-POS-02) — non-spoofable from outside gateway hierarchy",
+      "SplitPaymentService persistTranches transactional scope (validate then persist atomically)",
+      "RefundWithCounterEntryService mirror pattern (NF525-compliant counter-entry)",
+      "Bifurcation of pre-Z RETURNED vs post-Z mirror via SealedOrderGuard"
+    ],
+    "v1_1_backlog": [
+      "Codify RefundCreated event payload contract via typed PHPDoc",
+      "Refactor handleWebhook into thin parser + processStripeEvent for DLQ end-to-end replay",
+      "Standardise gateway constructor on container-managed PaymentService injection"
+    ]
+  },
+  "verdict_zone": "HEALTHY — no architectural defects, 3 V1.1 polish items"
+}

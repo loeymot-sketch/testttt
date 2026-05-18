@@ -1,0 +1,75 @@
+{
+  "role": "architect",
+  "zone": "PS-2 POS Order Lifecycle (10.2 active / 10.3 parked / 10.4 ready / 10.5 history / 10.9 modifications)",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "b0bc75987f0a117b150c829b6e34e9d6bd2ccf41",
+  "timestamp": "2026-05-18T22:22:29+0200",
+  "scope": "Order state machine, parked-resume flow, modifications guard, layering / dependency discipline.",
+  "findings": [
+    {
+      "id": "ARCH-PS2-01",
+      "severity": "P3",
+      "title": "Order lifecycle state machine is solid and consistent across call sites.",
+      "evidence": "app/Domain/Order/OrderStateMachine.php:30-75 enumerates legal transitions (PENDING→ACCEPT|CANCELED|REJECTED ; ACCEPT→PREPARING|CANCELED|DELIVERED-with-pos-perm ; PREPARING→PREPARED|CANCELED|DELIVERED-with-pos-perm ; PREPARED→OUT_FOR_DELIVERY|DELIVERED ; OUT_FOR_DELIVERY→DELIVERED ; DELIVERED→RETURNED). The 'pos shortcut' that allows ACCEPT→DELIVERED / PREPARING→DELIVERED for takeaway is restricted to users with `pos` permission (line 41, 48). app/Services/OrderService.php:1660 (changeStatus) defers transition validation to App\\Rules\\ValidStatusTransition (line 1663) which mirrors the same matrix — the rule and machine are aligned. NEW callsites should use OrderStateMachine::apply (lockForUpdate + atomic write + audit) per the comment at lines 184-198.",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "ARCH-PS2-02",
+      "severity": "P3",
+      "title": "Soft-delete is one-way + Order::restore() blocked at model level.",
+      "evidence": "app/Models/Order.php:108-116 registers a `restoring` boot hook that throws RuntimeException, with documentation explaining the cascade rationale (OrderService::destroy hard-deletes address+coupon, those models don't use SoftDeletes, so restore would leave a permanently inconsistent aggregate). The comment names the correct alternative: create a NEW order referencing the soft-deleted id. NF525-coherent.",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "ARCH-PS2-03",
+      "severity": "P1",
+      "title": "Parked-resume flow has a known semantic gap: recall HARD-deletes the parked row inside the transaction, but no audit trail.",
+      "evidence": "app/Services/PosParkedOrderService.php:72-103 — `recall()` wraps `lockForUpdate` + `delete()` in `DB::transaction`. If the cashier crashes between recall (deletion) and the new POST /api/admin/pos (commit), the parked cart is lost with no recovery path. The 'lists' aren't an issue because hourly retention is unlimited, but the loss-of-work on browser crash is real. The previous step of `recall` returns `$snapshot = $parked->replicate()` (line 90) but the actual row is deleted on line 99 BEFORE the consumer commits. This is a legacy 'fire-and-forget' UX choice. Recommendation: option A (preferred) — soft-delete the parked row (add SoftDeletes) and explicitly purge on successful commit (PosController::store can call a callback). Option B — append an AuditLogService entry on recall so the snapshot survives in forensic table.",
+      "verdict": "HEAL deferred V1.0.2 — current behavior is documented and matches tests (PosParkedRecallVariationAvailabilityTest:91+124+148 expect deletion-on-recall). Heal in this audit would require DB migration + service signature change — beyond scope-minimal."
+    },
+    {
+      "id": "ARCH-PS2-04",
+      "severity": "P2",
+      "title": "Post-creation modifications (§10.9 edit composition / qty / discount) intentionally NOT implemented.",
+      "evidence": "Recon grep `app/Services/OrderService.php` + `app/Services/Order/*` + `routes/api.php pos-order` shows ZERO endpoint for amending an existing order's composition. Available post-create actions: changeStatus, changePaymentStatus, selectDeliveryBoy, destroy (soft, with PAID/sealed-Z guards), refund-with-counter-entry (NF525 mirror). composition_snapshot is frozen at creation per app/Services/OrderService.php:574 (posOrderStore) — required by CLAUDE.md §8 NF525 Pricing SSOT. Verdict: this is a correct V1 scope decision, not a defect. The PS-2 brief lists §10.9 but mid-order edit ↔ NF525 sealed receipt is mutually exclusive. If the owner wants pre-paid edit (status ≤ PENDING), it must be implemented as 'destroy + new order' rather than in-place mutation.",
+      "verdict": "KEEP — document as V1 known-scope decision; back-of-mind for V1.0.2 if owner asks for pre-paid edits."
+    },
+    {
+      "id": "ARCH-PS2-05",
+      "severity": "P2",
+      "title": "Dual state-machine entry points (legacy direct save + new OrderStateMachine::apply) — frozen-zone V1 rule prevents migration.",
+      "evidence": "app/Domain/Order/OrderStateMachine.php:23 explicitly states 'Existing OrderService / FrontendOrderService call sites keep their historical pattern (`$order->status = $next; save(); recordTransition(...)`) to honour the frozen zone V1 rule. The apply() method is the path forward.' OrderService::changeStatus (line 1660) and OrderService::destroy (line 2186) use the legacy pattern + manual recordTransition. Risk: a future contributor missing this preamble adds a NEW call site using the legacy pattern. Mitigation already in place: tests/Feature/OrderStateMachineLockForUpdateTest.php + tests/Feature/Domain/OrderStateMachineApplyTest.php pin the new entry point's invariants. Recommend: add a static analysis lint rule (PHPStan custom rule or grep CI gate) to flag NEW `->status = ...; ->save();` outside the two whitelisted services. V1.0.2 backlog.",
+      "verdict": "KEEP for V1 (frozen-zone); HEAL deferred V1.0.2 (lint rule)."
+    },
+    {
+      "id": "ARCH-PS2-06",
+      "severity": "P2",
+      "title": "PosOrderController::show + destroy have correct timing-leak mitigation and PAID-guard layering.",
+      "evidence": "app/Http/Controllers/Admin/PosOrderController.php:104-128 (show) catches ModelNotFoundException + unifies with 403 to prevent existence enumeration (RED-team Wave 5I A.1 healed). app/Services/OrderService.php:2186-2284 (destroy) layers: 1) HTTP guards OUTSIDE try/catch so abort(403) bubbles, 2) global-Admin vs branch-staff branch check, 3) PAID + non-elevated-permission abort, 4) sealed-Z window check on fiscal_sequence_no orders (409 NF525 immutability), 5) wraps the actual delete in DB::transaction with ActionLog + AuditLogService::write (NF525 audit chain). Strong defense-in-depth.",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "ARCH-PS2-07",
+      "severity": "P1",
+      "title": "OrderService::list eager-loads relations that SimpleOrderResource never reads (wasted query weight).",
+      "evidence": "app/Services/OrderService.php:125-130 — `Order::with(['transaction', 'orderItems.orderItem.media', 'orderItems.orderItem.category', 'branch', 'user'])`. app/Http/Resources/SimpleOrderResource.php:18-60 only exposes user.name, user.phone (DELIVERY only), transaction.payment_method, and address.* (whenLoaded). The 'orderItems.orderItem.media' + 'orderItems.orderItem.category' chains pull thumbnails + category records that never reach the JSON. On a 50-row paginated list (default per_page=10, but PosOrdersTracker requests per_page=100), this is 4 extra joins per row + media polymorphic load. P1 not P0 because the list is admin-only and rarely hot, but the symptom is visible on slow networks (PosOrderListComponent.vue:340 list() dispatches with paginate=1, per_page=10, default → 10 rows × 4 wasted joins = ~40 extra queries on cold cache).",
+      "verdict": "HEAL — drop `orderItems.orderItem.media` + `orderItems.orderItem.category` from the eager-load on `list()`; keep them on `show()` which uses OrderDetailsResource. Scope-minimal, single-file change."
+    },
+    {
+      "id": "ARCH-PS2-08",
+      "severity": "P3",
+      "title": "Parked orders have hourly retention via PosPurgeParkedScheduleCommand; tested.",
+      "evidence": "tests/Feature/Pos/PosPurgeParkedScheduleTest.php:10 — test_kernel_registers_pos_purge_parked_daily asserts the schedule entry. PosParkedOrderService::purgeOlderThanHours(int $hours) (line 204) does the actual cleanup. Reasonable V1 default. No issue.",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "ARCH-PS2-09",
+      "severity": "P3",
+      "title": "ReorderItems (one-click reorder of an old order) reads composition_snapshot first, falls back to legacy item_variations/item_extras columns.",
+      "evidence": "app/Http/Controllers/Admin/PosOrderController.php:197-303 — reorderItems endpoint maps each OrderItem to a structured cart payload via reorderVariations + reorderExtras. Both helpers prefer `composition_snapshot.lines` / `composition_snapshot.extras` (the canonical V1 source) and fall back to legacy `item_variations` / `item_extras` JSON for historic orders. Defensive blank-filtering on line 244, 274. The endpoint is permission-gated (pos-orders via constructor middleware).",
+      "verdict": "KEEP"
+    }
+  ],
+  "summary": "Order lifecycle state machine is production-grade — atomic lockForUpdate, idempotent same-status early-return, audit trail via OrderStatusTransition + AuditLogService + ActionLog, branch-isolation guards, PAID + sealed-Z guards on destroy, soft-delete one-way semantics. Two P1 to consider: ARCH-PS2-07 (list eager-load waste — quick heal) and ARCH-PS2-03 (parked-resume hard-delete = lossy on crash, deferred V1.0.2). §10.9 'modifications post-creation' is not a defect — it is a correct V1 scope decision aligned with NF525 composition_snapshot frozen-at-creation invariant.",
+  "produced_by": "PS-2 architect specialist, autonomous"
+}

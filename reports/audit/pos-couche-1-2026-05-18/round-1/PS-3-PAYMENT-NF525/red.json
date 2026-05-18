@@ -1,0 +1,131 @@
+{
+  "specialist": "RED-team",
+  "zone": "PS-3-PAYMENT-NF525",
+  "date": "2026-05-18",
+  "scope": "Adversarial — fiscal sequence race, cash-drawer-requirement bypass, refund that skips audit chain, TRUNCATE/DROP wipe path",
+  "framing": "What would a malicious cashier OR a misconfigured deploy OR a 0-day attacker do to subvert NF525 integrity?",
+  "anchors_read": "Same as architect/security/dba/sre + adversarial framing applied",
+  "attack_attempts": [
+    {
+      "attack_id": "ATK-1",
+      "title": "Race two fiscal_sequence_no allocations to create a duplicate sequence",
+      "target": "FiscalSequenceService::next",
+      "method": "Spawn 2 simultaneous POS checkouts on same branch. Both call next() in parallel. Goal: get them to read MAX(fiscal_sequence_no) BEFORE either persists, both returning the same value, then both inserting Order with conflicting fiscal_sequence_no.",
+      "defenses_encountered": [
+        "Layer 1: Cache::lock('fiscal_seq_b{N}', 5s) serialises at app tier — Redis BLOCK semantics",
+        "Layer 2: DB::transaction + Order::withoutGlobalScopes()->lockForUpdate()->max() — storage-tier row locks",
+        "Layer 3: UNIQUE(branch_id, fiscal_sequence_no) on orders table — even if 1+2 fail, the second INSERT throws SQLSTATE 23000"
+      ],
+      "outcome": "BLOCKED. Triple defense. Worst case: Cache::lock acquire fails after 3s → RuntimeException raised, caller decides retry strategy. No silent gap created.",
+      "p_severity": "PASS"
+    },
+    {
+      "attack_id": "ATK-2",
+      "title": "Bypass cash drawer requirement for CASH order (sell off-the-books)",
+      "target": "PaymentService::recordCashOrderMovement (strict path)",
+      "method": "1) Don't open a CashDrawerSession. 2) Push POS order with pos_payment_method=CASH. 3) Expect that the order is created and cash skips the cash_movements ledger.",
+      "defenses_encountered": [
+        "OrderService::posOrderStore wires recordCashOrderMovement($strict=true) for POS direct CASH path",
+        "SplitPaymentService::persistTranches throws CashDrawerSessionNotOpenException BEFORE the DB::transaction commits — parent transaction rollbacks the order",
+        "CashDrawerSessionNotOpenException → HTTP 422 with code='CASH_NO_OPEN_SESSION' (test path 2 + path 4)",
+        "Test attestation: PosCashTrailTest::test_pos_cash_without_open_session_returns_422_and_rolls_back asserts 0 orders + 0 movements created"
+      ],
+      "outcome": "BLOCKED. Strict path covers POS direct + split CASH. Off-the-books sale impossible without opening a session.",
+      "p_severity": "PASS",
+      "edge_case": "Hardware simulation (pos.simulation_hardware=true) DOWNGRADES strict→soft. This is intentional for UAT/dev but production must set POS_SIMULATION_HARDWARE=false. Sentinel test PosSimulationHardwareProductionGuardSentinelTest exists to enforce APP_ENV=production+simulation=true rejection (referenced; not opened in this audit)."
+    },
+    {
+      "attack_id": "ATK-3",
+      "title": "Issue a refund that does NOT extend the audit chain",
+      "target": "RefundWithCounterEntryService.execute + PaymentService::cashBack",
+      "method": "1) Find a path to mark an Order REFUNDED without going through either service. 2) Direct Eloquent: $order->payment_status = REFUNDED; $order->save() — does this write to audit_logs?",
+      "defenses_encountered": [
+        "PaymentService::cancelCounterPayment writes audit_logs 'order.counter_payment_canceled' (line 443-454)",
+        "RefundWithCounterEntryService.execute writes audit_logs 'order.refund.counter_entry' (line 195-210)",
+        "PaymentService::cashBack writes audit_logs 'payment.cash_back_issued' (line 123-137) AND fires RefundCreated event",
+        "PaymentService::confirmCounterPayment writes audit_logs 'order.counter_payment_confirmed' (line 231-243)",
+        "ATTACK SUCCEEDS if a developer bypasses all 4 services and directly mutates payment_status",
+        "Mitigation: BranchScope + Spatie permissions + FormRequest layer + no admin route grants direct REFUNDED state mutation",
+        "Defense gap: there is no DB trigger on orders.payment_status to enforce 'state transitions must leave an audit_logs trail'"
+      ],
+      "outcome": "MOSTLY BLOCKED — 4 of 4 service paths write to chain. App-layer enforcement only; a future code path that bypasses these services would NOT write to chain. NF525 verification chain (verifyChain) would still detect the inconsistency post-hoc if the order is referenced in a Z aggregation that doesn't match the audit history.",
+      "p_severity": "V1.1-BACKLOG: add OrderStateMachine::transitionTo with mandatory audit_log write as the SINGLE refund entry point — close the app-layer gap"
+    },
+    {
+      "attack_id": "ATK-4",
+      "title": "TRUNCATE / DROP the audit_logs or z_reports table to wipe the chain",
+      "target": "DB schema",
+      "method": "1) As DB admin run TRUNCATE audit_logs. 2) Run DROP TABLE z_reports. 3) Run migrate:rollback in production.",
+      "defenses_encountered": [
+        "TRUNCATE: MySQL triggers DO NOT FIRE on TRUNCATE. Defended only by revoking TRUNCATE permission on the production DB user (documented in migration 2026_05_09_160000 line 30-32 + 2026_05_10_010000 line 46-49). Deploy doc concern, not migration scope.",
+        "DROP TABLE: same as TRUNCATE — bypasses triggers. Same mitigation = revoke DROP permission.",
+        "migrate:rollback: BLOCKED by production guards in down() methods. audit_logs migration 2026_04_22_000002:70-74 throws RuntimeException when APP_ENV=production. Unique-chain-index migration has same guard.",
+        "DB encryption-at-rest: orthogonal mitigation — even if the data is deleted, snapshots survive on the storage layer for forensics",
+        "audit_logs PHP model boot hook (AuditLog::booted) throws on updating/deleting — but does not catch raw SQL"
+      ],
+      "outcome": "PARTIAL — application-layer rollback is BLOCKED. Raw SQL TRUNCATE/DROP requires production DB user lockdown (deploy concern). The codebase cannot enforce this; it lives in docs/DEPLOY.md or equivalent. CI sentinel that asserts production DB user lacks TRUNCATE/DROP grants would close the loop.",
+      "p_severity": "V1.1-BACKLOG: add CI sentinel that scans production DB grants for TRUNCATE/DROP on fiscal tables"
+    },
+    {
+      "attack_id": "ATK-5",
+      "title": "Forge a PAID Order by calling PaymentService::payment from a controller",
+      "target": "PaymentService::payment",
+      "method": "1) Find any HTTP route that resolves PaymentService from the container and calls ->payment(...) directly. 2) Supply a forged $transactionNo. 3) Mark order PAID without going through Stripe/PayPal/Credit.",
+      "defenses_encountered": [
+        "assertGatewayContext (PaymentService:585-616) walks debug_backtrace, requires PaymentAbstract subclass in the call chain",
+        "Direct controller call → no PaymentAbstract frame → HTTP 403 'PaymentService::payment() can only be invoked from a gateway callback'",
+        "Test bypass requires container binding 'payment.service.allow_direct_call'=true which is cleared on first read (single-use token)"
+      ],
+      "outcome": "BLOCKED. Backtrace gate is non-spoofable from outside the gateway hierarchy.",
+      "p_severity": "PASS"
+    },
+    {
+      "attack_id": "ATK-6",
+      "title": "Forge a webhook event with a known transaction_id to replay a fake payment",
+      "target": "Stripe::handleWebhook + Senangpay::webhook",
+      "method": "1) Capture a valid past webhook payload. 2) Replay it to the endpoint hoping for double-capture. 3) Or craft a payload with valid HMAC using a leaked secret.",
+      "defenses_encountered": [
+        "Replay: WebhookEvent::firstOrCreate UNIQUE (provider, webhook_id) → second arrival returns 200 'duplicate_ignored', no business logic re-runs",
+        "Forge with leaked secret: requires secret leak — out of scope for code audit; mitigation = secret rotation drill + env-only storage (Stripe) — V1.1 for SenangPay (DB-stored)",
+        "Signature failure (invalid HMAC) → 400 with no WebhookEvent row created"
+      ],
+      "outcome": "BLOCKED at app + DB layer. Forgery requires secret leak.",
+      "p_severity": "PASS"
+    },
+    {
+      "attack_id": "ATK-7",
+      "title": "Inject malicious JSON into audit_logs payload to confuse verifyChain",
+      "target": "AuditLogService.write",
+      "method": "1) Submit an order with a JSON-bomb in a customer-controlled field that ends up in audit payload. 2) Try to break canonicalise/json_encode → make hash unstable → chain breaks.",
+      "defenses_encountered": [
+        "canonicalise uses JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE — deterministic encoding",
+        "sortRecursive does recursive ksort on associative arrays, preserves list order",
+        "json_encode returns false → RuntimeException 'payload not encodable to JSON' → write rejected before DB INSERT",
+        "DB stores payload as JSON column → if MySQL JSON validation rejects it, write fails atomically (whole transaction rollback)",
+        "No customer-controlled field flows directly to audit_logs payload without service-layer construction"
+      ],
+      "outcome": "BLOCKED. Canonicalisation is deterministic + JSON encoding fails closed.",
+      "p_severity": "PASS"
+    }
+  ],
+  "summary": "5 of 7 attacks fully blocked at app + DB layers. ATK-3 (refund-without-chain) is mostly blocked but app-layer-only — a future code path bypassing the 4 documented services would not write to audit_logs. ATK-4 (TRUNCATE/DROP) is blocked only by DB user grant policy, which is a deploy concern not enforced by the codebase. Recommend 2 V1.1 hardening items: OrderStateMachine::transitionTo with mandatory audit + CI sentinel on fiscal DB grants. No P0/P1 in FROZEN files. NF525 chain integrity is intact and defensively sound for the documented threat model.",
+  "findings": [
+    {
+      "id": "RED-PS3-01",
+      "severity": "P2",
+      "title": "Refund path discipline relies on 4 service entry points — no single chokepoint",
+      "evidence": "PaymentService::cashBack + PaymentService::cancelCounterPayment + RefundWithCounterEntryService::execute + (implicit) admin OrderService::changeStatus REFUNDED path. All 4 write to audit_logs. But there is no enforced single chokepoint via OrderStateMachine. A future controller mutating Order->payment_status = REFUNDED directly would NOT write to chain.",
+      "files": ["app/Services/PaymentService.php (multi)", "app/Services/Order/RefundWithCounterEntryService.php"],
+      "verdict": "V1.1-BACKLOG (OrderStateMachine::transitionTo as mandatory chokepoint with audit_log side-effect)"
+    },
+    {
+      "id": "RED-PS3-02",
+      "severity": "P2",
+      "title": "TRUNCATE/DROP bypass requires production DB grants policy — not codified in repo",
+      "evidence": "Migration comments explicitly call out this gap (2026_05_09_160000 line 30, 2026_05_10_010000 line 47). Reviewed reports/audit/* — no document found that codifies the production DB user privilege model. Audit gap: a deploy to a fresh tenant could grant TRUNCATE/DROP by accident.",
+      "verdict": "V1.1-BACKLOG (CI sentinel + docs/DEPLOY.md grants section)"
+    }
+  ],
+  "frozen_files_touched": [],
+  "verdict_zone": "ADVERSARIALLY ROBUST — 5/7 attacks fully blocked, 2/7 partial with documented V1.1 hardening. No P0 in FROZEN. Chain integrity intact."
+}
