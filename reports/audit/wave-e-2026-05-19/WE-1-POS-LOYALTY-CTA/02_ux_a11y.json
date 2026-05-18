@@ -1,0 +1,73 @@
+{
+  "specialist": "UX/A11y",
+  "task": "WE-1 POS Cashier Loyalty CTA — UX placement + WCAG 2.1 review",
+  "mode": "read-only",
+  "findings": {
+    "summary": "Sibling placement in the existing operator-bar nav (PosComponent.vue:160-170) is the most discoverable, design-coherent location. Use PosV5Button ghost variant with brand tone to mirror the existing Customer Screen / Floorplan / Caisse buttons. Add ARIA + keyboard parity. Mind the `dineInEnabled` swap.",
+    "ux_evaluation": {
+      "discoverability": {
+        "rating": "GOOD — sits in the operator-bar nav alongside Tracker / Customer Screen / Caisse, which the cashier scans before every order. Right of the search input strip, visible at all viewports >= md.",
+        "alternative_rejected": "Cart panel placement (aside#pos-cart): TOO HIDDEN — cashier focused on items grid, cart panel is a secondary surface on mobile/tablet.",
+        "alternative_rejected_2": "Floating action button: visually noisy, conflicts with existing pos-v5-success-flash overlay."
+      },
+      "visual_hierarchy": {
+        "icon_recommendation": "🎁 (gift/loyalty) — distinct from 📋 (Tracker), 🖥️ (Customer Screen), 🪑 (Floorplan), 💵 (No-sale), 🏦 (Caisse). Avoids icon collision.",
+        "tone": "PosV5Button variant=ghost tone=neutral (no halo by default). Switch to tone=ready when CTA is visible AND a non-terminal order exists, so the cashier sees the affordance light up when actionable.",
+        "label": "{{ $t('pos.loyalty.redeem.title') }} → 'Appliquer une réduction fidélité' (FR) / 'Apply loyalty discount' (EN). Truncated on small viewports per existing `hidden lg:inline` pattern on label span (mirrors lines 146, 158, 169, 187, 205)."
+      },
+      "state_machine": {
+        "hidden": "dineInEnabled === true (floorplan link rendered instead).",
+        "disabled_visible": "dineInEnabled === false AND currentLoyaltyOrderId === null. Button shown but disabled (greyed) with title='Aucune commande en cours' so cashier understands the affordance exists but requires an active order.",
+        "active": "dineInEnabled === false AND currentLoyaltyOrderId !== null AND order non-terminal AND non-PAID.",
+        "post_apply": "After successful redemption, modal shows success band → close → CTA stays visible until order transitions terminal. Cashier sees CTA tone shift back to neutral as a feedback cue."
+      },
+      "interaction_flow": [
+        "1. Cashier creates order (non-CASH path). PaymentComponent emits order:confirmed with non-PAID payload.",
+        "2. CTA tone shifts to 'ready' (subtle halo).",
+        "3. Cashier clicks → PosLoyaltyRedeemModal opens (existing modal, no UX delta).",
+        "4. Cashier enters loyalty code + points → submits → server applies → modal shows success band → modal auto-closes after 1.5s (existing behavior).",
+        "5. CTA stays visible (order still non-terminal) but the cashier visually sees the success-flash overlay (pos-v5-success-flash) confirming application.",
+        "6. Order finalizes (terminal state) → CTA hides → currentLoyaltyOrderId cleared on next cart action."
+      ]
+    },
+    "a11y_evaluation": {
+      "wcag_2_1": {
+        "1_1_1_text_alternatives": "PASS — emoji icon paired with text label. aria-label fallback via :title= attribute on PosV5Button.",
+        "1_3_1_info_relationships": "PASS — button is inside <nav> with implicit list semantics. ARIA already covered by PosV5Button primitive.",
+        "1_4_3_contrast": "PASS — PosV5Button ghost variant uses --pos-v5-border + --pos-v5-ink (both >= 4.5:1 against panel bg per V5 design tokens).",
+        "2_1_1_keyboard": "PASS — PosV5Button renders as <button> by default; Tab order natural after Caisse button. Enter/Space triggers click.",
+        "2_4_4_link_purpose": "PASS — label 'Appliquer une réduction fidélité' is self-describing.",
+        "3_2_2_on_input": "PASS — disabled state is not a context change.",
+        "3_3_1_error_identification": "PASS — modal already surfaces error_code via role='alert' (PosLoyaltyRedeemModal.vue:35-38).",
+        "4_1_2_name_role_value": "PASS — disabled state communicated via [disabled] attribute (already supported by PosV5Button)."
+      },
+      "aria_attributes_required": [
+        "title attribute → maps to button title + tooltip via PosV5Button :title prop.",
+        "data-testid='pos-loyalty-redeem-main-cta-open' — distinct from existing 'pos-loyalty-redeem-open' on PosOrderShow.",
+        "aria-disabled='true' when CTA disabled (no current order). Already auto-handled by PosV5Button via :disabled."
+      ],
+      "screen_reader_announcements": "When CTA toggles enabled→disabled (cashier creates new order vs. resetCart), no aria-live region update needed — cashier interaction is visual-first. Existing aria-live='polite' regions (cart, items grid) cover content updates.",
+      "keyboard_navigation": "Tab order: Tracker → Customer Screen → Floorplan|Loyalty → No-sale → Caisse. Loyalty button sits where Floorplan is, sibling not stacked, so tab order length unchanged.",
+      "focus_management": "Modal focus on code input already wired (PosLoyaltyRedeemModal.vue:232-240). After modal close, focus should return to the trigger button — add ref + nextTick focus restore in modal close handler."
+    },
+    "i18n_evaluation": {
+      "keys_reused": [
+        "pos.loyalty.redeem.title — already exists FR/EN/AR (resources/js/languages/fr.json:255, en.json:255, ar.json existing)."
+      ],
+      "new_keys_required": [
+        "pos.loyalty.redeem.cta_disabled_hint — 'Aucune commande en cours' / 'No active order' / 'لا يوجد طلب نشط'. RECOMMENDED but optional (can fall back to :title with existing i18n)."
+      ],
+      "rtl_considerations": "PosV5Button + nav already support RTL (ltr:/rtl: classes). Emoji icon stays in template literal — no flip needed.",
+      "raw_label_check": "Confirm no hardcoded 'Loyalty' or 'Fidélité' strings in new code. All via $t()."
+    },
+    "edge_cases": [
+      "User with permission=denied (server 403): modal still opens, error band shows on submit. CTA itself doesn't need permission gate (server is authoritative). UX: modal error is sufficient.",
+      "Network offline (isOnline=false): CTA still clickable. Backend call queues or 503s. Modal's existing error handler surfaces via :title 'pos.loyalty.redeem.errors.generic'.",
+      "Cashier opens modal, cart auto-reset by another tab (multi-tab): currentLoyaltyOrderId stale. Mitigation: modal already validates `canApply` on each input — when server returns ORDER_ALREADY_FINALIZED, modal shows clear error.",
+      "Cashier opens modal but doesn't submit (clicks Cancel): no side-effect, CTA tone unchanged. Modal close behavior already wired.",
+      "Rapid click on CTA (double-tap): modal's :open prop is boolean — second click is idempotent. No race condition."
+    ]
+  },
+  "verdict": "GO. Placement is operator-bar sibling to floorplan link, gated by !dineInEnabled. UX state machine: hidden (V2 dine-in) | disabled (no order) | active (non-terminal order). A11y compliant via PosV5Button primitive. i18n keys reused; one optional new key for disabled hint. Recommend focus-restore on modal close for keyboard parity.",
+  "word_count": "approx 920"
+}

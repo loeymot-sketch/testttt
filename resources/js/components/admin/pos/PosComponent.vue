@@ -157,7 +157,15 @@
                     <template #icon>🖥️</template>
                     <span class="hidden lg:inline">{{ $t('pos.tracker.customer_screen') }}</span>
                 </PosV5Button>
+                <!-- [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] When V2
+                     dine-in is enabled, render the floorplan link (legacy
+                     V2 upgrade path). When V1 default (`pos.dine_in_enabled=
+                     false`) — the only V1 production mode — render the
+                     loyalty redeem CTA in the same slot. Mutually exclusive
+                     so the operator-bar layout stays stable (one button
+                     wide). -->
                 <PosV5Button
+                    v-if="dineInEnabled"
                     variant="ghost"
                     size="md"
                     as="router-link"
@@ -167,6 +175,30 @@
                 >
                     <template #icon>🪑</template>
                     <span class="hidden lg:inline">{{ $t('label.floorplan') }}</span>
+                </PosV5Button>
+                <!-- [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page
+                     loyalty redeem CTA — V1 only (dine-in disabled). Visible
+                     when a non-terminal, non-PAID order is in flight; tone
+                     shifts to "ready" so the cashier sees the affordance
+                     light up the moment an order is created (server-side
+                     `pos.redeem-loyalty` permission gate remains the
+                     authoritative authz check; this UI gating only hides
+                     the visual entry point when redeem would always 422/409).
+                     The canonical CTA on PosOrderShowComponent stays in
+                     place — defense in depth, both paths reachable. -->
+                <PosV5Button
+                    v-else
+                    variant="ghost"
+                    size="md"
+                    class="pos-v4-loyalty-main-cta"
+                    data-testid="pos-loyalty-redeem-main-cta-open"
+                    :disabled="!canShowLoyaltyMainCta"
+                    :tone="canShowLoyaltyMainCta ? 'ready' : 'neutral'"
+                    :title="$t('pos.loyalty.redeem.title')"
+                    @click="openLoyaltyMainModal"
+                >
+                    <template #icon>🎁</template>
+                    <span class="hidden lg:inline">{{ $t('pos.loyalty.redeem.title') }}</span>
                 </PosV5Button>
                 <!--
                   [POS-V5] No-sale / open drawer — variant ghost neutral (pas de halo).
@@ -905,6 +937,18 @@
         @payment-form:reset="resetPaymentForm"
         @order:confirmed="triggerSuccessFlash"
     />
+    <!-- [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty
+         redeem modal — 2nd surface (canonical surface lives on
+         PosOrderShowComponent). Mounted here so the operator-bar CTA can
+         open it without the cashier navigating away. Defense in depth:
+         backend `pos.redeem-loyalty` permission + PosRedemptionService
+         terminal/PAID guards remain authoritative regardless of UI path. -->
+    <PosLoyaltyRedeemModal
+        :open="loyaltyRedeemMainOpen"
+        :order-id="currentLoyaltyOrder ? currentLoyaltyOrder.id : null"
+        @close="closeLoyaltyMainModal"
+        @applied="onLoyaltyMainApplied"
+    />
     <!-- [POS-V5 WAVE 3] Overlay success flash après confirm payment (700ms) -->
     <div v-if="successFlashing" class="pos-v5-success-flash" aria-hidden="true"></div>
     <!--====================================
@@ -1087,9 +1131,34 @@ import { openDrawer as kioskHardwareOpenDrawer } from "../../../services/kioskHa
 import PaymentComponent from "./PaymentComponent.vue";
 import ParkedOrdersComponent from "./ParkedOrdersComponent.vue";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
+import paymentStatusEnum from "../../../enums/modules/paymentStatusEnum";
 import CustomerAddressCreateComponent from "../customers/address/CustomerAddressCreateComponent.vue";
 import CreateCustomerAddressComponent from "./CreateCustomerAddressComponent.vue";
 import labelEnum from "../../../enums/modules/labelEnum";
+// [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty redeem
+// CTA wire-up. The modal already exists and is mounted from
+// PosOrderShowComponent (canonical CTA). This adds a 2nd CTA on the POS
+// main page so the cashier doesn't need to navigate to order-show to apply
+// loyalty for non-CASH orders (CARD/TPE/PARK paths where the order id is
+// known post-creation but not yet PAID).
+//
+// Gating contract:
+//   - V1 default (`pos.dine_in_enabled=false`) → CTA replaces the floorplan
+//     router-link slot (mutually exclusive render).
+//   - Visible only when a non-terminal, non-PAID order has been tracked via
+//     the existing `order:confirmed` event chain.
+//   - Cleared on resetCart + resetPaymentForm so the next order starts
+//     fresh (per owner direction 2026-05-19 — "loyalty applies during this
+//     order; on completion → reset").
+//
+// Server-side `pos.redeem-loyalty` permission + PosRedemptionService
+// terminal/PAID guards remain authoritative; this UI gating only hides the
+// visual entry point for orders where redeem would always 422/409.
+import PosLoyaltyRedeemModal from "./PosLoyaltyRedeemModal.vue";
+import {
+    extractLoyaltyOrderInfo,
+    canShowLoyaltyMainCta as resolveCanShowLoyaltyMainCta,
+} from "../../../helpers/posLoyaltyMainCta";
 import {
     rowUnitBundled,
     mainOrderLineTotal,
@@ -1152,6 +1221,10 @@ export default {
         PosV5SearchInput,
         // [Sprint 1A] Cash drawer session dialog (admin/cash/).
         PosCashDrawerSessionDialog,
+        // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty
+        // redeem modal — co-existing with the canonical CTA on
+        // PosOrderShowComponent (defense-in-depth, both paths reachable).
+        PosLoyaltyRedeemModal,
     },
     // [POS-OFFLINE-WIRE 2026-05-17] Composition-API bridge: expose the offline
     // composable refs (isOnline, queueDepth) and helpers (enqueueOrder,
@@ -1202,6 +1275,15 @@ export default {
             // no-sale button while the hardware bridge resolves (real till can
             // take ~200-500ms to physically open).
             noSaleBusy: false,
+            // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty
+            // CTA state. `currentLoyaltyOrder` is the latest order object
+            // captured from the `order:confirmed` event (PaymentComponent →
+            // PosComponent). It carries id + payment_status + status; the
+            // computed `canShowLoyaltyMainCta` hides the CTA the moment the
+            // order transitions terminal/PAID. Cleared on resetCart +
+            // resetPaymentForm so the next cycle starts fresh.
+            currentLoyaltyOrder: null,
+            loyaltyRedeemMainOpen: false,
             // [2026-05-18 F-4] POS first-page filter. False (default) = strip
             // shows only featured categories per `config('pos.featured_category_ids')`.
             // Toggled true via the "Toutes" pill (escape hatch). Persists for
@@ -1439,6 +1521,30 @@ export default {
             const t = typeof raw;
             if (t !== 'boolean' && t !== 'number' && t !== 'string') return false;
             return String(raw) === '1' || raw === true;
+        },
+        /**
+         * [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty
+         * CTA visibility resolver. Delegates to the pure helper so the gate
+         * stays independently unit-testable (see tests/js/posLoyaltyMainPageCta.spec.js).
+         *
+         * Returns true ONLY when (a) V1 dine-in flag is off, (b) a current
+         * order is tracked via the `order:confirmed` event chain, and (c)
+         * the order has NOT yet reached a terminal state or PAID. Mirrors
+         * the `canShowLoyaltyRedeem` computed on PosOrderShowComponent for
+         * convergent semantics across both CTAs.
+         */
+        canShowLoyaltyMainCta: function () {
+            return resolveCanShowLoyaltyMainCta({
+                dineInEnabled: this.dineInEnabled,
+                currentOrder: this.currentLoyaltyOrder,
+                paidStatus: paymentStatusEnum.PAID,
+                terminalStatuses: [
+                    orderStatusEnum.DELIVERED,
+                    orderStatusEnum.CANCELED,
+                    orderStatusEnum.REJECTED,
+                    orderStatusEnum.RETURNED,
+                ],
+            });
         },
         categories: function () {
             return this.$store.getters["posCategory/lists"];
@@ -1917,13 +2023,54 @@ export default {
                 this._totalFlashTimer = null;
             }, 360);
         },
-        triggerSuccessFlash() {
+        triggerSuccessFlash(orderPayload) {
             if (this._successFlashTimer) clearTimeout(this._successFlashTimer);
             this.successFlashing = true;
             this._successFlashTimer = setTimeout(() => {
                 this.successFlashing = false;
                 this._successFlashTimer = null;
             }, 720);
+
+            // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Capture the
+            // just-confirmed order so the main-page loyalty CTA gates
+            // correctly. PaymentComponent emits `order:confirmed` with
+            // `this.order` payload (PaymentComponent.vue:994); we extract
+            // id + payment_status + status. For CASH-via-wizard flows the
+            // order arrives PAID and `canShowLoyaltyMainCta` will hide the
+            // CTA — that's intentional (CASH path remains a backend follow-
+            // up, see STATUS.md known-limitation). For CARD / TPE / PARK
+            // flows that create the order non-PAID, the CTA lights up so
+            // the cashier can apply loyalty without navigating away.
+            this.currentLoyaltyOrder = extractLoyaltyOrderInfo(orderPayload);
+        },
+        /**
+         * [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Open the
+         * main-page loyalty redeem modal from the operator-bar CTA. The
+         * computed `canShowLoyaltyMainCta` already gates the button, so
+         * this method only flips the open flag.
+         */
+        openLoyaltyMainModal() {
+            if (!this.canShowLoyaltyMainCta) return;
+            this.loyaltyRedeemMainOpen = true;
+        },
+        closeLoyaltyMainModal() {
+            this.loyaltyRedeemMainOpen = false;
+        },
+        /**
+         * [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Modal `applied`
+         * handler. Updates the cached order's payment_status/status from
+         * the server payload so the CTA gate re-evaluates next tick. The
+         * canonical CTA on PosOrderShowComponent triggers a posOrder/show
+         * refresh; here we only need to refresh local computed state since
+         * the operator-bar CTA is the only UI surface on this page.
+         */
+        onLoyaltyMainApplied(payload) {
+            this.loyaltyRedeemMainOpen = false;
+            if (!payload || typeof payload !== 'object') return;
+            const refreshed = payload.order;
+            if (refreshed && refreshed.id != null) {
+                this.currentLoyaltyOrder = extractLoyaltyOrderInfo(refreshed);
+            }
         },
         // ────────────────────────────────────────────────────────────────────
 
@@ -2602,6 +2749,12 @@ export default {
                 quote_token: null,
                 quote_signature: null,
             };
+            // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Clear any
+            // previously tracked order so the next order:confirmed event
+            // captures fresh state. PaymentComponent emits payment-form:reset
+            // BEFORE order:confirmed in its success path, so the new order
+            // payload arrives at triggerSuccessFlash on the next tick.
+            this.currentLoyaltyOrder = null;
         },
         openParkedOrders() {
             this.showParkedOrders = true;
@@ -2891,6 +3044,11 @@ export default {
             this.$store.dispatch('posCart/resetCart').then(res => {
                 this.checkoutProps.form.token = "";
                 this.resetDeliveryInline();
+                // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Clear the
+                // tracked order so the main-page loyalty CTA hides until the
+                // next order:confirmed event. Mirrors the owner direction
+                // "loyalty applies during this order; on completion → reset".
+                this.currentLoyaltyOrder = null;
                 alertService.success(this.$t('message.cart_reset') || 'Panier vidé.');
             }).catch();
         },
