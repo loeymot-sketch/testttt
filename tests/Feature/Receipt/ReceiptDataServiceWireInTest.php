@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Receipt;
 
+use App\Enums\OrderStatus;
 use App\Enums\OrderType;
+use App\Enums\PaymentStatus;
 use App\Enums\PosPaymentMethod;
 use App\Http\Resources\OrderDetailsResource;
 use App\Models\Branch;
+use App\Models\FrontendOrder;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Receipt\ReceiptDataService;
@@ -171,5 +174,59 @@ class ReceiptDataServiceWireInTest extends TestCase
         $this->assertNull($resource['fiscal_sequence_no']);
         $this->assertSame('73282932000074', $payload['pos_siret']);
         $this->assertSame('73282932000074', $resource['pos_siret']);
+    }
+
+    /**
+     * Regression guard for Foundation Audit failures F1+F3 / 2026-05-18.
+     *
+     * `App\Models\FrontendOrder` is a sibling of `App\Models\Order` — both
+     * extend `Illuminate\Database\Eloquent\Model` and back the same `orders`
+     * table polymorphically. The wire-in commit 80fb27c48 originally typed
+     * `buildForOrderModel(Order $order)` which silently 500'd every
+     * `/api/frontend/order POST` (kiosk checkout fully broken, ghost orders
+     * persisted before the throw). The type-hint is widened to `Model` and
+     * this sentinel locks the contract.
+     */
+    public function test_build_for_order_model_accepts_frontend_order_sibling(): void
+    {
+        $branch = Branch::factory()->create([
+            'siret' => '73282932000074',
+            'vat_intra' => 'FR12345678901',
+            'register_id' => 'POS-001',
+            'legal_footer' => 'Merci de votre visite.',
+        ]);
+        $user = User::factory()->create([
+            'branch_id' => $branch->id,
+            'name' => 'Frontend Operator',
+        ]);
+        // FrontendOrder has no Factory class — backed by `orders` table
+        // polymorphically. Use forceCreate per existing test pattern
+        // (CancelReasonEnforceTest::makeKioskPendingOrder).
+        $frontendOrder = FrontendOrder::forceCreate([
+            'order_serial_no' => 'F-Z-' . substr(uniqid(), -8),
+            'branch_id'       => $branch->id,
+            'user_id'         => $user->id,
+            'order_type'      => OrderType::KIOSK,
+            'status'          => OrderStatus::PENDING,
+            'payment_status'  => PaymentStatus::UNPAID,
+            'pos_payment_method' => PosPaymentMethod::CARD,
+            'subtotal'        => 25.00,
+            'total'           => 25.00,
+            'discount'        => 0,
+            'delivery_charge' => 0,
+            'fiscal_sequence_no' => 2002,
+        ]);
+        $frontendOrder->refresh();
+        $frontendOrder->load(['branch', 'user']);
+
+        // Service must accept FrontendOrder (sibling of Order) without TypeError.
+        $payload = (new ReceiptDataService())->buildForOrderModel($frontendOrder);
+
+        $this->assertSame(2002, $payload['fiscal_sequence_no']);
+        $this->assertSame('POS-001', $payload['pos_register_id']);
+        $this->assertSame('73282932000074', $payload['pos_siret']);
+        $this->assertSame('FR12345678901', $payload['pos_vat_intra']);
+        $this->assertSame('Merci de votre visite.', $payload['pos_legal_footer']);
+        $this->assertSame('Frontend Operator', $payload['operator_name']);
     }
 }

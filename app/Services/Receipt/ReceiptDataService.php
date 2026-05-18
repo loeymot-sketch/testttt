@@ -2,6 +2,7 @@
 
 namespace App\Services\Receipt;
 
+use App\Contracts\BroadcastableOrder;
 use App\Models\Order;
 
 /**
@@ -44,10 +45,19 @@ final class ReceiptDataService
      * already has the hydrated $order (with branch + user) in scope —
      * avoids a duplicate SELECT per HTTP request.
      *
+     * Accepts any `BroadcastableOrder` — both `App\Models\Order` and
+     * `App\Models\FrontendOrder` implement this marker interface
+     * (cf. app/Contracts/BroadcastableOrder.php "designed so broadcast
+     * events can accept either model without a type mismatch"). The
+     * previous narrow `Order $order` type-hint silently 500'd every
+     * `/api/frontend/order POST` since commit 80fb27c48 (kiosk checkout
+     * fully broken, ghost orders persisted before throw). See Foundation
+     * Audit failures F1+F2+F3.
+     *
      * Returned shape matches {@see buildForOrder()} exactly so both
      * signatures are interchangeable.
      */
-    public function buildForOrderModel(Order $order): array
+    public function buildForOrderModel(BroadcastableOrder $order): array
     {
         return [
             'order_id' => $order->id,
