@@ -158,6 +158,26 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // [Wave 3 P1 FISCAL-ADV3-03 2026-05-18] NF525 audit chain
+        // monitor — re-walks audit_logs HMAC chain daily. Without this
+        // schedule the CLI exists but detection window is unbounded
+        // (CLAUDE.md §8 references the command but no cron pinned it).
+        // 03:30 staggers between fiscal:archive (02:00) and outbox-prune
+        // (04:00). Failure path logs to the fiscal channel so any non-
+        // zero exit (1=tamper, 2=invalid branch, 3=exec error) pages
+        // compliance. onOneServer prevents duplicate runs at scale.
+        $schedule->command('fiscal:verify-chain --branch=1')
+            ->dailyAt('03:30')
+            ->name('fiscal-chain-monitor')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->onFailure(function () {
+                Log::channel('fiscal')->error('NF525 chain verify failed', [
+                    'event' => 'fiscal.chain.monitor.failure',
+                    'branch_id' => 1,
+                ]);
+            });
+
         // [W8.C-P2 / P-MEGA-22 Pilier 2] NF525 fiscal archive scheduling
         // D4=A 02:00 quotidien ; D5=A toutes branches actives ; D6=A local + S3 nightly géré par command env ; D7=A ZIP+JSON géré par command
         $schedule->call(function () {

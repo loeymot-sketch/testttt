@@ -2,8 +2,11 @@
 
 namespace Tests\Feature\Fiscal;
 
+use App\Console\Commands\FiscalVerifyChainCommand;
 use App\Models\AuditLog;
+use App\Models\Branch;
 use App\Services\Fiscal\AuditLogService;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -12,15 +15,19 @@ use Tests\TestCase;
 
 /**
  * [NF525 Wave 1 W-1 heal]
+ * [NF525 Wave 3 P1 heal FISCAL-ADV3-01/02/03 2026-05-18]
  *
  * The `fiscal:verify-chain` artisan command exposes
  * AuditLogService::verifyChain() on the CLI so operators can validate
  * the audit chain on-demand. CLAUDE.md §8 referenced this command, but
  * it did not exist until this sprint.
  *
- *  - Clean chain  -> exit 0, output "CHAIN OK".
- *  - Tampered row -> exit != 0, output contains the tampered row id.
- *  - --branch=N   -> only the specified branch's chain is verified.
+ *  - Clean chain      -> exit 0, output "CHAIN OK".
+ *  - Tampered row     -> exit 1, output contains the tampered row id.
+ *  - --branch=N       -> only the specified branch's chain is verified.
+ *  - Invalid branch   -> exit 2, "Branch ID N not found" (no false-negative).
+ *  - Execution error  -> exit 3, "Verification FAILED to execute".
+ *  - schedule()       -> daily 03:30 `fiscal-chain-monitor` event present.
  */
 class FiscalVerifyChainCommandTest extends TestCase
 {
@@ -43,6 +50,17 @@ class FiscalVerifyChainCommandTest extends TestCase
         parent::setUp();
         Config::set('fiscal.audit_secret', 'unit-test-secret-verify-chain-cmd');
         $this->service = app(AuditLogService::class);
+
+        // [Wave 3 P1 FISCAL-ADV3-01 2026-05-18] The command now validates
+        // that --branch=N resolves to a real Branch row before walking
+        // the chain (no more false-negative CHAIN OK on a nonexistent
+        // branch). All pre-existing tests must therefore seed the
+        // synthetic branch ids they reference.
+        foreach ([
+            self::BR_CLEAN, self::BR_TAMPER, self::BR_SCOPED_OK, self::BR_SCOPED_BAD,
+        ] as $branchId) {
+            Branch::factory()->create(['id' => $branchId]);
+        }
     }
 
     public function test_clean_chain_returns_success_and_prints_chain_ok(): void
@@ -111,5 +129,96 @@ class FiscalVerifyChainCommandTest extends TestCase
         $this->artisan('fiscal:verify-chain', ['--branch' => self::BR_SCOPED_BAD])
             ->expectsOutputToContain('TAMPER')
             ->assertExitCode(1);
+    }
+
+    /**
+     * [Wave 3 P1 FISCAL-ADV3-01]
+     *
+     * Previously `--branch=99` against a single-resto install returned
+     * a false-negative `CHAIN OK exit 0` because the verifier iterated
+     * an empty cursor. Now: hard-fail with exit 2 and a clear message.
+     */
+    public function test_unknown_branch_returns_invalid_exit_code(): void
+    {
+        // Pick a branch id that provably does not exist in the branches
+        // table (RefreshDatabase + 4-digit isolated convention above
+        // keeps the real branch table sparse, so 999_999 is safe).
+        $missingBranchId = 999_999;
+
+        $this->assertDatabaseMissing('branches', ['id' => $missingBranchId]);
+
+        $this->artisan('fiscal:verify-chain', ['--branch' => $missingBranchId])
+            ->expectsOutputToContain('Branch ID '.$missingBranchId.' not found')
+            ->assertExitCode(FiscalVerifyChainCommand::INVALID);
+    }
+
+    /**
+     * [Wave 3 P1 FISCAL-ADV3-02]
+     *
+     * Exit-code collapse fix: a service-level throw (DB outage, missing
+     * fiscal.audit_secret, weak secret) must NOT share exit code 1 with
+     * a genuine TAMPER hit. Exit 3 = execution error, distinct lane.
+     *
+     * We swap the bound AuditLogService with a stub that throws so the
+     * test stays isolated from real DB/HMAC failure modes.
+     */
+    public function test_service_throw_returns_execution_error_exit_code(): void
+    {
+        // Seed a real branch row via the factory (which fills the
+        // NOT NULL city/state/zip/address columns) so we pass the
+        // FISCAL-ADV3-01 guard and land inside the try/catch lane.
+        $branchId = 920_605;
+        Branch::factory()->create(['id' => $branchId]);
+
+        $this->app->bind(AuditLogService::class, function () {
+            return new class extends AuditLogService
+            {
+                public function __construct() {}
+
+                public function verifyChain(?int $branchId = null): ?int
+                {
+                    throw new \RuntimeException('Simulated DB outage / missing secret');
+                }
+            };
+        });
+
+        // NOTE: Symfony Console's $this->error() block-wraps long lines
+        // for the red error decoration, so we assert only the stable
+        // first-fragment "Verification FAILED to execute" + the exit
+        // code 3 contract — the throw message itself can be split
+        // across decorated lines depending on terminal width.
+        $this->artisan('fiscal:verify-chain', ['--branch' => $branchId])
+            ->expectsOutputToContain('Verification FAILED to execute')
+            ->assertExitCode(3);
+    }
+
+    /**
+     * [Wave 3 P1 FISCAL-ADV3-03]
+     *
+     * Without a scheduled run, the CLI exists but detection window is
+     * unbounded. Assert that the Kernel::schedule() registers the
+     * daily monitor for `fiscal:verify-chain` by walking the live
+     * Schedule::events() collection (public API across Laravel 10/11).
+     */
+    public function test_schedule_registers_daily_fiscal_chain_monitor(): void
+    {
+        /** @var Schedule $schedule */
+        $schedule = $this->app->make(Schedule::class);
+
+        $commands = collect($schedule->events())
+            ->map(fn ($event) => (string) ($event->command ?? ''))
+            ->all();
+
+        $matches = array_filter(
+            $commands,
+            fn (string $command) => str_contains($command, 'fiscal:verify-chain')
+        );
+
+        $this->assertNotEmpty(
+            $matches,
+            'Expected fiscal:verify-chain to be wired into Kernel::schedule() '
+            .'(Wave 3 P1 FISCAL-ADV3-03). Registered commands: '
+            .implode(' | ', $commands)
+        );
     }
 }
