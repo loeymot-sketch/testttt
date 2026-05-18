@@ -152,7 +152,7 @@ $ bash .cursor/hooks/safety-check.sh
 - **Files staged** : 2 (the Vue component + the new spec)
 - **Commit message** : `fix(oss-v1-prep): chime TV-wall fallback + PRÊT WCAG AA contrast heal`
 - **Co-author** : `Claude Opus 4.7 (1M context) <noreply@anthropic.com>`
-- **Commit SHA** : `<filled-in-after-commit-below>`
+- **Commit SHA** : `c138b32dd07186fb2d71fc27c4afe17736112bbe`
 
 ---
 
