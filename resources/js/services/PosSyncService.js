@@ -44,6 +44,14 @@ const DEFAULTS = Object.freeze({
     jitterMaxMs: 500,
 });
 
+// [Wave 3c KDS-ADV3C-07 P1 2026-05-18] Cadence upper cap symmetric with
+// Wave 2c KDS heal (9ff26e12b). Without it, an owner-misconfig like
+// FK_CATALOG_POS_FALLBACK_INTERVAL_MS=999999999 (or test stub) would
+// silence POS catalog refresh for ~11.5 days during a WS outage. POS
+// shows stale stock; items 86'd at KDS still sellable.
+const CADENCE_CEILING_MS = 60_000; // 1 poll/min minimum
+const CADENCE_FLOOR_MS = 250;       // 4 req/s ceiling (DDoS guard)
+
 class PosSyncService {
     constructor() {
         this._state = STATE.IDLE;
@@ -140,7 +148,10 @@ class PosSyncService {
 
         return {
             enabled: cfg.enabled === true || cfg.enabled === 1 || cfg.enabled === '1',
-            intervalMsWhenDisconnected: this._positiveInt(
+            // [Wave 3c KDS-ADV3C-07 P1 2026-05-18] Was `_positiveInt` —
+            // accepted any positive int incl. 999999999. Now clamped to
+            // [250ms, 60_000ms] symmetric with Wave 2c KDS cadence cap.
+            intervalMsWhenDisconnected: this._clampCadence(
                 cfg.intervalMsWhenDisconnected,
                 DEFAULTS.intervalMsWhenDisconnected,
             ),
@@ -417,10 +428,23 @@ class PosSyncService {
         return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
     }
 
+    /**
+     * [Wave 3c KDS-ADV3C-07 P1 2026-05-18] Clamp a cadence value to
+     * [CADENCE_FLOOR_MS, CADENCE_CEILING_MS]. Non-numeric → fallback. Used
+     * for catalog refresh interval so misconfig (too low = DDoS / too high
+     * = silent freeze) cannot weaponize the polling loop.
+     */
+    _clampCadence(value, fallback) {
+        const parsed = parseInt(value, 10);
+        const candidate = Number.isFinite(parsed) ? parsed : fallback;
+        const floored = candidate >= CADENCE_FLOOR_MS ? candidate : CADENCE_FLOOR_MS;
+        return floored <= CADENCE_CEILING_MS ? floored : CADENCE_CEILING_MS;
+    }
+
     _jitter() {
         return Math.floor(Math.random() * this._opts.jitterMaxMs);
     }
 }
 
 export default new PosSyncService();
-export { PosSyncService, STATE, DEFAULTS };
+export { PosSyncService, STATE, DEFAULTS, CADENCE_CEILING_MS, CADENCE_FLOOR_MS };
