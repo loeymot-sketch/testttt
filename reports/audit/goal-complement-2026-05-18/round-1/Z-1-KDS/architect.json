@@ -1,0 +1,133 @@
+{
+  "role": "Architect",
+  "zone": "Z-1 KDS deeper",
+  "mode": "AUDIT-ONLY",
+  "date": "2026-05-18",
+  "branch": "pr/mobile-app-real-e2e-heal-2026-05-18",
+  "head": "fe595a4d67aac199a98551eb471cdcac2622510a",
+  "scope": "KdsOrder contract integrity + transition whitelist + recall/undo semantics",
+  "anchors_verified": [
+    "app/Http/Controllers/Admin/KitchenDisplaySystemController.php:1-61",
+    "app/Http/Controllers/Admin/KdsSyncController.php:1-79",
+    "app/Services/KitchenDisplaySystemOrderService.php:1-389",
+    "app/Services/KdsSyncService.php:1-168",
+    "app/Http/Resources/KDSOrderDetailsResource.php:1-74",
+    "app/Http/Resources/KDSOrderItemsResource.php:1-69",
+    "app/Http/Resources/OrderItemResource.php:21-51",
+    "app/Http/Requests/Kds/KdsOrderStatusRequest.php:1-42",
+    "app/Domain/Kds/KitchenReleaseRule.php:1-83",
+    "app/Listeners/DispatchKdsTicket.php:1-22",
+    "app/Events/OrderStatusChanged.php:1-26",
+    "resources/js/store/modules/kds.js:1-87",
+    "resources/js/store/modules/kdsInflight.js:1-156",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:404-407,587-590,760-763,936-939,1709-1740",
+    "routes/api.php:1005-1011"
+  ],
+  "findings": [
+    {
+      "id": "Z1-ARCH-P1-01",
+      "severity": "P1",
+      "title": "Recall mechanism is browser-local localStorage with NO backend round-trip and NO audit trail",
+      "evidence": {
+        "file": "resources/js/store/modules/kds.js",
+        "lines": "55-85",
+        "code_excerpt": "bumpItem ({ commit, state }, { orderId, itemId }) { ... persistMap(next); }, recallItem({ commit, state }, { orderId, itemId, now = Date.now() }) { ... persistMap(next); return { ok: true }; }",
+        "cross_ref_no_backend_route": "routes/api.php:1005-1011 declares ONLY index/changeStatus/items/sync — no /kds-order/bump and no /kds-order/recall endpoints",
+        "cross_ref_no_axios": "kds.js contains zero axios/fetch/window.api calls"
+      },
+      "impact": [
+        "Cross-browser inconsistency: chef A bumps item, chef B (same station, different tab) cannot see bump state",
+        "Cache-clear or private browsing wipes ALL bump/recall history mid-shift",
+        "No NF525 audit_log entry for bump events — fiscal auditors cannot trace plate-readiness timeline",
+        "No backend authoritative source-of-truth for KDS line-level workflow — frontend is sole arbiter",
+        "Owner-expected 60s recall grace (kds_recall_grace_expired i18n label) enforced by Date.now() only — clock skew across stations not validated"
+      ],
+      "contract_intent_gap": "Naming kds_recall + i18n key fr.json:1176 'délai d'annulation 60 s' suggests an order-status recall (PREPARED → PREPARING transition). Actual implementation is per-item bump-undo within ONE browser session. Owner-facing semantics likely diverge from implementation.",
+      "scope_minimal_heal_recommendation": "Add backend endpoint POST /kds-order/{order}/items/{item}/bump and POST /kds-order/{order}/items/{item}/recall persisting to a new kds_item_events append-only table; broadcast via existing OrderStatusChanged-pattern Echo channel; reconcile localStorage as a write-through cache. Estimated 4-6h.",
+      "backlog_ticket": "V1.0.2-KDS-BUMP-BACKEND-PERSISTENCE",
+      "audit_status": "Read-verified file:line citation confirmed"
+    },
+    {
+      "id": "Z1-ARCH-P1-02",
+      "severity": "P1",
+      "title": "Transition whitelist forbids backward jumps (PREPARED → PREPARING) — recall cannot restore order to PREPARING via Order.status",
+      "evidence": {
+        "file": "app/Domain/Kds/KitchenReleaseRule.php",
+        "lines": "41-49",
+        "code_excerpt": "public static function canTransition(int $from, int $to): bool { if ($from === $to) { return self::isVisibleStatus($from); } return ($from === OrderStatus::ACCEPT && $to === OrderStatus::PREPARING) || ($from === OrderStatus::PREPARING && $to === OrderStatus::PREPARED); }",
+        "cross_ref": "app/Http/Requests/Kds/KdsOrderStatusRequest.php:34-41 rules require Rule::in([ACCEPT, PREPARING, PREPARED]); FormRequest authz restricted to Admin/Branch Manager/Chef/POS Operator/Cashier"
+      },
+      "impact": [
+        "If owner intent is order-level recall (PREPARED → PREPARING for plate rework), current backend forbids it and would 422 invalid_status_transition",
+        "Forward-only state machine intersects with localStorage-only bump/recall in a confusing way: a chef can 'recall' an item visually but the Order.status stays PREPARED if all items had been bumped",
+        "No re-entrant transition allowed even for genuine error correction (e.g. wrong order marked PREPARED)"
+      ],
+      "scope_minimal_heal_recommendation": "Document explicitly that backward transitions are forbidden by design (NF525 audit chain immutability principle); add a separate kds.order_correction endpoint guarded by Branch Manager+ role that emits a void/replay audit_log entry rather than mutating Order.status. Estimated 6-8h with sentinel test.",
+      "backlog_ticket": "V1.0.2-KDS-ORDER-CORRECTION-FLOW",
+      "audit_status": "Read-verified"
+    },
+    {
+      "id": "Z1-ARCH-P2-03",
+      "severity": "P2",
+      "title": "KDS bump state stored under same localStorage key for ALL operators on a shared station",
+      "evidence": {
+        "file": "resources/js/store/modules/kds.js",
+        "lines": "1",
+        "code_excerpt": "const STORAGE_BUMPED = 'kds.bumped_items_v1';"
+      },
+      "impact": "Station shared between Chef A morning shift and Chef B afternoon shift carries A's stale bump state into B's session unless explicitly cleared. No user_id namespace.",
+      "scope_minimal_heal_recommendation": "Salt the localStorage key with auth user_id and/or branch_id, e.g. STORAGE_BUMPED = `kds.bumped_items_v1.${userId}.${branchId}`. Estimated 1h with vitest.",
+      "backlog_ticket": "V1.0.2-KDS-BUMP-USER-NAMESPACE",
+      "audit_status": "Read-verified"
+    },
+    {
+      "id": "Z1-ARCH-P2-04",
+      "severity": "P2",
+      "title": "Order.status mutation in changeStatus() executes without idempotency-key check",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "170-228",
+        "code_excerpt": "$result = DB::transaction(function () use ($order, $newStatus, $expectedFrom) { ... if ($fromLocked !== $expectedFrom) { abort(409, ...); }",
+        "cross_ref_route": "routes/api.php:1007 Route::post('/change-status/{order}', [KitchenDisplaySystemController::class, 'changeStatus']) — no X-Idempotency-Key middleware",
+        "comparison": "IdempotencyKeyMiddleware (CLAUDE.md §9) is applied to POST mutating endpoints elsewhere but NOT to KDS change-status"
+      },
+      "impact": "Network retry on flaky wifi can double-dispatch SendOrderMail/Sms/Push and emit a second OrderStatusChanged event. The expected_status optimistic lock catches the 2nd attempt (returns 409) but only AFTER mail/sms have been dispatched on the first attempt — race remains between transaction commit and listener side-effects on retry.",
+      "scope_minimal_heal_recommendation": "Wrap changeStatus route with IdempotencyKeyMiddleware similar to other mutating POSTs. Estimated 1h.",
+      "backlog_ticket": "V1.0.2-KDS-CHANGE-STATUS-IDEMPOTENCY",
+      "audit_status": "Read-verified — middleware absence confirmed by grep on routes/api.php"
+    },
+    {
+      "id": "Z1-ARCH-P3-05",
+      "severity": "P3",
+      "title": "KdsSyncService::computeOrderVersion documented TODO not yet implemented (per-order version stamp)",
+      "evidence": {
+        "file": "app/Services/KdsSyncService.php",
+        "lines": "151-167",
+        "code_excerpt": "TODO(F-03 / Phase 3 dette technique D-03bis): when the planned `status_changed_at` column lands on Order, switch to `max(updated_at_unix, status_changed_at_unix)` to avoid skipping cards whose status moved without other field updates."
+      },
+      "impact": "Edge case: if an order's only mutation is status flip and no other updated_at change, version compared against client may equal — frontend version-gate may skip the render update.",
+      "scope_minimal_heal_recommendation": "Add status_changed_at TIMESTAMP migration on orders + use max(updated_at, status_changed_at) for version. Estimated 3h.",
+      "backlog_ticket": "V1.0.3-KDS-STATUS-CHANGED-AT-COLUMN",
+      "audit_status": "Read-verified — TODO comment present at line 152"
+    }
+  ],
+  "verification_pattern_check": {
+    "transition_whitelist_unit_test_exists": "tests/Feature/KdsTransitionWhitelistTest.php (verified file exists)",
+    "transition_whitelist_sentinel_exists": "tests/Feature/Sentinels/KdsTransitionWhitelistSentinelTest.php (verified)",
+    "concurrency_test_exists": "tests/Feature/KdsChangeStatusConcurrencyTest.php (verified)",
+    "expected_status_conflict_test_exists": "tests/Feature/KdsExpectedStatusConflictTest.php (verified) + Sentinel variant",
+    "tz_aware_test_exists": "tests/Feature/KDS/KdsSyncTzAwareTest.php (verified — addresses Wave 3 KDS-ADV3-01 fix)",
+    "sargable_test_exists": "tests/Feature/Kds/KdsSyncSargableTest.php (verified — addresses idx_orders_datetime perf)",
+    "allergen_aggregation_test_exists": "tests/Feature/KDS/KdsAllergenAggregationSplitTest.php (verified)",
+    "snapshot_immutable_test_exists": "tests/Feature/KDS/KdsSnapshotImmutableTest.php (verified)",
+    "branch_filter_exact_test_exists": "tests/Feature/KdsBranchFilterExactTest.php (verified)",
+    "branch_scope_test_exists": "tests/Feature/KDSScopeRestrictionTest.php (verified)",
+    "controller_contract_test_exists": "tests/Feature/Admin/KdsSyncControllerTest.php (verified)",
+    "pagination_overflow_test_exists": "tests/Feature/KdsPaginationOverflowTest.php (verified)",
+    "delivery_enrichment_test_exists": "tests/Feature/KDS/KDSDeliveryEnrichmentTest.php (verified)",
+    "echo_sentinel_exists": "tests/Feature/Sentinels/KdsItemAvailabilityEchoSentinelTest.php (verified)",
+    "recall_idempotency_test_missing": "tests/Feature/Kds/KdsRecallIdempotencyTest.php — NOT FOUND (would be moot since recall is frontend-only)",
+    "undo_toast_window_test_missing": "tests/Feature/Kds/KdsUndoToastWindowTest.php — NOT FOUND (frontend-only state)"
+  },
+  "summary_one_line": "Recall + bump are pure localStorage frontend-state with no backend persistence/audit, transition whitelist is forward-only (correct for NF525) but contract intent for 'recall' diverges from implementation; 16 KDS tests cover backend slice exhaustively."
+}

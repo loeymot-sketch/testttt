@@ -1,0 +1,72 @@
+{
+  "zone": "Z-5-PRICING",
+  "audit_mode": "AUDIT-ONLY (FROZEN strict — CLAUDE.md §7)",
+  "wave": "goal-complement-2026-05-18 round-1",
+  "audit_date": "2026-05-18",
+  "head": "575a046527ed2d93fecbba7b1352aa1c607cdd03",
+  "branch": "pr/mobile-app-real-e2e-heal-2026-05-18",
+  "frozen_files_touched": [],
+  "specialists_completed": [
+    "architect",
+    "security",
+    "dba",
+    "red"
+  ],
+  "p0_findings": [],
+  "p1_findings": [],
+  "p2_findings": [],
+  "p3_findings": [
+    {
+      "id": "Z5-P3-01",
+      "title": "DB-level BEFORE UPDATE trigger missing on order_items.composition_snapshot",
+      "ref": "database/migrations/* — no immutability trigger",
+      "source_specialist": "dba",
+      "source_id": "Z5-DBA-P3-01",
+      "severity": "P3 (V1.1 backlog)",
+      "rationale": "Application layer is the only enforcement today. Wave 1 NF525 fiscal audit and Zone5 sentinel docblock both acknowledge this. CLAUDE.md §8 lists analogous triggers on audit_logs + z_reports — composition_snapshot deserves the same DB-level defense.",
+      "recommendation": "V1.1 backlog: add MySQL prod-only migration with BEFORE UPDATE SIGNAL SQLSTATE '45000' trigger blocking any change when OLD.composition_snapshot IS NOT NULL.",
+      "deferred_heal": true,
+      "deferred_reason": "AUDIT-ONLY mode + frozen-zone proximity + Wave 1 acknowledged V1.1 backlog"
+    },
+    {
+      "id": "Z5-P3-02",
+      "title": "menuRoleAdjustedAddonPrice duplicated between PricingService and CompositionSnapshotBuilder",
+      "ref": "app/Services/Pricing/PricingService.php:793-813 + app/Services/Pricing/CompositionSnapshotBuilder.php:171-191",
+      "source_specialist": "architect",
+      "source_id": "Z5-ARCH-P3-01",
+      "severity": "P3 (V1.1 backlog — design smell, no behavioral risk)",
+      "rationale": "Both classes read identical logic against the same config('kiosk.menu_pricing'). The duplication is documented as intentional (builder docblock L164-169: 'kept local to keep the snapshot builder a pure transformer'). Drift impossible while config is canonical source. Extract a `KioskMenuRatio` value object in V1.1 to remove residual DRY violation.",
+      "deferred_heal": true,
+      "deferred_reason": "AUDIT-ONLY mode + PricingService.php is FROZEN, refactor requires LOCK plan + owner gate not justified for V1"
+    }
+  ],
+  "ssot_invariants_state": {
+    "PR01_db_price_authoritative": "PASS — Sentinel Zone5PricingSsotConvergenceSentinelTest::test_pr01",
+    "PR02_client_total_overwritten_by_ssot": "PASS — Sentinel + PosPricingSsotProofTest",
+    "PR03_composition_snapshot_no_app_update_callsites": "PASS — Sentinel grep-asserts zero offenders in app/",
+    "PR03_bis_schema_invariant": "PASS — Column exists + cast is array",
+    "PR04_snapshot_frozen_across_mid_day_repricing": "PASS — Sentinel",
+    "PR07_stripe_round_before_cast_999_cents": "PASS — Sentinel",
+    "use_ssot_service_flag_production_stable_true": "PASS — 5-test sentinel pinning config + 2 env templates + 2 CI workflows",
+    "no_env_bypass_in_pricing_namespace": "PASS — grep -rn 'env(' app/Services/Pricing/ → ZERO matches",
+    "tax_inclusive_TTC_mode_single_switch": "PASS — TaxInclusivePricesTest covers"
+  },
+  "write_sites_reconciliation": {
+    "task_states_5_sites": true,
+    "actual_5_builder_driven_insert_sites": [
+      "app/Services/Pricing/PricingService.php:291 (SSOT path)",
+      "app/Services/OrderService.php:466 (legacy fallback path #1)",
+      "app/Services/OrderService.php:821 (legacy fallback path #2)",
+      "app/Services/OrderService.php:1277 (legacy fallback path #3)",
+      "app/Services/FrontendOrderService.php:441 (legacy frontend path)"
+    ],
+    "additional_copy_forward_insert_site": "app/Services/Order/RefundWithCounterEntryService.php:136 — copies parent's frozen snapshot verbatim into refund mirror order_items row. Preserves NF525 immutability (does not recompute).",
+    "context_note": "Legacy paths gated by config('pricing.use_ssot_service')=false. Per PricingSsotFlagProductionStableSentinelTest, default is always true → SSOT path is sole prod path. Legacy paths remain testable for PosSubtotalForgerySentinelTest. Cleanup owned by C.5 plan (CV1-CLEANUP-LEGACY-PRICING-PATH)."
+  },
+  "frozen_file_p0_escalation": {
+    "triggered": false,
+    "rationale": "No P0 found in frozen PricingService.php. Owner gate G3 NOT triggered. LOCK_PRICING_SSOT plan creation NOT required.",
+    "stuck_report_written": false
+  },
+  "verdict": "AUDIT-ONLY PASS — Wave 1 NF525 fiscal audit verdict confirmed. All Z-5 invariants pinned by sentinels. Zero P0/P1/P2 in frozen file. Two P3 V1.1 backlog items documented (DB trigger + KioskMenuRatio extract). Recommend proceed to global convergence."
+}

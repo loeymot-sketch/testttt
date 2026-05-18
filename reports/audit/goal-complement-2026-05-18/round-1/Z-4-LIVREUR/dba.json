@@ -1,0 +1,57 @@
+{
+  "role": "DBA",
+  "zone": "Z-4-LIVREUR",
+  "round": 1,
+  "timestamp": "2026-05-18",
+  "files_audited": [
+    "database/migrations/2026_05_18_100000_add_delivery_fee_settings_to_branches.php",
+    "database/migrations/2026_05_18_110000_add_delivery_minimum_order_to_branches.php",
+    "app/Models/Branch.php (fillable+casts)",
+    "app/Services/OrderService.php deliveryBoyOrder query (DIRTY — read-only)",
+    "app/Services/OrderService.php deliveryBoyOrderCount query"
+  ],
+  "findings": [
+    {
+      "severity": "INFO",
+      "id": "LIVREUR-Z4-DBA-01",
+      "file": "database/migrations/2026_05_18_100000_add_delivery_fee_settings_to_branches.php",
+      "line": 21,
+      "title": "Migration schema sound — 3 decimal(10,2) nullable columns + idempotent down()",
+      "description": "Branch additions: delivery_fee_base, delivery_fee_per_km, delivery_fee_minimum, all decimal(10,2) nullable. Migration places columns ->after('zone'). Down() correctly drops all three in a single Schema::table block. NULL semantics documented in doc-block (legacy fallback). No FK needed (branch-scoped already).",
+      "evidence": "Lines 20-24 + 28-31 reversible.",
+      "recommendation": "No action — sound."
+    },
+    {
+      "severity": "INFO",
+      "id": "LIVREUR-Z4-DBA-02",
+      "file": "database/migrations/2026_05_18_110000_add_delivery_minimum_order_to_branches.php",
+      "line": 17,
+      "title": "delivery_minimum_order column sound — single decimal(10,2) nullable",
+      "description": "Single column, NULL = no minimum (V1 default). Wired to OrderRequest:265-287 validateDeliveryMinimumOrder. Migration reversible. Branch model fillable+cast verified (app/Models/Branch.php:22+48).",
+      "evidence": "Migration line 18 ->nullable() after('delivery_fee_minimum'). Branch.php:22 fillable + :48 cast decimal:2.",
+      "recommendation": "No action — sound."
+    },
+    {
+      "severity": "P2",
+      "id": "LIVREUR-Z4-DBA-03",
+      "file": "app/Services/OrderService.php (DIRTY — read-only)",
+      "line": 283,
+      "title": "deliveryBoyOrder query — composite index (delivery_boy_id, status, branch_id) recommended",
+      "description": "OrderService::deliveryBoyOrder filters Order WHERE order_type != POS AND delivery_boy_id = ? AND branch_id = ?. Verified at lines 283-286. The query then ORDER BY (default 'id desc'). With high order volume, a composite index on (delivery_boy_id, branch_id) covers list+count efficiently. Existing index on delivery_boy_id alone (if any) may not be optimal.",
+      "reproduction": "grep delivery_boy_id orders migrations to verify current index coverage.",
+      "evidence": "Service uses 3-column WHERE + ORDER BY id desc.",
+      "recommendation": "V1.0.2 backlog: add composite index orders(delivery_boy_id, branch_id, status, created_at). Defer — not gating V1."
+    },
+    {
+      "severity": "P3",
+      "id": "LIVREUR-Z4-DBA-04",
+      "file": "app/Services/OrderService.php deliveryBoyOrderCount",
+      "line": 1475,
+      "title": "Two near-identical count queries — could be a single GROUP BY",
+      "description": "deliveryBoyOrderCount line 1475-1482 runs two separate COUNT queries (delivered, returned). Refactor to single SELECT status, COUNT(*) GROUP BY status WHERE delivery_boy_id=? AND status IN (DELIVERED, RETURNED).",
+      "evidence": "Lines 1475-1483 — two queries.",
+      "recommendation": "V1.0.2 micro-optimization. Not gating."
+    }
+  ],
+  "summary": "2 migrations schema-sound (INFO). 1 P2 index recommendation + 1 P3 optimization — both deferred-heal. No P0/P1 DBA finding."
+}

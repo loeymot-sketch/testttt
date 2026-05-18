@@ -1,0 +1,87 @@
+{
+  "zone": "Z-5-PRICING",
+  "role": "Architect",
+  "mission": "Audit-only (FROZEN) — PricingService SOLID + service composition + immutability snapshot",
+  "scope_files_read": [
+    "app/Services/Pricing/PricingService.php (FROZEN)",
+    "app/Services/Pricing/PricingRequest.php",
+    "app/Services/Pricing/PricingResult.php",
+    "app/Services/Pricing/PricingLineResult.php",
+    "app/Services/Pricing/CompositionSnapshotBuilder.php",
+    "app/Services/Pricing/DiscountCalculator.php",
+    "app/Services/Pricing/TaxCalculator.php"
+  ],
+  "verdict": "GREEN — solid composition, immutable types, single responsibility honored",
+  "findings": [
+    {
+      "id": "Z5-ARCH-OBS-01",
+      "severity": "INFO",
+      "ref": "app/Services/Pricing/PricingService.php:21-30",
+      "observation": "Class declared `final` + constructor uses readonly typed dependencies with sensible defaults (TaxCalculator, DiscountCalculator, CompositionSnapshotBuilder default-constructed; nullable AvailabilityService / ComposerProfileProjection / ChoiceAvailabilityResolver resolved lazily). DIP respected, testable, no inheritance trap."
+    },
+    {
+      "id": "Z5-ARCH-OBS-02",
+      "severity": "INFO",
+      "ref": "app/Services/Pricing/PricingRequest.php:10-108",
+      "observation": "PricingRequest is `final` + all public properties are `readonly`. Named static factories `forWeb`/`forPos`/`forTable`/`forKiosk` encapsulate per-surface rounding semantics (POS/Kiosk round line totals + tax + final; web/table preserve high precision). This is the canonical surface differentiator — clean and audit-traceable."
+    },
+    {
+      "id": "Z5-ARCH-OBS-03",
+      "severity": "INFO",
+      "ref": "app/Services/Pricing/PricingResult.php:8-28 + PricingLineResult.php:8-27",
+      "observation": "Both DTOs are `final` with `readonly` typed properties — true immutability post-construction. PricingResult exposes `orderItemInsertRows` (bulk-insert ready) + `lines` (rich per-line snapshot). Single source of truth for downstream callers."
+    },
+    {
+      "id": "Z5-ARCH-OBS-04",
+      "severity": "INFO",
+      "ref": "app/Services/Pricing/CompositionSnapshotBuilder.php:17-160",
+      "observation": "Builder is `final` + stateless. SCHEMA_VERSION=1 constant pinned for forward-compat. Snapshot shape is deterministic and serializable. Builder is a pure transformer — no DB writes, no side-effects. Reuses preloaded ItemAttribute collection when provided (N+1 avoidance from PricingService L114-117)."
+    },
+    {
+      "id": "Z5-ARCH-P3-01",
+      "severity": "P3",
+      "ref": "PricingService.php:793-813 + CompositionSnapshotBuilder.php:171-191",
+      "observation": "`menuRoleAdjustedAddonPrice` is duplicated verbatim across PricingService and CompositionSnapshotBuilder. The builder docblock (L164-169) explicitly justifies duplication: 'kept local to keep the snapshot builder a pure transformer (no PricingService dep)'. DRY violation traded for layer purity. Acceptable for V1 — but a future shared helper class (e.g. `KioskMenuRatio` value object) would remove the drift risk noted in the comment itself.",
+      "recommendation": "V1.1 backlog — extract `KioskMenuRatio::adjustedPrice(role, fullPrice)` and inject into both. Today both classes read the same `config('kiosk.menu_pricing')` so observable drift is impossible while config stays the canonical source."
+    },
+    {
+      "id": "Z5-ARCH-OBS-05",
+      "severity": "INFO",
+      "ref": "PricingService.php:122-320",
+      "observation": "`calculateOrder` is a long method (~200 LOC) but it is procedurally clear, single-pass, deterministic (no time/random except `now()` captured in `created_at` which is metadata, not pricing). No branching on environment, hostname, or non-deterministic state. Each line builds an immutable snapshot via the builder, then mass-insert array is assembled. Round flags come from PricingRequest, not config — clean."
+    },
+    {
+      "id": "Z5-ARCH-OBS-06",
+      "severity": "INFO",
+      "ref": "PricingService.php:557-657 + ComposerProfileProjection",
+      "observation": "`assertComposerStepConstraints` projects the published ItemWizardProfile (latest active version) and enforces min/max/allow_repeat/availability against payload selections. The projection is delegated to `ComposerProfileProjection` (injected lazily). Versioned mid-cart-rejection contract preserved (cf. ProfilePublishMidCartRejectionTest sibling)."
+    },
+    {
+      "id": "Z5-ARCH-OBS-07",
+      "severity": "INFO",
+      "ref": "PricingService.php:46-55 + L100-107",
+      "observation": "AvailabilityService is consulted in 2 stages: (a) at the top for direct item availability, (b) after addon resolution to recheck addon-item availability. `$orderId > 0` toggles lock-mode (FOR UPDATE during real order creation) vs preview-mode (read-only quote). Sound concurrency contract — preview never holds locks."
+    },
+    {
+      "id": "Z5-ARCH-OBS-08",
+      "severity": "INFO",
+      "ref": "PricingService.php:339-344",
+      "observation": "Manual discount accepted only for contexts `pos|table`. Kiosk + web contexts cannot inject manualDiscountRequest — enforced by per-surface factory in PricingRequest. Anti-fraud control intact."
+    },
+    {
+      "id": "Z5-ARCH-OBS-09",
+      "severity": "INFO",
+      "ref": "PricingService.php:346-355 (TTC-MODE)",
+      "observation": "Tax-inclusive (TTC) vs HT mode is gated by `config('pricing.tax_inclusive_prices')` (NF525 French default = true, per owner mandate iter15-BUG-NF525 2026-05-10). Branching is local to the totalization step; line-level tax extraction (TaxCalculator::lineTaxAmountFromTTC) is selected upstream at L250. Single, traceable switch — no scattered conditionals."
+    }
+  ],
+  "p0_p1_count": {
+    "P0_in_frozen_file": 0,
+    "P1_in_frozen_file": 0
+  },
+  "frozen_zone_touch": false,
+  "recommendations_for_v1_1_backlog": [
+    "Extract `KioskMenuRatio` shared helper to remove duplicate `menuRoleAdjustedAddonPrice` in PricingService + CompositionSnapshotBuilder (P3)",
+    "Consider splitting `assertComposerStepConstraints` into its own dedicated `ComposerConstraintEnforcer` to reduce PricingService to <500 LOC (P3 cosmetic)"
+  ]
+}

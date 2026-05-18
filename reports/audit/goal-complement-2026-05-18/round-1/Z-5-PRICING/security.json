@@ -1,0 +1,101 @@
+{
+  "zone": "Z-5-PRICING",
+  "role": "Security",
+  "mission": "Audit-only (FROZEN) — no env flag bypass + composition_snapshot tamper-proof + branch-scoped pricing",
+  "scope_files_read": [
+    "app/Services/Pricing/PricingService.php (FROZEN — read-only)",
+    "app/Services/Pricing/PricingRequest.php",
+    "app/Services/Pricing/CompositionSnapshotBuilder.php",
+    "app/Services/Pricing/DiscountCalculator.php",
+    "app/Services/OrderService.php (consumer)",
+    "app/Services/FrontendOrderService.php (consumer)",
+    "config/pricing.php",
+    "tests/Feature/Sentinels/PricingSsotFlagProductionStableSentinelTest.php"
+  ],
+  "verdict": "GREEN — no bypass in Pricing namespace, configuration boundary documented, end-to-end SSOT proof exists",
+  "findings": [
+    {
+      "id": "Z5-SEC-01-NO-ENV-BYPASS",
+      "severity": "PASS",
+      "ref": "app/Services/Pricing/* — full directory grep",
+      "evidence_command": "grep -rn 'env(' app/Services/Pricing/",
+      "evidence_result": "ZERO matches across all 7 files in app/Services/Pricing/.",
+      "observation": "PricingService and its peers do NOT consume `env()` directly. The only environment-driven booleans (`pricing.use_ssot_service`, `pricing.tax_inclusive_prices`) are accessed via `config(...)` from config/pricing.php at runtime. This is correct Laravel discipline — config layer is cache-stable in production (php artisan config:cache) whereas direct env() is not."
+    },
+    {
+      "id": "Z5-SEC-02-SSOT-FLAG-BOUNDARY",
+      "severity": "INFO (architectural boundary, not violation)",
+      "ref": "app/Services/OrderService.php:339,655,1129 + FrontendOrderService.php:276,463",
+      "observation": "The bypass flag `config('pricing.use_ssot_service')` is consumed OUTSIDE the Pricing namespace by OrderService (3 sites) and FrontendOrderService (2 sites). Each site reads `true` by default and only the legacy branch is gated by the flag. This is a configuration boundary, not a Pricing-namespace violation. Sentinel `PricingSsotFlagProductionStableSentinelTest` (5 tests) pins the flag to `true` across `config/pricing.php`, `.env.example`, `.env.testing`, `.github/workflows/phpunit.yml`, `.github/workflows/playwright.yml`. Any drift triggers CI failure."
+    },
+    {
+      "id": "Z5-SEC-03-SNAPSHOT-IMMUTABILITY-APP-LEVEL",
+      "severity": "PASS",
+      "ref": "app/Services/Pricing/PricingService.php:266-298 + Zone5PricingSsotConvergenceSentinelTest::test_pr03_*",
+      "evidence_command": "grep -rE '->update\\([^)]*composition_snapshot|composition_snapshot.{0,200}->update\\(|\\$[a-zA-Z_]+->composition_snapshot\\s*=' app/",
+      "evidence_result": "ZERO offenders in app/ source (sentinel itself in tests/ deliberately documents the forbidden patterns).",
+      "observation": "composition_snapshot is written via INSERT only. Application-layer immutability invariant is rigorously enforced. NO update/save/assign call site exists in app/. The Zone5 sentinel test grep-asserts this on every CI run."
+    },
+    {
+      "id": "Z5-SEC-04-DB-IMMUTABILITY-GAP-DOCUMENTED",
+      "severity": "P3 (V1.1 backlog, application-layer compensates)",
+      "ref": "Zone5PricingSsotConvergenceSentinelTest.php:34-39 + Wave 1 W5/R5",
+      "observation": "No DB-level BEFORE UPDATE trigger on order_items.composition_snapshot (the analogous TRIGGER protection exists on audit_logs + z_reports per CLAUDE.md §8). Application-layer is the only line of defense today. Wave 1 (NF525 fiscal audit) flagged this as P3 / V1.1 backlog. Acceptable for V1 — the Zone5 sentinel + application grep + sentinel CI test cover the risk surface."
+    },
+    {
+      "id": "Z5-SEC-05-FRONTEND-PRICE-DISCARDED",
+      "severity": "PASS",
+      "ref": "app/Services/Pricing/PricingService.php:127-135",
+      "observation": "Item price is RE-READ from DB (`$dbItem->price` from Item::query()->select('id','price','tax_id')) at line 134. The frontend `price` field is never accessed in the line-cost computation. PR01 sentinel + PosPricingSsotProofTest end-to-end prove that forged client `price: 0.01` is overwritten by the DB price. Anti-forgery contract intact."
+    },
+    {
+      "id": "Z5-SEC-06-CROSS-ITEM-GUARDS",
+      "severity": "PASS",
+      "ref": "PricingService.php:152-156, 182-187, 207-212 + tests/Feature/Orders/CrossItemGuardTest.php",
+      "observation": "When `enforceCrossItemGuards=true` (default true across all 4 factories), the service rejects requests where a variation/extra/addon ID does not belong to the parent item_id. Throws 422 with explicit message. Prevents cross-item ID injection attacks (e.g. submitting a cheap variation under an expensive item)."
+    },
+    {
+      "id": "Z5-SEC-07-OPTION-VISIBILITY-PER-SURFACE",
+      "severity": "PASS",
+      "ref": "PricingService.php:452-555 (assertOptionsOrderable)",
+      "observation": "Each variation/extra/addon is checked for Status::ACTIVE AND `isVisibleOn($surface)` where surface ∈ {pos, kiosk, web}. Items hidden on POS cannot be smuggled into a kiosk order via direct ID. Defense in depth against catalog surface-leak."
+    },
+    {
+      "id": "Z5-SEC-08-MANUAL-DISCOUNT-SCOPED",
+      "severity": "PASS",
+      "ref": "PricingService.php:339-343 + PricingRequest factories",
+      "observation": "Manual discount only applies when `context in ['pos','table']`. PricingRequest::forKiosk and ::forWeb hardcode `manualDiscountRequest=0.0`, so even if a payload tries to inject manual_discount via web/kiosk surfaces, the factory layer rejects it. Two-layer defense."
+    },
+    {
+      "id": "Z5-SEC-09-COUPON-VALIDATION",
+      "severity": "PASS",
+      "ref": "DiscountCalculator.php:12-20",
+      "observation": "Coupon discount is resolved via CouponService::resolveCouponById which performs full validation (active, within window, customer match, min order, etc.). Discount amount is computed server-side. No frontend-supplied discount value is accepted."
+    },
+    {
+      "id": "Z5-SEC-10-LOYALTY-REDEMPTION-CAPPED",
+      "severity": "PASS",
+      "ref": "DiscountCalculator.php:36-64",
+      "observation": "Kiosk loyalty redemption caps `maxDiscount = min(requestedDiscount, realSubtotal)`. Points are computed from rate (config). Lock + ledger debit happens in FrontendOrderService (not here) — DiscountCalculator returns the contract (discount + points) without touching DB. Single responsibility preserved."
+    },
+    {
+      "id": "Z5-SEC-11-MENU-RATIO-SAFEGUARDS",
+      "severity": "PASS",
+      "ref": "PricingService.php:793-813 + CompositionSnapshotBuilder.php:171-191",
+      "observation": "menuRoleAdjustedAddonPrice rejects non-finite or negative ratios (defaults to 1.0). Unknown menu_* roles default to 1.0 (full price). No way to coerce a negative price or NaN into the line total."
+    }
+  ],
+  "p0_p1_count": {
+    "P0_in_frozen_file": 0,
+    "P1_in_frozen_file": 0
+  },
+  "frozen_zone_touch": false,
+  "ssot_invariants_status": {
+    "PR01_db_price_authoritative": "PASS (sentinel pinned)",
+    "PR02_client_total_overwritten": "PASS (sentinel pinned)",
+    "PR03_snapshot_no_app_update": "PASS (sentinel grep-asserted)",
+    "PR04_snapshot_frozen_across_repricing": "PASS (sentinel pinned)",
+    "PR07_stripe_round_before_cast": "PASS (sentinel pinned)",
+    "use_ssot_service_flag_production_stable": "PASS (5 sentinels pin config + 2 env templates + 2 CI workflows)"
+  }
+}

@@ -1,0 +1,32 @@
+Bonjour
+Admin Le Cayenne
+Admin Le Cayenne
+
+admin@lecayenne.fr
+
++330600000000
+
+0.00€
+Modifier Le Profil
+Changer Le Mot De Passe
+Déconnexion
+Tableau De Bord
+POS
+Tableau De Bord Stock
+Catalogue
+Attribut D’articles
+Ingrédients
+Commandes Caisse
+Stock et ruptures
+
+Suivi des articles indisponibles et des alertes stock bas
+
+Surveillance automatique inactive
+Lancer Le Contrôle
+Articles actuellement indisponibles (0)
+
+Aucun article indisponible.
+
+Alertes stock bas (0)
+
+Aucune alerte stock bas.

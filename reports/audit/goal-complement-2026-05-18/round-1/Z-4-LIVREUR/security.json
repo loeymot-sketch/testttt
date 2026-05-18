@@ -1,0 +1,72 @@
+{
+  "role": "Security",
+  "zone": "Z-4-LIVREUR",
+  "round": 1,
+  "timestamp": "2026-05-18",
+  "files_audited": [
+    "app/Http/Controllers/Frontend/DeliveryBoyOrderController.php",
+    "app/Http/Controllers/Admin/DeliveryBoyController.php",
+    "app/Http/Controllers/Admin/DeliveryBoyOrderController.php",
+    "app/Http/Controllers/Admin/DeliveryBoyAddressController.php",
+    "app/Services/OrderService.php (read-only — DIRTY)",
+    "routes/api.php"
+  ],
+  "findings": [
+    {
+      "severity": "P1",
+      "id": "LIVREUR-Z4-SEC-01",
+      "file": "app/Http/Controllers/Admin/DeliveryBoyAddressController.php",
+      "line": 22,
+      "title": "All address CRUD uses delivery-boys_show permission — should split show vs mutate",
+      "description": "DeliveryBoyAddressController applies `permission:delivery-boys_show` to ALL methods: index, store, update, destroy, show (line 22). This is inconsistent with DeliveryBoyController which correctly splits permissions: _show, _create, _edit, _delete. A user with READ permission to a delivery boy can therefore CREATE/UPDATE/DELETE their addresses. RBAC discipline violation.",
+      "reproduction": "Read DeliveryBoyAddressController.php line 22 + compare DeliveryBoyController.php line 29-33.",
+      "evidence": "Line 22: middleware(['permission:delivery-boys_show'])->only('index','store','update','destroy','show')",
+      "recommendation": "Split permissions per HTTP verb: index/show → _show ; store → _create ; update → _edit ; destroy → _delete. Mirrors DeliveryBoyController convention."
+    },
+    {
+      "severity": "P2",
+      "id": "LIVREUR-Z4-SEC-02",
+      "file": "app/Http/Controllers/Frontend/DeliveryBoyOrderController.php",
+      "line": 35,
+      "title": "Frontend show() relies entirely on OrderService for authz — boundary check defensive",
+      "description": "Frontend DeliveryBoyOrderController::show calls OrderService::deliveryBoyOrderDetails which DOES enforce delivery_boy_id ownership + branch fence (verified OrderService:1428-1444). However the route is only behind `auth:sanctum` — no role check. Anyone logged in with sanctum can hit /api/frontend/delivery-boy-order/show/{order} ; the service throws 403 if not theirs. Defense-in-depth would add a `role:Delivery Boy` route guard.",
+      "reproduction": "Read routes/api.php line 1205-1209 + Frontend/DeliveryBoyOrderController.php line 35-44.",
+      "evidence": "Route 1205: middleware(['auth:sanctum']) — no role guard. Service-level ownership check is the only fence.",
+      "recommendation": "V1.0.2 backlog: add `role:Delivery Boy,sanctum` to the prefix group. Mark deferred-heal."
+    },
+    {
+      "severity": "P2",
+      "id": "LIVREUR-Z4-SEC-03",
+      "file": "app/Http/Controllers/Frontend/DeliveryBoyOrderController.php",
+      "line": 55,
+      "title": "Missing rate-limit on driver status change endpoint",
+      "description": "POST /api/frontend/delivery-boy-order/change-status/{order} has no per-IP throttle or idempotency key. A misbehaving driver client (or replayed token) could flap the order through transitions rapidly. AuditLogService chain has Cache::lock 5s per row but ValidStatusTransition rejects back-jumps, so the cap is logical, not throughput.",
+      "reproduction": "Read routes/api.php line 1209 — no `throttle:` middleware.",
+      "evidence": "Route 1209: no throttle key. Only auth:sanctum.",
+      "recommendation": "V1.0.2 backlog: add throttle:60,1 (60 req/min). Mark deferred-heal. Not gating V1."
+    },
+    {
+      "severity": "P0-AVOIDED",
+      "id": "LIVREUR-Z4-SEC-04",
+      "file": "app/Services/OrderService.php (DIRTY — read-only inspection)",
+      "line": 2127,
+      "title": "selectDeliveryBoy: BranchScope bypass is intentional + properly fenced",
+      "description": "OrderService::selectDeliveryBoy line 2125-2138 uses `withoutGlobalScope(BranchScope::class)` to find the target driver, then verifies `$target->branch_id === $order->branch_id` (line 2136). This is the ONLY way Admin (branch_id=0) can resolve a target driver in another branch. The branch-fence check directly after is the security primitive. Audit-log row at line 2151-2166 records actor + path. No bypass — verified.",
+      "reproduction": "Read OrderService.php line 2095-2181 (deep verification of selectDeliveryBoy guards).",
+      "evidence": "Line 2127-2130 (withoutGlobalScope+role+id), line 2132 (target null), line 2136 (branch-fence), line 2151 (audit). All four guards present.",
+      "recommendation": "No heal. Confirmed defense-in-depth correct. NF525 audit chain extended properly (`order.delivery_boy_assigned`)."
+    },
+    {
+      "severity": "P2",
+      "id": "LIVREUR-Z4-SEC-05",
+      "file": "app/Http/Controllers/Frontend/DeliveryBoyOrderController.php",
+      "line": 58,
+      "title": "No idempotency key on status mutation endpoint",
+      "description": "POST /api/frontend/delivery-boy-order/change-status/{order} accepts no X-Idempotency-Key header. While OrderService:1540 has an idempotent early-return (if $locked->status === $newStatus), a fast double-tap on a flaky 3G link can race past the early-return between two distinct status values. Driver UX issue more than security, but classify as P2 defensive.",
+      "reproduction": "Read routes/api.php line 1209 — no `idempotency` middleware.",
+      "evidence": "Compare to line 880: `Route::post('/select-delivery-boy/{order}', ...)->middleware('idempotency')` (Admin/OnlineOrderController has idempotency).",
+      "recommendation": "V1.0.2 backlog: add `idempotency` middleware to driver status endpoint. Deferred-heal."
+    }
+  ],
+  "summary": "1 P1 heal target (address controller permission split — pure RBAC consistency), 3 P2 deferred-heal (frontend role guard, throttle, idempotency), 1 P0-avoided confirmation (selectDeliveryBoy fence properly defended)."
+}

@@ -1,0 +1,12 @@
+{
+  "url": "http://localhost:8000/admin/stock/rupture",
+  "timestamp": "2026-05-18T09:07:13.304Z",
+  "console_errors_count": 0,
+  "console_errors": [],
+  "raw_label_leak_found": null,
+  "axe_total_violations": 0,
+  "axe_critical_serious": 0,
+  "axe_critical_ids": [],
+  "heading_first": "Stock et ruptures",
+  "dashboard_visible": true
+}

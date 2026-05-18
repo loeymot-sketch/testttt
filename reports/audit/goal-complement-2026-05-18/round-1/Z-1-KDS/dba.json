@@ -1,0 +1,121 @@
+{
+  "role": "DBA",
+  "zone": "Z-1 KDS deeper",
+  "mode": "AUDIT-ONLY",
+  "date": "2026-05-18",
+  "scope": "Schema, indexes on (status, branch_id), N+1, query plan, append-only invariants",
+  "anchors_verified": [
+    "app/Services/KitchenDisplaySystemOrderService.php:70-155,257-331",
+    "app/Services/KdsSyncService.php:50-148",
+    "database/migrations/2026_03_12_130000_add_performance_indexes.php:22-32",
+    "tests/Feature/Kds/KdsSyncSargableTest.php (test exists)",
+    "tests/Feature/KDS/KdsSyncTzAwareTest.php (test exists)",
+    "tests/Feature/Sentinels/KdsExpectedStatusConflictSentinelTest.php (test exists)"
+  ],
+  "findings": [
+    {
+      "id": "Z1-DBA-PASS-01",
+      "severity": "PASS",
+      "title": "Performance indexes on orders are correctly in place for KDS queries",
+      "evidence": {
+        "file": "database/migrations/2026_03_12_130000_add_performance_indexes.php",
+        "lines": "22-32",
+        "indexes": [
+          "idx_orders_branch_status — (branch_id, status) for branch-filtered KDS list",
+          "idx_orders_datetime — (order_datetime) for sargable range filtering",
+          "idx_orders_status — (status) standalone",
+          "idx_orders_user_id — (user_id) for customer relation eager-load"
+        ]
+      },
+      "verdict": "Composite idx_orders_branch_status is correctly placed for the WHERE branch_id = X AND status IN (...) pattern in KitchenDisplaySystemOrderService:71,84-85. PASS.",
+      "audit_status": "Read-verified migration"
+    },
+    {
+      "id": "Z1-DBA-PASS-02",
+      "severity": "PASS",
+      "title": "Sargable range query on order_datetime — heal correctly applied Wave 1 (P1) + Wave 3 TZ-aware (P0)",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "104-120",
+        "code_excerpt": "$parisTodayStartUtc = Carbon::today($appTz)->setTimezone('UTC'); ... $subQuery->whereBetween('order_datetime', [$parisTodayStartUtc, $parisTodayEndUtc])",
+        "comment_at_line_92": "[Wave 3b KDS Adversarial P0 2026-05-18 KDS-ADV3B-01] ... binding Paris-local midnight as-is shifted the active window by 1-2h, silently dropping nightly orders [00:00-02:00 Paris] from the KDS UI hydration."
+      },
+      "verdict": "whereBetween + UTC-converted Paris-day-bounds uses idx_orders_datetime efficiently. Mirror applied to orderItems() at lines 283-295 and KdsSyncService.php:77-94. PASS.",
+      "audit_status": "Read-verified, mirror confirmed across both services"
+    },
+    {
+      "id": "Z1-DBA-P2-03",
+      "severity": "P2",
+      "title": "Potential N+1 in orderItems() pluck-then-groupBy chain — collection traversal is in PHP memory after a get()",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "264,287-326",
+        "code_excerpt": "$query = Order::with('orderItems')->whereIn('status', KitchenReleaseRule::itemBoardStatuses()); ... $orders = $query->where(...)->get(); $allItems = $orders->pluck('orderItems')->flatten();"
+      },
+      "impact": "When KDS has 50 active orders × 8 items avg = 400 OrderItem rows pluck/flatten/groupBy/map in PHP. Not a DB N+1 (orderItems is eager-loaded), but: (a) no LIMIT 50 on this query unlike list() at line 150 — orderItems() returns unbounded; (b) hash computation in groupBy callback runs for every item including sha1+json_encode of allergens.",
+      "scope_minimal_heal_recommendation": "Add ->limit(50) to itemBoard query (mirror list()). Add server-side cache (1-2s TTL) similar to KdsSyncService::sync. Estimated 1h.",
+      "backlog_ticket": "V1.0.2-KDS-ITEM-BOARD-LIMIT-AND-CACHE",
+      "audit_status": "Read-verified"
+    },
+    {
+      "id": "Z1-DBA-P2-04",
+      "severity": "P2",
+      "title": "Missing composite index on orders(status, order_datetime) — single-status path queries fall back to less optimal plan",
+      "evidence": {
+        "file": "database/migrations/2026_03_12_130000_add_performance_indexes.php",
+        "lines": "22-32",
+        "missing_index": "(status, order_datetime) — admin global query (no branch filter) would benefit from composite covering the WHERE status IN (...) AND order_datetime BETWEEN bounds",
+        "current_indexes": "idx_orders_branch_status + idx_orders_datetime separate — MySQL optimizer must merge"
+      },
+      "impact": "Admin-global KDS view (branch_id=0) with high throughput: index merge between idx_orders_status and idx_orders_datetime is slower than a single composite covering both. With 50+ active orders, EXPLAIN may show 'Using intersect' which is suboptimal at high cardinality.",
+      "scope_minimal_heal_recommendation": "Add migration: $table->index(['status', 'order_datetime'], 'idx_orders_status_datetime'); only if EXPLAIN on production shows index-merge cost. Estimated 30min + measurement.",
+      "backlog_ticket": "V1.0.3-KDS-COMPOSITE-INDEX-STATUS-DATETIME (conditional on perf measurement)",
+      "audit_status": "Read-verified migration; EXPLAIN not run (audit-only)"
+    },
+    {
+      "id": "Z1-DBA-PASS-05",
+      "severity": "PASS",
+      "title": "Limit 51 with take(50) overflow detection pattern is correct",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "150-155",
+        "code_excerpt": "->limit(51)->get(); $this->lastListOverflow = $orders->count() > 50; return $orders->take(50)->values();"
+      },
+      "verdict": "Classic 'fetch n+1 to detect overflow' pattern, correctly implemented. Overflow flag exposed via lastListOverflow() and surfaced in KitchenDisplaySystemController.php:32 meta.overflow. PASS.",
+      "audit_status": "Read-verified"
+    },
+    {
+      "id": "Z1-DBA-PASS-06",
+      "severity": "PASS",
+      "title": "Optimistic concurrency control via expected_status + lockForUpdate is correctly implemented",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "176-202",
+        "test_coverage": "tests/Feature/KdsExpectedStatusConflictTest.php + Sentinel + tests/Feature/KdsChangeStatusConcurrencyTest.php"
+      },
+      "verdict": "DB::transaction wraps SELECT FOR UPDATE + check + UPDATE. On stale expected_status, abort(409) WITHOUT mutating row. Triple-defense: DB lock + optimistic check + audit log. PASS.",
+      "audit_status": "Read-verified, 3 tests cover this slice"
+    },
+    {
+      "id": "Z1-DBA-P3-07",
+      "severity": "P3",
+      "title": "KdsSyncService cache TTL of 5s + minute bucket could cause version stalling at minute boundary",
+      "evidence": {
+        "file": "app/Services/KdsSyncService.php",
+        "lines": "39-49",
+        "code_excerpt": "$minuteBucket = CarbonImmutable::now('UTC')->format('YmdHi'); ... return Cache::remember($cacheKey, 5, function () ..."
+      },
+      "impact": "Cache key includes minute bucket, so even within 5s TTL, a request crossing the minute boundary generates a NEW cache key and re-queries. Acceptable but causes thundering herd at :00 second every minute when many KDS clients poll simultaneously. Minor; load testing would confirm impact.",
+      "scope_minimal_heal_recommendation": "Defer — measure first. If thundering herd observed, add cache stampede protection (lock-based regeneration). Estimated 2h.",
+      "backlog_ticket": "V1.0.3-KDS-CACHE-STAMPEDE-PROTECTION",
+      "audit_status": "Read-verified"
+    }
+  ],
+  "schema_check": {
+    "orders_table_indexes_verified": "PASS — idx_orders_branch_status (FK pattern), idx_orders_datetime (sargable), idx_orders_status, idx_orders_user_id",
+    "order_items_eager_load_verified": "PASS — with(['orderItems', 'address', 'user']) at KitchenDisplaySystemOrderService:70 prevents N+1 on list payload",
+    "composition_snapshot_immutable_test_exists": "tests/Feature/KDS/KdsSnapshotImmutableTest.php — PASS, snapshot frozen at order creation",
+    "tz_aware_sentinel_exists": "tests/Feature/Services/SisterServicesTzAwareTest.php (referenced in code comment at line 103) — verify presence"
+  },
+  "summary_one_line": "DB schema + indexes are appropriate for current load (sargable range, composite branch_status, FOR UPDATE locks). Two P2 backlog items: orderItems() unbounded + missing composite (status, order_datetime) for admin global path."
+}

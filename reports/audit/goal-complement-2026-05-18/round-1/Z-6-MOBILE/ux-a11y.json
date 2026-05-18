@@ -1,0 +1,105 @@
+{
+  "role": "UX/A11y",
+  "zone": "Z-6-MOBILE",
+  "mode": "AUDIT-ONLY",
+  "round": 1,
+  "date": "2026-05-18",
+  "scope": "Contrast >=4.5:1 / RGPD consent + opt-out / modal dialog ARIA / screenshot drift visual",
+
+  "modal_dialog_aria_findings": [
+    {
+      "id": "UX-Z6-01",
+      "severity": "INFO",
+      "title": "ModalShell emits proper role='dialog' + aria-modal + ESC handler + initial focus",
+      "file_line": "mobile/screens-modals.jsx:10-37 (ModalShell)",
+      "evidence": "Wrapper accepts labelledBy + dataModalKind. Sheet has role='dialog' aria-modal='true' aria-labelledby={labelledBy}. useEffect installs keydown ESC handler. Initial focus moved to first focusable inside sheet via querySelector('button, [href], input, select, textarea, [tabindex]:not(\"-1\")'). Backdrop has aria-hidden='true'. Drag handle aria-hidden='true'. Per A11-006 P1 round-3 2026-05-11 spec.",
+      "status": "PASS"
+    },
+    {
+      "id": "UX-Z6-02",
+      "severity": "INFO",
+      "title": "All 6 modals labelled (no orphan dialogs)",
+      "file_line": "mobile/screens-modals.jsx (ModalPayChoice:43, ModalPointsGain:124, ModalCardLink:181, ModalWalletV0Notice:284, ModalOptOutConfirm:316) + mobile/components/WizardRedeem.jsx:136",
+      "evidence": "ids: modal-pay-title / modal-points-gain-title / modal-cardlink-title / modal-wallet-title / modal-opt-out-title / wizard-redeem-title — all six map to h2 with matching id in same component.",
+      "status": "PASS"
+    },
+    {
+      "id": "UX-Z6-03",
+      "severity": "INFO",
+      "title": "WizardRedeem 3-step has accessible step indicator + dynamic title + role='alert' on errors",
+      "file_line": "mobile/components/WizardRedeem.jsx:127-133 (StepDots) + 136 (root dialog) + 187 (error banner)",
+      "evidence": "StepDots: role='group' aria-label='Étape X sur 3'. Error banner: role='alert'. Buttons: aria-busy={inflight}. Step 3 success container: data-testid='redeem-success' + replay banner role='status'.",
+      "status": "PASS"
+    }
+  ],
+
+  "rgpd_findings": [
+    {
+      "id": "UX-Z6-04",
+      "severity": "INFO",
+      "title": "RGPD opt-out flow complete (consent gate + confirm modal + art. 17 erasure)",
+      "file_line": "mobile/screens-main.jsx:1026-1027 (consent gate) + 1070 (erasure copy) + mobile/screens-modals.jsx:311-334 (ModalOptOutConfirm)",
+      "evidence": "ScreenLoyalty reads window.LC.storage.getConsent(). When 'opted_out': hides POINTS tab content + shows reactivation prompt with art. 17 explanation. ModalOptOutConfirm displays current balance + 'Tes {balance} points actuels seront effacés (droit à l'effacement, RGPD article 17). Cette action est irréversible.'. Uses red bg + explicit Désactiver CTA.",
+      "status": "PASS"
+    },
+    {
+      "id": "UX-Z6-05",
+      "severity": "INFO",
+      "title": "localStorage cleanup on logout includes loyalty-related state (no cross-user leak)",
+      "file_line": "mobile/api/storage.js:31-49 (clearAuth)",
+      "evidence": "On logout: remove('auth'/'cart'/'loyalty'/'loyalty_consent'/'loyalty_idempotency'/'loyalty_pending_redemption'/'redeemed_keys'/'wallet_apple_dismissed_at'/'wallet_google_dismissed_at'). Triggers LC.loyalty._rehydrate() to reset in-memory state. Prevents next user inheriting idempotency keys / consent flag.",
+      "status": "PASS"
+    },
+    {
+      "id": "UX-Z6-06",
+      "severity": "OBSERVATION",
+      "title": "No first-launch RGPD consent banner present",
+      "file_line": "mobile/* (negative finding)",
+      "evidence": "grep -E 'RGPD|consent|cookie' in mobile/*.jsx = only opt-out flow + ScreenLoyalty consent gate hits. No global first-launch banner (typical for fast-food mobile prototype — onboarding implies consent). CNIL guidance suggests explicit cookie banner for marketing tracking; here mobile is standalone V0 with no third-party tracking, so absence is defensible but worth flagging for V1 production review.",
+      "recommendation": "If production release adds analytics SDK (Firebase / Sentry replay / GA), add first-launch consent screen before tracking init. V1.0.2 if analytics added.",
+      "status": "OBSERVATION-V1.0.2"
+    }
+  ],
+
+  "contrast_findings": [
+    {
+      "id": "UX-Z6-07",
+      "severity": "INFO",
+      "title": "Contrast >=4.5:1 attestation per cfa9ec679 + design-perfect round-3 baseline",
+      "file_line": "tests/mobile-e2e/inspect-contrast.spec.js:6-31 + memory project_v1_0_1_hardening_2026-05-17 (round-3 baseline closed)",
+      "evidence": "inspect-contrast.spec uses axe-core 4.10 runOnly:['color-contrast'] across home screen. Round-3 design-perfect cycle closed with 0 color-contrast violations. Visible palette confirmed: --orange (#FF5A1F) on white, --ink (#0A0A0A) on yellow/cream, --green (#1FA653) on green-light, --red on white. Manual review of A01-home + Z00-home-overview screenshots: all visible text >=4.5:1.",
+      "status": "PASS"
+    }
+  ],
+
+  "screenshot_drift_findings": [
+    {
+      "id": "UX-Z6-08",
+      "severity": "INFO",
+      "title": "Dirty screenshots (A01-home + Z00-home-overview) are sub-pixel regen drift only",
+      "file_line": "tests/e2e/__screenshots__/test-e2e-mobile-realignment-2026-05-16/A01-home.png (238290 B) + Z00-home-overview.png (237374 B)",
+      "evidence": "Origin commit: 27ef0aa85 'chore(goal-mission-2026-05-18): Round 3 validator screenshot regenerations'. Visual content identical: BONSOIR/IKYES greeting + LE CAYENNE branding + OUVERT status + 11 categories + ACCUEIL/MENU/COMMANDES/PROFIL tab bar. Sole micro-diff: horizontal scroll position of orange marquee (\"SAUCE CAYENNE MAISON · SANDWICHS FALUCHE\") — text starts at 'E CAYENNE' (A01) vs 'UCE CAYENNE' (Z00). This is animation-tick variance from regen, not a regression. No layout break, no raw labels, no fictional products visible.",
+      "investigation_verdict": "BENIGN — sub-pixel regen drift, not session-A WIP, no rollback needed.",
+      "status": "PASS"
+    }
+  ],
+
+  "visual_analysis_a01_home": {
+    "screenshot": "tests/e2e/__screenshots__/test-e2e-mobile-realignment-2026-05-16/A01-home.png",
+    "observed": [
+      "Status pill: red 'IB' avatar circle top-left",
+      "Header: 'LE CAYENNE' with orange CAYENNE accent + green dot 'OUVERT'",
+      "Bell icon top-right (notifications)",
+      "Greeting: 'BONSOIR, IKYES !' (ink black + orange exclamation)",
+      "Subtitle: 'Qu'est-ce qui te fait envie ce soir ?'",
+      "Orange marquee strip horizontal scroll: 'E CAYENNE MAISON · SANDWICHS FALUCHE'",
+      "Featured signature card: yellow bg, SIGNATURE pill, SANDWICH CAYENNE, photo right side, 7,50 € price chip, COMMANDER black CTA with arrow",
+      "CATEGORIES section: '11 choix' indicator + 3-col grid showing SANDWICH CAYENNE / GALETTE / SANDWICH CLASSIQUE with emoji icons",
+      "Bottom tab bar 4-up: ACCUEIL (active, orange dot) / MENU / COMMANDES / PROFIL"
+    ],
+    "raw_labels_found": [],
+    "fictional_products_found": [],
+    "layout_breaks_found": [],
+    "verdict": "GREEN"
+  }
+}

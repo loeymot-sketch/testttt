@@ -1,0 +1,116 @@
+{
+  "meta": {
+    "role": "RED-team",
+    "zone": "Z-8-CROSS",
+    "timestamp": "2026-05-18T11:00:00Z",
+    "scope": "Adversarial dispute on fr/en/ar i18n parity + encoding + placeholder integrity + cross-surface a11y coverage gaps",
+    "method": "static analysis (node + grep) + diff against UX/A11y findings"
+  },
+  "adversarial_findings": [
+    {
+      "id": "Z-8.RED-P0-01",
+      "severity": "P0",
+      "file": "resources/js/languages/ar.json",
+      "line": null,
+      "title": "Arabic translation drops {n} placeholder — i18n interpolation will fail at runtime",
+      "reproduction": "Compare fr.kiosk.wizard.step.viande.instruction_remaining_one against ar equivalent",
+      "evidence": "fr: 'Encore {n} portion : touchez une autre viande ou + sur une viande déjà choisie.' (HAS {n})\nar: 'بقيت حصة واحدة: المس لحماً آخر أو + على خيار اخترته.' (NO {n} — translator hardcoded 'one portion')\nResult: vue-i18n $tc plural fallback may swallow or output {n} literal in mixed-RTL context.",
+      "recommendation": "V1.0.X — restore {n} placeholder in ar translation: 'بقيت {n} حصة: ...' to keep interpolation contract. Add sentinel test placeholder-parity-fr-en-ar.",
+      "dispute_target": "Confirms UX-P0-02 (fr→ar drift) with concrete behavioral break — not just orphan keys."
+    },
+    {
+      "id": "Z-8.RED-P1-02",
+      "severity": "P1",
+      "file": "resources/js/languages/fr.json",
+      "line": "260, 629, 1432",
+      "title": "Empty-string keys inside fr.json under menu / label / kiosk.filters — emit dotted-suffix keys 'menu.', 'label.', 'kiosk.filters.'",
+      "reproduction": "grep -n '\"\"\\s*:' resources/js/languages/fr.json",
+      "evidence": "Line 260: menu.\"\" = \"Menu\" (root menu node has empty child)\nLine 629: label.\"\" = \"Libellé\" (label namespace empty child)\nLine 1432: kiosk.filters.\"\" = \"Tous\" (filter namespace empty child)\nThese are NOT in en/ar — meaning $t('menu.') would crash or return raw 'menu.' string elsewhere.",
+      "recommendation": "V1.0.X — rename to meaningful keys: menu.root, label.root (or whatever the use case is), kiosk.filters.all. Add sentinel test forbidding empty-string keys.",
+      "dispute_target": "NEW finding — UX agent missed empty-string keys (treated 'menu.' as flatten bug; this verifies data-level bug)."
+    },
+    {
+      "id": "Z-8.RED-P1-03",
+      "severity": "P1",
+      "file": "reports/test-e2e/goal-pageby-2026-05-18/round-1/",
+      "line": null,
+      "title": "Axe coverage gap is broader — mobile a11y wave (older artifact) ALSO missing recent goal-pageby capture",
+      "reproduction": "find reports/test-e2e -name '*axe*' -type f",
+      "evidence": "Only persisted artifacts: KDS goal-pageby (10 nodes) + mobile-design-perfect-wave-a11y from 2026-05-11 (253 nodes, 12 surfaces). NO axe for POS-12-pages, OSS, BORNE (Kiosk), STOCK, LIVREUR, WEB-23-pages of newer round. The 6-surface gap claim from UX is correct, but Mobile data is STALE (1 week old).",
+      "recommendation": "V1.0.X — add axe-core/playwright integration to each goal-pageby-2026-05-18 surface spec AND re-run mobile-A11y with current build (since composition changes since 2026-05-11 may have introduced new violations).",
+      "dispute_target": "Reinforces UX-P0-03 — also flags mobile axe staleness."
+    },
+    {
+      "id": "Z-8.RED-P2-04",
+      "severity": "P2",
+      "file": "resources/js/languages/ar.json",
+      "line": null,
+      "title": "Arabic locale has 10 lines with NO Arabic characters — risk: stale-copy from fr",
+      "reproduction": "node + filter ar values with length>3 and no /[Arabic Unicode range]/",
+      "evidence": "Examples: label.siret='SIRET', label.paypal='Paypal', label.stripe='Stripe', kiosk.pay_screen.tr_sub='Edenred · Swile · Sodexo', kiosk.loyalty_screen.placeholder_phone='06 12 34 56 78'. Most are proper nouns or French phone format examples. Phone placeholder in Arabic locale should use Arabic-Indic digits or be localized.",
+      "recommendation": "V1.0.X — owner review. Proper nouns OK (Stripe, Paypal, Edenred). Phone format example should use locale-appropriate. SIRET likely should stay (FR business ID).",
+      "dispute_target": "Mostly false positives, but kiosk.loyalty_screen.placeholder_phone is a real i18n smell."
+    },
+    {
+      "id": "Z-8.RED-P2-05",
+      "severity": "P2",
+      "file": "lang/fr, lang/en, lang/ar (PHP catalogs)",
+      "line": null,
+      "title": "PHP lang catalog (Laravel) has only 16 files per locale — minimal coverage vs JSON catalog (~1900 keys each)",
+      "reproduction": "ls lang/{fr,en,ar}/*.php | wc -l (each 16)",
+      "evidence": "Laravel PHP catalog handles validation/auth/payment_gateway/pos_payment_method. Vue JSON catalog handles app UI. Two separate catalogs = double maintenance + drift surface. Existing audit tool (tools/i18n/audit_locale_keys.mjs) is aware of this dual-catalog model.",
+      "recommendation": "V1.0.X — Not a bug per se. Document the split clearly + ensure i18nAuditTool spec covers PHP catalog drift too.",
+      "dispute_target": "Architectural note for V1.0.X consolidation backlog."
+    },
+    {
+      "id": "Z-8.RED-P0-06",
+      "severity": "P0",
+      "file": "tests/Feature/Sentinels/",
+      "line": null,
+      "title": "Missing sentinel tests as promised by plan §9 — CrossSurfaceI18nLeakSentinelTest.php + I18nParityFrEnArSentinelTest.php do NOT exist",
+      "reproduction": "find tests/Feature/Sentinels -name '*I18n*' (returns 0 matches in Feature/Sentinels)",
+      "evidence": "Plan §9 Sub 9.1 anchors test names 'tests/Feature/Sentinels/CrossSurfaceI18nLeakSentinelTest.php' and 'tests/Feature/Sentinels/I18nParityFrEnArSentinelTest.php' marked '(test TO BE CREATED)'. Existing sentinels only cover specific subsets: kdsAriaI18n (5-lang aria-label parity), studioFrontendI18nParity (studio.* namespace only), i18nForceFRForAdminSurfaces (helper assertion). No cross-namespace parity sentinel locks fr/en/ar coverage.",
+      "recommendation": "V1.0.X — create i18nParityFrEnArSentinel.spec.js (vitest) that asserts fr/en/ar have identical flatKey sets minus declared-exception list. Will fail until parity drift is fixed — keeps drift from re-emerging.",
+      "dispute_target": "Plan §9 acknowledged this as TO-BE-CREATED — RED confirms the gap is current."
+    },
+    {
+      "id": "Z-8.RED-P3-07",
+      "severity": "P3",
+      "file": "resources/js/languages/{fr,en,ar}.json",
+      "line": null,
+      "title": "No BOM detected, file encoding looks clean (UTF-8 no-BOM)",
+      "reproduction": "first 3 bytes hex: 7b0a20 for all three files (= '{\\n ', no BOM marker)",
+      "evidence": "Files start with literal { followed by newline+space. No EF BB BF byte-order mark. Encoding is UTF-8 throughout (Arabic + French accented chars parse cleanly via JSON.parse without re-encoding).",
+      "recommendation": "No action — encoding is OK.",
+      "dispute_target": "Cleared encoding concern raised in scope."
+    },
+    {
+      "id": "Z-8.RED-P1-08",
+      "severity": "P1",
+      "file": "tools/i18n/audit_locale_keys.mjs",
+      "line": null,
+      "title": "Existing i18n audit tool present but NOT wired to CI / not run on goal-pageby cycle",
+      "reproduction": "ls tools/i18n/ → audit_locale_keys.mjs (21KB, 9 mai 2026). tests/js/i18nAuditTool.spec.js exists with unit tests but no integration run output in reports/",
+      "evidence": "audit_locale_keys.mjs has flattenJson, extractI18nKeysFromVue, extractI18nKeysFromBlade, diffMissing, parsePhpLocaleFile, resolveBladeKeyToPhp helpers. Spec covers helpers. NO E2E run that scans the whole codebase and emits a 'missing keys' report. Tool dormant since 9 mai.",
+      "recommendation": "V1.0.X — write a `node tools/i18n/audit_locale_keys.mjs --emit-report reports/audit/i18n/` runner; integrate in CI as warn-only first then block.",
+      "dispute_target": "Pre-existing infra not leveraged — could close P0-01/02 quickly when run."
+    }
+  ],
+  "agreement_with_ux_a11y": [
+    "UX-P0-01 (fr/en parity drift) — CONFIRMED, with stronger framing (269 inconsistent keys not just '75 missing')",
+    "UX-P0-02 (fr/ar parity drift) — CONFIRMED, BUT escalated to P0 due to placeholder loss in ar (RED-P0-01)",
+    "UX-P0-03 (axe coverage gap) — CONFIRMED, EXTENDED to stale mobile data (RED-P1-03)",
+    "UX-P1-04/05 (KDS color-contrast + scrollable region) — CONFIRMED, no dispute",
+    "UX-P1-06/07/08 (mobile region/nested/button-name) — CONFIRMED, but mobile is standalone scope (Z-6); cross-zone risk noted",
+    "UX-P2-09/10 (stale-copy) — PARTIALLY DISPUTED — most are intentional proper nouns; only kiosk.pay_screen.tr_sub and admin.help.* warrant manual review"
+  ],
+  "summary": {
+    "new_findings_added_by_RED": 5,
+    "confirmed_ux_findings": 8,
+    "disputed_ux_findings": 2,
+    "p0_total": 3,
+    "p1_total": 4,
+    "p2_total": 2,
+    "p3_total": 1
+  }
+}
