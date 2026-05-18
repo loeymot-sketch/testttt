@@ -158,25 +158,57 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
-        // [Wave 3 P1 FISCAL-ADV3-03 2026-05-18] NF525 audit chain
-        // monitor — re-walks audit_logs HMAC chain daily. Without this
-        // schedule the CLI exists but detection window is unbounded
-        // (CLAUDE.md §8 references the command but no cron pinned it).
+        // [Wave 3 P1 FISCAL-ADV3-03 2026-05-18 / Wave 3b FISCAL-ADV3B-01]
+        // NF525 dual-chain monitor — re-walks audit_logs + z_reports
+        // HMAC chains daily for EVERY active branch (not just branch=1).
+        //
+        // Wave 3b FISCAL-ADV3B-01: the previous single-branch cron
+        // (`--branch=1` hardcoded) left branches >=2 silently unmonitored,
+        // asymmetric with `fiscal:archive` (below) which iterates active
+        // branches. Pattern now mirrors fiscal:archive: status=1 +
+        // whereNull(deleted_at), per-branch Artisan::call, per-branch
+        // exit-code logging to fiscal channel (no silent swallow).
+        //
         // 03:30 staggers between fiscal:archive (02:00) and outbox-prune
-        // (04:00). Failure path logs to the fiscal channel so any non-
-        // zero exit (1=tamper, 2=invalid branch, 3=exec error) pages
-        // compliance. onOneServer prevents duplicate runs at scale.
-        $schedule->command('fiscal:verify-chain --branch=1')
-            ->dailyAt('03:30')
-            ->name('fiscal-chain-monitor')
-            ->withoutOverlapping()
-            ->onOneServer()
-            ->onFailure(function () {
-                Log::channel('fiscal')->error('NF525 chain verify failed', [
-                    'event' => 'fiscal.chain.monitor.failure',
-                    'branch_id' => 1,
+        // (04:00). onOneServer prevents duplicate runs at scale.
+        $schedule->call(function () {
+            try {
+                Branch::query()
+                    ->where('status', 1)
+                    ->whereNull('deleted_at')
+                    ->pluck('id')
+                    ->each(function ($branchId) {
+                        try {
+                            $exit = Artisan::call('fiscal:verify-chain', [
+                                '--branch' => (int) $branchId,
+                            ]);
+                            if ($exit !== 0) {
+                                Log::channel('fiscal')->error('NF525 chain verify non-zero exit', [
+                                    'event'     => 'fiscal.chain.monitor.failure',
+                                    'branch_id' => (int) $branchId,
+                                    'exit_code' => $exit,
+                                ]);
+                            }
+                        } catch (\Throwable $e) {
+                            Log::channel('fiscal')->error('NF525 chain verify branch crashed', [
+                                'event'     => 'fiscal.chain.monitor.branch_error',
+                                'branch_id' => (int) $branchId,
+                                'message'   => $e->getMessage(),
+                            ]);
+                        }
+                    });
+            } catch (\Throwable $e) {
+                Log::channel('fiscal')->error('NF525 chain verify scheduler crashed', [
+                    'event'   => 'fiscal.chain.monitor.scheduler_error',
+                    'message' => $e->getMessage(),
+                    'trace'   => substr($e->getTraceAsString(), 0, 1000),
                 ]);
-            });
+            }
+        })
+            ->dailyAt('03:30')
+            ->name('fiscal-chain-monitor-all-branches')
+            ->withoutOverlapping()
+            ->onOneServer();
 
         // [W8.C-P2 / P-MEGA-22 Pilier 2] NF525 fiscal archive scheduling
         // D4=A 02:00 quotidien ; D5=A toutes branches actives ; D6=A local + S3 nightly géré par command env ; D7=A ZIP+JSON géré par command
