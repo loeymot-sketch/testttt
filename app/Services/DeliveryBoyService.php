@@ -37,7 +37,12 @@ class DeliveryBoyService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType   = $request->get('order_type') ?? 'desc';
 
-            return User::with('media', 'addresses')->role(EnumRole::DELIVERY_BOY)->where(
+            // [GOAL-PAGEBY-STOCK-2026-05-18 P0 LIVREUR-422 heal]
+            // Spatie's ->role($int) calls findById($int) (HasRoles trait L84). Passing
+            // EnumRole::DELIVERY_BOY (=3) breaks whenever the roles table AUTO_INCREMENT
+            // skipped past 3 (fresh seed often lands at id=73-76). The stable identity is
+            // the role NAME — see SpatieRoleLookup docblock for the same rationale.
+            return User::with('media', 'addresses')->role('Delivery Boy', 'sanctum')->where(
                 function ($query) use ($requests) {
                     foreach ($requests as $key => $request) {
                         if (in_array($key, $this->userFilter)) {

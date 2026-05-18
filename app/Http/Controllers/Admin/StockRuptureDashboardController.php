@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\Status;
 use App\Models\Branch;
 use App\Models\Item;
 use App\Models\ItemBranchAvailability;
@@ -130,9 +131,14 @@ class StockRuptureDashboardController extends AdminController
      */
     private function scopedBranches(Request $request)
     {
+        // [GOAL-PAGEBY-STOCK-2026-05-18 P0 SCAN-422 heal]
+        // Branches use the canonical Status enum (ACTIVE=5). Hard-coding `status=1`
+        // produced an empty scopedBranches → branchId=0 → 422 'No branch available'
+        // from POST /api/admin/stock/scan-rupture/run with no UI feedback.
+        // Mirror the bridge pattern from PersistCatalogChangedToOutbox L39.
         $query = Branch::query()
             ->whereNull('deleted_at')
-            ->where('status', 1);
+            ->whereIn('status', [Status::ACTIVE, 1]);
 
         if ($request->filled('branch_id')) {
             $branchId = (int) $request->integer('branch_id');
