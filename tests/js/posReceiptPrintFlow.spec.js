@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { shallowMount, flushPromises } from '@vue/test-utils';
 
 import axios from 'axios';
+import alertService from '../../resources/js/services/alertService';
 
 vi.mock('axios');
 
@@ -9,6 +10,18 @@ vi.mock('vue3-print-nb', () => ({
     default: {
         directiveName: 'print',
         mounted() {},
+    },
+}));
+
+// [PS-4 audit heal 2026-05-18] Stub alertService so we can assert the NF525
+// audit-chain warning is surfaced to the operator when audit_emitted=false.
+vi.mock('../../resources/js/services/alertService', () => ({
+    default: {
+        success: vi.fn(),
+        warning: vi.fn(),
+        info: vi.fn(),
+        error: vi.fn(),
+        default: vi.fn(),
     },
 }));
 
@@ -155,5 +168,44 @@ describe('ReceiptComponent print policy (W9.D)', () => {
 
         resolve({ data: { receipt_print_count: 1, is_duplicata: false, audit_emitted: true } });
         await flushPromises();
+    });
+
+    /*
+     * [PS-4 audit heal 2026-05-18 / RED-PS4-005 + UX-PS4-002]
+     * When PosReceiptPrintController emits the receipt-print row but the
+     * audit-chain write fails (lock contention / cache outage / DB hiccup),
+     * the response carries `audit_emitted: false`. The print still succeeds
+     * so the cashier can hand the paper to the customer (operational
+     * continuity), BUT the operator MUST be alerted so SIEM / fiscal ops
+     * can investigate the gap. Pre-heal the UI silently swallowed the
+     * signal.
+     */
+    it('surfaces a manager-visible warning when audit_emitted is false (NF525 SIEM signal)', async () => {
+        alertService.warning.mockClear();
+        axios.post = vi.fn(() => Promise.resolve({
+            data: { order_id: 42, receipt_print_count: 1, is_duplicata: false, audit_emitted: false },
+        }));
+
+        const wrapper = mountReceipt(0);
+
+        await wrapper.find('[data-testid="receipt-print-client"]').trigger('click');
+        await flushPromises();
+
+        expect(alertService.warning).toHaveBeenCalledTimes(1);
+        expect(alertService.warning.mock.calls[0][0]).toBe('pos.receipt_audit_chain_warning');
+    });
+
+    it('does NOT warn when audit_emitted is true (happy path)', async () => {
+        alertService.warning.mockClear();
+        axios.post = vi.fn(() => Promise.resolve({
+            data: { order_id: 42, receipt_print_count: 1, is_duplicata: false, audit_emitted: true },
+        }));
+
+        const wrapper = mountReceipt(0);
+
+        await wrapper.find('[data-testid="receipt-print-client"]').trigger('click');
+        await flushPromises();
+
+        expect(alertService.warning).not.toHaveBeenCalled();
     });
 });

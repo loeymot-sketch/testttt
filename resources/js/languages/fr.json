@@ -169,6 +169,7 @@
         "receipt_print_not_found": "Commande introuvable côté serveur. Le ticket est imprimé ; vérifiez la commande.",
         "receipt_print_conflict": "Conflit lors de l'enregistrement du reçu. Le ticket est imprimé ; vérifiez l'état fiscal.",
         "receipt_print_server_error": "Le serveur n'a pas pu enregistrer l'impression. Le ticket est imprimé quand même.",
+        "receipt_audit_chain_warning": "Ticket imprimé, mais l'écriture de la chaîne d'audit NF525 a échoué côté serveur. Signaler à votre manager.",
         "print_ticket_client": "Ticket client",
         "print_ticket_kitchen": "Ticket cuisine",
         "receipt_kitchen_title": "CUISINE",

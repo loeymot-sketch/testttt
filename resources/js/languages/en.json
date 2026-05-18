@@ -169,6 +169,7 @@
         "receipt_print_not_found": "Order not found on the server. The ticket still prints; please verify the order.",
         "receipt_print_conflict": "Conflict while recording the receipt. The ticket still prints; check the fiscal state.",
         "receipt_print_server_error": "The server could not record the print. The ticket still prints.",
+        "receipt_audit_chain_warning": "Ticket printed, but the NF525 audit-chain write failed on the server. Notify your manager.",
         "print_ticket_client": "Ticket client",
         "print_ticket_kitchen": "Ticket cuisine",
         "receipt_kitchen_title": "CUISINE",

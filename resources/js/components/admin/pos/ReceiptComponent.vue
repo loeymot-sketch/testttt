@@ -502,6 +502,16 @@ export default {
                             data?.receipt_print_count
                             ?? (Number(this.localPrintCount ?? 0) + 1)
                         );
+                        // [PS-4 audit heal 2026-05-18] NF525 audit-chain write
+                        // is best-effort server-side (PosReceiptPrintController
+                        // returns audit_emitted=false on chain failure). The
+                        // print itself succeeds so the cashier can deliver the
+                        // paper, but the manager MUST be alerted so SIEM /
+                        // fiscal ops can investigate the gap. Pre-heal the UI
+                        // silently swallowed this signal — see RED-PS4-005.
+                        if (data?.audit_emitted === false) {
+                            alertService.warning(this.$t('pos.receipt_audit_chain_warning'));
+                        }
                     } catch (apiError) {
                         const status = apiError?.response?.status;
                         if (status === 403) {
