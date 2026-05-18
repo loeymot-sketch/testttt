@@ -23,6 +23,7 @@ module.exports = defineConfig({
     'tests/e2e/test-e2e-fullflow-*.spec.js', // [FULL-FLOW 2026-05-18] new spec covering end-to-end
     'tests/e2e/test-real-e2e-pagebypage-*.spec.js', // [REAL-E2E 2026-05-18] page-by-page visual capture
     'tests/e2e/test-real-e2e-round2-*.spec.js', // [REAL-E2E R2 2026-05-18] extended coverage + 4 viewports
+    'tests/e2e/test-e2e-web-z7-*.spec.js', // [Z-7-WEB COMPLEMENT 2026-05-18] coverage gaps for account/loyalty/orders/funnel/axe
   ],
   workers: 1,
   timeout: 120_000,
