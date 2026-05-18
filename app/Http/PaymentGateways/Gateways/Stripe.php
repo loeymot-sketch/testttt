@@ -211,7 +211,15 @@ class Stripe extends PaymentAbstract
         $sigHeader = (string) $request->header('Stripe-Signature', '');
 
         try {
-            $stripeEvent = StripeClient\Webhook::constructEvent($payload, $sigHeader, $secret);
+            // [F-3 SYNC P1 V1.0.1 quick win — 2026-05-19]
+            // Pass an explicit 300s replay-tolerance (Stripe SDK default).
+            // Without this, constructEvent silently accepts arbitrarily-old
+            // signed payloads up to the WebhookEvent retention horizon (180d),
+            // widening the replay-attack window. 300s is the canonical Stripe
+            // recommendation for production.
+            // Source: reports/audit/foundation-2026-05-18/round-1/F-3-SYNC/STATUS.md §P1
+            // Sentinel: tests/Feature/Sentinels/StripeWebhookReplayToleranceSentinelTest.php
+            $stripeEvent = StripeClient\Webhook::constructEvent($payload, $sigHeader, $secret, 300);
         } catch (StripeClient\Exception\SignatureVerificationException $e) {
             Log::channel('fiscal')->warning('stripe.webhook.invalid_signature', [
                 'event'   => 'stripe_webhook_invalid_signature',
