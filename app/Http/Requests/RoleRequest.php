@@ -26,11 +26,22 @@ class RoleRequest extends FormRequest
      *
      * @return array
      */
-    #[ArrayShape(['name' => "array"])] 
+    #[ArrayShape(['name' => "array"])]
     public function rules() : array
     {
         return [
-            'name' => ['required', 'string', 'max:190', Rule::unique("roles", "name")->ignore($this->route('role.id'))],
+            // [GOAL-CMS-2026-05-18 M-R3-P0-C heal] R3 T-2.2.1 Sec S-1:
+            // Tenant Admin shadow-role hijack. 9 production files dual-gate on
+            // hasRole('Admin') || hasRole('Tenant Admin'), yet no seeder
+            // creates 'Tenant Admin' and no validator forbid the name. A single
+            // POST /admin/setting/role { "name":"Tenant Admin" } would grant
+            // super-admin treatment in 9 files. Reserved names list MUST be
+            // un-creatable via API; provision via seeder only.
+            'name' => [
+                'required', 'string', 'max:190',
+                Rule::notIn(['Tenant Admin']),
+                Rule::unique("roles", "name")->ignore($this->route('role.id')),
+            ],
         ];
     }
 }

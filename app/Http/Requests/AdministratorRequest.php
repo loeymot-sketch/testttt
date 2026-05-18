@@ -70,6 +70,25 @@ class AdministratorRequest extends FormRequest
             if ($this->password !== $this->password_confirmation) {
                 $validator->errors()->add('password_confirmation', 'The password confirmation does not match.');
             }
+
+            // [GOAL-CMS-2026-05-18 M-R3-P0-E heal] R3 T-2.2.1 Sec S-3 +
+            // cross-ref R2 T-1.3.1 Sec S-1 (Admin@Branch0 Mint).
+            // AdministratorService.php:70 unconditionally writes
+            // attacker-supplied branch_id=0 + assignRole(ADMIN). Only an
+            // already-super-admin (hasRole Admin or Tenant Admin) may
+            // create a new administrator at branch_id=0; otherwise the
+            // branch_id must be either the caller's own branch or omitted.
+            $caller = $this->user();
+            $bid = $this->input('branch_id');
+            if ($bid !== null && (int) $bid === 0
+                && ! ($caller?->hasRole('Admin') || $caller?->hasRole('Tenant Admin'))
+            ) {
+                $validator->errors()->add(
+                    'branch_id',
+                    'Only super-admin (Admin / Tenant Admin) can mint a user at branch_id=0 '
+                    . '(R3 T-2.2.1 Sec S-3).'
+                );
+            }
         });
     }
 }
