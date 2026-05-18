@@ -1,21 +1,27 @@
 <template>
     <!--
-        StockRuptureDashboardComponent — Mission #2 Vague 2 action 2.1 + 2.7.
+        StockRuptureDashboardComponent — V1.0.2 BUILD-4 wireup (Round 4).
+        Plan: reports/test-e2e/goal-2026-05-18/round-1/agent-6-stock-ui-plan.md
 
-        Admin dashboard that surfaces:
-          - Items currently auto-86'd (is_available=false from preventive scan)
-          - Last `php artisan stock:scan-rupture` run timestamp + summary
-          - Stock-low alerts (preventive: on_hand <= threshold_low) per branch
-          - Manual "Run scan now" button (dev/staging utility)
+        Surface that exposes:
+          - Cron status + manual scan trigger.
+          - List of items currently auto-86 / manually-86 with per-row Restaurer.
+          - Low-stock alerts list with per-row Mettre en rupture (item only).
+          - Bulk multi-select (Restaurer) on rupture list.
+          - Search filter (client-side, item name).
+          - Branch filter dropdown (admin branch_id=0 sees Toutes les branches).
+          - Real-time refresh via Echo (private-branch.{branchId}) on
+            ItemAvailabilityChanged / ItemVariationAvailabilityChanged /
+            ItemExtraAvailabilityChanged. Falls back to 60s polling for admin
+            (branch_id=0) where Echo subscribes to N branches is not supported.
 
-        The dashboard does NOT mutate stock directly. It consumes:
-          - GET /api/admin/stock/scan-rupture/last-summary  (TODO Codex endpoint)
-          - GET /api/admin/stock/low-alerts                  (TODO Codex endpoint)
-          - POST /api/admin/stock/scan-rupture/run           (manual trigger)
-
-        Audit  : reports/audit/CLAUDE_ULTRA_REVIEW_MISSION_2_STOCK_COMPOSITION_2026-05-02.md §A.1 #7 + §A.2 #14
-        Plan   : plans/PLAN_CV1-LIFECYCLE-UX-001_2026-05-02.md tasks 2.1 + 2.7
-        Status : SKELETON — implementation TODO Codex.
+        Consumes (no new routes — REUSE existing endpoints):
+          - GET  /api/admin/stock/scan-rupture/last-summary
+          - GET  /api/admin/stock/low-alerts
+          - POST /api/admin/stock/scan-rupture/run
+          - POST /api/admin/availability/toggle              (item)
+          - POST /api/admin/availability/toggle-extra
+          - POST /api/admin/availability/toggle-variation
     -->
     <section
         class="space-y-4"
@@ -32,6 +38,27 @@
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
+                <label
+                    v-if="canFilterByBranch"
+                    class="flex items-center gap-2 text-xs text-slate-700"
+                    data-testid="stock-rupture-branch-filter"
+                >
+                    <span>{{ $t('admin.stock_rupture.branch_filter_label') }}</span>
+                    <select
+                        v-model.number="branchFilter"
+                        class="rounded border border-slate-300 px-2 py-1 text-sm text-slate-800"
+                        data-testid="stock-rupture-branch-select"
+                    >
+                        <option :value="0">{{ $t('admin.stock_rupture.branch_filter_all') }}</option>
+                        <option
+                            v-for="branch in summaries"
+                            :key="branch.branch_id"
+                            :value="branch.branch_id"
+                        >
+                            {{ branch.branch_name }}
+                        </option>
+                    </select>
+                </label>
                 <span
                     class="rounded px-2 py-1 text-xs font-semibold"
                     :class="cronStatusBadgeClass"
@@ -51,6 +78,15 @@
                 </button>
             </div>
         </header>
+
+        <div
+            v-if="errorMessage"
+            class="rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+            role="alert"
+            data-testid="stock-rupture-error"
+        >
+            {{ errorMessage }}
+        </div>
 
         <article
             v-if="lastRunSummary"
@@ -84,28 +120,61 @@
             class="rounded border border-slate-200 bg-white p-4"
             data-testid="stock-rupture-currently-86"
         >
-            <h3 class="text-sm font-semibold text-slate-800">
-                {{ $t('admin.stock_rupture.currently_86') }} ({{ currentlyUnavailable.length }})
-            </h3>
-            <p v-if="currentlyUnavailable.length === 0" class="mt-3 text-sm text-slate-600">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h3 class="text-sm font-semibold text-slate-800">
+                    {{ $t('admin.stock_rupture.currently_86') }} ({{ filteredCurrentlyUnavailable.length }})
+                </h3>
+                <input
+                    v-model="searchQuery"
+                    type="search"
+                    :placeholder="$t('admin.stock_rupture.search_placeholder')"
+                    class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-800"
+                    data-testid="stock-rupture-search"
+                />
+            </div>
+
+            <p v-if="filteredCurrentlyUnavailable.length === 0" class="mt-3 text-sm text-slate-600">
                 {{ $t('admin.stock_rupture.none_unavailable') }}
             </p>
             <ul v-else class="mt-3 space-y-2">
                 <li
-                    v-for="row in currentlyUnavailable"
+                    v-for="row in filteredCurrentlyUnavailable"
                     :key="`${row.branch_id}-${row.item_id}`"
-                    class="flex items-center justify-between rounded border border-slate-100 p-3"
+                    class="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-100 p-3"
                     :data-testid="`stock-rupture-row-${row.item_id}`"
                 >
-                    <div>
-                        <p class="text-sm font-semibold text-slate-800">{{ row.item_name }}</p>
-                        <p class="text-xs text-slate-600">
-                            {{ row.branch_name }} · {{ $t('admin.stock_rupture.flipped_at') }} {{ row.flipped_at_human }}
-                        </p>
+                    <div class="flex items-center gap-3">
+                        <input
+                            v-if="canEditAvailability"
+                            type="checkbox"
+                            :value="rowSelectionKey(row)"
+                            v-model="selectedRupture"
+                            class="h-4 w-4 rounded border-slate-300"
+                            :aria-label="$t('admin.stock_rupture.select_all')"
+                            :data-testid="`stock-rupture-select-${row.item_id}`"
+                        />
+                        <div>
+                            <p class="text-sm font-semibold text-slate-800">{{ row.item_name }}</p>
+                            <p class="text-xs text-slate-600">
+                                {{ row.branch_name }} · {{ $t('admin.stock_rupture.flipped_at') }} {{ row.flipped_at_human }}
+                            </p>
+                        </div>
                     </div>
-                    <span class="rounded bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700">
-                        {{ reasonLabel(row.reason) }}
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="rounded bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700">
+                            {{ translateReason(row.reason) }}
+                        </span>
+                        <button
+                            v-if="canEditAvailability"
+                            type="button"
+                            class="db-btn db-btn-secondary text-xs !text-slate-800"
+                            :disabled="isRowBusy(rowSelectionKey(row))"
+                            :data-testid="`stock-rupture-restore-${row.item_id}`"
+                            @click="restoreItem(row)"
+                        >
+                            {{ $t('admin.stock_rupture.restore') }}
+                        </button>
+                    </div>
                 </li>
             </ul>
         </article>
@@ -115,16 +184,16 @@
             data-testid="stock-rupture-low-alerts"
         >
             <h3 class="text-sm font-semibold text-slate-800">
-                {{ $t('admin.stock_rupture.low_alerts') }} ({{ lowAlerts.length }})
+                {{ $t('admin.stock_rupture.low_alerts') }} ({{ filteredLowAlerts.length }})
             </h3>
-            <p v-if="lowAlerts.length === 0" class="mt-3 text-sm text-slate-600">
+            <p v-if="filteredLowAlerts.length === 0" class="mt-3 text-sm text-slate-600">
                 {{ $t('admin.stock_rupture.no_low_alerts') }}
             </p>
             <ul v-else class="mt-3 space-y-2">
                 <li
-                    v-for="alert in lowAlerts"
+                    v-for="alert in filteredLowAlerts"
                     :key="`${alert.branch_id}-${alert.stockable_id}-${alert.stockable_type}`"
-                    class="flex items-center justify-between rounded border border-amber-200 bg-amber-50 p-3"
+                    class="flex flex-wrap items-center justify-between gap-2 rounded border border-amber-200 bg-amber-50 p-3"
                     :data-testid="`stock-low-alert-${alert.stockable_id}`"
                 >
                     <div>
@@ -133,48 +202,147 @@
                             {{ alert.branch_name }} · {{ alert.on_hand }} / {{ alert.threshold_low }}
                         </p>
                     </div>
-                    <span class="rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">
-                        {{ $t('admin.stock_rupture.below_threshold') }}
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">
+                            {{ $t('admin.stock_rupture.below_threshold') }}
+                        </span>
+                        <button
+                            v-if="canEditAvailability && isItemAlert(alert)"
+                            type="button"
+                            class="db-btn db-btn-secondary text-xs !text-slate-800"
+                            :disabled="isAlertBusy(alert)"
+                            :data-testid="`stock-low-alert-mark-${alert.stockable_id}`"
+                            @click="markAlertRupture(alert)"
+                        >
+                            {{ $t('admin.stock_rupture.mark_rupture') }}
+                        </button>
+                    </div>
                 </li>
             </ul>
         </article>
+
+        <!--
+            Sticky bulk action bar — only visible when N>=1 selected on the
+            rupture list.
+        -->
+        <div
+            v-if="canEditAvailability && selectedRupture.length > 0"
+            class="sticky bottom-0 z-10 flex flex-wrap items-center gap-2 rounded border border-slate-200 bg-white px-4 py-3 shadow-sm"
+            data-testid="stock-rupture-bulk-bar"
+        >
+            <span class="text-sm font-semibold text-slate-700">
+                {{ $t('admin.stock_rupture.selected_count', { count: selectedRupture.length }) }}
+            </span>
+            <button
+                type="button"
+                class="db-btn db-btn-primary text-sm"
+                :disabled="bulkBusy"
+                data-testid="stock-rupture-bulk-restore"
+                @click="bulkRestore"
+            >
+                {{ $t('admin.stock_rupture.restore_selected') }}
+            </button>
+            <button
+                type="button"
+                class="db-btn db-btn-secondary text-sm !text-slate-800"
+                :disabled="bulkBusy"
+                data-testid="stock-rupture-bulk-clear"
+                @click="clearSelection"
+            >
+                {{ $t('admin.stock_rupture.cancel') }}
+            </button>
+        </div>
+
+        <!--
+            Reason modal — opens when marking an item rupture from the low-alerts
+            list. Single-step pick from MANUAL_UNAVAILABLE_REASONS whitelist.
+        -->
+        <div
+            v-if="reasonModal.open"
+            class="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40"
+            role="dialog"
+            aria-modal="true"
+            data-testid="stock-rupture-reason-modal"
+        >
+            <div class="w-full max-w-md rounded border border-slate-200 bg-white p-4 shadow-md">
+                <h4 class="text-base font-semibold text-slate-800">
+                    {{ reasonModal.title }}
+                </h4>
+                <fieldset class="mt-3 space-y-2">
+                    <legend class="sr-only">{{ $t('admin.stock_rupture.reason_label') }}</legend>
+                    <label
+                        v-for="reason in availableReasons"
+                        :key="reason.value"
+                        class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 p-2 text-sm text-slate-800 hover:bg-slate-50"
+                    >
+                        <input
+                            type="radio"
+                            :value="reason.value"
+                            v-model="reasonModal.selectedReason"
+                            :data-testid="`stock-rupture-reason-${reason.value}`"
+                        />
+                        <span>{{ reason.label }}</span>
+                    </label>
+                </fieldset>
+                <div class="mt-4 flex justify-end gap-2">
+                    <button
+                        type="button"
+                        class="db-btn db-btn-secondary text-sm !text-slate-800"
+                        data-testid="stock-rupture-reason-cancel"
+                        @click="closeReasonModal"
+                    >
+                        {{ $t('admin.stock_rupture.cancel') }}
+                    </button>
+                    <button
+                        type="button"
+                        class="db-btn db-btn-primary text-sm"
+                        :disabled="!reasonModal.selectedReason"
+                        data-testid="stock-rupture-reason-confirm"
+                        @click="confirmReasonModal"
+                    >
+                        {{ $t('admin.stock_rupture.confirm') }}
+                    </button>
+                </div>
+            </div>
+        </div>
     </section>
 </template>
 
 <script>
+import appService from "../../../services/appService";
+import { onEvents } from "../../../services/eventContract";
+
 /**
- * StockRuptureDashboardComponent — admin observability surface for the
- * preventive auto-86 cron and the stock-low alert listener.
+ * StockRuptureDashboardComponent — V1.0.2 admin observability + manual override.
  *
- * Props:
- *   pollIntervalMs: Number — polling cadence for refreshing data.
- *                            Default 60_000.
+ * Permissions (Spatie):
+ *   - items_show  : view dashboard data (read endpoints)
+ *   - items_edit  : toggle availability (write endpoints — gated UI elements)
+ *   - items_create: trigger manual scan
  *
- * TODO Codex (plan task 2.1 + 2.7):
- *   1. Implement loadAll() calling in parallel:
- *        GET /api/admin/stock/scan-rupture/last-summary
- *        GET /api/admin/stock/scan-rupture/currently-unavailable
- *        GET /api/admin/stock/low-alerts
- *      Backend endpoints to be added under app/Http/Controllers/Admin/Stock/
- *      (stub controllers + routes registered in routes/api.php).
- *   2. Implement runScanNow() POST /api/admin/stock/scan-rupture/run
- *      with optimistic UX: disable the button + show toast on response.
- *   3. Wire poll lifecycle: setInterval(loadAll, pollIntervalMs) in
- *      mounted(), clearInterval in beforeUnmount(). Pause polling when
- *      document.hidden === true (visibility API) to avoid burning quota.
- *   4. A11y:
- *        - aria-busy on the section root while loading.
- *        - Sort lists chronologically (most recent flip first).
- *        - Each row should be keyboard-focusable to inspect details.
- *   5. i18n keys (fr/en/ar):
- *        admin.stock_rupture.{title,subtitle,cron_enabled,cron_disabled,
- *           run_now,last_run,last_run_at,items_flipped,items_skipped,
- *           duration_ms,currently_86,none_unavailable,flipped_at,
- *           low_alerts,no_low_alerts,below_threshold}
- *   6. Sentinel: tests/js/stockRuptureDashboard.spec.js +
- *      tests/Feature/Stock/StockRuptureDashboardEndpointsTest.php
+ * Echo channel: `branch.{branchId}` (helper prepends `private-` internally).
+ *   - branch_id=0 admins: polling fallback (cannot subscribe to N branches).
+ *   - branch_id>0 staff:  Echo subscribe → debounced loadAll on event.
  */
+
+const MANUAL_UNAVAILABLE_REASONS = [
+    'out_of_stock_manual',
+    'seasonal',
+    'recipe_change',
+    'supplier_issue',
+    'quality_issue',
+];
+
+const DEBOUNCE_MS = 500;
+
+function debounce(fn, ms) {
+    let t = null;
+    return function (...args) {
+        if (t) clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, args), ms);
+    };
+}
+
 export default {
     name: 'StockRuptureDashboardComponent',
     props: {
@@ -189,8 +357,26 @@ export default {
             currentlyUnavailable: [],
             lowAlerts: [],
             runningManually: false,
+            errorMessage: '',
+            // Filters
+            searchQuery: '',
+            branchFilter: 0,
+            // Selection state for bulk
+            selectedRupture: [],
+            busyRows: {},
+            bulkBusy: false,
+            // Reason modal
+            reasonModal: {
+                open: false,
+                target: null,
+                title: '',
+                selectedReason: '',
+            },
+            // Echo lifecycle
             _timer: null,
             _visibilityHandler: null,
+            _echoSubscription: null,
+            _debouncedReload: null,
         };
     },
     computed: {
@@ -199,26 +385,100 @@ export default {
                 ? 'bg-emerald-50 text-emerald-700'
                 : 'bg-slate-100 text-slate-600';
         },
+        canEditAvailability() {
+            return appService.permissionChecker('items_edit');
+        },
+        canFilterByBranch() {
+            return this.authBranchId() === 0 && this.summaries.length > 1;
+        },
+        availableReasons() {
+            return MANUAL_UNAVAILABLE_REASONS.map((value) => ({
+                value,
+                label: this.$t(`admin.stock_rupture.reason.${value}`),
+            }));
+        },
+        filteredCurrentlyUnavailable() {
+            const q = (this.searchQuery || '').trim().toLowerCase();
+            const branchId = Number(this.branchFilter) || 0;
+            return (this.currentlyUnavailable || []).filter((row) => {
+                if (branchId > 0 && Number(row.branch_id) !== branchId) return false;
+                if (!q) return true;
+                return String(row.item_name || '').toLowerCase().includes(q);
+            });
+        },
+        filteredLowAlerts() {
+            const q = (this.searchQuery || '').trim().toLowerCase();
+            const branchId = Number(this.branchFilter) || 0;
+            return (this.lowAlerts || []).filter((alert) => {
+                if (branchId > 0 && Number(alert.branch_id) !== branchId) return false;
+                if (!q) return true;
+                return String(alert.stockable_name || '').toLowerCase().includes(q);
+            });
+        },
     },
     mounted() {
+        this._debouncedReload = debounce(() => { this.loadAll(); }, DEBOUNCE_MS);
         this.loadAll();
         this._timer = setInterval(this.loadAll, this.pollIntervalMs);
         this._visibilityHandler = () => {
             if (!document.hidden) this.loadAll();
         };
         document.addEventListener('visibilitychange', this._visibilityHandler);
+        this.subscribeEcho();
     },
     beforeUnmount() {
         if (this._timer) clearInterval(this._timer);
         if (this._visibilityHandler) {
             document.removeEventListener('visibilitychange', this._visibilityHandler);
         }
+        this.unsubscribeEcho();
     },
     methods: {
+        // ---------- Auth helpers ----------
+        authBranchId() {
+            try {
+                const fromGetter = this.$store?.getters?.['auth/authBranchId'];
+                if (fromGetter !== undefined && fromGetter !== null && fromGetter !== '') {
+                    return Number(fromGetter) || 0;
+                }
+                const fromState = this.$store?.state?.auth?.authBranchId;
+                if (fromState !== undefined && fromState !== null && fromState !== '') {
+                    return Number(fromState) || 0;
+                }
+            } catch (_) {}
+            return 0;
+        },
+
+        // ---------- Echo lifecycle ----------
+        subscribeEcho() {
+            if (!window.Echo) return;
+            const branchId = this.authBranchId();
+            // Admin (branch_id=0) cannot subscribe to N branches — polling 60s is the fallback.
+            if (branchId <= 0) return;
+            this.unsubscribeEcho();
+            try {
+                this._echoSubscription = onEvents(branchId, [
+                    { broadcastAs: 'ItemAvailabilityChanged', handler: () => { this._debouncedReload(); } },
+                    { broadcastAs: 'ItemVariationAvailabilityChanged', handler: () => { this._debouncedReload(); } },
+                    { broadcastAs: 'ItemExtraAvailabilityChanged', handler: () => { this._debouncedReload(); } },
+                ]);
+            } catch (e) {
+                console.warn('[StockRuptureDashboard] Echo subscription failed:', e?.message);
+            }
+        },
+        unsubscribeEcho() {
+            try {
+                this._echoSubscription?.unsubscribe?.();
+            } catch (_) {}
+            this._echoSubscription = null;
+        },
+
+        // ---------- Data load ----------
         async loadAll() {
             if (document.hidden) return;
 
             this.loading = true;
+            this.errorMessage = '';
             try {
                 const [summaryResponse, alertsResponse] = await Promise.all([
                     axios.get('admin/stock/scan-rupture/last-summary'),
@@ -233,39 +493,33 @@ export default {
                     : [];
                 this.lowAlerts = Array.isArray(alertsResponse.data?.alerts) ? alertsResponse.data.alerts : [];
                 this.lastRunSummary = this.normalizeLastRunSummary(this.summaries);
+                this.pruneStaleSelection();
+            } catch (err) {
+                this.errorMessage = this.$t('admin.stock_rupture.loading_error');
             } finally {
                 this.loading = false;
             }
         },
+
         async runScanNow() {
             this.runningManually = true;
+            this.errorMessage = '';
             try {
-                const branchId = this.summaries[0]?.branch_id
-                    || this.currentlyUnavailable[0]?.branch_id
-                    || this.lowAlerts[0]?.branch_id
-                    || null;
+                const branchId = (Number(this.branchFilter) || 0) > 0
+                    ? Number(this.branchFilter)
+                    : (this.summaries[0]?.branch_id
+                        || this.currentlyUnavailable[0]?.branch_id
+                        || this.lowAlerts[0]?.branch_id
+                        || null);
                 await axios.post('admin/stock/scan-rupture/run', branchId ? { branch_id: branchId } : {});
                 await this.loadAll();
+            } catch (err) {
+                this.errorMessage = this.$t('admin.stock_rupture.toggle_error');
             } finally {
                 this.runningManually = false;
             }
         },
-        // [Z-3 STOCK / Z3-UX-06 + Z3-RED-08 heal 2026-05-18]
-        // Localize raw backend reason ('stock_rupture' / 'seasonal' / etc.)
-        // through admin.stock_rupture.reason.* with safe fallback to the raw
-        // key so an unknown reason never crashes the dashboard.
-        reasonLabel(rawReason) {
-            const key = String(rawReason || '').trim();
-            if (!key) return '';
-            const i18nKey = `admin.stock_rupture.reason.${key}`;
-            const translated = this.$t(i18nKey);
-            // vue-i18n returns the key itself when missing — fall back to a
-            // humanized version of the raw key.
-            if (translated === i18nKey) {
-                return key.replace(/_/g, ' ');
-            }
-            return translated;
-        },
+
         normalizeLastRunSummary(branches) {
             const summaries = (branches || [])
                 .map((branch) => branch.summary)
@@ -288,6 +542,167 @@ export default {
                     + Number(latest.items_already_unavailable || 0),
                 duration_ms: Number(latest.duration_ms || 0),
             };
+        },
+
+        // ---------- Translation helper ----------
+        translateReason(reason) {
+            if (!reason) return '';
+            const key = `admin.stock_rupture.reason.${reason}`;
+            const translated = this.$t(key);
+            return translated === key ? reason : translated;
+        },
+
+        // ---------- Selection helpers ----------
+        rowSelectionKey(row) {
+            return `${row.branch_id}:${row.item_id}`;
+        },
+        isRowBusy(key) {
+            return Boolean(this.busyRows[key]);
+        },
+        isAlertBusy(alert) {
+            const k = `${alert.branch_id}:${alert.stockable_type}:${alert.stockable_id}`;
+            return Boolean(this.busyRows[k]);
+        },
+        isItemAlert(alert) {
+            // Mark-rupture button currently exposed for Item type only.
+            const t = String(alert.stockable_type || '').toLowerCase();
+            if (t === 'item') return true;
+            if (t.endsWith('\\item')) return true;
+            // Heuristic for FQCNs ending in '\\Item' but not extra/variation.
+            if (t.includes('item') && !t.includes('extra') && !t.includes('variation')) return true;
+            return false;
+        },
+        pruneStaleSelection() {
+            const validKeys = new Set(
+                (this.currentlyUnavailable || []).map((r) => this.rowSelectionKey(r))
+            );
+            this.selectedRupture = (this.selectedRupture || []).filter((k) => validKeys.has(k));
+        },
+        clearSelection() {
+            this.selectedRupture = [];
+        },
+
+        // ---------- Optimistic toggle (item — restore from rupture list) ----------
+        async restoreItem(row) {
+            const key = this.rowSelectionKey(row);
+            if (this.busyRows[key]) return;
+            this.busyRows = { ...this.busyRows, [key]: true };
+            const snapshot = [...this.currentlyUnavailable];
+            this.currentlyUnavailable = snapshot.filter((r) => this.rowSelectionKey(r) !== key);
+            try {
+                await axios.post('admin/availability/toggle', {
+                    item_id: Number(row.item_id),
+                    branch_id: Number(row.branch_id),
+                    is_available: true,
+                });
+            } catch (err) {
+                this.currentlyUnavailable = snapshot;
+                this.errorMessage = this.$t('admin.stock_rupture.toggle_error');
+            } finally {
+                const next = { ...this.busyRows };
+                delete next[key];
+                this.busyRows = next;
+            }
+        },
+
+        // ---------- Reason modal flow (mark item rupture from low-alerts) ----------
+        markAlertRupture(alert) {
+            if (!this.isItemAlert(alert)) return;
+            this.reasonModal = {
+                open: true,
+                target: {
+                    kind: 'item',
+                    id: Number(alert.stockable_id),
+                    branchId: Number(alert.branch_id),
+                    name: alert.stockable_name,
+                },
+                title: alert.stockable_name || this.$t('admin.stock_rupture.mark_rupture'),
+                selectedReason: '',
+            };
+        },
+        closeReasonModal() {
+            this.reasonModal = {
+                open: false,
+                target: null,
+                title: '',
+                selectedReason: '',
+            };
+        },
+        async confirmReasonModal() {
+            const { target, selectedReason } = this.reasonModal;
+            if (!target || !selectedReason) return;
+            const key = `${target.branchId}:item:${target.id}`;
+            if (this.busyRows[key]) return;
+            this.busyRows = { ...this.busyRows, [key]: true };
+            this.closeReasonModal();
+            try {
+                await axios.post('admin/availability/toggle', {
+                    item_id: Number(target.id),
+                    branch_id: Number(target.branchId),
+                    is_available: false,
+                    unavailable_reason: selectedReason,
+                });
+                await this.loadAll();
+            } catch (err) {
+                this.errorMessage = this.$t('admin.stock_rupture.toggle_error');
+            } finally {
+                const next = { ...this.busyRows };
+                delete next[key];
+                this.busyRows = next;
+            }
+        },
+
+        // ---------- Bulk actions (sequential to avoid new backend route) ----------
+        async bulkRestore() {
+            if (this.selectedRupture.length === 0) return;
+            this.bulkBusy = true;
+            this.errorMessage = '';
+            const keys = [...this.selectedRupture];
+            const rowsByKey = new Map(
+                (this.currentlyUnavailable || []).map((r) => [this.rowSelectionKey(r), r])
+            );
+            let ok = 0;
+            let fail = 0;
+            const total = keys.length;
+            const concurrency = 5;
+            let cursor = 0;
+            const runOne = async () => {
+                while (cursor < keys.length) {
+                    const i = cursor++;
+                    const k = keys[i];
+                    const row = rowsByKey.get(k);
+                    if (!row) {
+                        fail += 1;
+                        continue;
+                    }
+                    try {
+                        await axios.post('admin/availability/toggle', {
+                            item_id: Number(row.item_id),
+                            branch_id: Number(row.branch_id),
+                            is_available: true,
+                        });
+                        ok += 1;
+                    } catch (_) {
+                        fail += 1;
+                    }
+                }
+            };
+            try {
+                const workers = Array.from({ length: Math.min(concurrency, keys.length) }, () => runOne());
+                await Promise.all(workers);
+                if (fail > 0) {
+                    this.errorMessage = this.$t(
+                        'admin.stock_rupture.bulk_partial_error',
+                        { ok, fail, total }
+                    );
+                }
+                await this.loadAll();
+                if (fail === 0) {
+                    this.clearSelection();
+                }
+            } finally {
+                this.bulkBusy = false;
+            }
         },
     },
 };

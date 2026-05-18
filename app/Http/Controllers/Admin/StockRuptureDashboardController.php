@@ -66,30 +66,119 @@ class StockRuptureDashboardController extends AdminController
         $branches = $this->scopedBranches($request);
         $branchNames = $branches->keyBy('id')->map(fn (Branch $branch): string => (string) $branch->name);
 
-        $alerts = StockLevel::query()
+        $rows = StockLevel::query()
             ->whereIn('branch_id', $branches->pluck('id')->map(fn ($id): int => (int) $id)->all())
             ->whereNotNull('threshold_low')
             ->whereColumn('on_hand', '<=', 'threshold_low')
             ->orderBy('branch_id')
             ->orderBy('on_hand')
             ->limit(200)
-            ->get()
-            ->map(fn (StockLevel $level): array => [
-                'branch_id' => (int) $level->branch_id,
-                'branch_name' => (string) ($branchNames->get((int) $level->branch_id) ?? ('#' . $level->branch_id)),
-                'stockable_type' => (string) $level->stockable_type,
-                'stockable_id' => (int) $level->stockable_id,
-                'stockable_name' => $this->stockableLabel((string) $level->stockable_type, (int) $level->stockable_id),
-                'label' => $this->stockableLabel((string) $level->stockable_type, (int) $level->stockable_id),
-                'on_hand' => (int) $level->on_hand,
-                'threshold_low' => (int) $level->threshold_low,
-            ])
-            ->values();
+            ->get();
+
+        // [BUILD-4 stock-v1-0-2-ui N+1 heal] Previous impl called stockableLabel()
+        // TWICE per row (lines 82+83) → 200 rows × 2 polymorphic finds = up to 1200
+        // queries on a single endpoint hit. Replace with bucketed whereIn (one
+        // query per stockable_type) and resolve labels from an in-memory map.
+        $labelMap = $this->buildStockableLabelMap($rows);
+
+        $alerts = $rows->map(fn (StockLevel $level): array => [
+            'branch_id' => (int) $level->branch_id,
+            'branch_name' => (string) ($branchNames->get((int) $level->branch_id) ?? ('#' . $level->branch_id)),
+            'stockable_type' => (string) $level->stockable_type,
+            'stockable_id' => (int) $level->stockable_id,
+            'stockable_name' => $this->resolveLabel($labelMap, (string) $level->stockable_type, (int) $level->stockable_id),
+            'label' => $this->resolveLabel($labelMap, (string) $level->stockable_type, (int) $level->stockable_id),
+            'on_hand' => (int) $level->on_hand,
+            'threshold_low' => (int) $level->threshold_low,
+        ])->values();
 
         return response()->json([
             'alerts' => $alerts,
             'fetched_at' => now()->toIso8601String(),
         ]);
+    }
+
+    /**
+     * [BUILD-4 stock-v1-0-2-ui N+1 heal]
+     * Bucket polymorphic stockable references by type, run ONE whereIn per type,
+     * return a `[type => [id => name]]` map for O(1) label resolution.
+     *
+     * Before this heal: 200 rows × find() × 2 calls = ≤ 1200 queries.
+     * After this heal:  ≤ 3 queries (item / item_variation / item_extra).
+     *
+     * @param \Illuminate\Support\Collection<int, StockLevel> $rows
+     * @return array<string, array<int, string>>
+     */
+    private function buildStockableLabelMap($rows): array
+    {
+        $buckets = [
+            'item' => [],
+            'item_variation' => [],
+            'item_extra' => [],
+        ];
+
+        foreach ($rows as $row) {
+            $type = $this->normalizeStockableType((string) $row->stockable_type);
+            if ($type === null) {
+                continue;
+            }
+            $buckets[$type][(int) $row->stockable_id] = true;
+        }
+
+        $map = [
+            'item' => [],
+            'item_variation' => [],
+            'item_extra' => [],
+        ];
+
+        if (! empty($buckets['item'])) {
+            $map['item'] = Item::query()
+                ->whereIn('id', array_keys($buckets['item']))
+                ->pluck('name', 'id')
+                ->map(fn ($name): string => (string) $name)
+                ->all();
+        }
+
+        if (! empty($buckets['item_variation'])) {
+            $map['item_variation'] = ItemVariation::query()
+                ->whereIn('id', array_keys($buckets['item_variation']))
+                ->pluck('name', 'id')
+                ->map(fn ($name): string => (string) $name)
+                ->all();
+        }
+
+        if (! empty($buckets['item_extra'])) {
+            $map['item_extra'] = ItemExtra::query()
+                ->whereIn('id', array_keys($buckets['item_extra']))
+                ->pluck('name', 'id')
+                ->map(fn ($name): string => (string) $name)
+                ->all();
+        }
+
+        return $map;
+    }
+
+    private function normalizeStockableType(string $type): ?string
+    {
+        return match ($type) {
+            Item::class, 'item' => 'item',
+            ItemVariation::class, 'item_variation' => 'item_variation',
+            ItemExtra::class, 'item_extra' => 'item_extra',
+            default => null,
+        };
+    }
+
+    /**
+     * @param array<string, array<int, string>> $map
+     */
+    private function resolveLabel(array $map, string $type, int $id): string
+    {
+        $bucket = $this->normalizeStockableType($type);
+        if ($bucket !== null && isset($map[$bucket][$id])) {
+            return (string) $map[$bucket][$id];
+        }
+
+        return class_basename($type) . ' #' . $id;
     }
 
     public function run(Request $request): JsonResponse
