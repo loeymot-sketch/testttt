@@ -176,6 +176,18 @@ class PermissionTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier loyalty redeem
+            // permission (Option B per plans/LOCK_POS_LOYALTY_REDEEM_UI_2026-05-18.md).
+            // Enforced in PosLoyaltyRedeemRequest::authorize(). Assigned to
+            // POS Operator + Branch Manager + Admin via RolePermissionTableSeeder.
+            [
+                'title'      => 'POS Redeem Loyalty Points',
+                'name'       => 'pos.redeem-loyalty',
+                'guard_name' => 'sanctum',
+                'url'        => 'pos/redeem-loyalty',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
             [
                 'title'      => 'Online Orders',
                 'name'       => 'online-orders',

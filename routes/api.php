@@ -913,6 +913,13 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/{order}/refund-with-counter-entry', [PosOrderController::class, 'refundWithCounterEntry'])
             ->middleware(['throttle:pos-order-update', 'idempotency'])
             ->name('refundWithCounterEntry');
+        // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier loyalty redeem
+        // (Option B per plans/LOCK_POS_LOYALTY_REDEEM_UI_2026-05-18.md). New
+        // standalone controller (PosController.php is DIRTY — observe-only).
+        // Permission gate `pos.redeem-loyalty` enforced inside the FormRequest.
+        Route::post('/{order}/redeem-loyalty', [\App\Http\Controllers\Admin\PosLoyaltyController::class, 'redeem'])
+            ->middleware(['throttle:pos-order-update', 'idempotency'])
+            ->name('redeem-loyalty');
     });
 
     Route::prefix('online-order')->name('onlineOrder.')->group(function () {

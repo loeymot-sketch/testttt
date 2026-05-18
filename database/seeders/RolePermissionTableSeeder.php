@@ -76,6 +76,9 @@ class RolePermissionTableSeeder extends Seeder
                 // beyond the configured threshold (default 2€). Cashiers
                 // (POS Operator) must escalate to a manager.
                 'cash.reconcile.variance.override',
+                // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Branch Manager can
+                // apply customer loyalty redemption from POS cashier UI.
+                'pos.redeem-loyalty',
             ];
             $branchManager->givePermissionTo(
                 Permission::whereIn('name', $branchManagerPermissionNames)->get()
@@ -90,6 +93,9 @@ class RolePermissionTableSeeder extends Seeder
                 'pos-orders',
                 // [POS-9.1.1] cashier = up-to-10% discount
                 'pos-discount-up-to-10',
+                // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Cashier-facing
+                // loyalty redemption gate (LOCK §6.1).
+                'pos.redeem-loyalty',
             ];
             $posOperatorManager->givePermissionTo(
                 Permission::whereIn('name', $posOperatorManagerPermissionNames)->get()
