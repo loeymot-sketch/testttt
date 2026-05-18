@@ -1,14 +1,14 @@
 <template>
   <KsModal
     :model-value="modelValue"
-    title="Conflits file d'attente"
+    :title="$t('kiosk.offline_conflict.title')"
     size="md"
     @update:modelValue="$emit('update:modelValue', $event)"
     @close="$emit('update:modelValue', false)"
   >
     <div class="kiosk-offline-conflict" data-testid="kiosk-offline-conflict-modal">
       <p class="kiosk-offline-conflict__intro">
-        Une ou plusieurs commandes en attente contiennent désormais un produit indisponible.
+        {{ $t('kiosk.offline_conflict.intro') }}
       </p>
 
       <ul
@@ -27,7 +27,7 @@
             <span>{{ formatSavedAt(entry.savedAt) }}</span>
           </div>
           <p class="kiosk-offline-conflict__stale">
-            Produits impactés : {{ formatItemList(entry.staleItems) }}
+            {{ $t('kiosk.offline_conflict.products_impacted', { list: formatItemList(entry.staleItems) }) }}
           </p>
           <div class="kiosk-offline-conflict__actions">
             <button
@@ -36,7 +36,7 @@
               :data-testid="`kiosk-offline-cancel-${entry.localKey}`"
               @click="$emit('cancel-entry', entry.localKey)"
             >
-              Annuler
+              {{ $t('kiosk.offline_conflict.cancel') }}
             </button>
             <button
               type="button"
@@ -44,14 +44,14 @@
               :data-testid="`kiosk-offline-force-${entry.localKey}`"
               @click="$emit('force-entry', entry.localKey)"
             >
-              Forcer envoi
+              {{ $t('kiosk.offline_conflict.force_send') }}
             </button>
           </div>
         </li>
       </ul>
 
       <p v-else class="kiosk-offline-conflict__empty" data-testid="kiosk-offline-conflict-empty">
-        Aucun conflit en attente.
+        {{ $t('kiosk.offline_conflict.empty') }}
       </p>
     </div>
   </KsModal>
@@ -78,12 +78,12 @@ export default {
   methods: {
     formatItemList(staleItems) {
       if (!Array.isArray(staleItems) || staleItems.length === 0) {
-        return 'Aucun';
+        return this.$t('kiosk.offline_conflict.no_items');
       }
       return staleItems.join(', ');
     },
     formatSavedAt(savedAt) {
-      if (!savedAt) return 'Date inconnue';
+      if (!savedAt) return this.$t('kiosk.offline_conflict.date_unknown');
       try {
         return new Intl.DateTimeFormat('fr-FR', {
           dateStyle: 'short',

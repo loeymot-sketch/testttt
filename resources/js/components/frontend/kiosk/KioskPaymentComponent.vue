@@ -24,7 +24,7 @@
       aria-live="polite"
       data-testid="kiosk-payment-offline-alert"
     >
-      Paiement CB/TR indisponible hors ligne. Le menu reste consultable; choisissez les espèces au comptoir ou réessayez quand la connexion revient.
+      {{ $t('kiosk.pay_screen.offline_alert') }}
     </div>
 
     <div
@@ -330,7 +330,7 @@ export default {
     },
 
     offlinePaymentMessage() {
-      return 'Paiement CB/TR indisponible hors ligne.';
+      return this.$t('kiosk.pay_screen.offline_short');
     },
 
     selectMethod(m) {

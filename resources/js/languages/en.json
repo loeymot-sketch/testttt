@@ -1631,7 +1631,9 @@
             "payment_declined": "Payment declined by the device",
             "payment_cancelled": "Payment cancelled.",
             "payment_cancelled_toast": "Payment cancelled",
-            "speech_error": "Payment declined. {msg}"
+            "speech_error": "Payment declined. {msg}",
+            "offline_alert": "Card/meal-voucher payment is unavailable offline. You can still browse the menu; choose cash at the counter or try again once the connection is back.",
+            "offline_short": "Card/meal-voucher payment is unavailable offline."
         },
         "upsell_screen": {
             "title": "Anything else?",
@@ -1801,6 +1803,16 @@
         "offline": {
             "stale_single": "A queued order contains a product that is now unavailable.",
             "stale_multiple": "{count} queued products are now unavailable."
+        },
+        "offline_conflict": {
+            "title": "Queue conflicts",
+            "intro": "One or more queued orders contain a product that is no longer available.",
+            "products_impacted": "Affected products: {list}",
+            "cancel": "Cancel",
+            "force_send": "Force send",
+            "empty": "No pending conflicts.",
+            "no_items": "None",
+            "date_unknown": "Unknown date"
         },
         "wizard": {
             "loading_product": "Loading product…",

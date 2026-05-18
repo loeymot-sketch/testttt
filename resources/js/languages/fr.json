@@ -1505,7 +1505,9 @@
             "payment_declined": "Paiement refusé par l'appareil",
             "payment_cancelled": "Paiement annulé.",
             "payment_cancelled_toast": "Paiement annulé",
-            "speech_error": "Paiement refusé. {msg}"
+            "speech_error": "Paiement refusé. {msg}",
+            "offline_alert": "Paiement CB/TR indisponible hors ligne. Le menu reste consultable; choisissez les espèces au comptoir ou réessayez quand la connexion revient.",
+            "offline_short": "Paiement CB/TR indisponible hors ligne."
         },
         "upsell_screen": {
             "title": "Et pour terminer ?",
@@ -1675,6 +1677,16 @@
         "offline": {
             "stale_single": "Une commande en attente contient un produit désormais indisponible.",
             "stale_multiple": "{count} produits de commandes en attente sont désormais indisponibles."
+        },
+        "offline_conflict": {
+            "title": "Conflits file d'attente",
+            "intro": "Une ou plusieurs commandes en attente contiennent désormais un produit indisponible.",
+            "products_impacted": "Produits impactés : {list}",
+            "cancel": "Annuler",
+            "force_send": "Forcer envoi",
+            "empty": "Aucun conflit en attente.",
+            "no_items": "Aucun",
+            "date_unknown": "Date inconnue"
         },
         "wizard": {
             "loading_product": "Chargement du produit…",
