@@ -211,9 +211,12 @@ class OrderRequest extends FormRequest
             if ($isKioskToken
                 && ! (bool) Settings::group('pos')->get('pos_dine_in_enabled', false)
                 && in_array($orderTypeInt, [OrderType::KIOSK, OrderType::DINING_TABLE], true)) {
+                // [BORNE-001 heal] FR string — kiosk path is FR-locked per ADR-007.
+                // Previously hardcoded EN surfaced on a French UI when a client bypassed
+                // the frontend gate (UI bypass / legacy device / replay attack).
                 $validator->errors()->add(
                     'order_type',
-                    'Dine-in is disabled in V1 — kiosk orders must use TAKEAWAY (à emporter).'
+                    'Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.'
                 );
                 return;
             }

@@ -122,4 +122,58 @@ class CatalogKdsCadenceFloorTest extends TestCase
         $this->assertSame(0, $cfg['disconnected_jitter_ms']);
         $this->assertSame(0, $cfg['degraded_jitter_ms']);
     }
+
+    /**
+     * Wave 3b P1 / KDS-ADV3B-04 — silent-blind upper cap.
+     * Symmetric to the 250ms floor: a runaway base value (e.g. 999999999ms ≈
+     * 11.5 days between polls) would silence KDS during a WS outage. Cap base
+     * at 60_000ms (1 poll/min minimum) and jitter at 30_000ms.
+     */
+    public function test_silent_blind_misconfig_above_ceiling_is_clamped_to_60000ms(): void
+    {
+        $this->setEnv('FK_CATALOG_KDS_DISCONNECTED_BASE_MS', '999999999');
+        $this->setEnv('FK_CATALOG_KDS_DEGRADED_BASE_MS', '999999999');
+        $this->setEnv('FK_CATALOG_KDS_HIGH_ACTIVITY_BASE_MS', '999999999');
+
+        $cfg = $this->freshKdsConfig();
+
+        $this->assertSame(60_000, $cfg['disconnected_base_ms'], 'DISCONNECTED base must cap at 60_000ms (silent-blind guard)');
+        $this->assertSame(60_000, $cfg['degraded_base_ms'], 'DEGRADED base must cap at 60_000ms');
+        $this->assertSame(60_000, $cfg['high_activity_base_ms'], 'HIGH_ACTIVITY base must cap at 60_000ms');
+    }
+
+    public function test_owner_value_120000ms_is_clamped_down_to_ceiling(): void
+    {
+        $this->setEnv('FK_CATALOG_KDS_DISCONNECTED_BASE_MS', '120000');
+        $this->setEnv('FK_CATALOG_KDS_DEGRADED_BASE_MS', '120000');
+
+        $cfg = $this->freshKdsConfig();
+
+        $this->assertSame(60_000, $cfg['disconnected_base_ms']);
+        $this->assertSame(60_000, $cfg['degraded_base_ms']);
+    }
+
+    public function test_owner_value_30000ms_below_ceiling_is_preserved(): void
+    {
+        $this->setEnv('FK_CATALOG_KDS_DISCONNECTED_BASE_MS', '30000');
+        $this->setEnv('FK_CATALOG_KDS_DEGRADED_BASE_MS', '30000');
+
+        $cfg = $this->freshKdsConfig();
+
+        $this->assertSame(30_000, $cfg['disconnected_base_ms'], '30_000ms is below ceiling and must be preserved');
+        $this->assertSame(30_000, $cfg['degraded_base_ms']);
+    }
+
+    public function test_jitter_above_ceiling_is_clamped_to_30000ms(): void
+    {
+        $this->setEnv('FK_CATALOG_KDS_DISCONNECTED_JITTER_MS', '999999');
+        $this->setEnv('FK_CATALOG_KDS_DEGRADED_JITTER_MS', '60000');
+        $this->setEnv('FK_CATALOG_KDS_HIGH_ACTIVITY_JITTER_MS', '50000');
+
+        $cfg = $this->freshKdsConfig();
+
+        $this->assertSame(30_000, $cfg['disconnected_jitter_ms'], 'jitter must cap at 30_000ms (silent-blind widening guard)');
+        $this->assertSame(30_000, $cfg['degraded_jitter_ms']);
+        $this->assertSame(30_000, $cfg['high_activity_jitter_ms']);
+    }
 }

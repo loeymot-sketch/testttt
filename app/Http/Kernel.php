@@ -15,7 +15,12 @@ class Kernel extends HttpKernel
      * @var array<int, class-string|string>
      */
     protected $middleware = [
-        // \App\Http\Middleware\TrustHosts::class,
+        // [Wave 2c P1 SYNC-ADV3B-01 2026-05-18] Defense vs Host spoof —
+        // TrustProxies::$proxies='*' (Wave 2b) trusts X-Forwarded-Host /
+        // X-Forwarded-Proto from any upstream. TrustHosts pins host to
+        // APP_URL subdomains + 127.0.0.1 + localhost to prevent URL
+        // generation poisoning. No-op under runningUnitTests() / local.
+        \App\Http\Middleware\TrustHosts::class,
         \App\Http\Middleware\TrustProxies::class,
         \Illuminate\Http\Middleware\HandleCors::class,
         \App\Http\Middleware\PreventRequestsDuringMaintenance::class,

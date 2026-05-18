@@ -5,7 +5,9 @@ namespace Tests\Feature\Fiscal;
 use App\Console\Commands\FiscalVerifyChainCommand;
 use App\Models\AuditLog;
 use App\Models\Branch;
+use App\Models\ZReport;
 use App\Services\Fiscal\AuditLogService;
+use App\Services\Fiscal\ZReportService;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -73,7 +75,7 @@ class FiscalVerifyChainCommandTest extends TestCase
         ]);
 
         $this->artisan('fiscal:verify-chain', ['--branch' => self::BR_CLEAN])
-            ->expectsOutputToContain('CHAIN OK (branch='.self::BR_CLEAN.')')
+            ->expectsOutputToContain('CHAIN OK (audit_logs + z_reports) (branch='.self::BR_CLEAN.')')
             ->assertExitCode(0);
     }
 
@@ -193,32 +195,143 @@ class FiscalVerifyChainCommandTest extends TestCase
     }
 
     /**
-     * [Wave 3 P1 FISCAL-ADV3-03]
+     * [Wave 3 P1 FISCAL-ADV3-03 / Wave 3b FISCAL-ADV3B-01]
      *
      * Without a scheduled run, the CLI exists but detection window is
-     * unbounded. Assert that the Kernel::schedule() registers the
-     * daily monitor for `fiscal:verify-chain` by walking the live
-     * Schedule::events() collection (public API across Laravel 10/11).
+     * unbounded. Assert that Kernel::schedule() registers the daily
+     * dual-chain monitor.
+     *
+     * Wave 3b: the cron switched from `$schedule->command(...)` to
+     * `$schedule->call(closure)` so it can iterate every active branch
+     * (FISCAL-ADV3B-01). CallbackEvent has a null `$command` property,
+     * so we now match by the `name()` / description label, which is
+     * how named callback events surface in Schedule::events().
      */
-    public function test_schedule_registers_daily_fiscal_chain_monitor(): void
+    public function test_schedule_registers_daily_fiscal_chain_monitor_for_all_branches(): void
     {
         /** @var Schedule $schedule */
         $schedule = $this->app->make(Schedule::class);
 
-        $commands = collect($schedule->events())
-            ->map(fn ($event) => (string) ($event->command ?? ''))
+        $events = collect($schedule->events());
+
+        $descriptions = $events
+            ->map(fn ($event) => (string) ($event->description ?? ''))
             ->all();
 
         $matches = array_filter(
-            $commands,
-            fn (string $command) => str_contains($command, 'fiscal:verify-chain')
+            $descriptions,
+            fn (string $desc) => str_contains($desc, 'fiscal-chain-monitor-all-branches')
         );
 
         $this->assertNotEmpty(
             $matches,
-            'Expected fiscal:verify-chain to be wired into Kernel::schedule() '
-            .'(Wave 3 P1 FISCAL-ADV3-03). Registered commands: '
-            .implode(' | ', $commands)
+            'Expected fiscal-chain-monitor-all-branches to be wired into Kernel::schedule() '
+            .'(Wave 3b FISCAL-ADV3B-01). Registered descriptions: '
+            .implode(' | ', array_filter($descriptions))
         );
+    }
+
+    /**
+     * [Wave 3b FISCAL-ADV3B-02]
+     *
+     * Verifier MUST walk the z_reports HMAC chain in addition to
+     * audit_logs. Tamper a Z-row signature post-write; expect exit 1
+     * + output naming z_reports.id.
+     */
+    public function test_tampered_z_report_chain_returns_failure_and_prints_z_report_id(): void
+    {
+        $branchId = 920_606;
+        Branch::factory()->create(['id' => $branchId]);
+        Config::set('fiscal.verify_chain_strict', false);
+
+        $zService = app(ZReportService::class);
+
+        // Seed a clean audit chain on this branch so the audit-side
+        // verifier short-circuits to null and the tamper signal is
+        // unambiguously from z_reports.
+        $this->service->write([
+            'branch_id' => $branchId, 'action' => 'order.create', 'payload' => ['id' => 1],
+        ]);
+
+        // Build two genuinely-signed Z-reports via the public service
+        // path so signatures + prev_hash chain are valid, then tamper
+        // the second row to force a signature_mismatch (one of the
+        // three ZReportService::verifyChain error kinds).
+        //
+        // Columns mirror database/migrations/2026_04_22_000003_create_z_reports_table.php
+        // (total_ht/total_ttc/total_tva + order/cancel/refund counts +
+        // JSON method/rate aggregates). `total_ttc` is part of the HMAC
+        // input (ZReportService::computeSignature lines 676-685), so
+        // mutating it post-sign forces a signature_mismatch.
+        ZReport::unguard();
+        try {
+            $genesis = (string) config('fiscal.genesis_prev_hash', str_repeat('0', 64));
+
+            $z1 = new ZReport([
+                'branch_id'         => $branchId,
+                'sequence_no'       => 1,
+                'opened_at'         => now()->subDays(2),
+                'closed_at'         => now()->subDays(2),
+                'total_ht'          => 0,
+                'total_ttc'         => 0,
+                'total_tva'         => 0,
+                'total_by_method'   => [],
+                'total_by_tax_rate' => [],
+                'order_count'       => 0,
+                'cancel_count'      => 0,
+                'refund_count'      => 0,
+                'status'            => ZReport::STATUS_CLOSED,
+                'prev_hash'         => $genesis,
+            ]);
+            $z1->signature = $this->callServiceSignature($zService, $z1, $genesis);
+            $z1->save();
+
+            $z2 = new ZReport([
+                'branch_id'         => $branchId,
+                'sequence_no'       => 2,
+                'opened_at'         => now()->subDay(),
+                'closed_at'         => now()->subDay(),
+                'total_ht'          => 0,
+                'total_ttc'         => 0,
+                'total_tva'         => 0,
+                'total_by_method'   => [],
+                'total_by_tax_rate' => [],
+                'order_count'       => 0,
+                'cancel_count'      => 0,
+                'refund_count'      => 0,
+                'status'            => ZReport::STATUS_CLOSED,
+                'prev_hash'         => $z1->signature,
+            ]);
+            $z2->signature = $this->callServiceSignature($zService, $z2, $z1->signature);
+            $z2->save();
+
+            // Tamper: rewrite total_ttc on z2 (HMAC input) without
+            // re-signing. Raw DB update bypasses any observer that
+            // would otherwise re-sign on save.
+            DB::table('z_reports')->where('id', $z2->id)->update([
+                'total_ttc' => 999.99,
+            ]);
+        } finally {
+            ZReport::reguard();
+        }
+
+        $this->artisan('fiscal:verify-chain', ['--branch' => $branchId])
+            ->expectsOutputToContain('z_reports.id='.$z2->id)
+            ->assertExitCode(1);
+    }
+
+    /**
+     * Helper: call the protected computeSignature via reflection so
+     * the test can build chain-valid Z-report fixtures without
+     * duplicating signature logic (frozen-zone service — read-only
+     * access to its private signing routine).
+     */
+    private function callServiceSignature(ZReportService $service, ZReport $zReport, string $prevHash): string
+    {
+        $ref = new \ReflectionClass($service);
+        $method = $ref->getMethod('computeSignature');
+        $method->setAccessible(true);
+
+        return (string) $method->invoke($service, $zReport, $prevHash);
     }
 }

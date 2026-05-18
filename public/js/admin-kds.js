@@ -17,7 +17,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-card[data-v-151558cb] {\n    position: relative;\n    display: flex;\n    flex-direction: column;\n    background: #FFFFFF;\n    border-radius: 12px;\n    overflow: hidden;\n    transition: transform 250ms ease-out, box-shadow 150ms ease, opacity 200ms ease;\n    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);\n}\n.kds-card[data-v-151558cb]:hover {\n    transform: translateY(-1px);\n    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);\n}\n.kds-card[data-v-151558cb]:focus-visible {\n    outline: 4px solid #EA580C;\n    outline-offset: 4px;\n}\n.kds-card__stripe[data-v-151558cb] {\n    height: 6px;\n    flex-shrink: 0;\n}\n.kds-card__header[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    border-bottom: 1px solid #F3F4F6;\n}\n.kds-card__meta[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    height: 26px;\n    padding: 6px 12px 0;\n}\n.kds-card__shortcut[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    color: #6B7280;\n    background: rgba(0, 0, 0, 0.04);\n    min-width: 22px;\n    height: 18px;\n    border-radius: 4px;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.04em;\n}\n.kds-card__shortcut-spacer[data-v-151558cb],\n.kds-card__allergen-spacer[data-v-151558cb] {\n    width: 22px;\n}\n.kds-card__state-source[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n}\n.kds-card__state-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 8px;\n    height: 24px;\n    border-radius: 9999px;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n}\n.kds-card__state-dot[data-v-151558cb] {\n    display: inline-block;\n    width: 6px;\n    height: 6px;\n    border-radius: 9999px;\n}\n.kds-card__source-chip[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 10px;\n    height: 28px;\n    border-radius: 6px;\n    font-size: 13px;\n    font-weight: 700;\n    letter-spacing: 0.1em;\n    text-transform: uppercase;\n}\n.kds-card__allergen-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 4px;\n    padding: 0 8px;\n    height: 20px;\n    border-radius: 4px;\n    background: #EA580C;\n    color: #FFFFFF;\n    font-size: 10px;\n    font-weight: 800;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.30);\n}\n.kds-card__main[data-v-151558cb] {\n    display: flex;\n    align-items: flex-end;\n    justify-content: space-between;\n    gap: 12px; /* KDS-R1-01 heal: prevent queue + elapsed overlap on long times */\n    padding: 2px 16px 10px;\n}\n.kds-card__queue[data-v-151558cb],\n.kds-card__elapsed-wrap[data-v-151558cb] {\n    flex-shrink: 0; /* KDS-R1-01 heal: never compress, never overlap */\n}\n.kds-card__queue[data-v-151558cb] {\n    color: #111827;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 52px;\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.03em;\n    font-variant-numeric: tabular-nums;\n}\n.kds-card__queue-prefix[data-v-151558cb] {\n    font-size: 26px;\n    font-weight: 700;\n    opacity: 0.55;\n    margin-inline-end: 2px;\n}\n.kds-card__elapsed-wrap[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    align-items: flex-end;\n    gap: 2px;\n}\n.kds-card__elapsed-label[data-v-151558cb] {\n    font-size: 10px;\n    font-weight: 700;\n    letter-spacing: 0.15em;\n    text-transform: uppercase;\n    /* KDS-R1-02 heal: removed opacity:0.75 which dropped contrast below WCAG AA. */\n}\n.kds-card__elapsed[data-v-151558cb] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 34px;\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.02em;\n    font-variant-numeric: tabular-nums;\n}\n.kds-card__body[data-v-151558cb] {\n    flex: 1;\n    overflow-y: auto;\n    padding: 4px 16px;\n    position: relative;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar {\n    width: 4px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-thumb {\n    background: #D1D5DB;\n    border-radius: 2px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-track {\n    background: transparent;\n}\n.kds-card__item-block[data-v-151558cb] {\n    border-top: 1px solid #F3F4F6;\n}\n.kds-card__item-block[data-v-151558cb]:first-child {\n    border-top: none;\n}\n\n/* [Sprint 2A DEL-3 2026-05-16] Delivery block — sits at the top of the\n   card body, quiet teal accent (matches KDS_SOURCE.DELIVERY palette in\n   helpers/kdsSource.js). Never out-screams the queue number or timer. */\n.kds-card__delivery[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    gap: 4px;\n    padding: 8px 10px;\n    margin: 4px 0 6px;\n    border-radius: 8px;\n    background: #F0FDFA;\n    border-left: 3px solid #0F766E;\n}\n.kds-card__delivery-row[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n    font-size: 13px;\n    line-height: 1.3;\n    color: #0F766E;\n    font-weight: 600;\n    text-decoration: none;\n}\n.kds-card__delivery-row--muted[data-v-151558cb] {\n    color: #115E59;\n    font-weight: 500;\n}\n.kds-card__delivery-icon[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    width: 16px;\n    font-size: 14px;\n    flex-shrink: 0;\n}\n.kds-card__delivery-text[data-v-151558cb] {\n    min-width: 0;\n    overflow-wrap: anywhere;\n}\n.kds-card__delivery-phone[data-v-151558cb] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-weight: 700;\n    letter-spacing: 0.02em;\n    cursor: pointer;\n}\n.kds-card__delivery-phone[data-v-151558cb]:hover {\n    text-decoration: underline;\n}\n.kds-card__delivery-phone[data-v-151558cb]:focus-visible {\n    outline: 2px solid #0F766E;\n    outline-offset: 2px;\n    border-radius: 4px;\n}\n.kds-card__body-fade[data-v-151558cb] {\n    position: sticky;\n    bottom: 0;\n    height: 0;\n    pointer-events: none;\n}\n.kds-card__body-fade[data-v-151558cb]::before {\n    content: '';\n    position: absolute;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    height: 16px;\n    background: linear-gradient(to top, #FFFFFF, rgba(255, 255, 255, 0));\n}\n.kds-card__cta[data-v-151558cb] {\n    margin: 4px 8px 8px;\n    height: 52px;\n    background: #1F2937;\n    color: #FFFFFF;\n    border: 0;\n    border-radius: 12px;\n    font-size: 22px;\n    font-weight: 700;\n    letter-spacing: 0.01em;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    gap: 14px;\n    transition: transform 100ms ease;\n}\n.kds-card__cta[data-v-151558cb]:active {\n    transform: translateY(1px);\n}\n.kds-card__cta[data-v-151558cb]:focus-visible {\n    outline: 4px solid #4B5563;\n    outline-offset: 2px;\n}\n\n/* age critical pulse on time digit (1Hz) */\n@keyframes kds-card-pulse-digit-151558cb {\n0%, 100% { opacity: 1;\n}\n50%      { opacity: 0.55;\n}\n}\n.kds-pulse-digit[data-v-151558cb] {\n    animation: kds-card-pulse-digit-151558cb 1s ease-in-out infinite;\n}\n.kds-card--ready[data-v-151558cb] {\n    opacity: 0.7;\n}\n.kds-card--cancelled[data-v-151558cb] {\n    background: rgba(254, 226, 226, 0.5);\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-card[data-v-151558cb],\n    .kds-pulse-digit[data-v-151558cb],\n    .kds-card__cta[data-v-151558cb] {\n        transition: none !important;\n        animation: none !important;\n}\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-card[data-v-151558cb] {\n    position: relative;\n    display: flex;\n    flex-direction: column;\n    background: #FFFFFF;\n    border-radius: 12px;\n    overflow: hidden;\n    transition: transform 250ms ease-out, box-shadow 150ms ease, opacity 200ms ease;\n    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);\n}\n.kds-card[data-v-151558cb]:hover {\n    transform: translateY(-1px);\n    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);\n}\n.kds-card[data-v-151558cb]:focus-visible {\n    outline: 4px solid #EA580C;\n    outline-offset: 4px;\n}\n.kds-card__stripe[data-v-151558cb] {\n    height: 6px;\n    flex-shrink: 0;\n}\n.kds-card__header[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    border-bottom: 1px solid #F3F4F6;\n}\n.kds-card__meta[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    height: 26px;\n    padding: 6px 12px 0;\n}\n.kds-card__shortcut[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    /* KDS-R1-03 heal: stable WCAG AA contrast regardless of bucket-tinted header.\n       Previously #6B7280 on rgba(0,0,0,0.04) gave 3.63:1 on critical bucket (red header)\n       and 4.43:1 on fresh — both FAIL AA for normal text. Now opaque gray-100 bg + gray-800\n       text = ~12.6:1 stable on every bucket. */\n    color: #1F2937;\n    background: #F3F4F6;\n    min-width: 22px;\n    height: 18px;\n    border-radius: 4px;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.04em;\n}\n.kds-card__shortcut-spacer[data-v-151558cb],\n.kds-card__allergen-spacer[data-v-151558cb] {\n    width: 22px;\n}\n.kds-card__state-source[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n}\n.kds-card__state-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 8px;\n    height: 24px;\n    border-radius: 9999px;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n}\n.kds-card__state-dot[data-v-151558cb] {\n    display: inline-block;\n    width: 6px;\n    height: 6px;\n    border-radius: 9999px;\n}\n.kds-card__source-chip[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 10px;\n    height: 28px;\n    border-radius: 6px;\n    font-size: 13px;\n    font-weight: 700;\n    letter-spacing: 0.1em;\n    text-transform: uppercase;\n}\n.kds-card__allergen-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 4px;\n    padding: 0 8px;\n    height: 20px;\n    border-radius: 4px;\n    background: #EA580C;\n    color: #FFFFFF;\n    font-size: 10px;\n    font-weight: 800;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.30);\n}\n.kds-card__main[data-v-151558cb] {\n    display: flex;\n    align-items: flex-end;\n    justify-content: space-between;\n    gap: 12px; /* KDS-R1-01 heal: prevent queue + elapsed overlap on long times */\n    padding: 2px 16px 10px;\n}\n.kds-card__queue[data-v-151558cb],\n.kds-card__elapsed-wrap[data-v-151558cb] {\n    flex-shrink: 0; /* KDS-R1-01 heal: never compress, never overlap */\n}\n.kds-card__queue[data-v-151558cb] {\n    color: #111827;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 52px;\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.03em;\n    font-variant-numeric: tabular-nums;\n}\n.kds-card__queue-prefix[data-v-151558cb] {\n    font-size: 26px;\n    font-weight: 700;\n    opacity: 0.55;\n    margin-inline-end: 2px;\n}\n.kds-card__elapsed-wrap[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    align-items: flex-end;\n    gap: 2px;\n}\n.kds-card__elapsed-label[data-v-151558cb] {\n    font-size: 10px;\n    font-weight: 700;\n    letter-spacing: 0.15em;\n    text-transform: uppercase;\n    /* KDS-R1-02 heal: removed opacity:0.75 which dropped contrast below WCAG AA. */\n}\n.kds-card__elapsed[data-v-151558cb] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 34px;\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.02em;\n    font-variant-numeric: tabular-nums;\n}\n.kds-card__body[data-v-151558cb] {\n    flex: 1;\n    overflow-y: auto;\n    padding: 4px 16px;\n    position: relative;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar {\n    width: 4px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-thumb {\n    background: #D1D5DB;\n    border-radius: 2px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-track {\n    background: transparent;\n}\n.kds-card__item-block[data-v-151558cb] {\n    border-top: 1px solid #F3F4F6;\n}\n.kds-card__item-block[data-v-151558cb]:first-child {\n    border-top: none;\n}\n\n/* [Sprint 2A DEL-3 2026-05-16] Delivery block — sits at the top of the\n   card body, quiet teal accent (matches KDS_SOURCE.DELIVERY palette in\n   helpers/kdsSource.js). Never out-screams the queue number or timer. */\n.kds-card__delivery[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    gap: 4px;\n    padding: 8px 10px;\n    margin: 4px 0 6px;\n    border-radius: 8px;\n    background: #F0FDFA;\n    border-left: 3px solid #0F766E;\n}\n.kds-card__delivery-row[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n    font-size: 13px;\n    line-height: 1.3;\n    color: #0F766E;\n    font-weight: 600;\n    text-decoration: none;\n}\n.kds-card__delivery-row--muted[data-v-151558cb] {\n    color: #115E59;\n    font-weight: 500;\n}\n.kds-card__delivery-icon[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    width: 16px;\n    font-size: 14px;\n    flex-shrink: 0;\n}\n.kds-card__delivery-text[data-v-151558cb] {\n    min-width: 0;\n    overflow-wrap: anywhere;\n}\n.kds-card__delivery-phone[data-v-151558cb] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-weight: 700;\n    letter-spacing: 0.02em;\n    cursor: pointer;\n}\n.kds-card__delivery-phone[data-v-151558cb]:hover {\n    text-decoration: underline;\n}\n.kds-card__delivery-phone[data-v-151558cb]:focus-visible {\n    outline: 2px solid #0F766E;\n    outline-offset: 2px;\n    border-radius: 4px;\n}\n.kds-card__body-fade[data-v-151558cb] {\n    position: sticky;\n    bottom: 0;\n    height: 0;\n    pointer-events: none;\n}\n.kds-card__body-fade[data-v-151558cb]::before {\n    content: '';\n    position: absolute;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    height: 16px;\n    background: linear-gradient(to top, #FFFFFF, rgba(255, 255, 255, 0));\n}\n.kds-card__cta[data-v-151558cb] {\n    margin: 4px 8px 8px;\n    height: 52px;\n    background: #1F2937;\n    color: #FFFFFF;\n    border: 0;\n    border-radius: 12px;\n    font-size: 22px;\n    font-weight: 700;\n    letter-spacing: 0.01em;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    gap: 14px;\n    transition: transform 100ms ease;\n}\n.kds-card__cta[data-v-151558cb]:active {\n    transform: translateY(1px);\n}\n.kds-card__cta[data-v-151558cb]:focus-visible {\n    outline: 4px solid #4B5563;\n    outline-offset: 2px;\n}\n\n/* age critical pulse on time digit (1Hz) */\n@keyframes kds-card-pulse-digit-151558cb {\n0%, 100% { opacity: 1;\n}\n50%      { opacity: 0.55;\n}\n}\n.kds-pulse-digit[data-v-151558cb] {\n    animation: kds-card-pulse-digit-151558cb 1s ease-in-out infinite;\n}\n.kds-card--ready[data-v-151558cb] {\n    opacity: 0.7;\n}\n.kds-card--cancelled[data-v-151558cb] {\n    background: rgba(254, 226, 226, 0.5);\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-card[data-v-151558cb],\n    .kds-pulse-digit[data-v-151558cb],\n    .kds-card__cta[data-v-151558cb] {\n        transition: none !important;\n        animation: none !important;\n}\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -1214,6 +1214,27 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     }, 1000);
   },
   methods: {
+    // [2026-05-18 PR-C T2 reframe heal] JS-side filter for OrderStatusChanged.
+    // Mirrors `KitchenReleaseRule::visibleStatuses` (ACCEPT / PREPARING /
+    // PREPARED). A status change affects the KDS board when EITHER the
+    // previous OR the next status is in that set:
+    //   - Entry transitions (PENDING→ACCEPT, ACCEPT→PREPARING, etc.)
+    //   - Exit transitions  (PREPARED→DELIVERED, ACCEPT→CANCELED)
+    //   - Same-board mutations (ACCEPT→PREPARING bump)
+    // Pure transitions outside the KDS board (e.g. DELIVERED→REFUNDED,
+    // CANCELED→RETURNED) no longer trigger an unnecessary debounced refresh.
+    _statusChangeAffectsKds: function _statusChangeAffectsKds(parsed) {
+      var KDS_VISIBLE = [4, 7, 8]; // ACCEPT, PREPARING, PREPARED (mirror KitchenReleaseRule)
+      var payload = parsed && parsed.payload ? parsed.payload : parsed || {};
+      var oldStatus = Number(payload.old_status);
+      var newStatus = Number(payload.new_status);
+      // Missing payload (legacy / unparsed event) → fall back to refresh
+      // rather than risk swallowing a real transition.
+      if (!Number.isFinite(oldStatus) && !Number.isFinite(newStatus)) {
+        return true;
+      }
+      return KDS_VISIBLE.includes(oldStatus) || KDS_VISIBLE.includes(newStatus);
+    },
     // [Sprint 2A DEL-3 2026-05-16] Legacy template delivery-block helpers.
     // Mirror the V2 KdsOrderCard `isDeliveryOrder` + `deliveryAddressLine`
     // computed logic for the rollback path (?v2=0 / kds.v2_enabled='0').
@@ -1566,10 +1587,19 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       // [AUDIT-P51-BUG2] Always unsubscribe first to prevent duplicate listeners on re-mount
       this.unsubscribeEcho();
       try {
-        this._eventSub = (0,_services_eventContract__WEBPACK_IMPORTED_MODULE_9__.onEvents)(branchId, [{
+        this._eventSub = (0,_services_eventContract__WEBPACK_IMPORTED_MODULE_9__.onEvents)(branchId, [
+        // [2026-05-18 PR-C T2 reframe heal] Filter OrderStatusChanged JS-side:
+        // refresh only when from OR to is in the KDS-visible status set
+        // (ACCEPT=4 / PREPARING=7 / PREPARED=8 — mirror KitchenReleaseRule).
+        // Before this guard, every status flip (DELIVERED→REFUNDED, CANCELED,
+        // RETURNED, etc.) triggered a debounced full refresh even though
+        // none of those affect the KDS board → wasted backend calls + flicker.
+        {
           broadcastAs: 'OrderStatusChanged',
-          handler: function handler() {
-            _this8._debouncedRefresh();
+          handler: function handler(parsed) {
+            if (_this8._statusChangeAffectsKds(parsed)) {
+              _this8._debouncedRefresh();
+            }
           }
         }, {
           broadcastAs: 'OrderCreated',
@@ -2172,9 +2202,7 @@ var _hoisted_10 = {
 var _hoisted_11 = {
   "class": "kds-card__elapsed-wrap"
 };
-var _hoisted_12 = {
-  "class": "kds-card__body"
-};
+var _hoisted_12 = ["aria-label"];
 var _hoisted_13 = {
   key: 0,
   "class": "kds-card__delivery",
@@ -2248,7 +2276,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
       color: $options.elapsedColor
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.elapsedFormatted), 7 /* TEXT, CLASS, STYLE */)])])], 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" BODY "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint 2A DEL-3 2026-05-16] Delivery block — only renders when\n           the order is destined for delivery AND the backend has populated\n           `order_address` (i.e. the eager-load was applied). Without this,\n           the livreur sees a token + delivery_time and literally cannot\n           deliver. Kept visually quiet (border-left accent, monospace\n           latin digits for the phone) so it never out-screams the queue\n           number or the elapsed timer. "), $options.isDeliveryOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_13, [$options.deliveryAddressLine ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_14, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.elapsedFormatted), 7 /* TEXT, CLASS, STYLE */)])])], 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" BODY "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" KDS-R1-05 heal: tabindex=0 + role=region + aria-label = Safari keyboard accessibility\n         on scrollable overflow:auto region (axe-core 'scrollable-region-focusable' serious). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-card__body",
+    tabindex: "0",
+    role: "region",
+    "aria-label": _ctx.$t('label.kds_card_body_aria', {
+      queue: $props.order.queue_number || $props.order.id
+    })
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint 2A DEL-3 2026-05-16] Delivery block — only renders when\n           the order is destined for delivery AND the backend has populated\n           `order_address` (i.e. the eager-load was applied). Without this,\n           the livreur sees a token + delivery_time and literally cannot\n           deliver. Kept visually quiet (border-left accent, monospace\n           latin digits for the phone) so it never out-screams the queue\n           number or the elapsed timer. "), $options.isDeliveryOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_13, [$options.deliveryAddressLine ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_14, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kds-card__delivery-icon",
     "aria-hidden": "true"
   }, "📍", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.deliveryAddressLine), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.customerName ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_16, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
@@ -2277,7 +2312,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }), 128 /* KEYED_FRAGMENT */))]);
   }), 128 /* KEYED_FRAGMENT */)), _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "kds-card__body-fade"
-  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" FOOTER CTA "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, -1 /* CACHED */))], 8 /* PROPS */, _hoisted_12), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" FOOTER CTA "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kds-card__cta",
     onClick: _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
@@ -5777,6 +5812,14 @@ var WS_RECONNECTING = 'RECONNECTING';
 var WS_DEGRADED = 'DEGRADED';
 var WS_DISCONNECTED = 'DISCONNECTED';
 var WS_SESSION_INVALID = 'SESSION_INVALID';
+// [Wave 3 P1 / KDS-RED-09 2026-05-18] Safe cadence floor — 4 req/s max per
+// station. Mirrors config/catalog_v15.php clamp; protects against owner
+// misconfig (FK_CATALOG_KDS_*=10 → ~80 req/s/station DoS).
+// [Wave 3b P1 / KDS-ADV3B-04 2026-05-18] Upper cap 60_000ms base / 30_000ms
+// jitter protects against silent-blind misconfig (e.g. =999999999 → 11.5d).
+var CADENCE_FLOOR_MS = 250;
+var CADENCE_CEILING_MS = 60000;
+var JITTER_CEILING_MS = 30000;
 var DEFAULT_CADENCE_OPTIONS = Object.freeze({
   highActivityBaseMs: 3000,
   highActivityJitterMs: 1000,
@@ -6278,17 +6321,35 @@ var KdsSyncService = /*#__PURE__*/function () {
     value: function _runtimeCadenceOptions() {
       var _window$foodkingConfi;
       var cfg = typeof window !== 'undefined' && (_window$foodkingConfi = window.foodkingConfig) !== null && _window$foodkingConfi !== void 0 && _window$foodkingConfi.kdsFallbackPolling ? window.foodkingConfig.kdsFallbackPolling : {};
-      var toInt = function toInt(value, fallback) {
+
+      // [Wave 3 P1 / KDS-RED-09 2026-05-18] Base cadences are clamped to
+      // CADENCE_FLOOR_MS (250ms = 4 req/s) so an owner-misconfig like
+      // window.foodkingConfig.kdsFallbackPolling.disconnectedBaseMs=10 cannot
+      // weaponize the polling loop into PHP-FPM saturation. Jitters keep a
+      // 0 floor since they widen — never shorten — the wait.
+      // [Wave 3b P1 / KDS-ADV3B-04 2026-05-18] Upper cap CADENCE_CEILING_MS
+      // (60_000ms = 1 poll/min minimum) and JITTER_CEILING_MS (30_000ms)
+      // prevent the symmetric silent-blind misconfig where a runaway value
+      // (e.g. disconnectedBaseMs=999999999) would stall KDS for ~11.5 days.
+      var clampBase = function clampBase(value, fallback) {
         var parsed = parseInt(value, 10);
-        return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+        var candidate = Number.isFinite(parsed) ? parsed : fallback;
+        var floored = candidate >= CADENCE_FLOOR_MS ? candidate : CADENCE_FLOOR_MS;
+        return floored <= CADENCE_CEILING_MS ? floored : CADENCE_CEILING_MS;
+      };
+      var clampJitter = function clampJitter(value, fallback) {
+        var parsed = parseInt(value, 10);
+        var candidate = Number.isFinite(parsed) ? parsed : fallback;
+        var floored = candidate >= 0 ? candidate : 0;
+        return floored <= JITTER_CEILING_MS ? floored : JITTER_CEILING_MS;
       };
       return {
-        highActivityBaseMs: toInt(cfg.highActivityBaseMs, DEFAULT_CADENCE_OPTIONS.highActivityBaseMs),
-        highActivityJitterMs: toInt(cfg.highActivityJitterMs, DEFAULT_CADENCE_OPTIONS.highActivityJitterMs),
-        degradedBaseMs: toInt(cfg.degradedBaseMs, DEFAULT_CADENCE_OPTIONS.degradedBaseMs),
-        degradedJitterMs: toInt(cfg.degradedJitterMs, DEFAULT_CADENCE_OPTIONS.degradedJitterMs),
-        disconnectedBaseMs: toInt(cfg.disconnectedBaseMs, DEFAULT_CADENCE_OPTIONS.disconnectedBaseMs),
-        disconnectedJitterMs: toInt(cfg.disconnectedJitterMs, DEFAULT_CADENCE_OPTIONS.disconnectedJitterMs)
+        highActivityBaseMs: clampBase(cfg.highActivityBaseMs, DEFAULT_CADENCE_OPTIONS.highActivityBaseMs),
+        highActivityJitterMs: clampJitter(cfg.highActivityJitterMs, DEFAULT_CADENCE_OPTIONS.highActivityJitterMs),
+        degradedBaseMs: clampBase(cfg.degradedBaseMs, DEFAULT_CADENCE_OPTIONS.degradedBaseMs),
+        degradedJitterMs: clampJitter(cfg.degradedJitterMs, DEFAULT_CADENCE_OPTIONS.degradedJitterMs),
+        disconnectedBaseMs: clampBase(cfg.disconnectedBaseMs, DEFAULT_CADENCE_OPTIONS.disconnectedBaseMs),
+        disconnectedJitterMs: clampJitter(cfg.disconnectedJitterMs, DEFAULT_CADENCE_OPTIONS.disconnectedJitterMs)
       };
     }
   }]);

@@ -40,7 +40,10 @@ class AdministratorService
                         $query->where($key, 'like', '%' . $request . '%');
                     }
                 }
-            })->role(EnumRole::ADMIN)->orderBy($orderColumn, $orderType)->$method(
+            // [GOAL-pageby-V1.0.2 class-of-bug] Spatie's ->role($int) calls findById($int) (HasRoles L84).
+            // Passing EnumRole::ADMIN int breaks whenever roles.id AUTO_INCREMENT skipped past it
+            // (fresh seed lands at 73-80). Stable identity = role NAME. Pattern from DeliveryBoyService heal (0332e5b7e).
+            })->role('Admin', 'sanctum')->orderBy($orderColumn, $orderType)->$method(
                 $methodValue
             );
         } catch (Exception $exception) {

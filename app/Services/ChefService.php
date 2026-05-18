@@ -37,7 +37,10 @@ class ChefService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType   = $request->get('order_type') ?? 'desc';
 
-            return User::with('media', 'addresses', 'messages')->role(EnumRole::CHEF)->where(function ($query) use ($requests) {
+            // [GOAL-pageby-V1.0.2 class-of-bug] Spatie's ->role($int) calls findById($int) (HasRoles L84).
+            // Passing EnumRole::CHEF int breaks whenever roles.id AUTO_INCREMENT skipped past it
+            // (fresh seed lands at 73-80). Stable identity = role NAME. Pattern from DeliveryBoyService heal (0332e5b7e).
+            return User::with('media', 'addresses', 'messages')->role('Chef', 'sanctum')->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->chefFilter)) {
                         $query->where($key, 'like', '%' . $request . '%');
