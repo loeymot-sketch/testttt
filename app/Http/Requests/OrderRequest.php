@@ -113,9 +113,16 @@ class OrderRequest extends FormRequest
                 'delivery_charge' => $quote['delivery_charge'],
             ]);
         } elseif ($isDelivery && $this->filled('delivery_distance_km')) {
+            // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-02 P0] DEL-5 wire-up.
+            // Legacy-fallback branch (no saved address) must also honour the
+            // per-branch fee config when branch_id is supplied. Branch::find
+            // is null-safe: an unknown branch_id falls back to the legacy
+            // `max(5, ceil(d/5)*5)` formula (DeliveryFeeService:33).
+            $branchId = (int) $this->input('branch_id', 0);
+            $branch = $branchId > 0 ? \App\Models\Branch::find($branchId) : null;
             $this->merge([
                 'delivery_charge' => app(DeliveryFeeService::class)
-                    ->fromDistanceKm($this->input('delivery_distance_km')),
+                    ->fromDistanceKm($this->input('delivery_distance_km'), $branch),
             ]);
         }
     }

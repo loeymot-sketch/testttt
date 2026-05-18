@@ -24,9 +24,15 @@ class PosOrderRequest extends FormRequest
         }
 
         if ($this->filled('delivery_distance_km')) {
+            // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-03 P0] DEL-5 wire-up.
+            // POS walk-in DELIVERY path must also resolve the per-branch fee
+            // config when branch_id is in the payload. Mirrors OrderRequest:117
+            // and DeliveryQuoteService:63. Null-safe: unknown branch -> legacy.
+            $branchId = (int) $this->input('branch_id', 0);
+            $branch = $branchId > 0 ? \App\Models\Branch::find($branchId) : null;
             $this->merge([
                 'delivery_charge' => app(DeliveryFeeService::class)
-                    ->fromDistanceKm($this->input('delivery_distance_km')),
+                    ->fromDistanceKm($this->input('delivery_distance_km'), $branch),
             ]);
         }
 
@@ -41,10 +47,17 @@ class PosOrderRequest extends FormRequest
 
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * V1.0.2 BUILD-6 heal: defense-in-depth — PosController constructor enforces
+     * `permission:pos` on every action except `quote` (kiosk pricing path uses its
+     * own auth:sanctum + ability gate). PosOrderRequest is only injected on the
+     * `store` action which carries the `permission:pos` middleware. FormRequest
+     * doubles down so any future route bypass (e.g. inline controller invocation)
+     * still authz-checks. Pattern matches Wave 5H (CurrencyRequest/TaxRequest/...).
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('pos') ?? false;
     }
 
     /**
