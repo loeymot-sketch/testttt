@@ -109,6 +109,26 @@ class AppServiceProvider extends ServiceProvider
                 );
             }
 
+            // [GOAL-CMS-2026-05-18 M-R3-P0-C heal] R3 T-2.4.2 Sec S-1+S-5:
+            // APP_DEBUG=true in production leaks stack traces, SQL, DB creds,
+            // HMAC context, and even cache state via Whoops. SiteService:48
+            // ALLOWS admin-UI writing of APP_DEBUG into .env (an env-edit
+            // attack surface — see M-P0-D/E/F V1.0.2 backlog). Until the
+            // EnvEditor allowlist heal lands, the production boot guard
+            // refuses to boot when APP_DEBUG=true, mirroring the
+            // POS_SIMULATION_HARDWARE / PAYMENT_BYPASS / PRINTING_BYPASS
+            // patterns above. config('app.debug') reads the boot-cached
+            // value so this fires before any request.
+            if ((bool) config('app.debug', false)) {
+                throw new \RuntimeException(
+                    'APP_DEBUG=true is forbidden in production: enabling debug leaks '
+                    . 'stack traces, SQL queries, DB credentials, and HMAC context. '
+                    . 'Set APP_DEBUG=false in your .env file then run `php artisan config:cache`. '
+                    . 'If APP_DEBUG was set true via the admin UI (SiteService), revoke and '
+                    . 'redeploy. See R3 T-2.4.2 Sec for the env-edit lockdown V1.0.2 backlog.'
+                );
+            }
+
             if (in_array(config('broadcasting.default'), [null, 'null'], true)) {
                 throw new \RuntimeException(
                     'BROADCAST_DRIVER must be explicitly set in production (expected: pusher|redis). '
