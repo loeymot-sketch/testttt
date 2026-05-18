@@ -101,9 +101,22 @@ All 4 P0 sentinels GREEN.
 
 ## §4 — Commit SHA(s)
 
-Will be filled after `git commit`. One commit covers all 4 P0 fixes + test compat updates.
+**`606b7aaa7`** — single commit covering all 4 P0 fixes + 2 existing-test adapters + 4 new sentinel test files + this evidence bundle.
 
-(See git log post-commit for the final hash. Commit message follows GStack convention `fix(pos-payment-goal-r2): ...` with Co-Authored-By Claude.)
+```
+$ git log --oneline -1
+606b7aaa7 fix(pos-payment-goal-r2): 4 P0 POS Payment heals from Round 2 Impl A scope
+
+$ git show --stat 606b7aaa7
+ 10 files changed, 1166 insertions(+), 1 deletion(-)
+ create mode 100644 reports/test-e2e/goal-2026-05-18/round-2/impl-a-pos-evidence.md
+ create mode 100644 tests/Feature/Payment/PaymentServiceGatewayContextSentinelTest.php
+ create mode 100644 tests/Feature/Sentinels/ParkedOrderAdminBranchZeroSentinelTest.php
+ create mode 100644 tests/Feature/Sentinels/WizardProfileMirrorSentinelTest.php
+ create mode 100644 tests/Unit/Payment/StripeChargeMetadataTest.php
+```
+
+Branch: `v1-0-1-hardening-2026-05-17` (parent commit `abe0e9b5a3b67b72d76163f31e01d941091d61fe` chore(v1-prep) — head matches Round 1 baseline so no rebase risk vs. Impl B/C/D).
 
 ---
 
