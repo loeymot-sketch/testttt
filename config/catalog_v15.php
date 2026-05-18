@@ -80,12 +80,17 @@ return [
         // KDS cadence tuning (defaults preserve existing behavior).
         // CONNECTED remains Infinity in KdsSyncService; these values apply
         // to degraded/disconnected windows and high-activity mode.
-        'high_activity_base_ms' => env('FK_CATALOG_KDS_HIGH_ACTIVITY_BASE_MS', 3_000),
-        'high_activity_jitter_ms' => env('FK_CATALOG_KDS_HIGH_ACTIVITY_JITTER_MS', 1_000),
-        'degraded_base_ms' => env('FK_CATALOG_KDS_DEGRADED_BASE_MS', 5_000),
-        'degraded_jitter_ms' => env('FK_CATALOG_KDS_DEGRADED_JITTER_MS', 2_000),
-        'disconnected_base_ms' => env('FK_CATALOG_KDS_DISCONNECTED_BASE_MS', 10_000),
-        'disconnected_jitter_ms' => env('FK_CATALOG_KDS_DISCONNECTED_JITTER_MS', 3_000),
+        //
+        // [Wave 3 P1 / KDS-RED-09 2026-05-18] Floor clamp 250ms (4 req/s max per
+        // station) protects against owner misconfig like FK_CATALOG_KDS_*=10
+        // saturating PHP-FPM (~80 req/s/station local DoS). Jitter floored at 0
+        // to forbid negative integers from `parseInt` overflows downstream.
+        'high_activity_base_ms' => max(250, (int) env('FK_CATALOG_KDS_HIGH_ACTIVITY_BASE_MS', 3_000)),
+        'high_activity_jitter_ms' => max(0, (int) env('FK_CATALOG_KDS_HIGH_ACTIVITY_JITTER_MS', 1_000)),
+        'degraded_base_ms' => max(250, (int) env('FK_CATALOG_KDS_DEGRADED_BASE_MS', 5_000)),
+        'degraded_jitter_ms' => max(0, (int) env('FK_CATALOG_KDS_DEGRADED_JITTER_MS', 2_000)),
+        'disconnected_base_ms' => max(250, (int) env('FK_CATALOG_KDS_DISCONNECTED_BASE_MS', 10_000)),
+        'disconnected_jitter_ms' => max(0, (int) env('FK_CATALOG_KDS_DISCONNECTED_JITTER_MS', 3_000)),
     ],
 
     'pos_wizard_composer_aware' => [
