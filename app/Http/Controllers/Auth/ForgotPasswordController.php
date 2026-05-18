@@ -120,8 +120,13 @@ class ForgotPasswordController extends Controller
         $validator = Validator::make($request->all(), [
             'email'                 => ['required', 'string', 'email', 'max:255'],
             'reset_token'           => ['required', 'string', 'size:64'],
-            'password'              => ['required', 'string', 'min:6', 'confirmed'],
-            'password_confirmation' => ['required', 'string', 'min:6'],
+            // [F-2 AUTH R1 V1.0.1 quick win — 2026-05-19]
+            // Bumped min:6 -> min:12 for parity with staff create/update and the
+            // bcrypt-rounds-12 hardening shipped in Wave 5G. Sentinel:
+            // tests/Feature/Sentinels/PasswordResetMinLengthSentinelTest.php
+            // Source: reports/audit/foundation-2026-05-18/round-1/F-2-AUTH/STATUS.md §5.1 R1
+            'password'              => ['required', 'string', 'min:12', 'confirmed'],
+            'password_confirmation' => ['required', 'string', 'min:12'],
         ]);
 
         if ($validator->fails()) {
