@@ -1,0 +1,81 @@
+{
+  "specialist": "Architect",
+  "zone": "F-1 Data Storage",
+  "scope": "Model layer integrity, BranchScope coverage gaps, FK soundness, inheritance/trait cleanliness",
+  "approach": "Read-only static analysis. Compared the 22 BranchScope-applied models against the 32 models with branch_id columns (or pseudo-tenant ownership). Inspected core relations, inheritance, and identified scope-gap classes.",
+  "snapshot": {
+    "total_models": 78,
+    "total_migrations": 166,
+    "branchscope_models": 21,
+    "wizardprofilebranchscope_models": 1,
+    "models_with_branch_id_no_scope": 10
+  },
+  "findings": [
+    {
+      "id": "ARCH-F1-001",
+      "severity": "P0-DOC-REVIEW",
+      "title": "10 models carry branch_id but DO NOT apply BranchScope — divergence from CLAUDE.md §9 inventory of 17 (advertises 11, actually 22 applied)",
+      "models": [
+        {"file": "app/Models/ActionLog.php", "line": 8, "note": "Auto-populates branch_id in booted() but never registers BranchScope global. DashboardService::auditTrail must manually filter."},
+        {"file": "app/Models/AuditLog.php", "line": 16, "note": "INTENTIONAL — fiscal append-only, scope would interfere with HMAC chain rebuild + admin verification. KEEP-AS-IS."},
+        {"file": "app/Models/ZReport.php", "line": 11, "note": "INTENTIONAL — fiscal table, admin/owner cross-branch view required for Z verify/archive. KEEP-AS-IS."},
+        {"file": "app/Models/Customer.php", "line": 9, "note": "Extends User (single-table inheritance on users) — relies on User exemption + caller-side filter. Risk: NFC UID lookup cross-branch leak if controller forgets where('branch_id', ...)."},
+        {"file": "app/Models/DomainEvent.php", "line": 8, "note": "Outbox for async dispatch. branch_id stored for routing. Workers run console so BranchScope wouldn't apply anyway. KEEP-AS-IS."},
+        {"file": "app/Models/DiningTableAuditLog.php", "line": 7, "note": "POS-9.1.4 dining audit trail. Same family as ActionLog — admin-only inspection. Should be scoped at controller layer."},
+        {"file": "app/Models/Message.php", "line": 8, "note": "Legacy admin messaging. Low usage — 0 controller hits in fast-path. Acceptable gap."},
+        {"file": "app/Models/FrontendDiningTable.php", "line": 9, "note": "Mirrors DiningTable (which DOES apply BranchScope). Reuses same `dining_tables` table — risk: same table, two models with divergent scoping."},
+        {"file": "app/Models/KioskPromo.php", "line": 29, "note": "branch_id required-where in scopeValidFor() at usage site. Per-call filter, not global. Acceptable but documented."},
+        {"file": "app/Models/UpsellRule.php", "line": 27, "note": "Same pattern as KioskPromo — scopeActiveForBranch(). Per-call. Acceptable."}
+      ],
+      "removes_breaks": "ADD-ONLY recommendation — adding scope to AuditLog/ZReport WOULD BREAK fiscal verify (cross-branch admin must see all). Customer/FrontendDiningTable add WOULD NEED testing as those models may be queried pre-auth (Sanctum login flow).",
+      "decision": "Keep current state. Document the intentional exemptions in model class docblocks (already partially done)."
+    },
+    {
+      "id": "ARCH-F1-002",
+      "severity": "P2-DESIGN",
+      "title": "FrontendDiningTable and DiningTable both target `dining_tables` — single-table inheritance without scope parity",
+      "evidence": "app/Models/FrontendDiningTable.php:12 `protected $table = \"dining_tables\";` — but no BranchScope. app/Models/DiningTable.php applies BranchScope. Two models, one table, divergent isolation.",
+      "removes_breaks": "Removing FrontendDiningTable would require migrating callers to DiningTable. Risk: pre-auth kiosk lookups may rely on global view. KEEP-AS-IS, document.",
+      "decision": "DUPLICATION-KEEP-AS-IS-RISK with controller-side audit recommended."
+    },
+    {
+      "id": "ARCH-F1-003",
+      "severity": "P3-CLEANUP",
+      "title": "23 models lack HasFactory trait — partial test infrastructure coverage",
+      "models_count": 23,
+      "examples": ["AuditLog", "ZReport", "DomainEvent", "StockMovement", "OrderStatusTransition", "ItemBranchAvailability", "LoyaltyTransaction"],
+      "removes_breaks": "No — adding HasFactory is non-destructive. Removing trait absences increases test ergonomics.",
+      "decision": "STRUCTURAL-RECOMMENDATION — add HasFactory to fiscal/operational models for future test coverage. Not urgent."
+    },
+    {
+      "id": "ARCH-F1-004",
+      "severity": "P2-DESIGN",
+      "title": "Customer extends User (single-table inheritance) — same `users` table with role-based filtering",
+      "evidence": "app/Models/Customer.php:9 `class Customer extends User` — comment 'In-app customer accounts live in users with the Customer role'. Adds nfc_uid + is_guest fillable.",
+      "removes_breaks": "Removing Customer would require renaming queries throughout. KEEP-AS-IS, document inheritance choice.",
+      "decision": "STRUCTURAL-OK — pattern is intentional and documented in class docblock."
+    },
+    {
+      "id": "ARCH-F1-005",
+      "severity": "P2-DESIGN",
+      "title": "WizardProfileBranchScope is sister to BranchScope — handles nullable branch_id_scope semantics (global OR scoped)",
+      "evidence": "app/Models/Scopes/WizardProfileBranchScope.php:33 — overrides for `item_wizard_profiles.branch_id_scope` (nullable column = published-globally semantics).",
+      "removes_breaks": "Removing or merging would break wizard profile inheritance. KEEP-AS-IS — well-justified by 2026-05-18 PR-D blocker heal comment.",
+      "decision": "ARCH-OK pattern."
+    },
+    {
+      "id": "ARCH-F1-006",
+      "severity": "P1-NF525-AUTH-FOOTPRINT",
+      "title": "BranchScope skips authenticated checks in console mode unless runningUnitTests() — workers/cron see ALL branches",
+      "evidence": "app/Models/Scopes/BranchScope.php:27 `if ((!App::runningInConsole() || App::runningUnitTests()) && Auth::check())`",
+      "implication": "Cron/queue workers (fiscal verify, Z report cron, outbox dispatch) intentionally see all branches. This is correct for cross-branch system tasks (e.g., FiscalVerifyChainCommand). Document but do not change — frozen file.",
+      "decision": "DOCUMENT — confirm callers always wrap with `withoutGlobalScope(BranchScope::class)` when needed and never rely on implicit console-bypass behavior in HTTP path."
+    }
+  ],
+  "summary": {
+    "branchscope_coverage_correct": 19,
+    "branchscope_coverage_intentionally_global": 4,
+    "branchscope_coverage_should_review": 3,
+    "verdict": "Architecture is sound. BranchScope coverage is broader than CLAUDE.md §9 claims (22 vs 11 advertised — drift in DOCUMENTATION, not code). 3 borderline models need controller-layer audit but no code change to fix."
+  }
+}

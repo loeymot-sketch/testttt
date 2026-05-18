@@ -1,0 +1,81 @@
+{
+  "specialist": "Architect",
+  "zone": "F-2 Auth + Security",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "date": "2026-05-18",
+  "mode": "READ-ONLY",
+  "scope_summary": "Auth flow integrity: login -> token issue -> middleware check -> branch scope; FormRequest authz unification opportunity (88 scattered).",
+  "files_read": [
+    "app/Http/Kernel.php",
+    "app/Http/Controllers/Auth/LoginController.php",
+    "app/Http/Controllers/Auth/KioskMachineLoginController.php",
+    "app/Http/Controllers/Auth/ForgotPasswordController.php",
+    "app/Http/Controllers/Auth/RefreshTokenController.php",
+    "app/Http/Controllers/Auth/GuestSignupController.php",
+    "app/Http/Controllers/Auth/SignupController.php",
+    "app/Http/Controllers/Auth/DeactivateController.php",
+    "app/Http/Middleware/Authenticate.php",
+    "app/Http/Middleware/EnsureUserStatusActive.php",
+    "app/Http/Middleware/ApiKeyMiddleware.php",
+    "app/Providers/RouteServiceProvider.php",
+    "app/Providers/BroadcastServiceProvider.php",
+    "config/auth.php",
+    "config/sanctum.php",
+    "routes/api.php (auth surface)"
+  ],
+  "findings": {
+    "P1_architecture": [
+      {
+        "id": "F-2-ARCH-01",
+        "title": "Authorization model is THREE-LAYER mixed (route middleware + controller abort_unless + FormRequest authorize). 94 FormRequests; 72 return true unconditionally; only ~25 enforce->can()/tokenCan(). The 'permission:settings' middleware is referenced narrowly (4 hits in routes/api.php). Most admin authz lives in either FormRequest authorize() or abort_unless($user->can(...)) scattered across controllers (e.g. PosController.php:151, StockRuptureDashboardController.php:200, ItemController.php:262/283, Fiscal/{Z,X}ReportController, Pos/CashDrawerSessionController.php:251). NO single canonical layer; impossible to audit completeness at a glance.",
+        "evidence": "grep returned 72 'return true' bodies in app/Http/Requests/; FormRequest count 94; permission:X middleware total 4 in routes/api.php; controller-level can() checks distributed across 11+ files.",
+        "category": "RECOMMENDATION",
+        "user_impact": "Risk that future controller additions (e.g. NEW Livreur endpoints in plans/GOAL_PRODUCTION_READINESS_LECAYENNE_2026-05-18.md) silently drop authz because there is no enforcing pattern. Documented BRAIN drift: '88 endpoints partial heal Wave 5H (5 done) + Wave 7 follow-up (3 cash session done)' -> 80 still scattered.",
+        "proposed_v1_action": "V1.0.2 add a Sentinel test: scan all admin controller @method-line bodies and assert each one either (a) sits under a permission:X middleware group OR (b) opens with abort_unless($user->can('Y')) OR (c) the inbound FormRequest::authorize() returns ->can('Y'). Block CI on regression."
+      },
+      {
+        "id": "F-2-ARCH-02",
+        "title": "Two parallel admin route groups at lines 256 and 270 of routes/api.php (both prefix 'admin', same middleware except 'throttle:60,1' vs 'throttle:admin-mutation'). The first group exists ONLY to host /menu/availability/toggle with a 60/min bucket. Two SIBLING admin groups (not nested) make it easy for a future dev to register a route in the wrong group and accidentally inherit the wrong throttle ceiling.",
+        "evidence": "routes/api.php:256-268 (60/min admin group, 3 routes) and routes/api.php:270 (admin-mutation group, hundreds of routes). Comment block above line 252-255 explicitly warns about the stacking pitfall.",
+        "category": "KEEP-AS-IS",
+        "user_impact": "Currently works correctly because the comment block documents the constraint. Risk is future drift.",
+        "proposed_v1_action": "None for V1. KEEP. Optionally V1.0.2 extract a helper macro Route::adminGroup(throttle: 'X', fn(...)). Owner gate not required."
+      },
+      {
+        "id": "F-2-ARCH-03",
+        "title": "Three distinct token-issue paths (LoginController:113 ['*'], KioskMachineLoginController:100 ['kiosk:order'], GuestSignupController:146 ['kiosk:order'], ForgotPasswordController:167 ['*'], RefreshTokenController:51 inherit). Naming convention enforces discrimination ('auth_token' vs 'kiosk-token'). Channel auth in routes/channels.php:41 now correctly uses TOKEN NAME (immune to Sanctum '*' wildcard) instead of tokenCan() -- documented heal post Wave R3 T-3.2.2 F-SEC-W6-01.",
+        "evidence": "routes/channels.php lines 41-65 contain explicit comment: 'tokenCan('kiosk:order') was the kiosk discriminator. But LoginController:113 mints admin/staff tokens with abilities=['*']... Now we use the TOKEN NAME directly (un-spoofable, never wildcard-matched).' Healed already.",
+        "category": "KEEP-AS-IS",
+        "user_impact": "Healed correctly. Working.",
+        "proposed_v1_action": "None. Attest: channel-auth discriminator uses token NAME not ability -- correct post-heal."
+      }
+    ],
+    "P2_architecture": [
+      {
+        "id": "F-2-ARCH-04",
+        "title": "EnsureUserStatusActive runs per-request DB SELECT on every authenticated API call (app/Http/Middleware/EnsureUserStatusActive.php:70 `DB::table('users')->where('id', $user->id)->value('status')`). On a busy POS at lunch rush (~120/min POS-quote bucket) this is up to ~12000 extra single-column selects per hour. Owner Gate G4 explicitly chose this over a 5-min cache. NOT a defect -- intentional trade-off.",
+        "evidence": "Class docblock at EnsureUserStatusActive.php:18-43. Explicit comment 'Owner Gate G4 chose Option A (every-request middleware) over periodic-cache (5-min TTL).'",
+        "category": "KEEP-AS-IS",
+        "user_impact": "Documented and gated. Performance impact is bounded (single indexed SELECT by PK). Working.",
+        "proposed_v1_action": "None for V1. If load tests show p99 regression, V1.0.2 may revisit with a 60-second cache."
+      }
+    ],
+    "P3_architecture": [],
+    "P4_architecture": []
+  },
+  "attestations_of_owner_state": [
+    "Bcrypt rounds bumped 10 -> 12 (config/hashing.php:39) with transparent rehash on login (LoginController.php:95-98). Correctly preserves UX.",
+    "RefreshTokenController.php:42-46 explicitly preserves source token abilities (defensive ['*'] -> [] fallback). Privilege escalation closed.",
+    "Token rotation on relogin (LoginController:109 + KioskMachineLoginController:96). Closes token sprawl per CLAUDE.md §9.",
+    "Guest token narrowed to ['kiosk:order'] (GuestSignupController:146) + 30-day TTL. Closes the wildcard guest-token vector.",
+    "EnsureUserStatusActive middleware priority ordering correctly enforces 'after AuthenticatesRequests' via Kernel.php:81 $middlewarePriority. Without that, default Laravel `array_unshift` would run it before user is resolved.",
+    "Broadcast channel-auth routes/channels.php uses TOKEN NAME ('kiosk-token') not tokenCan() -- immune to '*' wildcard. Recent heal (R3 T-3.2.2 F-SEC-W6-01/02).",
+    "TrustHosts.php (recently healed Wave 3c b1c50311d) anchored regex `^127\\.0\\.0\\.1$`, `^localhost$`, `^\\[::1\\]$`, `^0\\.0\\.0\\.0$`. Closes the host-spoof attack from prior audit."
+  ],
+  "frozen_zones_touched": false,
+  "consolidation_opportunities": [
+    "FormRequest authz unification: write a base FormRequest that requires subclasses to declare ::requiredPermission(): array and reject if absent. Convert 72 'return true' subclasses one wave at a time. NOT V1 work -- backlog V1.0.2.",
+    "OTP rate-limit deduplication: SignupController + GuestSignupController + ForgotPasswordController all dispatch SMS-bearing OTPs. Same /otp 5/min + /verify 3/5min pattern but separate route registrations. Macro candidate."
+  ],
+  "wall_clock_minutes": 7
+}

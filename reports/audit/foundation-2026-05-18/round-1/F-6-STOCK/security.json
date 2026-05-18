@@ -1,0 +1,101 @@
+{
+  "role": "Security",
+  "zone": "F-6 Stock + Availability",
+  "specialist": "cross-branch leakage + tamper of stock_movements + auth on dashboard",
+  "audit_window": "2026-05-18 (Round 1 read-only)",
+  "files_examined": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/StockLevel.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/StockMovement.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/Scopes/BranchScope.php (referenced)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Stock/StockService.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/StockRuptureDashboardController.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Menu/AvailabilityService.php (lines 310-340 raw SQL audit)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_04_27_143130_create_stock_movements_table.php"
+  ],
+  "verdict": "OK-with-tamper-window",
+  "summary": "BranchScope applied to BOTH StockLevel and StockMovement models — cross-branch read leakage closed via global scope (iter12 P0). Service writes are all sourced from order.branch_id, and StockService rejects branch_id<=0. Dashboard controller uses permission-gated scopedBranches() respecting user branch_id. AvailabilityService::decrementForOrder has one raw-SQL site with $qty interpolated — cast to int just before, so technically safe but worth flagging since it's the lone raw-SQL hot path. Two security-adjacent concerns: (1) DB-level append-only enforcement gap (see DBA F6-DBA-01) means a compromised admin with DB ACCESS can tamper stock_movements without breaking the audit chain; (2) idempotency_key is a sha1 of predictable order/line composite — not security-sensitive (it's just a dedup key), but an attacker who can submit crafted X-Idempotency-Key headers could theoretically pre-compute and pre-claim a movement key. Not a current attack surface.",
+  "findings": [
+    {
+      "id": "F6-SEC-01",
+      "severity": "P1",
+      "title": "stock_movements tamper window — DB-level append-only missing, audit chain not HMAC-signed",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_04_27_143130_create_stock_movements_table.php (no trigger)",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/StockMovement.php:46-55 (model boot only)",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_04_22_000002_create_audit_logs_table.php:86-131 (audit_logs HAS HMAC + trigger)"
+      ],
+      "primary_source": "Compared to audit_logs (HMAC chain + DB trigger) and z_reports (HMAC chain). stock_movements has NEITHER — no HMAC prev_hash → current_hash chain, no DB BEFORE DELETE trigger. Migration creates only idempotency UNIQUE.",
+      "impact": "An attacker with DB write privilege (compromised admin user, MySQL root via privilege escalation) can DELETE individual rows or UPDATE delta values without leaving any forensic trace. NF525-grade integrity claims for fiscal sequences do not extend to stock. A reconciliation of orders vs stock_movements can produce misleading totals if movements are silently doctored. Reconciliation must therefore rely on order_items + composition_snapshot (which IS chain-signed via audit_logs) rather than stock_movements alone.",
+      "user_friendly_question": "Owner — stock_movements n'a ni HMAC chain ni trigger DB BEFORE DELETE. Audit_logs et z_reports en ont. Si un admin compromis (ou DBA accidentel) modifie/supprime des lignes stock_movements, aucune détection. Pour V1 Le Cayenne single-resto + 1 admin de confiance, c'est acceptable. Pour V2 SaaS multi-tenant, ça devient un risque. Veux-tu (1) ajouter trigger DB en V1.0.1 (heal-light, voir DBA F6-DBA-01), (2) ajouter HMAC chain (lourd, ~30 LOC + migration + tests), ou (3) accepter le risque V1 et tracker en V2 backlog?",
+      "remediation_proposal": "V1 minimal: add BEFORE DELETE trigger (couples with F6-DBA-01). V2 escalation: add prev_hash + current_hash columns + HmacService::sign sur chaque insert; verify chain command similar à FiscalVerifyChainCommand. ROI lower than fiscal chain (no legal mandate) but useful for SaaS forensic.",
+      "keep_current_working": "Today single-resto + trusted admin = minimal risk. Heal recommended for V1.0.1."
+    },
+    {
+      "id": "F6-SEC-02",
+      "severity": "P2",
+      "title": "AvailabilityService::decrementForOrder L310-312 raw SQL with {$qty} interpolation",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Menu/AvailabilityService.php:294,310-312"
+      ],
+      "primary_source": "L294: `$qty = (int) $line->quantity;` — cast to int before L310 `DB::raw(\"CASE WHEN daily_consumed_qty + {$qty} > max_daily_qty THEN max_daily_qty ELSE daily_consumed_qty + {$qty} END\")`.",
+      "impact": "Safe as written — the (int) cast prevents SQL injection. But the pattern (raw SQL with string interpolation) is the only such site in the Stock/Availability surface; if a future refactor changes the cast or switches $qty to a string from a non-trusted source, injection becomes possible. PR review burden / static-analysis blind spot.",
+      "user_friendly_question": "Owner — le seul raw SQL avec interpolation dans Stock+Availability est AvailabilityService L310. Aujourd'hui sécurisé via (int) cast L294. Veux-tu (1) refactor en query builder + bindings (plus de garanties), (2) ajouter un commentaire défensif + Psalm/PHPStan strict-type, ou (3) laisser tel quel?",
+      "remediation_proposal": "Refactor: use DB::table('item_branch_availability')->update(['daily_consumed_qty' => DB::raw('LEAST(daily_consumed_qty + ?, max_daily_qty)'), ...]) with bindings. Equivalent semantics in MySQL/SQLite (LEAST + COALESCE for MySQL).",
+      "keep_current_working": "Safe today. Defensive heal only."
+    },
+    {
+      "id": "F6-SEC-03",
+      "severity": "info",
+      "title": "BranchScope global scope coverage verified for both Stock models",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/StockLevel.php:25",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/StockMovement.php:23"
+      ],
+      "primary_source": "Both models call `static::addGlobalScope(new BranchScope())` in their boot(). Comments document iter12 P0 STOCK 2026-05-09 rationale.",
+      "impact": "Cross-tenant read leakage closed. Multi-branch admin (branch_id=0) bypass preserved. Staff scoped per their user.branch_id automatically.",
+      "user_friendly_question": "Aucun problème. Bon état.",
+      "remediation_proposal": "Aucune.",
+      "keep_current_working": "Aucun changement."
+    },
+    {
+      "id": "F6-SEC-04",
+      "severity": "info",
+      "title": "Dashboard authz uses permission gates + authorizeWritableBranchScope on POST",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/StockRuptureDashboardController.php:23-25,196-201,221-244"
+      ],
+      "primary_source": "L23-25: permission:items_show on read endpoints, permission:items_create on run. L196-201 authorizeWritableBranchScope + production-mode hard guard. scopedBranches L221-244 restricts non-admin users to their branch_id.",
+      "impact": "Acceptable. Authz layered correctly. One nit: L199 `app()->environment('production')` adds extra can-check only in prod; staging/dev permissions less strict. Probably intentional for QA, but worth noting.",
+      "user_friendly_question": "Pas d'action requise.",
+      "remediation_proposal": "Aucune.",
+      "keep_current_working": "Aucun changement."
+    }
+  ],
+  "cross_branch_leakage_check": {
+    "models_scoped": ["StockLevel", "StockMovement"],
+    "models_unscoped": [],
+    "verdict": "Both stock models have BranchScope. Pre-iter12 leak closed."
+  },
+  "tamper_resistance": {
+    "model_level": "boot()->updating/deleting throws LogicException",
+    "db_level": "MISSING — no trigger, no HMAC chain",
+    "compare_audit_logs": "audit_logs has BOTH (trigger + HMAC chain). stock_movements has neither.",
+    "remediation_priority": "P1 trigger (V1.0.1), P2 HMAC chain (V2)"
+  },
+  "raw_sql_sites": [
+    {
+      "path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Menu/AvailabilityService.php",
+      "lines": "310-312",
+      "context": "decrementForOrder daily_consumed_qty cap",
+      "interpolated_var": "$qty",
+      "cast_protection": "(int) at L294",
+      "verdict": "Safe today, fragile pattern. P2 refactor."
+    }
+  ],
+  "idempotency_key_attacker_model": {
+    "key_formula": "sha1(reason | order::class | order.id | line_uid | stockable_type | stockable_id [| seed]) — see StockService::movementKey",
+    "attacker_can_predict": "Yes — all inputs are publicly observable or guessable per order context",
+    "exploitation": "An attacker who knows an order's pending decrement could insert a stock_movement with the predicted idempotency_key (if they had write access to stock_movements, which is admin-only). Not an external attack surface. Internal-only.",
+    "verdict": "Not a current threat. Idempotency_key is a dedup mechanism, not a security secret."
+  }
+}

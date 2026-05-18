@@ -1,0 +1,67 @@
+{
+  "audit": "F-X-DUPS duplicate-patterns",
+  "date": "2026-05-18",
+  "approach": "Grep for repeated structural patterns — same validation block, same SQL query in N services, same compute logic across components, same string constants embedded inline.",
+  "patterns_found": [
+    {
+      "id": "PATTERN-1",
+      "title": "menuRoleAdjustedAddonPrice duplicated across PricingService and CompositionSnapshotBuilder",
+      "locations": [
+        "app/Services/Pricing/PricingService.php:793 (public)",
+        "app/Services/Pricing/CompositionSnapshotBuilder.php:171 (private, marked 'Mirror of PricingService::menuRoleAdjustedAddonPrice')"
+      ],
+      "body_similarity": "~99% identical — same role match, same ratio defaults from config('kiosk.menu_pricing'), same fallback to 1.0",
+      "intentional": true,
+      "documented_reason": "CompositionSnapshotBuilder header comment: 'kept local to keep the snapshot builder a pure transformer (no PricingService dep). Any drift here would be an NF525 audit-chain mismatch'",
+      "verdict": "KEEP-AS-IS — frozen-zone-adjacent NF525 critical path. Pulling into a shared trait or static helper would require refactoring CompositionSnapshotBuilder's purity contract. Risk > value.",
+      "user_friendly": "The same 20-line price-ratio calculation is in two files on purpose. It is a fiscal-law-critical (NF525) computation, and the dev team chose to copy it rather than share it to avoid a hidden dependency. Don't touch — it works and a refactor could violate fiscal audit chain rules."
+    },
+    {
+      "id": "PATTERN-2",
+      "title": "BranchScope::withoutGlobalScope bypass pattern (~13 call sites)",
+      "locations": [
+        "Pre-auth login lookups in controllers, admin cross-branch queries, fiscal allocation lookups"
+      ],
+      "verdict": "KEEP-AS-IS — each call site is auditable and security-critical. Encapsulation into a helper would obscure the security boundary. The 13 sites are each accompanied by a comment explaining why scope is bypassed.",
+      "user_friendly": "There is a small repeated pattern (~13 places) where the system asks the database 'ignore the branch filter for this query'. Each instance is documented. Hiding it behind a helper function would actually make the security audit harder. Keep visible."
+    },
+    {
+      "id": "PATTERN-3",
+      "title": "Cache::lock(...)->block(3, ...) concurrency pattern (3+ services)",
+      "locations": [
+        "app/Services/Fiscal/FiscalSequenceService.php (fiscal sequence allocation)",
+        "app/Services/Cash/CashDrawerService.php (cash drawer session open)",
+        "app/Services/Delivery/DeliveryBoyCashSessionService.php (delivery boy cash session)"
+      ],
+      "body_similarity": "Same Cache::lock(key, 5)->block(3, fn) shape, different keys and bodies",
+      "verdict": "KEEP-AS-IS — pattern only, not body duplicate. Extracting to a `LockedTransaction` helper is a nice refactor but no business value gain.",
+      "user_friendly": "Three places use the same 'briefly lock so two requests don't fight' pattern. The 5-second-lock / 3-second-wait shape is repeated but the keys and the protected work differ. Looks like discipline, not duplication."
+    },
+    {
+      "id": "PATTERN-4",
+      "title": "PricingService calls (27 sites across app/) — high coupling but no body duplicate",
+      "count": 27,
+      "verdict": "KEEP-AS-IS — PricingService is the SSOT (single source of truth, per CLAUDE.md §8 NF525) for prices. Every site that touches money goes through it — by design.",
+      "user_friendly": "Twenty-seven different places call the central PricingService for price math. That is the intended design (one source of truth for money). Not a duplication."
+    },
+    {
+      "id": "PATTERN-5",
+      "title": "FormRequest validation rules — Bkash.php Requests folder vs PaymentRequests folder",
+      "locations": [
+        "app/Http/PaymentGateways/Requests/Bkash.php (returns full validation rules)",
+        "app/Http/PaymentGateways/PaymentRequests/Bkash.php (returns [] empty)"
+      ],
+      "body_similarity": "Class name identical; rules() body different; Requests/* has real validation, PaymentRequests/* are empty stubs (spot-check: Cashfree/Razorpay/Senangpay all return [] — only Stripe stub has 1 rule)",
+      "intentional": "UNCONFIRMED — the empty-stub pattern may be intentional (downstream gateway services validate) or unfinished work",
+      "verdict": "KEEP-AS-IS — runtime depends on both folders existing; deleting breaks payment. But OWNER SHOULD CONFIRM the empty-stub pattern is intended design.",
+      "user_friendly": "See duplicate-files.json #1. Twin folders per payment provider. Admin side validates real fields. Customer side returns empty rules (Stripe is the exception with one rule). Worth a quick owner sanity-check — is the empty-stub pattern on purpose?"
+    }
+  ],
+  "patterns_NOT_found": [
+    "No N-service-with-same-SQL-query duplications detected — services are well-encapsulated",
+    "No copy-paste FormRequest rule blocks across controllers (other than PATTERN-5 above)",
+    "No copy-paste Vue computed properties across components (spot-checked top 10 components only — exhaustive sweep would need jscpd)",
+    "i18n key duplications across resources/lang/{en,fr,ar} — NOT SCANNED in this audit; deferred to a dedicated translation-key overlap pass"
+  ],
+  "note": "A complete pattern-duplication scan requires AST-based clone detection tools (PHPCPD for PHP, jscpd for JS). The qualitative scan above covered the highest-value paths (fiscal, pricing, auth, sync). For an exhaustive sweep, add tooling step in V1.0.2."
+}

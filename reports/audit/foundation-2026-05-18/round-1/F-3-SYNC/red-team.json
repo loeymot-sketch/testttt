@@ -1,0 +1,123 @@
+{
+  "zone": "F-3-SYNC",
+  "role": "RED-team",
+  "mode": "hostile-read-only",
+  "scope": "Adversarial probing - duplicate event injection, replay attack, payload tampering, queue starvation, race conditions",
+  "session_a_heals_acknowledged": [
+    "Wave 3 SYNC-ADV3-04 write-then-dispatch ordering closes the audit-row-without-dispatch race",
+    "Wave 2c Cache::lock + LOCK_TTL=300s closes the double-replay race between cron + manual replay",
+    "Wave 3b cadence clamp closes the silent-blind misconfig DOS",
+    "DispatchDomainEventsJob:64-86 lockForUpdate claim closes the double-broadcast race"
+  ],
+  "summary": "Outbox cascade is hardened against the obvious attack vectors. The remaining adversarial surface is: (1) replay attacks via webhook re-delivery exploiting WebhookEvent retention windows, (2) payload tampering between DomainEvent insert and DispatchDomainEventsJob broadcast (PayloadMismatchException check is the gate), (3) race conditions in Persist*ToOutbox listeners under sync queue when multiple identical events fire in same request, (4) queue-starvation via DLQ flood, and (5) CORS-bypass abuse of channel-auth.",
+  "attack_scenarios": [
+    {
+      "id": "RED-1",
+      "severity": "P1",
+      "category": "REPLAY-ATTACK-WEBHOOK",
+      "title": "Stripe replay attack window vs WebhookEvent prune horizon",
+      "attack": "Attacker captures a legitimate Stripe webhook delivery (signature is timing-safe verified server-side, but the SIGNED PAYLOAD is identical on every replay). After config('foodking:webhook:prune --older-than-days=180') has pruned the row (Kernel.php:117), attacker re-posts the captured payload + signature. Stripe::handleWebhook verifies signature -> PASS (still valid timing-safe). WebhookEvent::firstOrCreate creates a NEW row (because the old one was pruned). The charge.succeeded handler re-creates CapturePaymentNotification -> potential double-charge replay on the merchant ledger.",
+      "evidence": {
+        "file": "app/Console/Commands/PruneWebhookEventsCommand.php (referenced Kernel.php:117), app/Http/PaymentGateways/Gateways/Stripe.php:247-268",
+        "detail": "Stripe webhook signatures DO NOT expire by default (Stripe-Signature header timestamp is checked by constructEvent but tolerance is unbounded unless explicitly set). The prune horizon is 180d. Attacker needs to retain the payload + replay after pruning."
+      },
+      "mitigation_recommendation": "Stripe::handleWebhook should pass a tolerance parameter to Webhook::constructEvent: `\\Stripe\\Webhook::constructEvent($payload, $sigHeader, $secret, 300)` (5min tolerance). This rejects any timestamp >5min old, making the replay window much smaller than the 180d retention.",
+      "owner_question": "Does Stripe::handleWebhook need to handle delayed webhook deliveries longer than 5 minutes? If no, add the tolerance parameter."
+    },
+    {
+      "id": "RED-2",
+      "severity": "P1",
+      "category": "PAYLOAD-TAMPERING",
+      "title": "DomainEvent.payload column is `array` cast (JSON) - mutable after firstOrCreate, broadcast happens later",
+      "attack": "Between PersistOrderCreatedToOutbox::handle inserting the DomainEvent row (line 24-48) and DispatchDomainEventsJob picking it up async (DB::afterCommit at line 61), an attacker with DB write access (or a buggy listener) could mutate the payload column. EventContract::assertEnvelopeValid (DispatchDomainEventsJob:110) validates structure but NOT the content authenticity (no HMAC on the row itself).",
+      "evidence": {
+        "file": "app/Models/DomainEvent.php:28-31, app/Jobs/DispatchDomainEventsJob.php:107-110",
+        "detail": "payload cast = 'array'. No row-level HMAC. EventContract validates shape only. If the queue worker has DB read permission only (good), the attack surface is internal-malicious or buggy SQL injection. Risk is low but not zero."
+      },
+      "mitigation_recommendation": "Add a row-level HMAC: compute hash_hmac('sha256', json_encode($payload), config('app.key')) at insert time, store in a new column (e.g. payload_signature), verify in DispatchDomainEventsJob before broadcast. Defense-in-depth - cost is one hash per row.",
+      "owner_question": "Is this in V1 threat model? If the production DB write access is restricted to the app user only, this is low-priority. If multi-tenant later or a managed-DB scenario, raise priority."
+    },
+    {
+      "id": "RED-3",
+      "severity": "P2",
+      "category": "RACE-CONDITION-LISTENERS",
+      "title": "QUEUE_CONNECTION=sync + Persist*ToOutbox listeners + DB::afterCommit + nested transactions",
+      "attack": "Under QUEUE_CONNECTION=sync (currently set in .env.example for dev but production uses redis), DB::afterCommit registers a callback that fires DispatchDomainEventsJob synchronously. If the outer transaction is nested (Laravel transaction levels >1), DB::afterCommit fires when the OUTERMOST transaction commits. A buggy caller wrapping the order-creation in a SAVEPOINT + rollback would leak the DomainEvent row (committed) but not the Order row (rolled back) -> dispatch fires for a non-existent order -> PayloadMismatchException at line 110 -> job retries 6 times -> 'contract_violation' DLQ.",
+      "evidence": {
+        "file": "app/Listeners/PersistOrderCreatedToOutbox.php:61-79, app/Jobs/DispatchDomainEventsJob.php:96-110",
+        "detail": "The DomainEvent row is INSIDE the outer transaction (firstOrCreate at line 24). If the outer transaction rolls back, the DomainEvent row rolls back with it. SAFE - the worst case is a queued job dispatch for a row that no longer exists, which is handled gracefully at DispatchDomainEventsJob:70 ('if (! $domainEvent) skip').",
+        "verdict": "SAFE - no exploit path. Documented for thoroughness."
+      },
+      "mitigation_recommendation": "KEEP-AS-IS. The skip path at DispatchDomainEventsJob:70 closes this attack vector.",
+      "owner_question": null
+    },
+    {
+      "id": "RED-4",
+      "severity": "P2",
+      "category": "QUEUE-STARVATION",
+      "title": "DLQ flood via repeated PayloadMismatchException -> 'high' queue saturation",
+      "attack": "Attacker triggers 1000 OrderCreated events with malformed payloads (e.g. via a SQL-injection vector or a buggy admin endpoint). Each DispatchDomainEventsJob attempt validates the envelope (line 110), throws PayloadMismatchException, persists 'contract_violation:' last_error, queue retries 6 times each = 6000 'high' queue messages. Legit order broadcasts queue behind the flood.",
+      "evidence": {
+        "file": "app/Jobs/DispatchDomainEventsJob.php:107-176, $tries=6 at line 42, backoff=[1,5,15,60,300]s",
+        "detail": "PayloadMismatchException is NOT special-cased to skip retries. The job runs $tries=6 times even though the payload won't suddenly become valid."
+      },
+      "mitigation_recommendation": "Special-case PayloadMismatchException in DispatchDomainEventsJob: if caught, mark as terminal-failed (set dispatched_at + last_error) and DO NOT throw -> no retry. Use $this->fail($e) or `release(60)` once.",
+      "owner_question": null
+    },
+    {
+      "id": "RED-5",
+      "severity": "P2",
+      "category": "WEBHOOK-DLQ-RETENTION",
+      "title": "Webhook retry-failed --since=24h leaves DLQ rows older than 24h orphaned",
+      "attack": "Attacker forces a webhook handler to fail (e.g. CapturePaymentNotification UNIQUE collision) -> webhook_events row flips to status=failed. After 24h, OutboxWebhookRetryFailedCommand stops re-trying (cutoff). The DLQ row sits in `failed` status until pruned (180d at Kernel.php:117). Stripe / SenangPay providers may have ALREADY retried + given up on their side. Manual intervention required.",
+      "evidence": {
+        "file": "app/Console/Commands/OutboxWebhookRetryFailedCommand.php:40, app/Console/Kernel.php:117",
+        "detail": "24h window for autonomous retry. 180d retention before prune. Gap = 179 days of orphaned DLQ rows."
+      },
+      "mitigation_recommendation": "Add a weekly cron `--since=168h` (7d) sweep, OR expand the staleness monitor to alert on webhook_events.failed older than 24h. Current state: silent operational risk after 24h.",
+      "owner_question": "Has a webhook_events row ever sat in `failed` status >24h in production? If yes, the staleness monitor (Kernel.php:50, threshold=10) is the only alert."
+    },
+    {
+      "id": "RED-6",
+      "severity": "P3",
+      "category": "IDEMPOTENCY-KEY-BRUTE-FORCE",
+      "title": "X-Idempotency-Key regex /^[A-Za-z0-9._\\-]{8,64}$/ - 8-char minimum is brute-forceable in theory",
+      "attack": "Attacker spams POST /api/admin/pos with X-Idempotency-Key brute-forced from 8-char ASCII space. If a legit cashier just sent a request with key 'abcdefgh', the attacker's collision returns the cached response - reveals an order summary or refund detail. Realistic only with insider access (cashier token + IP whitelist breach).",
+      "evidence": {
+        "file": "app/Http/Middleware/IdempotencyKeyMiddleware.php:61",
+        "detail": "8 chars * 64 alphabet = 64^8 = 281 trillion combinations. With Redis 10k req/s rate (impossible through web), 891 years for full brute force. Insider attack requires breach of the (branch_id, user_id, hash(key)) scope - much harder."
+      },
+      "mitigation_recommendation": "KEEP-AS-IS. The scoped key includes branch_id + user_id, preventing cross-cashier collision. 8-char minimum is acceptable.",
+      "owner_question": null
+    },
+    {
+      "id": "RED-7",
+      "severity": "P0",
+      "category": "CORS-CHANNEL-AUTH-BYPASS",
+      "title": "CORS mismatch on /api/broadcasting/auth (cross-confirms SEC-1)",
+      "attack": "If APP_URL = http://localhost:8000 but the kiosk browser loads from http://127.0.0.1:8000 (or vice versa), every Echo channel subscription fails CORS. The kiosk falls back to polling but the polling endpoint also uses the same axios baseURL - if THAT also CORS-fails, the kiosk goes blind. Evidence shows polling worked in flow-6 but channel-auth failed - the failure is silent because polling is the safety net.",
+      "evidence": {
+        "file": "reports/test-e2e/goal-pageby-2026-05-18/round-1/SYNC/sync-findings.json flow-6 consoleErrors",
+        "detail": "Same as SEC-1. Re-raised here because it's also a security-relevant attack-surface: a misconfigured APP_URL silently downgrades the entire fleet to polling, increasing PHP-FPM load + potentially exposing more attack surface (more HTTP requests = more authn validation cycles)."
+      },
+      "mitigation_recommendation": "See SEC-1. Add a sentinel test + production health-check warning.",
+      "owner_question": null
+    }
+  ],
+  "keep_as_is": [
+    "DispatchDomainEventsJob lockForUpdate + dispatched_at guard (closes double-broadcast)",
+    "Wave 3 write-then-dispatch ordering (closes audit-row-without-dispatch race)",
+    "Wave 2c Cache::lock + 300s TTL (closes double-replay race)",
+    "Webhook firstOrCreate + DB UNIQUE (provider, webhook_id) - closes duplicate webhook injection",
+    "IdempotencyKey payload-hash conflict 409 - closes idempotency-key reuse with different payload",
+    "Channel-auth token-name discriminator (closes Sanctum wildcard bypass)"
+  ],
+  "dirty_files_cited_no_change": [
+    "app/Console/Commands/OutboxRetryFailedCommand.php",
+    "app/Console/Commands/OutboxWebhookRetryFailedCommand.php",
+    "tests/Feature/Outbox/OutboxReplayAuditTest.php"
+  ],
+  "frozen_files_cited_no_change": [
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php"
+  ]
+}

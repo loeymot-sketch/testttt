@@ -1,0 +1,102 @@
+{
+  "zone": "F-3-SYNC",
+  "role": "SRE",
+  "mode": "read-only",
+  "scope": "Cadence caps, Pusher reconnect, polling triggers, queue stability, retry backoff, cron schedule",
+  "session_a_heals_acknowledged": [
+    "Wave 2c-5 Cache::lock + LOCK_TTL=300s + BATCH_CAP=500 (OutboxRetryFailedCommand:42-46, OutboxWebhookRetryFailedCommand:62-66)",
+    "Wave 3b CADENCE_CEILING_MS=60000 + CADENCE_FLOOR_MS=250 (KdsSyncService:25-26, PosSyncService:52-53, OssSyncService:34-35)",
+    "Wave 3 backoff curve [1,5,15,60,300]s + tries=6 (DispatchDomainEventsJob:40-42)"
+  ],
+  "summary": "Cadence cap correctly applied across all 3 sync services (KDS/POS/OSS). Backoff curve in DispatchDomainEventsJob covers ~6.4 min Pusher restart window. Outbox staleness monitor + rescue + retry-failed + webhook-retry-failed scheduled hourly with mutex+onOneServer. Pusher heartbeat write on successful broadcast (DispatchDomainEventsJob:128) closes the GOAL-CMS S-P0-A 'green dashboard while Pusher dead' hole. Polling fallback triggers on ws state_change('disconnected' | 'reconnect_storm') across all 3 services. Some divergence between OSS (intervalMsWhenConnected=60000, intervalMsWhenDisconnected=2000) and POS/KDS cadence profiles - intentional per surface.",
+  "findings": [
+    {
+      "id": "SRE-1",
+      "severity": "P1",
+      "category": "POLLING-DRIFT",
+      "title": "OssSyncService dev-mode 2000ms-when-disconnected vs POS/KDS 10000ms-disconnected - asymmetric load on /api/order-status-screen/orders",
+      "evidence": {
+        "file": "resources/js/services/OssSyncService.js:14-17, resources/js/services/KdsSyncService.js:33-34, resources/js/services/PosSyncService.js:41",
+        "detail": "OssSyncService DEFAULTS.intervalMsWhenDisconnected = 2_000 (comment: 'test-e2e round-2 cluster-6 D-002 2026-05-10 Tightened from 5000 to 2000 so SYNC-2 8s budget is met'). KdsSyncService DEFAULT_CADENCE_OPTIONS.disconnectedBaseMs = 10000. PosSyncService DEFAULTS.intervalMsWhenDisconnected = 30_000. With WS down, OSS hits backend at 0.5 req/s/screen vs KDS 0.1 req/s/station vs POS 0.033 req/s/till.",
+        "impact": "If 10 OSS screens go ws-disconnected concurrently (restart Soketi), backend gets 5 req/s on orderStatusScreenOrder/lists. Likely safe at this scale but asymmetric. The comment notes 'production still uses Echo/Pusher live so this fallback is essentially unused there' which is an unverified assumption."
+      },
+      "recommendation": "Either (a) raise OSS intervalMsWhenDisconnected to 5000ms and rely on visibility-burst-poll (line 50-55) for SYNC-2 latency, or (b) document the OSS production cadence behavior with a load test. The dev-vs-prod divergence is a fragile assumption.",
+      "owner_question": "Has the 2000ms OSS dev fallback ever fired in production? If yes, what is the steady-state QPS on /api/order-status-screen/orders during a Soketi outage?"
+    },
+    {
+      "id": "SRE-2",
+      "severity": "P1",
+      "category": "RECONNECT-RESILIENCE",
+      "title": "Reconnect-storm handler in KdsSyncService bypasses cadence but adds 0-500ms client jitter; POS/OSS use uniform jitter on every poll",
+      "evidence": {
+        "file": "resources/js/services/KdsSyncService.js:255-273",
+        "detail": "On 'reconnect_storm', KDS fires a single forceSync() with 0-500ms jitter (line 257-271) to spread the herd. Comment block 252-254 'When the broadcasting server restarts, every KDS station receives reconnect_storm simultaneously. Without client-side jitter, all 50+ kitchens would hit /api/admin/kds-order/sync at the same instant'. POS and OSS handle reconnect_storm via _resume() / handleState('disconnected') which goes through _scheduleNormalCadence() + standard _jitter() - same herd-mitigation but smaller jitter window (POS jitterMaxMs=500, OSS jitterMaxMs=500).",
+        "impact": "Same effective protection but OSS/POS herd protection relies on the same 500ms jitter for the burst. If 100 stations storm-reconnect, the 100/500ms = 200 req/s peak is still high enough to spike PHP-FPM."
+      },
+      "recommendation": "Consider raising the storm-jitter to 2000ms (uniform) for OSS/POS, OR add an explicit storm-handler in each service that spreads to 0-2000ms instead of 0-500ms. KDS pattern at line 257 is the model.",
+      "owner_question": null
+    },
+    {
+      "id": "SRE-3",
+      "severity": "P2",
+      "category": "CRON-COHERENCE",
+      "title": "OutboxRetryFailed --since=24h + OutboxRescue both run hourly; rescue catches stale rows (>2 min) with attempts<5; retry-failed catches DLQ (attempts>=5)",
+      "evidence": {
+        "file": "app/Console/Kernel.php:37-81, app/Console/Commands/OutboxRescueCommand.php:17-19, app/Models/DomainEvent.php:46-49",
+        "detail": "Rescue scope: scopeStale(2) ∩ attempts<5. RetryFailed scope: scopeFailed(5) = pending ∩ attempts>=5, within --since=24h cutoff. The 24h window for retry-failed means a row failing more than 24h ago AND attempts>=5 stays in DLQ forever (until staleness monitor pages a human). Webhook retry-failed has same 24h cutoff (OutboxWebhookRetryFailedCommand:40).",
+        "impact": "Operational: rows older than 24h with attempts>=5 require manual intervention or `--since=720h` override. Not a defect, just an observability gap if no human watches the staleness monitor."
+      },
+      "recommendation": "Document the 24h DLQ horizon prominently (currently buried in OutboxRetryFailedCommand:69-72 comment). Either widen --since=168h (7d) for autonomous self-heal or add a quarterly DLQ sweep cron with explicit --since=720h.",
+      "owner_question": "What is the operational target for DLQ retention? If V1 single-restaurant 24h is fine, the staleness monitor (Kernel.php:50) is the gate. If multi-tenant later, this needs widening."
+    },
+    {
+      "id": "SRE-4",
+      "severity": "P3",
+      "category": "BACKOFF-INTERACTION",
+      "title": "DispatchDomainEventsJob backoff [1,5,15,60,300]s + tries=6 means worst-case 381s before final failure; KDS UI cadence at WS_DISCONNECTED is 10000ms + 3000ms jitter so a transient broadcast failure heals within 1 polling cycle",
+      "evidence": {
+        "file": "app/Jobs/DispatchDomainEventsJob.php:28-42, resources/js/services/KdsSyncService.js:35",
+        "detail": "Backoff total = 1+5+15+60+300 = 381s. Polling fallback cadence = 10s base + 3s jitter = ~13s. Polling self-heals KDS faster than the job retry would. The dispatched_at is reset in catch (line 162) so the next outbox:rescue would also re-queue the row. This is correct redundancy."
+      },
+      "recommendation": "KEEP-AS-IS. Redundancy is intentional: queue backoff for clean retry, polling fallback for UX recovery, outbox:rescue for stuck rows.",
+      "owner_question": null
+    },
+    {
+      "id": "SRE-5",
+      "severity": "P2",
+      "category": "QUEUE-LANE",
+      "title": "DispatchDomainEventsJob -> 'high' queue, ProcessWebhookEventJob lane unverified",
+      "evidence": {
+        "file": "app/Jobs/DispatchDomainEventsJob.php:46",
+        "detail": "Constructor calls $this->onQueue('high'). Comment 'Audit Claude NEW-03 B7 Queue lane SSOT = job constructor.' All 12 Persist listeners dispatch via DispatchDomainEventsJob::dispatch($id) which constructs with onQueue('high'). ProcessWebhookEventJob lane not inspected this round - referenced by OutboxWebhookRetryFailedCommand:146.",
+        "impact": "If ProcessWebhookEventJob is on 'default' queue and the worker only runs 'high', webhook DLQ replay would silently stall."
+      },
+      "recommendation": "Verify ProcessWebhookEventJob lane in next round (out-of-scope confirm only). Document worker boot command convention `php artisan queue:work --queue=high,default` in .env.example.",
+      "owner_question": null
+    },
+    {
+      "id": "SRE-6",
+      "severity": "P2",
+      "category": "POLLING-FALLBACK-MASK",
+      "title": "OSS dev-warn message 'Realtime broadcast unavailable for Xs - polling fallback active' fires only when window.foodkingConfig.appEnv !== 'production' (OssSyncService:261-265). Production silently degrades.",
+      "evidence": {
+        "file": "resources/js/services/OssSyncService.js:254-274",
+        "detail": "_maybeWarnDisconnect at line 254: 'if (!isDev) return;' at line 264. Single warn per disconnect window. Comment: 'so the console isn't spammed'. POS and KDS have no equivalent operator hint.",
+        "impact": "Production OSS users see lag but no UI indication. config('broadcasting.polling_fallback.hint_when_off') (broadcasting.php:33) suggests an intended hint UI - status unverified."
+      },
+      "recommendation": "Surface a small banner on OSS/KDS/POS when polling fallback active for >30s, even in production. The data is already available (this._disconnectedSinceMs at OssSyncService:175); just needs a Vue prop hook.",
+      "owner_question": "Has the broadcasting.polling_fallback.hint_when_off UI banner been wired anywhere? Search returned no matches in V components."
+    }
+  ],
+  "keep_as_is": [
+    "Cache::lock with 300s TTL + BATCH_CAP=500 in both retry-failed commands",
+    "Backoff curve [1,5,15,60,300]s with tries=6 in DispatchDomainEventsJob",
+    "ws:heartbeat cache write on broadcast success (DispatchDomainEventsJob:127-131)",
+    "Cadence clamp [250ms, 60s] in 3 sync services",
+    "Hourly outbox:rescue / retry-failed / webhook-retry-failed cadence with mutex+onOneServer"
+  ],
+  "dirty_files_cited_no_change": [
+    "app/Console/Commands/OutboxRetryFailedCommand.php",
+    "app/Console/Commands/OutboxWebhookRetryFailedCommand.php"
+  ]
+}

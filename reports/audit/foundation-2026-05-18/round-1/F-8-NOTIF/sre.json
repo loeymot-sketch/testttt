@@ -1,0 +1,120 @@
+{
+  "specialist": "SRE",
+  "zone": "F-8 Notifications (Push + SMS + Mail + In-app)",
+  "lens": "Queue config, retry/backoff, dead-letter handling, provider config soundness, observability",
+  "scope_read_only": true,
+  "approx_words": 1300,
+  "summary": "Queue posture for notifications is split-brain. SendFcmNotificationJob is the only notification job that implements ShouldQueue + a documented backoff curve + a notifications-dedicated queue. Every other notification path runs synchronously inside the event dispatcher. Provider configuration is fragile: FCM ships as both legacy-server-key (FcmNotificationService) and OAuth2-HTTP-v1 (FirebaseService) implementations, each with different env requirements; neither has health-check tooling. SMS provider is DB-resolved (SmsService::gateway reads Settings::group('site')->get('site_default_sms_gateway') at runtime) with no failover. Mail uses the framework default (MAIL_MAILER=smtp + mailpit in .env.example) with no DLQ. Failures are universally swallowed at the listener layer via Log::info (not warning/error) — invisible in any sane log-level filter. There is no failed-notifications table.",
+  "findings": [
+    {
+      "id": "F-8-SRE-001",
+      "severity": "P0",
+      "title": "Failures uniformly swallowed via Log::info — invisible in ops dashboards",
+      "files": [
+        "app/Listeners/SendOrderMailNotification.php:17",
+        "app/Listeners/SendOrderSmsNotification.php:17",
+        "app/Listeners/SendOrderPushNotification.php:18",
+        "app/Listeners/SendOrderGotMailNotification.php:18",
+        "app/Listeners/SendOrderGotSmsNotification.php:17",
+        "app/Listeners/SendOrderGotPushNotification.php:18",
+        "app/Listeners/SendOrderDeliveryBoyMailNotification.php:20",
+        "app/Listeners/SendOrderDeliveryBoySmsNotification.php:17",
+        "app/Listeners/SendOrderDeliveryBoyPushNotification.php:20",
+        "app/Services/FirebaseService.php:64-66",
+        "app/Services/OrderMailNotificationBuilder.php:74,82,89,96,103,110,117,124,131,138,145",
+        "app/Services/OrderSmsNotificationBuilder.php:81-83",
+        "app/Http/SmsGateways/Gateways/Twilio.php:52-53"
+      ],
+      "evidence": "Every Send*Notification listener wraps its body in try/catch and calls Log::info($e->getMessage()) on exception. Default Laravel log level filter (LOG_LEVEL=info) keeps these lines, but production deployments routinely raise threshold to warning/error — INFO entries are then dropped silently. Twilio.php:52-53 does the same: Log::info on Twilio Rest API exception. FirebaseService.php:64-66 catches ALL Exception in sendNotification and Log::info()s, then returns void — no failure indicator returned to caller.",
+      "impact": "If Twilio API is down, every SMS attempt logs info and returns; the customer never receives status SMS; ops sees nothing in error pipelines. If FCM service-account JSON is missing or expired, FirebaseService.getAccessToken throws → caught by outer Log::info → silent. There is no rate of 'notification send failure' metric anywhere.",
+      "remediation": "Replace Log::info with Log::warning (transient) or Log::error (final). Emit a structured metric (SyncMetricsRecorder pattern already exists at app/Services/Observability/SyncMetricsRecorder.php — used by DispatchDomainEventsJob.php:140). Add notification_send_failure_total counter."
+    },
+    {
+      "id": "F-8-SRE-002",
+      "severity": "P0",
+      "title": "No retry / no DLQ for synchronous notification listeners",
+      "files": [
+        "app/Listeners/SendOrderMailNotification.php:9-20",
+        "app/Listeners/SendOrderPushNotification.php:10-21",
+        "app/Listeners/SendOrderSmsNotification.php:9-20",
+        "app/Providers/EventServiceProvider.php:100-126",
+        "config/queue.php:87-91"
+      ],
+      "evidence": "config/queue.php:87-91 defines failed_jobs table for ShouldQueue jobs that exhaust $tries. Send*Notification listeners are NOT ShouldQueue, so a failed Mail::send → caught → Log::info → control returns; the event is gone, never retried, no failed_jobs row. Only SendFcmNotificationJob (Jobs/SendFcmNotificationJob.php:30,40-43) declares $tries=3 + backoff=[10,30]. Mail + SMS + legacy Push have zero retry semantics.",
+      "impact": "Transient Twilio 429 / Mailgun timeout / FCM 503 = customer never receives status. The current swallow-and-log pattern was a deliberate F-002 round-3 defense-in-depth choice (EventServiceProvider.php:128-143 comment) to keep the outbox SSOT path live — but the trade-off was never compensated by a separate retry queue.",
+      "remediation": "Convert each listener to ShouldQueue + onQueue('notifications') + $tries=3 + backoff=[10,30,60]. Add a failed() method that writes to a dedicated notification_dead_letters table for ops triage. Keep the try/catch inside handle() ONLY to convert transient failures into thrown exceptions (so the queue can retry) instead of swallow."
+    },
+    {
+      "id": "F-8-SRE-003",
+      "severity": "P0",
+      "title": "FCM provider config split across services.php + NotificationSetting + Settings — runtime brittleness",
+      "files": [
+        "config/services.php:54-58",
+        "app/Services/FcmNotificationService.php:46-56,114-119,177-183",
+        "app/Services/FirebaseService.php:21-24,69-99"
+      ],
+      "evidence": "FcmNotificationService reads config('services.fcm.server_key') (env FCM_SERVER_KEY) — STATIC config. FirebaseService reads Settings::group('notification')->all() at every send call (FirebaseService.php:21) for 'notification_fcm_project_id' AND queries NotificationSetting::where(['key' => 'notification_fcm_json_file'])->first() (FirebaseService.php:71) for the service-account JSON file path stored in DB then mapped to storage/app/public/{relative_path}. Three sources of truth: env var, settings table, notification_settings table. .env.example:FCM_SERVER_KEY is empty by default — silent failure when unset (FcmNotificationService.php:48-51 returns false without throwing).",
+      "impact": "Production deployments are vulnerable to any of: (a) env not set → legacy track silent-fails, (b) Settings group rows missing → FirebaseService throws, (c) NotificationSetting row missing OR file path stale → throws on first send. No bootstrap-time validation. No /health endpoint that pings FCM with a no-op.",
+      "remediation": "Single source of truth (config/services.php). Add Provider boot-time validation gate: if config('services.fcm.driver') === 'http_v1', assert NotificationSetting('notification_fcm_json_file') exists + file readable. Add Artisan command fcm:ping --topic=health-check or POST to FCM dry_run endpoint."
+    },
+    {
+      "id": "F-8-SRE-004",
+      "severity": "P1",
+      "title": "SMS provider DB-driven with zero failover / observability",
+      "files": [
+        "app/Services/SmsService.php:11-23",
+        "app/Services/SmsManagerService.php:6-37",
+        "app/Http/SmsGateways/Gateways/Twilio.php:21-55"
+      ],
+      "evidence": "SmsService::gateway() defaults to 'twilio' then overrides via Settings::group('site')->get('site_default_sms_gateway'). SmsManagerService::gateway($name) instantiates App\\Http\\SmsGateways\\Gateways\\{Name} dynamically. Twilio constructor reads Twilio account_sid/auth_token from gateway_options table (Twilio.php:27-32). On Twilio API failure (Twilio.php:52-53) Log::info + return — no fallback to another configured SMS gateway, no quota tracking, no last-success timestamp.",
+      "impact": "If Twilio goes down (or sub_id revoked), all OTP + order SMS silently fail. No metric to alert on rising fail-rate.",
+      "remediation": "Track sms_send_outcome metric (provider, status). Add a failover-gateway config option (SmsService picks next gateway in priority list on circuit-break)."
+    },
+    {
+      "id": "F-8-SRE-005",
+      "severity": "P1",
+      "title": "Notifications queue 'notifications' declared but no worker config / supervisor entry shipped",
+      "files": [
+        "app/Jobs/SendFcmNotificationJob.php:67",
+        "config/queue.php:31-72",
+        ".env.example (no QUEUE_NOTIFICATIONS_* hint)"
+      ],
+      "evidence": "SendFcmNotificationJob.php:67 calls onQueue('notifications') to isolate from the 'high' queue. config/queue.php declares only generic connections ('sync', 'database', 'redis', etc.). No deploy/ansible or supervisor.conf file (per BRAIN Wave 5G deploy/ansible/site.yml) was traced that runs queue:work --queue=notifications,high,default. If the worker is started with default queue only, every FCM job sits unprocessed.",
+      "impact": "FCM jobs silently pile up in jobs table never processed.",
+      "remediation": "Ship a supervisor stanza for worker.notifications with --queue=notifications --tries=3 --max-time=3600. Add CI check that supervisor.conf includes the notifications queue."
+    },
+    {
+      "id": "F-8-SRE-006",
+      "severity": "P1",
+      "title": "No notification observability — no metrics, no dashboard, no alerts",
+      "files": [
+        "app/Services/Observability/SyncMetricsRecorder.php (exists, used only by DispatchDomainEventsJob)",
+        "app/Jobs/SendFcmNotificationJob.php:105-113 (only logs final failure)"
+      ],
+      "evidence": "SyncMetricsRecorder exists but only DispatchDomainEventsJob calls it (DispatchDomainEventsJob.php:140-146). No notification job/listener records latency or outcome. SendFcmNotificationJob::failed() only Log::error — no counter increment, no Prom/Sentry hook.",
+      "impact": "Ops has no view of notification health. A 50% Twilio failure rate is invisible until a customer complains.",
+      "remediation": "Extend SyncMetricsRecorder with recordNotificationSent(channel, audience, outcome, latency_ms). Wire into FCM job + each builder. Add Grafana panel."
+    },
+    {
+      "id": "F-8-SRE-007",
+      "severity": "P2",
+      "title": "FCM Job backoff [10, 30] is short for typical FCM transients",
+      "files": [
+        "app/Jobs/SendFcmNotificationJob.php:30,40-43"
+      ],
+      "evidence": "$tries=3, backoff=[10, 30]. Total worst-case retry window 40s.",
+      "impact": "FCM 503 / 429 events often last 1-3 minutes (typical Google transient). Three retries within 40s all fail.",
+      "remediation": "Adjust to [10, 30, 120] with $tries=4 (mirror DispatchDomainEventsJob.php:30-42 curve sized to typical Pusher restart 1-3 min)."
+    }
+  ],
+  "kpis": {
+    "notification_jobs_with_retry": 1,
+    "notification_jobs_total": 1,
+    "notification_listeners_with_retry": 0,
+    "notification_listeners_total": 12,
+    "dlq_table_for_notifications": 0,
+    "log_info_swallow_sites": 24,
+    "metric_recorders_for_notifications": 0,
+    "fcm_health_check_command": 0
+  }
+}

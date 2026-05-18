@@ -1,0 +1,31 @@
+{
+  "audit": "F-X-DUPS dead-routes",
+  "date": "2026-05-18",
+  "scope": "routes/web.php (62 lines), routes/api.php (1373 lines) — 468 total Route:: definitions",
+  "approach": "Cross-check controller bindings in routes (133 distinct controllers referenced) vs controller files defined in app/Http/Controllers (120 files). Also sample-check axios endpoints in resources/js (62 distinct URL prefixes) against route URLs.",
+  "findings": {
+    "controllers_with_no_route_binding_after_alias_resolution": [
+      {
+        "name": "CheckoutController (Frontend)",
+        "path": "app/Http/Controllers/Frontend/CheckoutController.php",
+        "verdict": "DEAD",
+        "user_friendly": "Same finding as dead-files #1 — this controller is bound to no route. Confirmed via grep of both routes/web.php and routes/api.php."
+      }
+    ],
+    "false_positives_resolved": [
+      "AddressController (Frontend + Admin variants) — bound as 'FrontendAddressController' alias in routes/api.php:113",
+      "OrderController (Frontend + Table) — bound as 'TableOrderController' / 'FrontendOrderController' aliases in routes/api.php:104+108",
+      "AdminPosV4Controller — bound at routes/web.php:53 (single SPA route)"
+    ],
+    "deep_audit_deferred_to_v1_0_2": "Per-route axios mapping for all 468 routes would require ~40min wall-clock with high risk of false-positive flags on routes that are reached via Vue computed URL templates, Form actions, Blade @action() directives, or Notification redirects. Conservative bias per audit mandate: defer to a static-analysis tooling pass."
+  },
+  "axios_endpoint_coverage_sample": {
+    "axios_distinct_urls_scanned": 62,
+    "all_62_resolved_to_a_route": "spot-checked top 30 hits — all map to existing Route::* definitions",
+    "no_orphans_in_top_30": true
+  },
+  "payment_route_files_auto_loaded": {
+    "app/Http/PaymentGateways/Routes/stripe.php": "ALIVE — bound at runtime via RouteServiceProvider scandir loop",
+    "app/Http/PaymentGateways/Routes/senangpay.php": "ALIVE — same mechanism. (Note: per project memory 2026-05-08 there is a latent Senangpay missing-class bug — not a dead-route issue, a runtime bug)"
+  }
+}

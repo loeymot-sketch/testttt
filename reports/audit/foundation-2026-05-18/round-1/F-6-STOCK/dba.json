@@ -1,0 +1,135 @@
+{
+  "role": "DBA",
+  "zone": "F-6 Stock + Availability",
+  "specialist": "schema soundness + UNIQUE on idempotency_key + indexes + append-only enforcement",
+  "audit_window": "2026-05-18 (Round 1 read-only)",
+  "files_examined": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_04_27_143120_create_stock_levels_table.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_04_27_143130_create_stock_movements_table.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_05_08_150000_add_manual_unavailable_to_stock_levels.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_04_22_000002_create_audit_logs_table.php (comparator)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/StockMovement.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/StockLevel.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Stock/StockMovementsAppendOnlyTest.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Stock/StockLevelSchemaTest.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Stock/StockMovementIdempotencyKeyUniqueTest.php"
+  ],
+  "verdict": "OK-with-trigger-gap",
+  "summary": "Schema is correct (UNIQUE on idempotency_key, composite (branch_id, stockable_type, stockable_id), CHECK constraints non-negative + reserved<=on_hand). Hot indexes match service queries (branch+stockable lookup, threshold scan). Critical gap: stock_movements 'append-only' is enforced ONLY at the Eloquent model level (boot()->updating/deleting throws LogicException). Unlike audit_logs (2026_04_22_000002 L86-131) which installs BEFORE UPDATE/DELETE triggers in MySQL + RAISE(ABORT) in SQLite, stock_movements has NO database-level trigger. Any DB::table('stock_movements')->delete() or raw SQL DELETE bypasses the model guard entirely. The CleanupTestFixturesCommand already uses DB::table('stock_movements') in production codebase (test cleanup), so the precedent is present.",
+  "findings": [
+    {
+      "id": "F6-DBA-01",
+      "severity": "P0",
+      "title": "stock_movements has no DB-level BEFORE DELETE/UPDATE trigger (relies on Eloquent boot() only)",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_04_27_143130_create_stock_movements_table.php:11-29",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/StockMovement.php:46-55",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_04_22_000002_create_audit_logs_table.php:86-131 (comparator: audit_logs DOES have triggers)"
+      ],
+      "primary_source": "Migration 2026_04_27_143130 L11-29 contains zero DB::statement / CREATE TRIGGER statements. StockMovement.php L46-55 model booted() throws LogicException only when Eloquent saves/deletes. Any raw query (DB::table, DB::statement, MySQL CLI, phpMyAdmin) bypasses the model entirely. Compare audit_logs migration 2026_04_22_000002 L86-131 which installs MySQL BEFORE UPDATE+BEFORE DELETE triggers using SIGNAL SQLSTATE '45000' and SQLite RAISE(ABORT).",
+      "impact": "The 'stock_movements is append-only audit trail' claim in StockMovement.php L9-10 + the system-wide invariant in CLAUDE.md is not enforced at the storage layer. An operator with DB access, a misconfigured cleanup script (CleanupTestFixturesCommand L182/185/188 already opens this door), a future Outbox replay tool, or a DBA running mass deletes for 'cleanup' can erase decrement history with no log trail. NF525-comparable claim of integrity is therefore weaker for stock than for audit_logs/z_reports. Reconciliation of stock movements against orders (forensic audit) can be silently corrupted.",
+      "user_friendly_question": "Owner — la table stock_movements est documentée comme append-only mais la garde existe seulement au niveau Eloquent (model boot). Aucun trigger MySQL/SQLite. Un DELETE direct (`DB::table('stock_movements')->delete()`) bypasse silencieusement. Audit_logs/z_reports ont des triggers BEFORE DELETE qui SIGNAL '45000'. Veux-tu (1) ajouter les mêmes triggers via une migration nouvelle, (2) garder l'état actuel + simple GRANT-level mitigation documentée, ou (3) reporter en V1.0.2?",
+      "remediation_proposal": "New migration (NOT modifying applied migrations): mirror audit_logs trigger pattern. MySQL: `CREATE TRIGGER stock_movements_no_update BEFORE UPDATE ON stock_movements FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'stock_movements is append-only.'` + same for DELETE. SQLite: `CREATE TRIGGER ... BEFORE DELETE ... BEGIN SELECT RAISE(ABORT, 'stock_movements is append-only.'); END;` Add a feature test running DB::table('stock_movements')->delete() and expecting QueryException.",
+      "keep_current_working": "Today the model boot() catches the vast majority of code paths (StockService, listeners, dashboard all use Eloquent). No regression risk if trigger added — model already throws before reaching DB; trigger becomes belt-and-suspenders."
+    },
+    {
+      "id": "F6-DBA-02",
+      "severity": "P1",
+      "title": "stock_movements_idempotency_unique is on a NULLABLE column",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_04_27_143130_create_stock_movements_table.php:19"
+      ],
+      "primary_source": "`$table->string('idempotency_key')->nullable()->unique('stock_movements_idempotency_unique');` — MySQL allows multiple NULL values in a UNIQUE index. SQLite allows none. Cross-engine inconsistency.",
+      "impact": "Today StockService always sets idempotency_key (sha1 composite). But the schema permits NULL inserts (manual_in / rupture_set reasons could write without a key, depending on backfill). MySQL silently allows duplicate NULLs; SQLite test environment would reject the second NULL. CI may pass on SQLite while prod has NULL-key rows that bypass dedup.",
+      "user_friendly_question": "Owner — la colonne idempotency_key est nullable + UNIQUE. MySQL accepte plusieurs NULL, SQLite n'en accepte qu'un. Tous les writes prod passent par StockService (toujours non-null), donc pas de bug actif. Veux-tu (1) rendre la colonne NOT NULL via migration future (1 ligne + backfill), ou (2) garder en l'état avec assertion runtime (StockMovement::saving guard)?",
+      "remediation_proposal": "Migration future: backfill NULL keys with deterministic sha1 from (reference_type, reference_id, stockable_id, delta, reason, created_at) → then ALTER COLUMN idempotency_key VARCHAR NOT NULL. Defer if no current prod NULL.",
+      "keep_current_working": "No bug today; preventive heal only."
+    },
+    {
+      "id": "F6-DBA-03",
+      "severity": "P2",
+      "title": "Hot read path index check: branch_id+stockable_type+stockable_id is UNIQUE (covers SELECT). No separate covering index on (branch_id, on_hand) for low-stock dashboard.",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_04_27_143120_create_stock_levels_table.php:22-23",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/StockRuptureDashboardController.php:69-77 lowAlerts query"
+      ],
+      "primary_source": "Dashboard lowAlerts query: `whereIn('branch_id', $branchIds)->whereNotNull('threshold_low')->whereColumn('on_hand', '<=', 'threshold_low')->orderBy('branch_id')->orderBy('on_hand')->limit(200)`. UNIQUE covers branch_id lookup but whereColumn comparison requires full row scan within branch.",
+      "impact": "At small dataset (1 branch, < 1k SKU) — negligible. At multi-branch (100 branches × 500 SKU = 50k rows) the lowAlerts endpoint scans all rows of each branch per request. Dashboard polls — could become a hot N×M scan. F-016a-BIS migration added stock_levels_manual_reason_idx but no compound index for the dashboard hot path.",
+      "user_friendly_question": "Owner — le dashboard lowAlerts scanne (branch_id, on_hand, threshold_low) sans index dédié. Aujourd'hui 1 branche / Le Cayenne = négligeable. Si tu prévois SaaS multi-tenant > 50k SKU dans 12 mois, on peut ajouter un index composite préventif. Veux-tu (1) ajouter dès V1.0.1 (1 migration), (2) reporter en V1.0.2 quand le SaaS démarre, ou (3) laisser tel quel?",
+      "remediation_proposal": "Future migration: `CREATE INDEX stock_levels_low_alerts_idx ON stock_levels (branch_id, threshold_low, on_hand)`. Verify EXPLAIN plan switches to index range scan.",
+      "keep_current_working": "Le Cayenne single-resto fits in memory regardless. Preventive only."
+    },
+    {
+      "id": "F6-DBA-04",
+      "severity": "info",
+      "title": "CHECK constraints applied only on non-sqlite — sqlite tests rely on model::saving() guard",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_04_27_143120_create_stock_levels_table.php:26-30",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/StockLevel.php:64-75"
+      ],
+      "primary_source": "Migration L26: `if (DB::getDriverName() !== 'sqlite')` skips CHECK constraints on test runner. StockLevel model::booted() L64-75 throws InvalidArgumentException on negative on_hand/reserved + reserved>on_hand.",
+      "impact": "Test environment (sqlite) catches violations at model level, prod (MySQL) catches at DB level. Dual defense. Acceptable. Just worth noting that raw DB::table writes in prod would still hit the CHECK; raw writes in tests would silently succeed.",
+      "user_friendly_question": "Pas d'action requise. Juste pour info.",
+      "remediation_proposal": "Aucune.",
+      "keep_current_working": "Aucune action."
+    }
+  ],
+  "schema_summary": {
+    "stock_levels": {
+      "primary_key": "id (autoincrement)",
+      "unique_constraints": [
+        "(branch_id, stockable_type, stockable_id) — stock_levels_branch_stockable_unique"
+      ],
+      "indexes": [
+        "(stockable_type, stockable_id) — stock_levels_stockable_idx (polymorphic reverse lookup)",
+        "(manual_unavailable_reason) — stock_levels_manual_reason_idx (F-016a-BIS dashboard buckets)"
+      ],
+      "check_constraints_mysql_only": [
+        "on_hand >= 0",
+        "reserved >= 0",
+        "reserved <= on_hand"
+      ],
+      "foreign_keys": [
+        "branch_id → branches.id ON DELETE CASCADE"
+      ]
+    },
+    "stock_movements": {
+      "primary_key": "id (autoincrement)",
+      "unique_constraints": [
+        "idempotency_key — stock_movements_idempotency_unique (NULLABLE — see F6-DBA-02)"
+      ],
+      "indexes": [
+        "(branch_id, stock_level_id, created_at) — stock_movements_branch_level_created_idx (replay queries)"
+      ],
+      "append_only_enforcement": "Eloquent model boot() ONLY — no DB trigger (see F6-DBA-01)",
+      "foreign_keys": [
+        "stock_level_id → stock_levels.id ON DELETE CASCADE",
+        "branch_id → branches.id ON DELETE CASCADE"
+      ],
+      "updated_at_disabled": "StockMovement::UPDATED_AT = null (correct for append-only)"
+    }
+  },
+  "hot_query_index_coverage": {
+    "stockservice_lockForUpdate_lookup": {
+      "query": "WHERE branch_id=? AND stockable_type=? AND stockable_id=? FOR UPDATE",
+      "index_used": "stock_levels_branch_stockable_unique (composite UNIQUE)",
+      "verdict": "OK — direct UNIQUE seek"
+    },
+    "stockservice_idempotency_existsCheck": {
+      "query": "WHERE idempotency_key=?",
+      "index_used": "stock_movements_idempotency_unique",
+      "verdict": "OK — direct UNIQUE seek"
+    },
+    "dashboard_lowAlerts": {
+      "query": "WHERE branch_id IN (?) AND threshold_low IS NOT NULL AND on_hand <= threshold_low",
+      "index_used": "Range scan within (branch_id, ...) — see F6-DBA-03",
+      "verdict": "Acceptable for single-resto, attention for multi-tenant"
+    }
+  },
+  "append_only_enforcement": {
+    "level_present": "Eloquent model boot() (StockMovement.php L46-55)",
+    "level_missing": "Database trigger (BEFORE UPDATE / BEFORE DELETE)",
+    "bypass_risk": "DB::table('stock_movements')->delete() / DB::statement('DELETE FROM stock_movements ...') / raw MySQL CLI",
+    "compare_audit_logs": "audit_logs HAS DB trigger (migration 2026_04_22_000002 L86-131). Inconsistency in NF525-grade enforcement promises."
+  }
+}

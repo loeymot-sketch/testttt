@@ -1,0 +1,72 @@
+{
+  "audit": "F-X-DUPS dead-files",
+  "date": "2026-05-18",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "approach": "bulk diff of {defined-class-basenames} minus {referenced-classes} via grep on use/new/::class across app/, routes/, tests/, resources/views/, config/, database/seeders/, bootstrap/, then per-candidate verification with full-string grep and framework auto-resolution exclusions (Commands auto-loaded via load(), FormRequests injected by type-hint, ServiceProvider-bound classes, Observers/Listeners/Events auto-registered, payment+SMS gateway dynamic resolution via `new $className`)",
+  "exclusions_applied": [
+    "All app/Console/Commands/* (auto-discovered via Kernel::load and have signatures)",
+    "All app/Http/PaymentGateways/Gateways/* (loaded dynamically via PaymentManagerService::gateway())",
+    "All app/Http/PaymentGateways/Requests/* (loaded dynamically via Admin/PaymentGatewayController)",
+    "All app/Http/PaymentGateways/PaymentRequests/* (loaded dynamically via Frontend/PaymentController)",
+    "All app/Http/PaymentGateways/Routes/* (auto-scanned via RouteServiceProvider::mapWebRoutes scandir)",
+    "All app/Http/SmsGateways/Gateways/* (loaded via SmsManagerService::gateway())",
+    "All app/Http/SmsGateways/Requests/* (loaded via Admin/SmsGatewayController)",
+    "All app/Providers/* (registered in config/app.php)",
+    "All app/Http/Middleware/* aliased in Kernel.php protected $routeMiddleware",
+    "All app/Models/* with Eloquent relations or polymorphic morphTo references",
+    "All app/Observers/, app/Listeners/, app/Events/ (registered in EventServiceProvider)"
+  ],
+  "candidates_after_filter": 4,
+  "candidates": [
+    {
+      "name": "CheckoutController (Frontend)",
+      "path": "app/Http/Controllers/Frontend/CheckoutController.php",
+      "evidence": [
+        "no route binds [CheckoutController::class, ...] in routes/web.php or routes/api.php (verified)",
+        "no use App\\Http\\Controllers\\Frontend\\CheckoutController anywhere except self-file"
+      ],
+      "verdict": "NEEDS-OWNER-DECISION",
+      "user_friendly": "Looks like an unused old checkout controller. The only payment paths today are PaymentController + Stripe webhook. Probably leftover from earlier dev, but I am not 100% sure no admin route relies on it via a hidden import. Safer to ask before removing."
+    },
+    {
+      "name": "ReceiptDataService",
+      "path": "app/Services/Receipt/ReceiptDataService.php",
+      "evidence": [
+        "no use App\\Services\\Receipt\\ReceiptDataService anywhere except self-file",
+        "ReceiptService.php is the active receipt service"
+      ],
+      "verdict": "NEEDS-OWNER-DECISION",
+      "user_friendly": "A backend receipt helper file that appears unused. The active receipt logic is elsewhere. Could be a half-finished feature."
+    },
+    {
+      "name": "SetLocale middleware",
+      "path": "app/Http/Middleware/SetLocale.php",
+      "evidence": [
+        "not registered in app/Http/Kernel.php (verified: only 'localization' alias points to App\\Http\\Middleware\\localization::class at Kernel.php:122)",
+        "no `SetLocale` string in routes/ or app/"
+      ],
+      "verdict": "NEEDS-OWNER-DECISION",
+      "user_friendly": "There are two locale-switching middlewares in the codebase. Only the lowercase `localization` is registered and used by API routes. SetLocale.php looks like an unused alternate version."
+    },
+    {
+      "name": "FixIdentityCommand (artisan)",
+      "path": "app/Console/Commands/FixIdentityCommand.php",
+      "evidence": [
+        "has signature so it loads, but the signature name is a one-shot identity recovery command from 2026-05-09 incident (per project memory: 'Recovery 2026-05-09 DB identity')",
+        "not on any cron schedule"
+      ],
+      "verdict": "NEEDS-OWNER-DECISION",
+      "user_friendly": "An old artisan command from the May 9 incident recovery. Not scheduled. Could be deleted if owner confirms the DB identity issue is fully behind us."
+    }
+  ],
+  "one_off_commands_kept_alive_for_history": [
+    "MenuCommand", "MenuHealLightV2Command", "MenuHealLightV2Round2PatchCommand",
+    "MenuHealLightV3Command", "MenuHealLightV31BurgerCommand", "MenuResetLeCayenneCommand",
+    "BackfillAllergensSnapshotCommand", "Iter15CleanupTestOrdersCommand", "E2EStressCommand",
+    "SimulateKioskOrders", "FreshOrderSeed",
+    "EnsureAdminLoginCommand", "EnsureChefLoginCommand", "EnsureKioskMachineCommand",
+    "EnsurePosOperatorLoginCommand"
+  ],
+  "one_off_commands_note": "These are one-shot artisan commands used during specific cycles (menu heals, e2e seeding, login fixtures). They have signatures so they auto-load. Owner mandate KEEP what works — none of them run automatically, so they sit at zero cost. Removing them is purely cosmetic; would lose audit trail. Recommend leave as-is unless explicit cleanup sprint.",
+  "note_on_models_addon_customer_notification": "App\\Models\\Addon, Customer, Notification show no static references but Eloquent uses dynamic relation resolution and morphTo polymorphism. Customer is a User subtype (NFC loyalty alias on the users table). Notification probably tied to legacy notifications table from the StarterKit upstream. Verdict NEEDS-OWNER-DECISION but bias KEEP — risk of breaking a morphTo lookup at runtime."
+}

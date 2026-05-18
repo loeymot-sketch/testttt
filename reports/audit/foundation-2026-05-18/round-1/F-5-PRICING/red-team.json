@@ -1,0 +1,93 @@
+{
+  "specialist": "RED-team",
+  "zone": "F-5 Pricing SSOT",
+  "scope": "Adversarial — forge a price, force backend trust client total, rewrite a snapshot, overflow cumulative discounts. READ-ONLY.",
+  "date": "2026-05-18",
+  "attack_attempts": [
+    {
+      "id": "F5-RED-01",
+      "attack": "Forge a price by injecting an item_id with a cheaper variation belonging to a different item",
+      "vector": "POST /api/order with items=[{item_id: 100 /* expensive */, item_variations:[{id: 999 /* belongs to cheap item 50 */}]}]",
+      "blocked_by": "PricingService.php:152-157 enforceCrossItemGuards rejects `(int) $dbVar->item_id !== (int) $item->item_id` with HTTP 422 + message 'Variation ID {$varId} n\\'appartient pas à l\\'article {$item->item_id}.'",
+      "verification": "All 4 PricingRequest::for* factories set enforceCrossItemGuards=true (web, pos, table, kiosk). Legacy branches at OrderService.php:749-754 + FrontendOrderService.php:372-377 implement the same guard [P2-1 FIX] / [GAP-21-3].",
+      "result": "BLOCKED on all surfaces."
+    },
+    {
+      "id": "F5-RED-02",
+      "attack": "Force backend to trust client total via $request->total / $request->subtotal / $request->discount",
+      "vector": "POST /api/order with total=0, subtotal=0, discount=99999 in body",
+      "blocked_by": "OrderService.php:319-322 (web), :617-618 (POS), :1118 (table) + FrontendOrderService.php:254-257 (kiosk) all execute `unset($validated['total'], $validated['subtotal'], $validated['discount'])` BEFORE Order::create / FrontendOrder::create. PricingService::calculateOrder recomputes from DB prices via Item::query()->select('id', 'price', 'tax_id')->whereIn(...).",
+      "result": "BLOCKED — client financial fields stripped before persistence. PricingService never reads from $request, only from PricingRequest (which factories build with `$req->requestItems` = the items payload only, not totals)."
+    },
+    {
+      "id": "F5-RED-03",
+      "attack": "Rewrite a composition_snapshot post-insert via direct Eloquent reassignment",
+      "vector": "$orderItem->composition_snapshot = ['lines' => [], 'extras' => [], 'addons' => []]; $orderItem->save();  // wipe snapshot",
+      "blocked_by": "NOTHING AT DB/MODEL LEVEL. composition_snapshot is in $fillable, has 'array' cast, no model boot() updating listener, no DB BEFORE UPDATE trigger.",
+      "discovered_today": "Zero code paths perform such reassignment — grep `->composition_snapshot\\s*=` returned 0 matches across app/. The 6 known write sites are insert-only or copy-forward.",
+      "result": "TECHNICALLY UNBLOCKED — convention-enforced only. Any future PR introducing the pattern would compile and run without warning. See F5-SEC-03 / F5-DBA-01 for the v1.1 hardening ask.",
+      "severity": "P2 (defense-in-depth gap, not exposed today)"
+    },
+    {
+      "id": "F5-RED-04",
+      "attack": "Stack coupon + manual discount + loyalty redemption to drive order total below zero",
+      "vector": "POS order with coupon_id=X (50%), manual discount=20€, kiosk loyalty redemption=5€",
+      "blocked_by": [
+        "PricingService.php:331-344 — discount logic is EXCLUSIVE: `if ($req->couponId > 0) { coupon } elseif ($req->manualDiscountRequest > 0.0 && in_array($req->context, ['pos', 'table'], true)) { manual }`. Coupon AND manual cannot stack — only one applies.",
+        "PricingService.php:355 — `$finalTotal = max(0.0, $rawTotal)` clamps to 0 floor. Cannot go negative.",
+        "DiscountCalculator.php:25-29 manual discount: `return $requested <= $subtotal ? $requested : 0.0;` — manual discount > subtotal silently returns 0 (no negative).",
+        "DiscountCalculator.php:38-40 loyalty: `if ($validatedCoupon instanceof Coupon && $loyaltyCode !== '' && $requestedDiscount > 0) { return ['discount' => 0.0, 'points' => 0]; }` — loyalty MUTUALLY EXCLUSIVE with coupon.",
+        "FrontendOrderService applyKioskLoyaltyDiscount + OrderQuoteService::withKioskLoyaltyDiscount apply loyalty only when no coupon."
+      ],
+      "result": "BLOCKED — discount stacking is by-design impossible. Coupon XOR manual; loyalty XOR coupon."
+    },
+    {
+      "id": "F5-RED-05",
+      "attack": "Maximum-discount probe via CouponCheckResource preview endpoint to fish for high-value coupons",
+      "vector": "GET /api/coupon-checking?code=X&total=999999  // forged total to maximize percentage coupon yield",
+      "blocked_by": "Coupon.maximum_discount cap (CouponCheckResource.php:33-37, :40-44 — `if ($amount > $this->maximum_discount) { return $this->maximum_discount; }`)",
+      "leakage": "Attacker can: (1) confirm coupon existence by code, (2) measure maximum_discount cap, (3) probe minimum_order threshold via validateCouponForOrder's minimum_purchase check, (4) enumerate coupons in batch (rate-limited?).",
+      "actual_fiscal_impact": "ZERO — eventual order creation re-validates via PricingService::calculateOrder which recomputes subtotal from DB.",
+      "result": "INFORMATION LEAK ONLY. See F5-SEC-01 — preview leak, not value extraction."
+    },
+    {
+      "id": "F5-RED-06",
+      "attack": "Downgrade the SSOT flag via env-var to re-enable legacy duplicate math + introduce drift via a future-only patch to PricingService",
+      "vector": "Compromise .env on the production host → set PRICING_USE_SSOT=false. Legacy branches at OrderService.php:358-493 / :687-839 / :1148-1295 + FrontendOrderService.php:296-459 activate.",
+      "blocked_by_in_CI": "PricingSsotFlagProductionStableSentinelTest enforces =true in 5 config artefacts (config default + .env.example + .env.testing + 2 GitHub workflows). Hostile .env edit bypasses CI entirely.",
+      "blocked_by_in_runtime": "NOTHING — there is no boot-time invariant assertion.",
+      "current_safety_net": "Today, SSOT and legacy compute the same values (sentinel tested at PricingSsotEquivalence-class tests). The downgrade is currently a no-op fiscally. But: F5-ARCH-01 highlights that any future PricingService patch (e.g., NF525 rule update, tax change) that doesn't get mirrored to all 4 legacy sites creates a drift window where the downgrade attack yields outdated math.",
+      "result": "TECHNICALLY UNBLOCKED at runtime. Sentinel protects CI/templates. v1.1 recommendation: boot-time assertion `if (config('pricing.use_ssot_service') === false && app()->environment('production')) { throw new \\LogicException('PRICING_USE_SSOT=false is not permitted in production'); }` in AppServiceProvider.",
+      "severity": "P2 (currently no-op, future drift window)"
+    },
+    {
+      "id": "F5-RED-07",
+      "attack": "Inject menu_role=menu_drink_FORGED to bypass kiosk menu-formula ratio (claim 0.4× when full price applies)",
+      "vector": "POST /kiosk/order with item_addons=[{id: X, role: 'menu_unknown_role'}] hoping default ratio applies",
+      "blocked_by": "PricingService.php:801-806 `match` block: known roles only (menu_full=1.0, menu_frites=0.6, menu_boisson=0.4); default for unknown menu_* role = 1.0 (full price). Unknown non-menu_* role returns $fullPrice unchanged via the `str_starts_with($role, 'menu_')` guard on line 796.",
+      "result": "BLOCKED — fail-safe default is full price, never the cheapest ratio. Attempted ratio injection cannot reduce the charged price below catalog."
+    },
+    {
+      "id": "F5-RED-08",
+      "attack": "Variation/extra quantity overflow to wrap PHP int and zero out line_total",
+      "vector": "POST with item_variations=[{id: X, quantity: PHP_INT_MAX}]",
+      "blocked_by": [
+        "PricingService.php:158 — `$varQuantity = max(1, (int) ($variation->quantity ?? 1));` (similar at :188, :213, :232, :403)",
+        "FormRequest validation in OrderRequest / PosOrderRequest / KioskOrderRequest typically caps quantity (need to cross-verify with F-1 Data agent)",
+        "PHP float multiplication of `(float) $dbVar->price * $varQuantity` for PHP_INT_MAX would yield Infinity, then float math, not int wrap."
+      ],
+      "result": "PARTIALLY BLOCKED — `max(1, ...)` handles negative/zero. Extreme positive values produce huge totals (catalog price × large int) which would (a) hit Order.total numeric column overflow, (b) fail tax_amount decimal storage, (c) be visually obvious. Not a SSOT bypass — it would crash the insert or yield an absurd total visible to all stakeholders. Worth verifying integer/decimal column widths in F-1."
+    }
+  ],
+  "summary": {
+    "blocked": 5,
+    "partially_blocked": 1,
+    "technically_unblocked_but_unexposed": 2,
+    "p0_findings": 0,
+    "p1_findings": 0,
+    "p2_findings": 3
+  },
+  "p0_in_frozen_file": 0,
+  "owner_gate_g3_trigger": false,
+  "adversarial_verdict": "SSOT correctly resists the direct attack surface (price forge, total trust, discount stack, role injection). The 2 'technically unblocked' findings (F5-RED-03 snapshot mutability, F5-RED-06 SSOT downgrade) are convention-enforced today and not exposed by any code path — they represent defense-in-depth opportunities for V1.1, not active vulnerabilities. CouponCheckResource preview leak (F5-RED-05) is an information leak with zero fiscal impact."
+}

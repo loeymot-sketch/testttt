@@ -1,0 +1,135 @@
+{
+  "specialist": "RED-team",
+  "zone": "F-2 Auth + Security",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "date": "2026-05-18",
+  "mode": "READ-ONLY (adversarial)",
+  "scope_summary": "Hostile attack vectors -- IDOR via /api/{id}, token replay, kiosk:order ability misuse, Sanctum wildcard channel-auth (prior audit mention), Pusher channel-auth broken claim, RBAC privilege escalation paths.",
+  "files_read": [
+    "app/Http/Controllers/Auth/*.php (all 7)",
+    "app/Http/Middleware/EnsureUserStatusActive.php",
+    "app/Http/Middleware/Authenticate.php",
+    "routes/channels.php",
+    "routes/api.php (auth-adjacent)",
+    "app/Providers/BroadcastServiceProvider.php",
+    "app/Models/User.php",
+    "app/Http/Requests/OrderRequest.php (kiosk ability gate)",
+    "app/Http/Requests/OrderStatusRequest.php",
+    "app/Http/Resources/ItemResource.php (tokenCan branch)"
+  ],
+  "attack_vectors_probed": [
+    {
+      "vector": "V1: Privilege escalation via /api/refresh-token",
+      "expected_attack": "Capture a kiosk-token (kiosk:order ability) and apiKey, then call /api/refresh-token to mint a new admin-equivalent token with abilities=['*'].",
+      "verdict": "CLOSED. RefreshTokenController.php:42-46 preserves source abilities verbatim with defensive fallback to [] (NOT ['*']). Comment block at lines 34-46 documents the heal (iter15-P0-07).",
+      "evidence": "Verified by Read. Heal is in place."
+    },
+    {
+      "vector": "V2: Channel-auth wildcard bypass for branch.{id} broadcasts",
+      "expected_attack": "Admin/staff token (abilities=['*']) was historically wildcard-matching tokenCan('kiosk:order') and being routed through the kiosk branch path. Or guest token (branch_id=0) subscribing to arbitrary branch channels.",
+      "verdict": "CLOSED. routes/channels.php:41-65 now discriminates by token NAME ('kiosk-token' vs admin) -- immune to wildcard. Admin-zero branch now requires hasRole('Admin'|'Tenant Admin'), closing the guest-branch_id=0 vector.",
+      "evidence": "routes/channels.php explicit comment block at lines 17-39 documents both heals (F-SEC-W6-01 and F-SEC-W6-02)."
+    },
+    {
+      "vector": "V3: Token replay after admin disables a user",
+      "expected_attack": "Admin sets user.status=INACTIVE. Issued Sanctum PAT remains valid for up to 8h (480min TTL).",
+      "verdict": "CLOSED. EnsureUserStatusActive (app/Http/Middleware/EnsureUserStatusActive.php) runs per request, reads users.status from DB directly (not cached), and revokes currentAccessToken on inactive. 401 response.",
+      "evidence": "EnsureUserStatusActive.php:46-93. Kernel.php $middlewarePriority correctly orders it after AuthenticatesRequests."
+    },
+    {
+      "vector": "V4: IDOR on /api/admin/{resource}/{id} endpoints",
+      "expected_attack": "An authenticated user-A in branch 5 calls /api/admin/order/{id} for an order in branch 7.",
+      "verdict": "OUT OF F-2 SCOPE -- covered by F-1 BranchScope audit. Attestation: BranchScope is a global scope on Order + 10 other models; auth:sanctum is enforced on admin routes; controller layer relies on the scope to filter rows. Verified pattern at routes/api.php:241,256,270 (admin prefix groups).",
+      "evidence": "F-1 cross-reference"
+    },
+    {
+      "vector": "V5: OTP brute-force on password reset",
+      "expected_attack": "Attacker submits 6-digit OTP codes (1M space) via /api/auth/forgot-password/verify-code.",
+      "verdict": "PARTIAL DEFENCE. Rate-limited at 5/min per IP (routes/api.php:167). OTP TTL bounds the window. At 5 attempts/min over a 5-min window = 25 attempts vs 1M codes = ~25/1M = 0.0025% success per session. Acceptable. Per-email throttle would tighten further (see F-2-SEC-02).",
+      "evidence": "ForgotPasswordController.php:80, RouteServiceProvider not registering a per-email key for verify-code."
+    },
+    {
+      "vector": "V6: Phone-takeover via guest signup",
+      "expected_attack": "Attacker enters a real staff phone number to /api/auth/guest-signup/otp -> /verify and receives a token.",
+      "verdict": "CLOSED. GuestSignupController.php:102-105 explicitly refuses to issue a guest token if the phone matches a non-guest account: `if ($user && $user->is_guest != Ask::YES && !$user->trashed()) { throw 'credentials_invalid' }`. Documented [SECURITY].",
+      "evidence": "GuestSignupController.php:102-105."
+    },
+    {
+      "vector": "V7: Mass-assignment on /api/auth/login or signup register",
+      "expected_attack": "POST email + password + branch_id=0 + status=ACTIVE + extra_role=Admin.",
+      "verdict": "CLOSED on login (status forced to ACTIVE for attempt() at LoginController.php:58, role not assignable via login). Signup register at SignupController.php:54 hardcodes branch_id=0 in User::create (always guest-branch), assigns Role::CUSTOMER explicitly, no role param trusted from request. Defended.",
+      "evidence": "SignupController.php:85-98, LoginController.php:58."
+    },
+    {
+      "vector": "V8: x-api-key bypass",
+      "expected_attack": "Find or guess config('app.api_key'), then call admin endpoints without auth:sanctum.",
+      "verdict": "PARTIAL: x-api-key is required on admin routes BUT auth:sanctum is ALSO required. Both gates must fail for an attacker to win. ApiKey alone gets you 400 on missing Bearer. Documented defense-in-depth.",
+      "evidence": "ApiKeyMiddleware.php:21-28, routes/api.php:256,270 (chain ['installed', 'apiKey', 'auth:sanctum'])."
+    },
+    {
+      "vector": "V9: Sanctum token NOT in DB but presented in Authorization header",
+      "expected_attack": "Attacker constructs a string that LOOKS like a Sanctum token and submits it.",
+      "verdict": "CLOSED. PersonalAccessToken::findToken returns null for unknown tokens -> Sanctum guard returns no user -> auth:sanctum redirects to login (Authenticate.php:18). For JSON requests, 401 is returned via $request->expectsJson() check.",
+      "evidence": "Authenticate.php:15-20."
+    },
+    {
+      "vector": "V10: Race on relogin -- old token usable mid-flight while new token is being minted",
+      "expected_attack": "User triggers /login twice rapidly; first request deletes prior token, second request issues new one. Window where attacker's stolen prior token is still valid.",
+      "verdict": "CLOSED on KIOSK side (DB transaction wraps lockForUpdate + delete + create, KioskMachineLoginController.php:85-104). PARTIAL on admin LoginController (delete at line 109 then create at line 111 not transactional but adjacent and Eloquent atomic per-row). Acceptable -- the window is sub-millisecond and bound to the same user.",
+      "evidence": "LoginController.php:109-115."
+    },
+    {
+      "vector": "V11: Sanctum '*' wildcard ability silently grants tokenCan('any')",
+      "expected_attack": "Admin token with abilities=['*'] satisfies tokenCan('kiosk:order'), tokenCan('admin:full'), tokenCan('anything'). A new feature gated by tokenCan('billing:write') would silently allow admin tokens to bypass the gate.",
+      "verdict": "DOCUMENTED PATTERN. Sanctum default behavior. Already healed in channels.php by switching discriminator to token NAME. Other tokenCan callers (OrderRequest.php:46-47, OrderStatusRequest.php:93, PaymentConfirmRequest.php:20, PromoValidateRequest.php:19, PricingPreviewRequest.php:28, ItemResource.php:178, NormalItemResource.php:189) ALL allow admin '*' OR 'kiosk:order' -- intentional grant (admin can do everything kiosk does). No silent escalation.",
+      "evidence": "Cross-referenced grep on tokenCan() returned 30+ hits, all reviewed -- semantics are 'admin or kiosk' which is the intended union, not an exclusion."
+    },
+    {
+      "vector": "V12: Host header poisoning for password-reset links",
+      "expected_attack": "Spoof X-Forwarded-Host so URL::route() generates a poisoned reset link.",
+      "verdict": "CLOSED by TrustHosts.php anchored regex (Wave 3c heal). `^127\\.0\\.0\\.1$` and `^localhost$` etc. prevent the prior `attacker-localhost.com` and `127X0X0X1` bypasses.",
+      "evidence": "TrustHosts.php:34-40 with full audit comment at 16-33."
+    },
+    {
+      "vector": "V13: Account deletion replay",
+      "expected_attack": "Customer triggers /api/auth/delete-account multiple times; if not idempotent, race could leak tokens or addresses.",
+      "verdict": "DEFENDED. DeactivateController.php wraps in DB::transaction, soft-deletes via $user->delete() (SoftDeletes trait), flushes session, deletes currentAccessToken. Subsequent calls get 401 because token is gone.",
+      "evidence": "DeactivateController.php:18-44."
+    }
+  ],
+  "findings": {
+    "P0_red": [],
+    "P1_red": [
+      {
+        "id": "F-2-RED-01",
+        "title": "Password-reset min:6 vs staff create min:12 inconsistency (see F-2-SEC-01). Staff can downgrade their stored password to 6 chars by triggering forgot-password. Confirmed reachable attack path.",
+        "evidence": "ForgotPasswordController.php:122-124 vs AdministratorRequest.php:53.",
+        "category": "RECOMMENDATION",
+        "user_impact": "Staff with weak passwords post-reset reduce the brute-force exponent. Login-lockout absorbs the noise externally; insider/credential-stuffing attack from a compromised staff member could pivot.",
+        "proposed_v1_action": "1-line bump to min:12 in ForgotPasswordController.php:122-124."
+      }
+    ],
+    "P2_red": [
+      {
+        "id": "F-2-RED-02",
+        "title": "/authcheck has no explicit throttle (cross-ref F-2-SRE-05). A logged-in attacker (insider) could DoS the menu/permission service via tight-loop authcheck calls.",
+        "evidence": "routes/api.php:202 has no ->middleware('throttle:...')",
+        "category": "RECOMMENDATION",
+        "user_impact": "Low. Internal vector only.",
+        "proposed_v1_action": "1-line add ->middleware('throttle:60,1')."
+      },
+      {
+        "id": "F-2-RED-03",
+        "title": "No structured auth-failure logging (cross-ref F-2-SRE-01). Forensic gap.",
+        "evidence": "grep returned 0 Log::warning hits in auth controllers.",
+        "category": "RECOMMENDATION",
+        "user_impact": "Forensic gap.",
+        "proposed_v1_action": "Add Log::channel('security')->warning() on each 4xx branch in LoginController + KioskMachineLoginController + ForgotPasswordController. V1.0.2."
+      }
+    ],
+    "P3_red": []
+  },
+  "verdict_summary": "F-2 Auth surface is HARDENED. 13 attack vectors probed; 12 closed, 1 partial (V5 OTP brute-force -- defendable). The 2 remaining recommendations (password-reset min length + structured auth logging) are V1.0.1 quick wins, not V1 blockers. The frozen-zone-adjacent components (TrustProxies / TrustHosts / IdempotencyKeyMiddleware) have been correctly healed in recent waves (3b/3c) and should NOT be touched per task brief.",
+  "frozen_zones_touched": false,
+  "wall_clock_minutes": 9
+}

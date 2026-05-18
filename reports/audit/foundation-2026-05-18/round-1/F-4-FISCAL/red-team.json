@@ -1,0 +1,131 @@
+{
+  "role": "RED-team",
+  "zone": "F-4-FISCAL",
+  "round": 1,
+  "scan_window": "2026-05-18",
+  "mode": "ADVERSARIAL READ-ONLY — find ways to break chain integrity",
+  "files_read": [
+    "app/Services/Fiscal/AuditLogService.php",
+    "app/Services/Fiscal/ZReportService.php",
+    "app/Services/Fiscal/FiscalChainValidator.php",
+    "app/Services/Fiscal/FiscalSealingService.php",
+    "app/Services/Fiscal/FiscalSequenceService.php",
+    "app/Console/Commands/FiscalVerifyChainCommand.php",
+    "config/fiscal.php",
+    "all 8 fiscal-related migrations",
+    "app/Console/Kernel.php (fiscal lanes)"
+  ],
+  "framing": "Adversarial — treat every safeguard as untrusted. Goal = enumerate concrete attack paths that would (a) silently break chain integrity, (b) insert a gap in fiscal_sequence_no, (c) make verifyChain falsely report CHAIN OK on a tampered system, (d) corrupt composition_snapshot without detection.",
+  "attack_paths_enumerated": [
+    {
+      "id": "RED-1",
+      "title": "TRUNCATE the audit_logs / z_reports table",
+      "preconditions": "Privileged DB account with TRUNCATE on the production audit_logs and/or z_reports table.",
+      "result": "Entire chain wiped in 1 statement. BEFORE DELETE triggers DO NOT fire on TRUNCATE in MySQL. Fiscal evidence destroyed.",
+      "detection_window": "verifyChain reports CHAIN OK on empty table (count=0). Daily archive cron logs 0 rows. Detection only via secondary signal: missing payments, missing receipts. Effectively undetectable from the fiscal pipeline alone.",
+      "mitigation_status_today": "Documented in 3 migration docstrings (deploy doc / GRANT level). NOT CODE — depends on operator discipline.",
+      "severity": "CRITICAL — single point of failure outside the codebase",
+      "recommended_action_v1_1": "Verify production GRANTs do NOT include TRUNCATE on audit_logs/z_reports/cash_movements/order_payments. Use a separate DB user for the migration runner (with full DDL) vs the app runtime (which gets only SELECT/INSERT/UPDATE on whitelisted tables, and only INSERT on audit_logs). Document in docs/FISCAL_SECRETS.md."
+    },
+    {
+      "id": "RED-2",
+      "title": "DROP TRIGGER audit_logs_no_update; UPDATE audit_logs SET payload=... ; CREATE TRIGGER audit_logs_no_update ...",
+      "preconditions": "DB account with DROP/CREATE TRIGGER privilege on the production audit_logs.",
+      "result": "Trigger temporarily removed, tampered UPDATE applied, trigger reinstalled. PHP layer would still detect the tamper via verifyChain (HMAC fails on the modified row).",
+      "detection_window": "Daily 03:30 cron sweeps every branch and logs fiscal.chain.monitor.failure. Manual fiscal:verify-chain --all run also catches it.",
+      "mitigation_status_today": "Detection works via HMAC re-walk. SEPARATE migration-user vs app-user GRANT separation prevents DDL by the runtime user.",
+      "severity": "HIGH — but detectable",
+      "recommended_action_v1_1": "Ensure prod app user has NO TRIGGER privilege. Alert any DDL event on audit_logs/z_reports via DB audit logging (MySQL audit plugin / RDS audit logs)."
+    },
+    {
+      "id": "RED-3",
+      "title": "Insert a forged row through SQL with prev_hash matching the current tail",
+      "preconditions": "Read access to current_hash of the tail row + write access to audit_logs (DB account, not via AuditLogService).",
+      "result": "The forged row has correct prev_hash and a fake current_hash. UNIQUE(branch_id, prev_hash) BLOCKS the second writer because the legitimate next AuditLogService::write would compute the same prev_hash. But the FORGER goes first, so the legitimate writer fails. Service retries once (line 187) and computes a NEW prev_hash from the forged tail — so the forger ESTABLISHES the new tail, and subsequent legitimate writes chain on top of the forgery. Eventually verifyChain re-walks the chain and recomputes current_hash for the forged row — HMAC mismatch DETECTED.",
+      "detection_window": "Immediate on next verifyChain (operator command or 03:30 cron). The forged row appears as the first tampered id.",
+      "mitigation_status_today": "Detection works — HMAC re-walk catches any current_hash that does not match recompute(prev_hash, action, payload, branch_secret).",
+      "severity": "MEDIUM — detectable but creates panic-state",
+      "recommended_action_v1_1": "Alert on ANY non-zero exit from fiscal:verify-chain. Currently logs to fiscal channel but ops escalation depends on log-monitor wiring. Verify SIEM has a CRITICAL alert on event=fiscal.chain.monitor.failure or event=fiscal.chain.verification_failed."
+    },
+    {
+      "id": "RED-4",
+      "title": "Insert a gap in fiscal_sequence_no by deleting an order pre-payment",
+      "preconditions": "Soft-delete or hard-delete an order BEFORE fiscal_sequence_no allocation.",
+      "result": "No gap — fiscal_sequence_no is allocated AT payment time (POS cash at close) or AT order creation (kiosk paid). Orders without fiscal_sequence_no never enter the Z aggregate.",
+      "detection_window": "N/A — not a real attack.",
+      "mitigation_status_today": "Schema invariant — fiscal_sequence_no nullable until allocated, UNIQUE composite prevents duplicate allocation.",
+      "severity": "NONE",
+      "recommended_action_v1_1": "none"
+    },
+    {
+      "id": "RED-5",
+      "title": "Insert a gap in fiscal_sequence_no by deleting an order POST-payment",
+      "preconditions": "Hard DELETE on a paid order. order_payments DELETE rejected by trigger (P0-FIX-4). orders table itself has no DELETE trigger.",
+      "result": "Order row gone. fiscal_sequence_no = N orphaned (gap between N-1 and N+1). ZReportService::aggregate STILL aggregates from order_items (line 651-666) and aggregate filter joins on orders.id — if the parent order is deleted, the line is excluded. RESULT = silent fiscal gap.",
+      "detection_window": "ZReportService::aggregate uses withTrashed() (line 338) which catches soft-delete but NOT hard-delete. Hard DELETE on orders would create a gap that next-period Z cannot detect because verifyChain only checks audit_logs + z_reports, not order-level continuity.",
+      "mitigation_status_today": "order_payments and audit_logs are protected. ORDERS TABLE ITSELF has no DELETE trigger. Cascade behaviour: order_payments now restrictOnDelete (P0-FIX-4) so a hard DELETE on orders fails if any order_payments exist. SO: hard DELETE only succeeds for orders with NO order_payments — which means unpaid orders — which means fiscal_sequence_no=null — which means no gap (RED-4 case). Net result: SAFE because of the cascade-to-restrict refactor.",
+      "severity": "LOW — defense via FK chain",
+      "recommended_action_v1_1": "Add explicit BEFORE DELETE trigger on orders that rejects DELETE when fiscal_sequence_no IS NOT NULL. Defense-in-depth — currently relies on FK restrictOnDelete. V1.1 backlog."
+    },
+    {
+      "id": "RED-6",
+      "title": "Tamper composition_snapshot on a paid order",
+      "preconditions": "DB account with UPDATE on order_items (no trigger blocking this currently).",
+      "result": "composition_snapshot is JSON nullable, no DB-level guard. Application reads it via OrderItem cast. Tamper changes the receipt content (e.g. swap an item, change price displayed, alter allergens) but order.total stays the same. ZReportService::aggregate uses order.total — so Z signature unchanged. Re-print receipt would show tampered content.",
+      "detection_window": "NONE within fiscal pipeline. composition_snapshot is per-line, not chained, not hashed. Only detection: comparing receipt printout with payment record manually.",
+      "mitigation_status_today": "Application enforces immutability via comments + OrderService write-once pattern, but DB does NOT enforce.",
+      "severity": "MEDIUM — undetectable from inside the fiscal chain",
+      "recommended_action_v1_1": "Add BEFORE UPDATE trigger on order_items rejecting changes to composition_snapshot when parent order has payment_status=PAID. Echoes DBA-REC-V11-1."
+    },
+    {
+      "id": "RED-7",
+      "title": "DB inconsistency between trigger and PHP layer",
+      "preconditions": "Driver mismatch — e.g. trigger is MySQL but Laravel reads from a stale read-replica, OR cache lock acquired on Redis A but DB write goes to MySQL primary B with no replication lag awareness.",
+      "result": "FiscalSequenceService Cache::lock + DB lockForUpdate + UNIQUE composite still serializes. Even in a multi-master / write-split scenario, the DB UNIQUE constraint catches the race. Two writers both see MAX=N → both attempt INSERT with N+1 → second one fails UNIQUE → caller gets exception, retries with new MAX. No gap, no duplicate.",
+      "detection_window": "Application surfaces RuntimeException to caller. Failed allocation flagged via fiscal_alloc_error_at column and reconciled by RetryFiscalAllocCommand everyMinute.",
+      "mitigation_status_today": "Layered defense holds.",
+      "severity": "LOW",
+      "recommended_action_v1_1": "Document the multi-region constraint (single-Redis required, or distributed lock service) in deploy doc. V1.1+."
+    },
+    {
+      "id": "RED-8",
+      "title": "Rebuild audit_logs from scratch using AuditLogService with crafted payloads",
+      "preconditions": "Attacker has app runtime privilege + knows the fiscal.audit_secret.",
+      "result": "Attacker writes a series of valid-looking audit rows. Each is HMAC-correct, prev_hash chains correctly, verifyChain returns OK. But the rows are NOT the legitimate history.",
+      "detection_window": "From inside the fiscal pipeline: ZERO. Only out-of-band correlation (cross-reference with payment-processor records, kiosk logs, etc.) would expose this.",
+      "mitigation_status_today": "Secret protection (32+ char + dev sentinel rejection + per-branch override) is the ENTIRE defense. If the secret leaks, the chain is forgeable.",
+      "severity": "CRITICAL if secret leaks",
+      "recommended_action_v1_1": "Secret rotation playbook (docs/FISCAL_SECRETS.md). Consider HSM / KMS-based signing for V1.2+ so the secret never sits in env. For V1: ensure FISCAL_AUDIT_SECRET is rotated quarterly + scoped per branch + monitored for env enumeration."
+    },
+    {
+      "id": "RED-9",
+      "title": "Modify chain via SQLite test env then ship to prod",
+      "preconditions": "Developer accidentally runs migration with sqlite + manipulates rows + dumps the binary file as the prod database.",
+      "result": "SQLite triggers protect against UPDATE/DELETE in test env too. Shipping a sqlite file as prod is not a realistic deployment vector (prod is MySQL).",
+      "detection_window": "Deploy gate — APP_ENV=production refuses to use sqlite if any code reads driver name.",
+      "mitigation_status_today": "Operationally implausible.",
+      "severity": "NONE",
+      "recommended_action_v1_1": "none"
+    },
+    {
+      "id": "RED-10",
+      "title": "Force a Z close with strict=false to swallow chain corruption",
+      "preconditions": "Set FISCAL_VERIFY_CHAIN_STRICT=false in production .env.",
+      "result": "ZReportService::verifyChain returns valid=false but does NOT throw. Caller logs and continues — Z close proceeds on top of a broken chain.",
+      "detection_window": "ZReportService::open delegates to FiscalChainValidator::assertChainIntegrity which ALWAYS uses strict=true (FiscalChainValidator.php:67) — overrides the env config. Z OPEN is protected. But Z CLOSE call site at ZReportService.php:201 calls $this->verifyChain($branchId) WITHOUT strict — defaults to env. So a flipped env would let a corrupt chain CLOSE the Z while throwing on the next OPEN.",
+      "mitigation_status_today": "PARTIAL — Open is protected, Close is env-dependent. Wave 2c-2 + Wave 3b heals likely intended both paths to be strict in prod.",
+      "severity": "MEDIUM — design ambiguity",
+      "recommended_action_v1_1": "Force strict=true in ZReportService::close's verifyChain call regardless of config. Frozen file modification — requires LOCK + Wave 4 plan."
+    }
+  ],
+  "structural_recommendations_v1_1": [
+    {"id": "RED-REC-V11-1", "priority": "P0-AUDIT", "label": "Confirm GRANTs on prod DB user", "rationale": "RED-1 + RED-2. TRUNCATE + DROP TRIGGER privileges must be revoked on the app runtime user.", "frozen_impact": "operational", "effort": "trivial verification"},
+    {"id": "RED-REC-V11-2", "priority": "P1", "label": "Block orders DELETE when fiscal_sequence_no NOT NULL", "rationale": "RED-5 — defense in depth on top of FK restrictOnDelete.", "frozen_impact": "new migration, no frozen file.", "effort": "small V1.1"},
+    {"id": "RED-REC-V11-3", "priority": "P1", "label": "Block composition_snapshot UPDATE on PAID orders", "rationale": "RED-6 — close the only DB-layer gap in fiscal evidence integrity.", "frozen_impact": "new migration, no frozen file.", "effort": "small V1.1"},
+    {"id": "RED-REC-V11-4", "priority": "P1", "label": "Force strict=true in Z close verifyChain regardless of env", "rationale": "RED-10 — close env-config bypass. Currently Z OPEN forces strict via FiscalChainValidator; Z CLOSE does not.", "frozen_impact": "FROZEN ZReportService modification — requires LOCK doc + owner gate.", "effort": "small change but heavy gate process"},
+    {"id": "RED-REC-V11-5", "priority": "P2", "label": "SIEM CRITICAL alert on fiscal.chain.verification_failed", "rationale": "RED-3 — verifyChain detects but ops escalation is wire-dependent.", "frozen_impact": "monitor config only.", "effort": "small V1.1"},
+    {"id": "RED-REC-V11-6", "priority": "P2", "label": "Quarterly FISCAL_AUDIT_SECRET rotation", "rationale": "RED-8 — secret leak forges the whole chain.", "frozen_impact": "doc/runbook only.", "effort": "small (procedure)"}
+  ],
+  "no_findings_p0_code": true,
+  "specialist_verdict": "AMBER — code is correct, but THREE structural risks merit V1.1 attention: (1) P0-AUDIT verify TRUNCATE GRANT mitigation (operational, outside code), (2) P1 composition_snapshot has no DB-level immutability trigger, (3) P1 Z close verifyChain env-config bypass (frozen file change with LOCK). Chain forgery is detectable; chain wipe via TRUNCATE is not. ESCALATE the GRANT verification."
+}
