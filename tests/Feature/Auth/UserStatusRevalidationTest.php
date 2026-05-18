@@ -141,4 +141,80 @@ class UserStatusRevalidationTest extends TestCase
             'Inactive user token must be revoked on first request even with wildcard ability.'
         );
     }
+
+    /**
+     * [T-9.4.1 — V1.0.2 R-3 2026-05-18]
+     *
+     * AD09 case 4 — flipping one user's status MUST NOT affect a second,
+     * independently-authenticated user with an independent token. This
+     * isolates the middleware to per-user side-effects (no cross-user
+     * token-revocation leak via shared cache or wrongly-scoped delete).
+     *
+     * @test
+     */
+    public function test_deactivating_one_user_does_not_affect_another_active_user(): void
+    {
+        // Reserve id=1 — root admin status sentinel.
+        User::factory()->create(['status' => Status::ACTIVE]);
+
+        $userA = User::factory()->create(['status' => Status::ACTIVE]);
+        $userB = User::factory()->create(['status' => Status::ACTIVE]);
+
+        $tokenA = $userA->createToken('auth_token_A', ['*'])->plainTextToken;
+        $tokenB = $userB->createToken('auth_token_B', ['*'])->plainTextToken;
+
+        // Sanity: both users have one token initially.
+        $this->assertSame(1, $userA->fresh()->tokens()->count());
+        $this->assertSame(1, $userB->fresh()->tokens()->count());
+
+        // Flip ONLY userA to INACTIVE.
+        $userA->update(['status' => Status::INACTIVE]);
+
+        // userA's token must be rejected on next request.
+        $rA = $this->withHeader('Authorization', "Bearer $tokenA")
+            ->getJson('/api/profile');
+        $rA->assertStatus(401);
+
+        // userA's token must be revoked.
+        $this->assertSame(
+            0,
+            $userA->fresh()->tokens()->count(),
+            'Deactivated user A token must be revoked.'
+        );
+
+        // Sanity: userB row in DB is ACTIVE (=5). If this assertion fails,
+        // the User::boot.updating root-admin sentinel or branch_id default
+        // may have mutated B's status.
+        $this->assertSame(
+            (int) Status::ACTIVE,
+            (int) \DB::table('users')->where('id', $userB->id)->value('status'),
+            'User B status must remain ACTIVE in DB before token-B request.'
+        );
+
+        // Flush auth state between requests — Laravel's TestCase resolves
+        // and caches the user via the auth guard during the first request
+        // (rA), so $request->user() in the second request would still
+        // return the cached userA regardless of the new Authorization
+        // header. Calling forgetGuards() forces a fresh guard resolution
+        // for tokenB. This mirrors production behavior, where each HTTP
+        // request hits a separate guard instance.
+        $this->app['auth']->forgetGuards();
+
+        // userB's token MUST remain valid (status still ACTIVE).
+        $rB = $this->withHeader('Authorization', "Bearer $tokenB")
+            ->getJson('/api/profile');
+        $bodyB = $rB->getContent();
+        $this->assertNotSame(
+            401,
+            $rB->status(),
+            'Active user B token must NOT be affected by user A deactivation. Body: '.$bodyB
+        );
+
+        // userB's token row must remain.
+        $this->assertSame(
+            1,
+            $userB->fresh()->tokens()->count(),
+            'Active user B token MUST remain in personal_access_tokens.'
+        );
+    }
 }
