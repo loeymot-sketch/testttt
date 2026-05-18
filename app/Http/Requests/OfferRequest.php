@@ -11,11 +11,20 @@ class OfferRequest extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      *
+     * V1.0.2 BUILD-6 heal: defense-in-depth — OfferController middleware enforces
+     * `permission:offers_create` on store and `permission:offers_edit` on update;
+     * FormRequest accepts either since the same class is injected on both verbs.
+     * Any future route bypass still authz-checks against the offers capability family.
+     *
      * @return bool
      */
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
+        return $user->can('offers_create') || $user->can('offers_edit');
     }
 
     /**

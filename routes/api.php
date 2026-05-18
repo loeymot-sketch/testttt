@@ -627,24 +627,26 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // flaky tablets don't open multiple sessions for the same livreur.
     // Controller: app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php
     // BUILD-1 (round-4 brief 2026-05-18).
-    Route::prefix('delivery-boy/cash-session')->name('delivery-boy.cash-session.')->group(function () {
+    // [RECONCILE 2026-05-18] BUILD-1 canonical contract : URL prefix = `cash-sessions` (plural),
+    // permissions enforced in DeliveryBoyCashSessionController::__construct via
+    // `permission:delivery-boys_show` (read) + `permission:delivery-boys` (mutations).
+    // Route-level middleware reduced to `idempotency` on POST only (avoid double permission gate).
+    Route::prefix('delivery-boy/cash-sessions')->name('delivery-boy.cash-sessions.')->group(function () {
         Route::get('/', [DeliveryBoyCashSessionController::class, 'index'])
-            ->middleware(['permission:settings'])
             ->name('index');
+        Route::post('/open', [DeliveryBoyCashSessionController::class, 'open'])
+            ->middleware('idempotency')
+            ->name('open');
         Route::get('/{session}', [DeliveryBoyCashSessionController::class, 'show'])
             ->whereNumber('session')
-            ->middleware(['permission:settings'])
             ->name('show');
-        Route::post('/open', [DeliveryBoyCashSessionController::class, 'open'])
-            ->middleware(['permission:settings', 'idempotency'])
-            ->name('open');
         Route::post('/{session}/close', [DeliveryBoyCashSessionController::class, 'close'])
             ->whereNumber('session')
-            ->middleware(['permission:settings', 'idempotency'])
+            ->middleware('idempotency')
             ->name('close');
         Route::post('/{session}/reconcile', [DeliveryBoyCashSessionController::class, 'reconcile'])
             ->whereNumber('session')
-            ->middleware(['permission:settings', 'idempotency'])
+            ->middleware('idempotency')
             ->name('reconcile');
     });
 

@@ -12,11 +12,20 @@ class CouponRequest extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      *
+     * V1.0.2 BUILD-6 heal: defense-in-depth — CouponController middleware enforces
+     * `permission:coupons_create` on store and `permission:coupons_edit` on update;
+     * FormRequest accepts either since the same class is injected on both verbs.
+     * Any future route bypass still authz-checks against the coupons capability family.
+     *
      * @return bool
      */
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
+        return $user->can('coupons_create') || $user->can('coupons_edit');
     }
 
     /**

@@ -13,11 +13,20 @@ class ItemRequest extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      *
+     * V1.0.2 BUILD-6 heal: defense-in-depth — ItemController middleware enforces
+     * `permission:items_create` on store/import/duplicate and `permission:items_edit`
+     * on update/changeImage; FormRequest accepts either since the same class is injected
+     * on both verbs. Any future route bypass still authz-checks against the items family.
+     *
      * @return bool
      */
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
+        return $user->can('items_create') || $user->can('items_edit');
     }
 
     /**

@@ -27,15 +27,38 @@ use Tests\TestCase;
 class FormRequestAuthzDriftSentinelTest extends TestCase
 {
     /**
-     * Baseline = 77 (2026-05-18 post Wave 7 — ChangePasswordRequest still
-     * has `return true;` for the authorize body but the underlying
-     * password rule is now hardened. Wave 7 commit ec0d49241).
+     * Baseline = 69 (2026-05-18 post V1.0.2 BUILD-6 critical subset).
      *
-     * Original ultra-review claim: 86 — broader text-match including
-     * comment lines. The 77 number reflects an exact `return true;` body
-     * count via the methodology this test uses.
+     * History:
+     *   - 77 initial Wave 8 (commit 68b63c090) — sentinel baseline establishment.
+     *   - 74 post Wave 5H (commit 46fb4ef2d) — 5 admin-write FormRequests refactored
+     *     to $this->user()?->can('xxx') (Currency, Tax, Branch, Role, Administrator).
+     *   - 69 post BUILD-6 (this wave) — 8 critical FormRequests refactored:
+     *       * PosOrderRequest   → can('pos')                              (POS order create)
+     *       * DeliveryBoyRequest→ can('delivery-boys_create|edit')
+     *       * CouponRequest     → can('coupons_create|edit')
+     *       * OfferRequest      → can('offers_create|edit')
+     *       * PermissionRequest → can('settings')                         (Spatie root mutation)
+     *       * KioskMachineRequest → can('settings')                       (kiosk pairing → sanctum tokens)
+     *       * DiningTableRequest → can('dining_tables_create|edit')
+     *       * ItemRequest       → can('items_create|edit')                (catalog mutation)
+     *
+     * Note: 3 NEW FormRequests landed before this wave (DeliveryBoyCashSession*),
+     * each ships with `return true;` but the underlying routes are guarded by
+     * the LIVREUR-Z4-ARCH-03 cash-session controller middleware. They will be
+     * folded into a follow-up BUILD-6.5 wave (same can() pattern) once the
+     * delivery-boy cash-session feature is fully wired.
+     *
+     * V1.0.2 BACKLOG (remaining ~69 → keep shrinking each wave):
+     * Largest blast-radius candidates remaining (Phase A subset):
+     *   - EmployeeRequest, ChefRequest, WaiterRequest (staff create/edit)
+     *   - SignupRequest, OtpRequest, VerifyPhoneRequest (customer authn)
+     *   - CompanyRequest, SiteRequest, ThemeRequest, LanguageRequest (settings)
+     *   - SliderRequest, PageRequest, SocialMediaRequest (CMS)
+     *   - ItemCategoryRequest, ItemAttributeRequest, ItemExtraRequest, ItemAddonRequest,
+     *     ItemVariationRequest, MenuTemplateRequest, OfferItemRequest (catalog family)
      */
-    private const RETURN_TRUE_BASELINE = 74;
+    private const RETURN_TRUE_BASELINE = 69;
 
     public function test_form_request_return_true_count_does_not_grow_past_baseline(): void
     {
@@ -79,8 +102,9 @@ class FormRequestAuthzDriftSentinelTest extends TestCase
         // Diagnostic: also report when count has SHRUNK so the operator
         // remembers to lower the baseline post-refactor.
         if ($count < self::RETURN_TRUE_BASELINE) {
+            $baseline = self::RETURN_TRUE_BASELINE;
             fwrite(STDOUT, "\n[sentinel] FormRequest return-true count is now {$count} "
-                . "(< baseline {$count}). Lower RETURN_TRUE_BASELINE accordingly.\n");
+                . "(< baseline {$baseline}). Lower RETURN_TRUE_BASELINE accordingly.\n");
         }
     }
 }
