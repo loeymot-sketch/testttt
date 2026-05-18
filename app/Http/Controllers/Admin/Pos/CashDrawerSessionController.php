@@ -222,6 +222,14 @@ class CashDrawerSessionController extends AdminController
      * Garantit que l'utilisateur courant peut acceder a la session.
      * BranchScope filtrerait deja, mais on ajoute un abort 404 explicite
      * si la session n'est pas visible (cohérent avec l'API REST).
+     *
+     * [Wave 1 P1 — POS-RED-04 2026-05-18] Ownership tightening.
+     * Pre-fix: branch-only check let cashier B close cashier A's drawer
+     * on the same branch (closing_amount=0 → variance mis-attribution +
+     * NF525 audit_log captures wrong actor_user_id).
+     * Post-fix: same-branch users must EITHER own the session OR hold
+     * `cash.reconcile.variance.override` (Branch Manager / Admin) to
+     * act on someone else's drawer.
      */
     private function assertSessionVisibleToUser(Request $request, int $sessionId): void
     {
@@ -236,6 +244,13 @@ class CashDrawerSessionController extends AdminController
             return;
         }
 
-        abort_if((int) $session->branch_id !== (int) $user->branch_id, 403);
+        abort_if((int) $session->branch_id !== (int) $user->branch_id, 403, 'Cross-branch access denied');
+
+        // [POS-RED-04] Same-branch ownership gate.
+        $isOwner   = (int) $session->opened_by_user_id === (int) $user->id;
+        $isManager = $user->can('cash.reconcile.variance.override')
+            || $user->hasRole('Admin')
+            || $user->hasRole('Branch Manager');
+        abort_if(! $isOwner && ! $isManager, 403, 'Not session owner (manager permission required)');
     }
 }
