@@ -1,0 +1,38 @@
+[
+  {
+    "flow": "SETUP",
+    "slug": "env",
+    "state": "branches=1",
+    "severity": "OK",
+    "note": "spaUp=true token=true branchId=1 itemId=375 extraId=172 variationId=271 fiscalSeqBefore=334",
+    "ts": "2026-05-18T02:13:56.763Z"
+  },
+  {
+    "flow": "FLOW1",
+    "slug": "pos-create",
+    "state": "HTTP 401",
+    "severity": "P1",
+    "note": "POS create failed (likely composition_snapshot missing) — backend hardening required for full flow",
+    "ts": "2026-05-18T02:13:58.057Z",
+    "httpStatus": 401,
+    "body": "{\"message\":\"Unauthenticated.\"}"
+  },
+  {
+    "flow": "FLOW1",
+    "slug": "outbox-emission",
+    "state": "NO_EVENT",
+    "severity": "P0",
+    "note": "OrderCreated DomainEvent NOT emitted to outbox (listener silent?)",
+    "ts": "2026-05-18T02:13:58.409Z",
+    "baselineId": 1849,
+    "body": "[]"
+  },
+  {
+    "flow": "FLOW1",
+    "slug": "ui-visual",
+    "state": "deferred",
+    "severity": "P3",
+    "note": "UI visual capture deferred: page.waitForTimeout: Target page, context or browser has been closed",
+    "ts": "2026-05-18T02:15:56.920Z"
+  }
+]
