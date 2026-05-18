@@ -46,6 +46,7 @@ Plateforme restaurant fast-food complète :
 
 ## §2 CURRENT STATE — Auto-managed
 
+- **🆕 Mission active 2026-05-18 GOAL COMPLEMENT CONVERGED ✅** : `goal-complement-2026-05-18` — 8 zones (KDS/OSS/Stock/Livreur/Pricing/Mobile/Web/Cross-i18n+a11y) en parallèle MAX (8 master sub-agents + ~33 inner specialists + dual-agent QA/RED Visual). Branche `heal/cms-pr1-quickwins-2026-05-18` HEAD `72e45fe59` (Phase 0 baseline `ec0d49241`). **8/8 zones VALIDATED**. 6 GOAL-own heal commits (Z-3 `fe73fdbb1`+`a27721d21`, Z-4 `04a9454f6`+`ab04839ec`, Z-7 `00b9651a3`+`00b1010b8`) coexistèrent avec 29 parallel session-A commits (fiscal Wave 2d + sync Wave 3c + mgmt/central RBAC heals + cash session livreur build). **NF525 APPENDED-ONLY attesté** : count 29 → 56 (+27 legitimate), hash `ee56…db62` → `f928…a279` extended, `php artisan fiscal:verify-chain` CHAIN OK. **Frozen-zone diff = 0 lignes sur 13 fichiers**. PHPUnit 499→514 (+15), Vitest 413→426 (+13). Smoke broad targeted 300 passed / 5 skipped / 0 failed. Wall-clock total ~50 min (3 + 33 + 14). Backup branch `backup/pre-goal-complement-2026-05-18` at `0ca8ea800`. Deferred V1.0.X backlog ~50 items (Z-1 KDS 13 + Z-2 OSS 16 + Z-4 LIVREUR 9 + Z-7 WEB 6 + Z-8 CROSS i18n 16). G3 NOT triggered (0 P0 PricingService.php). Deliverables : `reports/audit/goal-complement-2026-05-18/CONVERGENCE_COMPLEMENT.md` (~12 KB) + 8 STATUS.md (~95 KB) + 33 specialist JSONs + 6 deferred-heal findings.json + visual artifacts × 4 viewports Z-7 (24 PNGs + 16 axe reports clean) + Z-3 Playwright × 2 cycles + Z-4 Playwright × 2 cycles.
 - **Branche active V1.0.1** : `v1-0-1-hardening-2026-05-17` (HEAD `283594f11` post ULTRA architectural-backbone GOAL commit). 21 commits dans la mission GOAL Production Readiness (`8966881aa..6908edbde`) + 1 commit GOAL CMS architectural-backbone (`283594f11`).
 - **Mission active 2026-05-18** : `goal-ultra-central-mgmt-sync-2026-05-18` — ULTRA architectural-backbone audit across 3 systems CENTRAL × MGMT × SYNC. **Rounds 1+2+3 + Heal-Implementer-Wave-A CLOSED** : 39 parallel sub-agents audit + 3 heal commits on `heal/cms-pr1-quickwins-2026-05-18` branch (C-P0-H idempotency 18 routes coverage + sentinel `4b12f678a` ; M-R3-P0-A PermissionController index gate + sentinel `6a01c71bf` ; C-P0-E BranchScope coverage sentinel baseline-lock 10 V1.0.2 exemptions `32395b625`). 3 of 39 still-open P0s closed + 2 new CI sentinels (IdempotencyRequiredRoutesCoverageTest + BranchScopeCoverageSentinelTest + PermissionControllerIndexAuthzTest). RECONCILIATION_2026-05-18.md tracks ~8 of 47 P0s closed by parallel mission (~37 still-open after heal wave A). 39 parallel sub-agents total (9 + 15 + 15), 13 of 49 GOAL tasks audited (27% coverage). **47 P0 findings cumulative** + ~25 P1 + ~30 P2. 7 cross-validated P0 (≥2 agents). Aggregate verdict **NO-GO V1 ABSOLUTE-AS-IS, escalated by Round 3** (Pricing fraud surface today, Fiscal Z aggregation broken with Art.1729 D CGI criminal exposure, cashier-fraud surface, RBAC privilege-escalation Tenant Admin shadow + Self-Permission Sync, Outbox 10k simulation does not exist, Pusher channel-auth observably broken via Sanctum wildcard). Heal scope ~65-80h V1-blocker path (~7-10 calendar days). 0 frozen-zone touch for V1-blocker scope (1 exception LOCK doc deferred V1.0.2 — C-P0-I). Deliverables : `reports/test-e2e/goal-ultra-central-mgmt-sync-2026-05-18/{FINAL_ROUND_1_2_3_VERDICT.md (24 KB), ROUND_1_GLOBAL_VERDICT.md, FINAL_ROUND_1_2_VERDICT.md}` + 39 specialist reports (~792 KB) + 3 PR-PACKAGE files (~52 KB) + GOAL doc 42 KB + NF525 baseline. **NF525 chain bit-identical W0 baseline** : `count=27 | last_hash=206f9dcaa25f30354fe28da3ac5f8d980e58c52f9a08c53c7f183f3fcc6200c1`. 3 heal branches created (heal/central/mgmt/sync-backbone-2026-05-18 from `5b147f9e7`). 16 parallel-mission commits landed during audit on same branch (need reconciliation before heal). Next decision-point : User chose "b than a" — Round 3 (DONE) then Heal-Implementer Wave (NEXT — reconcile parallel commits + 3 sequential implementer waves + 3 user-triggered /ultrareview).
 - **Prior 2026-05-18** : `goal-2026-05-18` GOAL Production Readiness mission CONVERGED ✅ GO-CONDITIONAL (HEAD `6908edbde` → ne change pas) — TAG `v1.0.2-rc1-2026-05-18` au HEAD `6908edbde`. **Backup safety net** : branche `backup/pre-goal-2026-05-18` + tag `pre-goal-2026-05-18` (HEAD `8966881aa`). 20 commits dans la mission GOAL (`8966881aa..6908edbde`).
@@ -88,6 +89,33 @@ Plateforme restaurant fast-food complète :
 ---
 
 ## §3 LAST DONE — Auto-managed
+
+**🆕 GOAL COMPLEMENT CONVERGED 2026-05-18** (branche `heal/cms-pr1-quickwins-2026-05-18`, HEAD `ec0d49241` → `72e45fe59`, ~50 min wall-clock, max parallel 8 zone tracks) :
+
+Plan : `plans/GOAL_PRODUCTION_READINESS_COMPLEMENT_2026-05-18.md` (63 KB, 1099 lines) — ultra-architect-planify skill output. Scope strictement disjoint de session-A (Wave 2c/3c/4b/4-batch-2 + CONVERGENCE_FINAL).
+
+**Phase 0 Pre-flight** (~3 min sequential) : backup `backup/pre-goal-complement-2026-05-18` at `0ca8ea800`, NF525 baseline `count=29 last_hash=ee56…db62 CHAIN OK`, smoke counts 499 PHPUnit + 413 Vitest, frozen file SHAs captured (13 files), HEAL zones cleanness verified.
+
+**Phase 1 MAX PARALLEL** (~33 min, 8 master sub-agents single message dispatch) :
+- **Z-1 KDS deeper** AUDIT-ONLY ✅ VALIDATED — 4 P1 + 5 P2 + 4 P3 deferred V1.0.X, 78/78 tests × 2 cycles.
+- **Z-2 OSS fullsys** AUDIT-ONLY ✅ VALIDATED — 0 blocking, session-A 6 heals attested intact, 17/17 vitest.
+- **Z-3 STOCK fullsys** HEAL ✅ VALIDATED 2× — 2 commits `fe73fdbb1`+`a27721d21` (i18n integrity P0×2 + raw reason chip P1 + E2E spec + STATUS). 78+5 PHPUnit + Playwright dashboard 1366×768 raw_label=null axe=0.
+- **Z-4 LIVREUR fullsys** HEAL ✅ VALIDATED 2× — 2 commits `04a9454f6`+`ab04839ec` (branch-aware delivery fee wire-up DEL-5 sur 4 entry points + status transition whitelist + RBAC split + 12 sentinels). 33 PHPUnit + 14 Vitest + 6 Playwright × 2.
+- **Z-5 PRICING SSOT** AUDIT-ONLY FROZEN ✅ PASS — 0 P0 frozen file, 109+10 PASS, G3 NOT triggered, 2 V1.1 P3 backlog (DB trigger + DRY duplication intentional).
+- **Z-6 MOBILE** AUDIT-ONLY ✅ VALIDATED — 1 P2 deferred V1.0.2 (screens-modals fictional fallback dead-code unreachable), baseline `cfa9ec679` intact, 5 adversarial vectors all defended.
+- **Z-7 WEB standalone** HEAL ✅ VALIDATED 2× — 2 commits `00b9651a3`+`00b1010b8` (4 P1 RED coverage gaps + 2 axe P0 button-name + 2 P2 ARIA, NEW spec 366 LOC × 4 viewports = 40 cases, components.jsx/flows.jsx inline-edit ~9 LOC). 116/116 GREEN × 2 cycles + 24 screenshots × 4 viewports + 16 axe reports clean.
+- **Z-8 CROSS-surface i18n+a11y** AUDIT-ONLY ✅ PASS — 6 P0 i18n drift en/ar (non-default V1 Le Cayenne FR) + 6 P1 + 3 P2 + 1 P3, NOT V1 blocker (existing i18nForceFR sentinel guarantees admin=FR). Single owner-gate question: add `label.kds_status_conflict` fr.json scope-minimal patch pre-V1.
+
+**Phase 2 Global convergence** (~14 min sequential) : NF525 APPENDED-ONLY attest count 29→56 hash extended CHAIN OK, frozen-zone diff 0 lines / 13 files, broad smoke targeted 300 passed / 5 skipped / 0 failed, CONVERGENCE_COMPLEMENT.md written (12 KB), BRAIN update (this entry), Graphiti push, tag deferred owner sign-off (G5).
+
+**Discoveries** :
+1. Branch shift mid-execution `pr/mobile-app-real-e2e-heal-2026-05-18` → `heal/cms-pr1-quickwins-2026-05-18` (session-A activity). Acceptable, branches reconcile at session-A's own merge.
+2. 3 pre-existing `DeliveryBoyCashSessionControllerTest` failures flagged by Z-4 (root cause sibling commit `0c824ddbd` formrequest-authz-followup tightening, predates Z-4 heals).
+3. Anti-fiction discipline 100% : all findings Read-cited file:line, no hallucinated paths, RED disputes on every zone surfaced 0 new P0.
+
+**V1 SHIP BLOCKER count after GOAL complement** : **0** (all 8 zones GREEN pour V1 Le Cayenne single-restaurant French market).
+
+---
 
 **V1 Cloud-Prep — Phase C local + Wave 5D-5I + insights heal Round 1 2026-05-17 → 18** (branche `v1-0-1-hardening-2026-05-17`, HEAD `4fc4c3b86` → `2477a2d05`, 9+ commits) :
 
