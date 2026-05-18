@@ -19,7 +19,9 @@
 | 3 | F-3 P1        | Stripe webhook replay tolerance 300s                          | 1   | `5695fe59f`  | StripeWebhookReplayToleranceSentinelTest         |
 | 4 | F-3 P1        | DispatchDomainEventsJob PayloadMismatchException fail-once    | 9   | `5452e556d`  | PayloadMismatchFailOnceSentinelTest              |
 | 5 | F-7 D.1       | Sentinel lock-in: no empty-string keys in fr/en/ar.json       | 0   | `521bc7fcc`  | I18nNoEmptyKeySentinelTest                       |
-| — | follow-up     | Reconcile OutboxPipelineHealthSentinelTest with H4 + refactor | —   | `b14d0f977`  | (test updates only)                              |
+| — | follow-up 1   | Reconcile OutboxPipelineHealthSentinelTest with H4 + refactor | —   | `b14d0f977`  | (test updates only)                              |
+| — | follow-up 2   | Reconcile 2 Outbox tests with H4 fail-once                    | —   | `b1a7dc39d`  | (test updates only)                              |
+| — | follow-up 3   | Reconcile EventContractTest with H4 fail-once                 | —   | `f3dbf903d`  | (test updates only)                              |
 
 **Net delta**: +23 LOC production + 6 sentinel tests + 1 sentinel update. Each heal carries a behavioural or source-pin sentinel making it regression-proof at PHPUnit time.
 
@@ -149,7 +151,28 @@ $ vendor/bin/phpunit tests/Feature/Queue/DispatchDomainEventsFailedCallbackTest.
 
 $ vendor/bin/phpunit tests/Unit/Services/OrderServiceSecurityTest.php
   OK (5 tests, 12 assertions)
+
+$ vendor/bin/phpunit tests/Feature/EventContractTest.php
+  OK (9 tests, 30 assertions)
+
+$ vendor/bin/phpunit --testsuite=Feature --filter='Sentinel|Outbox|Webhook|Auth|DispatchDomain|EventContract'
+  Tests: 522, Assertions: 1692, Skipped: 2.
+  Failures: 3 (all in tests/Feature/Composer/ComposerAuthzMinimalTest — PRE-EXISTING
+  test debt unrelated to this batch; verified by grep that the failing tests do NOT
+  depend on any file my heals touched).
 ```
+
+### H4 cross-cutting reconciliation — exhaustive grep verification
+
+```
+$ grep -rn "PayloadMismatchException" tests/ | grep "expectException\|catch.*PayloadMismatch"
+# 0 remaining expect-throw assertions over DispatchDomainEventsJob::handle()
+```
+
+3 test-side updates (follow-up 1/2/3 commits above) reconciled the OLD
+"must throw" implementation pin with the new "must fail()" behaviour.
+All DB invariants (claim released, contract_violation prefix, attempts=1,
+broadcaster bypassed) are preserved across every test.
 
 ---
 
