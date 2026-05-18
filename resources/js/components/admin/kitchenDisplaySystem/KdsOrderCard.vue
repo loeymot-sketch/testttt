@@ -76,7 +76,14 @@
     </div>
 
     <!-- BODY -->
-    <div class="kds-card__body">
+    <!-- KDS-R1-05 heal: tabindex=0 + role=region + aria-label = Safari keyboard accessibility
+         on scrollable overflow:auto region (axe-core 'scrollable-region-focusable' serious). -->
+    <div
+      class="kds-card__body"
+      tabindex="0"
+      role="region"
+      :aria-label="$t('label.kds_card_body_aria', { queue: order.queue_number || order.id })"
+    >
       <!-- [Sprint 2A DEL-3 2026-05-16] Delivery block — only renders when
            the order is destined for delivery AND the backend has populated
            `order_address` (i.e. the eager-load was applied). Without this,

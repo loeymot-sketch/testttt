@@ -573,6 +573,7 @@
         "kds_allergens_badge": "Allergènes",
         "kds_allergens_badge_aria": "Voir les allergènes de cette commande",
         "kds_call_customer_aria": "Appeler {name} {phone}",
+        "kds_card_body_aria": "Détails de la commande {queue}, défilable au clavier",
         "kds_card_aria": "Commande {queue}, source {source}, {state}, attente {minutes} minutes {seconds} secondes",
         "kds_allergens_modal_title": "Allergènes de la commande #{order_id}",
         "kds_allergens_modal_intro": "Vérifiez chaque article avant préparation. L'information est purement informative et ne bloque PAS le flux normal.",

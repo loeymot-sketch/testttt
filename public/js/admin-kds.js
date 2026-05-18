@@ -2202,9 +2202,7 @@ var _hoisted_10 = {
 var _hoisted_11 = {
   "class": "kds-card__elapsed-wrap"
 };
-var _hoisted_12 = {
-  "class": "kds-card__body"
-};
+var _hoisted_12 = ["aria-label"];
 var _hoisted_13 = {
   key: 0,
   "class": "kds-card__delivery",
@@ -2278,7 +2276,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
       color: $options.elapsedColor
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.elapsedFormatted), 7 /* TEXT, CLASS, STYLE */)])])], 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" BODY "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint 2A DEL-3 2026-05-16] Delivery block — only renders when\n           the order is destined for delivery AND the backend has populated\n           `order_address` (i.e. the eager-load was applied). Without this,\n           the livreur sees a token + delivery_time and literally cannot\n           deliver. Kept visually quiet (border-left accent, monospace\n           latin digits for the phone) so it never out-screams the queue\n           number or the elapsed timer. "), $options.isDeliveryOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_13, [$options.deliveryAddressLine ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_14, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.elapsedFormatted), 7 /* TEXT, CLASS, STYLE */)])])], 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" BODY "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" KDS-R1-05 heal: tabindex=0 + role=region + aria-label = Safari keyboard accessibility\n         on scrollable overflow:auto region (axe-core 'scrollable-region-focusable' serious). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kds-card__body",
+    tabindex: "0",
+    role: "region",
+    "aria-label": _ctx.$t('label.kds_card_body_aria', {
+      queue: $props.order.queue_number || $props.order.id
+    })
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint 2A DEL-3 2026-05-16] Delivery block — only renders when\n           the order is destined for delivery AND the backend has populated\n           `order_address` (i.e. the eager-load was applied). Without this,\n           the livreur sees a token + delivery_time and literally cannot\n           deliver. Kept visually quiet (border-left accent, monospace\n           latin digits for the phone) so it never out-screams the queue\n           number or the elapsed timer. "), $options.isDeliveryOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_13, [$options.deliveryAddressLine ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_14, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kds-card__delivery-icon",
     "aria-hidden": "true"
   }, "📍", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.deliveryAddressLine), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.customerName ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_16, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
@@ -2307,7 +2312,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }), 128 /* KEYED_FRAGMENT */))]);
   }), 128 /* KEYED_FRAGMENT */)), _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "kds-card__body-fade"
-  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" FOOTER CTA "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, -1 /* CACHED */))], 8 /* PROPS */, _hoisted_12), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" FOOTER CTA "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kds-card__cta",
     onClick: _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
@@ -5810,7 +5815,11 @@ var WS_SESSION_INVALID = 'SESSION_INVALID';
 // [Wave 3 P1 / KDS-RED-09 2026-05-18] Safe cadence floor — 4 req/s max per
 // station. Mirrors config/catalog_v15.php clamp; protects against owner
 // misconfig (FK_CATALOG_KDS_*=10 → ~80 req/s/station DoS).
+// [Wave 3b P1 / KDS-ADV3B-04 2026-05-18] Upper cap 60_000ms base / 30_000ms
+// jitter protects against silent-blind misconfig (e.g. =999999999 → 11.5d).
 var CADENCE_FLOOR_MS = 250;
+var CADENCE_CEILING_MS = 60000;
+var JITTER_CEILING_MS = 30000;
 var DEFAULT_CADENCE_OPTIONS = Object.freeze({
   highActivityBaseMs: 3000,
   highActivityJitterMs: 1000,
@@ -6318,15 +6327,21 @@ var KdsSyncService = /*#__PURE__*/function () {
       // window.foodkingConfig.kdsFallbackPolling.disconnectedBaseMs=10 cannot
       // weaponize the polling loop into PHP-FPM saturation. Jitters keep a
       // 0 floor since they widen — never shorten — the wait.
+      // [Wave 3b P1 / KDS-ADV3B-04 2026-05-18] Upper cap CADENCE_CEILING_MS
+      // (60_000ms = 1 poll/min minimum) and JITTER_CEILING_MS (30_000ms)
+      // prevent the symmetric silent-blind misconfig where a runaway value
+      // (e.g. disconnectedBaseMs=999999999) would stall KDS for ~11.5 days.
       var clampBase = function clampBase(value, fallback) {
         var parsed = parseInt(value, 10);
         var candidate = Number.isFinite(parsed) ? parsed : fallback;
-        return candidate >= CADENCE_FLOOR_MS ? candidate : CADENCE_FLOOR_MS;
+        var floored = candidate >= CADENCE_FLOOR_MS ? candidate : CADENCE_FLOOR_MS;
+        return floored <= CADENCE_CEILING_MS ? floored : CADENCE_CEILING_MS;
       };
       var clampJitter = function clampJitter(value, fallback) {
         var parsed = parseInt(value, 10);
         var candidate = Number.isFinite(parsed) ? parsed : fallback;
-        return candidate >= 0 ? candidate : 0;
+        var floored = candidate >= 0 ? candidate : 0;
+        return floored <= JITTER_CEILING_MS ? floored : JITTER_CEILING_MS;
       };
       return {
         highActivityBaseMs: clampBase(cfg.highActivityBaseMs, DEFAULT_CADENCE_OPTIONS.highActivityBaseMs),

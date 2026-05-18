@@ -873,6 +873,7 @@
         "kds_allergens_badge": "مسببات الحساسية",
         "kds_allergens_badge_aria": "عرض مسببات الحساسية لهذا الطلب",
         "kds_call_customer_aria": "اتصل بـ {name} {phone}",
+        "kds_card_body_aria": "تفاصيل الطلب {queue}، قابلة للتمرير بلوحة المفاتيح",
         "kds_card_aria": "طلب {queue}، المصدر {source}، {state}، الانتظار {minutes} دقيقة و{seconds} ثانية",
         "kds_allergens_modal_title": "مسببات الحساسية للطلب رقم #{order_id}",
         "kds_allergens_modal_intro": "تحقّق من كل صنف قبل التحضير. هذه المعلومات للعِلم فقط ولا تَحجب سير العمل.",
