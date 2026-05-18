@@ -88,6 +88,20 @@ export function normalizeRealtimeOrderEvent(event = {}) {
     };
 }
 
+// [PS-2 audit 2026-05-18] Idempotency-Key helper for mutation actions.
+// Server-side IdempotencyKeyMiddleware (routes/api.php:892-906) sits idle when
+// the header is absent (middleware returns next() with no replay protection).
+// This helper supplies a fresh per-action key so double-click + retry-on-network
+// blip are deduped at the middleware layer (defense-in-depth on top of the
+// OrderService same-status early-return + lockForUpdate).
+function buildIdempotencyHeaders(payload) {
+    const explicit = payload && typeof payload === 'object' ? payload.idempotency_key : null;
+    const key = explicit
+        || crypto.randomUUID?.()
+        || (`pos-mut-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    return { 'X-Idempotency-Key': String(key) };
+}
+
 export function shouldNotifyPosRealtimeOrder(event = {}) {
     const normalized = normalizeRealtimeOrderEvent(event);
     const origin = String(normalized.origin || '').trim().toLowerCase();
@@ -226,7 +240,12 @@ export const posOrder = {
         },
         destroy: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.delete(`admin/pos-order/${payload.id}`).then((res) => {
+                // [PS-2 audit 2026-05-18] Idempotency-Key on DELETE — pairs with
+                // server-side `idempotency` middleware on admin/pos-order/{order}
+                // (routes/api.php:885). Defense-in-depth against double-tap.
+                axios.delete(`admin/pos-order/${payload.id}`, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.dispatch('lists', payload.search).then().catch();
                     resolve(res);
                 }).catch((err) => {
@@ -236,7 +255,12 @@ export const posOrder = {
         },
         changeStatus: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post(`admin/pos-order/change-status/${payload.id}`, payload).then((res) => {
+                // [PS-2 audit 2026-05-18] Idempotency-Key on POST change-status
+                // (routes/api.php:892 has the middleware — wired but client did
+                // not supply a key so replay protection was inert).
+                axios.post(`admin/pos-order/change-status/${payload.id}`, payload, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.commit('show', res.data.data);
                     resolve(res);
                 }).catch((err) => {
@@ -246,7 +270,11 @@ export const posOrder = {
         },
         changePaymentStatus: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post(`admin/pos-order/change-payment-status/${payload.id}`, payload).then((res) => {
+                // [PS-2 audit 2026-05-18] Idempotency-Key on POST change-payment-status
+                // (routes/api.php:895).
+                axios.post(`admin/pos-order/change-payment-status/${payload.id}`, payload, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.commit('show', res.data.data);
                     resolve(res);
                 }).catch((err) => {
@@ -256,7 +284,11 @@ export const posOrder = {
         },
         selectDeliveryBoy: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post(`admin/pos-order/select-delivery-boy/${payload.id}`,payload).then((res) => {
+                // [PS-2 audit 2026-05-18] Idempotency-Key on POST select-delivery-boy
+                // (routes/api.php:897).
+                axios.post(`admin/pos-order/select-delivery-boy/${payload.id}`, payload, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.commit('show', res.data.data);
                     resolve(res);
                 }).catch((err) => {

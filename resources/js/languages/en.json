@@ -732,6 +732,7 @@
         "extras": "Extras",
         "addons": "Addons",
         "order_id": "N° commande",
+        "queue_number": "Queue number",
         "total": "Total",
         "delivery_charge": "Delivery Charge",
         "payment_type": "Mode de paiement",

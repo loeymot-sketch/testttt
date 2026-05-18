@@ -85,7 +85,7 @@
                     <thead class="db-table-head">
                         <tr class="db-table-head-tr">
                             <th class="db-table-head-th">{{ $t('label.order_id') }}</th>
-                            <th class="db-table-head-th">N° file</th>
+                            <th class="db-table-head-th">{{ $t('label.queue_number') }}</th>
                             <th class="db-table-head-th">{{ $t('label.order_type') }}</th>
                             <th class="db-table-head-th">{{ $t('label.customer') }}</th>
                             <th class="db-table-head-th">{{ $t('label.amount') }}</th>

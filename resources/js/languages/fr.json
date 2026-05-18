@@ -515,6 +515,7 @@
         "special_instructions": "Instructions spéciales",
         "discount": "Remise",
         "order_id": "N° Commande",
+        "queue_number": "N° file",
         "payment_status": "Statut paiement",
         "pending": "En attente",
         "preparing": "En préparation",

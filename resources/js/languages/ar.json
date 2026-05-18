@@ -592,6 +592,7 @@
         "extras": "إضافات",
         "addons": "وحدات الإضافة",
         "order_id": "معرف الطلب",
+        "queue_number": "رقم الطابور",
         "total": "المجموع",
         "delivery_charge": "رسوم التوصيل",
         "payment_type": "نوع الدفع",
