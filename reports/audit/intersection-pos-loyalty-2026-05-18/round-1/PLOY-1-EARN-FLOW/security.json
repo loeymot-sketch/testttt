@@ -1,0 +1,47 @@
+{
+  "zone": "PLOY-1-EARN-FLOW",
+  "role": "Security",
+  "scope": "Earn-side authz, anti-fraud, double-earn prevention, customer impersonation via loyalty_customer_code injection",
+  "findings": [
+    {
+      "id": "PLOY-1-S-01",
+      "severity": "P1",
+      "title": "Cashier can inject arbitrary loyalty_customer_code on POS order create",
+      "finding": "PosOrderRequest line 133 accepts `loyalty_customer_code` as nullable string min:4 max:25 with NO exists-check, NO ownership-check, NO branch-scope check. OrderService::posOrderStore line 910-917 stores it verbatim. AwardLoyaltyPointsOnDelivery then credits that loyalty_code on DELIVERED — a cashier can hand-type any customer's loyalty_code and silently credit points to that customer's account. Same risk: cashier credits their own loyalty account by typing their own code on every order.",
+      "files": ["app/Http/Requests/PosOrderRequest.php:133", "app/Services/OrderService.php:910-917", "app/Listeners/AwardLoyaltyPointsOnDelivery.php:66-74"],
+      "impact": "Cashier fraud — silently inflate loyalty balance of any user. Also: typo on cashier side credits points to a wrong customer who happens to own that loyalty_code.",
+      "remediation": "Add Rule\\Exists('users', 'loyalty_code')->where('status', Status::ACTIVE) on the loyalty_customer_code rule. Optionally cross-check that the code belongs to a customer (role:Customer) — not staff. Add audit-log entry on POS order create when loyalty_customer_code is set, capturing the cashier id."
+    },
+    {
+      "id": "PLOY-1-S-02",
+      "severity": "P2",
+      "title": "Cashier can opt-out a real customer from earning (or steal their points via wrong code)",
+      "finding": "If cashier types a typo `ABC123XY` instead of `ABC123XZ`, loyalty_customer_code is silently set to non-existent code → listener fails User lookup (line 66-74) → sentinel reverted to NULL, no points awarded, no error returned to cashier. Customer is silently denied loyalty. No telemetry on this case.",
+      "files": ["app/Listeners/AwardLoyaltyPointsOnDelivery.php:75-81"],
+      "remediation": "Add Log::warning when loyalty_customer_code set but user not found, with cashier_id + order_id + code. Surface UI feedback (POS toast) when code is invalid at order-creation time (not silently fail at award)."
+    },
+    {
+      "id": "PLOY-1-S-03",
+      "severity": "P3",
+      "title": "Cashier sets loyalty_customer_code on a refunded customer",
+      "finding": "Status check on User lookup (line 67) does NOT filter by status=ACTIVE. A soft-deleted, banned, or status=INACTIVE user can still earn points if their loyalty_code matches.",
+      "files": ["app/Listeners/AwardLoyaltyPointsOnDelivery.php:67"],
+      "remediation": "Add ->where('status', \\App\\Enums\\Status::ACTIVE) to both User::where('loyalty_code') and User::find() lookups."
+    },
+    {
+      "id": "PLOY-1-S-04",
+      "severity": "P3",
+      "title": "Listener does not enforce branch isolation on User lookup",
+      "finding": "User::where('loyalty_code', ...) is global — a Branch A cashier can credit points to a Branch B customer if loyalty_codes happened to collide (collision is unique-enforced at line users.loyalty_code so this is theoretical, but the cross-branch points award is real if loyalty is intended to be branch-scoped).",
+      "files": ["app/Listeners/AwardLoyaltyPointsOnDelivery.php:67"],
+      "remediation": "If loyalty is intended cross-branch (multi-resto group), document explicitly. If branch-scoped, add ->where('branch_id', $order->branch_id) (but be aware loyalty_code is UNIQUE so cross-branch collision is impossible — the real concern is whether a Branch A customer should be able to spend points earned in Branch A at Branch B — a business decision)."
+    }
+  ],
+  "auth_summary": {
+    "POS order create": "Requires permission:pos via PosController. Cashier role enforced. loyalty_customer_code passed in JSON body, NOT validated against any whitelist.",
+    "Listener execution": "Server-side event listener, no user auth context. Trusts the event payload (order model) — order model trust is established at order-create time in OrderService::posOrderStore."
+  },
+  "verdict": "FAIL",
+  "blocker_for_v1": false,
+  "notes": "PLOY-1-S-01 is a real fraud surface but mitigated by physical-POS context (cashier audit, camera, manager oversight). Recommend heal in V1.0.2 cycle. Owner gate required for production rollout to chain restaurants (multiple cashiers per branch)."
+}

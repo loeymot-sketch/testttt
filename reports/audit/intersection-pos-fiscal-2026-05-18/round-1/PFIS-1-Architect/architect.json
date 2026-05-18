@@ -1,0 +1,97 @@
+{
+  "specialist": "Architect",
+  "intersection": "POS x Fiscal (NF525)",
+  "timestamp": "2026-05-18",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope": "Composition flow PaymentService -> FiscalSequenceService::next -> AuditLogService::write; Cache::lock race + DB FOR UPDATE soundness; kiosk-paid (at finalize) vs POS cash (at counter confirm) split; SplitPaymentService tranche persistence; RefundWithCounterEntry mirror flow; Z report close & verify integration",
+  "method": "Read-only review of FiscalSequenceService.php, AuditLogService.php, ZReportService.php, FiscalChainValidator.php, FiscalSealingService.php, PaymentService.php, Payments/SplitPaymentService.php, Order/RefundWithCounterEntryService.php, Cash/CashDrawerService.php (head), Admin/PosController.php, FrontendOrderService.php finalizePaidKioskOrder, OrderService.php fiscal-alloc call site, plus all NF525 migrations. Cross-referenced config/fiscal.php.",
+  "summary_findings": "The POS x Fiscal intersection is in a remarkably disciplined state. Composition of the three Fiscal services follows a textbook NF525 layering: (1) FiscalSequenceService is the SOLE writer of sequence numbers (allocation only — caller persists), (2) AuditLogService is the SOLE writer of audit_logs rows, (3) ZReportService composes both (verifyChain pre-open + pre-close; aggregate() reads only fiscally-sealed orders via whereNotNull(fiscal_sequence_no); sign() delegates to FiscalSealingService for canonical HMAC). PaymentService::confirmCounterPayment (POS cash path), FrontendOrderService::finalizePaidKioskOrder (kiosk TPE path), and RefundWithCounterEntryService all funnel through FiscalSequenceService::next() and AuditLogService::write() with proper transactional nesting. Concurrency primitives are layered defense-in-depth: Cache::lock (5s TTL / 3s wait for seq, 10s TTL / 5s wait for audit chain, 10s TTL / 4s wait for Z report) + DB::transaction + lockForUpdate + UNIQUE(branch_id, prev_hash) DB constraint with retry-once on collision. SQLite parity is handled via BEGIN IMMEDIATE semantics. Composition_snapshot is correctly built at order creation (OrderService.php:466, 821, 1277 + FrontendOrderService.php:291 + RefundWithCounterEntry mirroring at line 136) and never overwritten — the 5+1 INSERT sites map cleanly to POS direct / kiosk auto-promote / refund mirror / POS counter / FrontendOrderService quote-confirm / Refund duplication. No KEEP-AS-IS violations, no architectural drift.",
+  "FIX_NOW_P0": [],
+  "FIX_SOON_P1": [],
+  "ROADMAP_P2": [
+    {
+      "id": "PFIS-A-R2-01",
+      "title": "FiscalChainValidator constructor uses lazy app() resolution for cycle break — fragile if container is rebuilt between calls",
+      "file": "app/Services/Fiscal/FiscalChainValidator.php:39-47",
+      "evidence": "Both zReportService() and auditLogService() helpers call app($className) on first invocation and cache in a property. If the validator is itself bound as a singleton and the container is later flushed (rare — typically only in tests), the cached refs may diverge from the rest of the request's services. In practice the validator is resolved fresh on every Z.open via app(FiscalChainValidator::class), so this is theoretical. Action: consider documenting the lifetime contract in a one-line comment, no code change required for V1.",
+      "risk": "Low — pure theoretical, no observed prod failure.",
+      "regression_cost": "Zero (comment only)."
+    },
+    {
+      "id": "PFIS-A-R2-02",
+      "title": "RefundWithCounterEntryService creates mirror Order INSIDE the parent DB::transaction but RefundCreated dispatchAfterCommit fires on `$parent` not `$mirror`",
+      "file": "app/Services/Order/RefundWithCounterEntryService.php:229",
+      "evidence": "Intentional comment line 224-228 explains stock release listeners iterate $order->orderItems with positive qty. Mirror has negated qty which would corrupt released_qty ledger. Behavior is correct AS-IS but downstream consumers must be aware the event payload references the PARENT order not the mirror — for outbox / webhook fanout, the order_id will be the original sale's id, not the mirror refund's id. Document for V1.0.X integrator clarity.",
+      "risk": "Low — semantic clarification, not a correctness issue.",
+      "regression_cost": "Zero (doc only)."
+    }
+  ],
+  "KEEP_AS_IS": [
+    {
+      "id": "PFIS-A-KAI-01",
+      "title": "FiscalSequenceService::next 3-layer concurrency",
+      "file": "app/Services/Fiscal/FiscalSequenceService.php:57-104",
+      "evidence": "Cache::lock(fiscal_seq_b{branch}, TTL=5, wait=3) wraps DB::transaction with lockForUpdate on Order::where('branch_id', $b)->max('fiscal_sequence_no'). UNIQUE constraint orders_branch_fiscal_seq_unique is the third gate. Idempotent finally release. RuntimeException on lock acquire failure (no silent gap). InvalidArgumentException on branch_id<=0. Comment at line 86-87 correctly documents SQLite BEGIN IMMEDIATE fallback.",
+      "verdict": "Production-grade. Frozen. No changes recommended."
+    },
+    {
+      "id": "PFIS-A-KAI-02",
+      "title": "AuditLogService::write per-branch lock + UNIQUE retry-once",
+      "file": "app/Services/Fiscal/AuditLogService.php:70-192",
+      "evidence": "Cache::lock(audit_chain_b{branch}, TTL=10, wait=5). DB::transaction wraps performInsert(). On QueryException (codes 23000/23505 or 'unique'/'duplicate' in message), retry exactly once with attempt=2 — caps the recursion at depth 2. Null branch_id is REJECTED with InvalidArgumentException (line 93-98) to prevent poisoning whichever chain happens to be latest. Lock release in finally is best-effort.",
+      "verdict": "Production-grade. Frozen. Triple-defense (lock + tx + UNIQUE) is the canonical NF525 pattern."
+    },
+    {
+      "id": "PFIS-A-KAI-03",
+      "title": "ZReportService::open + close lock + verifyChain pre-flight",
+      "file": "app/Services/Fiscal/ZReportService.php:71-286",
+      "evidence": "Both open() and close() acquire Cache::lock(z_report_b{branch}, TTL=10, wait=4) and call verifyChain($branchId) BEFORE writing. open() additionally calls FiscalChainValidator::assertChainIntegrity which extends the check to the bounded audit-chain tail (window=500 rows). close() uses lockForUpdate on the OPEN Z row inside the transaction so a second cashier pressing close concurrently sees it locked. assertNoPendingClose detects stuck STATUS_CLOSING > 15s — currently no-op (STATUS_CLOSING constant not defined yet) but the dead branch is harmless.",
+      "verdict": "Production-grade. Frozen."
+    },
+    {
+      "id": "PFIS-A-KAI-04",
+      "title": "ZReportService::aggregate post-iter15 P0-FIX-1/2 semantics",
+      "file": "app/Services/Fiscal/ZReportService.php:297-435",
+      "evidence": "Uses withoutGlobalScope(BranchScope::class) AND withTrashed() so soft-deleted post-allocation orders are still aggregated (NF525 fiscal continuity). Half-open window (from, to] is mathematically rigorous — comment lines 326-336 explains the double-count avoidance proof. terminalStatuses CANCELED/REJECTED/RETURNED are evidence counters only (not positive revenue). Post-Z negative adjustments use updated_at>from && updated_at<=to so refunds that cross a Z boundary land in the next window. byTaxRate is rebuilt from order_items table not via re-running PricingService (avoids drift). ksort + array_map(round) before signing for stable hashes.",
+      "verdict": "Production-grade. The aggregate algorithm is bit-stable, exposed publicly for X-report reuse, and ALL the historical edge cases (soft-delete, iter6 archive-recoverable, post-Z adjustments, boundary instants) are documented with cross-references."
+    },
+    {
+      "id": "PFIS-A-KAI-05",
+      "title": "PaymentService::confirmCounterPayment + FrontendOrderService::finalizePaidKioskOrder fiscal-alloc nesting",
+      "file": "app/Services/PaymentService.php:158-265 + app/Services/FrontendOrderService.php:1066-1200",
+      "evidence": "Both run FiscalSequenceService::next INSIDE the outer DB::transaction. POS counter flow allocates only if $locked->fiscal_sequence_no === null (idempotent on replay). Kiosk flow does the same. Both write to audit_logs with action='order.counter_payment_confirmed' or 'kiosk.fiscal_sequence_auto_allocated'. The OrderService.php:933-934 POS direct-pay path (called inside a callback supplied to a separate DB::transaction wrapper) also funnels through the same service — comment at line 927-931 correctly documents the savepoint behavior on rollback (no sequence consumed if outer tx rolls back).",
+      "verdict": "Production-grade. The composition of transactions and the savepoint semantics are the architecturally correct interpretation of NF525 'no gap'."
+    },
+    {
+      "id": "PFIS-A-KAI-06",
+      "title": "SplitPaymentService validateBreakdown + persistTranches NF525 audit per tranche",
+      "file": "app/Services/Payments/SplitPaymentService.php:51-294",
+      "evidence": "validateBreakdown enforces server-total >= sum(tranches) with 1.00 EUR overpay tolerance (cash change allowance), max 12 tranches (config), CARD requires terminal_id active on branch (defense-in-depth mirror of PosOrderRequest withValidator). persistTranches: feature-flagged via split_payment.enabled, throws CashDrawerSessionNotOpenException if any CASH tranche without OPEN session (downgraded to soft when POS_SIMULATION_HARDWARE=true per line 207), creates one OrderPayment row + one audit_logs entry per tranche, plus CASH tranches generate cash_movement IN with strict=true to fail-fast on race-closed session. Atomicity inside DB::transaction wrapping the foreach loop — partial failure rolls back all tranches.",
+      "verdict": "Production-grade. The 'always-on simulation guard' for HARDWARE (cash drawer / TPE) without bypassing fiscal/pricing matches the documented invariant (CLAUDE.md §8 + feedback_pos_simulation_hardware_pattern.md)."
+    },
+    {
+      "id": "PFIS-A-KAI-07",
+      "title": "RefundWithCounterEntryService mirror + audit + payment tranches mirror",
+      "file": "app/Services/Order/RefundWithCounterEntryService.php:52-233",
+      "evidence": "SealedOrderGuard::assertSealed prevents creating a mirror for orders still in the OPEN Z window (which should use the pre-Z RETURNED path). InvalidArgumentException with HTTP 422 on missing parent fiscal_sequence_no, on already-RETURNED parent, on empty reason. Fresh fiscal_sequence_no allocated via $sequence->next($branchId). Mirror order has parent_order_id FK, status=RETURNED, payment_status=REFUNDED, negated subtotal/total_tax/total. order_items duplicated with negated quantity + tax_amount. iter15-P0-10 fix at lines 145-192 mirrors OrderPayment rows with negated amount/tendered/change (terminal_id preserved for TPE-level Z balance). Audit entry action='order.refund.counter_entry' with full forensic payload (parent_serial, parent_seq, mirror_seq, mirror_total, reason). RefundCreated fired with $parent (positive qty) for stock release.",
+      "verdict": "Production-grade. The post-iter15 P0-10 payment-tranche mirror closes the cash-Z drift loophole on split refunds."
+    },
+    {
+      "id": "PFIS-A-KAI-08",
+      "title": "POS_SIMULATION_HARDWARE bypass perimeter respect",
+      "file": "app/Http/Controllers/Admin/PosController.php:95-97 + PaymentService.php:298-300 + Payments/SplitPaymentService.php:205-218",
+      "evidence": "All three simulation guards downgrade STRICTNESS on cash drawer / TPE ONLY. Fiscal_sequence_no allocation is NEVER bypassed. audit_logs writes are NEVER bypassed. composition_snapshot is NEVER bypassed. Pricing SSOT is NEVER bypassed. Comment trails (line 92-97 in PosController, line 297 in PaymentService, line 205-206 in SplitPaymentService) explicitly restate the invariant. Config key is `pos.simulation_hardware`. Couche 0 boot guard already attested (F-X / Foundation).",
+      "verdict": "Production-grade. The simulation perimeter respects the audit_logs / fiscal_sequence_no immutable contract."
+    }
+  ],
+  "adversarial_questions_considered": [
+    "Q: Could a queue worker call PaymentService::payment() and forge a PAID transaction without a gateway? A: No. P0-POS-02 guard at line 46 + assertGatewayContext() walks the backtrace and requires a PaymentAbstract subclass frame. Throws HttpException 403 otherwise.",
+    "Q: Could two concurrent finalizePaidKioskOrder calls allocate duplicate fiscal_sequence_no? A: No. FrontendOrder::lockForUpdate inside DB::transaction wrapping the call, FiscalSequenceService takes its own Cache::lock + DB FOR UPDATE. UNIQUE index is the third gate.",
+    "Q: Could a refund mirror create an audit_logs row whose prev_hash collides with a concurrent POS counter payment? A: No. AuditLogService takes a per-branch lock + retries once on UNIQUE collision before propagating.",
+    "Q: Could a Z.close double-aggregate an order that crosses two Z windows? A: No. Window is half-open (from, to] — boundary instant lands in upper Z only. Post-Z adjustment uses updated_at not created_at so refund-of-pre-Z lands in current Z with sign=-1.",
+    "Q: Could a refund with counter-entry be created for an order still in the OPEN Z window? A: No. SealedOrderGuard::assertSealed at line 70-71 throws if parent's Z is not CLOSED. Use the pre-Z RETURNED path instead."
+  ],
+  "regressions_seen_during_recent_history": "None observed. Audit-chain baseline at start: count=97, last_hash=af02d7895d412654bf86b468e1d6f2e7375237d8361a10bcfcdd3e48424ac36f. z_reports count=4, last_signature=2c7ef3d479bf334ad75e6d8b3dacb48da445a9b6dfa70fc5afb096a4dac30034. fiscal:verify-chain returns CHAIN OK (audit_logs + z_reports) (branch=1).",
+  "verdict": "GREEN. POS x Fiscal intersection composition is at production-grade NF525 maturity. 0 P0, 0 P1, 2 P2 informational nits (docs only), 8 KEEP-AS-IS attestations. No architectural change recommended; treat all frozen anchors as frozen.",
+  "word_count_approx": 1480
+}

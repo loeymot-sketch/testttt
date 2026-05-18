@@ -1,0 +1,77 @@
+{
+  "specialist": "Security",
+  "role": "READ-ONLY",
+  "scope": "Intersection POS×OSS — PII on public wall, branch isolation, channel-auth Sanctum",
+  "checks": [
+    {
+      "id": "SEC-OSS-01",
+      "title": "Public customer-wall payload PII surface",
+      "evidence": "app/Http/Resources/CDSOrderDetailsResource.php:17..24",
+      "fields_exposed": ["id", "order_serial_no", "token", "queue_number", "order_type", "status"],
+      "fields_NOT_exposed": ["customer name", "customer phone", "address", "total", "items", "delivery_boy_id", "user_id"],
+      "verdict": "PASS",
+      "note": "Token IS exposed — it is a public retrieval token already printed on kiosk receipts (the customer types it to check their own order). Not a session credential. Order_serial_no is the same number printed on the receipt. No private fields leak. Verified against Controller docstring lines 60..63 (publicIndex) explicitly attesting same."
+    },
+    {
+      "id": "SEC-OSS-02",
+      "title": "Branch isolation on OSS admin query",
+      "evidence": "app/Services/OrderStatusScreenOrderService.php:40 + 245..263 resolveBranchScope()",
+      "rule_global_admin": "branch_id=0 + hasRole('Admin') → can override via ?branch_id=N or get null (unscoped)",
+      "rule_branch_staff": "branch_id>0 → forced to own branch_id; cross-branch request aborts 403 line 259",
+      "rule_unknown_user": "branch_id=0 without Admin role → aborts 403 line 255 (anti privilege escalation)",
+      "verdict": "PASS",
+      "note": "Defense-in-depth: also covered by tests/Feature/Branch/OssAdminBranchPolicyTest.php"
+    },
+    {
+      "id": "SEC-OSS-03",
+      "title": "Branch isolation on OSS public wall query",
+      "evidence": "app/Http/Controllers/Admin/OrderStatusScreenController.php:75..100 publicIndex + Service::listForBranch line 230..232",
+      "rule": "branch_id from ?branch_id=N (if N>0) else first active branch. listForBranch() applies where('branch_id', N) — no cross-branch leakage.",
+      "verdict": "PASS",
+      "note": "Anti-enumeration rate limit `oss-public` 60/min/IP (RouteServiceProvider:145..152) blocks branch_id sweep attacks."
+    },
+    {
+      "id": "SEC-OSS-04",
+      "title": "Channel-auth Sanctum on private-branch.{id} broadcast",
+      "evidence": "routes/channels.php:43..70 Broadcast::channel('branch.{branchId}', ...)",
+      "rules": [
+        "Kiosk token (name='kiosk-token') → must own a KioskMachine row matching branch — token-NAME-based check is immune to Sanctum '*' wildcard ability",
+        "Admin / Tenant Admin role → cross-branch allowed",
+        "Regular staff → own branch only (strict equality)",
+        "Customer / Guest (branch_id=0 default but no role) → falls into the last `return $user->branch_id === $branchId` clause → 0!=N → DENY"
+      ],
+      "verdict": "PASS",
+      "note": "[GOAL-CMS R3 T-3.2.2 Sec F-SEC-W6-01/02] explicitly closed the wildcard-token + Guest-Echo-Bypass paths recently — comment block lines 22..40 attests."
+    },
+    {
+      "id": "SEC-OSS-05",
+      "title": "OSS public endpoint exposes only PREPARING/PREPARED orders",
+      "evidence": "OrderStatusScreenOrderService.php:63 whereIn(status,[PREPARING,PREPARED]) + line 200 listForBranch sister",
+      "verdict": "PASS",
+      "note": "An attacker who probes ?branch_id=N cannot infer historical activity beyond current preparation queue — orders flush out after 8h via stale-prune (line 108)."
+    },
+    {
+      "id": "SEC-OSS-06",
+      "title": "Source-surface fail-closed allowlist (RED R-3 heal)",
+      "evidence": "OrderStatusScreenOrderService.php:53..62 + 193..199 whereIn(order_type,[KIOSK, TAKEAWAY])",
+      "rule": "Even if a POS=15 / DINING_TABLE=20 / DELIVERY=30 order happens to carry a token, it is EXCLUDED from the customer wall by the allowlist.",
+      "verdict": "PASS",
+      "note": "Wave 3c sentinel: tests/Feature/OSS/OssCustomerScreenFilterTest.php covers POS+DINING+DELIVERY leak paths (test_pos_order_with_token_is_excluded, test_dining_table_..., test_delivery_...)"
+    },
+    {
+      "id": "SEC-OSS-07",
+      "title": "Permission gate on admin index/popular-items",
+      "evidence": "OrderStatusScreenController.php:21 middleware permission:order-status-screen ->only('index','mostPopularItems')",
+      "verdict": "PASS",
+      "note": "Public endpoints (publicIndex/publicMostPopularItems) intentionally NOT in the permission gate — they ride the `frontend` middleware group (installed+apiKey+localization) only, scoped by IP rate-limit `oss-public`."
+    },
+    {
+      "id": "SEC-OSS-08",
+      "title": "Idempotency key isolation — same order multiple status transitions",
+      "evidence": "PersistOrderStatusChangedToOutbox.php:26..32",
+      "rule": "sha1(eventType|orderId|oldStatus|newStatus|correlationId) — distinct correlation_id per request → legitimate re-transitions (PREPARING→PREPARED→PREPARING admin revert) each get a fresh outbox row.",
+      "verdict": "PASS"
+    }
+  ],
+  "verdict": "ZERO P0/P1 security defects in POS×OSS intersection. Public wall PII surface is minimal-by-design and explicitly documented. Branch isolation triple-guarded (HTTP query scope + DB filter + private-channel auth)."
+}

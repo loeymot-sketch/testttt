@@ -1,0 +1,84 @@
+{
+  "specialist": "SRE / Sync",
+  "role": "READ-ONLY",
+  "scope": "Intersection POS×OSS — cadence cap, Echo reconnect, polling fallback, chime debounce, wake-lock release",
+  "checks": [
+    {
+      "id": "SRE-OSS-01",
+      "title": "Wave 3b cadence ceiling intact (60s)",
+      "evidence": "resources/js/services/OssSyncService.js:34..35 CADENCE_CEILING_MS=60_000, CADENCE_FLOOR_MS=250",
+      "clamp_path": "Line 122..134 _runtimeConfig() pipes both intervalMsWhenConnected and intervalMsWhenDisconnected through _clampCadence() line 430..435",
+      "verdict": "PASS",
+      "note": "Sentinel tests/js/posOssCadenceCap.spec.js lines 85..157 cover [999999999→60_000, 1→250, valid pass-through, garbage→fallback]."
+    },
+    {
+      "id": "SRE-OSS-02",
+      "title": "Echo reconnect → burst-poll integration",
+      "evidence": "OssSyncService.js:162..189 handleState(): on previous!=connected → connected, fires _burstPoll('ws_reconnected')",
+      "verdict": "PASS",
+      "note": "Prevents 'caught up only at next interval tick' lag — fires immediate fetch within Math.max(0, minGap) of the WS reconnection edge."
+    },
+    {
+      "id": "SRE-OSS-03",
+      "title": "Polling fallback cadence",
+      "evidence": "OssSyncService.js:9..16 DEFAULTS — intervalMsWhenConnected=60_000 (live broadcast on, low ping rate) vs intervalMsWhenDisconnected=2_000 (broadcast off, tighter loop)",
+      "verdict": "PASS",
+      "note": "2s dev fallback matches test-e2e round-2 cluster-6 D-002 SYNC-2 8s budget (POS pay → OSS visible)."
+    },
+    {
+      "id": "SRE-OSS-04",
+      "title": "Visibility burst-poll throttle",
+      "evidence": "OssSyncService.js:214..252 _bindVisibility + _burstPoll — visibilityBurstMinIntervalMs=1_000",
+      "verdict": "PASS",
+      "note": "Tab regaining focus triggers immediate poll but rate-capped at 1/sec; prevents burst storms on rapid focus/blur."
+    },
+    {
+      "id": "SRE-OSS-05",
+      "title": "Chime debounce — Echo×poll dual-path dedupe",
+      "evidence": "public/js/admin-oss.js:420..423 + 523..530 _echoMarkedReady one-shot guard",
+      "verdict": "PASS",
+      "note": "Within same hydrate cycle, Echo'd PREPARED id is pre-registered; subsequent poll diff sees it in echoMarked set and skips _markNewReady (→ no double chime / no double flash)."
+    },
+    {
+      "id": "SRE-OSS-06",
+      "title": "Chime structural skip on public wall (no audio-unlock gesture)",
+      "evidence": "public/js/admin-oss.js:219..243 + 469..477 _playReadySound() gate",
+      "rule": "authBranchId() <= 0 (public wall) → skip both audio-unlock listener wiring AND chime invocation; visual flash remains.",
+      "verdict": "PASS",
+      "note": "[GOAL Round 2 Impl C — P0-OSS-01 2026-05-18] explicitly documented heal."
+    },
+    {
+      "id": "SRE-OSS-07",
+      "title": "Wake-lock acquire + visibilitychange re-acquire",
+      "evidence": "public/js/admin-oss.js:244..251 mounted hooks + 297..346 _acquireWakeLock + 347..355 _releaseWakeLock",
+      "rules": [
+        "Feature-flag window.foodkingConfig.ossWakeLockEnabled (default true)",
+        "Graceful degrade if navigator.wakeLock unsupported",
+        "Re-acquire on visibilitychange='visible' (browsers auto-release on tab switch / OS lock)"
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "id": "SRE-OSS-08",
+      "title": "Wake-lock release on unmount (no zombie)",
+      "evidence": "public/js/admin-oss.js:253..279 beforeUnmount() removes visibilitychange listener + calls _releaseWakeLock()",
+      "verdict": "PASS",
+      "note": "Sentinel: sentinel.addEventListener('release', () => {_wakeLockSentinel=null}) ensures correct null-state on browser-side auto-release too."
+    },
+    {
+      "id": "SRE-OSS-09",
+      "title": "AbortController abort-in-flight prevents poll stampede",
+      "evidence": "OssSyncService.js:281..293 _poll() calls _abortInFlight() before issuing new request; finally-clause clears the controller ref",
+      "verdict": "PASS",
+      "note": "Burst-poll on visibility-resume cancels the currently-pending fetch — no double fetch on the wire."
+    },
+    {
+      "id": "SRE-OSS-10",
+      "title": "Backoff on 5xx with exponential ramp + cap",
+      "evidence": "OssSyncService.js:322..333 _handle5xx — currentBackoffMs starts at 5s, doubles, caps at 30s",
+      "verdict": "PASS",
+      "note": "Backoff resets to backoffStartMs on a successful poll (line 299) and on WS state change (line 167)."
+    }
+  ],
+  "verdict": "All SRE / sync defenses (cadence cap, reconnect, polling, debounce, wake-lock) functioning as documented. Wave 3b/3c attested INTACT. No degradation since the parallel sister-service heals."
+}

@@ -1,0 +1,91 @@
+{
+  "specialist": "RED-team",
+  "role": "READ-ONLY",
+  "scope": "Intersection POS×OSS — adversarial dispute on cascade, race conditions, leakage paths",
+  "attacks": [
+    {
+      "id": "RED-OSS-01",
+      "scenario": "Multi-order race — 3 POS staff mark 3 orders PREPARED simultaneously",
+      "vector": "Three concurrent PUT /api/admin/order/{id}/status with status=8 (PREPARED) within the same 100ms window",
+      "expected_defect": "Outbox dedupe collapses one event; chime fires only once; wall display shows 2/3 orders",
+      "actual_behavior": "Idempotency key sha1(orderId|oldStatus|newStatus|correlationId) — each transition has DISTINCT order_id → 3 distinct outbox rows. Each broadcasts to channel; OSS handler fires _markNewReady(id) 3 times for 3 distinct IDs. _echoMarkedReady is a Set — collects all 3 IDs in same tick. _hydrateFromRows skips them all on next poll. No race defect.",
+      "verdict": "BLOCKED — defense intact",
+      "evidence": "PersistOrderStatusChangedToOutbox.php:26..32 (idempotency includes orderId AND correlation_id) + public/js/admin-oss.js:420..423 (Set per id)"
+    },
+    {
+      "id": "RED-OSS-02",
+      "scenario": "Chime spam attack — repeated PREPARING→PREPARED→PREPARING transitions",
+      "vector": "Admin reverts order from PREPARED to PREPARING and back 10 times within 30s",
+      "expected_defect": "Each transition fires chime → 10 chimes within 30s, customers stop trusting audio cue",
+      "actual_behavior": "Each PREPARED transition correctly fires chime once. This is by-design behavior — admin intentional revert SHOULD signal. Burst-revert is not a realistic attack vector; the 4-second visual flash timer (admin-oss.js:457..465) is also reset cleanly per call. No actual defect class.",
+      "verdict": "INTENTIONAL behavior — operationally rare, no heal needed",
+      "note": "If owner ever reports spam concern, debounce window via Lodash throttle on _markNewReady could be added (V1.0.2 backlog candidate)."
+    },
+    {
+      "id": "RED-OSS-03",
+      "scenario": "Wake-lock zombie — Vue route navigation away from OSS page",
+      "vector": "Operator navigates from /admin/order-status-screen to /admin/dashboard while wakeLockSentinel is active",
+      "expected_defect": "Sentinel persists after unmount, drains battery on tablet/operator surface",
+      "actual_behavior": "public/js/admin-oss.js:253..278 beforeUnmount hook explicitly calls _releaseWakeLock() AND removes visibilitychange listener BEFORE the sentinel reference is nulled. The native sentinel.release() is invoked in _releaseWakeLock line 353. Also a passive defense: sentinel.addEventListener('release', () => null) handles browser auto-release.",
+      "verdict": "BLOCKED — release path enforced"
+    },
+    {
+      "id": "RED-OSS-04",
+      "scenario": "Cross-branch OSS leak — Branch A wall fetches Branch B orders",
+      "vector": "Customer-wall iframe on Branch A network calls /api/frontend/oss-order?branch_id=2 (Branch B)",
+      "expected_defect": "Returns Branch B orders — confidentiality breach across tenants",
+      "actual_behavior": "Returns Branch B's preparation queue, BUT payload contains NO PII (only order_serial_no + queue_number + status). The serial_no is the same number printed on the receipt — Branch B's queue numbers being visible on a Branch A screen is a UX issue, not a confidentiality breach. AND rate-limit `oss-public` 60/min/IP throttles enumeration. RouteServiceProvider:135..143 explicitly logs the threat model.",
+      "verdict": "BY-DESIGN — anti-enumeration sufficient; PII payload empty"
+    },
+    {
+      "id": "RED-OSS-05",
+      "scenario": "Source-surface allowlist bypass — DELIVERY order somehow surfaces",
+      "vector": "Craft an Order with order_type=DELIVERY but token='X' and try to read it via /api/frontend/oss-order",
+      "expected_defect": "DELIVERY leaks onto customer wall (was a real Wave 3c defect)",
+      "actual_behavior": "Wave 3c heal at OrderStatusScreenOrderService.php:59..62 + 196..199 added whereIn(order_type,[KIOSK,TAKEAWAY]) FAIL-CLOSED allowlist. Even with a non-null token, DELIVERY is excluded. Verified by tests/Feature/OSS/OssCustomerScreenFilterTest.php::test_delivery_order_with_token_is_excluded_from_oss_wall.",
+      "verdict": "BLOCKED — Wave 3c heal converged"
+    },
+    {
+      "id": "RED-OSS-06",
+      "scenario": "DINING_TABLE/POS order with token leaks to wall",
+      "vector": "Stale-test pre-Wave-3c data: POS=15 or DINING_TABLE=20 order with a leftover token",
+      "expected_defect": "Same allowlist bypass — V1 dine-in disabled but DB might still hold legacy rows",
+      "actual_behavior": "Same whereIn allowlist excludes both. Sentinel tests cover both (test_pos_order_with_token_is_excluded line 170, test_dining_table_order_with_token_is_excluded line 192).",
+      "verdict": "BLOCKED"
+    },
+    {
+      "id": "RED-OSS-07",
+      "scenario": "Branch enumeration via OSS public endpoint sweep",
+      "vector": "Attacker scripts GET /api/frontend/oss-order?branch_id=1..1000 from many IPs",
+      "expected_defect": "Confirms branch existence + measures throughput across the SaaS fleet",
+      "actual_behavior": "Per-IP throttle 60/min/IP (RouteServiceProvider:145..152). Distributed-IP attack would need ~17 IPs per branch to enumerate 1000 branches in 1 min — possible but high-friction. V1.0.2 backlog mentions distinct-branch_id-per-IP logging.",
+      "verdict": "PARTIAL — V1 acceptable for single-tenant Le Cayenne; SaaS hardening backlogged",
+      "severity_proposed": "P2 (backlog, not V1 blocker)"
+    },
+    {
+      "id": "RED-OSS-08",
+      "scenario": "Echo subscription on public wall (no authed branchId)",
+      "vector": "Public TV mounted at /admin/order-status-screen — authBranchId() returns 0 — subscribeEcho() at admin-oss.js:407 returns early",
+      "expected_defect": "Public wall never sees live broadcasts; relies on 2s polling fallback only",
+      "actual_behavior": "By-design. Public wall has no Sanctum token → cannot pass channels.php branch.{branchId} auth → cannot subscribe. Polling fallback at 2s (intervalMsWhenDisconnected) is fast enough for SYNC-2 8s budget.",
+      "verdict": "BY-DESIGN — documented in admin-oss.js:403..407"
+    },
+    {
+      "id": "RED-OSS-09",
+      "scenario": "Token replay — public viewer steals token from wall display screenshot",
+      "vector": "Customer-wall scraper photo captures token='abc123' for someone else's order, attempts to use it",
+      "expected_defect": "Token is a session credential",
+      "actual_behavior": "The token is a public order-retrieval handle (already printed on the customer receipt). It allows checking order status, NOT modifying or authenticating. No write authority. Equivalent attack vector = picking up receipt from trash.",
+      "verdict": "BY-DESIGN — token is not a secret"
+    },
+    {
+      "id": "RED-OSS-10",
+      "scenario": "Idempotency-key clash across self-cancel + admin-changeStatus path",
+      "vector": "Customer self-cancels (OrderService.php:1718 path) while admin simultaneously changes status (line 1864 path)",
+      "expected_defect": "Two distinct paths dispatch OrderStatusChanged for same order_id with same final_status — outbox collapses one",
+      "actual_behavior": "Idempotency key includes correlation_id (PersistOrderStatusChangedToOutbox.php:31) — each HTTP request has distinct X-Correlation-ID. Even with same (orderId, old, new), distinct correlation → distinct outbox rows. Plus self-cancel path is protected by lockForUpdate (OrderService.php:1681) → only one wins.",
+      "verdict": "BLOCKED — defense intact"
+    }
+  ],
+  "verdict": "ZERO adversarial defects produce P0 findings. RED-OSS-07 (branch enumeration) is the only sub-P1 with deferred V1.0.2 mitigation; explicitly accepted by RouteServiceProvider documentation. Intersection POS×OSS is converged at this audit depth."
+}

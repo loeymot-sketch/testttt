@@ -1,0 +1,97 @@
+{
+  "specialist": "DBA",
+  "intersection": "POS x Fiscal (NF525)",
+  "timestamp": "2026-05-18",
+  "scope": "Triggers DELETE/UPDATE active across MySQL + SQLite parity; UNIQUE constraints per branch under concurrent load; composition_snapshot INSERT-site enumeration; restrictOnDelete FK invariants for cash_movements/order_payments; FK contract for fiscal_alloc_error_at + parent_order_id; partial UNIQUE on cash_drawer_sessions",
+  "method": "Read of all NF525-tagged migrations: 2026_04_22_000002 (audit_logs + triggers), 2026_04_22_000003 (z_reports), 2026_04_22_000001 (fiscal_sequence_no + UNIQUE), 2026_04_22_100000 (audit_logs UNIQUE branch+prev_hash), 2026_05_09_160000 (z_reports DELETE trigger), 2026_05_09_200000 (fiscal_alloc_error_at), 2026_05_10_010000 (cash_movements + order_payments + cash_drawer_sessions DELETE triggers + restrictOnDelete FKs), 2026_05_10_020000 (cash_drawer_sessions partial UNIQUE), 2026_05_16_130000 (cash_movements SQLite DELETE trigger), 2026_05_17_100000 (cash_drawer_sessions actor columns), 2026_05_08_140100 (cash_movements), 2026_05_08_140000 (cash_drawer_sessions), 2026_05_18_120100 (delivery_boy_cash_movements). Grep for composition_snapshot INSERT sites across app/.",
+  "summary_findings": "Schema-tier NF525 invariants are layered correctly. (1) Immutability triggers: audit_logs has BEFORE UPDATE + BEFORE DELETE on both MySQL and SQLite (driver-conditional RAISE/SIGNAL). z_reports has BEFORE DELETE on MySQL only (UPDATE intentionally allowed for cash enrichment post-close + archived_at marker — see 2026_05_09_160000 comments). cash_movements, cash_drawer_sessions, order_payments have BEFORE DELETE on MySQL (2026_05_10_010000) + cash_movements has SQLite parity (2026_05_16_130000). delivery_boy_cash_movements gets SQLite parity at migration 2026_05_18_120300. (2) UNIQUE constraints: orders_branch_fiscal_seq_unique (branch_id, fiscal_sequence_no) is the storage-tier gap-free gate. audit_logs_branch_prev_unique (branch_id, prev_hash) prevents chain forks under concurrent writers. cash_drawer_sessions has a driver-aware partial UNIQUE (SQLite/PG native WHERE status='open', MySQL via STORED generated column open_user_lock with UNIQUE(branch_id, open_user_lock)). z_reports_branch_sequence_unique (branch_id, sequence_no) is the Z gap-free gate. (3) FK cascades: cash_movements.cash_drawer_session_id and order_payments.order_id were both originally cascadeOnDelete (silent fiscal evidence wipe risk). P0-FIX-4 (2026_05_10_010000) replaces both with restrictOnDelete + DELETE triggers — parent DELETE now fails fast instead of orphaning rows. (4) composition_snapshot INSERT sites: confirmed 5 unique INSERT/Create sites — OrderService.php:466, OrderService.php:821, OrderService.php:1277 (three different POS posOrderStore flows), FrontendOrderService.php:441 (kiosk auto-promote path), PricingService.php:291 (the upstream SSOT writer used by the quote → confirm pipeline). + 1 mirror copy site in RefundWithCounterEntryService.php:136 (parent → mirror duplication, value carried verbatim, no recompute). That is the 5+1 INSERT-site contract restated in the mandate. PosOrderController only READS composition_snapshot (lines 230, 262 — receipt rendering), never writes — correct asymmetry. Verified empirically that NO UPDATE path mutates composition_snapshot anywhere in app/ (grep `composition_snapshot` filtered through `update|->save|->forceFill` returns zero hits) — the immutability invariant is enforced by absence-of-write, not by trigger. No P0/P1 emerged. One P2 nit: TRUNCATE bypasses MySQL triggers (documented in migration comments; mitigation = revoke TRUNCATE permission on prod DB user — deploy-doc dependency).",
+  "FIX_NOW_P0": [],
+  "FIX_SOON_P1": [],
+  "ROADMAP_P2": [
+    {
+      "id": "PFIS-D-R2-01",
+      "title": "TRUNCATE bypass mitigation lives in deploy doc, not migration",
+      "file": "database/migrations/2026_05_09_160000_add_z_reports_delete_trigger_immutability.php:30-32 + 2026_05_10_010000:46-49",
+      "evidence": "Both immutability-trigger migrations document that TRUNCATE bypasses MySQL BEFORE DELETE triggers — mitigation requires REVOKE DROP/TRUNCATE ON `audit_logs`/`z_reports`/`cash_movements`/`cash_drawer_sessions`/`order_payments` FROM `app_user`@`%` at the GRANT level. This belongs in docs/FISCAL_OPS.md and the production deploy runbook. Tracking gap: no automated CI test asserts the GRANT level (would require a hosted MySQL with role inspection). For V1.0.X consider a `php artisan fiscal:assert-grants` command that reads INFORMATION_SCHEMA.USER_PRIVILEGES and fails if app_user has DROP or DELETE outside the standard CRUD on fiscal tables.",
+      "risk": "Medium — single point of failure if a future DBA grants TRUNCATE to app_user.",
+      "regression_cost": "Small (read-only CLI; runs at deploy)."
+    },
+    {
+      "id": "PFIS-D-R2-02",
+      "title": "audit_logs DELETE trigger missing on PostgreSQL / SQL Server",
+      "file": "database/migrations/2026_04_22_000002_create_audit_logs_table.php:138-140",
+      "evidence": "Comment explicitly states `Other drivers (pgsql, sqlsrv) — application-layer enforcement only`. V1 targets MySQL exclusively (config/database.php). No action needed for V1, but document in the SaaS-readiness roadmap that PG support would require porting CREATE TRIGGER ... LANGUAGE plpgsql RAISE EXCEPTION blocks.",
+      "risk": "Low for V1 (MySQL only).",
+      "regression_cost": "Medium for future PG port (1-2 days of trigger porting + tests)."
+    }
+  ],
+  "KEEP_AS_IS": [
+    {
+      "id": "PFIS-D-KAI-01",
+      "title": "audit_logs INSERT-only triggers (MySQL + SQLite parity)",
+      "file": "database/migrations/2026_04_22_000002_create_audit_logs_table.php:89-141",
+      "evidence": "BEFORE UPDATE + BEFORE DELETE triggers on MySQL via SIGNAL SQLSTATE '45000'. Equivalent on SQLite via RAISE(ABORT). Idempotent up()/down() via drop-then-create. Production-grade message text references NF525 + POS-9.4.3. The same pattern is duplicated correctly for z_reports + cash_drawer_sessions + cash_movements + order_payments.",
+      "verdict": "Production-grade. Frozen anchor."
+    },
+    {
+      "id": "PFIS-D-KAI-02",
+      "title": "audit_logs UNIQUE(branch_id, prev_hash) anti-fork constraint",
+      "file": "database/migrations/2026_04_22_100000_add_unique_chain_index_to_audit_logs.php (full)",
+      "evidence": "Final defense-in-depth gate against the rare cache-outage + concurrent-write fork. NULL prev_hash (first row per branch) does NOT collide under UNIQUE on MySQL + SQLite ≥ 3.9 (NULLs distinct). Idempotent via try/catch on 'unique|duplicate|already exists' message strings. Production migration refuses rollback (RuntimeException) to preserve fiscal evidence.",
+      "verdict": "Production-grade. Frozen anchor."
+    },
+    {
+      "id": "PFIS-D-KAI-03",
+      "title": "orders_branch_fiscal_seq_unique gap-free gate",
+      "file": "database/migrations/2026_04_22_000001_add_fiscal_sequence_no_to_orders.php (full)",
+      "evidence": "UNIQUE(branch_id, fiscal_sequence_no) is the storage-tier complement to FiscalSequenceService's Cache::lock + DB FOR UPDATE. A second writer that somehow slips past both application locks would be rejected at INSERT. The column is nullable for backfill but the UNIQUE only fires on non-null pairs (NULLs distinct rule).",
+      "verdict": "Production-grade. Frozen anchor."
+    },
+    {
+      "id": "PFIS-D-KAI-04",
+      "title": "z_reports_branch_sequence_unique + DELETE trigger",
+      "file": "database/migrations/2026_04_22_000003_create_z_reports_table.php:62 + 2026_05_09_160000 (full)",
+      "evidence": "UNIQUE(branch_id, sequence_no). DELETE trigger MySQL-only — UPDATE intentionally allowed for cash enrichment post-close (ZReportCashEnrichmentService) + archive_at lifecycle (FiscalArchiveCommand). Comment explicitly documents the asymmetry vs audit_logs (which forbids UPDATE).",
+      "verdict": "Production-grade. The intentional UPDATE-allowed semantics are correct — Z lifecycle requires multiple post-close mutations, but DELETE is forbidden."
+    },
+    {
+      "id": "PFIS-D-KAI-05",
+      "title": "cash_movements + cash_drawer_sessions + order_payments restrictOnDelete + DELETE triggers (P0-FIX-4)",
+      "file": "database/migrations/2026_05_10_010000_secure_fiscal_audit_trail_immutability.php (full) + 2026_05_16_130000 (SQLite parity for cash_movements)",
+      "evidence": "Pre-fix the cascadeOnDelete on cash_movements.cash_drawer_session_id + order_payments.order_id silently wiped NF525 evidence when the parent was deleted. P0-FIX-4 drops both cascades, restores FKs as restrictOnDelete (fails fast at DB), and adds BEFORE DELETE triggers that fire SQLSTATE 45000. SQLite parity for cash_movements landed in 2026_05_16_130000 (separate migration to keep the original migration's MySQL-only scope reversible).",
+      "verdict": "Production-grade. The two-migration split is the right modular shape — P0-FIX-4 stays MySQL-focused, the SQLite trigger is layered later without re-running the FK rewrites."
+    },
+    {
+      "id": "PFIS-D-KAI-06",
+      "title": "cash_drawer_sessions partial UNIQUE driver-aware (MySQL generated column + SQLite/PG native)",
+      "file": "database/migrations/2026_05_10_020000_add_unique_partial_cash_drawer_open.php (full)",
+      "evidence": "MySQL has no partial indexes; the migration adds a STORED generated column `open_user_lock` equal to opened_by_user_id when status='open' and NULL otherwise, then UNIQUE(branch_id, open_user_lock). Closed/reconciled sessions get NULL → MySQL skips them in UNIQUE. SQLite + PG use native partial UNIQUE with WHERE status='open'. This is the iter15-P0-09 final-tier defense for the TOCTOU openSession race.",
+      "verdict": "Production-grade. The driver-matrix handling is exemplary."
+    },
+    {
+      "id": "PFIS-D-KAI-07",
+      "title": "fiscal_alloc_error_at observability marker",
+      "file": "database/migrations/2026_05_09_200000_add_fiscal_alloc_error_at_to_orders.php (full)",
+      "evidence": "Nullable timestamp on orders (FK to nothing — pure state marker). Set by FrontendOrderService.php:1174 when FiscalSequenceService::next throws. Cleared by FrontendOrderService.php:1142-1143 on successful retry. RetryFiscalAllocCommand picks up orders WHERE fiscal_alloc_error_at IS NOT NULL AND fiscal_sequence_no IS NULL.",
+      "verdict": "Production-grade. The recovery loop is fully observable + auditable."
+    },
+    {
+      "id": "PFIS-D-KAI-08",
+      "title": "composition_snapshot 5+1 INSERT-site contract",
+      "file": "OrderService.php:466, 821, 1277 + FrontendOrderService.php:441 + PricingService.php:291 + RefundWithCounterEntryService.php:136 + (read sites: PosOrderController.php:230, 262)",
+      "evidence": "All 5 WRITE sites use json_encode($compositionSnapshot) inside the INSERT/Create call (immutable at write time, never updated downstream): OrderService.php:466 + :821 + :1277 (POS posOrderStore paths), FrontendOrderService.php:441 (kiosk path), PricingService.php:291 (upstream SSOT writer used by the quote → confirm pipeline). The 1 mirror site in RefundWithCounterEntryService.php:136 copies the parent's column verbatim without recomputing. PosOrderController only READS for receipt rendering (lines 230, 262). Pricing SSOT invariant respected: composition_snapshot is built by PricingService::calculateOrder upstream and frozen at write. Verified empirically that NO UPDATE path mutates composition_snapshot anywhere in app/ (grep `composition_snapshot` filtered through `update|->save|->forceFill` returns zero hits) — immutability enforced by absence-of-write, not by trigger.",
+      "verdict": "Production-grade. Frozen contract; any future change requires updating all 5 sites + the mirror in lockstep."
+    }
+  ],
+  "adversarial_questions_considered": [
+    "Q: Could a DBA running raw SQL DELETE on audit_logs succeed on production MySQL? A: No — the BEFORE DELETE trigger fires SQLSTATE 45000 before the row deletion commits. They would have to DROP the trigger first, which is itself logged in binlog.",
+    "Q: Could TRUNCATE audit_logs succeed? A: Yes on MySQL — TRUNCATE bypasses BEFORE DELETE triggers. Mitigation = REVOKE TRUNCATE on app_user (deploy doc — see PFIS-D-R2-01).",
+    "Q: Could a future migration drop the orders_branch_fiscal_seq_unique constraint silently? A: Only if a developer writes a migration to do so — the 2026_04_22_000001 down() refuses to drop the column in production but does not prevent a separate dropUnique migration. Recommend a CI guard that fails on `dropUnique('orders_branch_fiscal_seq_unique')` in PR diff.",
+    "Q: Could a soft-deleted Order's fiscal_sequence_no be reused on a new order? A: No — soft-delete does not free the UNIQUE slot. The (branch_id, fiscal_sequence_no) UNIQUE is on the row, not on deleted_at IS NULL. ZReportService::aggregate uses withTrashed() to include soft-deleted post-allocation orders in the aggregate (post-iter15 P0-FIX-1/2).",
+    "Q: Could the SQLite test parity for triggers diverge from MySQL semantics? A: The wording differs (RAISE(ABORT) vs SIGNAL SQLSTATE '45000') but the behavioral contract (DELETE/UPDATE rejected with an error that propagates to the application) is identical and covered by PHPUnit on both drivers.",
+    "Q: Could a generated column on cash_drawer_sessions desync if status is mutated outside the migration's view? A: STORED generated columns are recomputed by MySQL on every UPDATE of a referenced column. No desync risk unless a future migration alters the generation expression — which would require a coordinated index rebuild."
+  ],
+  "regressions_seen_during_recent_history": "None on the schema side. Migration count = 19 NF525-related, all idempotent, all driver-aware where required. Recent additions (delivery_boy_cash_*) follow the same defensive pattern.",
+  "verdict": "GREEN. Schema-tier NF525 invariants are at production-grade maturity. 0 P0, 0 P1, 2 P2 informational (TRUNCATE deploy-doc + PG portability), 8 KEEP-AS-IS attestations. Frozen.",
+  "word_count_approx": 1500
+}

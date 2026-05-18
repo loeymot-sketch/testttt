@@ -1,0 +1,78 @@
+{
+  "zone": "PLOY-1-EARN-FLOW",
+  "role": "RED-team adversarial",
+  "scope": "Attack scenarios on POS earn flow: double-earn via replay, status-revert, listener race, cashier collusion",
+  "attack_scenarios": [
+    {
+      "id": "PLOY-1-R-01",
+      "name": "Double-earn via DELIVERED→PENDING→DELIVERED status-revert",
+      "severity": "P2",
+      "scenario": "Cashier marks order DELIVERED → listener fires → points awarded, sentinel = +20. Cashier reverts order to PENDING (if state machine allows). Cashier re-marks DELIVERED → listener fires → sentinel check at line 54 (whereNull) BLOCKS the second award because sentinel is now 20, not NULL.",
+      "outcome": "DEFENDED. Sentinel guard works correctly. Verified by code reading: line 54 `whereNull('loyalty_points_awarded')` filter on the UPDATE means second award is rejected.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "PLOY-1-R-02",
+      "name": "Double-earn via concurrent OrderStatusChanged dispatch race",
+      "severity": "P2",
+      "scenario": "Two PHP workers simultaneously process OrderStatusChanged for same order_id (e.g. queue worker + sync listener, or status-change endpoint hit twice in same millisecond). Both pass line 39-43 (status check), both reach line 52 (sentinel claim).",
+      "outcome": "DEFENDED. The UPDATE at line 52-56 is atomic in MySQL — first writer claims (rows_affected=1), second writer's UPDATE returns rows_affected=0 (whereNull guard fails because sentinel is now -1). Line 58-60 early-returns. Verified.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "PLOY-1-R-03",
+      "name": "Sentinel stuck at -1 (process kill mid-execution)",
+      "severity": "P2",
+      "scenario": "Listener claims sentinel = -1 at line 52-56. PHP-FPM worker is SIGKILL'd before line 142 (finalize) and before line 154-161 (catch-block revert). orders.loyalty_points_awarded = -1 forever. Next OrderStatusChanged for same order → line 54 whereNull guard fails → no retry. Customer permanently denied points.",
+      "outcome": "VULNERABLE. No recovery cron found. The sentinel becomes a tombstone.",
+      "verdict": "FAIL",
+      "remediation": "Add cron LoyaltyReconcileStuckSentinelCommand: WHERE loyalty_points_awarded = -1 AND updated_at < now() - INTERVAL 5 MINUTE → set NULL + re-dispatch OrderStatusChanged."
+    },
+    {
+      "id": "PLOY-1-R-04",
+      "name": "Cashier collusion: cashier credits own loyalty_code on every walk-in",
+      "severity": "P1",
+      "scenario": "Cashier types their own loyalty_code into loyalty_customer_code field on every cash order. Cashier silently inflates own loyalty balance, eventually redeems large discounts.",
+      "outcome": "VULNERABLE. PosOrderRequest line 133 has no ownership check. No audit-log capturing cashier_id + loyalty_customer_code per order. Manager can detect via SQL audit on loyalty_transactions GROUP BY loyalty_code but no UI tool exists for this.",
+      "verdict": "FAIL",
+      "remediation": "Already covered in PLOY-1-S-01. Add (a) audit-log row on POS order with loyalty_customer_code (action='pos.order.loyalty_attached', cashier_id, code, branch_id), (b) admin dashboard widget 'Top loyalty earners by cashier' to detect anomalies, (c) policy: cashier's own loyalty_code rejected on their own POS orders (User.loyalty_code != Auth::id().loyalty_code check)."
+    },
+    {
+      "id": "PLOY-1-R-05",
+      "name": "Cancel-after-award refund replay (re-cancel)",
+      "severity": "P2",
+      "scenario": "Order DELIVERED → award +20pts (balance 100→120). Order CANCELED → refundPoints credits back any redeem txn (no redeem in this case → no-op). BUT: the earn is NOT reversed. User keeps 120pts even after cancel.",
+      "outcome": "BUSINESS-DECISION. Not technically a bug. LoyaltyService::refundPoints only refunds REDEEMED points (line 28-30 filter type='redeem'). Earned points on a cancelled order are NOT clawed back — listener's CANCELED guard (line 33) only PREVENTS new earn, doesn't reverse an already-awarded one.",
+      "verdict": "DOCUMENTED-GAP. Requires owner decision: should earned points be clawed back on post-DELIVERED cancellation? If yes, add reverseEarn() path in LoyaltyService called from CANCELED transition handler."
+    },
+    {
+      "id": "PLOY-1-R-06",
+      "name": "Listener exception → sentinel orphaned to -1",
+      "severity": "P2",
+      "scenario": "Throwable inside line 115-142 (inside DB::transaction). Transaction rolls back → users.loyalty_points NOT incremented, loyalty_transactions row NOT inserted, BUT sentinel UPDATE at line 52-56 was OUTSIDE the transaction → already committed. Catch block line 154-161 tries to revert sentinel via separate UPDATE — succeeds IF the throwable wasn't a DB-level catastrophe. If DB connection died, revert also fails → sentinel stuck at -1.",
+      "outcome": "PARTIAL DEFENSE. Catch block handles app-level throwables. DB-level deaths (connection drop) leave orphan sentinel.",
+      "verdict": "PARTIAL. Covered by PLOY-1-R-03 reconciliation cron remediation."
+    },
+    {
+      "id": "PLOY-1-R-07",
+      "name": "Settings drift: loyalty_points_per_euro set to 0 silently",
+      "severity": "P3",
+      "scenario": "Admin sets loyalty_points_per_euro = 0 via Settings UI. Listener line 85-91 detects rate <= 0 → reverts sentinel to NULL, no points, no error to user. All future POS earns silently no-op until admin fixes.",
+      "outcome": "DEGRADED-SILENT. No alerting.",
+      "verdict": "PARTIAL. Recommend admin UI guard (min:1 validation) + boot-time sanity check + observability alert."
+    }
+  ],
+  "summary": {
+    "p1_count": 1,
+    "p2_count": 4,
+    "p3_count": 2,
+    "blocker_for_v1": false,
+    "primary_concerns": [
+      "PLOY-1-R-04 cashier collusion — real fraud surface",
+      "PLOY-1-R-03 stuck sentinel — operational tombstone",
+      "PLOY-1-R-05 earn-on-cancelled-order — business decision needed"
+    ]
+  },
+  "verdict": "PASS-WITH-CONCERN",
+  "notes": "Earn flow is robust against concurrent races (sentinel + lockForUpdate are correct). Main risks are operational (stuck sentinel) and trust-boundary (cashier collusion). No NF525 violation, no chain corruption risk."
+}

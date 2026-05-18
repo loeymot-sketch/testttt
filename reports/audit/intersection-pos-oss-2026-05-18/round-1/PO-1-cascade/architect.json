@@ -1,0 +1,112 @@
+{
+  "specialist": "Architect",
+  "role": "READ-ONLY",
+  "scope": "Intersection POS×OSS — cascade integrity POS PREPARED → outbox → broadcast → OSS render",
+  "anchors": {
+    "pos_writer": "app/Services/OrderService.php (DIRTY: read-only)",
+    "domain_event": "app/Events/OrderStatusChanged.php",
+    "persister": "app/Listeners/PersistOrderStatusChangedToOutbox.php",
+    "dispatcher": "app/Jobs/DispatchDomainEventsJob.php",
+    "state_machine": "app/Domain/Order/OrderStateMachine.php",
+    "oss_reader_admin": "app/Http/Controllers/Admin/OrderStatusScreenController.php::index/publicIndex",
+    "oss_service": "app/Services/OrderStatusScreenOrderService.php (DIRTY: read-only)",
+    "oss_frontend_compiled": "public/js/admin-oss.js (DIRTY: read-only)",
+    "oss_frontend_source": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue (clean)",
+    "oss_sync_service": "resources/js/services/OssSyncService.js (clean)",
+    "oss_store_module": "resources/js/store/modules/orderStatusScreenOrder.js (clean)"
+  },
+  "cascade_trace": [
+    {
+      "step": 1,
+      "where": "app/Services/OrderService.php:1739..1864",
+      "what": "changeStatus() locks order, sets status=8 (PREPARED), recordTransition, then post-commit dispatches OrderStatusChanged via DispatchableAfterCommit"
+    },
+    {
+      "step": 2,
+      "where": "app/Events/OrderStatusChanged.php:17 (DispatchableAfterCommit trait)",
+      "what": "Event deferred until DB tx commits — rollback drops event entirely (gate C9 / KI-001)"
+    },
+    {
+      "step": 3,
+      "where": "app/Listeners/PersistOrderStatusChangedToOutbox.php:15..86",
+      "what": "Idempotency key = sha1(eventType|orderId|oldStatus|newStatus|correlationId); firstOrCreate(domain_events); afterCommit → DispatchDomainEventsJob.dispatch (try/catch best-effort, log warn on broadcast failure)"
+    },
+    {
+      "step": 4,
+      "where": "PersistOrderStatusChangedToOutbox.php:52 broadcastAs=OrderStatusChanged, channel=['private-branch.'+branch_id]",
+      "what": "Broadcast channel is branch-scoped private channel; payload exposes order_id, queue_number, _origin, payment_method, payment_status, old_status, new_status, token"
+    },
+    {
+      "step": 5,
+      "where": "public/js/admin-oss.js:403..436",
+      "what": "Vue subscribeEcho() requires branchId>0 (operator session). Handler: data.new_status==PREPARED -> _markNewReady(order_id) -> _playReadySound() + flash; then list() refresh."
+    },
+    {
+      "step": 6,
+      "where": "public/js/admin-oss.js:509..531 _hydrateFromRows()",
+      "what": "Polled poll path re-detects PREPARED transitions via prevPreparedIds diff; _echoMarkedReady set dedupes against Echo path to prevent double chime."
+    },
+    {
+      "step": 7,
+      "where": "app/Services/OrderStatusScreenOrderService.php:45..120 list() / 185..238 listForBranch()",
+      "what": "Read query: whereIn(order_type,[KIOSK,TAKEAWAY]) + whereIn(status,[PREPARING,PREPARED]) + Paris→UTC day bounds + stale prune (now('UTC') - 8h) + branch filter + FIFO order"
+    }
+  ],
+  "state_machine_alignment_with_kds": {
+    "kds_consumes": "OrderStatus::PREPARING (orange column) and OrderStatus::PREPARED (green column) — same enum constants used by OSS read query line 63",
+    "transition_owner": "OrderService::changeStatus dispatches a single OrderStatusChanged; KDS listener (DispatchKdsTicket) and OSS broadcast both flow through SAME event — SSOT respected.",
+    "ready_terminology": "OSS calls PREPARED 'ready' in UI; backend enum PREPARED=8 is the only canonical 'ready' state. No drift detected."
+  },
+  "findings": [
+    {
+      "id": "ARCH-OSS-01",
+      "severity": "INFO",
+      "title": "Cascade is end-to-end clean and atomic with the DB transaction.",
+      "evidence": [
+        "app/Events/OrderStatusChanged.php:17 DispatchableAfterCommit ensures rollback drops the event",
+        "app/Listeners/PersistOrderStatusChangedToOutbox.php:64..66 wasRecentlyCreated skip on listener replay",
+        "DispatchDomainEventsJob.dispatch wrapped in try/catch (line 73..85) — broadcast failure does NOT roll back the HTTP request (test-e2e fix E-001)"
+      ]
+    },
+    {
+      "id": "ARCH-OSS-02",
+      "severity": "INFO",
+      "title": "Dual-path dedupe (Echo + poll) correctly prevents double chime.",
+      "evidence": [
+        "public/js/admin-oss.js:420..423 pre-registers Echo'd PREPARED order_id into _echoMarkedReady before list() refresh",
+        "public/js/admin-oss.js:523..530 _hydrateFromRows skips _markNewReady if id is in echoMarked set, then clears one-shot guard"
+      ],
+      "rationale": "Without this guard, an Echo event + poll refresh in the same second would fire the chime twice for the same order."
+    },
+    {
+      "id": "ARCH-OSS-03",
+      "severity": "INFO",
+      "title": "OSS query reads PREPARING+PREPARED only — matches KDS surface contract.",
+      "evidence": [
+        "app/Services/OrderStatusScreenOrderService.php:63 whereIn(status,[PREPARING,PREPARED])",
+        "Mirror line 200 listForBranch() — byte-identical query body per service docstring line 144"
+      ]
+    },
+    {
+      "id": "ARCH-OSS-04",
+      "severity": "INFO",
+      "title": "Sister-of pattern between list() and listForBranch() prevents future drift.",
+      "evidence": [
+        "OrderStatusScreenOrderService.php:174..181 docstring forces byte-identical query bodies",
+        "Wave 3b/3c heals at lines 73..78 and 204..211 mirrored across both methods — TZ-aware day bounds, stale prune UTC, allowlist heal"
+      ]
+    },
+    {
+      "id": "ARCH-OSS-05",
+      "severity": "INFO",
+      "title": "Three independent OrderStatusChanged dispatch sites identified — no orphan path bypasses the outbox.",
+      "evidence": [
+        "OrderService.php:1643 (DeliveryBoy doorstep flow)",
+        "OrderService.php:1718 (Customer self-cancel)",
+        "OrderService.php:1864 (Admin/staff changeStatus)"
+      ],
+      "note": "All three are POST-commit, all three feed PersistOrderStatusChangedToOutbox.handle() → same idempotency_key contract."
+    }
+  ],
+  "verdict": "CASCADE INTEGRITY = INTACT. No architectural drift. POS→OSS contract honors the single domain-event SSOT pattern."
+}
