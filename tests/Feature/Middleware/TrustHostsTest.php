@@ -87,24 +87,185 @@ class TrustHostsTest extends TestCase
     /**
      * Test B: loopback hosts are whitelisted for local
      * single-restaurant deployment behind nginx.
+     *
+     * [Wave 3c P0 SYNC-ADV3C-01 heal] The whitelist entries MUST be
+     * anchored regex strings (^...$). Plain `'127.0.0.1'` /
+     * `'localhost'` were exploitable because Symfony wraps each entry
+     * as `{%s}i` and uses unanchored `preg_match`, admitting
+     * `127X0X0X1`, `attacker-localhost.com`, etc.
      */
-    public function test_hosts_whitelists_loopback(): void
+    public function test_hosts_whitelists_loopback_with_anchored_regex(): void
     {
         $middleware = $this->app->make(TrustHosts::class);
         $hosts = $middleware->hosts();
 
         $this->assertContains(
-            '127.0.0.1',
+            '^127\.0\.0\.1$',
             $hosts,
-            'TrustHosts::hosts() must whitelist 127.0.0.1 for nginx '
-            .'loopback / local PHP-FPM deployment.'
+            'SYNC-ADV3C-01: TrustHosts::hosts() must whitelist '
+            .'127.0.0.1 with anchors `^...$`. Plain `127.0.0.1` is '
+            .'wrapped by Symfony as unanchored `{127.0.0.1}i` (dot = '
+            .'any char) and admits attacker hosts like `127X0X0X1`.'
         );
 
         $this->assertContains(
+            '^localhost$',
+            $hosts,
+            'SYNC-ADV3C-01: TrustHosts::hosts() must whitelist '
+            .'localhost with anchors `^...$`. Plain `localhost` is '
+            .'wrapped by Symfony as unanchored `{localhost}i` and '
+            .'admits attacker hosts like `attacker-localhost.com` or '
+            .'`evil.localhost-bypass.io`.'
+        );
+
+        $this->assertContains(
+            '^::1$',
+            $hosts,
+            'SYNC-ADV3C-03: TrustHosts::hosts() must whitelist '
+            .'`::1` (IPv6 loopback) for dual-stack PHP-FPM deployment.'
+        );
+
+        $this->assertContains(
+            '^0\.0\.0\.0$',
+            $hosts,
+            'SYNC-ADV3C-03: TrustHosts::hosts() must whitelist '
+            .'`0.0.0.0` for `php artisan serve --host=0.0.0.0` and '
+            .'container 0.0.0.0 binds.'
+        );
+
+        // Negative assertion: no plain unanchored loopback entry leaks.
+        $this->assertNotContains(
+            '127.0.0.1',
+            $hosts,
+            'SYNC-ADV3C-01: plain `127.0.0.1` must NOT appear in '
+            .'hosts() — Symfony unanchored wrap admits spoofed hosts.'
+        );
+
+        $this->assertNotContains(
             'localhost',
             $hosts,
-            'TrustHosts::hosts() must whitelist localhost for dev / '
-            .'CLI / artisan serve usage.'
+            'SYNC-ADV3C-01: plain `localhost` must NOT appear in '
+            .'hosts() — Symfony unanchored wrap admits spoofed hosts.'
+        );
+    }
+
+    /**
+     * Test D: explicit Symfony-shape regression — wrap each pattern
+     * as `{%s}i` (per vendor/symfony/http-foundation/Request.php:652)
+     * and verify the EXACT same preg_match() Symfony will execute
+     * REJECTS the empirical spoof payloads from the Wave 3c
+     * adversarial report and ACCEPTS the legitimate loopback hosts.
+     *
+     * This is the test that would have caught SYNC-ADV3C-01 in the
+     * first place: it does not stub the vendor, it reproduces
+     * `setTrustedHosts()`'s wrap on the live `hosts()` return value
+     * and asserts the runtime behavior.
+     */
+    public function test_runtime_regex_rejects_spoof_payloads(): void
+    {
+        $middleware = $this->app->make(TrustHosts::class);
+        $hosts = $middleware->hosts();
+
+        // Reproduce vendor/symfony/http-foundation/Request.php:652.
+        $patterns = array_map(
+            fn ($h) => sprintf('{%s}i', $h),
+            $hosts
+        );
+
+        $matchesAny = static function (string $host) use ($patterns): bool {
+            foreach ($patterns as $pattern) {
+                if (@preg_match($pattern, $host) === 1) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        // === MUST REJECT (would have been admitted by the un-anchored bug) ===
+        $spoofPayloads = [
+            '127X0X0X1',                  // dot-glob bypass
+            'attacker-localhost.com',     // substring bypass
+            'evil.localhost-bypass.io',   // subdomain substring bypass
+            'real-127a0a0a1.com',         // dot-glob substring bypass
+            'localhost.attacker.com',     // suffix-of-substring bypass
+            'attacker.com',               // unrelated
+            '',                           // empty (Symfony's empty-host fallback)
+        ];
+
+        foreach ($spoofPayloads as $spoof) {
+            $this->assertFalse(
+                $matchesAny($spoof),
+                sprintf(
+                    'SYNC-ADV3C-01: TrustHosts whitelist must REJECT spoof '
+                    .'payload "%s" — would have been admitted by the '
+                    .'unanchored regex bug.',
+                    $spoof
+                )
+            );
+        }
+
+        // === MUST ACCEPT (legitimate loopback) ===
+        $legitHosts = [
+            '127.0.0.1',
+            'localhost',
+            '::1',
+            '0.0.0.0',
+        ];
+
+        foreach ($legitHosts as $legit) {
+            $this->assertTrue(
+                $matchesAny($legit),
+                sprintf(
+                    'TrustHosts whitelist must ACCEPT legitimate '
+                    .'loopback host "%s".',
+                    $legit
+                )
+            );
+        }
+    }
+
+    /**
+     * Test E: legitimate APP_URL host still resolves under the
+     * runtime wrap, ensuring the heal didn't accidentally break the
+     * `allSubdomainsOfApplicationUrl()` path.
+     */
+    public function test_runtime_regex_accepts_app_url_hosts(): void
+    {
+        config(['app.url' => 'http://lecayenne.local']);
+
+        $middleware = $this->app->make(TrustHosts::class);
+        $hosts = $middleware->hosts();
+
+        $patterns = array_map(
+            fn ($h) => sprintf('{%s}i', $h),
+            $hosts
+        );
+
+        $matchesAny = static function (string $host) use ($patterns): bool {
+            foreach ($patterns as $pattern) {
+                if (@preg_match($pattern, $host) === 1) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        $this->assertTrue(
+            $matchesAny('lecayenne.local'),
+            'APP_URL host must match.'
+        );
+
+        $this->assertTrue(
+            $matchesAny('admin.lecayenne.local'),
+            'Subdomain of APP_URL host must match.'
+        );
+
+        $this->assertFalse(
+            $matchesAny('attacker-lecayenne.local'),
+            'Adjacent label of APP_URL host must NOT match — anchors '
+            .'enforce subdomain boundary.'
         );
     }
 
