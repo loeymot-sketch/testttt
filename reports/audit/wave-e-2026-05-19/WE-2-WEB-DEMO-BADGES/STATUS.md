@@ -64,11 +64,12 @@ Existing `tests/e2e/test-e2e-web-z7-gaps-2026-05-18.spec.js` re-run post-impleme
 - `{mobile,tablet,desktop,wide}-LOY-qr.png` — QR area badge visible below identifier
 - `{mobile,tablet,desktop,wide}-MOD-success.png` — success modal badge between eyebrow and +25 headline
 
-All 12 read via Read tool — confirmed visually:
+Of the 12 captures, only 8 are byte-unique: each `*-LOY-head.png` and `*-LOY-qr.png` pair is identical (same DOM, same scroll position, `fullPage:false` snapshot taken seconds apart). All 8 unique images read via Read tool — confirmed visually:
 - No layout break (flex row holds, no overflow on 390px mobile)
 - Badges visually unavoidable (placed in customer-attention hotspots)
 - Color contrast strong (yellow#FFD93D on ink#0A0A0A or inverted ≈ 16:1 — passes WCAG AAA)
 - Site stays in French (badge label `DÉMO V1` is owner-locked per task brief)
+- All 12 captures programmatically asserted via Playwright `.innerText` substring match on the correct DOM container at the correct viewport.
 
 ---
 
