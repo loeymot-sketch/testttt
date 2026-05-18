@@ -218,6 +218,25 @@
                             {{ order.total_currency_price }}
                         </h5>
                     </div>
+                    <!-- [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier
+                         loyalty redeem CTA. Visible only when the order is
+                         not yet paid AND not in a terminal state. Pressing
+                         it opens a Vue overlay (no frozen-zone touch).
+                         Permission gate `pos.redeem-loyalty` is enforced
+                         server-side by the FormRequest. -->
+                    <div
+                        v-if="order.id && canShowLoyaltyRedeem"
+                        class="flex items-center justify-end p-3 pt-0"
+                    >
+                        <button
+                            type="button"
+                            class="text-xs px-3 py-1.5 rounded border border-primary text-primary hover:bg-primary hover:text-white transition"
+                            data-testid="pos-loyalty-redeem-open"
+                            @click="loyaltyRedeemOpen = true"
+                        >
+                            {{ $t('pos.loyalty.redeem.title') }}
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="col-12">
@@ -259,6 +278,16 @@
     </div>
 
     <PosOrderReceiptComponent :order="order" />
+
+    <!-- [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Cashier loyalty redeem
+         modal — separate Vue overlay outside the FROZEN pos-wizard.js.
+         Opens via the CTA above ; emits 'applied' to refresh order totals. -->
+    <PosLoyaltyRedeemModal
+        :open="loyaltyRedeemOpen"
+        :order-id="order.id"
+        @close="loyaltyRedeemOpen = false"
+        @applied="onLoyaltyRedeemApplied"
+    />
 </template>
 <script>
 import LoadingComponent from "../components/LoadingComponent";
@@ -276,6 +305,12 @@ import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import statusEnum from "../../../enums/modules/statusEnum";
 import PosOrderMapComponent from "./PosOrderMapComponent";
+// [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier loyalty redeem modal
+// (Option B per plans/LOCK_POS_LOYALTY_REDEEM_UI_2026-05-18.md). Mounted
+// here because PosOrderShowComponent is the canonical detail view ; the
+// modal itself is server-permission-gated so it's safe to render the CTA
+// unconditionally — backend will 403 unauthorized cashiers.
+import PosLoyaltyRedeemModal from "../pos/PosLoyaltyRedeemModal.vue";
 
 export default {
     name: "PosOrderShowComponent",
@@ -286,7 +321,8 @@ export default {
         PaginationTextComponent,
         LoadingComponent,
         PosOrderReceiptComponent,
-        PosOrderMapComponent
+        PosOrderMapComponent,
+        PosLoyaltyRedeemModal,
     },
     directives: {
         print
@@ -310,6 +346,8 @@ export default {
             payment_status: null,
             order_status: null,
             delivery_boy: null,
+            // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Loyalty redeem modal flag.
+            loyaltyRedeemOpen: false,
         }
     },
     mounted() {
@@ -343,6 +381,24 @@ export default {
         },
         deliveryBoys: function () {
             return this.$store.getters["deliveryBoy/lists"];
+        },
+        // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] CTA visibility :
+        // only allowed when the order is not yet paid and not in a terminal
+        // state. Server-side `pos.redeem-loyalty` permission gate is the
+        // authoritative defense — this computed only hides the visual entry
+        // point for orders where redeem would always 409.
+        canShowLoyaltyRedeem: function () {
+            const o = this.order || {};
+            if (!o.id) return false;
+            if (o.payment_status === paymentStatusEnum.PAID) return false;
+            const terminal = [
+                orderStatusEnum.DELIVERED,
+                orderStatusEnum.CANCELED,
+                orderStatusEnum.REJECTED,
+                orderStatusEnum.RETURNED,
+            ];
+            if (terminal.includes(o.status)) return false;
+            return true;
         },
         orderStatusObject: function () {
             const list = [
@@ -397,6 +453,23 @@ export default {
         },
     },
     methods: {
+        // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] On successful redemption,
+        // refresh the order so subtotal/discount/total + loyalty_customer_code
+        // reflect the new state. Then close the modal.
+        onLoyaltyRedeemApplied: function () {
+            this.loyaltyRedeemOpen = false;
+            this.loading.isActive = true;
+            this.$store
+                .dispatch('posOrder/show', this.$route.params.id)
+                .then((res) => {
+                    this.payment_status = res.data.data.payment_status;
+                    this.order_status = res.data.data.status;
+                    this.loading.isActive = false;
+                })
+                .catch(() => {
+                    this.loading.isActive = false;
+                });
+        },
         statusClass: function (status) {
             return appService.statusClass(status);
         },

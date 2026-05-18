@@ -146,7 +146,31 @@
         "split_empty_hint": "أضف شريحة للبدء.",
         "split_not_balanced": "الدفع المتعدد غير متوازن (المتبقي).",
         "terminal_required_card": "حدّد محطة الدفع قبل إتمام الدفع بالبطاقة.",
-        "no_terminal_configured_hint": "لا توجد محطة دفع نشطة لهذا الفرع. أضف محطة من الإعدادات ← محطات الدفع قبل قبول الدفع بالبطاقة."
+        "no_terminal_configured_hint": "لا توجد محطة دفع نشطة لهذا الفرع. أضف محطة من الإعدادات ← محطات الدفع قبل قبول الدفع بالبطاقة.",
+        "loyalty": {
+            "redeem": {
+                "title": "تطبيق خصم الولاء",
+                "balance": "الرصيد الحالي",
+                "input_code": "رمز الولاء أو الهاتف",
+                "input_points": "النقاط المراد استبدالها",
+                "apply": "تطبيق",
+                "cancel": "إلغاء",
+                "close": "إغلاق",
+                "success": "تم تطبيق الخصم: -{amount}",
+                "rate_hint": "{rate} نقطة = 1 €",
+                "preview_discount": "الخصم المتوقع",
+                "errors": {
+                    "insufficient_balance": "الرصيد غير كافٍ لهذا الخصم.",
+                    "customer_not_found": "رمز الولاء غير موجود.",
+                    "already_redeemed": "تم تطبيق خصم ولاء بالفعل على هذا الطلب.",
+                    "order_already_finalized": "هذا الطلب مدفوع أو مغلق — لا يمكن تطبيق الخصم.",
+                    "points_not_multiple": "يجب أن تكون النقاط مضاعفًا لـ {rate}.",
+                    "discount_exceeds_subtotal": "مبلغ الخصم يتجاوز المجموع الفرعي.",
+                    "permission_denied": "ليس لديك صلاحية تطبيق خصم الولاء.",
+                    "generic": "تعذّر تطبيق الخصم."
+                }
+            }
+        }
     },
     "menu": {
         "dashboard": "لوحة القيادة",

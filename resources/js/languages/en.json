@@ -249,6 +249,30 @@
             "mark_delivered": "Marquer servie",
             "delivered_short": "Servie",
             "now": "à l'instant"
+        },
+        "loyalty": {
+            "redeem": {
+                "title": "Apply loyalty discount",
+                "balance": "Current balance",
+                "input_code": "Loyalty code or phone",
+                "input_points": "Points to redeem",
+                "apply": "Apply",
+                "cancel": "Cancel",
+                "close": "Close",
+                "success": "Discount applied: -{amount}",
+                "rate_hint": "{rate} points = €1",
+                "preview_discount": "Estimated discount",
+                "errors": {
+                    "insufficient_balance": "Insufficient balance for this discount.",
+                    "customer_not_found": "Loyalty code not found.",
+                    "already_redeemed": "A loyalty discount has already been applied to this order.",
+                    "order_already_finalized": "This order is already paid or closed — discount unavailable.",
+                    "points_not_multiple": "Points must be a multiple of {rate}.",
+                    "discount_exceeds_subtotal": "Discount amount exceeds the subtotal.",
+                    "permission_denied": "You don't have permission to apply a loyalty discount.",
+                    "generic": "Unable to apply the discount."
+                }
+            }
         }
     },
     "menu": {

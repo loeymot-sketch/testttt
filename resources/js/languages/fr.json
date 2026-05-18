@@ -249,6 +249,30 @@
             "mark_delivered": "Marquer comme livré",
             "delivered_short": "Livré",
             "now": "à l'instant"
+        },
+        "loyalty": {
+            "redeem": {
+                "title": "Appliquer une réduction fidélité",
+                "balance": "Solde actuel",
+                "input_code": "Code fidélité ou téléphone",
+                "input_points": "Points à utiliser",
+                "apply": "Appliquer",
+                "cancel": "Annuler",
+                "close": "Fermer",
+                "success": "Réduction appliquée : -{amount}",
+                "rate_hint": "{rate} points = 1 €",
+                "preview_discount": "Réduction prévue",
+                "errors": {
+                    "insufficient_balance": "Solde insuffisant pour cette réduction.",
+                    "customer_not_found": "Code fidélité introuvable.",
+                    "already_redeemed": "Une réduction fidélité a déjà été appliquée à cette commande.",
+                    "order_already_finalized": "Cette commande est déjà payée ou clôturée — réduction impossible.",
+                    "points_not_multiple": "Les points doivent être un multiple de {rate}.",
+                    "discount_exceeds_subtotal": "Le montant de la réduction dépasse le sous-total.",
+                    "permission_denied": "Vous n'avez pas le droit d'appliquer une réduction fidélité.",
+                    "generic": "Impossible d'appliquer la réduction."
+                }
+            }
         }
     },
     "menu": {
