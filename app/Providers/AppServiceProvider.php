@@ -129,6 +129,27 @@ class AppServiceProvider extends ServiceProvider
                 );
             }
 
+            // [Foundation Audit F-3 P0 / 2026-05-18] Idempotency middleware MUST
+            // be enabled in production. Default in config/idempotency.php is
+            // false for safe dev/CI roll-out (per PLAN_P11 §2). In production,
+            // missing the IDEMPOTENCY_MIDDLEWARE_ENABLED env var silently
+            // disables 23 idempotency-required routes (cash-drawer open/close,
+            // refund-with-counter-entry, change-status × 6, kiosk paid order
+            // confirm, etc — see config/idempotency.php `required_routes`).
+            // Duplicate POST retries would become double-charges,
+            // double-drawer-opens, double-status-changes. Same defensive
+            // pattern as POS_SIMULATION_HARDWARE / APP_DEBUG / BROADCAST_DRIVER
+            // guards above.
+            if (! (bool) config('idempotency.enabled', false)) {
+                throw new \RuntimeException(
+                    'IDEMPOTENCY_MIDDLEWARE_ENABLED must be true in production '
+                    . '(NF525-adjacent: prevents double-execute on 23 mutation routes '
+                    . '— cash-drawer, refunds, status changes, payment confirms). '
+                    . 'Set IDEMPOTENCY_MIDDLEWARE_ENABLED=true in your .env file '
+                    . 'then run `php artisan config:cache`.'
+                );
+            }
+
             if (in_array(config('broadcasting.default'), [null, 'null'], true)) {
                 throw new \RuntimeException(
                     'BROADCAST_DRIVER must be explicitly set in production (expected: pusher|redis). '
