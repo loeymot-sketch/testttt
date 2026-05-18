@@ -273,7 +273,7 @@
         "o_s_s": "Suivi client",
         "home": "Accueil",
         "kiosk_machines": "Bornes",
-        "": "Menu",
+        "label": "Menu",
         "addons": "Suppléments",
         "addresses": "Adresses",
         "administrators": "Administrateurs",
@@ -642,7 +642,6 @@
         "kds_group_other": "Choix",
         "ws_session_invalid_text": "Session expirée — votre session est terminée. Rechargez la page.",
         "ws_session_invalid_action": "Recharger",
-        "": "Libellé",
         "about_our_privacy": "À propos de notre politique de confidentialité",
         "accept": "Accepter",
         "account": "Compte",
@@ -1380,7 +1379,7 @@
             "gluten_free": "Sans gluten",
             "spicy": "Piquant",
             "under_10": "Moins de 10€",
-            "": "Tous"
+            "all": "Tous"
         },
         "badges": {
             "chef_pick": "Coup de cœur",
