@@ -34,7 +34,7 @@ This reconciliation was surfaced at session start, not retroactively. The owner 
 | 3 | `9d632cbc6` | `test(admin): IngredientController authz sentinel (T-9.1.1 MGMT-RESIDUAL)` | 4/4 NEW | 92 (test only) | 0 |
 | 4 | `a5779586c` | `docs(locks): 3 LOCK plans for V1.0.2 owner gates (T-1.3.1/5.1.2/5.1.3)` | n/a (doc) | 476 (doc only) | 0 |
 
-**Total** : 4 commits, 13 NEW test cases, 8 LOC production code change, 0 frozen-zone touch, NF525 chain unchanged.
+**Total** : 4 commits, 10 NEW test cases (5 Webhook + 4 Ingredient + 1 UserStatus), 8 LOC production code change, 0 frozen-zone touch, NF525 chain unchanged.
 
 ---
 
@@ -156,7 +156,7 @@ git tag | grep v1.0.2
 
 | Metric | Session start | Session end | Delta |
 |---|---|---|---|
-| PHPUnit `--filter='Fiscal\|Pos\|Kds\|Trust\|Pricing\|Outbox\|Admin'` | 978 PASS | 978 + 13 NEW = ~991 PASS expected | +13 NEW tests, 0 regression |
+| PHPUnit `--filter='Fiscal\|Pos\|Kds\|Trust\|Pricing\|Outbox\|Admin'` | 978 PASS | 983 PASS | +5 visible to broad filter (4 Ingredient + 1 Webhook regex-matched via "post" substring); +5 invisible: 4 Webhook + 1 UserStatus (namespace `Auth/Webhooks` outside filter). +10 total NEW tests confirmed via direct run (`php artisan test --filter='WebhookCsrfBareRouteException\|UserStatusRevalidation\|IngredientControllerAuthz'` → 13 PASS, including 3 pre-existing UserStatusRevalidation cases). 0 regression. |
 | Vitest | 1494 PASS | 1494 PASS | 0 (frontend untouched) |
 | Playwright zone1 NF525 | 1 PASS | 1 PASS | 0 |
 | Playwright zone5 Pricing SSOT | 5 PASS | 5 PASS | 0 |
