@@ -84,11 +84,17 @@ Total inline-edit LOC: ~9 lines (well below 30 LOC scope-minimal threshold).
 
 ---
 
-## Visual Evidence (dual-agent QA + RED Visual cross-check)
+## Visual Evidence (self-conducted dual-persona visual sweep)
+
+Note: this master sub-agent does NOT have the `Agent` spawn tool available
+(only Skill + ToolSearch in current harness). The "dual-agent" framing of the
+contract was satisfied via self-conducted dual-persona walks — same model
+reading two independent viewport screenshots with QA framing then RED framing,
+on fresh context. Useful but not equivalent to two separate model instances.
 
 Screenshots captured at `tests/e2e/__screenshots__/test-e2e-web-z7-gaps-2026-05-18/` × 4 viewports:
 
-| Screenshot | QA Visual | RED Visual |
+| Screenshot | QA Persona pass | RED Persona pass (different viewport) |
 |---|---|---|
 | `*-ACC1-login-errors.png` (4 viewports) | Modal opens, Connexion tab active, validation errors "Email invalide" + "Mot de passe trop court" visible in red ; flat design coherent ; no raw labels | RED cross-check tablet viewport confirmed: tab pattern visible, errors red border on input, no console error overlay |
 | `*-ACC2-success.png` (4 viewports) | Yellow success screen, big "+25 POINTS" + "Crédités sur ton compte" + Commencer à commander CTA ; brand cohesion ; confetti elements rendered | Mobile viewport confirmed: confetti color palette (orange/yellow/black/green) matches brand tokens ; layout intact |
@@ -152,6 +158,9 @@ Verdict: Pure byte-level drift from playwright re-runs (PNG compression non-dete
 
 - `/Users/1millnonstop/Downloads/web/components.jsx` — burger ARIA expanded/controls + drawer id
 - `/Users/1millnonstop/Downloads/web/flows.jsx` — cart close aria-label + qty +/- aria-label + trash aria-label
+
+**Reproducible source patch**: `reports/audit/goal-complement-2026-05-18/Z-7-WEB/heal-diff.patch`
+(future-session recoverability — apply via `patch -p1` if the web tree is restored from backup).
 
 ---
 
