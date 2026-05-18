@@ -23,6 +23,8 @@ module.exports = defineConfig({
     'tests/e2e/test-e2e-mobile-design-full-wave-*.spec.js',
     'tests/e2e/test-e2e-mobile-design-perfect-wave-*.spec.js',
     'tests/e2e/test-e2e-mobile-realignment-*.spec.js', // [MOBILE-REALIGNMENT 2026-05-16] cycle realignment Bols composer + data parity
+    'tests/e2e/test-real-e2e-pagebypage-*.spec.js', // [REAL-E2E 2026-05-18] page-by-page visual capture
+    'tests/e2e/test-real-e2e-round2-*.spec.js', // [REAL-E2E R2 2026-05-18] extended coverage
   ],
   workers: 1,                     // localStorage shared state per worker
   timeout: 90_000,

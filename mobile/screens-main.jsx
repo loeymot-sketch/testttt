@@ -658,7 +658,7 @@ function ScreenCart({ go, cart, setCart }) {
         <div style={{ margin: '20px 20px 0', padding: 16, background: 'var(--yellow)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--ink)', color: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><I.Gift size={20}/></div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>+{Math.round(total)} pts gagnés sur cette commande</div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>+{Math.round(total || 0)} pts gagnés sur cette commande</div>
             <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>Plus que 153 pts pour ton burger gratuit</div>
           </div>
         </div>
@@ -1343,7 +1343,8 @@ function PromoCodeRow({ onApply }) {
   const apply = () => {
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) return;
-    if (trimmed === 'WELCOME10' || trimmed === 'CAYENNE') {
+    // [FULL-FLOW HEAL 2026-05-18 P0-2] Unify promo codes with web (WELCOME10 + CAYENNE + CAYENNE10)
+    if (trimmed === 'WELCOME10' || trimmed === 'CAYENNE' || trimmed === 'CAYENNE10') {
       setStatus('applied');
       setAppliedCode(trimmed);
       if (typeof onApply === 'function') onApply(trimmed);
