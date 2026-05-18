@@ -237,7 +237,10 @@ export default {
             return AGE_ELAPSED_COLOR[this.bucket] || AGE_ELAPSED_COLOR.fresh;
         },
         elapsedLabelColor() {
-            return this.bucket === 'fresh' ? '#9CA3AF' : this.elapsedColor;
+            // KDS-R1-02 heal: fixed dark color always (9.5:1 on white, WCAG AA-large) —
+            // bucket color stays on the BIG elapsed number for visual hierarchy.
+            // Previous bucket-tinted label hit 1.94:1 (axe-confirmed FAIL).
+            return '#374151';
         },
         borderColor() {
             // Allergen overrides age — orange regardless of how old.
@@ -448,7 +451,12 @@ export default {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
+    gap: 12px; /* KDS-R1-01 heal: prevent queue + elapsed overlap on long times */
     padding: 2px 16px 10px;
+}
+.kds-card__queue,
+.kds-card__elapsed-wrap {
+    flex-shrink: 0; /* KDS-R1-01 heal: never compress, never overlap */
 }
 .kds-card__queue {
     color: #111827;
@@ -476,7 +484,7 @@ export default {
     font-weight: 700;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    opacity: 0.75;
+    /* KDS-R1-02 heal: removed opacity:0.75 which dropped contrast below WCAG AA. */
 }
 .kds-card__elapsed {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
