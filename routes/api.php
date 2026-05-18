@@ -60,6 +60,7 @@ use App\Http\Controllers\Frontend\ProfileController;
 use App\Http\Controllers\Frontend\SettingController;
 use App\Http\Controllers\Admin\ChefAddressController;
 use App\Http\Controllers\Admin\CountryCodeController;
+use App\Http\Controllers\Admin\DeliveryBoyCashSessionController;
 use App\Http\Controllers\Admin\DeliveryBoyController;
 use App\Http\Controllers\Admin\DiningTableController;
 use App\Http\Controllers\Admin\AvailabilityController;
@@ -619,6 +620,34 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::delete('/address/{deliveryBoy}/{address}', [DeliveryBoyAddressController::class, 'destroy']);
     });
 
+    // [V1.0.2-LIVREUR-CASH] Delivery boy cash session — open/close/reconcile a
+    // livreur's float at the start/end of a shift. Mirrors the POS cash-drawer
+    // session pattern (L815) but scoped to the delivery_boy_id rather than the
+    // cashier user_id. Mutations carry idempotency middleware so retries from
+    // flaky tablets don't open multiple sessions for the same livreur.
+    // Controller: app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php
+    // BUILD-1 (round-4 brief 2026-05-18).
+    Route::prefix('delivery-boy/cash-session')->name('delivery-boy.cash-session.')->group(function () {
+        Route::get('/', [DeliveryBoyCashSessionController::class, 'index'])
+            ->middleware(['permission:settings'])
+            ->name('index');
+        Route::get('/{session}', [DeliveryBoyCashSessionController::class, 'show'])
+            ->whereNumber('session')
+            ->middleware(['permission:settings'])
+            ->name('show');
+        Route::post('/open', [DeliveryBoyCashSessionController::class, 'open'])
+            ->middleware(['permission:settings', 'idempotency'])
+            ->name('open');
+        Route::post('/{session}/close', [DeliveryBoyCashSessionController::class, 'close'])
+            ->whereNumber('session')
+            ->middleware(['permission:settings', 'idempotency'])
+            ->name('close');
+        Route::post('/{session}/reconcile', [DeliveryBoyCashSessionController::class, 'reconcile'])
+            ->whereNumber('session')
+            ->middleware(['permission:settings', 'idempotency'])
+            ->name('reconcile');
+    });
+
     Route::prefix('coupon')->name('coupon.')->group(function () {
         Route::get('/', [CouponController::class, 'index']);
         Route::get('/show/{coupon}', [CouponController::class, 'show']);
@@ -853,8 +882,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('show/{order}', [PosOrderController::class, 'show']);
         Route::delete('/{order}', [PosOrderController::class, 'destroy']);
         Route::get('/export', [PosOrderController::class, 'export']);
+        // [V1.0.2-IDEMP-01] Idempotency added on change-status — see
+        // reports/test-e2e/goal-2026-05-18/round-4/build-5-routes-evidence.md.
+        // Status A→B transitions: middleware uses payload hash so A→B vs A→A
+        // produce different keys; replay of identical A→B is safe no-op via
+        // controller state-machine guards.
         Route::post('/change-status/{order}', [PosOrderController::class, 'changeStatus'])
-            ->middleware('throttle:pos-order-update');
+            ->middleware(['throttle:pos-order-update', 'idempotency'])
+            ->name('change-status');
         Route::post('/change-payment-status/{order}', [PosOrderController::class, 'changePaymentStatus'])
             ->middleware(['throttle:pos-order-update', 'idempotency']);
         Route::post('/select-delivery-boy/{order}', [PosOrderController::class, 'selectDeliveryBoy'])
@@ -875,7 +910,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::delete('/{order}', [OnlineOrderController::class, 'destroy']);
         Route::get('/export', [OnlineOrderController::class, 'export']);
         Route::get('/pdf', [OnlineOrderController::class, 'pdf']);
-        Route::post('/change-status/{order}', [OnlineOrderController::class, 'changeStatus']);
+        // [V1.0.2-IDEMP-01] idempotency on online-order change-status — see L856 comment.
+        Route::post('/change-status/{order}', [OnlineOrderController::class, 'changeStatus'])
+            ->middleware('idempotency')
+            ->name('change-status');
         Route::post('/change-payment-status/{order}', [OnlineOrderController::class, 'changePaymentStatus'])->middleware('idempotency');
         Route::post('/select-delivery-boy/{order}', [OnlineOrderController::class, 'selectDeliveryBoy'])->middleware('idempotency');
     });
@@ -885,7 +923,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/show/{order}', [AdminTableOrderController::class, 'show']);
         Route::delete('/{order}', [AdminTableOrderController::class, 'destroy']);
         Route::get('/export', [AdminTableOrderController::class, 'export']);
-        Route::post('/change-status/{order}', [AdminTableOrderController::class, 'changeStatus']);
+        // [V1.0.2-IDEMP-01] idempotency on table-order change-status — see L856 comment.
+        Route::post('/change-status/{order}', [AdminTableOrderController::class, 'changeStatus'])
+            ->middleware('idempotency')
+            ->name('change-status');
         Route::post('/change-payment-status/{order}', [AdminTableOrderController::class, 'changePaymentStatus'])->middleware('idempotency');
         Route::post('/token-create/{order}', [AdminTableOrderController::class, 'tokenCreate']);
     });
@@ -1004,7 +1045,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     });
     Route::prefix('kds-order')->name('kdsOrder.')->group(function () {
         Route::get('/', [KitchenDisplaySystemController::class, 'index']);
-        Route::post('/change-status/{order}', [KitchenDisplaySystemController::class, 'changeStatus']);
+        // [V1.0.2-IDEMP-01] idempotency on kds change-status — see L856 comment.
+        // KDS already uses OrderStateMachine guards so replay is provably no-op
+        // when target == current (StateMachine throws InvalidTransition on dup).
+        Route::post('/change-status/{order}', [KitchenDisplaySystemController::class, 'changeStatus'])
+            ->middleware('idempotency')
+            ->name('change-status');
         Route::get('/items', [KitchenDisplaySystemController::class, 'orderItems']);
         // [F-03 / Lot 1.C] Adaptive polling fallback when WebSocket is degraded.
         Route::get('/sync', [KdsSyncController::class, 'sync']);
@@ -1129,7 +1175,10 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
         Route::post('/quote', [PosController::class, 'quote'])->middleware('throttle:kiosk-orders');
         Route::post('/', [FrontendOrderController::class, 'store'])->middleware(['throttle:kiosk-orders', 'idempotency']);
-        Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus']);
+        // [V1.0.2-IDEMP-01] idempotency on frontend order change-status — see L856 comment.
+        Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus'])
+            ->middleware('idempotency')
+            ->name('change-status');
         // [BORNE-WINDOWS] Confirm card payment from physical terminal — stores transaction_id
         Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm'])->middleware('idempotency');
     });
@@ -1206,7 +1255,10 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/', [FrontendDeliveryBoyOrderController::class, 'index']);
         Route::get('/show/{order}', [FrontendDeliveryBoyOrderController::class, 'show']);
         Route::get('/count', [FrontendDeliveryBoyOrderController::class, 'orderCount']);
-        Route::post('/change-status/{order}', [FrontendDeliveryBoyOrderController::class, 'deliveryBoyOrderChangeStatus']);
+        // [V1.0.2-IDEMP-01] idempotency on delivery-boy change-status — see L856 comment.
+        Route::post('/change-status/{order}', [FrontendDeliveryBoyOrderController::class, 'deliveryBoyOrderChangeStatus'])
+            ->middleware('idempotency')
+            ->name('change-status');
     });
 
     // [SEC-CRIT FIX] Loyalty routes now require auth:sanctum — previously fully unauthenticated
