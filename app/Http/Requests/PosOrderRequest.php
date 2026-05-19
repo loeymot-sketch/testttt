@@ -6,6 +6,7 @@ use App\Enums\Activity;
 use App\Enums\Ask;
 use App\Enums\OrderType;
 use App\Enums\PosPaymentMethod;
+use App\Http\Requests\Concerns\ValidatesAddonRoles;
 use App\Http\Requests\Concerns\ValidatesOrderItemVariations;
 use App\Models\PaymentTerminal;
 use App\Rules\ValidJsonOrder;
@@ -15,6 +16,7 @@ use Smartisan\Settings\Facades\Settings;
 
 class PosOrderRequest extends FormRequest
 {
+    use ValidatesAddonRoles;
     use ValidatesOrderItemVariations;
 
     protected function prepareForValidation(): void
@@ -240,6 +242,10 @@ class PosOrderRequest extends FormRequest
             }
 
             $this->validateOrderItemVariationsAfter($validator);
+            // [HEAL-PLAN-D.1 / RED-Z4 P0-Z4-01 2026-05-19] Bind payload
+            // addon role to DB membership. Blocks the kiosk menu-formula
+            // ratio injection on non-menu_component addons.
+            $this->validateAddonRolesAfter($validator);
         });
     }
 

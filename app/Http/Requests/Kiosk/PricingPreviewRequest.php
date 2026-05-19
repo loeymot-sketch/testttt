@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Kiosk;
 
+use App\Http\Requests\Concerns\ValidatesAddonRoles;
 use App\Http\Requests\Concerns\ValidatesOrderItemVariations;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -20,6 +21,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
  */
 class PricingPreviewRequest extends FormRequest
 {
+    use ValidatesAddonRoles;
     use ValidatesOrderItemVariations;
 
     public function authorize(): bool
@@ -69,6 +71,10 @@ class PricingPreviewRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             $this->validateOrderItemVariationsAfter($validator);
+            // [HEAL-PLAN-D.1 / RED-Z4 P0-Z4-01 2026-05-19] Bind payload
+            // addon role to DB membership. Blocks the kiosk menu-formula
+            // ratio injection on non-menu_component addons.
+            $this->validateAddonRolesAfter($validator);
         });
     }
 

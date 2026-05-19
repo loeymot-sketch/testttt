@@ -7,6 +7,7 @@ use App\Enums\Ask;
 use App\Enums\OrderType;
 use App\Enums\Status;
 use App\Exceptions\Delivery\GeocodeUnavailableException;
+use App\Http\Requests\Concerns\ValidatesAddonRoles;
 use App\Http\Requests\Concerns\ValidatesOrderItemVariations;
 use App\Models\KioskMachine;
 use App\Rules\ValidJsonOrder;
@@ -18,6 +19,7 @@ use Laravel\Sanctum\TransientToken;
 
 class OrderRequest extends FormRequest
 {
+    use ValidatesAddonRoles;
     use ValidatesOrderItemVariations;
 
     /**
@@ -255,6 +257,10 @@ class OrderRequest extends FormRequest
             }
 
             $this->validateOrderItemVariationsAfter($validator);
+            // [HEAL-PLAN-D.1 / RED-Z4 P0-Z4-01 2026-05-19] Bind payload
+            // addon role to DB membership. Blocks the kiosk menu-formula
+            // ratio injection on non-menu_component addons.
+            $this->validateAddonRolesAfter($validator);
         });
     }
 
