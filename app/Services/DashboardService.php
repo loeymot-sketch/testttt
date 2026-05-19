@@ -438,14 +438,57 @@ class DashboardService
                 ];
             }
 
-            $web = $orders->where('source', \App\Enums\Source::WEB)->count();
-            $app = $orders->where('source', \App\Enums\Source::APP)->count(); // Utilisé pour le kiosk
-            $pos = $orders->where('source', \App\Enums\Source::POS)->count();
+            // [WG-3 WF-3 P1 2026-05-19] WHY kiosk orders mis-bucket as Web:
+            //
+            //   The kiosk frontend posts `source = Source::WEB (=5)` because
+            //   the kiosk runs the same web shell. Prior code key'd kiosk on
+            //   `source == Source::APP (=10)` — an assumption that has NEVER
+            //   matched the actual production payload. Result: ~152 kiosk
+            //   orders silently mis-bucket as "Web" in admin analytics.
+            //   (Sync/KDS unaffected — they already discriminate via
+            //   `source_surface` + `order_type`, not the legacy int.)
+            //
+            // FIX (surgical, back-compat safe):
+            //
+            //   Promote `source_surface = 'kiosk'` as the canonical positive
+            //   kiosk marker. This is the explicit string tag that
+            //   FrontendOrderService writes for every kiosk order created
+            //   since 2026-03-26 (see also KDSOrderDetailsResource which
+            //   states "KDS lane bucketing must use source_surface"). All
+            //   other buckets keep keying on the legacy `source` int so the
+            //   long-tail (DELIVERY orders auto-tagged source_surface=
+            //   'delivery', pre-migration historical rows, web/POS rows with
+            //   source_surface='web'|'pos') keep counting exactly as before.
+            //
+            //   - Kiosk: source_surface='kiosk'  OR  source=Source::APP (legacy)
+            //   - Web:   source=Source::WEB  AND  source_surface != 'kiosk'
+            //   - POS:   source=Source::POS
+            //
+            // No frontend change. No migration. Pure backend bucketing fix.
+            $kioskCount = $orders->filter(function ($order) {
+                if ((string) ($order->source_surface ?? '') === 'kiosk') {
+                    return true;
+                }
+
+                return (int) $order->source === \App\Enums\Source::APP;
+            })->count();
+
+            $webCount = $orders->filter(function ($order) {
+                // Exclude kiosk-tagged rows (they post source=WEB but are not
+                // browser-web channel orders).
+                if ((string) ($order->source_surface ?? '') === 'kiosk') {
+                    return false;
+                }
+
+                return (int) $order->source === \App\Enums\Source::WEB;
+            })->count();
+
+            $posCount = $orders->where('source', \App\Enums\Source::POS)->count();
 
             return [
-                ['name' => 'Web', 'value' => round(($web / $total) * 100, 2)],
-                ['name' => 'Kiosk/App', 'value' => round(($app / $total) * 100, 2)],
-                ['name' => 'POS', 'value' => round(($pos / $total) * 100, 2)]
+                ['name' => 'Web', 'value' => round(($webCount / $total) * 100, 2)],
+                ['name' => 'Kiosk/App', 'value' => round(($kioskCount / $total) * 100, 2)],
+                ['name' => 'POS', 'value' => round(($posCount / $total) * 100, 2)]
             ];
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
