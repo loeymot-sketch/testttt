@@ -412,16 +412,33 @@ class SisterServicesTzAwareV2Test extends TestCase
     // ---------------------------------------------------------------------
 
     /**
-     * The cron uses whereDate('daily_reset_at', '<', $today). `daily_reset_at`
-     * is a DATE column (not TIMESTAMP), so the bug surface is the explicit
-     * resolution of "today" — pre-heal `Carbon::today()` resolved Paris-local
-     * via app.timezone but could drift if app.timezone is mutated or if the
-     * cron runs from a process inheriting UTC. Heal: `Carbon::today($appTz)`
-     * makes the Paris-local semantics explicit at the call site.
+     * [WH-3 bug_003 2026-05-19] Sentinel inverted to lock the CORRECT
+     * contract. Earlier (Wave 3c) iteration of this test enshrined a buggy
+     * UTC-shifted binding because Wave 3c heal applied TIMESTAMP-style
+     * TZ-conversion to a DATE column. Ultra-review 2026-05-18 caught it.
      *
-     * We assert the predicate binds the Paris-day Y-m-d string (UTC literal
-     * would be off-by-one on a midday-UTC test pin: Paris 2026-01-15 13:00
-     * → UTC 2026-01-15 12:00, but Paris-today still = '2026-01-15').
+     * `daily_reset_at` is a DATE column (`$table->date(...)` in migration
+     * 2026_04_15_230100). DATE columns have NO timezone semantics in MySQL —
+     * they store plain Y-m-d. The predicate
+     *   `whereDate('daily_reset_at', '<', $today)`
+     * compares Y-m-d strings lexically. Applying `setTimezone('UTC')` to a
+     * Paris-local Carbon and then `toDateString()` shifts the literal
+     * back one day (Paris 2026-01-15 00:00 → UTC 2026-01-14 23:00 →
+     * '2026-01-14'), which makes the cron at 00:05 Paris fail to pick up
+     * rows whose `daily_reset_at='2026-01-15'` (yesterday Paris) — exactly
+     * the rows the cron is supposed to refresh. Real-world impact:
+     * 86-rupture-flagged items stay unavailable one full business day
+     * longer than intended.
+     *
+     * Heal: drop the artificial UTC conversion; use
+     *   `Carbon::today(config('app.timezone'))->toDateString()`
+     * for BOTH predicate and write (one variable, no inversion possible).
+     * Mirrors the canonical pattern already in use in
+     * `AvailabilityService::decrementForOrder()` / `toggle()`.
+     *
+     * Test pin: Paris-winter 2026-01-15 12:00 UTC → Paris-day '2026-01-15'.
+     * Predicate must bind the Paris-local Y-m-d, NOT the UTC-shifted
+     * '2026-01-14'.
      */
     public function test_reset_stale_quota_command_binds_paris_today(): void
     {
@@ -448,9 +465,9 @@ class SisterServicesTzAwareV2Test extends TestCase
             return str_contains($n, 'from item_branch_availability');
         }));
 
-        // The heal pattern resolves $todayForQuery = Carbon::today($appTz)
-        // ->setTimezone('UTC'). Eloquent's whereDate grammar truncates to
-        // Y-m-d before binding (driver-specific) → bound literal '2026-01-14'.
+        // --dry-run path issues only the count SELECT, so the predicate
+        // date is the only meaningful binding captured. No write-side
+        // timestamps interfere with substring matching.
         $allBindings = [];
         foreach ($queries as $q) {
             foreach ($q['bindings'] as $b) {
@@ -464,21 +481,22 @@ class SisterServicesTzAwareV2Test extends TestCase
             'Expected at least one query against item_branch_availability.'
         );
 
-        // Heal: Paris-today = 2026-01-15. UTC-converted Paris-today start =
-        // 2026-01-14 23:00 → toDateString = '2026-01-14'.
-        // Pre-heal: Carbon::today() (Paris-local) → '2026-01-15'.
+        // Post-heal: Paris-today = '2026-01-15'. DATE column → Paris-local
+        // Y-m-d binding. This is what unblocks yesterday-Paris rows.
         $this->assertStringContainsString(
-            '2026-01-14',
+            '2026-01-15',
             $joined,
-            "ResetStaleDailyQuotaCommand MUST bind UTC-converted Paris-today (= '2026-01-14').\n"
+            "ResetStaleDailyQuotaCommand MUST bind Paris-local Y-m-d for DATE column (= '2026-01-15').\n"
             . "Captured: $joined"
         );
 
-        // Negative: Paris-local Y-m-d MUST NOT appear (pre-heal regression).
+        // Negative: UTC-shifted Y-m-d MUST NOT appear (bug_003 regression).
+        // '2026-01-14' would mean the cron skips rows with daily_reset_at
+        // = '2026-01-15' (yesterday Paris on day-N+1) which is the bug.
         $this->assertStringNotContainsString(
-            '2026-01-15',
+            '2026-01-14',
             $joined,
-            "ResetStaleDailyQuotaCommand MUST NOT bind Paris-local '2026-01-15' (pre-heal regression).\n"
+            "ResetStaleDailyQuotaCommand MUST NOT bind UTC-shifted '2026-01-14' (bug_003 regression — skips yesterday-Paris rows).\n"
             . "Captured: $joined"
         );
     }

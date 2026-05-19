@@ -33,23 +33,32 @@ class ResetStaleDailyQuotaCommand extends Command
 
     public function handle(): int
     {
-        // [Wave 3c KDS-ADV3C-03 P1 2026-05-18] Carbon::today() resolves in
-        // app.timezone='Europe/Paris' but MySQL session TZ is UTC. The cron
-        // runs at `0 0 * * *` Paris; if Carbon resolves Paris-today midnight
-        // while the SQL session interprets that literal as UTC, the cutover
-        // creates a 1-2h window where rows are reset but the `<` predicate
-        // excludes them. Heal mirrors Wave 2b pattern (148dbebce): convert
-        // Paris-local "today" to UTC for predicate binding, store the
-        // Paris-local date (Y-m-d) for the column write because
-        // `daily_reset_at` is column TYPE DATE (no TZ context — Paris-day
-        // semantics is correct since reset is a business-day concept).
-        $appTz = config('app.timezone');
-        $todayForQuery = Carbon::today($appTz)->setTimezone('UTC');
-        $todayForWrite = Carbon::today($appTz)->toDateString();
+        // [WH-3 bug_003 2026-05-19] `daily_reset_at` is a DATE column
+        // (`$table->date(...)` in migration 2026_04_15_230100). DATE columns
+        // store plain Y-m-d strings with NO timezone semantics in MySQL.
+        // The predicate `whereDate('daily_reset_at', '<', $today)` is a
+        // lexical Y-m-d compare on both driver families (MySQL + SQLite).
+        //
+        // Earlier Wave 3c heal applied TIMESTAMP-style TZ conversion
+        // (`->setTimezone('UTC')`) to the predicate side while keeping a
+        // plain Paris Y-m-d on the write side. That inversion shifted the
+        // predicate literal back one day (Paris '2026-01-15' → UTC
+        // '2026-01-14 23:00' → Eloquent formats with INSTANCE TZ → bound
+        // '2026-01-14'), so the cron at 00:05 Paris on day-N+1 failed to
+        // pick up rows whose `daily_reset_at='2026-N'` (yesterday Paris).
+        // Real-world impact: items hitting `max_daily_qty` stay
+        // 86-rupture-flagged ONE FULL BUSINESS DAY longer than intended.
+        //
+        // Heal: resolve "today" once in app.timezone (Paris) as a plain
+        // Y-m-d string and use the SAME variable for predicate AND write.
+        // Mirrors the canonical pattern in
+        // `AvailabilityService::decrementForOrder()` and ::toggle().
+        // Sentinel: tests/Feature/Sentinels/ResetStaleDailyQuotaTzCorrectSentinelTest.php
+        $today = Carbon::today(config('app.timezone'))->toDateString();
         $dryRun = (bool) $this->option('dry-run');
 
         $query = DB::table('item_branch_availability')
-            ->whereDate('daily_reset_at', '<', $todayForQuery)
+            ->whereDate('daily_reset_at', '<', $today)
             ->whereNotNull('daily_reset_at');
 
         $count = (int) $query->count();
@@ -68,13 +77,13 @@ class ResetStaleDailyQuotaCommand extends Command
 
         $updated = $query->update([
             'daily_consumed_qty' => 0,
-            'daily_reset_at'     => $todayForWrite,
+            'daily_reset_at'     => $today,
             'updated_at'         => now(),
         ]);
 
         Log::info('foodking.availability.reset_stale_quota', [
             'rows_reset' => $updated,
-            'reset_at'   => $todayForWrite,
+            'reset_at'   => $today,
         ]);
 
         $this->info("Reset {$updated} stale daily quota rows.");
