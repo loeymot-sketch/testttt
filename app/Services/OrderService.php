@@ -558,9 +558,26 @@ class OrderService
                         number_format($calculatedDiscount, 2)
                     ),
                 ]);
+
+                // [Wave M / Heal Z2 P1 — 2026-05-19] OrderCreated::dispatch moved
+                // INSIDE the closure so the DispatchableAfterCommit trait
+                // (`app/Events/Concerns/DispatchableAfterCommit.php:31-39`)
+                // engages: transactionLevel()>0 → registers via afterCommit().
+                // Net runtime semantics are equivalent to the previous
+                // outside-closure pattern (broadcast fires after commit), but
+                // they are now ENFORCED by the trait instead of by control
+                // flow — locking the rollback-safety guarantee advertised in
+                // `app/Events/OrderCreated.php:14-17`. Sentinel:
+                // `tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest`.
+                // Audit reference: RED-Z2 §B P1.
+                \App\Events\OrderCreated::dispatch($this->order);
             });
 
-            // [BUG-C1 FIX] Dispatch notifications AFTER transaction commit — prevents ghost KDS orders on rollback
+            // Notifications (mail / SMS / push queue jobs) remain post-commit
+            // via control flow — their dispatch is dropped if the closure
+            // above throws (we never reach this block). The OrderCreated
+            // broadcast event is now dispatched INSIDE the closure for
+            // afterCommit() enforcement (see Wave M heal note inside).
             try {
                 SendOrderMail::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
                 SendOrderSms::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
@@ -568,8 +585,6 @@ class OrderService
                 SendOrderGotMail::dispatch(['order_id' => $this->order->id]);
                 SendOrderGotSms::dispatch(['order_id' => $this->order->id]);
                 SendOrderGotPush::dispatch(['order_id' => $this->order->id]);
-                // [PHASE-E] Broadcast via Soketi WebSockets
-                \App\Events\OrderCreated::dispatch($this->order);
             } catch (\Exception $e) {
                 Log::warning('Notifications post-commande Web/App échouées pour order #' . $this->order->id . ': ' . $e->getMessage());
             }
@@ -1063,16 +1078,24 @@ class OrderService
                 }
 
                 $order = $this->order;
+
+                // [Wave M / Heal Z2 P1 — 2026-05-19] OrderCreated::dispatch moved
+                // INSIDE the closure so DispatchableAfterCommit engages
+                // (transactionLevel()>0 → afterCommit). On rollback the
+                // broadcast is dropped — KDS never observes a ghost order
+                // (POS cash close path). Sentinel:
+                // `tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest`.
+                \App\Events\OrderCreated::dispatch($order);
             });
-            
-            // Dispatcher notifications APRÈS transaction (hors transaction)
+
+            // Notifications (mail / SMS / push queue jobs) remain post-commit
+            // via control flow. OrderCreated broadcast was moved INSIDE the
+            // closure (Wave M heal) for trait-mediated afterCommit().
             if ($order) {
                 try {
                     SendOrderGotMail::dispatch(['order_id' => $order->id]);
                     SendOrderGotSms::dispatch(['order_id' => $order->id]);
                     SendOrderGotPush::dispatch(['order_id' => $order->id]);
-                    // [PHASE-E] Broadcast via Soketi WebSockets (no-op if BROADCAST_DRIVER=null)
-                    \App\Events\OrderCreated::dispatch($order);
                 } catch (\Exception $e) {
                     Log::warning('Notification KDS échouée pour order #' . $order->id . ': ' . $e->getMessage());
                 }
@@ -1374,15 +1397,23 @@ class OrderService
                     'resource' => 'Commande #' . $this->order->order_serial_no,
                     'details'  => sprintf('Créée via QR Code Dine-in | Total: %s€ | %s', number_format($this->order->total, 2), $discountDetail),
                 ]);
+
+                // [Wave M / Heal Z2 P1 — 2026-05-19] OrderCreated::dispatch moved
+                // INSIDE the closure so DispatchableAfterCommit engages
+                // (transactionLevel()>0 → afterCommit). On rollback the
+                // broadcast is dropped — KDS never observes a ghost order
+                // (dine-in QR path). Sentinel:
+                // `tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest`.
+                \App\Events\OrderCreated::dispatch($this->order);
             });
 
-            // [BUG-C1 FIX] Dispatch notifications AFTER transaction commit — prevents ghost KDS orders on rollback
+            // Notifications (mail / SMS / push queue jobs) remain post-commit
+            // via control flow. OrderCreated broadcast was moved INSIDE the
+            // closure (Wave M heal) for trait-mediated afterCommit().
             try {
                 SendOrderGotMail::dispatch(['order_id' => $this->order->id]);
                 SendOrderGotSms::dispatch(['order_id' => $this->order->id]);
                 SendOrderGotPush::dispatch(['order_id' => $this->order->id]);
-                // [PHASE-E] Broadcast via Soketi WebSockets
-                \App\Events\OrderCreated::dispatch($this->order);
             } catch (\Exception $e) {
                 Log::warning('Notifications post-commande Table échouées pour order #' . $this->order->id . ': ' . $e->getMessage());
             }

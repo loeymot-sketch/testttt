@@ -106,9 +106,19 @@ class OrderServicesContractTest extends TestCase
             'DB::transaction(function () use ($frontendOrder, $request, $kioskMachine',
             '$promoted = $this->frontendOrderService->finalizePaidKioskOrder'
         );
+        // [Wave M / Heal Z2 P1 + Z5 P1-C — 2026-05-19] The
+        // `use(...)` clause now also imports `&$allocFailed,
+        // &$allocFailureError` for the deferred (outside-parent-tx)
+        // fiscal_alloc_error_at flag write. Anchor on the prefix to
+        // remain robust across future additions; keep ordering
+        // assertion intact (parent tx still wraps the alloc; queue
+        // jobs still dispatch via `dispatchNewOrderSignals` after).
+        // OrderCreated::dispatch was moved INSIDE the closure (so the
+        // helper no longer dispatches it) — anchored by separate
+        // sentinel `OrderCreatedDispatchPlacementSentinelTest`.
         $this->assertSourceOrder(
             $frontendService,
-            'DB::transaction(function () use ($frontendOrder, &$promoted)',
+            'DB::transaction(function () use ($frontendOrder, &$promoted',
             '$this->dispatchNewOrderSignals($frontendOrder);'
         );
     }
