@@ -1,0 +1,112 @@
+{
+  "zone": "WI-4-ROUTES-MIDDLEWARE-SURFACE",
+  "role": "SRE",
+  "specialist_mode": "read-only audit",
+  "scope": "Rate-limiter coverage on hot endpoints + per-IP throttle effectiveness post Wave 3 P1 TrustProxies heal + named limiter definitions in RouteServiceProvider + queue/cron interlock with route surface + observability gate consistency",
+  "anchors_verified": {
+    "route_service_provider": "app/Providers/RouteServiceProvider.php:50-174 — configures 10 named limiters: api, kiosk-orders, kiosk-menu, admin-mutation, pos-quote, pos-order-create, pos-order-update, kiosk-login, oss-public, login-lockout",
+    "trust_proxies": "app/Http/Middleware/TrustProxies.php:24 — `$proxies = '*'` (Wave 3 P1 SYNC-ADV3-01 heal). Headers enabled: X-Forwarded-For + X-Forwarded-Host + X-Forwarded-Port + X-Forwarded-Proto + X-Forwarded-AWS-ELB",
+    "trust_hosts": "app/Http/Middleware/TrustHosts.php — anchored regex whitelist `^127\\.0\\.0\\.1$`, `^localhost$`, `^\\[::1\\]$`, `^0\\.0\\.0\\.0$` + allSubdomainsOfApplicationUrl()",
+    "throttle_keys": "All RateLimiter::for() lambdas observed use `$request->user()?->id ?: $request->ip()` (10 limiters confirmed)"
+  },
+  "design_assessment": "Three-tier rate limiting: (1) global API limiter `throttle:api` applied to entire api middleware group (Kernel.php:55) — 120 req/min default per user/IP (config app.api_throttle_per_minute); (2) named limiters for specific buckets: admin-mutation (300 GET, 30 POST except POS at 120, login-lockout 10/10min, kiosk-login 30/min, kiosk-orders 5/min, pos-order-create 60/min, oss-public 60/min); (3) hot-endpoint-specific throttles `throttle:N,M` inline on individual routes (forgot-password 3,60 + 5,1 stages, signup 5,1, csp-report 1000,1, etc.). The pattern is well-layered and each bucket has documented rationale (BLUE 2026-05-08 separate availability throttle, iter15-BUG-RATE-LIMIT POS lift, Sprint H5-B oss-public per-IP). Per-IP keying is correctly restored post Wave 3 P1.",
+  "throttle_coverage_audit": {
+    "hot_endpoints_with_throttle": [
+      {"endpoint": "POST /api/auth/login", "throttle": "login-lockout (10/10min by email|ip)", "verified": true},
+      {"endpoint": "POST /api/auth/kiosk-login", "throttle": "kiosk-login (30/min by username|ip)", "verified": true},
+      {"endpoint": "POST /api/auth/forgot-password", "throttle": "3,60 (3 req/60min)", "verified": true},
+      {"endpoint": "POST /api/auth/forgot-password/verify-code", "throttle": "5,1 (5/min)", "verified": true},
+      {"endpoint": "POST /api/auth/signup/otp", "throttle": "5,1", "verified": true},
+      {"endpoint": "POST /api/auth/signup/verify", "throttle": "3,5", "verified": true},
+      {"endpoint": "POST /api/auth/signup/register", "throttle": "10,1", "verified": true},
+      {"endpoint": "POST /api/admin/menu/availability/toggle*", "throttle": "60,1 (separate from admin-mutation, BLUE B3-S5 heal)", "verified": true},
+      {"endpoint": "GET/POST /api/admin/pos/quote + walk-in-customer", "throttle": "pos-quote (120/min)", "verified": true},
+      {"endpoint": "POST /api/admin/pos (create order)", "throttle": "pos-order-create (60/min) + idempotency", "verified": true},
+      {"endpoint": "POST /api/admin/pos-order/* (mutations)", "throttle": "pos-order-update (120/min)", "verified": true},
+      {"endpoint": "POST /api/admin/fiscal/z-report/{open,close}", "throttle": "10,1 (POS-9-H.3.1 fiscal-rate-limit)", "verified": true},
+      {"endpoint": "GET /api/frontend/oss-order + popular-items", "throttle": "oss-public (60/min per IP — UNAUTHENTICATED endpoint)", "verified": true},
+      {"endpoint": "POST /api/frontend/order", "throttle": "kiosk-orders (5/min) + idempotency", "verified": true},
+      {"endpoint": "POST /api/frontend/loyalty/check + redeem + qr", "throttle": "10,1 + idempotency + 30,1 (per route)", "verified": true},
+      {"endpoint": "POST /api/frontend/loyalty/scan", "throttle": "20,1", "verified": true},
+      {"endpoint": "POST /api/frontend/loyalty/register", "throttle": "5,1 (AUDIT-P0-D anti-mass-registration)", "verified": true},
+      {"endpoint": "POST /api/frontend/coupon-checking", "throttle": "10,1 (SEC-26-1 anti brute-force)", "verified": true},
+      {"endpoint": "POST /api/frontend/subscriber", "throttle": "5,1 (SEC-26-2)", "verified": true},
+      {"endpoint": "POST /api/frontend/payment/reconcile-pending", "throttle": "5,1 (AUDIT-F-008)", "verified": true},
+      {"endpoint": "POST /api/frontend/kiosk-event + /kiosk/event", "throttle": "30,1 (C6 anti-log-spam)", "verified": true},
+      {"endpoint": "POST /api/frontend/csp-report", "throttle": "1000,1 (iter15-mega-fix CSP report burst headroom)", "verified": true},
+      {"endpoint": "POST /api/table/dining-order", "throttle": "20,1 (AUDIT-P1 unauth QR)", "verified": true},
+      {"endpoint": "POST /api/admin/observability/client-metrics", "throttle": "60,1", "verified": true},
+      {"endpoint": "POST /api/admin/observability/outbox/retry-failed", "throttle": "10,1", "verified": true},
+      {"endpoint": "POST /api/admin/observability/outbox/drain-failed", "throttle": "5,1", "verified": true}
+    ],
+    "hot_endpoints_missing_throttle": [
+      {"endpoint": "POST /api/admin/pos/cash-drawer/* (open + sessions open/close/reconcile)", "current": "auth:sanctum + permission:pos + idempotency, NO route-level throttle", "rationale": "Sits inside the /admin parent group `throttle:admin-mutation` (which is 120/min for /api/admin/pos/*). Verified intact. Bucket sized at 120/min — adequate for a cashier opening/closing/reconciling 1-2 sessions per shift.", "verdict": "ADEQUATE"},
+      {"endpoint": "POST /api/admin/pos/customers/lookup-by-nfc", "current": "auth:sanctum + permission:pos via PosController constructor + admin-mutation 120/min", "verdict": "ADEQUATE"},
+      {"endpoint": "GET /api/admin/customer/show/{id} + /administrator + 4 staff types", "current": "auth:sanctum + permission:*_show + admin-mutation GET=300/min", "verdict": "ADEQUATE"},
+      {"endpoint": "POST /api/admin/delivery-boy/cash-sessions/{open,close,reconcile}", "current": "auth:sanctum + permission:delivery-boys + idempotency, NO route-level throttle", "rationale": "Inherits admin-mutation parent throttle 30/min for non-POS, 120/min for /pos/*. /delivery-boy/cash-sessions is NOT under /pos/* — inherits 30/min. Cashier doing 1 open + 1 close per shift = adequate.", "verdict": "ADEQUATE"},
+      {"endpoint": "POST /api/admin/items/{id}/photo", "current": "no throttle specified, parent admin-mutation 30/min", "rationale": "Photo upload — bursts of 5-10 photos per item edit is plausible. 30/min would 429 after 10 photo uploads. Possible mild UX impact.", "verdict": "BORDERLINE — see WI-4-R-02"}
+    ]
+  },
+  "rate_limiter_definitions_verified": {
+    "api": "Limit::perMinute(config('app.api_throttle_per_minute', 120))->by(user_id || ip)",
+    "kiosk-orders": "Limit::perMinute(config('kiosk.order_rate_limit', 5))->by('kiosk:<userKey>|<ip>') with explicit JSON 429 response",
+    "kiosk-menu": "Limit::perMinute(60)->by(user_id || ip)",
+    "admin-mutation": "GET/HEAD → Limit::perMinute(300)->by(user_id || ip); POST under /api/admin/pos/* → 120/min; else 30/min — keyed by user_id || ip",
+    "pos-quote": "Limit::perMinute(120)->by(user_id || ip)",
+    "pos-order-create": "Limit::perMinute(60)->by(user_id || ip)",
+    "pos-order-update": "Limit::perMinute(120)->by(user_id || ip)",
+    "kiosk-login": "Limit::perMinute(config('kiosk.login_rate_limit', 30))->by('kiosk:<username>|<ip>') with JSON 429",
+    "oss-public": "Limit::perMinute(60)->by(ip) — UNAUTHENTICATED, IP-keyed only (Sprint H5-B Z4-P2-05)",
+    "login-lockout": "Limit::perMinutes(config('auth.login_lockout.decay_minutes', 10), config('auth.login_lockout.max_attempts', 10))->by('<email-or-username>|<ip>')"
+  },
+  "sre_concerns": [
+    {
+      "id": "WI-4-R-01",
+      "severity": "P2",
+      "finding": "Per-IP throttle effectiveness depends on TrustProxies::$proxies='*' AND nginx forwarding X-Forwarded-For correctly. If a future deploy adds a CDN (CloudFlare, CloudFront) between client and nginx, the X-Forwarded-For chain becomes `client-ip, cf-ip` and Laravel's getClientIp() may resolve to cf-ip (the LAST entry in the chain) instead of client-ip (the FIRST). Symfony's Request::getClientIp() returns the LEFTMOST trusted entry — with $proxies='*' trusting everyone, this works correctly. But if the chain becomes 3-deep + a misconfigured intermediate, weird things happen. P2 because today's deployment is single-restaurant local with no CDN. RECOMMEND adding a sentinel `TrustProxiesIPResolutionSentinelTest` that asserts `Request::create('/', 'GET', ['REMOTE_ADDR' => '127.0.0.1', 'HTTP_X_FORWARDED_FOR' => '1.2.3.4, 5.6.7.8'])->ip()` returns '1.2.3.4' (the leftmost client IP).",
+      "files": ["app/Http/Middleware/TrustProxies.php:24-36"],
+      "remediation": "Defer to V1.0.2. Today's local deploy is safe."
+    },
+    {
+      "id": "WI-4-R-02",
+      "severity": "P3",
+      "finding": "Item photo upload POST /api/admin/items/{id}/photo lacks a dedicated throttle. Inherits admin-mutation 30/min (since it's NOT under /api/admin/pos/*). A catalog manager uploading 10 product photos triggers 429 after ~30 uploads. UX impact: admin must wait 60s between bursts. Low severity because catalog edits are infrequent ops.",
+      "files": ["routes/api.php:720"],
+      "remediation": "V1.0.2 — declare a `catalog-upload` named limiter at 60/min, or move photo upload route to /api/admin/items/* under a separate child group with higher throttle."
+    },
+    {
+      "id": "WI-4-R-03",
+      "severity": "P3",
+      "finding": "Inline route-level throttle `throttle:60,1` syntax (used 8+ times: csp-report 1000,1, signup paths 3,5/5,1/10,1, loyalty 10,1, etc.) creates ad-hoc limiters that are NOT keyed consistently. Laravel's default `throttle:60,1` keys by user_id || ip — same as the named limiters. BUT the response shape on 429 differs: named limiters with `->response(function() {...})` return a custom JSON shape (e.g., kiosk-orders returns `{message, retry_after}`), while ad-hoc `throttle:60,1` returns Laravel's default HTML 429 page. For an API consumer this is inconsistent.",
+      "files": ["routes/api.php × 8 ad-hoc throttle instances"],
+      "remediation": "V1.0.2 — promote each ad-hoc throttle to a named limiter with explicit JSON 429 response. Consistency play."
+    },
+    {
+      "id": "WI-4-R-04",
+      "severity": "P2",
+      "finding": "RateLimiter `oss-public` is the ONLY rate limiter on the unauthenticated /api/frontend/oss-order surface — 60/min/IP across BOTH endpoints (index + popular-items). A fleet of 5 wall-displays behind one NAT polls every 5-10s — ~12 req/min × 2 endpoints = 24 req/min. Fits with headroom. BUT: the SHARED `throttle:api` middleware on the api group ALSO applies (120/min/IP default). The TIGHTER (oss-public) takes effect. Verified intact. Logging of >10 distinct branch_id values from same IP within 5 min was deferred to V1.0.2 per inline doc — sweep-detection sentinel is missing.",
+      "files": ["app/Providers/RouteServiceProvider.php:145-152", "routes/api.php:1168-1173"],
+      "remediation": "V1.0.2 — implement the branch_id sweep-detection sentinel. Audit log when same IP hits >10 distinct branch_ids on /oss-order within 5min window."
+    },
+    {
+      "id": "WI-4-R-05",
+      "severity": "P3",
+      "finding": "RateLimiter `api` default uses `Limit::perMinute(perMinute)->by(user_id || ip)` — when user_id is present, the limit is shared across ALL endpoints. A cashier on POS V4 generating ~100 req/min for the menu+pricing preview workflow could starve their own /api/admin/dashboard polling for stats. Mitigated by per-bucket overrides (pos-quote 120/min, admin-mutation GET 300/min) but the parent throttle:api still applies and uses min(parent, child). Today: parent=120, admin-mutation-GET=300 → effective 120 cashier-wide. Wide enough for normal POS use.",
+      "files": ["app/Providers/RouteServiceProvider.php:54-58", "Kernel.php:55"],
+      "remediation": "No change. Document the min(parent, child) semantics in plans/PROJECT_BRAIN.md §11."
+    },
+    {
+      "id": "WI-4-R-06",
+      "severity": "P3",
+      "finding": "Idempotency middleware fail_open config (config/idempotency.php:23) — `IDEMPOTENCY_FAIL_OPEN` env defaults to false. When Redis is unhealthy AND a required-route POST arrives with X-Idempotency-Key, the middleware returns 503 (per IdempotencyKeyRepository fail mode). On a single-restaurant deployment with no Redis, this is critical for kiosk: pos-order-create + frontend order POST would 503 on every Redis hiccup. The fallback path mentions an `app-layer UNIQUE backstop` in middleware docstring (L24-25), but routing 503s upstream is a hard fail for the cashier. Production posture should be `IDEMPOTENCY_FAIL_OPEN=true` for a single-restaurant local deploy.",
+      "files": ["config/idempotency.php:23", "app/Http/Middleware/IdempotencyKeyMiddleware.php (handle method around L98+)"],
+      "remediation": "Verify .env.example posture. Production .env in single-restaurant should set IDEMPOTENCY_FAIL_OPEN=true. Add deployment doc note."
+    }
+  ],
+  "evidence": {
+    "per_ip_throttle_via_trust_proxies": "TrustProxies $proxies='*' (verified line 24) + Symfony Request::getClientIp() returns the leftmost trusted entry from X-Forwarded-For. Pre-heal (Wave 3 P0 SYNC-ADV3-01) had $proxies=null which made $request->ip() return the nginx loopback for every caller. Heal restored per-attacker keying.",
+    "limiter_count_matches_route_usage": "10 named limiters defined in RouteServiceProvider × audit reveals all 10 are referenced from api.php (verified). No phantom limiter names. No registered-but-unused limiters.",
+    "throttle_admin_mutation_split_intact": "BLUE 2026-05-08 B3-S5 fix: /menu/availability/toggle routes carry throttle:60,1 inline (NOT inside admin-mutation group). Verified routes/api.php:256-268 — sibling group with separate bucket. AvailabilityToggleSeparateThrottleSentinelTest.php exists.",
+    "fiscal_open_close_throttled": "Z-report open/close at api.php:1112+1114 carry throttle:10,1 (POS-9-H.3.1 / F-C7). Per inline doc: 'a legitimate operator opens and closes at most 1 Z per day per branch — so 10/min is still generous, yet blocks any accidental retry-storm.' Verified intact."
+  }
+}

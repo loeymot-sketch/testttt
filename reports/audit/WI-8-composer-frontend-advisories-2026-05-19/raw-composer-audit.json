@@ -1,0 +1,221 @@
+{
+    "advisories": {
+        "aws/aws-sdk-php": [
+            {
+                "advisoryId": "PKSA-4t1p-xpk2-nsss",
+                "packageName": "aws/aws-sdk-php",
+                "affectedVersions": ">=3.11.7,<=3.371.3",
+                "title": "AWS SDK for PHP has CloudFront Policy Document Injection via Special Characters",
+                "cve": null,
+                "link": "https://github.com/advisories/GHSA-27qh-8cxx-2cr5",
+                "reportedAt": "2026-03-27T19:54:58+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-27qh-8cxx-2cr5"
+                    }
+                ],
+                "severity": "high"
+            },
+            {
+                "advisoryId": "PKSA-dxyf-6n16-t87m",
+                "packageName": "aws/aws-sdk-php",
+                "affectedVersions": ">=3.0.0,<3.368.0",
+                "title": "Key Commitment Issues in S3 Encryption Clients",
+                "cve": "CVE-2025-14761",
+                "link": "https://aws.amazon.com/security/security-bulletins/AWS-2025-032/",
+                "reportedAt": "2025-12-17T20:15:00+00:00",
+                "sources": [
+                    {
+                        "name": "FriendsOfPHP/security-advisories",
+                        "remoteId": "aws/aws-sdk-php/CVE-2025-14761.yaml"
+                    },
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-x8cp-jf6f-r4xh"
+                    }
+                ],
+                "severity": "medium"
+            }
+        ],
+        "firebase/php-jwt": [
+            {
+                "advisoryId": "PKSA-y2cr-5h3j-g3ys",
+                "packageName": "firebase/php-jwt",
+                "affectedVersions": "<7.0.0",
+                "title": "php-jwt contains weak encryption",
+                "cve": "CVE-2025-45769",
+                "link": "https://github.com/advisories/GHSA-2x45-7fc3-mxwq",
+                "reportedAt": "2025-07-31T21:31:53+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-2x45-7fc3-mxwq"
+                    }
+                ],
+                "severity": "low"
+            }
+        ],
+        "laravel/framework": [
+            {
+                "advisoryId": "PKSA-8qx3-n5y5-vvnd",
+                "packageName": "laravel/framework",
+                "affectedVersions": "<10.48.29|>=11.0.0,<11.44.1|>=12.0.0,<12.1.1",
+                "title": "Laravel has a File Validation Bypass",
+                "cve": "CVE-2025-27515",
+                "link": "https://github.com/advisories/GHSA-78fx-h6xr-vch4",
+                "reportedAt": "2025-03-05T19:09:39+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-78fx-h6xr-vch4"
+                    }
+                ],
+                "severity": "medium"
+            }
+        ],
+        "league/commonmark": [
+            {
+                "advisoryId": "PKSA-21fb-n1x5-5nf7",
+                "packageName": "league/commonmark",
+                "affectedVersions": ">=2.3.0,<=2.8.1",
+                "title": "league/commonmark has an embed extension allowed_domains bypass",
+                "cve": "CVE-2026-33347",
+                "link": "https://github.com/advisories/GHSA-hh8v-hgvp-g3f5",
+                "reportedAt": "2026-03-19T19:04:24+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-hh8v-hgvp-g3f5"
+                    }
+                ],
+                "severity": "medium"
+            },
+            {
+                "advisoryId": "PKSA-2cx9-ynrq-qdk3",
+                "packageName": "league/commonmark",
+                "affectedVersions": ">=2.0.0,<=2.8.0",
+                "title": "CommonMark has DisallowedRawHtml extension bypass via whitespace in HTML tag names",
+                "cve": "CVE-2026-30838",
+                "link": "https://github.com/advisories/GHSA-4v6x-c7xx-hw9f",
+                "reportedAt": "2026-03-06T23:27:03+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-4v6x-c7xx-hw9f"
+                    }
+                ],
+                "severity": "medium"
+            }
+        ],
+        "phpseclib/phpseclib": [
+            {
+                "advisoryId": "PKSA-smrh-yx37-92ws",
+                "packageName": "phpseclib/phpseclib",
+                "affectedVersions": ">=0.1.1,<=1.0.28|>=3.0.0,<=3.0.51|>=2.0.0,<=2.0.53",
+                "title": "phpseclib has a CVE-2024-27355 mitigation bypass — OID amplification DoS in ASN1::decodeOID()",
+                "cve": "CVE-2026-44167",
+                "link": "https://github.com/advisories/GHSA-3qpq-r242-jqj7",
+                "reportedAt": "2026-05-05T21:17:57+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-3qpq-r242-jqj7"
+                    }
+                ],
+                "severity": "high"
+            },
+            {
+                "advisoryId": "PKSA-zh4j-by9m-7mz8",
+                "packageName": "phpseclib/phpseclib",
+                "affectedVersions": ">=0.1.1,<1.0.28|>=3.0.0,<3.0.51|>=2.0.0,<2.0.53",
+                "title": "phpseclib has a variable-time HMAC comparison in SSH2::get_binary_packet() using != instead of hash_equals()",
+                "cve": "CVE-2026-40194",
+                "link": "https://github.com/advisories/GHSA-r854-jrxh-36qx",
+                "reportedAt": "2026-04-10T20:58:10+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-r854-jrxh-36qx"
+                    }
+                ],
+                "severity": "low"
+            },
+            {
+                "advisoryId": "PKSA-km2b-zc3b-mjm3",
+                "packageName": "phpseclib/phpseclib",
+                "affectedVersions": ">=0.1.1,<=1.0.26|>=2.0.0,<=2.0.51|>=3.0.0,<=3.0.49",
+                "title": "phpseclib's AES-CBC unpadding susceptible to padding oracle timing attack",
+                "cve": "CVE-2026-32935",
+                "link": "https://github.com/advisories/GHSA-94g3-g5v7-q4jg",
+                "reportedAt": "2026-03-19T16:42:18+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-94g3-g5v7-q4jg"
+                    }
+                ],
+                "severity": "high"
+            }
+        ],
+        "phpunit/phpunit": [
+            {
+                "advisoryId": "PKSA-z3gr-8qht-p93v",
+                "packageName": "phpunit/phpunit",
+                "affectedVersions": ">=0,<8.5.52|>=9.0.0,<9.6.33|>=10.0.0,<10.5.62|>=11.0.0,<11.5.50|>=12.0.0,<12.5.8",
+                "title": "Unsafe Deserialization in PHPT Code Coverage Handling",
+                "cve": "CVE-2026-24765",
+                "link": "https://github.com/sebastianbergmann/phpunit/security/advisories/GHSA-vvj3-c3rp-c85p",
+                "reportedAt": "2026-01-27T05:21:14+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-vvj3-c3rp-c85p"
+                    },
+                    {
+                        "name": "FriendsOfPHP/security-advisories",
+                        "remoteId": "phpunit/phpunit/CVE-2026-24765.yaml"
+                    }
+                ],
+                "severity": "high"
+            }
+        ],
+        "psy/psysh": [
+            {
+                "advisoryId": "PKSA-4s4z-t146-6123",
+                "packageName": "psy/psysh",
+                "affectedVersions": "<=0.11.22|>=0.12.0,<=0.12.18",
+                "title": "PsySH has Local Privilege Escalation via CWD .psysh.php auto-load",
+                "cve": "CVE-2026-25129",
+                "link": "https://github.com/advisories/GHSA-4486-gxhx-5mg7",
+                "reportedAt": "2026-01-30T21:28:44+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-4486-gxhx-5mg7"
+                    }
+                ],
+                "severity": "medium"
+            }
+        ],
+        "symfony/process": [
+            {
+                "advisoryId": "PKSA-rkkf-636k-qjb3",
+                "packageName": "symfony/process",
+                "affectedVersions": ">=8.0,<8.0.5|>=7.4,<7.4.5|>=7.3,<7.3.11|>=6.4,<6.4.33|<5.4.51",
+                "title": "Symfony's incorrect argument escaping under MSYS2/Git Bash can lead to destructive file operations on Windows",
+                "cve": "CVE-2026-24739",
+                "link": "https://github.com/advisories/GHSA-r39x-jcww-82v6",
+                "reportedAt": "2026-01-28T21:28:10+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-r39x-jcww-82v6"
+                    }
+                ],
+                "severity": "medium"
+            }
+        ]
+    },
+    "abandoned": []
+}

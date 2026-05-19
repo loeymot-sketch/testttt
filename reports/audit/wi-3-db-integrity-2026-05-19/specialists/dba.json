@@ -1,0 +1,169 @@
+{
+  "specialist": "DBA",
+  "scope": "FK consistency, index coverage hot queries, UNIQUE coverage append-only tables, JSON column integrity, timestamp/date conventions",
+  "method": "Read-only grep + targeted migration/model inspection. 169 migrations + 79 models + ~83 FK declarations + 33 UNIQUE constraints inventoried.",
+  "baseline_drift_from_f1": {
+    "f1_count": "166 migrations + 78 models + 79 FKs + 31 UNIQUEs",
+    "wi3_count": "169 migrations + 79 models + 83 FK lines + 33 UNIQUEs",
+    "delta_migrations": [
+      "2026_05_18_140000_add_stock_movements_immutability_triggers.php",
+      "2026_05_19_100000_create_loyalty_qr_nonces_consumed_table.php",
+      "2026_05_19_120000_add_pos_session_id_to_loyalty_transactions.php"
+    ],
+    "delta_models": ["app/Models/Scopes/WizardProfileBranchScope.php (Scopes/ subdir grew)"],
+    "verdict": "Drift is fully explained by Wave-G/H/Loyalty heals; no orphan migrations or undocumented models."
+  },
+  "findings": [
+    {
+      "id": "DBA-001",
+      "severity": "P1",
+      "title": "audit_logs.branch_id has NO FK to branches.id",
+      "evidence_path": "database/migrations/2026_04_22_000002_create_audit_logs_table.php",
+      "evidence_line": "36-37",
+      "evidence_excerpt": "$table->unsignedBigInteger('branch_id')->nullable()->index();  // no FK\n$table->unsignedBigInteger('user_id')->nullable()->index();   // no FK",
+      "impact": "branch_id and user_id are integer-only references. NF525 audit_logs survives branch hard-delete (branches uses SoftDeletes so prod risk is theoretical), but the schema does not enforce that audit_logs.branch_id ever pointed to a real branch. Garbage writes from a buggy service layer (similar to the webhook_events.order_id case fixed in 2026_05_18_120000) would silently succeed.",
+      "mitigation_present": "AuditLogService is the sole authorised writer (per migration docblock POS-9.4.3) + immutability triggers prevent UPDATE/DELETE so bad rows are permanent.",
+      "recommendation": "Add nullable FK with nullOnDelete on audit_logs.branch_id and audit_logs.user_id, after scrub-pass like the webhook_events.order_id heal (2026_05_18_120000). Same pattern: NULL out orphan rows, then ADD CONSTRAINT. NF525-safe: nullOnDelete fires only on hard-delete and Branch hard-delete is prevented by SoftDeletes on the parent."
+    },
+    {
+      "id": "DBA-002",
+      "severity": "P1",
+      "title": "z_reports.branch_id / opened_by / closed_by have NO FK",
+      "evidence_path": "database/migrations/2026_04_22_000003_create_z_reports_table.php",
+      "evidence_line": "30, 35-36",
+      "evidence_excerpt": "$table->unsignedBigInteger('branch_id')->index();\n$table->unsignedBigInteger('opened_by')->nullable();\n$table->unsignedBigInteger('closed_by')->nullable();",
+      "impact": "Same shape as DBA-001: integer-only columns. opened_by/closed_by reference users.id implicitly. A buggy ZReportService write could persist garbage user_id values; the immutability migration 2026_05_09_160000 then makes them undeletable. Hardens audit drift between Z report aggregates and User table.",
+      "mitigation_present": "ZReportService is sole writer; cache lock + UNIQUE(branch_id, sequence_no) prevent forks.",
+      "recommendation": "Same as DBA-001: nullable FK with nullOnDelete on branch_id, opened_by, closed_by."
+    },
+    {
+      "id": "DBA-003",
+      "severity": "P1",
+      "title": "cash_movements.branch_id and cash_movements.order_id have NO FK",
+      "evidence_path": "database/migrations/2026_05_08_140100_create_cash_movements_table.php",
+      "evidence_line": "32-33",
+      "evidence_excerpt": "$table->unsignedBigInteger('branch_id');\n$table->unsignedBigInteger('order_id')->nullable();",
+      "impact": "Fiscal-adjacent append-only table (delete-trigger added in 2026_05_16_130000) but no FK enforcement. order_id orphan rows possible if Order is soft-deleted then PRUNE is run later; branch_id orphan rows possible if a Branch is force-deleted bypassing SoftDeletes. Both scenarios are off-path today, but the foundation is weaker than the cash_drawer_session_id FK (which is cascadeOnDelete).",
+      "mitigation_present": "DELETE trigger (immutability) prevents row removal; service layer is sole writer.",
+      "recommendation": "Add nullable FK + nullOnDelete on order_id; non-nullable FK + restrictOnDelete on branch_id (consistent with stock_movements post 2026_05_18_140000 heal)."
+    },
+    {
+      "id": "DBA-004",
+      "severity": "P1",
+      "title": "pending_payment_confirmations.branch_id and order_id have NO FK",
+      "evidence_path": "database/migrations/2026_05_08_120000_create_pending_payment_confirmations_table.php",
+      "evidence_line": "29-30",
+      "evidence_excerpt": "$table->unsignedBigInteger('branch_id');\n$table->unsignedBigInteger('order_id');",
+      "impact": "Reconciliation queue for TPE transactions — orphan order_id possible if Order is soft-deleted while a pending confirmation is still in-flight. UNIQUE(transaction_id) catches replay but not orphan parent.",
+      "mitigation_present": "UNIQUE(transaction_id) blocks replay; status enum + retry_count for reconciliation.",
+      "recommendation": "Add FK on order_id with restrictOnDelete (Order is SoftDelete, hard delete is forbidden anyway; FK would block force-delete attempts). Same for branch_id."
+    },
+    {
+      "id": "DBA-005",
+      "severity": "P0",
+      "title": "FreshOrderSeed command TRUNCATEs orders + order_items with no environment guard",
+      "evidence_path": "app/Console/Commands/FreshOrderSeed.php",
+      "evidence_line": "13-18",
+      "evidence_excerpt": "public function handle()\n{\n    DB::statement('SET FOREIGN_KEY_CHECKS=0;');\n    DB::table('order_items')->truncate();\n    DB::table('orders')->truncate();\n    DB::statement('SET FOREIGN_KEY_CHECKS=1;');\n    // ...\n}",
+      "impact": "TRUNCATE bypasses MySQL triggers — so audit_logs DELETE trigger does NOT fire if cleanup ever extends to those tables. Currently scoped to orders/order_items only, but the pattern of SET FOREIGN_KEY_CHECKS=0 + TRUNCATE is dangerous: order_payments cascadeOnDelete chain becomes moot, FKs lose enforcement, and audit_logs may end up pointing to dead orders. NO environment guard (`if (app()->environment('production')) throw`) — `php artisan seed:fresh-orders` against prod would wipe orders+order_items silently. Matches BRAIN deploy-doc TRUNCATE concern verbatim.",
+      "mitigation_present": "Production GRANT level (deploy doc owner-deferred) is the only mitigation, and BRAIN flags this as such.",
+      "recommendation": "Add environment guard at top of handle(): `if (app()->environment('production')) { throw new RuntimeException('seed:fresh-orders forbidden in production - TRUNCATE bypasses NF525 immutability triggers'); }`. Identical pattern to the audit_logs down() migration guard at line 70-76 of 2026_04_22_000002. Single-LOC heal, no schema change, P0 because the command is exposed via artisan."
+    },
+    {
+      "id": "DBA-006",
+      "severity": "P2",
+      "title": "loyalty_transactions UNIQUE(user_id, order_id, type) — type='earn' multi-row possible across orders, single-redemption invariant only on (user, order)",
+      "evidence_path": "database/migrations/2026_03_26_075919_add_unique_to_loyalty_transactions.php",
+      "evidence_line": "(referenced by 2026_05_19_120000 docblock line 14-17)",
+      "evidence_excerpt": "UNIQUE(user_id, order_id, type) — covers \"single redemption per order\"",
+      "impact": "UNIQUE is correct for redemption (one redeem per order). For earn rows with order_id=NULL (manual_add via admin), NULL semantics on UNIQUE in MySQL/SQLite ≥3.9 allow multiple NULL order_id rows per (user, type). Acceptable per docblock, but a per-source_surface UNIQUE could tighten further (out of V1 scope).",
+      "mitigation_present": "Service layer (PosRedemptionService etc.) enforces single redemption; DB is defence-in-depth.",
+      "recommendation": "V1: accept. V1.0.2: consider partial UNIQUE WHERE order_id IS NOT NULL + a separate idempotency_key UNIQUE for kiosk/web/mobile redeem paths."
+    },
+    {
+      "id": "DBA-007",
+      "severity": "P2",
+      "title": "JSON columns lack DB-level structural validation (composition_snapshot, allergens_snapshot, payload)",
+      "evidence_path": "database/migrations/2026_04_22_000020_add_composition_snapshot_to_order_items.php + 2026_04_18_140004_add_allergens_snapshot_to_order_items.php + 2026_04_22_000002_create_audit_logs_table.php",
+      "evidence_line": "various ->json() calls (30 occurrences across migrations)",
+      "evidence_excerpt": "$table->json('composition_snapshot')->nullable();  // no CHECK constraint, no schema validation",
+      "impact": "Eloquent casts 'array' deserialise on read. If a column is corrupted at write-time (bad encoding, truncation, version skew), read-time defensive parsing in services like OrderDetailsResource or KdsItemResource silently returns NULL or partial data. composition_snapshot is the NF525 evidence of what the customer paid for — corruption here = fiscal evidence loss.",
+      "mitigation_present": "Writers (PricingService::calculateOrder) populate via json_encode of structured PHP arrays; Eloquent throws on malformed JSON read. No prod incident logged.",
+      "recommendation": "V1.0.2: MySQL 8.0+ supports JSON CHECK constraints. Add CHECK (JSON_VALID(composition_snapshot)) and CHECK (JSON_EXTRACT(composition_snapshot, '$.template_id') IS NOT NULL) for critical columns. SQLite needs application-layer JSON schema validator. Out of V1 scope, but document the gap."
+    },
+    {
+      "id": "DBA-008",
+      "severity": "P2",
+      "title": "Missing composite index (branch_id, status, order_datetime) on orders for KDS/OSS hot queries",
+      "evidence_path": "app/Services/KitchenDisplaySystemOrderService.php:70-119 + database/migrations/2026_03_12_130000_add_performance_indexes.php",
+      "evidence_line": "list() query: whereIn(status) + where(branch_id) + whereBetween(order_datetime)",
+      "evidence_excerpt": "Existing indexes: idx_orders_branch_status (branch_id, status), idx_orders_datetime (order_datetime), idx_orders_status (status). MISSING: (branch_id, status, order_datetime) covering composite.",
+      "impact": "KDS hot list path uses three separate indexes — MySQL optimiser typically picks (branch_id, status) and filters on order_datetime via Index Range Scan + filesort. At Le Cayenne V1 single-resto scale (~200 orders/day), zero measurable impact. At V2 SaaS multi-branch scale (10k+/day per branch), p95 latency would degrade.",
+      "mitigation_present": "V1 traffic shape makes this a non-issue.",
+      "recommendation": "Defer to V1.0.2. Add `$table->index(['branch_id', 'status', 'order_datetime'], 'orders_kds_oss_hot_idx')` in a non-breaking additive migration when V2 SaaS scale is on the roadmap."
+    },
+    {
+      "id": "DBA-009",
+      "severity": "P3",
+      "title": "source_surface column on orders is not indexed",
+      "evidence_path": "database/migrations/2026_03_26_075905_add_source_surface_to_orders_table.php",
+      "evidence_line": "17",
+      "evidence_excerpt": "$table->string('source_surface', 20)->nullable()->after('loyalty_customer_code')->comment('kiosk | pos | web | mobile');",
+      "impact": "FrontendOrderService:822 does `->where('source_surface', 'kiosk')` without an index. Single-resto V1 = irrelevant. Reporting/analytics path at scale = mild degradation.",
+      "mitigation_present": "Composite indexes idx_orders_branch_status pre-filter so source_surface scan happens on a tiny subset.",
+      "recommendation": "V1.0.2 deferred. Optional non-breaking additive index on (branch_id, source_surface, created_at)."
+    },
+    {
+      "id": "DBA-011",
+      "severity": "P1",
+      "title": "cash_movements has NO idempotency UNIQUE — append-only + retry-safe assumption broken",
+      "evidence_path": "database/migrations/2026_05_08_140100_create_cash_movements_table.php + 2026_05_16_130000_add_cash_movements_delete_trigger_sqlite.php",
+      "evidence_line": "2026_05_08_140100 lines 28-51 (table definition, only id+FK+composite indexes, NO UNIQUE)",
+      "evidence_excerpt": "Schema::create('cash_movements', function (Blueprint $table) {\n    $table->id();\n    $table->unsignedBigInteger('cash_drawer_session_id');\n    $table->unsignedBigInteger('branch_id');\n    $table->unsignedBigInteger('order_id')->nullable();\n    ...\n    $table->index('cash_drawer_session_id');\n    $table->index(['branch_id', 'created_at']);\n    $table->index(['order_id', 'type']);\n    // NO unique() constraint anywhere\n});",
+      "impact": "stock_movements has UNIQUE(idempotency_key) (DBA-001 confirms) — append-only with replay defence. cash_movements is ALSO append-only (DELETE trigger 2026_05_16_130000), but lacks idempotency UNIQUE. Scenario: cashier action retries (network blip, button double-click) cause 2 cash_movements rows for the same logical event. Immutability trigger then makes the duplicate PERMANENT. Cash reconciliation (X/Z report) reads cash_movements aggregate — duplicate row inflates the cash total, breaking NF525 fiscal closure invariants. Same shape applies to order_payments (no reference/transaction_id UNIQUE).",
+      "mitigation_present": "Service layer (CashDrawerService) likely uses Cache::lock + idempotency middleware to prevent double-submit. Not a code-side replay leak today.",
+      "recommendation": "Add nullable `idempotency_key` column + UNIQUE constraint on cash_movements (mirror stock_movements pattern). Same for order_payments. Migration is additive; backfill existing rows = NULL (legacy rows not idempotency-protected). New writes MUST populate. Symmetric inverse of DBA-006 (loyalty UNIQUE present, cash UNIQUE absent)."
+    },
+    {
+      "id": "DBA-012",
+      "severity": "P2",
+      "title": "order_payments lacks UNIQUE on reference field — multi-tender retry replay possible",
+      "evidence_path": "database/migrations/2026_05_06_180000_create_order_payments_table.php",
+      "evidence_line": "20-35",
+      "evidence_excerpt": "// order_payments columns: order_id, branch_id, mode, amount, tendered, change_amount, reference, paid_at, timestamps.\n// reference field (line 28) holds 4-derniers card / ID TPE / ID ticket resto.\n// NO unique() on reference, NO unique() on (order_id, mode, reference).",
+      "impact": "If a TPE transaction's reference (card 4-last-digits + amount) is replayed (network retry), TWO rows insert. cashier sees 2x amount in receipt. No DB-level guard. Same class as DBA-011.",
+      "mitigation_present": "SplitPaymentService likely guards against this at service layer.",
+      "recommendation": "Add UNIQUE(order_id, mode, reference) WHERE reference IS NOT NULL (partial UNIQUE). MySQL 8.0+ supports functional indexes; SQLite supports partial indexes. Or use a deterministic idempotency_key column like stock_movements."
+    },
+    {
+      "id": "DBA-013",
+      "severity": "P2",
+      "title": "JSON column read-time defensive parsing — Eloquent throws on malformed JSON, no fallback (read-time)",
+      "evidence_path": "app/Models/OrderItem.php:71-76 + app/Models/AuditLog.php:38",
+      "evidence_line": "OrderItem.php:71-76 (composition_snapshot/allergens_snapshot cast 'array')",
+      "evidence_excerpt": "'composition_snapshot' => 'array', // Eloquent json_decode; throws InvalidArgumentException on malformed JSON",
+      "impact": "Write-time integrity addressed by DBA-007 (no DB-level CHECK). Read-time: Eloquent json_decode in 'array' cast THROWS on malformed JSON. A corrupt row (manual UPDATE attempting unicode injection, ASCII NUL byte, truncation) crashes the model load. KDS list / receipt generation that fetches such an OrderItem will 500 — no graceful degradation. Combined with immutability triggers, recovery requires SQL surgery.",
+      "mitigation_present": "Writes via PricingService::calculateOrder use structured PHP arrays + json_encode — corruption requires raw SQL manipulation.",
+      "recommendation": "V1.0.2: add accessor on OrderItem for composition_snapshot with try/catch fallback to empty array + Log::warning. Defensive read-time pattern for fiscal-critical JSON. Mirror for AuditLog.payload, ZReport.total_by_method, domain_events.payload."
+    },
+    {
+      "id": "DBA-010",
+      "severity": "P3",
+      "title": "fiscal_sequence_no = unsignedBigInteger (non-issue, documented for completeness)",
+      "evidence_path": "database/migrations/2026_04_22_000001_add_fiscal_sequence_no_to_orders.php",
+      "evidence_line": "28",
+      "evidence_excerpt": "$table->unsignedBigInteger('fiscal_sequence_no')->nullable()->after('total');",
+      "impact": "9.2 quintillion max — at 1M orders/day per branch = 25 billion years to overflow. Non-issue. Worth noting because the audit task asked about BIGINT overflow on long-running counters.",
+      "mitigation_present": "Type choice itself.",
+      "recommendation": "No action. Verified safe."
+    }
+  ],
+  "summary": {
+    "p0_count": 1,
+    "p1_count": 5,
+    "p2_count": 5,
+    "p3_count": 2,
+    "highest_impact_finding": "DBA-005 (FreshOrderSeed TRUNCATE no prod guard)",
+    "next_class_of_finding": "DBA-001..004 + DBA-011 + DBA-012 — append-only audit-adjacent tables consistently missing FK enforcement (audit_logs, z_reports, cash_movements, pending_payment_confirmations) OR missing idempotency UNIQUE (cash_movements, order_payments). Defence-in-depth gap; not a blocker because service layer + immutability triggers cover the gap, but a forensic-grade DB schema would constrain them."
+  }
+}

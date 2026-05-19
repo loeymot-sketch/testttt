@@ -1,0 +1,150 @@
+{
+  "specialist": "Architect",
+  "task": "WI-1 Configuration + Environment coherence — config layer composition + env var coverage matrix",
+  "mode": "read-only",
+  "scope": [
+    "config/*.php (38 files, 4408 LOC, 222 unique env() references)",
+    ".env.example (337 LOC, 71 declared keys)",
+    "docs/cloud/PRODUCTION_ENV_TEMPLATE.env.txt (201 LOC, 101 declared keys)",
+    "deploy/ansible/group_vars/vault.yml.example (53 LOC, 8 active placeholders + 4 commented forward-looking)",
+    "app/Providers/AppServiceProvider.php (10 production boot guards, lines 78-223)"
+  ],
+  "method_note": "3-perspective analysis (Architect/Security/RED) performed sequentially in-session, not via sub-agent dispatch — Agent/Task tool unavailable in this loadout. Each perspective applied independently to the same primary-source corpus.",
+  "findings": {
+    "summary": "Configuration layer is well-structured: 10 production boot guards (AppServiceProvider.php:78-223) all have matching keys in PRODUCTION_ENV_TEMPLATE — no boot-crash deploy gap. Fiscal + loyalty secrets use a lazy-validation pattern (dev_sentinels + min_secret_length) enforced at first sign rather than at boot, which is defensible. Three coverage-asymmetry gaps remain: FCM key-name drift between PROD template and config/services.php, vault.yml.example scope is narrower than the secret surface, and 2 boot-guarded vars are absent from .env.example causing dev friction. No P0 architectural failures.",
+    "boot_guards_coverage_matrix": {
+      "method": "For each of 10 production boot guards in AppServiceProvider.php:78-223, verify presence in PRODUCTION_ENV_TEMPLATE.env.txt (P0-blocker if missing), .env.example (dev-friction if missing), and vault.yml.example (deploy-completeness).",
+      "results": [
+        {"var": "POS_SIMULATION_HARDWARE", "guard_line": "AppServiceProvider.php:85-91", "in_prod_template": true, "prod_line": 124, "in_env_example": true, "env_example_line": 285, "in_vault": false, "verdict": "OK"},
+        {"var": "PAYMENT_BYPASS_MODE", "guard_line": "AppServiceProvider.php:97-103", "in_prod_template": true, "prod_line": 115, "in_env_example": true, "env_example_line": 266, "in_vault": false, "verdict": "OK"},
+        {"var": "PRINTING_BYPASS_MODE", "guard_line": "AppServiceProvider.php:104-110", "in_prod_template": true, "prod_line": 116, "in_env_example": true, "env_example_line": 267, "in_vault": false, "verdict": "OK"},
+        {"var": "APP_DEBUG", "guard_line": "AppServiceProvider.php:122-130", "in_prod_template": true, "prod_line": 9, "in_env_example": true, "env_example_line": 17, "in_vault": false, "verdict": "OK"},
+        {"var": "IDEMPOTENCY_MIDDLEWARE_ENABLED", "guard_line": "AppServiceProvider.php:143-151", "in_prod_template": true, "prod_line": 127, "in_env_example": false, "env_example_line": null, "in_vault": false, "verdict": "MINOR — dev devs setting up local env without prod template won't know default is false; documented in config/idempotency.php:14 PLAN_P11 §2 comment but not surfaced in .env.example"},
+        {"var": "LOYALTY_QR_SECRET", "guard_line": "AppServiceProvider.php:161-171", "in_prod_template": true, "prod_line": 25, "in_env_example": false, "env_example_line": null, "in_vault": false, "verdict": "MINOR — same as above; also missing from vault.yml.example secret list"},
+        {"var": "APP_URL", "guard_line": "AppServiceProvider.php:181-191", "in_prod_template": true, "prod_line": 10, "in_env_example": true, "env_example_line": 20, "in_vault": false, "verdict": "OK"},
+        {"var": "BROADCAST_DRIVER", "guard_line": "AppServiceProvider.php:193-198", "in_prod_template": true, "prod_line": 54, "in_env_example": true, "env_example_line": 139, "in_vault": false, "verdict": "OK"},
+        {"var": "QUEUE_CONNECTION", "guard_line": "AppServiceProvider.php:199-204", "in_prod_template": true, "prod_line": 45, "in_env_example": true, "env_example_line": 120, "in_vault": false, "verdict": "OK"},
+        {"var": "CACHE_DRIVER", "guard_line": "AppServiceProvider.php:214-222", "in_prod_template": true, "prod_line": 44, "in_env_example": true, "env_example_line": 98, "in_vault": false, "verdict": "OK"}
+      ],
+      "boot_crash_p0_count": 0,
+      "comment": "All 10 boot-guarded vars present in PRODUCTION_ENV_TEMPLATE — zero P0 deploy boot crash. This is the highest-asymmetry check and it PASSES."
+    },
+    "config_layer_composition": {
+      "total_config_files": 38,
+      "total_env_calls_in_config": 222,
+      "total_env_calls_outside_config": "12 unique vars (env() called directly in app/ — Laravel anti-pattern when config:cache is run)",
+      "env_calls_in_app_breakdown": {
+        "fiscal_secret_branch_override": {
+          "file": "app/Services/Fiscal/AuditLogService.php",
+          "pattern": "env('FISCAL_AUDIT_SECRET_BRANCH_'.$branchId)",
+          "severity": "P1",
+          "rationale": "Per-branch HMAC rotation feature is silently inert in production after config:cache. Global FISCAL_AUDIT_SECRET still signs (graceful fallback), so chain integrity preserved — but the per-branch rotation runbook documented in docs/FISCAL_SECRETS.md never works."
+        },
+        "currency_date_helpers": {
+          "file": "app/Libraries/AppLibrary.php (lines 24, 32, 40, 48, 56, 273-274, 276, 281, 286, 377, 405)",
+          "pattern": "env('CURRENCY_SYMBOL'), env('DATE_FORMAT'), env('TIME_FORMAT')",
+          "severity": "P2/P3",
+          "rationale": "Display-only — currency symbol / date pattern fallback to null after config:cache. Laravel's number_format() with null is graceful (outputs digits). Visible UX defect (no € symbol on POS) but not a fiscal bug. Le Cayenne V1 hardcodes EUR in admin so this is dormant."
+        },
+        "installer_redirect": {
+          "file": "app/Http/Controllers/Installer/InstallerController.php:29,135",
+          "pattern": "env('APP_URL')",
+          "severity": "P3",
+          "rationale": "Installer controller — should never run in production (post-install bootstrap). Verify route gated; if accessible, redirect target is null. Out-of-scope for V1 cloud-prep."
+        },
+        "demo_flag": {
+          "file": "app/Http/Controllers/Auth/SignupController.php:62, ItemController.php:106, SiteController.php:34, SettingResource.php:95",
+          "pattern": "env('DEMO')",
+          "severity": "P3",
+          "rationale": "DEMO is in PRODUCTION_ENV_TEMPLATE:201 (DEMO=false) — so $_ENV has it. PROD template includes it. Still anti-pattern but functionally safe."
+        }
+      },
+      "config_files_with_lazy_secret_validation": [
+        "config/fiscal.php (dev_sentinels[] + min_secret_length=32, enforced in app/Services/Fiscal/{AuditLogService:310-318, FiscalSealingService:98-106, ZReportService:709-717})",
+        "config/loyalty.php (same pattern, enforced lazily by LoyaltyQrSigner — boot guard catches empty secret only)"
+      ]
+    },
+    "set_arithmetic": {
+      "A_config_used": 222,
+      "B_env_example_declared": 71,
+      "C_prod_template_declared": 101,
+      "A_minus_C_used_but_not_in_prod_template": 140,
+      "C_minus_A_in_prod_template_but_unused_in_config": 19,
+      "C_minus_A_breakdown": {
+        "FCM_SECRET_KEY": "TYPO — config/services.php:55 reads env('FCM_SERVER_KEY'), PROD template declares FCM_SECRET_KEY",
+        "FCM_TOPIC": "TYPO — config/services.php:57 reads env('FCM_TOPIC_PREFIX'), PROD template declares FCM_TOPIC",
+        "FISCAL_AUDIT_SECRET_BRANCH_1": "USED via dynamic env() in app/Services/Fiscal/AuditLogService.php (per-branch override, see anti-pattern above)",
+        "BACKUP_S3_BUCKET": "Read by scripts/backup-foodking-daily.sh:16 (infra layer, not Laravel) — OK",
+        "BACKUP_S3_ENDPOINT": "Infra layer — OK",
+        "BACKUP_ALERT_WEBHOOK": "Infra layer (backup script) — OK",
+        "STAFF_ONLY_MODE": "Read via env() in resources/views/master.blade.php — Blade env() bypass — same anti-pattern P2",
+        "TIME_FORMAT, CURRENCY_*, DATE_FORMAT": "Read via env() in app/Libraries/AppLibrary.php — anti-pattern P2/P3",
+        "MIX_HOST, VITE_PUSHER_*": "Frontend build-time env (Laravel Mix / Vite) — OK, not Laravel runtime",
+        "FISCAL_AUDIT_SECRET_BRANCH_1": "Documented placeholder for per-branch rotation (.env.example:251)"
+      },
+      "comment_on_A_minus_C_140": "Vast majority are dev/staging-only conveniences (DEMO_*, KIOSK_*, FK_CATALOG_* feature flags, Pakistan-only EASYPAISA_*, ABLY, AWS_ENDPOINT, DYNAMODB_*, PAPERTRAIL_*, MEMCACHED_*, REDIS_URL/CLUSTER/QUEUE legacy aliases). Their absence from PROD template is INTENTIONAL — they fall back to defensive defaults in config/ files. Spot-checked 15 entries; all have safe defaults. Not a P0/P1 finding."
+    },
+    "production_env_template_completeness": {
+      "verdict": "GREEN for V1 Le Cayenne single-domain deploy",
+      "strengths": [
+        "Comments tagged with audit-finding IDs (RED-team Wave 5I C.1, GOAL-CMS-2026-05-18 M-R3-P0-C, LCS-S-001) explaining WHY each var matters in prod — best-in-class self-documentation",
+        "Boot guard cross-references (AppServiceProvider:85-93 mentioned at PROD template:114) — operator can trace symptom-to-root",
+        "ROTATE_openssl_rand_hex_32_PRODUCTION_ONLY placeholders ensure fresh-deploy values are visibly templated — no danger of shipping a dev sentinel"
+      ],
+      "gaps": [
+        "FCM_SECRET_KEY (line 197) does NOT match config/services.php:55 env('FCM_SERVER_KEY') — silent push degradation (Architect P1, RED-confirmed)",
+        "FCM_TOPIC (line 198) similar mismatch with FCM_TOPIC_PREFIX (config/services.php:57) — silent degradation only if FCM activated; OK V1 since FCM is V1.0.2+",
+        "KIOSK_DOMAIN, ADMIN_DOMAIN not declared (config/cors.php:6-10 derives allowed_origins from them). For Le Cayenne V1 single-domain (lecayenne.fr) deploy, APP_URL alone is sufficient — OK. For SaaS B2B multi-domain (V2), this becomes a deploy P0.",
+        "STRIPE_WEBHOOK_SECRET in PROD template but NOT in .env.example (would be a dev/local-test friction — currently optional but should be documented for staging stripe-cli testing)"
+      ]
+    },
+    "vault_yml_example_completeness": {
+      "verdict": "PARTIAL — scope is intentionally narrow (DB+Redis+Soketi+Fiscal+backup-alert webhook), but critical secrets remain ungated by Ansible",
+      "ansible_vault_active_keys": ["vault_db_password", "vault_redis_password", "vault_soketi_app_id/key/secret", "vault_fiscal_audit_secret", "vault_fiscal_z_report_secret", "vault_backup_alert_webhook"],
+      "missing_critical_secrets_from_vault": [
+        "LOYALTY_QR_SECRET (boot-guarded NF525-adjacent — see LCS-S-001)",
+        "MIX_API_KEY (CRITICAL per .env.example:57 — all /api/* requires it; absence breaks SPA admin/borne)",
+        "PUSHER_APP_ID / PUSHER_APP_KEY / PUSHER_APP_SECRET (Soketi keys ARE in vault, but external Pusher.com fallback isn't)",
+        "MAIL_PASSWORD (SMTP credential — silent mail dies if blank)",
+        "STRIPE_WEBHOOK_SECRET (vault has a commented stub line 53, currently inactive)",
+        "AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY (vault has commented stub lines 47-48, currently inactive)",
+        "FCM_SERVER_KEY (V1.0.2+ activation — defer until then)"
+      ],
+      "rationale_for_partial_scope": "vault.yml.example comment lines 40-53 explicitly document that Stripe + S3 secrets are forward-looking and currently set in /etc/foodking-backup.env directly. This is a documented architectural choice — not an oversight. Whether to migrate them into the Ansible vault SSOT is an owner decision."
+    },
+    "dead_config_findings": [
+      {
+        "id": "DEAD-1",
+        "file": "config/services.php:44-48",
+        "claim": "Easypaisa stub with empty string values is unreachable",
+        "evidence_quote": "'easypaisa' => [ 'env' => \"\", 'storeId' => \"\", 'hashKey' => \"\" ]",
+        "rationale": "Canonical Easypaisa config lives in config/easypaisa.php (env-driven, 12 keys). config/services.php stub is template-leftover from Laravel scaffold. Easypaisa is a Pakistan-only payment provider; Le Cayenne V1 France-only.",
+        "recommendation": "Remove the stub in V1.0.X cleanup wave to reduce confusion."
+      },
+      {
+        "id": "DEAD-2",
+        "file": "config/services.php:35-42",
+        "claim": "Paytm-wallet stub with empty string values is unreachable",
+        "evidence_quote": "'paytm-wallet' => [ 'env' => \"\", 'merchant_id' => \"\" ... ]",
+        "rationale": "Paytm is India-only. No grep hits in app/, no controller wires it. Template scaffold leftover.",
+        "recommendation": "Remove in V1.0.X cleanup."
+      }
+    ],
+    "anti_drift_checks": {
+      "ssot_pricing_env_layer": "config/pricing.php + PRICING_USE_SSOT env (.env.example:29) — PRICING_USE_SSOT=true is the safe default; no boot guard but PricingService::calculateOrder() is the runtime SSOT enforcer. PASS.",
+      "fiscal_chain_validation_defaults": "config/fiscal.php:96 (chain_validation_enabled) + :117 (sealed_z_guard_enabled) + :138 (kiosk_auto_allocate_sequence) all default to true via filter_var(env(...), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true — null-on-failure protects against accidental disable from typos. PASS.",
+      "idempotency_required_routes_drift": "config/idempotency.php:25-71 has 24 explicit route patterns. config/idempotency.php:34-41 comment documents the GOAL-CMS-2026-05-18 C-P0-H heal sentinel (IdempotencyRequiredRoutesCoverageTest) which catches drift between routes/api.php `idempotency` middleware declarations and this list. Wave E-1 added redeem-loyalty (line 70) via that sentinel. PASS — drift protection is sentinel-enforced.",
+      "boot_guard_order_in_appserviceprovider": "Order in AppServiceProvider::boot(): POS_SIMULATION_HARDWARE → PAYMENT_BYPASS → PRINTING_BYPASS → APP_DEBUG → IDEMPOTENCY → LOYALTY_QR → APP_URL → BROADCAST_DRIVER → QUEUE → CACHE_DRIVER. Order is NOT alphabetical; clusters by P0 severity (fiscal first, then UX/dev-flag, then infra). PASS — defensible by severity grouping."
+    },
+    "recommendations": [
+      {"id": "R1-FCM-RENAME", "priority": "P1", "action": "Rename FCM_SECRET_KEY → FCM_SERVER_KEY in docs/cloud/PRODUCTION_ENV_TEMPLATE.env.txt:197 to match config/services.php:55", "scope": "1-line doc fix", "impact": "FCM push notifications work post-V1.0.2 activation; currently silent no-op."},
+      {"id": "R1-FCM-TOPIC-RENAME", "priority": "P2", "action": "Rename FCM_TOPIC → FCM_TOPIC_PREFIX in PROD template:198 to match config/services.php:57", "scope": "1-line doc fix", "impact": "Topic prefix configurable post-V1.0.2."},
+      {"id": "R1-ENV-EXAMPLE-COMPLETENESS", "priority": "P2", "action": "Add IDEMPOTENCY_MIDDLEWARE_ENABLED=false + LOYALTY_QR_SECRET= to .env.example with comments matching .env.example:262 BYPASS MODE block style", "scope": "~10 lines doc fix", "impact": "Dev friction reduction — fresh clones get all boot-guarded vars visible."},
+      {"id": "R1-VAULT-EXPANSION", "priority": "OWNER-DECISION", "action": "Decide whether to expand vault.yml.example to cover LOYALTY_QR_SECRET + MIX_API_KEY + MAIL_PASSWORD + Stripe + S3", "scope": "Ansible inventory architecture decision", "impact": "Single SSOT for secrets vs distributed /etc/foodking-*.env files."},
+      {"id": "R1-ENV-IN-APP-AUDIT", "priority": "V1.0.2-BACKLOG", "action": "Sweep app/Libraries/AppLibrary.php + InstallerController.php currency/date env() calls — replace with config() facade reads", "scope": "~15 occurrences", "impact": "Eliminates Laravel anti-pattern; cosmetic UX defect risk on first production boot."},
+      {"id": "R1-FISCAL-BRANCH-OVERRIDE", "priority": "V1.0.2-BACKLOG", "action": "Replace env('FISCAL_AUDIT_SECRET_BRANCH_'.$branchId) at AuditLogService.php with a config()-based lookup (e.g. config('fiscal.audit_secret_branch_'.$id) sourced from config/fiscal.php array)", "scope": "1 file, ~5 lines + matching config/fiscal.php additions", "impact": "Per-branch HMAC rotation feature actually works post-config:cache. P1 because graceful fallback to global secret means chain still signs."},
+      {"id": "R1-DEAD-STUBS", "priority": "V1.0.X-CLEANUP", "action": "Remove config/services.php:35-48 (paytm-wallet + easypaisa stubs) — canonical in config/easypaisa.php, Pakistan/India-only providers", "scope": "14 LOC removal", "impact": "Reduces operator confusion."}
+    ],
+    "verdict": "GREEN — configuration architecture is production-safe for V1 Le Cayenne single-domain deploy. Zero P0 boot-crash gaps. 7 recommendations span P1 doc fixes (FCM rename), P2 dev-friction (.env.example completeness), V1.0.2 anti-pattern cleanup (env() in app/), and one owner decision (vault.yml scope). No findings block V1 cloud-prep merge."
+  }
+}

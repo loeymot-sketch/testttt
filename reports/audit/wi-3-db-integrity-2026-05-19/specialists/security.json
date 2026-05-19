@@ -1,0 +1,114 @@
+{
+  "specialist": "Security",
+  "scope": "Multi-tenant leak via FK paths not BranchScope-protected, raw query surfaces that bypass scopes, FK enforcement bypass via SET FOREIGN_KEY_CHECKS=0",
+  "method": "Read-only grep of DB::table / DB::raw / DB::statement / FOREIGN_KEY_CHECKS / PRAGMA foreign_keys patterns across app/. Cross-check with BranchScope coverage from Architect specialist.",
+  "findings": [
+    {
+      "id": "SEC-001",
+      "severity": "P1",
+      "title": "TaxService::destroy() disables FOREIGN_KEY_CHECKS to force-delete tax in use",
+      "evidence_path": "app/Services/TaxService.php",
+      "evidence_line": "80-94",
+      "evidence_excerpt": "public function destroy(Tax $tax): void {\n    if (!blank($checkItem)) {\n        $tax->delete();\n    } else {\n        DB::statement('SET FOREIGN_KEY_CHECKS=0');\n        $tax->delete();\n        DB::statement('SET FOREIGN_KEY_CHECKS=1');\n    }\n}",
+      "impact": "When a tax has no non-deleted items, the code disables FK checks SESSION-WIDE before deleting. ANY subsequent query in the same DB session/connection runs without FK enforcement until the SET=1 line — which is unconditional but a race or exception between line 88 and 89 leaves FK_CHECKS=0 dangling on the connection (Laravel reuses connections). Concurrent requests on the same pooled connection could insert orphan rows. Combined with NF525 audit triggers running on writes, this is a real (if narrow) integrity window.",
+      "mitigation_present": "Try/catch wraps the block; exceptions surface to controller. But the SET=1 is NOT in a finally{} — exception between SET=0 and the next SET=1 leaves connection in dangerous state.",
+      "recommendation": "Wrap in try/finally: `try { DB::statement('SET FOREIGN_KEY_CHECKS=0'); $tax->delete(); } finally { DB::statement('SET FOREIGN_KEY_CHECKS=1'); }`. Or refactor: cascade-delete tax_items rows explicitly via a DB::transaction, avoiding the FK-disable hack entirely."
+    },
+    {
+      "id": "SEC-002",
+      "severity": "P1",
+      "title": "ItemCategoryService::destroy() also disables FK checks (PRAGMA on SQLite, SET on MySQL)",
+      "evidence_path": "app/Services/ItemCategoryService.php",
+      "evidence_line": "165-193",
+      "evidence_excerpt": "if (DB::getDriverName() === 'sqlite') {\n    DB::statement('PRAGMA foreign_keys=0');\n    $itemCategory->delete();\n    DB::statement('PRAGMA foreign_keys=1');\n} else {\n    DB::statement('SET FOREIGN_KEY_CHECKS=0');\n    $itemCategory->delete();\n    DB::statement('SET FOREIGN_KEY_CHECKS=1');\n}",
+      "impact": "Same shape as SEC-001 but cross-driver. PRAGMA foreign_keys=0 on SQLite is the same hazard; on a long-running SQLite test session, this stays at 0 until re-enabled. SQLite PRAGMA setting is per-connection, so test isolation can leak. MySQL: same as SEC-001. Code IS wrapped in DB::transaction (line 169) so the SET-OFF block is at least atomic — but no try/finally so an exception still leaves FK_CHECKS=0 until the next query in the closure errors out.",
+      "mitigation_present": "DB::transaction provides rollback for the delete itself.",
+      "recommendation": "Same as SEC-001: try/finally around the FK-disable. Long-term: explicit cascade in the closure, drop the FK-disable pattern entirely. Mirror the pattern from BranchScope::class — explicit and auditable beats clever and short."
+    },
+    {
+      "id": "SEC-003",
+      "severity": "P1",
+      "title": "DB::table() bypasses BranchScope in 30+ service/controller call sites — verified no current exploitable leak, but pattern is fragile",
+      "evidence_path": "AvailabilityService:296,305,321,630,671,707,713 + ZReportService:651 + OrderService:2562 + FrontendOrderService:853,975 + LoyaltyController:218,223,305,483,513 + LoyaltyService:56 + PosRedemptionService:155 + LoyaltyQrSigner:143 + Observability/SyncOverviewController:76,128,308,329,336,427,443,464,500,513",
+      "evidence_line": "Multiple files",
+      "evidence_excerpt": "DB::table('orders')->where(...) ; DB::table('users')->where(...) ; DB::table('item_branch_availability')->where(...)",
+      "impact": "`DB::table()` COMPLETELY BYPASSES Eloquent global scopes including BranchScope. Each call site MUST manually add tenant scoping. VERIFIED CALL SITES (sample of 5 high-risk): (1) AvailabilityService:296-298 → explicit `->where('branch_id', $branchId)` — SAFE. (2) LoyaltyController:484 → `->where('user_id', $user->id)` from authenticated $request->user() — SAFE (user-scoped is tighter than branch-scoped for loyalty data). (3) LoyaltyController:513 → same user_id filter from authenticated user — SAFE for same reason. (4) ZReportService:651 → order_items joined via order_id from already-scoped Order context — depends on caller passing branch-correct order. (5) Observability/SyncOverviewController — admin-only routes per route group middleware — SAFE for current scope. CONCLUSION: no confirmed exploitable cross-tenant leak found at audit time. P1 retained because the pattern is fragile (next engineer adds DB::table without filter), not because of confirmed exploit.",
+      "mitigation_present": "Each verified call site uses user_id (authenticated context) or explicit branch_id filter. Admin-only routes are middleware-gated.",
+      "recommendation": "Downgraded from P0 → P1 after verification. Still requires: (1) Audit remaining ~25 unverified DB::table call sites systematically. (2) Add a static-analysis rule (PHPStan custom rule or ripgrep CI check) that flags `DB::table('<branch-scoped-table>')` without nearby `branch_id` reference. (3) For session-scoped queries, prefer `Eloquent\\Model::query()` over `DB::table()` — Eloquent applies BranchScope automatically. Tables to flag in CI: orders, order_items, order_payments, cash_movements, cash_drawer_sessions, stock_movements, stock_levels, item_branch_availability, push_notifications, printers, dining_tables, pos_parked_orders, pending_payment_confirmations, webhook_events. (Note: loyalty_transactions intentionally not branch-scoped — user-centric.)"
+    },
+    {
+      "id": "SEC-004",
+      "severity": "P1",
+      "title": "DB::raw() in UPDATE expressions (AvailabilityService:310-313, ZReportCashEnrichmentService:170-172, PosReceiptPrintController:47, PosCategoryController:92,98) — SQL fragment construction",
+      "evidence_path": "app/Services/Menu/AvailabilityService.php:310-313 + app/Services/Fiscal/ZReportCashEnrichmentService.php:170-172",
+      "evidence_line": "AvailabilityService.php:310-313",
+      "evidence_excerpt": "DB::raw(\n    \"CASE WHEN daily_consumed_qty + {$qty} > max_daily_qty \"\n    . \"THEN max_daily_qty ELSE daily_consumed_qty + {$qty} END\"\n)",
+      "impact": "`{$qty}` is interpolated directly into raw SQL. The variable comes from `(int) $line->quantity` (line 294), so a (int) cast is the guard — safe AS-IS because PHP's int cast strips any string to 0-or-number. ZReportCashEnrichmentService uses an enum value (PosPaymentMethod::CASH which is an int constant) — also safe. But the pattern is fragile: future engineers may interpolate non-cast values.",
+      "mitigation_present": "All current call sites cast or use enum int constants — no user input reaches the raw SQL.",
+      "recommendation": "Add a code review checklist entry: \"any DB::raw with string interpolation must demonstrate the interpolated value is type-cast or enum-bound\". Or refactor AvailabilityService:310-313 to use parameter binding via DB::raw(\"CASE WHEN daily_consumed_qty + ? > max_daily_qty THEN max_daily_qty ELSE daily_consumed_qty + ? END\") + ->whereRaw bindings."
+    },
+    {
+      "id": "SEC-005",
+      "severity": "P2",
+      "title": "BranchScope short-circuits when !App::runningInConsole() === false AND !App::runningUnitTests()",
+      "evidence_path": "app/Models/Scopes/BranchScope.php",
+      "evidence_line": "27-40",
+      "evidence_excerpt": "if ((!App::runningInConsole() || App::runningUnitTests()) && Auth::check()) { ... }",
+      "impact": "Console commands (artisan ...) run WITHOUT BranchScope unless inside unit tests. This is correct for cron commands (FiscalSequenceRetry, OutboxRetry etc.) which legitimately need cross-branch access. BUT any artisan command that takes a user-id argument and queries scoped models will return CROSS-TENANT data. Example: a hypothetical `artisan order:cancel --user=X --order=Y` could pull an order from a different branch than the user's branch if the command developer assumed BranchScope was active.",
+      "mitigation_present": "Most artisan commands are admin-only (run via deploy or owner). Cron commands deliberately need cross-branch.",
+      "recommendation": "Document loudly in BranchScope.php docblock: \"Console (artisan) bypasses this scope. Commands handling user-scoped data MUST manually scope or call User::withGlobalScope(BranchScope::class)\". Add a static analysis or test that lints command classes against direct Eloquent calls without explicit branch_id."
+    },
+    {
+      "id": "SEC-006",
+      "severity": "P1",
+      "title": "Loyalty manual_add via admin POST inserts raw DB::table('loyalty_transactions') — bypasses model events + audit trail",
+      "evidence_path": "app/Http/Controllers/Frontend/LoyaltyController.php",
+      "evidence_line": "223-235",
+      "evidence_excerpt": "\\Illuminate\\Support\\Facades\\DB::table('loyalty_transactions')->insert([\n    'user_id'        => $user->id,\n    'loyalty_code'   => $user->loyalty_code,\n    'order_id'       => null,\n    'type'           => 'manual_add',\n    'points'         => $pointsToAdd,\n    ...\n]);",
+      "impact": "Inserting directly via DB::table bypasses any LoyaltyTransaction model events (`creating`, `created`) and any future BranchScope (loyalty_transactions does not currently have BranchScope but might gain one). Audit log writer for loyalty events likely depends on model events. Inconsistent with PosRedemptionService which uses Eloquent.",
+      "mitigation_present": "Admin role permission gate at controller layer; UNIQUE(user_id, order_id, type) DB constraint catches obvious replays.",
+      "recommendation": "Refactor to `LoyaltyTransaction::create([...])`. Same DB rows but goes through Eloquent → events → audit log writers. 5-LOC change."
+    },
+    {
+      "id": "SEC-007",
+      "severity": "P2",
+      "title": "WizardProfileBranchScope (NEW 2026-05-18) — correctly implements OR-NULL for global profiles",
+      "evidence_path": "app/Models/Scopes/WizardProfileBranchScope.php",
+      "evidence_line": "33-58",
+      "evidence_excerpt": "$builder->where(function ($q) use ($field, $userBranch): void {\n    $q->whereNull($field)\n      ->orWhere($field, '=', $userBranch);\n});",
+      "impact": "Custom scope for item_wizard_profiles.branch_id_scope (nullable). Sound implementation: nullable means \"published globally\". Mirrors BranchScope structure including the User-recursion guard. Sister test referenced.",
+      "mitigation_present": "Implementation correct, test referenced.",
+      "recommendation": "No action. Confirmed sound."
+    },
+    {
+      "id": "SEC-008",
+      "severity": "P2",
+      "title": "withoutGlobalScope(BranchScope::class) used in 8+ Frontend controllers — by design, but each is a manual-audit checkpoint",
+      "evidence_path": "app/Http/Controllers/Frontend/OrderController.php:159,184 + Frontend/PaymentReconcileController.php:141,143,194,232,247,288 + Auth/GuestSignupController.php:98",
+      "evidence_line": "Multiple",
+      "evidence_excerpt": "FrontendOrder::withoutGlobalScope(BranchScope::class)->where('idempotency_key', $key)->first()",
+      "impact": "Each bypass is intentional (kiosk pre-auth lookup, payment reconciliation across branches, guest user phone lookup). Pattern is documented in code comments. Risk: a future engineer adds a new withoutGlobalScope call without realizing it disables tenant isolation.",
+      "mitigation_present": "Code comments explain rationale at each call site.",
+      "recommendation": "Document a code-review rule: \"any new withoutGlobalScope(BranchScope::class) requires explanatory comment + sister test + security-team approval\". Add a sentinel test that counts bypass sites and fails when an undocumented one appears (foreshadowing P0 catch via grep+count CI gate)."
+    },
+    {
+      "id": "SEC-009",
+      "severity": "P3",
+      "title": "FreshOrderSeed::handle() SET FOREIGN_KEY_CHECKS=0 + TRUNCATE — see DBA-005, classified as security/data-loss as well",
+      "evidence_path": "app/Console/Commands/FreshOrderSeed.php",
+      "evidence_line": "13-18",
+      "evidence_excerpt": "DB::statement('SET FOREIGN_KEY_CHECKS=0');\nDB::table('order_items')->truncate();\nDB::table('orders')->truncate();",
+      "impact": "Duplicate finding with DBA-005. Listed here for completeness from security angle: TRUNCATE bypasses ALL triggers including NF525 fiscal immutability triggers on stock_movements (if extended) and audit_logs (if extended in the cleanup pattern). Currently scoped to orders/order_items so direct NF525 impact = nil, BUT pattern propagation is the threat.",
+      "mitigation_present": "Production GRANT level (owner-deferred per BRAIN).",
+      "recommendation": "See DBA-005. Add environment guard."
+    }
+  ],
+  "summary": {
+    "p0_count": 0,
+    "p1_count": 5,
+    "p2_count": 3,
+    "p3_count": 1,
+    "highest_impact_finding": "SEC-001 + SEC-002 (FK disable pattern in destroy() services without try/finally — session-wide leak if exception fires between SET=0 and SET=1)",
+    "next_class_of_finding": "SEC-003 verified — no confirmed exploitable cross-tenant leak from DB::table() bypass; pattern fragility remains. CI grep gate recommended."
+  }
+}

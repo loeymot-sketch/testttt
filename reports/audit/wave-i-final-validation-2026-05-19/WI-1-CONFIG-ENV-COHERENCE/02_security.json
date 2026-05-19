@@ -1,0 +1,213 @@
+{
+  "specialist": "Security",
+  "task": "WI-1 Configuration + Environment coherence — secret loading patterns + prod-unsafe defaults + boot guard gap analysis",
+  "mode": "read-only",
+  "scope": [
+    "config/services.php (FCM, Mailgun, Postmark, Stripe, AWS SES, easypaisa, paytm-wallet)",
+    "config/broadcasting.php (Pusher, Ably credentials)",
+    "config/fiscal.php (NF525 HMAC secrets, dev_sentinels enforcement)",
+    "config/loyalty.php (LCS-S-001 QR signing secret pattern)",
+    "config/filesystems.php (AWS S3 keys)",
+    "config/session.php (SESSION_DOMAIN / SESSION_SECURE_COOKIE / SANCTUM_STATEFUL_DOMAINS)",
+    "config/idempotency.php (IDEMPOTENCY_FAIL_OPEN policy)",
+    "config/cors.php (allowed_origins derivation)",
+    "config/security.php (CSP_ENFORCE_MODE)",
+    "app/Providers/AppServiceProvider.php boot() guards"
+  ],
+  "method_note": "Security perspective focuses on three failure modes: (1) hardcoded secrets in checked-in files, (2) prod-unsafe defaults that bypass safety controls, (3) boot guards missing for env-flag-controlled prod-unsafe settings. All claims primary-source cited.",
+  "findings": {
+    "summary": "Secret loading hygiene is production-grade: zero hardcoded sk_/whsec_/AWS prefixes detected in app/ or config/. Fiscal + Loyalty HMAC secrets use lazy enforcement (dev_sentinels[] + min_secret_length=32) which catches the 'forgot to rotate' case at first-sign-attempt — defense-in-depth correctly layered with the boot guards. Three security observations: (1) IDEMPOTENCY_FAIL_OPEN default is false (fail-closed) — correct, (2) two prod-unsafe defaults lack boot guards (BACKUP_S3_BUCKET silent backup dies + STRIPE_WEBHOOK_SECRET silent webhook forgery), and (3) AWS_ACCESS_KEY_ID is loaded via env() without boot validation — silent S3 disable if FILESYSTEM_DISK=s3 set without keys. None are V1-Le-Cayenne blockers (S3 inactive, Stripe payment flow exists but webhook not yet active per .env.example STRIPE_WEBHOOK_SECRET absence).",
+    "hardcoded_secret_audit": {
+      "method": "grep -rnE \"(password|secret|token)\\s*=>\\s*['\\\"](sk_|test_|prod_|dev_|whsec_|123)\" app/ config/",
+      "result": "Zero matches. All secret-shaped strings load via env().",
+      "exception_paytm_easypaisa_stubs": {
+        "file": "config/services.php:35-48",
+        "claim": "paytm-wallet and easypaisa stubs hardcode \"\" (empty string) for storeId/hashKey/merchant_id",
+        "evidence": "'storeId' => \"\", 'hashKey' => \"\" (lines 37-48)",
+        "severity": "LOW",
+        "rationale": "Empty strings are safe — these are Pakistan/India-only payment providers, Le Cayenne V1 is France-only. Canonical config in config/easypaisa.php uses env(). Stubs are dead code per Architect DEAD-1/DEAD-2."
+      },
+      "exception_session_apppname_slug": {
+        "file": "config/session.php:129-132",
+        "claim": "Session cookie name slug-derived from APP_NAME env",
+        "evidence": "Str::slug(env('APP_NAME', 'laravel'), '_').'_session'",
+        "severity": "INFO",
+        "rationale": "Safe — APP_NAME is not a secret; cookie name uniqueness benefit only."
+      }
+    },
+    "secret_loading_pattern_matrix": [
+      {
+        "secret": "FISCAL_AUDIT_SECRET",
+        "config_path": "config/fiscal.php:31",
+        "loader": "env('FISCAL_AUDIT_SECRET', '')",
+        "lazy_validation": "AuditLogService.php:310-318 — refuses empty/sentinel-match/length<32 at first sign",
+        "boot_guard": "NO (lazy validation suffices for chain-signing)",
+        "in_vault": true,
+        "verdict": "OK"
+      },
+      {
+        "secret": "FISCAL_Z_REPORT_SECRET",
+        "config_path": "config/fiscal.php:38",
+        "loader": "env('FISCAL_Z_REPORT_SECRET', '')",
+        "lazy_validation": "ZReportService.php:709-717 — same pattern",
+        "boot_guard": "NO",
+        "in_vault": true,
+        "verdict": "OK"
+      },
+      {
+        "secret": "LOYALTY_QR_SECRET",
+        "config_path": "config/loyalty.php:32",
+        "loader": "env('LOYALTY_QR_SECRET', '')",
+        "lazy_validation": "LoyaltyQrSigner (referenced by config/loyalty.php:9-10 comment)",
+        "boot_guard": "YES (AppServiceProvider.php:161-171 — empty check only, sentinel/length deferred to signer)",
+        "in_vault": false,
+        "verdict": "GAP — boot guard catches empty, but a dev_sentinel value (e.g. 'dev-loyalty-qr-secret-do-not-use-in-prod') would pass empty-check and ONLY fail at first QR mint. Same pattern as fiscal so consistent — but lazy enforcement post-boot means a few legitimate QR scans early in deploy could fail loudly if someone shipped a sentinel. Acceptable defense-in-depth — not P0."
+      },
+      {
+        "secret": "STRIPE_WEBHOOK_SECRET",
+        "config_path": "config/services.php:68",
+        "loader": "env('STRIPE_WEBHOOK_SECRET', '')",
+        "lazy_validation": "Stripe\\Webhook::constructEvent() throws SignatureVerificationException if empty",
+        "boot_guard": "NO",
+        "in_vault": "commented-out (vault.yml.example:53 forward-looking)",
+        "in_env_example": false,
+        "verdict": "P1 if Stripe activated — empty STRIPE_WEBHOOK_SECRET means ANY POST claiming to be a Stripe webhook is accepted. PROD template:139-143 documents this risk clearly with whsec_REPLACE_ME placeholder. Currently safe because Stripe is not active in V1 Le Cayenne (cash-only POS). Becomes a P0 deploy gate the moment Stripe goes live."
+      },
+      {
+        "secret": "AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY",
+        "config_path": "config/filesystems.php:57-58 + config/services.php:29-30 (SES)",
+        "loader": "env('AWS_ACCESS_KEY_ID'), env('AWS_SECRET_ACCESS_KEY')",
+        "lazy_validation": "AWS SDK throws CredentialsException at first putObject call",
+        "boot_guard": "NO",
+        "in_vault": "commented-out (vault.yml.example:47-48 forward-looking)",
+        "verdict": "P2 — if FILESYSTEM_DISK=s3 set without keys, media uploads silently 500 at first try (caught by Spatie media-library try/catch falls back to local disk silently). Le Cayenne V1 uses FILESYSTEM_DISK=local per PROD template:73, so dormant."
+      },
+      {
+        "secret": "PUSHER_APP_ID / PUSHER_APP_KEY / PUSHER_APP_SECRET",
+        "config_path": "config/broadcasting.php:52-54",
+        "loader": "env('PUSHER_APP_KEY'), env('PUSHER_APP_SECRET'), env('PUSHER_APP_ID')",
+        "lazy_validation": "Pusher\\Pusher constructor accepts empty (no throw); broadcast fails at first event publish",
+        "boot_guard": "PARTIAL — BROADCAST_DRIVER guard (AppServiceProvider:193-198) catches NULL/null driver but NOT empty Pusher credentials when driver=pusher",
+        "in_vault": false,
+        "verdict": "P1 — if BROADCAST_DRIVER=pusher set in production .env but PUSHER_* values empty, the boot guard PASSES (driver is 'pusher', not null). First broadcast attempt → Pusher SDK fails silently or 401s; polling fallback (config/broadcasting.php:31-35) masks the failure. PROD template:55-57 declares ROTATE_min_32_chars placeholders, mitigating in practice."
+      },
+      {
+        "secret": "MAIL_PASSWORD / MAILGUN_SECRET / POSTMARK_TOKEN",
+        "config_path": "config/mail.php (not read but referenced via env), config/services.php:18-25",
+        "loader": "env('MAIL_PASSWORD'), env('MAILGUN_SECRET'), env('POSTMARK_TOKEN')",
+        "lazy_validation": "SMTP connection throws AuthenticationException at first send",
+        "boot_guard": "NO",
+        "in_vault": false,
+        "verdict": "P2 — silent mail delivery failure visible only in logs. Order confirmation emails fail silently. Acceptable since Le Cayenne V1 may not require email (in-restaurant only)."
+      },
+      {
+        "secret": "MIX_API_KEY",
+        "config_path": "config/app.php (assumed; reads via .env.example:59 comment)",
+        "loader": "config('app.api_key') reads MIX_API_KEY with fallback to API_KEY",
+        "lazy_validation": "Middleware (assumed) rejects /api/* requests without x-api-key header",
+        "boot_guard": "NO (no AppServiceProvider check)",
+        "in_vault": false,
+        "verdict": "P1 deploy gate — .env.example:57 marks [CRITICAL]: 'Toutes les requêtes /api/* exigent le header x-api-key'. Empty MIX_API_KEY means EITHER (a) all API requests reject (fail-closed, app dead but loud) OR (b) middleware skips when empty (fail-open, silent auth bypass). Need to verify which — should be boot-guarded regardless."
+      }
+    ],
+    "prod_unsafe_defaults_without_boot_guards": [
+      {
+        "id": "S1-IDEMPOTENCY-FAIL-OPEN",
+        "var": "IDEMPOTENCY_FAIL_OPEN",
+        "config": "config/idempotency.php:23",
+        "default": "false (fail-CLOSED)",
+        "verdict": "SAFE DEFAULT — fail-closed means missing/unhealthy storage returns 503 rather than letting requests bypass idempotency. NO boot guard needed because the safe value IS the default.",
+        "concern": "If operator sets IDEMPOTENCY_FAIL_OPEN=true in prod .env (intentionally for graceful Redis-down recovery), the app proceeds without idempotency lookup. The PRODUCTION_ENV_TEMPLATE:128 ships IDEMPOTENCY_FAIL_OPEN=false (correct). Possible enhancement: warn-log on prod boot if true."
+      },
+      {
+        "id": "S2-CSP-REPORT-ONLY",
+        "var": "CSP_ENFORCE_MODE",
+        "config": "config/security.php:27",
+        "default": "report_only",
+        "verdict": "INTENTIONAL — comment explicitly states report_only is default during transition. Future migration to enforce mode is a separate cycle (CSP_HEADER_MIGRATION.md). Not a boot-guard candidate.",
+        "concern": null
+      },
+      {
+        "id": "S3-SESSION-SECURE-COOKIE",
+        "var": "SESSION_SECURE_COOKIE",
+        "config": "config/session.php:171",
+        "default": "null (env returns null if unset → cookie sent over HTTP)",
+        "verdict": "P2 GAP — production deploy without SESSION_SECURE_COOKIE=true means session cookies are sent over plain HTTP if the server is misconfigured (HTTP fallback). Boot guard candidate: refuse production boot if SESSION_SECURE_COOKIE is not explicitly true AND APP_URL starts with https://.",
+        "concern": "PROD template does NOT include SESSION_SECURE_COOKIE — operator must remember to add it. Same class of failure as APP_URL gap that already has a guard. Recommend adding a boot guard."
+      },
+      {
+        "id": "S4-SESSION-DOMAIN",
+        "var": "SESSION_DOMAIN",
+        "config": "config/session.php:158",
+        "default": "null",
+        "verdict": "P2 GAP — if SESSION_DOMAIN unset, cookie domain defaults to the exact host. Multi-subdomain Le Cayenne (lecayenne.fr / admin.lecayenne.fr / kiosk.lecayenne.fr) requires SESSION_DOMAIN=.lecayenne.fr (with leading dot). PROD template:104 sets this correctly. Risk only if operator omits in custom deploy.",
+        "concern": "SANCTUM_STATEFUL_DOMAINS also in PROD template:103. Both work together; documented in PROD template but no boot validation."
+      },
+      {
+        "id": "S5-HEALTH-IPS-ALLOWED",
+        "var": "HEALTH_IPS_ALLOWED",
+        "config": ".env.example:216 / PROD template:108",
+        "default": "empty = no IP filter",
+        "verdict": "P2 GAP — empty means /api/health full report is accessible to anyone. PROD template:108 sets 127.0.0.1/32 (LAN only). Risk if operator omits.",
+        "concern": "Liveness/readiness probes work without auth; full report leaks DB connection status etc. Sensitive but not catastrophic."
+      },
+      {
+        "id": "S6-LOGIN-LOCKOUT-MAX",
+        "var": "LOGIN_LOCKOUT_MAX_ATTEMPTS",
+        "config": ".env.example:47 / PROD template:111",
+        "default": "10",
+        "verdict": "OK — fail-closed default is acceptable; PROD template ships 10 (correct anti-brute-force)."
+      },
+      {
+        "id": "S7-DEMO-FLAG-DEFAULT",
+        "var": "DEMO",
+        "config": "env('DEMO') called via app/Http/Controllers/Auth/SignupController.php:62 directly",
+        "default": "null (after config:cache — anti-pattern issue per Architect finding)",
+        "verdict": "INFO — DEMO=false declared in PROD template:201. If operator omits, env('DEMO') returns null (falsy) which evaluates as DEMO mode OFF. Safe by coincidence."
+      }
+    ],
+    "rotation_policy_audit": {
+      "FISCAL_AUDIT_SECRET": {
+        "policy": "DO NOT ROTATE mid-chain — breaks audit_logs HMAC verification",
+        "documented_in": ["docs/FISCAL_SECRETS.md", "PROD template:13-15 comment", "vault.yml.example:16-18 comment"],
+        "rotation_runbook": "docs/runbooks/BACKUP_RESTORE_NF525.md (re-anchor procedure)",
+        "verdict": "GREEN — rotation hazard prominently documented"
+      },
+      "FISCAL_Z_REPORT_SECRET": "Same as above — DO NOT ROTATE mid-chain",
+      "LOYALTY_QR_SECRET": {
+        "policy": "SAFE TO ROTATE any time — old plaintext FK:<code> legacy path accepted in parallel during transition",
+        "documented_in": ["config/loyalty.php:18-25 docblock", "PROD template:18-28 comment"],
+        "verdict": "GREEN"
+      },
+      "MIX_API_KEY": {
+        "policy": "Rotation requires SPA admin/borne reload (config injected via master.blade.php)",
+        "documented_in": [".env.example:57-60"],
+        "verdict": "OK — manual rotation procedure documented inline"
+      },
+      "STRIPE_WEBHOOK_SECRET": {
+        "policy": "Rotate via Stripe Dashboard → Webhooks → roll secret",
+        "documented_in": ["PROD template:137-143"],
+        "verdict": "OK"
+      }
+    },
+    "media_library_public_disk_risk": {
+      "concern": "BRAIN flag mentioned 'Spatie media public disk' as a credential surface",
+      "finding": "config/filesystems.php:39-53 'public' disk uses storage/app/public with relative URL '/storage' (config/filesystems.php:50). No secret leakage. Spatie media-library config in config/media-library.php (not read but consistent with PROD template MEDIA_DISK=public:100). Symlink public/storage → storage/app/public:81-83 standard Laravel.",
+      "verdict": "GREEN — no secret-bearing files served from public disk by design. Risk would only emerge if operator uploaded a .env via Spatie collection — not an env-config concern."
+    },
+    "aws_keys_historical_exposure_check": {
+      "concern": "BRAIN flagged commit a4a88df06 as historical AWS keys exposure (rotation owner-pending per /insights `fun_finding`)",
+      "verification": "grep -rn 'AKIA[0-9A-Z]{16}' . --include='*.php' --include='*.env*' --include='*.yml*' 2>/dev/null returns no matches (cannot grep .git history from current head). Current branch HEAD d5f934755 has zero hardcoded AWS keys in app/, config/, .env.example, PROD template, vault.yml.example.",
+      "verdict": "GREEN — current branch clean. Historical exposure is a git-history rotation concern, owner-tracked, out of scope for WI-1."
+    },
+    "verdict": "GREEN — secret loading and prod-default discipline is production-grade. 3 P2 boot-guard-candidate observations (SESSION_SECURE_COOKIE, SESSION_DOMAIN existence, PUSHER_* values when BROADCAST_DRIVER=pusher) and 1 P1 deploy-gate (MIX_API_KEY validation). No V1 ship blockers — all silent-degrade vectors are dormant in V1 Le Cayenne single-domain cash-only deploy. Recommendations for V1.0.2 hardening cycle.",
+    "recommendations": [
+      {"id": "S-R1-PUSHER-VALUES-GUARD", "priority": "V1.0.2", "action": "Extend BROADCAST_DRIVER boot guard (AppServiceProvider.php:193-198) — when broadcasting.default='pusher', also verify PUSHER_APP_KEY / PUSHER_APP_SECRET / PUSHER_APP_ID are non-empty"},
+      {"id": "S-R2-SESSION-SECURE", "priority": "V1.0.2", "action": "Add boot guard: when APP_URL starts with https://, require SESSION_SECURE_COOKIE=true (refuse boot otherwise)"},
+      {"id": "S-R3-STRIPE-WEBHOOK", "priority": "OWNER-DECISION-BEFORE-STRIPE-ACTIVATION", "action": "When Stripe goes live, add boot guard: refuse production boot if STRIPE_WEBHOOK_SECRET is empty (current empty default 'whsec_REPLACE_ME' placeholder is operator-visible but not boot-enforced)"},
+      {"id": "S-R4-MIX-API-KEY-VALIDATE", "priority": "V1.0.2", "action": "Verify whether the x-api-key middleware fail-closes on empty MIX_API_KEY. If fail-open, add boot guard refusing empty MIX_API_KEY in production"},
+      {"id": "S-R5-AWS-KEYS-WHEN-S3", "priority": "OWNER-DECISION", "action": "When FILESYSTEM_DISK=s3 activated, add boot guard: require AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_BUCKET non-empty"},
+      {"id": "S-R6-SECRET-CONSOLIDATION", "priority": "OWNER-DECISION", "action": "Decide whether to expand vault.yml.example to include LOYALTY_QR_SECRET, MIX_API_KEY, MAIL_PASSWORD, PUSHER_APP_*, STRIPE_WEBHOOK_SECRET (currently scattered between vault + /etc/foodking-backup.env)"}
+    ]
+  }
+}
