@@ -71,22 +71,32 @@ class AdministratorRequest extends FormRequest
                 $validator->errors()->add('password_confirmation', 'The password confirmation does not match.');
             }
 
-            // [GOAL-CMS-2026-05-18 M-R3-P0-E heal] R3 T-2.2.1 Sec S-3 +
-            // cross-ref R2 T-1.3.1 Sec S-1 (Admin@Branch0 Mint).
-            // AdministratorService.php:70 unconditionally writes
-            // attacker-supplied branch_id=0 + assignRole(ADMIN). Only an
-            // already-super-admin (hasRole Admin or Tenant Admin) may
-            // create a new administrator at branch_id=0; otherwise the
-            // branch_id must be either the caller's own branch or omitted.
+            // [bug_011 / R3 T-2.2.1 Sec S-3 / WH-5 2026-05-19] Close the
+            // super-admin mint bypass. The previous M-R3-P0-E heal only
+            // covered the EXPLICIT path `branch_id=0`; omitting the
+            // `branch_id` field entirely bypassed the gate because
+            // `$this->input('branch_id')` returns null and `null !== null`
+            // is false, short-circuiting the check. The downstream
+            // `DefaultAccessModelTrait::branch()` then treats
+            // `(int) null === 0` as a super-admin (BranchScope skipped),
+            // so a null branch_id is functionally equivalent to
+            // branch_id=0 from an authorization standpoint. The fix:
+            // treat null and 0 identically — only Admin / Tenant Admin
+            // may mint a user without a branch (cross-branch super-admin).
+            // Non-super-admin callers MUST supply a non-zero branch_id.
+            //
+            // Covers both store (POST) and update (PATCH/PUT) verbs
+            // since both controllers consume AdministratorRequest, and
+            // AdministratorService::update line 96 writes branch_id from
+            // the request unconditionally too.
             $caller = $this->user();
             $bid = $this->input('branch_id');
-            if ($bid !== null && (int) $bid === 0
-                && ! ($caller?->hasRole('Admin') || $caller?->hasRole('Tenant Admin'))
-            ) {
+            $isSuperAdmin = $caller?->hasRole('Admin') || $caller?->hasRole('Tenant Admin');
+            if (($bid === null || (int) $bid === 0) && ! $isSuperAdmin) {
                 $validator->errors()->add(
                     'branch_id',
-                    'Only super-admin (Admin / Tenant Admin) can mint a user at branch_id=0 '
-                    . '(R3 T-2.2.1 Sec S-3).'
+                    'Only super-admin (Admin / Tenant Admin) can mint or update a user '
+                    . 'at branch_id=0 or with no branch (R3 T-2.2.1 Sec S-3 / bug_011).'
                 );
             }
         });
