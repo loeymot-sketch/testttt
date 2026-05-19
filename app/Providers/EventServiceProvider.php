@@ -26,6 +26,9 @@ use App\Events\OrderPaidAtCounter;
 use App\Events\OrderPaymentStatusChanged;
 use App\Events\OrderStatusChanged;
 use App\Events\OrderTableChanged;
+// [HEAL B.2 2026-05-19] OutboxBroadcastSwallowedEvent listener registration —
+// closes RED-Z3 finding B-3 P1 (alarm void on outbox swallow).
+use App\Events\OutboxBroadcastSwallowedEvent;
 use App\Events\RefundCreated;
 use App\Events\SendOrderGotMail;
 use App\Events\SendOrderGotPush;
@@ -41,6 +44,8 @@ use App\Listeners\SendOrderDeliveryBoyPushNotification;
 use App\Listeners\SendOrderDeliveryBoySmsNotification;
 use App\Listeners\AwardLoyaltyPointsOnDelivery;
 use App\Listeners\BumpMenuSnapshotOnItemAvailabilityChanged;
+// [HEAL B.2 2026-05-19] Pager-grade escalator for outbox broadcast swallows.
+use App\Listeners\EscalateOutboxBroadcastSwallowed;
 use App\Listeners\InvalidateKioskMenuCacheOnCatalogChange;
 use App\Listeners\InvalidateKioskMenuCacheOnItemAvailabilityChanged;
 use App\Listeners\InvalidateMenuProjectionOnIngredientChange;
@@ -256,6 +261,14 @@ class EventServiceProvider extends ServiceProvider
         BranchStatusChanged::class => [
             RevokeTokensOnBranchDeactivated::class,
             \App\Listeners\PersistBranchStatusChangedToOutbox::class,
+        ],
+        // [HEAL B.2 2026-05-19] V1 LOCAL pager-grade alarm for outbox
+        // broadcast swallows. Closes RED-Z3 §B-3 alarm void.
+        // Listener emits Log::channel('fiscal')->critical with the full
+        // structured payload — see EscalateOutboxBroadcastSwallowed::class
+        // for channel/payload/queueing rationale.
+        OutboxBroadcastSwallowedEvent::class => [
+            EscalateOutboxBroadcastSwallowed::class,
         ],
     ];
 
