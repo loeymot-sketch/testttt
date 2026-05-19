@@ -45,6 +45,15 @@ use Illuminate\Support\Facades\Log;
  * listener only runs once per refund event. PersistOrderPaymentStatusChangedToOutbox
  * uses (old, new, correlation_id) in its idempotency key — a duplicate
  * listener fire within the same request collapses to a single outbox row.
+ *
+ * Listener-array position (HEAL-PLAN-D.3 / RED-Z8 P2-2 2026-05-19):
+ * FIRST under {@see RefundCreated::class} in EventServiceProvider::$listen.
+ * Laravel's sync dispatcher halts on listener throw (vendor/.../Events/
+ * Dispatcher.php:233-269), so this listener must precede the throw-prone
+ * stock / availability release listeners. The internal try/catch envelopes
+ * around the DB::transaction (lines 79-113) and the OrderPaymentStatusChanged
+ * dispatch (lines 119-138) guarantee this listener never propagates upward,
+ * so the downstream release listeners still run on broadcast failure.
  */
 class PersistOrderPaymentStatusChangedOnRefundCreated
 {

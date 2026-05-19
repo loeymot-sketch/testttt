@@ -168,16 +168,21 @@ class EventServiceProvider extends ServiceProvider
             ReleaseStockOnOrderCanceled::class,
             ReleaseAvailabilityOnOrderCanceled::class,
         ],
+        // [HEAL-PLAN-D.3 / RED-Z8 P2-2 — heal/cms-pr1-quickwins-2026-05-18]
+        // Persist+broadcast FIRST so a downstream stock / availability release
+        // listener throw cannot silently re-open the WG-1 P1-1 broadcast hole.
+        // Laravel's sync dispatcher (vendor/.../Events/Dispatcher.php:233-269)
+        // halts on listener throw — position matters. Persist listener is
+        // itself wrapped in try/catch envelopes (see PersistOrderPaymentStatusChangedOnRefundCreated
+        // lines 79-138) so it never propagates upward, guaranteeing the
+        // remaining listeners still run when Persist itself fails.
         RefundCreated::class => [
+            // [WG-1-WF6-P1-1] Realtime refund signal — MUST run first so
+            // POS / admin / OSS clients still receive the broadcast even
+            // when a later listener (stock / availability release) throws.
+            PersistOrderPaymentStatusChangedOnRefundCreated::class,
             ReleaseStockOnRefundCreated::class,
             ReleaseAvailabilityOnRefundCreated::class,
-            // [WG-1-WF6-P1-1 heal/cms-pr1-quickwins-2026-05-18]
-            // Bridges RefundCreated -> OrderPaymentStatusChanged so connected
-            // POS / admin / OSS clients receive a realtime refund signal.
-            // For pre-Z orders (mutable parent), also persists payment_status=REFUNDED.
-            // For post-Z orders (sealed parent), broadcast-only — NF525 invariant
-            // forbids parent mutation; the mirror RETURN_OF carries REFUNDED.
-            PersistOrderPaymentStatusChangedOnRefundCreated::class,
         ],
         // [F-02] Floorplan transfer / occupy → KDS gets a non-disruptive update.
         OrderTableChanged::class => [
