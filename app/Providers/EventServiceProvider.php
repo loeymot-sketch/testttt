@@ -58,6 +58,7 @@ use App\Listeners\ReleaseStockOnOrderCanceled;
 use App\Listeners\ReleaseStockOnRefundCreated;
 use App\Listeners\PersistOrderCreatedToOutbox;
 use App\Listeners\PersistOrderPaidAtCounterToOutbox;
+use App\Listeners\PersistOrderPaymentStatusChangedOnRefundCreated;
 use App\Listeners\PersistOrderPaymentStatusChangedToOutbox;
 use App\Listeners\PersistOrderStatusChangedToOutbox;
 use App\Listeners\PersistOrderTableChangedToOutbox;
@@ -165,6 +166,13 @@ class EventServiceProvider extends ServiceProvider
         RefundCreated::class => [
             ReleaseStockOnRefundCreated::class,
             ReleaseAvailabilityOnRefundCreated::class,
+            // [WG-1-WF6-P1-1 heal/cms-pr1-quickwins-2026-05-18]
+            // Bridges RefundCreated -> OrderPaymentStatusChanged so connected
+            // POS / admin / OSS clients receive a realtime refund signal.
+            // For pre-Z orders (mutable parent), also persists payment_status=REFUNDED.
+            // For post-Z orders (sealed parent), broadcast-only — NF525 invariant
+            // forbids parent mutation; the mirror RETURN_OF carries REFUNDED.
+            PersistOrderPaymentStatusChangedOnRefundCreated::class,
         ],
         // [F-02] Floorplan transfer / occupy → KDS gets a non-disruptive update.
         OrderTableChanged::class => [
