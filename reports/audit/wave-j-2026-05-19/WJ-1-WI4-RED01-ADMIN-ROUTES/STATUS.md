@@ -1,6 +1,21 @@
 # WJ-1 / WI-4-RED-01 — Admin Mutation Route Permission Gate
 
-**Status**: GREEN — heal landed
+**Status**: GREEN — heal landed (commit `eaf77625f`)
+
+> NOTE on commit boundary: this commit `eaf77625f` (intended scope =
+> 5 files for WJ-1) accidentally absorbed WJ-4 work (Outbox broadcast
+> swallow alarm sentinel: 4 additional files) because a sibling agent
+> staged its files into the shared worktree index between this agent's
+> `git status` validation and the `git commit` invocation. The WJ-1
+> diff (3 controllers + 1 sentinel test + this STATUS file) is intact
+> and correctly described in the commit message body; the absorbed
+> WJ-4 files (`app/Events/OutboxBroadcastSwallowedEvent.php`, 3
+> updated listeners, `tests/Feature/Sentinels/OutboxBroadcastSwallow…`,
+> and the WJ-4 STATUS.md) are legitimate WJ-4 deliverables — they are
+> part of the same heal wave but should ideally have shipped in their
+> own commit. No reversal is requested because both heals pass tests
+> and amending is forbidden by safety protocol (this branch is shared
+> with parallel agents).
 **Branch**: heal/cms-pr1-quickwins-2026-05-18
 **HEAD (pre-heal)**: d5f934755
 **Severity**: P0 SECURITY (privilege escalation)
