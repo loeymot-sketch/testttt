@@ -161,8 +161,13 @@ class OutboxTest extends TestCase
         });
     }
 
-    public function test_retry_failed_resets_and_requeues(): void
+    public function test_retry_failed_preserves_attempts_and_requeues(): void
     {
+        // [Heal B.1 Z3 B-2 P0 — 2026-05-19] Sentinel updated post-heal.
+        // Pre-heal the OutboxRetryFailedCommand wiped `attempts=0` + `last_error=null`
+        // on every replay, causing chronic-fail rows to flap indefinitely (prune
+        // lane `attempts>=6 AND created_at<cutoff` was unreachable). Post-heal:
+        // attempts + last_error PRESERVED; only dispatched_at re-nulled.
         Bus::fake();
 
         $domainEvent = DomainEvent::query()->create([
@@ -188,9 +193,9 @@ class OutboxTest extends TestCase
 
         $domainEvent->refresh();
 
-        $this->assertSame(0, $domainEvent->attempts);
-        $this->assertNull($domainEvent->last_error);
-        $this->assertNull($domainEvent->dispatched_at);
+        $this->assertSame(5, $domainEvent->attempts, 'attempts must be PRESERVED (Heal B.1 monotonic semantics).');
+        $this->assertSame('Pusher timeout', (string) $domainEvent->last_error, 'last_error must be PRESERVED as forensic trail.');
+        $this->assertNull($domainEvent->dispatched_at, 'dispatched_at must be re-nulled so DispatchDomainEventsJob can re-claim.');
 
         Bus::assertDispatched(DispatchDomainEventsJob::class, function (DispatchDomainEventsJob $job) use ($domainEvent): bool {
             return $job->domainEventId === $domainEvent->id;

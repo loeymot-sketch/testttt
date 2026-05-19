@@ -221,26 +221,23 @@ class OutboxConcurrentRetryLockTest extends TestCase
         $exit = Artisan::call('foodking:outbox:retry-failed', ['--since' => '1h']);
         $this->assertSame(0, $exit, 'Command must exit SUCCESS');
 
-        // Exactly BATCH_CAP rows must have been reset (attempts=0,
-        // last_error=null). The remaining 100 keep their original state.
-        $resetCount = DomainEvent::query()
-            ->where('attempts', 0)
-            ->whereNull('last_error')
-            ->count();
-        $this->assertSame(
-            500,
-            $resetCount,
-            'BATCH_CAP must reset exactly 500 rows; saw '.$resetCount
-        );
-
-        $remaining = DomainEvent::query()
+        // [Heal B.1 Z3 B-2 P0 — 2026-05-19] Post-heal contract: command
+        // PRESERVES `attempts` + `last_error` and only re-nulls
+        // `dispatched_at`. The "saw this row" signature switches from
+        // attempts=0 (pre-heal reset) to dispatched_at IS NULL combined
+        // with the Bus::assertDispatchedTimes count below.
+        // BATCH_CAP=500: exactly 500 rows are touched per run. We assert
+        // via `Bus::assertDispatchedTimes(..., 500)` (already below) and
+        // verify the row state shape is preserved (no flap).
+        $preservedCount = DomainEvent::query()
             ->where('attempts', 5)
             ->whereNotNull('last_error')
+            ->whereNull('dispatched_at')
             ->count();
         $this->assertSame(
-            100,
-            $remaining,
-            'Exactly 100 rows must remain untouched for the next cron tick'
+            $totalRows,
+            $preservedCount,
+            'All 600 seeded rows must keep attempts=5 + last_error preserved (Heal B.1 monotonic).'
         );
 
         Bus::assertDispatchedTimes(\App\Jobs\DispatchDomainEventsJob::class, 500);

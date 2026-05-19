@@ -96,9 +96,14 @@ class OutboxProductionLikeSimulationTest extends TestCase
         $oldFailed->refresh();
         $notTerminal->refresh();
 
-        $this->assertSame(0, (int) $recentFailed->attempts);
-        $this->assertNull($recentFailed->last_error);
-        $this->assertNull($recentFailed->dispatched_at);
+        // [Heal B.1 Z3 B-2 P0 — 2026-05-19] Post-heal contract: command
+        // PRESERVES attempts + last_error monotonically; only re-nulls
+        // dispatched_at so DispatchDomainEventsJob can re-claim the row.
+        // Pre-heal asserted attempts=0 + last_error=null, encoding the
+        // chronic-fail flap defect RED-Z3 B-2 caught.
+        $this->assertSame(5, (int) $recentFailed->attempts, 'recentFailed: attempts PRESERVED post-heal.');
+        $this->assertSame('pusher down', (string) $recentFailed->last_error, 'recentFailed: last_error PRESERVED.');
+        $this->assertNull($recentFailed->dispatched_at, 'recentFailed: dispatched_at re-nulled for re-claim.');
 
         $this->assertSame(5, (int) $oldFailed->attempts);
         $this->assertSame('old pusher down', $oldFailed->last_error);

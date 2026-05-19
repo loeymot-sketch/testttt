@@ -45,6 +45,27 @@ class OutboxRetryFailedCommand extends Command
 
     private const BATCH_CAP = 500;
 
+    /**
+     * [Heal B.1 Z3 B-2 P0 — 2026-05-19]
+     * Replay budget ceiling. Pre-heal this command wiped `attempts=0` on
+     * every run (`forceFill` block below), so a chronically failing row
+     * flapped indefinitely:
+     *   - never crossed PruneOutboxCommand threshold (`attempts>=6 AND
+     *     created_at<cutoff`), so the row was un-reclaimable.
+     *   - lost `last_error` forensic trail each cycle.
+     *
+     * Post-heal: `attempts` is monotonic. This filter bounds the replay
+     * lane at REPLAY_MAX_ATTEMPTS (≈ 2 × `$tries=6` cycles of
+     * `DispatchDomainEventsJob`). Rows at/above the cap are left alone:
+     *   - staleness monitor (filters on `dispatched_at NULL`) still pages
+     *     the operator,
+     *   - prune lane (90d + `attempts>=6`) eventually reclaims.
+     *
+     * Const exposed for testability (sentinel
+     * `OutboxRetryFailedAttemptsPreservedTest`).
+     */
+    public const REPLAY_MAX_ATTEMPTS = 12;
+
     public function handle(): int
     {
         $lock = Cache::lock(self::LOCK_KEY, self::LOCK_TTL_SECONDS);
@@ -74,8 +95,13 @@ class OutboxRetryFailedCommand extends Command
         // BATCH_CAP bounds the single-run wall-clock so the LOCK_TTL
         // window can never expire mid-handle. Overflow drains on the
         // next hourly cron tick (Kernel.php:65).
+        // [Heal B.1 Z3 B-2 P0 — 2026-05-19] Bound the replay lane by an
+        // upper attempts cap so chronic-fail rows can transition to the
+        // PruneOutboxCommand lane (`attempts>=6 AND created_at<cutoff`)
+        // and the staleness monitor keeps paging until then.
         $events = DomainEvent::query()
             ->failed(5)
+            ->where('attempts', '<', self::REPLAY_MAX_ATTEMPTS)
             ->where('created_at', '>=', $cutoff)
             ->orderBy('id') // deterministic order ⇒ overflow is the same tail each run
             ->take(self::BATCH_CAP)
@@ -116,9 +142,16 @@ class OutboxRetryFailedCommand extends Command
             }
 
             try {
+                // [Heal B.1 Z3 B-2 P0 — 2026-05-19] attempts left monotonic so:
+                //  - prune lane (`attempts>=6 AND created_at<cutoff`)
+                //    eventually reclaims chronic-fail rows.
+                //  - replay budget bounded by self::REPLAY_MAX_ATTEMPTS
+                //    filter on the query above.
+                //  - last_error preserved as forensic trail (was wiped
+                //    on every cycle pre-heal).
+                // Only `dispatched_at` is re-nulled so DispatchDomainEventsJob
+                // Phase 1 lockForUpdate can re-claim the row.
                 $event->forceFill([
-                    'attempts' => 0,
-                    'last_error' => null,
                     'dispatched_at' => null,
                 ])->save();
 
