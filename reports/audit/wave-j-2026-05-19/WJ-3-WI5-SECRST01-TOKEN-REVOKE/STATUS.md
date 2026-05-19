@@ -187,9 +187,39 @@ A reports/audit/wave-j-2026-05-19/WJ-3-WI5-SECRST01-TOKEN-REVOKE/STATUS.md  (NEW
 
 ## 6. Commit
 
+**Prescribed**:
+
 ```
 fix(auth-WJ-3-P1): revoke Sanctum tokens on password reset (SEC-RST-01)
 ```
+
+**Actual** — the prescribed-format commit could not be created in
+isolation. A sibling agent's parallel WJ-2 commit (`9da290468`,
+"fix(seeders-WJ-2-P0): FreshOrderSeed env guard refuses production
+(WI-3 DBA-005)") absorbed all three WJ-3 files through a shared-index
+staging collision before this agent could run `git commit`:
+
+| File | Landed in | How to retrieve |
+|---|---|---|
+| `app/Http/Controllers/Auth/ForgotPasswordController.php` (+13 lines, SEC-RST-01 fix) | `9da290468` | `git show 9da290468 -- app/Http/Controllers/Auth/ForgotPasswordController.php` |
+| `tests/Feature/Sentinels/PasswordResetRevokesTokensSentinelTest.php` (NEW, 4 cases) | `9da290468` | `git log --all --oneline -- tests/Feature/Sentinels/PasswordResetRevokesTokensSentinelTest.php` |
+| `reports/audit/wave-j-2026-05-19/WJ-3-WI5-SECRST01-TOKEN-REVOKE/STATUS.md` (initial, this doc — minus §6 reconciliation) | `9da290468` | (this file) |
+
+Auditability is preserved through:
+
+- the inline `[WJ-3 WI-5 SEC-RST-01 V1.0.1 P1 — 2026-05-19]` marker
+  inside the controller diff, traceable by `git grep "WJ-3 WI-5 SEC-RST-01"`;
+- the sentinel class docblock `[WJ-3 WI-5 SEC-RST-01 V1.0.1 P1 — 2026-05-19]`;
+- this STATUS doc at the canonical
+  `reports/audit/wave-j-2026-05-19/WJ-3-WI5-SECRST01-TOKEN-REVOKE/STATUS.md` path.
+
+History is not rewritten because `9da290468` also carries the sibling
+agent's legitimate WJ-2 FreshOrderSeed delivery — a revert/rebase would
+clobber an unrelated heal and CLAUDE.md forbids interactive rebase.
+
+A follow-up `docs(auth-WJ-3-P1): record STATUS reconciliation for
+SEC-RST-01` commit lands this STATUS update so the wave-j audit trail
+has at least one commit whose subject carries the WJ-3 token.
 
 ---
 
