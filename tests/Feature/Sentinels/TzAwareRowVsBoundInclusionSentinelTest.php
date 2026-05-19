@@ -1,43 +1,62 @@
 <?php
 
 /**
- * [WG-4 TZ-test-drift V1.0.X 2026-05-19] Sentinel — KDS row-vs-bound inclusion
- * contract in the Paris-evening failure window.
+ * [WG-4 TZ-test-drift V1.0.X 2026-05-19] Sentinel — KDS service binds
+ * UTC-converted day bounds at Paris-evening (DST-active) wall-clock.
  *
  * Authority:
  *   - reports/audit/foundation-2026-05-18/failures/V1_0_X_BACKLOG_KDS_TZ_FIX.md
  *     §"Sentinel test addition"
  *   - Companion to tests/Feature/Services/SisterServicesTzAwareTest.php
- *     (Wave 3b KDS-ADV3B-01) and SisterServicesTzAwareV2Test.php
- *     (Wave 3c KDS-ADV3C-01..04). Those sentinels pin the COMPILED SQL
- *     BINDINGS shape (UTC literals). This sentinel pins the COMPLEMENTARY
- *     CONTRACT: at Paris 22:20 (inside the documented failure window
- *     [22:00, 23:59:59]), the row's UTC-converted instant falls strictly
- *     between the service-computed UTC bound literals, so on a TZ-aware
- *     storage engine (MySQL prod) the row IS included in the result set.
+ *     (Wave 3b KDS-ADV3B-01) which pins the same KDS binding pattern at
+ *     Paris-WINTER noon. This sentinel covers the complementary
+ *     Paris-EVENING DST-active case [22:00, 23:59:59] explicitly called out
+ *     in V1_0_X_BACKLOG_KDS_TZ_FIX.md as the failure window the heal
+ *     `c2613cab0` was deployed to close.
  *
- * Why driver-agnostic math instead of SQLite behavioral assertion:
- *   SQLite has no session-TZ concept, so a behavioral row-count test would
- *   pass both pre- and post-heal (or fail post-heal because SQLite string-
- *   compares Paris-local fixture literals against UTC bound literals
- *   unawarely). Asserting the **UTC-aware comparison math** holds in the
- *   Paris-evening window is what guarantees the production behavior on
- *   MySQL.
+ * What this pins:
+ *   At Paris 22:20 CEST (the failure-window centroid), the SQL bindings
+ *   emitted by `KitchenDisplaySystemOrderService::list()` MUST contain the
+ *   UTC-converted day bounds (`2026-05-17 22:00:00`, `2026-05-18 21:59:59`,
+ *   `2026-05-18 22:00:00`) and MUST NOT contain the Paris-local literals
+ *   that pre-heal `Carbon::today()` would have produced (`2026-05-18 00:00:00`,
+ *   `2026-05-18 23:59:59`).
+ *
+ * Why a DST-evening pin is non-duplicative with SisterServicesTzAwareTest:
+ *   The sister sentinel pins Paris-WINTER noon (`2026-01-15 12:00:00 UTC` →
+ *   Paris UTC+1) to dodge DST ambiguity in the binding-shape assertion.
+ *   The V1.0.X failure manifested in DST-active May at 22:20 Paris (UTC+2).
+ *   Without an explicit DST-evening case, a future regression that broke
+ *   ONLY the DST arithmetic (e.g. forgot `$appTz` and used PHP default TZ)
+ *   could pass the winter test and still break production. This sentinel
+ *   closes that gap.
  *
  * RED trigger:
- *   If any future change reverts c2613cab0 (re-introduces Paris-local
- *   `Carbon::today()` day bounds), the computed bound literals shift back
- *   to Paris-local strings and the row's UTC instant falls OUTSIDE the
- *   resulting [bound_start, bound_end] window in UTC space → assertion
- *   fails → V1.0.X regression caught at CI.
+ *   - `c2613cab0` reverted (KDS service binds `Carbon::today()` directly):
+ *     bindings would include Paris-local `'2026-05-18 00:00:00'` →
+ *     assertion-A fires.
+ *   - DST handling regressed (e.g. service ignores `$appTz`): UTC bounds
+ *     would be `'2026-05-18 23:00:00'` (UTC+1 winter math applied) instead
+ *     of `'2026-05-17 22:00:00' / '2026-05-18 21:59:59'` (correct UTC+2
+ *     May math) → assertion-B and assertion-C fire.
  */
 
 namespace Tests\Feature\Sentinels;
 
+use App\Enums\Ask;
+use App\Enums\OrderStatus;
+use App\Enums\OrderType;
+use App\Enums\PaymentStatus;
+use App\Models\Branch;
+use App\Models\Order;
+use App\Models\User;
+use App\Services\KitchenDisplaySystemOrderService;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class TzAwareRowVsBoundInclusionSentinelTest extends TestCase
@@ -61,96 +80,142 @@ class TzAwareRowVsBoundInclusionSentinelTest extends TestCase
     }
 
     /**
-     * Contract: at Paris 22:20 (CEST, DST active), the KDS service-computed
-     * UTC day bounds MUST bracket the row's UTC instant.
-     *
-     * GREEN (post-c2613cab0): row at Paris 22:20 = UTC 20:20 falls inside
-     *   [UTC 22:00 prev-day, UTC 21:59:59 today] because the heal converts
-     *   Paris-today → UTC range = [2026-05-17 22:00:00, 2026-05-18 21:59:59].
-     *
-     * RED (pre-c2613cab0 or reverted): bounds would be the raw Paris-local
-     *   literals `[2026-05-18 00:00:00, 2026-05-18 23:59:59]` interpreted by
-     *   MySQL as UTC, which on a UTC-stored TIMESTAMP column shifts the
-     *   visible window to Paris [02:00, 25:59:59 (next day 01:59:59)] — the
-     *   [22:00, 23:59:59] Paris evening drops out of `today`'s window.
+     * RED: fails when KitchenDisplaySystemOrderService::list() binds
+     *      Paris-local midnight literal (Carbon::today() pre-heal) at
+     *      Paris 22:20 CEST wall-clock.
+     * GREEN: passes when service converts Paris-local day → UTC range
+     *        (c2613cab0 post-heal).
      */
-    public function test_row_at_paris_evening_falls_inside_utc_converted_day_bounds(): void
+    public function test_kds_list_binds_utc_converted_paris_day_boundaries_in_dst_evening_window(): void
     {
         // Pin the wall-clock to the documented failure-window centroid.
-        // 2026-05-18 20:20:00 UTC = 22:20:00 Paris CEST (DST active May).
+        // 2026-05-18 20:20:00 UTC = 22:20:00 Paris CEST (DST active in May).
         $now = CarbonImmutable::parse('2026-05-18 20:20:00', 'UTC');
         Carbon::setTestNow($now);
         CarbonImmutable::setTestNow($now);
 
-        // Sanity: confirm pinning + DST math.
+        // Sanity: confirm pinning + DST math (UTC+2 May, NOT UTC+1).
         $this->assertSame(
             '2026-05-18 22:20:00',
             Carbon::now()->setTimezone('Europe/Paris')->format('Y-m-d H:i:s'),
             'pinned UTC 20:20 must resolve to Paris 22:20 (CEST, DST active in May)'
         );
 
-        // Replicate the heal's bound-computation logic byte-for-byte.
-        $appTz = config('app.timezone'); // 'Europe/Paris'
-        $startUtc = Carbon::today($appTz)->setTimezone('UTC');
-        $endUtc = Carbon::today($appTz)->endOfDay()->setTimezone('UTC');
-        $tomorrowUtc = Carbon::tomorrow($appTz)->setTimezone('UTC');
+        // Expected post-heal UTC bound literals at this pinned moment.
+        // Paris-today in May = UTC+2 → start UTC = '2026-05-17 22:00:00',
+        // end UTC = '2026-05-18 21:59:59', tomorrow UTC = '2026-05-18 22:00:00'.
+        $appTz = config('app.timezone');
+        $expectedStartUtc = Carbon::today($appTz)
+            ->setTimezone('UTC')
+            ->format('Y-m-d H:i:s');
+        $expectedEndUtc = Carbon::today($appTz)
+            ->endOfDay()
+            ->setTimezone('UTC')
+            ->format('Y-m-d H:i:s');
+        $expectedTomorrowUtc = Carbon::tomorrow($appTz)
+            ->setTimezone('UTC')
+            ->format('Y-m-d H:i:s');
+        $this->assertSame('2026-05-17 22:00:00', $expectedStartUtc, 'Paris-today start CEST = UTC 22:00 prev-day');
+        $this->assertSame('2026-05-18 21:59:59', $expectedEndUtc, 'Paris-today end CEST = UTC 21:59:59 today');
+        $this->assertSame('2026-05-18 22:00:00', $expectedTomorrowUtc, 'Paris-tomorrow start CEST = UTC 22:00 today');
 
-        // Expected UTC literals for Paris-today on 2026-05-18 (CEST, UTC+2).
-        $this->assertSame(
-            '2026-05-17 22:00:00',
-            $startUtc->format('Y-m-d H:i:s'),
-            'Paris-today start in CEST = UTC 22:00 prev-day. If this changes, '
-            . 'c2613cab0 heal has been reverted to Carbon::today() (Paris-local).'
-        );
-        $this->assertSame(
-            '2026-05-18 21:59:59',
-            $endUtc->format('Y-m-d H:i:s'),
-            'Paris-today end in CEST = UTC 21:59:59 today.'
-        );
-        $this->assertSame(
-            '2026-05-18 22:00:00',
-            $tomorrowUtc->format('Y-m-d H:i:s'),
-            'Paris-tomorrow start in CEST = UTC 22:00 today (used by advance-'
-            . 'order overdue branch).'
+        // Seed an admin user + an active KIOSK order at "now" so the
+        // service's whereBetween / orWhere(is_advance) branches emit
+        // their order_datetime predicates.
+        $branch = Branch::factory()->create();
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $this->actingAs($admin, 'sanctum');
+
+        $order = Order::factory()->create([
+            'branch_id'        => $branch->id,
+            'status'           => OrderStatus::PREPARING,
+            'payment_status'   => PaymentStatus::PAID,
+            'order_type'       => OrderType::KIOSK,
+            'order_datetime'   => $now,
+            'is_advance_order' => Ask::NO,
+        ]);
+        $order->forceFill(['updated_at' => $now])->saveQuietly();
+
+        // Capture compiled SQL + bindings emitted by the service.
+        $captured = [];
+        DB::listen(static function ($query) use (&$captured) {
+            $captured[] = [
+                'sql' => strtolower($query->sql),
+                'bindings' => array_map(
+                    static fn ($b) => is_object($b) && method_exists($b, 'format')
+                        ? $b->format('Y-m-d H:i:s')
+                        : (string) $b,
+                    $query->bindings
+                ),
+            ];
+        });
+
+        $service = app(KitchenDisplaySystemOrderService::class);
+        $service->list(new Request());
+
+        // Filter to the SELECT FROM orders queries that bind order_datetime.
+        $normalize = static fn (string $sql): string => str_replace(['`', '"'], '', $sql);
+        $orderQueries = array_values(array_filter(
+            $captured,
+            static function (array $q) use ($normalize): bool {
+                $n = $normalize($q['sql']);
+                return str_contains($n, 'from orders')
+                    && str_contains($n, 'order_datetime');
+            }
+        ));
+
+        $this->assertNotEmpty(
+            $orderQueries,
+            'KitchenDisplaySystemOrderService::list() must emit at least one '
+            . 'SELECT FROM orders predicating on order_datetime. '
+            . 'If empty, the service shape has changed materially.'
         );
 
-        // CORE CONTRACT — the row's UTC instant falls strictly between the
-        // bounds, so on a TZ-aware MySQL TIMESTAMP column it WILL be included
-        // in the whereBetween(...) predicate. This is the bit that breaks on
-        // revert: pre-heal bounds were Paris-local '2026-05-18 23:59:59' but
-        // bound against UTC-stored '2026-05-18 20:20:00' would compare as
-        // raw lexicographic strings — fine here — yet a 22:20 Paris-local
-        // fixture row writes UTC 20:20 to the column, AND a Paris-local end-
-        // bound 23:59:59 bound as UTC means the predicate is "row 20:20 UTC
-        // BETWEEN UTC 00:00 and UTC 23:59:59", which mistakenly INCLUDES
-        // rows from 00:00-01:59:59 UTC = Paris 02:00-03:59:59 of the SAME
-        // calendar day (next day's early morning Paris-local). The heal
-        // restores the correct Paris-anchored window.
-        $rowUtc = $now->format('Y-m-d H:i:s'); // '2026-05-18 20:20:00'
-        $this->assertGreaterThanOrEqual(
-            $startUtc->format('Y-m-d H:i:s'),
-            $rowUtc,
-            "Row UTC instant ($rowUtc) MUST be >= Paris-today start UTC bound "
-            . "({$startUtc->format('Y-m-d H:i:s')}). If this fails, c2613cab0 "
-            . 'is reverted and Paris 22:00-23:59:59 rows fall outside the day '
-            . 'window — KDS UI silently drops them. See '
-            . 'reports/audit/foundation-2026-05-18/failures/V1_0_X_BACKLOG_KDS_TZ_FIX.md.'
-        );
-        $this->assertLessThanOrEqual(
-            $endUtc->format('Y-m-d H:i:s'),
-            $rowUtc,
-            "Row UTC instant ($rowUtc) MUST be <= Paris-today end UTC bound "
-            . "({$endUtc->format('Y-m-d H:i:s')}). Same root cause as above."
+        // Flatten all bindings into one string for substring assertions.
+        $allBindings = [];
+        foreach ($orderQueries as $q) {
+            foreach ($q['bindings'] as $b) {
+                $allBindings[] = (string) $b;
+            }
+        }
+        $joined = implode(' | ', $allBindings);
+
+        // ASSERTION-A (negative — revert detector): the pre-heal Paris-local
+        // midnight literal '2026-05-18 00:00:00' MUST NOT appear. Pre-heal
+        // `Carbon::today()` resolves to this in app.timezone='Europe/Paris'
+        // and was bound as-is against the UTC-stored TIMESTAMP column.
+        $this->assertStringNotContainsString(
+            '2026-05-18 00:00:00',
+            $joined,
+            'KDS service MUST NOT bind Paris-local midnight literal at Paris '
+            . '22:20 CEST. If this fails, Wave 3b heal c2613cab0 has been '
+            . 'reverted — production MySQL would silently drop 22:00-23:59:59 '
+            . 'Paris orders from the KDS UI. See '
+            . "reports/audit/foundation-2026-05-18/failures/V1_0_X_BACKLOG_KDS_TZ_FIX.md.\n"
+            . "Captured bindings: $joined"
         );
 
-        // SECONDARY GUARD — the row is also strictly INSIDE the half-open
-        // overdue-advance-order window (..<tomorrowStartUtc), so the second
-        // branch of the service whereBetween also matches.
-        $this->assertLessThan(
-            $tomorrowUtc->format('Y-m-d H:i:s'),
-            $rowUtc,
-            'Row UTC instant MUST be < Paris-tomorrow start UTC bound '
-            . '(advance-order overdue branch). Same revert symptom as above.'
+        // ASSERTION-B (positive — UTC start bound): UTC instant of Paris-today
+        // start MUST be bound (whereBetween lower bound).
+        $this->assertStringContainsString(
+            $expectedStartUtc,
+            $joined,
+            "KDS service MUST bind UTC instant of Paris-today start "
+            . "(expected '$expectedStartUtc') at Paris 22:20 CEST. "
+            . "If this fails, c2613cab0 may be partially reverted or DST "
+            . "handling regressed.\nCaptured bindings: $joined"
+        );
+
+        // ASSERTION-C (positive — UTC tomorrow bound): the advance-order
+        // overdue half-open `<` boundary MUST also be bound at the correct
+        // UTC instant for Paris-tomorrow start.
+        $this->assertStringContainsString(
+            $expectedTomorrowUtc,
+            $joined,
+            "KDS service MUST bind UTC instant of Paris-tomorrow start "
+            . "(expected '$expectedTomorrowUtc') for the overdue advance-"
+            . "order branch.\nCaptured bindings: $joined"
         );
     }
 }

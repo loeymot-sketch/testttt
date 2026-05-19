@@ -29,7 +29,7 @@ classes — and added a complementary contract sentinel.
 | `tests/Feature/Orders/KDSAllergenVisibilityTest.php` | + setUp (was none) with pin + tearDown |
 | `tests/Feature/Oss/OssPolishClusterTest.php` | + pin in setUp + tearDown; + 2 fixtures aligned to `now('UTC')->subHours(N)` (root cause for WF-2 P2 was 2h Paris↔UTC DST offset exceeding the 1h prune window — pin alone insufficient) |
 | `tests/Feature/OrderPipeline/KioskFullFlowE2ETest.php` | NO Carbon pin (documented why below) — controller writes via `date()`, not Carbon-aware ; pin breaks the test mid-day. Tracked as V1.0.X-followup needing production heal. |
-| `tests/Feature/Sentinels/TzAwareRowVsBoundInclusionSentinelTest.php` | NEW — driver-agnostic contract sentinel: pins wall-clock to Paris 22:20 CEST and asserts the row's UTC instant falls strictly between the service-computed UTC day bounds. RED if `c2613cab0` is reverted. |
+| `tests/Feature/Sentinels/TzAwareRowVsBoundInclusionSentinelTest.php` | NEW — service-side binding sentinel: pins wall-clock to Paris 22:20 CEST (DST-active failure-window centroid) and uses `DB::listen` to capture `KitchenDisplaySystemOrderService::list()` SQL bindings, asserts UTC-converted day bounds present + Paris-local midnight absent. RED-verified by temporary in-source revert simulation 2026-05-19. |
 
 ## Verification
 
@@ -142,25 +142,47 @@ not by design).
 
 The V1.0.X doc proposed a behavioral row-count test ("Row created at Paris-
 evening must be picked up by query bounds"). I prototyped that exactly and
-it fails on SQLite — because SQLite has no session-TZ concept, so the Wave 3b
-heal's UTC-bound conversion lexicographically EXCLUDES the Paris-local
-fixture row from the `whereBetween(...)` predicate even post-heal.
+it fails on SQLite — because SQLite has no session-TZ concept, so a fixture-
+based behavioral inclusion test cannot prove the heal's MySQL-correctness.
 
-The advisor flagged the same issue. The pivot: a DRIVER-AGNOSTIC math
-sentinel that asserts the contract at the level of bound literals + row's
-UTC instant, independent of how the storage engine TZ-coerces.
+**First-iteration sentinel** (rejected on advisor review): a static
+Carbon-math invariant asserting the row's UTC instant falls within the
+service-computed UTC day bounds. Caught the math-level contract but did
+NOT call into the service — so a service-side revert of `c2613cab0`
+(switching back to `Carbon::today()` instead of `Carbon::today($appTz)->setTimezone('UTC')`)
+would NOT trip it. Advisor flagged this as the sentinel claim being
+unfulfilled.
 
-**Contract pinned** : at Paris 22:20 (inside the failure window), the row's
-UTC instant `2026-05-18 20:20:00` falls strictly between the service-computed
-UTC day bounds `[2026-05-17 22:00:00, 2026-05-18 21:59:59]`. On MySQL prod
-this means the row IS included in the KDS UI. On revert of `c2613cab0` the
-bounds shift back to Paris-local strings and the row falls outside → sentinel
-RED → V1.0.X regression caught at CI before deploy.
+**Shipped sentinel** : a service-side binding capture via `DB::listen`,
+mirroring the `SisterServicesTzAwareTest` pattern but pinned at Paris 22:20
+CEST (DST-active failure-window centroid) instead of Paris-winter noon.
+Calls `KitchenDisplaySystemOrderService::list(new Request())` against an
+actively-seeded KIOSK order, captures the emitted SQL bindings, and asserts:
 
-This complements the existing binding-level sentinels (`SisterServicesTzAwareTest`,
-`SisterServicesTzAwareV2Test`, `KdsSyncTzAwareTest`) which prove the SQL
-BINDINGS shape. WG-4's sentinel proves the BUSINESS CONTRACT the bindings
-exist to satisfy.
+  - **(A) negative — revert detector** : `'2026-05-18 00:00:00'` (Paris-local
+    midnight, pre-heal literal) MUST NOT appear in any binding.
+  - **(B) positive — UTC start bound** : `'2026-05-17 22:00:00'` (post-heal
+    UTC literal for Paris-today start in CEST) MUST be bound.
+  - **(C) positive — UTC tomorrow bound** : `'2026-05-18 22:00:00'` (post-heal
+    UTC literal for Paris-tomorrow start in CEST, used by advance-order
+    overdue branch) MUST be bound.
+
+**RED-trigger verified** (2026-05-19 wall-clock test) : temporarily reverted
+`KitchenDisplaySystemOrderService.php` line 105-107 to pre-heal
+`Carbon::today()` and re-ran the sentinel. It correctly went RED on
+assertion-A with captured bindings showing `'2026-05-18 00:00:00 |
+2026-05-18 23:59:59 | 2026-05-19 00:00:00'` — exactly the Paris-local
+literals the heal removed. Production code restored before commit.
+
+**Non-duplicative with sister sentinels** :
+  - `SisterServicesTzAwareTest` pins Paris-WINTER noon (no DST). Sufficient
+    for binding-shape, insufficient for the DST-evening contract.
+  - `SisterServicesTzAwareV2Test` covers OSS prune + Dashboard + OrderService
+    list (different services entirely).
+  - `KdsSyncTzAwareTest` covers `KdsSyncService::sync()` (different KDS path).
+  - **This sentinel** covers `KitchenDisplaySystemOrderService::list()` at
+    DST-active Paris-evening — the documented failure window the V1.0.X
+    plan flagged as missing.
 
 ## Constraints honored
 
