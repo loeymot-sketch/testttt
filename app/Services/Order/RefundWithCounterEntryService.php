@@ -221,6 +221,25 @@ class RefundWithCounterEntryService
                 // best-effort log
             }
 
+            // [WG-1-WF6-P1-2 heal/cms-pr1-quickwins-2026-05-18]
+            // Companion loyalty-points reversal. The 3 cashBack() callers in
+            // OrderService / FrontendOrderService correctly call refundPoints
+            // RIGHT AFTER cashBack (app/Services/OrderService.php:1702, :1805
+            // and app/Services/FrontendOrderService.php:707) — but
+            // PosOrderController::refundWithCounterEntry (sole caller of this
+            // service) did NOT. Without this, a customer who redeemed loyalty
+            // points and later receives a post-Z refund loses BOTH cash AND
+            // points (cash refunded via mirror order, points NEVER credited
+            // back). refundPoints() is no-op-safe when loyalty_customer_code
+            // is null — unconditional call is correct.
+            //
+            // Placement: inside the DB::transaction so the loyalty reversal
+            // ledger row + the customer's loyalty_points re-credit are atomic
+            // with the mirror order + mirror payments + audit row. A failure
+            // in any leg rolls them all back together — same atomicity
+            // guarantee as the pre-Z cash refund path.
+            app(\App\Services\LoyaltyService::class)->refundPoints($parent, 'pos');
+
             // [REFUND-EVENT-WIRE] Fire RefundCreated for stock + availability release.
             // Pass PARENT (positive qty) — listeners iterate $order->orderItems and use
             // qty as a positive release amount; the mirror order has NEGATED qty which
