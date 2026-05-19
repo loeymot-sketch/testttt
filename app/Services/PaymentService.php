@@ -89,6 +89,10 @@ class PaymentService
 
     public function cashBack($order, $gatewaySlug, $transactionNo)
     {
+        // Idempotent early-return — stays OUTSIDE the transaction envelope so
+        // a no-op second call does not waste a tx + savepoint. Mirrors the
+        // pre-heal behaviour: a re-fire of cashBack on an already-refunded
+        // order returns the prior row without re-dispatching RefundCreated.
         $existingCashBack = Transaction::where(['order_id' => $order->id])
             ->where('type', 'cash_back')
             ->first();
@@ -97,10 +101,37 @@ class PaymentService
             return $existingCashBack;
         }
 
-        $transaction = Transaction::where(['order_id' => $order->id])
-            ->where('type', 'payment')
-            ->first();
-        if ($transaction) {
+        // [HEAL-PLAN-D.2 / Z8 P1-2 2026-05-19] Atomic envelope around the
+        // four mutating side-effects of a cash-back issuance:
+        //   1. Transaction::create('cash_back')
+        //   2. User->balance += $order->total
+        //   3. AuditLogService::write — NF525 HMAC chain append
+        //   4. RefundCreated::dispatch — stock/availability release + broadcast
+        //
+        // Pre-heal, an exception between steps 1-2 and step 3 (audit chain
+        // head missing, unique-constraint collision, HMAC failure) left
+        // orphan Transaction rows + inflated balance + no audit footprint +
+        // no downstream RefundCreated -> stock never released, payment_status
+        // never flipped. Post-heal, any throw inside the closure rolls back
+        // all three writes atomically.
+        //
+        // Nested-tx safe: when called from OrderService::changeStatus (which
+        // wraps its work in its own DB::transaction(lockForUpdate)), Laravel
+        // uses a savepoint — the inner tx participates in the outer one.
+        //
+        // DispatchableAfterCommit on RefundCreated defers the dispatch to
+        // commit of the OUTERMOST tx — a rollback discards the deferred
+        // callback before any listener runs, preserving consistent rollback
+        // semantics.
+        $transaction = null;
+        DB::transaction(function () use ($order, $gatewaySlug, $transactionNo, &$transaction): void {
+            $priorPayment = Transaction::where(['order_id' => $order->id])
+                ->where('type', 'payment')
+                ->first();
+            if (! $priorPayment) {
+                return; // No prior payment -> no cashBack (legacy behavior preserved).
+            }
+
             $transaction = Transaction::create([
                 'order_id'       => $order->id,
                 'transaction_no' => $transactionNo,
@@ -137,20 +168,23 @@ class PaymentService
             ]);
 
             // [AUDIT-F-003] Cash drawer hook — record cashback as direction=out.
-            // Best-effort hors transaction principale.
+            // recordCashBackMovement is self-shielded (try/catch + Log::warning)
+            // so its failure CANNOT abort the outer tx; the cash drawer
+            // movement is intentionally best-effort.
             if ($order instanceof Order) {
                 $this->recordCashBackMovement($order, (float) $order->total);
             }
 
             // [REFUND-EVENT-WIRE] Fire RefundCreated so listeners release stock /
-            // availability counters. Inside `if ($transaction)` so the second
-            // idempotent cashBack() call (early-returned above) does NOT re-fire
-            // the event. DispatchableAfterCommit defers to post-commit; double-
-            // fire with OrderCanceled (admin RETURN/CANCEL paths in OrderService /
-            // FrontendOrderService) is acceptable — AvailabilityService is
-            // idempotent via the released_qty ledger.
+            // availability counters. Inside the transaction so the dispatch
+            // is registered on Laravel's afterCommit hook — listeners only
+            // fire on durable commit. The idempotent early-return above
+            // guarantees we never re-fire on a second cashBack() call.
+            // Double-fire with OrderCanceled (admin RETURN/CANCEL paths in
+            // OrderService / FrontendOrderService) is acceptable —
+            // AvailabilityService is idempotent via the released_qty ledger.
             RefundCreated::dispatch($order);
-        }
+        });
 
         return $transaction;
     }
