@@ -1,5 +1,5 @@
 # CLAUDE.md
-— FoodKing Master Operating Memory (Claude Code edition, 2026-05-09)
+— FoodKing Master Operating Memory (Claude Code edition, 2026-05-19 post WI-7)
 
 > Cette mémoire opère en **Claude Code natif**. Tout agent Claude qui ouvre une
 > session sur ce projet la lit automatiquement. Elle remplace la version
@@ -217,6 +217,10 @@ nécessite gate explicite owner ou test régression triple-vert.
 - `resources/js/components/frontend/kiosk/KioskWizardComponent.vue`
 - `resources/js/components/frontend/kiosk/KioskAppComponent.vue`
 - `resources/js/components/frontend/kiosk/KioskUpsellComponent.vue`
+- `resources/js/components/admin/pos/PaymentComponent.vue` — POS payment
+  component, frozen per BRAIN §2 (V1 untouched protected file)
+- `resources/js/components/admin/pos/v5/PosV5TrancheRow.vue` — POS V5
+  tranche row, frozen per BRAIN §2 (V1 untouched protected file)
 - **POS Vanilla JS wizard** (popup caisse) — design parfait selon owner.
   Fichiers exacts (verified iter15 ultra-review 2026-05-09) :
   - `public/js/pos-wizard.js` (Vanilla JS hand-written, ~296 KB,
@@ -252,6 +256,17 @@ Loi de Finance France — non-négociable, prison time si violé.
 - Frontend envoie `item_id, quantity, option_ids` UNIQUEMENT
 - Aucun env flag pour bypass — toujours actif
 
+### Production boot guards (concrete enforcement)
+- `app/Providers/AppServiceProvider.php:78-145` REFUSE TO BOOT en
+  production si :
+  - `POS_SIMULATION_HARDWARE != false` (NF525 cash-trail bypass)
+  - `IDEMPOTENCY_MIDDLEWARE_ENABLED != true` (duplicate POST protection)
+  - `APP_DEBUG = true` (leaks stack/SQL/secrets)
+  - `APP_URL` vide (Sanctum + webhook signing dépendent)
+- Added by commits `2477a2d05`, `dafb6b3c4`, `1e7c65ecc`, `2949e92ed`.
+- L'abstract invariant ("forbidden") est doublé par une `RuntimeException`
+  au boot — pas de silent override possible.
+
 ### Fiscal Sequence
 - `fiscal_sequence_no` monotonic per branch, gap-free
 - Cache::lock 5s + DB FOR UPDATE = triple défense concurrent
@@ -263,7 +278,8 @@ Loi de Finance France — non-négociable, prison time si violé.
 - `audit_logs` HMAC SHA-256 chain-signed (prev_hash → current_hash)
 - `z_reports` HMAC chain-signed daily clôture
 - DB trigger `BEFORE DELETE` SIGNAL SQLSTATE '45000' (MySQL prod only)
-- TRUNCATE bypass mitigé via GRANT level (deploy doc)
+- TRUNCATE bypass mitigé via GRANT-level REVOKE on `audit_logs` +
+  `z_reports` (Ansible task CVP0-1, commit `f840c3ef5`)
 - 6 ans rétention obligatoire post-close
 
 ---
@@ -271,24 +287,42 @@ Loi de Finance France — non-négociable, prison time si violé.
 ## 9. Multi-Tenant + Auth Invariants
 
 ### Branch Isolation
-- `BranchScope` global appliqué sur 11 models post iter11+12 :
-  Order, FrontendOrder, OrderItem, OrderPayment, KioskMachine,
-  StockLevel, StockMovement, CashDrawerSession, CashMovement,
-  PendingPaymentConfirmation, PushNotification, DiningTable, Printer
-- Admin (branch_id=0) bypass ; staff (branch_id>0) scoped
-- User model exempté pour éviter Sanctum recursion
+- `BranchScope` global appliqué sur **20 models** (baseline locked par
+  `tests/Feature/Branch/BranchScopeCoverageSentinelTest.php`) :
+  Order, FrontendOrder, OrderItem, OrderPayment, OrderQuote,
+  PosParkedOrder, KioskMachine, StockLevel, StockMovement,
+  ItemBranchAvailability, CashDrawerSession, CashMovement,
+  DeliveryBoyCashSession, DeliveryBoyCashMovement,
+  PendingPaymentConfirmation, PaymentTerminal, PushNotification,
+  DiningTable, Printer, **User**.
+- Admin (branch_id=0) bypass ; staff (branch_id>0) scoped.
+- **Exemptions documentées** (sentinel `EXEMPTED_MODELS`) :
+  - `Branch` — self-reference (BranchScope sur Branch serait circulaire)
+  - `Customer` — Sanctum customer-token recursion risk
+  - V1.0.2 BACKLOG baseline (10 models — single-tenant low-risk, V2 SaaS
+    hard-fail) : FrontendDiningTable, ZReport, AuditLog, OrderDiscountLog,
+    Message, DiningTableAuditLog, KioskPromo, UpsellRule, ActionLog,
+    DomainEvent
+- `ItemWizardProfile` utilise la variante nullable
+  `WizardProfileBranchScope` (global-or-branch published).
 
 ### Sanctum kiosk:order
 - Token créé avec `['kiosk:order']` ability UNIQUEMENT
 - TTL 480 minutes (config sanctum.expiration)
 - Old tokens revoked à chaque relogin (prevent token sprawl)
-- `tokenCan('kiosk:order')` checks dans 6+ controllers
+- `tokenCan('kiosk:order')` checks dans 8 controllers (verified WI-7)
 - Pre-auth lookups : `withoutGlobalScope(BranchScope::class)` explicit
+- V1.0.1 roadmap (BRAIN §1) : TTL 8h → 1h sensitive ops
 
 ### Spatie Permissions (RBAC)
 - `permission:settings` gate les routes admin sensibles
 - Roles : Admin, Branch Manager, POS Operator, Chef, etc.
-- FormRequest authz scattered → roadmap V1.0.1 refactor 88 endpoints
+- FormRequest authz unifié sur baseline **69 FormRequests avec
+  `return true;` restantes** (sentinel `FormRequestAuthzDriftSentinelTest`
+  baseline-lock — count GROWS = CI fails). Historique : 77 initial
+  Wave 8 → 74 post Wave 5H → 69 post BUILD-6 (8 critical refactored
+  vers `$this->user()?->can('xxx')`). V1.0.2 BACKLOG : chip-away par
+  vague de commits.
 
 ### Idempotency
 - HTTP `X-Idempotency-Key` header sur POST mutating
@@ -422,7 +456,10 @@ clear, rigorous, responsible.
 
 Quand pertinent, consulter :
 - `PROJECT_BRAIN.md` — état actuel (toujours)
-- `plans/MASTER_ITER14_V1_HARDENING_DELIVERY_2026-05-09.md` — last delivery
+- Active plan : voir `PROJECT_BRAIN.md` §2 pour pointer GOAL en cours
+  (rotating). À l'heure du WI-7 (2026-05-19) :
+  `plans/GOAL_V1_PRODUCTION_PERFECT_PHASE2_2026-05-18.md` + Wave E
+  follow-ons.
 - `plans/MASTER_ULTRA_PLAN_V1_INTERNAL_AUDIT_2026-05-09.md` — full audit
 - `docs/PROJECT_CONTINUITY_AND_VISION.md`
 - `docs/ARCHITECTURE.md`
@@ -433,7 +470,7 @@ Quand pertinent, consulter :
 - `docs/GATES_DOCTRINE.md`
 - `reports/planning/` (latest)
 - `reports/execution/` (latest)
-- `reports/antigravity/` (Playwright cycle reports)
+- `reports/test-e2e/` (Playwright cycle reports)
 - `reports/review/` (latest)
 
 ---
