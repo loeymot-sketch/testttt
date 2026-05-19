@@ -12,6 +12,8 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Scopes\BranchScope;
 use App\Services\OrderStatusScreenOrderService;
+use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -28,8 +30,28 @@ class OssPolishClusterTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // [WG-4 TZ-test-drift V1.0.X 2026-05-19] Pin Carbon::setTestNow to a
+        // fixed UTC instant inside the Paris business day. WF-2 sibling cluster
+        // (Wave 3c heal at OrderStatusScreenOrderService L108 binds
+        // `now('UTC')->subHours(N)` as UTC literal against the SQLite-stored
+        // Paris-local fixture `now()->subHours(N)` → string comparison drifts
+        // by 1-2h depending on wall-clock vs DST). Pinning both to a UTC
+        // reference removes the drift. See
+        // reports/audit/foundation-2026-05-18/failures/V1_0_X_BACKLOG_KDS_TZ_FIX.md.
+        Carbon::setTestNow(Carbon::create(2026, 5, 18, 12, 0, 0, 'UTC'));
+        CarbonImmutable::setTestNow(CarbonImmutable::create(2026, 5, 18, 12, 0, 0, 'UTC'));
+
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
+    }
+
+    protected function tearDown(): void
+    {
+        // [WG-4] Carbon::setTestNow() leaks across tests if not cleared.
+        Carbon::setTestNow();
+        CarbonImmutable::setTestNow();
+        parent::tearDown();
     }
 
     /** @test */
@@ -38,11 +60,18 @@ class OssPolishClusterTest extends TestCase
         config(['oss.stale_window_hours' => 8]);
         $branch = Branch::factory()->create(['status' => Status::ACTIVE]);
 
+        // [WG-4 TZ-test-drift V1.0.X 2026-05-19] Fixture `order_datetime`
+        // written in UTC so SQLite string-compare against the service's
+        // UTC-naive prune bound (`now('UTC')->subHours(N)`, Wave 3c heal
+        // c2613cab0) is consistent. Pre-WG-4 the fixture used `now()`
+        // (Paris-local) which drifted the comparison by 1-2h depending on
+        // DST and accidentally passed only because the 8h gap absorbed the
+        // shift. The sibling 1h test exposes the drift below.
         $fresh = Order::factory()->create([
             'branch_id'        => $branch->id,
             'order_type'       => OrderType::TAKEAWAY,
             'status'           => OrderStatus::PREPARED,
-            'order_datetime'   => now()->subHours(2),
+            'order_datetime'   => now('UTC')->subHours(2),
             'is_advance_order' => Ask::NO,
             'queue_number'     => '100',
             'token'            => null,
@@ -52,7 +81,7 @@ class OssPolishClusterTest extends TestCase
             'branch_id'        => $branch->id,
             'order_type'       => OrderType::TAKEAWAY,
             'status'           => OrderStatus::PREPARED,
-            'order_datetime'   => now()->subHours(12),
+            'order_datetime'   => now('UTC')->subHours(12),
             'is_advance_order' => Ask::NO,
             'queue_number'     => '101',
             'token'            => null,
@@ -73,11 +102,17 @@ class OssPolishClusterTest extends TestCase
         config(['oss.stale_window_hours' => 1]);
         $branch = Branch::factory()->create(['status' => Status::ACTIVE]);
 
+        // [WG-4 TZ-test-drift V1.0.X 2026-05-19] Same root cause as cluster:
+        // fixture in UTC to align with service-side `now('UTC')->subHours(N)`
+        // bound. With Paris-local `now()` the 2h Paris↔UTC DST offset exceeds
+        // the 1h prune window and the assertion oscillates depending on local
+        // wall-clock — i.e. the test was relying on an accidental TZ shift,
+        // not on the stale-prune logic actually being correct.
         $twoHourOld = Order::factory()->create([
             'branch_id'        => $branch->id,
             'order_type'       => OrderType::TAKEAWAY,
             'status'           => OrderStatus::PREPARED,
-            'order_datetime'   => now()->subHours(2),
+            'order_datetime'   => now('UTC')->subHours(2),
             'is_advance_order' => Ask::NO,
             'queue_number'     => '200',
             'token'            => null,

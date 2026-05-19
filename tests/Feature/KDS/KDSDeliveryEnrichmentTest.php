@@ -14,6 +14,8 @@ use App\Models\Order;
 use App\Models\OrderAddress;
 use App\Models\Tax;
 use App\Models\User;
+use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -45,6 +47,17 @@ class KDSDeliveryEnrichmentTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // [WG-4 TZ-test-drift V1.0.X 2026-05-19] Pin Carbon::setTestNow to a
+        // fixed UTC instant inside the Paris business day (2026-05-18 12:00 UTC
+        // = 14:00 Paris CEST) so test fixtures `now()` and service
+        // `Carbon::today($appTz)->setTimezone('UTC')` bounds (Wave 3b heal
+        // c2613cab0) resolve deterministically. Without the pin, this test
+        // fails in the [22:00, 23:59:59] Paris evening window because SQLite
+        // string-compares Paris-local fixture against UTC bound literal.
+        // See reports/audit/foundation-2026-05-18/failures/V1_0_X_BACKLOG_KDS_TZ_FIX.md.
+        Carbon::setTestNow(Carbon::create(2026, 5, 18, 12, 0, 0, 'UTC'));
+        CarbonImmutable::setTestNow(CarbonImmutable::create(2026, 5, 18, 12, 0, 0, 'UTC'));
 
         $this->seedMinimalSettings();
         $this->seedSpatieRoles();
@@ -98,6 +111,15 @@ class KDSDeliveryEnrichmentTest extends TestCase
             'price' => 12,
             'status' => 5,
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        // [WG-4] Carbon::setTestNow() leaks across tests if not cleared —
+        // would silently corrupt unrelated tests sharing the process.
+        Carbon::setTestNow();
+        CarbonImmutable::setTestNow();
+        parent::tearDown();
     }
 
     /** @test */

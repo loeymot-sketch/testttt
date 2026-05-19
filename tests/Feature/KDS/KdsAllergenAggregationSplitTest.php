@@ -15,6 +15,8 @@ use App\Models\OrderItem;
 use App\Models\Tax;
 use App\Models\User;
 use App\Services\KitchenDisplaySystemOrderService;
+use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -39,6 +41,15 @@ class KdsAllergenAggregationSplitTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // [WG-4 TZ-test-drift V1.0.X 2026-05-19] Pin Carbon::setTestNow to a
+        // fixed UTC instant inside the Paris business day so test fixtures
+        // `now()` and the KitchenDisplaySystemOrderService::orderItems()
+        // Paris→UTC bound conversion (Wave 3b heal c2613cab0) resolve
+        // deterministically across the day. See
+        // reports/audit/foundation-2026-05-18/failures/V1_0_X_BACKLOG_KDS_TZ_FIX.md.
+        Carbon::setTestNow(Carbon::create(2026, 5, 18, 12, 0, 0, 'UTC'));
+        CarbonImmutable::setTestNow(CarbonImmutable::create(2026, 5, 18, 12, 0, 0, 'UTC'));
 
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
@@ -103,6 +114,14 @@ class KdsAllergenAggregationSplitTest extends TestCase
             'delivery_charge' => 0,
             'order_datetime' => now(),
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        // [WG-4] Carbon::setTestNow() leaks across tests if not cleared.
+        Carbon::setTestNow();
+        CarbonImmutable::setTestNow();
+        parent::tearDown();
     }
 
     /**
