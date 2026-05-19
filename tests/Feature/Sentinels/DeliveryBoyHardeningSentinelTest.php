@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
@@ -56,23 +57,38 @@ class DeliveryBoyHardeningSentinelTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seedSpatieRoles();
         $this->seedMinimalSettings();
 
-        // [WAVE5-SEC-001 parity] explicit role IDs so hasRole(int) works
-        $rows = [
-            ['id' => EnumRole::ADMIN,        'name' => 'Admin'],
-            ['id' => EnumRole::CUSTOMER,     'name' => 'Customer'],
-            ['id' => EnumRole::DELIVERY_BOY, 'name' => 'Delivery Boy'],
-            ['id' => EnumRole::WAITER,       'name' => 'Waiter'],
-            ['id' => EnumRole::CHEF,         'name' => 'Chef'],
-        ];
-        foreach ($rows as $row) {
-            Role::firstOrCreate(
-                ['id' => $row['id']],
-                ['name' => $row['name'], 'guard_name' => 'sanctum']
-            );
-        }
+        // [WAVE-H bug_001 follow-up — 2026-05-19]
+        // Seed the 5 enum-aligned roles at EXPLICIT ids via raw DB::insert.
+        // Spatie\Permission\Models\Role guards the primary key in its
+        // constructor (Models/Role.php:36 → `$this->guarded[] = $this->primaryKey`)
+        // so `Role::firstOrCreate(['id'=>X], [...])` silently strips the id
+        // and the row lands wherever AUTO_INCREMENT chooses. The previous
+        // setUp pattern was passing tests by triple-coincidence: `seedSpatieRoles`
+        // planted 'Branch Manager' at id=3, the `firstOrCreate(['id'=>3])` then
+        // matched (early-return, no insert), and the broken `->role(3)` in
+        // selectDeliveryBoy resolved to 'Branch Manager' — never actually
+        // exercising 'Delivery Boy' identification. With selectDeliveryBoy
+        // healed to `->role('Delivery Boy', 'sanctum')`, the test honestly
+        // needs a 'Delivery Boy' row at id=EnumRole::DELIVERY_BOY (=3).
+        $now = now();
+        $rolesTable = config('permission.table_names.roles', 'roles');
+        DB::table($rolesTable)->insert([
+            ['id' => EnumRole::ADMIN,        'name' => 'Admin',        'guard_name' => 'sanctum', 'created_at' => $now, 'updated_at' => $now],
+            ['id' => EnumRole::CUSTOMER,     'name' => 'Customer',     'guard_name' => 'sanctum', 'created_at' => $now, 'updated_at' => $now],
+            ['id' => EnumRole::DELIVERY_BOY, 'name' => 'Delivery Boy', 'guard_name' => 'sanctum', 'created_at' => $now, 'updated_at' => $now],
+            ['id' => EnumRole::WAITER,       'name' => 'Waiter',       'guard_name' => 'sanctum', 'created_at' => $now, 'updated_at' => $now],
+            ['id' => EnumRole::CHEF,         'name' => 'Chef',         'guard_name' => 'sanctum', 'created_at' => $now, 'updated_at' => $now],
+        ]);
+
+        // Now run seedSpatieRoles — it firstOrCreates Admin/Chef/Customer/etc
+        // by name+guard. The first 4 already exist (no-op), and Branch Manager
+        // / POS Operator / Stuff are appended at next AUTO_INCREMENT (≥6).
+        $this->seedSpatieRoles();
+
+        // Bust the Spatie permission registrar cache so it sees the raw inserts.
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
     private function makeDeliveryBoy(int $branchId): User
