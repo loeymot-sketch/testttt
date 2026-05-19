@@ -1,0 +1,129 @@
+{
+  "specialist": "dba",
+  "zone": "WF-4-STOCK-CASCADE",
+  "scope": "stock_movements UNIQUE constraint integrity, append-only DB-level trigger enforcement (Foundation F-6 P0-DBA-01), stock_levels schema invariants (non-negative on_hand + reserved <= on_hand), composite indexes, FK behavior post-restrictOnDelete.",
+  "head": "50bdd5150",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "verdict": "PASS_WITH_FINDINGS",
+  "evidence_root": "reports/audit/wave-f-sync-confirmation-2026-05-19/WF-4-STOCK-CASCADE/",
+  "schema_invariants_verified": {
+    "stock_movements_idempotency_key_unique": {
+      "evidence": "database/migrations/2026_04_27_143130_create_stock_movements_table.php:19 — $table->string('idempotency_key')->nullable()->unique('stock_movements_idempotency_unique'). UNIQUE named 'stock_movements_idempotency_unique'.",
+      "exploit_window_closed": "test_stock_movement_idempotency_key_is_unique_when_present (StockMovementsAppendOnlyTest:47-69) — second insert with same key throws QueryException. Service-side catch at StockService:102-104 (StockMovement::query()->where('idempotency_key', $key)->exists() short-circuit) handles the normal-path replay; the UNIQUE is the last-line DB defense for cross-thread race.",
+      "verdict": "PASS"
+    },
+    "stock_levels_unique_stockable_tuple": {
+      "evidence": "tests/Feature/Stock/StockLevelSchemaTest::test_stock_levels_schema_and_unique_stockable_tuple — passes (verified php artisan test --filter Stock 79 passed).",
+      "verdict": "PASS"
+    },
+    "stock_levels_non_negative_guard": {
+      "evidence": "app/Models/StockLevel.php:66-74 — booted saving() throws InvalidArgumentException if on_hand < 0 OR reserved < 0 OR reserved > on_hand. Test sentinel: StockLevelSchemaTest::test_stock_level_rejects_reserved_greater_than_on_hand. NB: this is Eloquent-layer guard. Raw DB::table('stock_levels')->update(['on_hand' => -1]) bypasses; no DB CHECK constraint enforces non-negativity. SQLite supports CHECK; MySQL >= 8.0.16 supports CHECK; pre-8.0.16 MySQL parses but ignores. Recommend backlog: add explicit CHECK constraint at DB level for defense-in-depth.",
+      "verdict": "PASS_WITH_FINDING (P2 below)"
+    },
+    "stock_movements_append_only_triggers_F6_P0_DBA_01": {
+      "evidence": "database/migrations/2026_05_18_140000_add_stock_movements_immutability_triggers.php:107-148 — MySQL/MariaDB BEFORE DELETE + BEFORE UPDATE triggers (SQLSTATE 45000) AND SQLite parity BEFORE DELETE + BEFORE UPDATE triggers (RAISE ABORT). Applied per migrate:status: '2026_05_18_140000_add_stock_movements_immutability_triggers .......... [16] Ran'.",
+      "exploit_window_closed": "Closes the raw-query bypass demonstrated by CleanupTestFixturesCommand:182-188 (uses DB::table('stock_movements')->whereIn(...)->pluck('id') for cleanup ID collection — production paths could similarly invoke ->delete()/->update() bypassing the Eloquent updating()/deleting() boot guards at StockMovement:46-55).",
+      "trigger_test_sentinel_NOT_PRESENT": "tests/Feature/Stock/StockMovementsAppendOnlyTest covers ELOQUENT-layer LogicException ($movement->update / $movement->delete) at :15-45. NO test exercises raw DB::table('stock_movements')->delete()/->update() to assert the trigger fires. The eloquent test would pass even if the trigger migration were rolled back. Gap = absence-of-defense test. See WF4-DBA-01 finding.",
+      "verdict": "PASS_WITH_FINDING (P1 below)"
+    },
+    "stock_movements_fk_post_F6_P0_DBA_01": {
+      "evidence": "Migration 2026_05_18_140000:76-99 — both stock_level_id and branch_id FKs recreated with restrictOnDelete() (MySQL only; SQLite branch is no-op because PRAGMA foreign_keys is typically OFF). Replaces the original cascadeOnDelete (migration 2026_04_27_143130:13-14).",
+      "behavior_change": "Hard-deleting a stock_levels row or a branches row now FAILS at DB level if any stock_movements references it. Prevents silent fan-out of movement deletes when a parent is hard-deleted. Test-cleanup paths must adapt (CleanupTestFixturesCommand documented to need TRUNCATE-under-foreign-keys-off block).",
+      "verdict": "PASS"
+    },
+    "stock_movements_composite_index": {
+      "evidence": "Migration 2026_04_27_143130:22 — INDEX (branch_id, stock_level_id, created_at) named 'stock_movements_branch_level_created_idx'. Optimal for the StockLowAlertsWidget query path (admin dashboard reads per-branch-per-stockable trail).",
+      "verdict": "PASS"
+    }
+  },
+  "findings": [
+    {
+      "id": "WF4-DBA-01",
+      "severity": "P1",
+      "title": "F-6 P0-DBA-01 trigger migration applied, but no test exercises the raw-query bypass path the trigger is designed to block — the absence-of-defense test is missing",
+      "file": "tests/Feature/Stock/StockMovementsAppendOnlyTest.php",
+      "lines": "15-45",
+      "evidence_read": "StockMovementsAppendOnlyTest:15-45 tests $movement->update() and $movement->delete() — these go through StockMovement::booted() updating()/deleting() callbacks which throw \\LogicException. Both tests would pass even if the migration 2026_05_18_140000 were rolled back (i.e. triggers removed). The trigger migration's RAISE(ABORT) is verified ONLY by migration file presence + migrate:status='Ran'.",
+      "impact": "If a future refactor accidentally drops the Eloquent boot guards (e.g. extracting a trait, replacing Model with a generic table abstraction), AND if a contributor mistakenly thinks the triggers cover all paths, the regression escapes both unit tests AND code review. The Foundation F-6 P0-DBA-01 narrative claims defense-in-depth — the test surface should validate BOTH layers independently.",
+      "recommendation": "Add 2 new test methods to StockMovementsAppendOnlyTest: (a) test_raw_delete_blocked_by_db_trigger() — invokes DB::table('stock_movements')->where('id', $id)->delete() and asserts QueryException (SQLite: 'stock_movements is append-only' RAISE; MySQL: SQLSTATE 45000). (b) test_raw_update_blocked_by_db_trigger() — same pattern with ->update(['delta' => -99]). Both paths bypass Eloquent and exercise the trigger directly.",
+      "scope_minimal_fix": "HEAL-NOW eligible if added to a clean test file (not frozen). 2 test methods, ~20 lines total. Defer if WF-7 RED-META prefers a separate trigger-coverage sentinel test file."
+    },
+    {
+      "id": "WF4-DBA-02",
+      "severity": "P2",
+      "title": "stock_levels non-negative on_hand guard is Eloquent-layer only — no DB CHECK constraint",
+      "file": "app/Models/StockLevel.php",
+      "lines": "66-74",
+      "evidence_read": "StockLevel:66-74 — saving() callback throws InvalidArgumentException for on_hand<0, reserved<0, reserved>on_hand. Migration 2026_04_27_143120_create_stock_levels_table.php — no CHECK constraint on these columns.",
+      "actual_behavior": "DB::table('stock_levels')->update(['on_hand' => -1]) succeeds at DB level. Eloquent boot guards bypassed. The append-only triggers protect stock_movements raw-query path (F-6 P0-DBA-01 fix) but stock_levels remains soft. Composite real-world exploit: an admin migration script could lower on_hand via raw query.",
+      "impact": "LOW V1 (no production raw stock_levels writes — all paths through StockService::mutateForOrderInTransaction or AvailabilityService::toggleStockable use Eloquent). MID V2 if SaaS multi-tenant bulk-update admin tooling is introduced.",
+      "recommendation": "Defer V1.0.2 — add CHECK (on_hand >= 0) AND CHECK (reserved >= 0) AND CHECK (reserved <= on_hand) via separate migration. MySQL >= 8.0.16 enforces, SQLite enforces. Old MariaDB <10.2.1 parses-but-ignores so document the floor.",
+      "scope_minimal_fix": "DEFERRED V1.0.2."
+    },
+    {
+      "id": "WF4-DBA-03",
+      "severity": "P2",
+      "title": "stock_movements.reason enum drift risk — migration locks 6 values but no code-level validator",
+      "file": "database/migrations/2026_04_27_143130_create_stock_movements_table.php",
+      "lines": "16",
+      "evidence_read": "Migration L16 — enum('reason', ['order_created', 'order_canceled', 'refund', 'manual_in', 'manual_out', 'rupture_set']). StockService writes 'order_created' (:29) + 'order_canceled' / 'refund' (:37). No code path emits 'manual_in', 'manual_out', or 'rupture_set' — those are forward-compat reserved values.",
+      "actual_behavior": "Mixing string-typing approach. Adding a 7th reason would require a migration + enum alteration (MySQL ALTER TABLE rebuilds the column). Code-side, there's no PHP-enum-backed type for $reason — typos like 'order_canceled' vs 'order_cancelled' would silently insert a row that fails MySQL ENUM strict check.",
+      "impact": "LOW — DB-level enum check catches typos at INSERT time. Migration overhead per new reason is unique-but-not-blocking.",
+      "recommendation": "Defer V1.0.2 — promote $reason to a backed PHP enum (App\\Enums\\Stock\\MovementReason) so callsites are compile-time safe. Concurrent migration to widen enum is the same effort either way.",
+      "scope_minimal_fix": "DEFERRED V1.0.2."
+    },
+    {
+      "id": "WF4-DBA-04",
+      "severity": "P3",
+      "title": "stock_movements.idempotency_key is nullable() but the listener flow always writes a key — nullable allows historical/manual rows without uniqueness",
+      "file": "database/migrations/2026_04_27_143130_create_stock_movements_table.php",
+      "lines": "19",
+      "evidence_read": "Migration L19 — $table->string('idempotency_key')->nullable()->unique(). UNIQUE on nullable column — DB treats multiple NULLs as non-conflicting (PostgreSQL standard; MySQL also allows multiple NULLs on UNIQUE index). StockService::movementKey() always generates a non-null key (StockService:343), so V1 production rows always have a key. The nullable() is a forward-compat affordance for V1.1 manual stock adjustments where admin might insert untracked corrections.",
+      "impact": "LOW — V1 nominal path keys every row. The future manual_in / manual_out reason would need to opt into a key (e.g. 'manual:branch:user:timestamp:rand') for traceability.",
+      "recommendation": "When manual_in/manual_out admin UI ships in V1.1, REQUIRE non-null idempotency_key at controller layer (FormRequest validation) and consider making the column NOT NULL via migration after the surface is live.",
+      "scope_minimal_fix": "DOC-ONLY — defer."
+    }
+  ],
+  "keeps": [
+    "Foundation F-6 P0-DBA-01 trigger migration (ccc95e862) APPLIED — migrate:status confirms '[16] Ran'. Driver-conditional MySQL/MariaDB BEFORE DELETE+UPDATE triggers (SQLSTATE 45000) + SQLite parity triggers (RAISE ABORT). Same defensive pattern as audit_logs (2026_04_22_000002), z_reports (2026_05_09_160000), cash_movements (2026_05_08_140100), delivery_boy_cash (2026_05_18_120300). Architectural consistency.",
+    "stock_movements UNIQUE idempotency_key constraint named 'stock_movements_idempotency_unique' — final-line DB defense against concurrent decrement double-write that escapes Eloquent::exists() short-circuit. Test sentinel: StockMovementsAppendOnlyTest::test_stock_movement_idempotency_key_is_unique_when_present.",
+    "stock_movements FK restrictOnDelete on both stock_level_id and branch_id (post-F-6) — prevents silent cascade-wipe of movement audit trail when a parent stock_level is hard-deleted. Cleaner failure path than the pre-fix cascadeOnDelete behavior.",
+    "stock_movements composite index (branch_id, stock_level_id, created_at) named 'stock_movements_branch_level_created_idx' — optimal for admin dashboard queries reading per-branch-per-stockable trail.",
+    "BranchScope global scope on both StockLevel and StockMovement (StockLevel:25, StockMovement:23) — multi-tenant isolation enforced at query layer; admin (branch_id=0) bypass preserved. Test sentinel: tests/Feature/Multitenant/* (out of WF-4 scope but cross-validates).",
+    "Migration row reset_at scoping for daily counters uses Carbon::today(config('app.timezone')) (AvailabilityService:64, :115, :291) — Wave 3c KDS-ADV3C-03 P1 TZ-aware boundary. Cross-validates with WF-5 fiscal cascade TZ discipline.",
+    "Manual rupture lifecycle preserved across stock decrement (StockService::isAutoStockRuptureReason :217-220) — distinguishes 'stock_rupture' (auto) / 'out_of_stock' (legacy) from manager-set reasons (seasonal, supplier_issue, recipe_change, quality_issue, out_of_stock_manual — StockLevel::MANUAL_UNAVAILABLE_REASONS :35-41). Test sentinel test_stock_zero_does_not_override_manual_admin_rupture_reason."
+  ],
+  "out_of_scope": [
+    "CleanupTestFixturesCommand TRUNCATE-under-FK-off pattern — migration header documents the test-only impact (line 49-54). Test infra fix scope, not production.",
+    "MySQL TRUNCATE bypass of trigger — deploy doc scope (REVOKE TRUNCATE on prod DB user), already documented in audit_logs / z_reports migration headers.",
+    "Stock_levels manual_unavailable_reason whitelist (StockLevel::MANUAL_UNAVAILABLE_REASONS) — F-016a-BIS scope, no schema drift here.",
+    "FrontendOrder fiscal_alloc_error_at / fiscal allocation column — WF-5 scope."
+  ],
+  "phpunit_evidence": {
+    "command": "php artisan test --filter \"Stock\"",
+    "result": "79 passed, 5 skipped (consolidated), 0 failed",
+    "duration": "11.60s",
+    "key_passing_tests": [
+      "Tests\\Feature\\Stock\\StockMovementsAppendOnlyTest::test_stock_movements_are_append_only (Eloquent layer)",
+      "Tests\\Feature\\Stock\\StockMovementsAppendOnlyTest::test_stock_movements_cannot_be_deleted (Eloquent layer)",
+      "Tests\\Feature\\Stock\\StockMovementsAppendOnlyTest::test_stock_movement_idempotency_key_is_unique_when_present (UNIQUE constraint)",
+      "Tests\\Feature\\Stock\\StockConcurrentDecrementTest::test_atomic_guard_allows_only_available_quantity (3/5 success on on_hand=3)",
+      "Tests\\Feature\\Stock\\StockConcurrentDecrementTest::test_stress_guard_allows_only_20_successes_across_50_attempts",
+      "Tests\\Feature\\Stock\\StockConcurrentDecrementTest::test_failed_multi_line_decrement_rolls_back_prior_stock_changes",
+      "Tests\\Feature\\Stock\\StockLevelSchemaTest::test_stock_levels_schema_and_unique_stockable_tuple",
+      "Tests\\Feature\\Stock\\StockLevelSchemaTest::test_stock_level_rejects_reserved_greater_than_on_hand",
+      "Tests\\Feature\\Stock\\StockRuptureAvailabilitySyncTest::test_stock_zero_does_not_override_manual_admin_rupture_reason",
+      "Tests\\Feature\\Stock\\StockReleaseOnRefundTest::test_decrement_and_partial_refund_track_addon_target_stock_from_composition_snapshot"
+    ],
+    "consolidated_skipped_tests": [
+      "StockMovementIdempotencyKeyUniqueTest::unique constraint present (consolidated into StockMovementsAppendOnlyTest)",
+      "StockMovementIdempotencyKeyUniqueTest::duplicate insert throws and is treated as noop (consolidated)",
+      "StockMovementIdempotencyKeyUniqueTest::append only guard unaffected (consolidated)",
+      "StockMovementIdempotencyKeyUniqueTest::concurrent decrement still passes (consolidated)"
+    ],
+    "availability_command": "php artisan test --filter \"Availability\"",
+    "availability_result": "117 passed, 1 skipped, 0 failed",
+    "availability_duration": "17.73s"
+  },
+  "word_count": 1610
+}

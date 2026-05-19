@@ -1,0 +1,138 @@
+{
+  "specialist": "Architect",
+  "task": "WF-6 Refund Cascade Sync Confirmation",
+  "scope_read_only": true,
+  "frozen_zones_touched": 0,
+  "dispatch_topology": {
+    "refund_entry_points": [
+      {
+        "path": "App\\Services\\PaymentService::cashBack",
+        "file": "app/Services/PaymentService.php",
+        "line": 152,
+        "dispatches": "RefundCreated::dispatch($order)  // PARENT order, post DispatchableAfterCommit",
+        "context": "pre-Z idempotent cashback path; requires prior 'payment' Transaction; second cashBack early-returns BEFORE dispatch — single fire guaranteed."
+      },
+      {
+        "path": "App\\Services\\Order\\RefundWithCounterEntryService::execute",
+        "file": "app/Services/Order/RefundWithCounterEntryService.php",
+        "line": 229,
+        "dispatches": "RefundCreated::dispatch($parent)  // PARENT order, NOT mirror — critical, mirror has negated qty",
+        "context": "post-Z sealed parent path; fires inside DB::transaction so DispatchableAfterCommit defers to commit."
+      }
+    ],
+    "listeners_registered": [
+      {
+        "class": "App\\Listeners\\ReleaseStockOnRefundCreated",
+        "file": "app/Listeners/ReleaseStockOnRefundCreated.php",
+        "delegates_to": "StockService::releaseForOrder($order, 'refund', $event->refundedItems)",
+        "idempotency": "movementKey reason='refund' + released:N:delta:M ensures repeated dispatch is a no-op (StockMovement idempotency_key UNIQUE)."
+      },
+      {
+        "class": "App\\Listeners\\ReleaseAvailabilityOnRefundCreated",
+        "file": "app/Listeners/ReleaseAvailabilityOnRefundCreated.php",
+        "delegates_to": "AvailabilityService::releaseForOrderItems($lineItems)",
+        "idempotency": "order_items.released_qty ledger increment with WHERE released_qty < quantity — duplicate fire bounded by parent quantity."
+      }
+    ],
+    "listener_order": "Stock release BEFORE availability release (EventServiceProvider lines 165-168). Same order as OrderCanceled (lines 161-164). Consistent."
+  },
+  "parity_with_ordercanceled": {
+    "cancellation_cascade": [
+      "ReleaseStockOnOrderCanceled",
+      "ReleaseAvailabilityOnOrderCanceled"
+    ],
+    "refund_cascade": [
+      "ReleaseStockOnRefundCreated",
+      "ReleaseAvailabilityOnRefundCreated"
+    ],
+    "delta": "IDENTICAL listener pair structure. Both miss outbox + loyalty listeners. So gap is symmetric to OrderCanceled — not a refund-specific drift. Refund inherits the same outbox-broadcast hole as cancellation (see RED finding R-2)."
+  },
+  "mirror_order_safety": {
+    "concern": "Mirror Order created via Order::create() in RefundWithCounterEntryService line 95 — could it spuriously fire OrderCreated via a model observer and trigger DecrementStockOnOrderCreated on negated qty?",
+    "verification": "AppServiceProvider line 67-70 attaches SoftDeleteAuditObserver to Order/FrontendOrder/OrderItem/Branch. SoftDeleteAuditObserver writes audit trail rows on soft-delete; it does NOT dispatch OrderCreated.",
+    "OrderCreated_dispatch_sites": [
+      "OrderService.php:564 (POS sale)",
+      "OrderService.php:1067 (admin create)",
+      "OrderService.php:1377 (other POS path)",
+      "FrontendOrderService.php:1226 (kiosk)"
+    ],
+    "conclusion": "OrderCreated is explicitly dispatched, never via observer. Mirror order Order::create() is safe — no cascade on the negated-qty mirror.",
+    "verdict": "SAFE — mirror does NOT self-cascade."
+  },
+  "composition_snapshot_copy_forward": {
+    "verification": "RefundWithCounterEntryService line 136 sets composition_snapshot directly from parent's OrderItem ('$item->composition_snapshot'). This is a COPY (Eloquent attribute read) — parent's snapshot is bit-identical to mirror's.",
+    "NF525_invariant": "PRESERVED — parent's composition_snapshot is never mutated; mirror copies the frozen JSON."
+  },
+  "fiscal_sequence_allocation": {
+    "mirror_seq": "Allocated via FiscalSequenceService::next(branchId) at line 90 — fresh monotonic per-branch sequence inside DB::transaction.",
+    "concurrency_defense": "Cache::lock 5s + DB FOR UPDATE inside FiscalSequenceService — gap-free guaranteed (validated by FiscalVerifyChainCommand cron).",
+    "verdict": "Mirror gets fresh gap-free fiscal_sequence_no; parent's stays untouched (immutable)."
+  },
+  "audit_chain_extension": {
+    "write_call": "AuditLogService::write at RefundWithCounterEntryService line 195",
+    "action": "order.refund.counter_entry",
+    "payload_fields": [
+      "parent_order_id",
+      "parent_serial_no",
+      "parent_fiscal_sequence_no",
+      "mirror_fiscal_sequence_no",
+      "mirror_total",
+      "mirror_payments_count",
+      "reason"
+    ],
+    "chain_integrity": "HMAC-SHA256(prev_hash || canonical(payload)) under branch HMAC key — extends per-branch chain with full forensic link parent↔mirror.",
+    "verdict": "Chain extension is COMPLETE for refund-with-counter-entry path. Audit log writer is the SSOT for fiscal forensics; outbox broadcast is INDEPENDENT (and missing — see RED R-2)."
+  },
+  "test_coverage": {
+    "filter": "Refund|RefundCreated|RefundWithCounter",
+    "result": "29 passed, 0 failed in 4.20s",
+    "covers": [
+      "PaymentStateMachine refund transitions (6)",
+      "Partial + full refund availability release (2)",
+      "NF525 E2E refund post-Z (1)",
+      "RefundPostZ counter-entry negative adjustment (1)",
+      "RefundPreZ pre-Z standard path (1)",
+      "Sealed order mutation guard (4)",
+      "Loyalty refund on cancel — NOT on RefundCreated (1)",
+      "Terminal_id wire-in on mirror (1)",
+      "Split-payment mirror with negated tranches (3)",
+      "RefundCreated dispatch + idempotency (2)",
+      "Sealed Z sentinel route (1)",
+      "Sealed parent required for counter-entry (4)",
+      "Stock release on refund event (2)"
+    ],
+    "verdict": "Cascade behavior under test. NF525 invariants under test. Outbox gap NOT explicitly under test."
+  },
+  "findings": [
+    {
+      "id": "WF-6-A-1",
+      "severity": "INFO",
+      "title": "Refund cascade dispatch topology is documented and consistent",
+      "evidence": "PaymentService::cashBack:152 + RefundWithCounterEntryService::execute:229 both dispatch PARENT (positive qty) via DispatchableAfterCommit. Listeners idempotent via released_qty ledger + StockMovement.idempotency_key UNIQUE. EventServiceProvider:165-168 wires 2 listeners in correct order.",
+      "verdict": "CONFIRMED — no architecture drift detected."
+    },
+    {
+      "id": "WF-6-A-2",
+      "severity": "P2",
+      "title": "Refund cascade INHERITS OrderCanceled outbox gap — no PersistRefundCreatedToOutbox listener",
+      "evidence": "EventServiceProvider:165-168 lists ONLY ReleaseStock + ReleaseAvailability for RefundCreated. No outbox persistence. Same pattern as OrderCanceled (lines 161-164) — neither cancellation nor refund fans out via the outbox-broadcast SSOT. Symmetric to known cancellation gap, not refund-specific drift.",
+      "impact": "Connected POS/admin/OSS clients listening on private-branch.{id} do NOT receive a refund broadcast event. They become aware of refund state ONLY when they re-poll order listings, or when OrderPaymentStatusChanged fires for the parent (which cashBack does NOT trigger — see RED R-1).",
+      "verdict": "GAP — backlog candidate (P2; not blocker since admin daily aggregates from DB query and ZReportService picks up mirror via standard query)."
+    },
+    {
+      "id": "WF-6-A-3",
+      "severity": "INFO",
+      "title": "Composition snapshot copy-forward respects NF525 immutability",
+      "evidence": "RefundWithCounterEntryService:136 reads parent's $item->composition_snapshot directly into mirror OrderItem; never mutates parent. composition_snapshot is the SSOT for line-item pricing/options at sale time; copy-forward preserves it bit-identical.",
+      "verdict": "CONFIRMED — NF525 immutability invariant satisfied."
+    },
+    {
+      "id": "WF-6-A-4",
+      "severity": "INFO",
+      "title": "Mirror order Order::create() does NOT spuriously fire OrderCreated event",
+      "evidence": "AppServiceProvider:67 attaches only SoftDeleteAuditObserver (a soft-delete audit trail observer, NOT OrderCreated dispatcher). OrderCreated::dispatch occurs only at explicit OrderService/FrontendOrderService call sites. Mirror does not self-cascade.",
+      "verdict": "CONFIRMED — RED concern dismissed."
+    }
+  ],
+  "verdict": "REFUND CASCADE ARCHITECTURE CONFIRMED with one P2 backlog (outbox parity). NF525 invariants intact. Listener idempotency intact. 29/29 tests green."
+}

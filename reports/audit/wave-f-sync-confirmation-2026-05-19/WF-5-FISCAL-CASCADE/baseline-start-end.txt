@@ -1,0 +1,43 @@
+WF-5 NF525 FISCAL CASCADE — Baseline & End Attestation
+=======================================================
+Date:   2026-05-19 (session start 2026-05-18, completed 2026-05-19)
+Branch: v1-0-1-hardening-2026-05-17
+Mode:   READ-ONLY (frozen-zone discipline)
+
+START BASELINE
+--------------
+Command:  php artisan fiscal:verify-chain
+Output:   CHAIN OK (audit_logs + z_reports) (branch=1)
+Exit:     0
+
+audit_logs:
+  count       = 97
+  last_id     = 97
+  last_hash   = af02d7895d412654bf86b468e1d6f2e7375237d8361a10bcfcdd3e48424ac36f
+
+z_reports:
+  count       = 4
+  last_signature = 2c7ef3d479bf334ad75e6d8b3dacb48da445a9b6dfa70fc5afb096a4dac30034
+  last_closed_at = 2026-05-18 11:30:35
+  last_status    = closed
+
+END ATTESTATION
+---------------
+Command:  php artisan fiscal:verify-chain
+Output:   CHAIN OK (audit_logs + z_reports) (branch=1)
+Exit:     0
+
+audit_logs:
+  count       = 97     <- UNCHANGED
+  last_id     = 97     <- UNCHANGED
+  last_hash   = af02d7895d412654bf86b468e1d6f2e7375237d8361a10bcfcdd3e48424ac36f   <- BIT-IDENTICAL
+
+z_reports:
+  count       = 4      <- UNCHANGED
+  last_signature = 2c7ef3d479bf334ad75e6d8b3dacb48da445a9b6dfa70fc5afb096a4dac30034   <- BIT-IDENTICAL
+
+VERDICT
+-------
+Chain bit-identical between START and END. No writes performed during audit.
+READ-ONLY discipline confirmed. Frozen-zone touch count: 0.
+NF525 invariants: 5/5 INTACT.

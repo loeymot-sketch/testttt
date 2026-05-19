@@ -1,0 +1,156 @@
+{
+  "specialist": "SRE-Sync",
+  "scope": "WF-2 POS->OSS cadence cap correctness, fail-closed allowlist whereIn, ws:heartbeat plumbing",
+  "mode": "READ-ONLY",
+  "anchors": {
+    "cadence_clamps": [
+      "resources/js/services/OssSyncService.js#L34-L35 CADENCE_CEILING_MS=60000, CADENCE_FLOOR_MS=250",
+      "resources/js/services/OssSyncService.js#L117-L136 _runtimeConfig() applies _clampCadence",
+      "resources/js/services/OssSyncService.js#L430-L435 _clampCadence implementation"
+    ],
+    "fail_closed_allowlist": [
+      "app/Services/OrderStatusScreenOrderService.php#L59-L62 list() whereIn KIOSK,TAKEAWAY",
+      "app/Services/OrderStatusScreenOrderService.php#L196-L199 listForBranch() whereIn KIOSK,TAKEAWAY"
+    ],
+    "ws_heartbeat": [
+      "app/Jobs/DispatchDomainEventsJob.php#L118-L140 ws:heartbeat cache write (Sprint S-P0-A R1 SRE-001 heal)"
+    ],
+    "stale_prune": [
+      "config/oss.php OSS_STALE_WINDOW_HOURS default 8h",
+      "app/Services/OrderStatusScreenOrderService.php#L108 stale prune now('UTC')->subHours()"
+    ],
+    "tz_correctness": [
+      "app/Services/OrderStatusScreenOrderService.php#L77-L91 Paris-day-bounds → UTC conversion",
+      "tests/Feature/Services/SisterServicesTzAwareTest.php sentinel"
+    ]
+  },
+  "cadence_validation": {
+    "ceiling_clamp": {
+      "value_ms": 60000,
+      "verdict": "CORRECT",
+      "evidence": "OssSyncService.js line 34 const CADENCE_CEILING_MS=60_000. _clampCadence (line 430) returns floored <= ceiling. Sentinel posOssCadenceCap.spec.js#L106-L114 verifies 999999999ms→60000ms. Sister symmetry with PosSyncService + KDS (Wave 3c KDS-ADV3C-07/08 P1 healed via 9ff26e12b family).",
+      "blast_radius_if_removed": "Owner misconfig FK_CATALOG_OSS_FALLBACK_CONNECTED_INTERVAL_MS=999999999 would freeze customer wall for 11.5 days during Pusher outage, blowing SYNC-2 budget (POS pay → OSS visible ≤8s).",
+      "sentinel": "tests/js/posOssCadenceCap.spec.js#L106-L114"
+    },
+    "floor_clamp": {
+      "value_ms": 250,
+      "verdict": "CORRECT",
+      "evidence": "OssSyncService.js line 35 const CADENCE_FLOOR_MS=250. _clampCadence returns candidate >= 250. Sentinel posOssCadenceCap.spec.js#L126-L135 verifies 1ms→250ms.",
+      "blast_radius_if_removed": "Misconfig to 1ms would DDoS the public OSS endpoint (GET /oss-order). 4 polls/s × 10 TV walls = 40 req/s sustained, breaching the rate-limiter."
+    },
+    "default_disconnected_2s": {
+      "value_ms": 2000,
+      "verdict": "TIGHT BUT JUSTIFIED",
+      "evidence": "DEFAULTS.intervalMsWhenDisconnected=2_000 (line 16). Comment on lines 10-15 explains: SYNC-2 8s budget must be met by polling alone when broadcast queue is idle in dev. Prod uses Echo live so this fallback is essentially unused there.",
+      "concern": "10 TV walls × 1 poll/2s = 5 req/s sustained per branch when WS is down. Throttle bucket should handle this — confirm rate-limiter on /oss-order endpoint."
+    },
+    "default_connected_60s": {
+      "value_ms": 60000,
+      "verdict": "CORRECT",
+      "evidence": "DEFAULTS.intervalMsWhenConnected=60_000 (line 9). With WS healthy, Echo is the primary push channel; 60s sweep catches missed broadcasts (network jitter, transient Pusher drops not surfacing as disconnected event)."
+    },
+    "exponential_backoff_5xx": {
+      "start_ms": 5000,
+      "cap_ms": 30000,
+      "verdict": "CORRECT",
+      "evidence": "DEFAULTS.backoffStartMs=5_000, backoffCapMs=30_000 (lines 17-18). _handle5xx (line 323-332) doubles _currentBackoffMs each fail, caps at backoffCapMs. ossSyncFallback.spec.js#L98-L124 asserts curve 5→10→20→30s."
+    },
+    "visibility_burst_throttle_1s": {
+      "value_ms": 1000,
+      "verdict": "CORRECT",
+      "evidence": "DEFAULTS.visibilityBurstMinIntervalMs=1_000 (line 24). _burstPoll (line 237-252) rejects if now-lastBurstPollAt < minGap. Protects against focus/blur storm (e.g. user repeatedly Cmd+Tab)."
+    },
+    "dev_warn_disconnect_threshold": {
+      "value_ms": 10000,
+      "verdict": "CORRECT",
+      "evidence": "DEFAULTS.devWarnAfterDisconnectMs=10_000 (line 26). _maybeWarnDisconnect (line 254-274) fires single console.warn when (a) disconnected ≥10s AND (b) appEnv !== 'production' AND (c) not already warned this disconnect window. _devWarnedDisconnected reset on connect (line 173)."
+    }
+  },
+  "allowlist_validation": {
+    "list_method": {
+      "filter": "whereIn('order_type', [OrderType::KIOSK, OrderType::TAKEAWAY])",
+      "location": "OrderStatusScreenOrderService.php#L59-L62",
+      "verdict": "FAIL-CLOSED CORRECT",
+      "regression_history": "[2026-05-18 RED R-3 heal] Previous `!= DELIVERY` blacklist let POS=15 / DINING_TABLE=20 leak through whereNotNull('token') OR-branch. Heal swapped to allowlist + comment at line 53-58 documents the regression class. Sentinel OssCustomerScreenFilterTest::test_pos_order_with_token_is_excluded + test_dining_table_order_with_token_is_excluded.",
+      "evidence_count": 7
+    },
+    "listForBranch_method": {
+      "filter": "whereIn('order_type', [OrderType::KIOSK, OrderType::TAKEAWAY])",
+      "location": "OrderStatusScreenOrderService.php#L196-L199",
+      "verdict": "FAIL-CLOSED CORRECT — SISTER SYMMETRY",
+      "evidence": "Byte-identical filter to list() per service docstring line 144. Sentinel test_authed_list_also_excludes_delivery asserts both paths excluded DELIVERY in identical fashion."
+    },
+    "status_filter": {
+      "filter": "whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED])",
+      "verdict": "CORRECT",
+      "evidence": "PENDING + ACCEPT excluded (sentinel test_pending_and_accept_orders_are_hidden). DELIVERED auto-disappears (sentinel test_delivered_transition_removes_from_oss)."
+    },
+    "branch_isolation": {
+      "filter": "if (branchId>0) ->where('branch_id', $branchId) + auth-aware resolveBranchScope()",
+      "verdict": "CORRECT",
+      "evidence": "Non-admin staff with mismatched branch → abort(403) (line 258-260). Global admin (branch_id=0) → null scope (line 247-251). Public endpoint forces explicit branch via listForBranch() bypass-auth-resolver path."
+    }
+  },
+  "ws_heartbeat": {
+    "write_location": "DispatchDomainEventsJob.php#L118-L140 (Sprint S-P0-A R1 SRE-001 heal)",
+    "read_location": "app/Http/Controllers/Admin/SyncOverviewController.php#L531",
+    "cache_key": "ws:heartbeat (admin observability dashboard)",
+    "verdict": "WIRED — was previously read but not written (Wave 3 P1 audit caught this)"
+  },
+  "stale_prune": {
+    "window_hours_default": 8,
+    "env_override": "OSS_STALE_WINDOW_HOURS",
+    "location": "OrderStatusScreenOrderService.php#L108 + L228",
+    "tz_correctness": {
+      "verdict": "CORRECT after Wave 3c KDS-ADV3C-04 P0 heal",
+      "evidence": "now('UTC')->subHours() ensures the bound literal matches order_datetime column's UTC storage (line 108 comment block). Pre-heal: Paris-local bind would slip prune window by 1-2h. Sentinel SisterServicesTzAwareV2Test."
+    },
+    "concern": "8h window matches typical single-shift fast-food. SaaS branches with longer hours override via env. Documentation in config/oss.php line 25 explicit."
+  },
+  "tz_correctness_today_window": {
+    "method": "Paris-day-bounds → UTC conversion",
+    "location": "OrderStatusScreenOrderService.php#L77-L91 + L208-L221",
+    "verdict": "CORRECT after Wave 3b KDS-ADV3B-01 P0 heal",
+    "evidence": "Carbon::today($appTz)->setTimezone('UTC') / Carbon::today($appTz)->endOfDay()->setTimezone('UTC') correctly converts midnight-Paris to the UTC instant before binding against TIMESTAMP column. Sentinel SisterServicesTzAwareTest.",
+    "regression_class": "Pre-heal: Carbon::today() in Paris bound as Paris-local 'Y-m-d H:i:s' against UTC-stored column dropped 00:00-02:00 Paris orders (winter) / 00:00-01:00 (summer) from the wall."
+  },
+  "deterministic_ordering": {
+    "method": "orderBy('queue_number', 'asc')->orderBy('id', 'asc')",
+    "location": "OrderStatusScreenOrderService.php#L120 + L236",
+    "verdict": "CORRECT after Sprint 5C Z4-P1-02 heal",
+    "evidence": "Without explicit ordering, MySQL returns unordered set; polls re-shuffled customer wall between fetches; customers saw queue position jump. Heal forces FIFO by queue_number + id tiebreaker."
+  },
+  "concerns_for_red": [
+    {
+      "id": "SRE-OSS-01",
+      "severity": "P3",
+      "title": "Disconnected cadence 2s × N TV walls per branch",
+      "detail": "10 TV walls × 1 poll/2s = 5 req/s/branch during sustained Pusher outage. Confirm /api/frontend/oss-order has rate-limiter middleware (config/throttle/api defaults to 60/min). At 5 req/s a single TV wall fits, but worst-case 10 walls would hit 300 req/min/branch."
+    },
+    {
+      "id": "SRE-OSS-02",
+      "severity": "P3",
+      "title": "Burst-poll on visibility while WS is connected wastes one request",
+      "detail": "Tab regains visibility → _burstPoll fires regardless of WS state. If WS is connected and just delivered the update, burst-poll re-fetches the same data. Trivial cost (one HTTP round-trip). Not a defect — just a minor over-fetch."
+    },
+    {
+      "id": "SRE-OSS-03",
+      "severity": "P2",
+      "title": "ws_state listener race on _wsService swap",
+      "detail": "If window._wsService is replaced mid-lifecycle (e.g. Echo reconnect with new instance), the cached this._webSocketService in OssSyncService still points to the old service. stop()/start() cycle would resolve. Confirm Echo replace pattern in admin shell."
+    }
+  ],
+  "verdict": "Sync hygiene is PRODUCTION-GRADE. Cadence clamps prevent silent-blind misconfig (DDoS floor + freeze ceiling). Fail-closed allowlist enforces public TV wall data minimization at the database layer (not just the resource serializer — defense in depth). TZ-aware boundaries are correct UTC. Deterministic FIFO ordering. Sentinel coverage: posOssCadenceCap + ossSyncFallback + OssCustomerScreenFilterTest + SisterServicesTzAwareTest + ossWakeLockOnMount + ossChimePublicWall + orderStatusScreenOssSync.",
+  "metrics_observed": {
+    "cadence_ceiling_ms": 60000,
+    "cadence_floor_ms": 250,
+    "polling_default_connected_ms": 60000,
+    "polling_default_disconnected_ms": 2000,
+    "backoff_curve_ms": [5000, 10000, 20000, 30000],
+    "visibility_burst_throttle_ms": 1000,
+    "dev_warn_threshold_ms": 10000,
+    "stale_window_default_h": 8,
+    "wakelock_feature_flag_default": "true",
+    "wakelock_visibility_reacquire": true
+  }
+}

@@ -1,0 +1,187 @@
+{
+  "wave": "WF-3-KIOSK-KDS-OSS-SYNC",
+  "round": 1,
+  "agent": "agent-3-oss-and-sequence",
+  "role": "OSS Reception + Cross-Channel Sequence Integrity Specialist",
+  "scope_steps": [5, 6, 7],
+  "scope_description": "Step 5 (OSS receives kiosk order with the correct allowlist — order_type-based, NOT source-based as the prompt mistakenly stated). Step 6 (status transitions PREPARING->PREPARED visible on OSS in parallel with KDS). Step 7 (cross-channel — kiosk + POS — sequence integrity audit).",
+  "captured_at_utc": "2026-05-19T00:06:43Z",
+  "head_sha": "50bdd5150d784355168abd6d503ab9b3583d55a4",
+  "branch": "v1-0-1-hardening-2026-05-17",
+  "files_audited": [
+    "app/Services/OrderStatusScreenOrderService.php",
+    "app/Http/Controllers/Admin/OrderStatusScreenController.php",
+    "app/Enums/Source.php",
+    "app/Enums/OrderType.php",
+    "app/Services/Fiscal/FiscalSequenceService.php",
+    "public/js/admin-oss.js",
+    "public/js/kiosk-shell.js",
+    "tests/Feature/OSS/OssCustomerScreenFilterTest.php (referenced)",
+    "tests/Feature/Services/SisterServicesTzAwareTest.php (referenced)"
+  ],
+  "invariants_verified": [
+    {
+      "id": "INV-A3-01",
+      "title": "OSS allowlist is order_type-driven, NOT source-driven (contradicting prompt statement)",
+      "expectation": "Only KIOSK + TAKEAWAY orders ever reach the customer wall. POS / DELIVERY / DINING_TABLE must never leak even if they coincidentally carry a token.",
+      "evidence": "OrderStatusScreenOrderService.php:59-63 (admin path) and :196-200 (public path) both apply `->whereIn('order_type', [OrderType::KIOSK, OrderType::TAKEAWAY])`. Comment at :53-58 explicitly documents the 2026-05-18 RED R-3 heal that flipped from `!= DELIVERY` blacklist to fail-closed allowlist. Source field is NEVER consulted in either query.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A3-02",
+      "title": "Sister-method byte-identical query parity — list() (admin) vs listForBranch() (public)",
+      "expectation": "Public customer-wall (no auth) and admin dashboard must agree on what's visible. Drift between the two would let walking customers see orders staff don't, or vice versa.",
+      "evidence": "OrderStatusScreenOrderService.php:182-200 docstring (lines 173-181) explicitly states 'The query body MUST stay byte-identical to list() above'. Both apply identical order_type allowlist, identical [PREPARING, PREPARED] status filter, identical TZ-aware datetime bounds (:208-219 mirrors :77-94), identical stale-window prune at config('oss.stale_window_hours', 8).",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A3-03",
+      "title": "OSS status transition visibility — PREPARING / PREPARED only (not ACCEPT)",
+      "expectation": "Customer wall shows two stages: 'En préparation' and 'Prêt'. Staff dashboard (KDS) also shows ACCEPT (queued for kitchen). OSS intentionally excludes ACCEPT.",
+      "evidence": "OrderStatusScreenOrderService.php:63 and :200 both `->whereIn('status', [OrderStatus::PREPARING, OrderStatus::PREPARED])`. KitchenReleaseRule.php:16-23 lists ACCEPT/PREPARING/PREPARED for KDS — the ACCEPT exclusion on OSS is deliberate (kitchen-internal queue state).",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A3-04",
+      "title": "OSS TZ-aware Paris->UTC boundary heal (KDS sister-of)",
+      "expectation": "Carbon::today/tomorrow in app.timezone resolved to UTC before binding. Same heal as KdsSyncService (Wave 2b 148dbebce).",
+      "evidence": "OrderStatusScreenOrderService.php:77-80 + :208-219. Documented at :65-76 as Wave 3b KDS Adversarial P0 KDS-ADV3B-01. Sentinel: tests/Feature/Services/SisterServicesTzAwareTest.php.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A3-05",
+      "title": "OSS stale-window prune in UTC — Wave 3c heal applied",
+      "expectation": "stale_window_hours prune uses now('UTC') explicitly, not now() (which would resolve in app.timezone Paris and slip 1-2h depending on DST).",
+      "evidence": "OrderStatusScreenOrderService.php:108 `->where('order_datetime', '>=', now('UTC')->subHours((int) config('oss.stale_window_hours', 8)))`. Documented at :101-107 as Wave 3c KDS-ADV3C-04 P0. Sentinel: SisterServicesTzAwareV2Test.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A3-06",
+      "title": "Deterministic FIFO ordering — queue_number asc with id tiebreaker",
+      "expectation": "Without explicit order, MySQL returns rows in undefined order — customer queue tokens jump positions between polls (Mongo-style unordered set complaint from Sprint 5C).",
+      "evidence": "OrderStatusScreenOrderService.php:120 `->orderBy('queue_number', 'asc')->orderBy('id', 'asc')`. Documented as Sprint 5C Z4-P1-02 heal at :115-120.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A3-07",
+      "title": "OSS Echo subscribes to OrderStatusChanged + OrderCreated on private branch channel",
+      "expectation": "Real-time updates parity with KDS. Polling fallback for Echo outage.",
+      "evidence": "public/js/admin-oss.js:427-431 binds broadcastAs='OrderCreated' → this.list(). Earlier in same eventSub array (around :395-426) binds OrderStatusChanged with PREPARED-ready visual cue (sound + flash animation). Echo subscribes to 'branch.{branchId}' (private-) — channel auth at routes/channels.php:41-62.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A3-08",
+      "title": "Cross-tenant isolation — branch_id required on every OSS query path",
+      "expectation": "Public wall endpoint resolves branch via query param + first-active-branch fallback; admin path resolves via auth user. No tenant leak.",
+      "evidence": "OrderStatusScreenOrderService.php:40 resolveBranchScope from auth + query param. :110-113 conditional `where('branch_id', $branchScope)`. listForBranch() at :182 takes branchId as required parameter — caller responsibility.",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A3-09",
+      "title": "Cross-channel sequence integrity — kiosk + POS share one allocation pool, no duplicates, monotonic",
+      "expectation": "FiscalSequenceService::next(branchId) returns MAX(fiscal_sequence_no)+1 across ALL orders on the branch — kiosk and POS interleave in a single counter.",
+      "evidence": "FiscalSequenceService.php:88-93 SELECT MAX no source/order_type filter — single sequence pool per branch. Both kiosk (FrontendOrderService.php:1134) and POS (OrderService.php:938, PaymentService.php:207) call the same `app(FiscalSequenceService::class)->next(branchId)`. Runtime DB confirmation: branch=1 first 20 sequence numbers interleave kiosk (8, 11, 18) with POS (1-5, 7, 9-10, 12-17, 19-21). No duplicate (branch_id, fiscal_sequence_no) tuple anywhere in DB.",
+      "status": "PASS_RUNTIME"
+    },
+    {
+      "id": "INV-A3-10",
+      "title": "OSS Echo channel auth treats kiosk customers (no auth) differently from kitchen staff — public path skips channel auth",
+      "expectation": "Customer wall (publicIndex) is a public endpoint — no auth, no Echo. Staff dashboard (list) requires auth and uses Echo via branch.{id} channel.",
+      "evidence": "OrderStatusScreenController.php differentiates `index` (auth) from `publicIndex` (unauthenticated public wall). The Echo subscription block in admin-oss.js applies only to authenticated dashboards; public-wall poll-only is the contract. Claim hardened by absence-of-evidence verification: searched public/js/ for any `oss-public.js` / `wall.js` / customer-wall Echo binding — none found. Public wall is polling-only by design (matches Sanctum auth gate on Broadcast::routes at BroadcastServiceProvider.php:22).",
+      "status": "PASS"
+    },
+    {
+      "id": "INV-A3-11",
+      "title": "Audit chain integrity verified at runtime",
+      "expectation": "audit_logs + z_reports HMAC chain valid across all active branches.",
+      "evidence": "Ran `php artisan fiscal:verify-chain --all` at HEAD 50bdd5150 — output `+ branch=1 CHAIN OK / SWEEP COMPLETE — CHAIN OK on every active branch (1 total)`, exit 0. (Also documented in agent-1.)",
+      "status": "PASS_RUNTIME"
+    }
+  ],
+  "findings": [
+    {
+      "id": "WF3-A3-P1-01",
+      "severity": "P1",
+      "title": "Prompt-vs-code factual error — OSS allowlist is order_type-based, not source-based",
+      "category": "audit-prompt accuracy / cross-validation",
+      "evidence": {
+        "prompt_quote": "Wave-F prompt step 5: 'OSS receives kiosk order with source=KIOSK (matches public wall allowlist)'.",
+        "code_reality_1": "Source enum (app/Enums/Source.php) has NO KIOSK constant — only WEB=5, APP=10, POS=15.",
+        "code_reality_2": "OSS allowlist queries (OrderStatusScreenOrderService.php:59-63 and :196-200) filter exclusively by order_type, with explicit comment 'Fail-closed allowlist excludes POS / DELIVERY / DINING_TABLE'. Source field is not consulted.",
+        "code_reality_3": "Kiosk client actually sends source=5 (=WEB constant, confirmed in public/js/app.js:133611). See sister finding WF3-A1-P1-01 — analytics-layer mislabel.",
+        "cross_validation_value": "Pattern intent: catch when the prompt's mental model diverges from code. This is the highest-value catch."
+      },
+      "impact": "If the audit conclusion had blindly trusted the prompt, the OSS sync path would have been documented incorrectly. Three distinct discriminator fields (`source` int enum / `source_surface` varchar / `order_type` int enum) easily conflate in informal speech. The actual implementation is sound — but the wave-F mental model needs correcting before downstream WF-4/5/6/7/8 inherit it.",
+      "remediation_options": [
+        "Update wave-F orchestration doc (if any successor is created) to say `OSS receives kiosk order — order_type allowlist filter (KIOSK=25, TAKEAWAY=10)`.",
+        "Add note to docs/ARCHITECTURE.md on the three-field naming split (see also WF3-A1-P3-03)."
+      ],
+      "confidence": "HIGH",
+      "wave": "WF-3-A3"
+    },
+    {
+      "id": "WF3-A3-P2-02",
+      "severity": "P2",
+      "title": "OSS list() has no explicit limit — large active windows return unbounded rows",
+      "category": "scale / DoS hygiene",
+      "evidence": {
+        "code": "OrderStatusScreenOrderService.php:122 `return $query->get();` — no limit() applied. KdsSyncService caps at 50 by contrast.",
+        "behavior": "Current Le Cayenne max would be ~50-100 PREPARING+PREPARED at peak (each lingers <30 min in those states). Customer wall pages can show 20-30 max — frontend implicit truncation. But a stale_window_hours misconfiguration or peak-burst spike could send 500+ rows over the wire.",
+        "scope": "Public endpoint at OrderStatusScreenController::publicIndex — anonymous traffic. DoS-risk if a malicious actor polls aggressively against a slow query."
+      },
+      "impact": "Negligible at single-restaurant scale. Latent for SaaS multi-tenant + public traffic exposure.",
+      "remediation_options": [
+        "Add ->limit(100) on both list() and listForBranch() (mirror KdsSyncService).",
+        "Add response caching (Cache::remember 5s) on publicIndex — public wall doesn't need sub-second freshness."
+      ],
+      "confidence": "MEDIUM",
+      "wave": "WF-3-A3"
+    },
+    {
+      "id": "WF3-A3-P2-03",
+      "severity": "P2",
+      "title": "fiscal_sequence_no gap-rate signal — 48% gaps on branch=1 indicates high transaction-rollback rate",
+      "category": "fiscal observability (cross-ref with agent-1 WF3-A1-P2-02)",
+      "evidence": {
+        "metric": "branch=1: min=1, max=355, alive_seq_count=183, gap=172 (~48% of [1..355] range is missing).",
+        "interpretation": "FiscalSequenceService is MAX+1 inside DB::transaction with lockForUpdate. A burned sequence implies the transaction allocating it then rolled back. Multiple sources possible: (a) finalizePaidKioskOrder allocation success then status-promotion fail (unlikely — they're in the same closure), (b) OrderService POS path with PricingService failure post-alloc, (c) test environment churn (most likely on a dev DB).",
+        "nf525_caveat": "HMAC chain integrity (audit_logs + z_reports) is the legal invariant; per-counter contiguity is NOT a hard NF525 requirement. CHAIN OK verified at runtime."
+      },
+      "impact": "Operational visibility only. Auditors may ask 'why so many gaps?' — answer must be ready (rollback-burn pattern; chain is the invariant).",
+      "remediation_options": [
+        "Add structured log on every fiscal_sequence_no burn (compare MAX before/after transaction).",
+        "Bake gap-rate into observability dashboard with alert threshold (e.g. >20% on prod).",
+        "Document in PROJECT_BRAIN.md / docs/ARCHITECTURE.md the MAX+1 + rollback-burn pattern as expected NF525-compliant behavior."
+      ],
+      "confidence": "HIGH (runtime db query)",
+      "wave": "WF-3-A3"
+    },
+    {
+      "id": "WF3-A3-P3-04",
+      "severity": "P3",
+      "title": "OSS public wall has no rate-limit on the Echo channel auth — relies on Sanctum/middleware",
+      "category": "security hygiene",
+      "evidence": {
+        "code": "routes/channels.php:41-62 — branch.{branchId} channel auth runs Eloquent + role lookups per subscribe attempt. No explicit rate limit at the channel layer.",
+        "rate_limit_chain": "Broadcast::routes() at app/Providers/BroadcastServiceProvider.php:22 uses ['auth:sanctum'] — Sanctum default per-token. Sanctum has built-in throttle but the channel auth runs role lookups which are DB-hits.",
+        "exposure": "Authenticated user trying to subscribe to N branches in burst would N×role-check the DB. Bound by Sanctum's per-token rate limit and the (Admin || Tenant Admin || own-branch) short-circuit."
+      },
+      "impact": "Negligible — channel auth is rare (subscription-time, not per-message). Bound by Sanctum throttle.",
+      "remediation_options": [
+        "Add explicit RateLimiter::for('broadcast-auth') in RouteServiceProvider if SaaS traffic warrants.",
+        "Defer — not a real concern at single-tenant scale."
+      ],
+      "confidence": "LOW",
+      "wave": "WF-3-A3"
+    }
+  ],
+  "verdict": {
+    "summary": "OSS reception of kiosk orders is correct and visually parity-equivalent to KDS for the [PREPARING, PREPARED] subset. Fail-closed allowlist (Wave-3 RED heal) prevents POS / DELIVERY leak. TZ-aware boundary heals applied. Cross-channel sequence integrity verified: kiosk + POS share one per-branch counter, no duplicates, HMAC chain CHAIN OK. The prompt's statement about source=KIOSK as the OSS discriminator is factually incorrect — the code routes by order_type, not source. Worth surfacing because the same confusion will repeat in WF-4/5/6/7/8 prompts.",
+    "p0": 0,
+    "p1": 1,
+    "p2": 2,
+    "p3": 1,
+    "blockers": [],
+    "production_readiness": "GO. The P1 is a prompt-correction, not a code defect. Sync path is structurally and runtime sound."
+  }
+}

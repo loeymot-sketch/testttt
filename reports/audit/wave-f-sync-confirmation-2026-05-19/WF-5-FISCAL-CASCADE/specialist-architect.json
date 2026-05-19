@@ -1,0 +1,142 @@
+{
+  "specialist": "Architect",
+  "wave": "WF-5-FISCAL-CASCADE",
+  "scope": "fiscal service composition, allocation paths, retry-on-failure",
+  "mode": "READ-ONLY",
+  "frozen_zone_touched": false,
+  "lens": "patterns + cohesion of layers + dependency discipline + composition contract",
+  "files_audited": [
+    "app/Services/Fiscal/FiscalSequenceService.php",
+    "app/Services/Fiscal/AuditLogService.php",
+    "app/Services/Fiscal/ZReportService.php",
+    "app/Services/Fiscal/FiscalChainValidator.php",
+    "app/Services/Fiscal/FiscalSealingService.php",
+    "app/Services/Order/RefundWithCounterEntryService.php",
+    "app/Services/Order/SealedOrderGuard.php",
+    "app/Services/OrderService.php (lines 920-1040, 1280-1290, 1850-1860, 2030-2040, 2210-2280)",
+    "app/Services/FrontendOrderService.php (lines 430-450, 1090-1190)",
+    "app/Services/PaymentService.php",
+    "app/Console/Commands/RetryFiscalAllocCommand.php",
+    "app/Console/Commands/FiscalVerifyChainCommand.php",
+    "app/Console/Kernel.php (lines 137-208, 287)",
+    "config/fiscal.php"
+  ],
+  "five_invariants_verified": {
+    "I-1_sequence_monotonic_gap_free": {
+      "verdict": "INTACT",
+      "evidence": [
+        "FiscalSequenceService::next L66 Cache::lock('fiscal_seq_b{N}',5s) + block(3s) acquire",
+        "L76-94 DB::transaction + Order::lockForUpdate()->max('fiscal_sequence_no') + 1",
+        "Triple defense: cache lock (perf) + row-level FOR UPDATE (correctness on cache outage) + UNIQUE index orders_branch_fiscal_seq_unique (final gate)",
+        "SQLite fallback: lockForUpdate is no-op but BEGIN IMMEDIATE semantics serialize writers (documented L86-87)"
+      ]
+    },
+    "I-2_hmac_chain_atomic": {
+      "verdict": "INTACT",
+      "evidence": [
+        "AuditLogService::write L100-109 Cache::lock('audit_chain_b{N}',10s) + block(5s)",
+        "L112-114 DB::transaction wraps performInsert (tail-read + INSERT atomic)",
+        "L184-188 UNIQUE(branch_id, prev_hash) violation triggers exactly-one retry via attempt counter",
+        "L207-228 verifyChain re-walks O(N) chain comparing prev_hash + recomputed current_hash via hash_equals (constant-time)",
+        "FiscalChainValidator orchestrates BOTH Z chain (full re-walk) + audit_logs tail (bounded 500 default) to avoid deadlock under the 4s z_report cache lock"
+      ]
+    },
+    "I-3_composition_snapshot_frozen": {
+      "verdict": "INTACT",
+      "evidence": [
+        "5 INSERT sites confirmed: PricingService L291, OrderService L466 + L826 + L1282, FrontendOrderService L441",
+        "All sites json_encode the snapshot BEFORE DB INSERT — never overwritten post-creation (no UPDATE found targeting composition_snapshot column)",
+        "OrderItem fillable L44 + cast 'array' L71",
+        "Copy-forward at RefundWithCounterEntryService L136 propagates parent snapshot verbatim to mirror — preserves provenance",
+        "ItemWizardStepVersion docblock L14 documents the immutability contract"
+      ]
+    },
+    "I-4_db_triggers_active": {
+      "verdict": "INTACT",
+      "evidence": [
+        "audit_logs: BEFORE UPDATE + BEFORE DELETE on MySQL/MariaDB (SIGNAL 45000) AND SQLite (RAISE ABORT) — migration 2026_04_22_000002",
+        "z_reports: BEFORE DELETE on MySQL only — migration 2026_05_09_160000 (UPDATE allowed for STATUS transitions + archive_at + cash enrichment)",
+        "cash_movements + cash_drawer_sessions + order_payments: BEFORE DELETE on MySQL — migration 2026_05_10_010000 (P0-FIX-4)",
+        "FK cascadeOnDelete replaced by restrictOnDelete to fail fast at FK layer before trigger",
+        "down() blocked in APP_ENV=production for audit_logs migration (line 70-76)"
+      ]
+    },
+    "I-5_truncate_bypass_mitigation": {
+      "verdict": "INTACT (with documented operational caveat)",
+      "evidence": [
+        "docs/FISCAL_SECRETS.md exists (referenced from AuditLogService L314 + ZReportService L712)",
+        "TRUNCATE bypass documented in trigger migrations (audit_logs L138-140, z_reports L29-30, cash_movements L46-49) — mitigation = revoke TRUNCATE permission on prod DB GRANT level (deploy doc scope)",
+        "Cannot be enforced from migration scope — requires DBA action at deploy. Pattern is industry-standard for NF525 compliance."
+      ]
+    }
+  },
+  "architecture_findings": [
+    {
+      "id": "ARCH-FIS-01",
+      "severity": "INFO",
+      "kind": "lazy-resolution-cycle-break",
+      "location": "ZReportService L42-48 + FiscalChainValidator L29-47",
+      "observation": "Container cycle (ZReportService -> FiscalChainValidator -> ZReportService) deliberately broken via lazy resolution + setChainValidator() test hook. Clean pattern — no eager constructor injection. [P11-FZH] marker confirms it was a hardened decision, not an accident.",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "ARCH-FIS-02",
+      "severity": "INFO",
+      "kind": "feature-flag-defense-in-depth",
+      "location": "config/fiscal.php (chain_validation_enabled, kiosk_auto_allocate_sequence, sealed_z_guard_enabled, verify_chain_strict)",
+      "observation": "Four runtime flags allow emergency rollback to legacy behaviour without redeploy. All default to safe (validation on, auto-allocate on, guard on, strict in prod). Pattern is risk-balanced — keeps NF525 enforcement active by default but provides operator escape hatch.",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "ARCH-FIS-03",
+      "severity": "INFO",
+      "kind": "dual-allocation-path",
+      "location": "OrderService L938 (POS at-creation) + FrontendOrderService L1130-1153 (kiosk auto-allocate post-payment)",
+      "observation": "Two allocation entry points for two transaction lifecycles. POS allocates inside saveOrderWithQueueNumber savepoint (rollback-safe — failed transaction releases the seq number for next caller via MAX+1). Kiosk allocates in finalizePaidKioskOrder INSIDE the lockForUpdate transaction — failure persists fiscal_alloc_error_at marker and lets RetryFiscalAllocCommand cron pick it up every minute. Two paths, one SSOT (FiscalSequenceService::next).",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "ARCH-FIS-04",
+      "severity": "INFO",
+      "kind": "orphan-retry-mechanism",
+      "location": "RetryFiscalAllocCommand + FrontendOrderService L1174-1188",
+      "observation": "Iter14 hardening: kiosk-paid orders whose fiscal alloc fails now write fiscal_alloc_error_at (no exception re-throw that would rollback payment), and the cron re-invokes the SAME finalize path (single SSOT). The aggregation at Z close warns operators about pending orphans via warnOnOrphanedPaidOrders (L586-616). Z aggregate excludes orphans correctly (NF525 gap-free invariant) — orphans cannot enter a Z report by accident.",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "ARCH-FIS-05",
+      "severity": "INFO",
+      "kind": "post-z-refund-state-machine",
+      "location": "RefundWithCounterEntryService + SealedOrderGuard",
+      "observation": "Post-Z refund uses formal counter-entry mirror order (NEGATED total/subtotal/tax + items + payments, fresh fiscal_sequence_no, parent_order_id FK self-ref). SealedOrderGuard::assertSealed (L84-114) gates this path: only orders inside a CLOSED Z window can mirror. Pre-Z refund uses standard RETURNED transition (still mutable parent). One predicate, two enforcement paths — no semantic drift.",
+      "verdict": "KEEP-AS-IS"
+    },
+    {
+      "id": "ARCH-FIS-06",
+      "severity": "INFO",
+      "kind": "split-payment-mirror-symmetry",
+      "location": "RefundWithCounterEntryService L163-192",
+      "observation": "Iter15-P0-10 hardening: refund mirror order now duplicates parent's OrderPayment rows with negated amounts + terminal_id carry-forward (Sprint H2 P1-Z7-01 2026-05-17). Without this, split-payment Z reconciliation would be under-credited per payment method (only the aggregate Order.total was negated). Cross-branch admin tools call withoutGlobalScopes() correctly — payments still write to the parent's branch_id (preserves multi-tenant isolation).",
+      "verdict": "KEEP-AS-IS"
+    }
+  ],
+  "four_list_classification": {
+    "keep_as_is": [
+      "All 5 NF525 invariants verified intact; service composition is production-validated through 17+ iterations.",
+      "FiscalSequenceService::next triple-defense (cache lock + lockForUpdate + UNIQUE constraint)",
+      "AuditLogService HMAC chain with unique-prev-hash retry-on-violation",
+      "ZReportService::aggregate half-open interval (from, to] preventing boundary double-count",
+      "FiscalChainValidator lazy resolution breaks container cycle without losing dual-chain coverage",
+      "RefundWithCounterEntryService mirror-order pattern (no parent mutation post-seal)",
+      "SealedOrderGuard single-predicate SSOT shared across destroy/changeStatus/aggregate/refund",
+      "RetryFiscalAllocCommand cron orphan recovery (every minute, withoutOverlapping(5), onOneServer)"
+    ],
+    "heal": [],
+    "lock_plan": [],
+    "defer_v1_0_2": []
+  },
+  "p0_findings_in_frozen_zone": 0,
+  "p1_findings_in_frozen_zone": 0,
+  "verdict": "INTACT",
+  "summary": "Fiscal cascade composition is exemplary — five invariants enforced via defense-in-depth at three layers (cache lock + transactional DB lock + UNIQUE index + DB triggers). Dual allocation paths (POS at-creation, kiosk auto-allocate on PAID) feed one SSOT (FiscalSequenceService::next). Post-Z refund uses formal counter-entry mirror with parent immutability. Orphan retry cron prevents silent NF525 gaps. No architectural concerns observed; no patches recommended. Recommendation: KEEP-AS-IS across all 14 fiscal-cascade files."
+}
