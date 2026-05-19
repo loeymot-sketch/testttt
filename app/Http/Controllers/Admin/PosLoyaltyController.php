@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PosLoyaltyRedeemRequest;
 use App\Models\Order;
+use App\Models\Scopes\BranchScope;
 use App\Services\Loyalty\PosRedemptionException;
 use App\Services\Loyalty\PosRedemptionService;
 use Illuminate\Http\JsonResponse;
@@ -34,17 +35,24 @@ final class PosLoyaltyController extends Controller
 
     public function redeem(PosLoyaltyRedeemRequest $request, int $orderId): JsonResponse
     {
-        // Bypass branch global scope so a cashier on branch_id=N can redeem
-        // for an order he/she just opened (branch_id is already on the route
-        // model; if FormRequest authz is required the permission gate above
-        // already filtered). We deliberately scope-minimal here.
-        $order = Order::withoutGlobalScopes()->find($orderId);
+        // [HEAL-A.1 2026-05-19] Z6+Z8 cross-confirmed P0: Spatie permission
+        // `pos.redeem-loyalty` is global per-user, NOT branch-bound. Pre-heal
+        // a cashier on branch=5 could redeem against an order on branch=3.
+        // Mirror PosOrderController::show:113-121 pattern: bypass BranchScope
+        // (singular — preserves SoftDeletingScope so soft-deleted orders are
+        // not silently leaked, per Z6 P1-Z6-03) then explicit post-fetch
+        // branch check. Admin (branch_id=0) bypass per BranchScope:33-36.
+        $order = Order::withoutGlobalScope(BranchScope::class)->find($orderId);
         if (!$order) {
             return response()->json([
                 'status'  => false,
                 'code'    => 'ORDER_NOT_FOUND',
                 'message' => 'Commande introuvable',
             ], 404);
+        }
+        $userBranchId = (int) ($request->user()?->branch_id ?? -1);
+        if ($userBranchId !== 0 && $userBranchId !== (int) $order->branch_id) {
+            abort(403, 'Cross-branch access denied');
         }
 
         try {

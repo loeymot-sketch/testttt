@@ -268,4 +268,100 @@ class PosLoyaltyRedeemTest extends TestCase
                 ->count()
         );
     }
+
+    /**
+     * Path 7 — [HEAL-A.1 2026-05-19] Cross-branch cashier MUST get 403 on foreign order.
+     *
+     * Z6+Z8 cross-confirmed P0: Spatie permission `pos.redeem-loyalty` is global per-user,
+     * NOT branch-bound. Without the post-fetch branch check (mirror of PosOrderController:113-121),
+     * a cashier on Branch A could redeem against an order on Branch B because the controller
+     * bypassed BranchScope via `Order::withoutGlobalScopes()->find()`.
+     *
+     * This sentinel proves the fix by:
+     *  - Creating a foreign branch + foreign order (different branch_id from the cashier).
+     *  - Acting as the cashier (same-branch as $this->branch, has permission).
+     *  - POST to /api/admin/pos-order/{foreignOrder->id}/redeem-loyalty.
+     *  - Asserts 403 + zero loyalty mutation (no ledger row, no order mutation).
+     */
+    public function test_cross_branch_cashier_gets_403_on_foreign_order(): void
+    {
+        // Foreign branch + foreign order (different branch_id).
+        $otherBranch = Branch::factory()->create();
+        $otherCustomer = User::factory()->create([
+            'branch_id' => $otherBranch->id,
+            'password'  => Hash::make('password'),
+            'phone'     => '0809010203',
+        ]);
+        DB::table('users')->where('id', $otherCustomer->id)->update([
+            'loyalty_code'   => 'OTHERCUST',
+            'loyalty_points' => 500,
+        ]);
+
+        $foreignOrder = Order::factory()->create([
+            'branch_id'          => $otherBranch->id,
+            'user_id'            => $otherCustomer->id,
+            'subtotal'           => 25.00,
+            'discount'           => 0.00,
+            'total_tax'          => 0.00,
+            'delivery_charge'    => 0.00,
+            'total'              => 25.00,
+            'status'             => OrderStatus::PENDING,
+            'payment_status'     => PaymentStatus::UNPAID,
+            'payment_method'     => PaymentGateway::CASH_ON_DELIVERY,
+            'pos_payment_method' => PosPaymentMethod::CASH,
+            'order_type'         => OrderType::TAKEAWAY,
+            'source_surface'     => 'pos',
+        ]);
+
+        // Cashier is on $this->branch — DIFFERENT from $otherBranch — has the permission.
+        $this->assertNotSame($this->cashier->branch_id, $foreignOrder->branch_id);
+        $this->assertTrue((bool) $this->cashier->can('pos.redeem-loyalty'));
+
+        $this->actingAs($this->cashier, 'sanctum');
+
+        $balanceBefore = (int) DB::table('users')->where('id', $otherCustomer->id)->value('loyalty_points');
+        $ledgerBefore = LoyaltyTransaction::count();
+        $foreignOrderBefore = Order::withoutGlobalScopes()->findOrFail($foreignOrder->id);
+
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', 'test-redeem-xbranch-' . uniqid())
+            ->postJson("/api/admin/pos-order/{$foreignOrder->id}/redeem-loyalty", [
+                'points'       => 100,
+                'loyalty_code' => 'OTHERCUST',
+            ]);
+
+        // Must be 403 cross-branch denied (NOT 200, NOT 404, NOT 422).
+        $response->assertStatus(403);
+
+        // Zero loyalty mutation: balance unchanged, no ledger row written,
+        // foreign order unchanged (no loyalty_customer_code, no discount).
+        $this->assertSame(
+            $balanceBefore,
+            (int) DB::table('users')->where('id', $otherCustomer->id)->value('loyalty_points'),
+            'Foreign customer balance must NOT be decremented on cross-branch attempt'
+        );
+        $this->assertSame(
+            $ledgerBefore,
+            LoyaltyTransaction::count(),
+            'No ledger row may be written on cross-branch attempt'
+        );
+
+        $foreignOrderAfter = Order::withoutGlobalScopes()->findOrFail($foreignOrder->id);
+        $this->assertNull(
+            $foreignOrderAfter->loyalty_customer_code,
+            'Foreign order loyalty_customer_code must remain null'
+        );
+        $this->assertEqualsWithDelta(
+            (float) $foreignOrderBefore->discount,
+            (float) $foreignOrderAfter->discount,
+            0.01,
+            'Foreign order discount must not change'
+        );
+        $this->assertEqualsWithDelta(
+            (float) $foreignOrderBefore->total,
+            (float) $foreignOrderAfter->total,
+            0.01,
+            'Foreign order total must not change'
+        );
+    }
 }
