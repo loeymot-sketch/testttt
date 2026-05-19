@@ -1212,15 +1212,31 @@ class FrontendOrderService
             $locked->save();
             $promoted = true;
 
-            // [Wave M / Heal Z2 P1 — 2026-05-19] OrderCreated::dispatch
-            // moved INSIDE the closure so DispatchableAfterCommit engages
-            // (transactionLevel()>0 → afterCommit). On rollback the
-            // broadcast is dropped — KDS never observes a ghost ACCEPT'd
-            // kiosk order. The mail/SMS/push queue jobs at the bottom of
-            // this method still fire after the closure via control flow.
+            // [Wave M / Heal Z2 P1 — 2026-05-19 + advisor pivot 2026-05-19]
+            // OrderCreated::dispatch moved INSIDE the closure so
+            // DispatchableAfterCommit engages (transactionLevel()>0 →
+            // afterCommit). On rollback the broadcast is dropped — KDS
+            // never observes a ghost ACCEPT'd kiosk order.
+            //
+            // IMPORTANT — pass `$locked`, NOT the caller's `$frontendOrder`.
+            // Pre-Wave-M, the dispatch happened outside the closure AFTER
+            // `$frontendOrder->refresh()` (see line ~1275 below) so the
+            // event captured the fresh ACCEPT status + cleared
+            // fiscal_alloc_error_at. Inside the closure we hold the lock
+            // on `$locked`; that is the instance whose in-memory state
+            // mirrors the freshly-committed row. `$frontendOrder` (caller
+            // parameter) is NOT mutated by this method and would broadcast
+            // status=PENDING, which is exactly the symptom this heal is
+            // supposed to prevent. PersistOrderCreatedToOutbox reads
+            // `$order->status` into the payload (line 39 of that file) —
+            // so passing the stale instance would mark the broadcast
+            // ACCEPT-promotion event as still PENDING.
+            //
+            // The mail/SMS/push queue jobs at the bottom of this method
+            // continue to fire after the closure via control flow.
             // Sentinel:
             // `tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest`.
-            OrderCreated::dispatch($frontendOrder);
+            OrderCreated::dispatch($locked);
         });
 
         if ($allocFailed) {
