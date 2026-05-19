@@ -280,7 +280,15 @@ class OrderService
             $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
             $branchId = (int) (Auth::user()?->branch_id ?? 0);
 
-            return Order::with('transaction', 'orderItems', 'branch', 'user')
+            // [WAVE-H-2026-05-19 bug_005 heal] Eager-load `orderItems.orderItem`
+            // (dotted) so SimpleDeliveryBoyOrderResource::resolveItemsForDriver
+            // can read `$line->orderItem?->name` without firing one
+            // `SELECT * FROM items WHERE id=?` per order_item line. The
+            // resource's `relationLoaded('orderItems')` guard only protected
+            // the FIRST hop — the inner belongsTo(Item) was still lazy and
+            // produced ~50 extra queries per 10-order × 5-item index page.
+            // Guarded by tests/Feature/Sentinels/DeliveryBoyOrderIndexNoN1SentinelTest.
+            return Order::with(['transaction', 'orderItems.orderItem', 'branch', 'user'])
                     ->where('order_type', "!=", OrderType::POS)
                     ->where('delivery_boy_id', Auth::user()->id)
                     ->when($branchId > 0, fn ($query) => $query->where('branch_id', $branchId))
@@ -1571,20 +1579,63 @@ class OrderService
                         abort(422, 'Refusing to auto-mark order PAID: payment_method is missing or out of the allowed enum range.');
                     }
 
-                    $locked->payment_status = PaymentStatus::PAID;
-                    if ((int) $pm === (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY
-                        && (int) $newStatus === (int) OrderStatus::DELIVERED) {
-                        // [P0-LIV-02] Record the cash-collection event for NF525.
-                        // The escrow row is the audit-trail anchor between
-                        // "collected at doorstep" and "deposited at branch".
-                        $cashEscrowWritten = true;
-                        $cashEscrowMeta = [
-                            'branch_id' => (int) $locked->branch_id,
-                            'order_id'  => (int) $locked->id,
-                            'driver_id' => Auth::check() ? (int) Auth::id() : null,
-                            'amount'    => round((float) $locked->total, 2),
-                            'serial'    => $locked->order_serial_no,
-                        ];
+                    // [WH-2 bug_002 / 2026-05-19] Gate the payment_status →
+                    // PAID flip on the canonical legal anchor.
+                    //
+                    // BEFORE: $locked->payment_status flipped to PAID
+                    // UNCONDITIONALLY on every transition that hit
+                    // $wasUnpaidCash. On the canonical 2-step driver flow
+                    // (PREPARED→OFD then OFD→DELIVERED) the flip fired at
+                    // call 1 (OFD), so on call 2 (DELIVERED) the order was
+                    // already PAID, $wasUnpaidCash was false, and the
+                    // inner `if (CASH_ON_DELIVERY && DELIVERED)` block —
+                    // which contains the audit row capture — was skipped
+                    // entirely. Net: ZERO `delivery.cash_collected_escrow`
+                    // rows on the canonical 2-step flow, violating NF525.
+                    //
+                    // AFTER: for CASH_ON_DELIVERY we delay the PAID flip
+                    // until newStatus === DELIVERED. This is the
+                    // legally-correct anchor — cash is collected at the
+                    // doorstep, not at pickup — AND it ensures the audit
+                    // row capture downstream fires on the SAME locked
+                    // transaction that performs the flip, so the chain
+                    // gains exactly one row per cash delivery regardless
+                    // of single-jump or 2-step path.
+                    //
+                    // For non-COD methods (E_WALLET / PAYPAL / CARD /
+                    // TICKET_RESTAURANT) that somehow reached the driver
+                    // still UNPAID (an unusual but observed edge case —
+                    // e.g. card auth captured late), the prior flip-at-
+                    // OFD-or-DELIVERED behaviour is preserved verbatim.
+                    // Those flows never wrote an escrow row anyway.
+                    $isCod = ((int) $pm === (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY);
+                    $atDelivered = ((int) $newStatus === (int) OrderStatus::DELIVERED);
+
+                    if ($isCod) {
+                        if ($atDelivered) {
+                            $locked->payment_status = PaymentStatus::PAID;
+
+                            // [P0-LIV-02] Record the cash-collection event
+                            // for NF525. The escrow row is the audit-trail
+                            // anchor between "collected at doorstep" and
+                            // "deposited at branch".
+                            $cashEscrowWritten = true;
+                            $cashEscrowMeta = [
+                                'branch_id' => (int) $locked->branch_id,
+                                'order_id'  => (int) $locked->id,
+                                'driver_id' => Auth::check() ? (int) Auth::id() : null,
+                                'amount'    => round((float) $locked->total, 2),
+                                'serial'    => $locked->order_serial_no,
+                            ];
+                        }
+                        // CASH_ON_DELIVERY at OFD: leave payment_status =
+                        // UNPAID. The flip + audit row will fire on the
+                        // next call (OFD → DELIVERED), which re-enters
+                        // this branch with $wasUnpaidCash still true.
+                    } else {
+                        // Non-COD methods preserve the legacy flip semantics
+                        // (flip at OFD-or-DELIVERED, no escrow row).
+                        $locked->payment_status = PaymentStatus::PAID;
                     }
                 }
 
@@ -2129,8 +2180,19 @@ class OrderService
 
         // Spatie role scope + branch fence. Use withoutGlobalScope so an Admin
         // calling from branch_id=0 still sees the target row in its own branch.
+        //
+        // [WAVE-H bug_001 heal — 2026-05-19] Mirror the 5 sibling heals
+        // (DeliveryBoyService:45, AdministratorService:46, ChefService:43,
+        // CustomerService:43, WaiterService:44). Spatie's `->role($int)` calls
+        // `findById($int, $guard)` (HasRoles trait L84). Passing
+        // EnumRole::DELIVERY_BOY (=3) breaks on fresh-seeded envs where the
+        // roles table AUTO_INCREMENT has skipped past 3 — `findById(3, ...)`
+        // then throws RoleDoesNotExist and every legitimate driver assignment
+        // 500s. The stable identity is the role NAME + guard, not the legacy
+        // enum integer. See `database/seeders/SpatieRoleLookup.php` for the
+        // same rationale.
         $target = User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
-            ->role(\App\Enums\Role::DELIVERY_BOY)
+            ->role('Delivery Boy', 'sanctum')
             ->where('id', (int) $targetId)
             ->first();
 
