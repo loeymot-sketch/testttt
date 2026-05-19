@@ -71,7 +71,7 @@ footer a { color: #60a5fa; text-decoration: none; }
 <div class="subtitle">
   Branche <code style="background:#0d1117;padding:2px 6px;border-radius:3px;color:#fbbf24">heal/cms-pr1-quickwins-2026-05-18</code>
   · Tag <code style="background:#0d1117;padding:2px 6px;border-radius:3px;color:#22c55e">v1.0.X-massive-converged-2026-05-19</code>
-  · 122 commits cumul · NF525 chain CHAIN OK · Frozen-zone diff = 0
+  · 124 commits cumul · NF525 chain CHAIN OK · Frozen-zone diff = 0
   <br>
   <span style="color:#aaa">Cliquez sur n'importe quelle case pour voir l'explication détaillée.</span>
 </div>
@@ -93,7 +93,7 @@ footer a { color: #60a5fa; text-decoration: none; }
     <div class="boxes central">
       <div class="box box-central" data-key="db">
         <div class="box-title">📊 Database MySQL</div>
-        <div class="box-sub">169 migrations · 79 models · 22 BranchScope · 33 UNIQUE</div>
+        <div class="box-sub">169 migrations · 78 models · 21 BranchScope · 33 UNIQUE</div>
       </div>
       <div class="box box-central" data-key="auth">
         <div class="box-title">🔐 Auth + RBAC</div>
@@ -199,7 +199,7 @@ footer a { color: #60a5fa; text-decoration: none; }
       </div>
       <div class="box box-standalone" data-key="web">
         <div class="box-title">🌐 Web Site Le Cayenne</div>
-        <div class="box-sub">/Downloads/web · 17 files JSX · 4 viewports · "DÉMO V1" badges</div>
+        <div class="box-sub">/Downloads/web · 9 JSX + 6 legal HTML · 4 viewports · "DÉMO V1" badges</div>
         <span class="box-badge badge-demo">DÉMO</span>
       </div>
     </div>
@@ -252,7 +252,7 @@ const data = {
   db: {
     title: "📊 Database MySQL",
     role: "Source de vérité pour TOUTES les données opérationnelles + fiscales + audit.",
-    invariants: ["169 migrations alignées Wave G/H/J + Loyalty", "79 models · 83 FKs · 33 UNIQUE constraints", "22 models avec BranchScope (multi-tenant isolation)", "5 NF525-immutable tables avec triggers BEFORE DELETE/UPDATE"],
+    invariants: ["169 migrations alignées Wave G/H/J + Loyalty", "78 models · 83 FKs · 33 UNIQUE constraints", "21 models avec BranchScope (multi-tenant isolation, Customer exempté pour éviter Sanctum recursion)", "5 NF525-immutable tables avec triggers BEFORE DELETE/UPDATE"],
     files: ["database/migrations/ (169 fichiers)", "app/Models/ (79 models)", "app/Models/Scopes/BranchScope.php (FROZEN §7)"],
     sync: "Toutes les opérations CRUD passent par BranchScope global. Audit_logs append-only via DB triggers + Eloquent boot.",
     status: "✅ Validated Wave I WI-3 (2 P0 healed: FreshOrderSeed env guard + DDL bypass owner-cloud-gate)"
@@ -308,7 +308,7 @@ const data = {
   kiosk: {
     title: "🟧 Kiosk Borne — 8 sous-systèmes",
     role: "Borne self-service client : navigation menu + wizard composition + paiement card + confirmation. FR-lock.",
-    subsystems: ["11.1 Idle/attract screen", "11.2 Navigation catalogue", "11.3 Wizard composition 4 templates (sandwich/taco/burger/menu_formule) Vue FROZEN §7", "11.4 Cart bottom-sheet recap groupé", "11.5 Paiement card primarily", "11.6 Confirmation screen + queue number", "11.7 Allergen modal dialog", "11.8 Upsell accessoires + boissons"],
+    subsystems: ["11.1 Idle/attract screen", "11.2 Navigation catalogue", "11.3 Wizard composition templates (custom/sandwich/simple/tacos per config/menu.php) — KioskWizardComponent switch (tacos/sandwich/burger/snacking/omelette/salade) Vue FROZEN §7", "11.4 Cart bottom-sheet recap groupé", "11.5 Paiement card primarily", "11.6 Confirmation screen + queue number", "11.7 Allergen modal dialog", "11.8 Upsell accessoires + boissons"],
     files: ["resources/js/components/frontend/kiosk/KioskWizardComponent.vue (FROZEN §7)", "resources/js/components/frontend/kiosk/KioskAppComponent.vue (FROZEN §7)", "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue (FROZEN §7)", "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue + KioskWaitingComponent.vue (healed PK-2 idempotency)", "public/js/kiosk-shell.js"],
     sync: "Kiosk paid → fiscal_sequence_no AT CREATION (different from POS cash at-close) → OrderCreated cascade → KDS source=KIOSK + OSS public wall display",
     status: "✅ Wave B Kiosk Couche 1 GREEN · 20 KEEP-AS-IS attestations · owner manual test 'impeccable' confirmed independently"
@@ -317,7 +317,7 @@ const data = {
     title: "👨‍🍳 KDS Kitchen Display System",
     role: "Écran cuisine : affichage commandes en cours, transitions de status, gestion allergens, bump+undo.",
     subsystems: ["Order cards V2 grid single-station", "Status whitelist forward-only (PENDING → PREPARING → READY → COMPLETED)", "Bump CTA + shortcuts [A]/[B] hotkeys", "Recall mechanism (5s undo window)", "Allergen pill aggregated cross-items (WH Z-1 healed exposure)", "Timer elapsed TZ-aware Paris↔UTC (Wave 3b c2613cab0)", "Pagination overflow (>50 orders +N more)"],
-    files: ["app/Http/Controllers/Admin/KitchenDisplaySystemController.php + KdsSyncController.php", "app/Services/Kds/* (verify)", "resources/js/components/admin/kitchenDisplaySystem/* (5 Vue components)", "public/js/admin-kds.js", "Resources: KDSOrderDetailsResource + KDSOrderItemsResource (post Wave 3+PK-3 allergens_snapshot exposed)"],
+    files: ["app/Http/Controllers/Admin/KitchenDisplaySystemController.php + KdsSyncController.php", "app/Services/KdsSyncService.php (TZ-aware Paris→UTC bounds lines 77-94)", "resources/js/components/admin/kitchenDisplaySystem/* (5 Vue components)", "public/js/admin-kds.js", "Resources: KDSOrderDetailsResource + KDSOrderItemsResource (post Wave 3+PK-3 allergens_snapshot exposed)"],
     sync: "OrderCreated event → outbox → broadcast OR KDS polling → KdsSyncController::list → resource serialization → Vue render. Bump → KdsSyncController::changeStatus → OrderStatusChanged event → bidirectional sync.",
     status: "✅ Wave F WF-1 POS→KDS PASS · Z-1 audit AMBER → R1 healed (4 P1 fixed) · WH KDS deeper 3 EN-locale heals applied"
   },
@@ -348,7 +348,7 @@ const data = {
   mobile: {
     title: "📱 Mobile App Le Cayenne (STANDALONE)",
     role: "App mobile React standalone — NON reliée au backend V1. Catalogue + wizard + loyalty + Wallet.",
-    invariants: ["NO axios/fetch wiring to V1 backend (intentional V0 standalone)", "data/menu.js mirror du SSOT Le Cayenne (post-fictional-purge 2026-05-17)", "Wizard 4-template parity avec kiosk (sandwich/taco/burger/menu_formule)", "Loyalty 15 specs + 5 adversarial (clipboard replay/screenshot OCR/localStorage tamper/double-tap/browser back)", "Apple/Google Wallet integration mocks"],
+    invariants: ["NO axios/fetch wiring to V1 backend (intentional V0 standalone)", "data/menu.js mirror du SSOT Le Cayenne (post-fictional-purge 2026-05-17)", "Wizard template parity avec kiosk (sandwich/tacos/burger/snacking/omelette/salade per KioskWizardComponent switch)", "Loyalty 15 specs + 5 adversarial (clipboard replay/screenshot OCR/localStorage tamper/double-tap/browser back)", "Apple/Google Wallet integration mocks"],
     files: ["mobile/screens-main.jsx + screens-item-steps.jsx + screens-modals.jsx + screens-onboarding.jsx", "mobile/data/menu.js (SSOT alignment)", "mobile/components/ + api/ + icons.jsx", "22 specs tests/mobile-e2e/loyalty-* + adversarial A1-A5 + red-d-fictional-purge"],
     sync: "Mobile = standalone V0. Future Phase 6 wireup pour native iOS/Android + signed QR client + landmark a11y. Pour V1 LeCayenne single-resto = customer-facing demo only.",
     status: "✅ Wave D Mobile final PRODUCTION-READY V0 · 0 P0/P1/P2 cumul · 2 heals dead-code applied · QR signing backward-compatible (LCS-S-001)"
@@ -356,7 +356,7 @@ const data = {
   web: {
     title: "🌐 Web Site Le Cayenne (STANDALONE DÉMO)",
     role: "Site web standalone — funnel guest order + account-v2 + loyalty-v2 + legal pages. Mode DÉMO V1 (badges visibles).",
-    invariants: ["Tree at /Users/1millnonstop/Downloads/web/ (NOT wired to V1 backend per V1 design)", "17 files JSX + CSS + legal/ HTML pages", "Tested 4 viewports (mobile 360/tablet 768/desktop 1280/wide 1920)", "DÉMO V1 badges (Path A) sur Wallet head + QR area + Success modal post WE-2", "0 axios/fetch/XHR (no backend POST)", "XSS clean (React escape + 0 innerHTML)"],
+    invariants: ["Tree at /Users/1millnonstop/Downloads/web/ (NOT wired to V1 backend per V1 design)", "9 files JSX + CSS + 6 legal/ HTML pages + index.html", "Tested 4 viewports (mobile 360/tablet 768/desktop 1280/wide 1920)", "DÉMO V1 badges (Path A) sur Wallet head + QR area + Success modal post WE-2", "0 axios/fetch/XHR (no backend POST)", "XSS clean (React escape + 0 innerHTML)"],
     files: ["/Users/1millnonstop/Downloads/web/screens.jsx (43 KB) + screens-v3.jsx", "/Downloads/web/funnel.jsx + flows.jsx + components.jsx", "/Downloads/web/account-v2.jsx + loyalty-v2.jsx + orders.jsx", "/Downloads/web/data/menu.js + legal/ (CGU+CGV+RGPD+cookies+allergens HTML)", "tests/e2e/test-e2e-website-realignment-* + test-e2e-web-z7-* (116 Playwright cases)"],
     sync: "Web standalone DÉMO mode V1. Cloud production = post owner business data injection (G-WEB-LEGAL-1 9 placeholders).",
     status: "🟡 Wave D Web final VALIDATED CONDITIONAL · G-WEB-LEGAL-1 9 LCEN placeholders owner-deferred end of project"
@@ -365,7 +365,7 @@ const data = {
   "flow-pos-kds": {
     title: "🔗 Flux POS → KDS détaillé",
     cascade: ["1. POS submit order via PosController::storeOrder", "2. DB transaction crée order + order_items + composition_snapshot frozen", "3. Après commit: OrderCreated event fires (DispatchableAfterCommit)", "4. PersistOrderCreatedToOutbox FIRST (SSOT defense F-002 round-3)", "5. DecrementStockOnOrderCreated + DecrementItemAvailability cascade", "6. DispatchDomainEventsJob picks up outbox row (Cache::lock + lockForUpdate atomic claim)", "7. Pusher broadcast OR polling fallback (cadence cap 60s)", "8. KDS Vue subscribe via Echo OR KdsSyncService polling 5s", "9. KdsSyncController::list serialize via KDSOrderDetailsResource + KDSOrderItemsResource (with allergens_snapshot post PK-3)"],
-    defenses: ["Listener-order : Outbox FIRST in EventServiceProvider:145-151 (SSOT defense)", "TZ-aware bounds Paris→UTC (KdsSyncService:77-94 commit c2613cab0)", "Idempotency-Key on bump (KDS PK-2 11 callsites healed)", "Allergen exposure on items-board (PK-3 d6b20eef1)", "Failure isolation unified (WG-2 4 listeners + WJ-1 follow-up)"],
+    defenses: ["Listener-order : Outbox FIRST in EventServiceProvider:146-152 (line 148 listener; SSOT defense F-002 round-3)", "TZ-aware bounds Paris→UTC (KdsSyncService:77-94 commit c2613cab0)", "Idempotency-Key on bump (KDS PK-2 11 callsites healed)", "Allergen exposure on items-board (PK-3 d6b20eef1)", "Failure isolation unified (WG-2 4 listeners + WJ-1 follow-up)"],
     status: "Wave F WF-1 PASS verified · 49 PHPUnit sync-cascade tests GREEN · 3 Playwright Zone-3 PASS (kiosk→wizard→pay→KDS bump end-to-end 54s)"
   },
   "flow-pos-oss": {
