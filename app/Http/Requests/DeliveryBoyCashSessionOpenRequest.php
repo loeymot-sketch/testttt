@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\Role as EnumRole;
+use App\Models\Scopes\BranchScope;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -47,8 +48,10 @@ class DeliveryBoyCashSessionOpenRequest extends FormRequest
             }
 
             // BranchScope-bypass : the admin may be branch_id=0 (global) while the
-            // livreur lives on branch N — fetch without scope and assert role.
-            $user = User::query()->withoutGlobalScopes()->find($deliveryBoyId);
+            // livreur lives on branch N — fetch without branch fence and assert role.
+            // [Z6-P1-WGS 2026-05-19] singular form preserves SoftDeletingScope so
+            // a soft-deleted livreur User row is NOT openable.
+            $user = User::query()->withoutGlobalScope(BranchScope::class)->find($deliveryBoyId);
             if (! $user) {
                 $validator->errors()->add('delivery_boy_id', 'Delivery boy not found.');
                 return;

@@ -81,8 +81,10 @@ class DeliveryBoyCashSessionService
         try {
             $session = Cache::lock($lockKey, 5)->block(3, function () use ($branchId, $deliveryBoyId, $openingAmount, $openedByUserId) {
                 return DB::transaction(function () use ($branchId, $deliveryBoyId, $openingAmount, $openedByUserId) {
+                    // [Z6-P1-WGS 2026-05-19] singular — DeliveryBoyCashSession
+                    // has no SoftDeletes; explicit BranchScope::class arg.
                     $existing = DeliveryBoyCashSession::query()
-                        ->withoutGlobalScopes() // cross-branch check from admin context — explicit
+                        ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class) // cross-branch check from admin context — explicit
                         ->where('branch_id', $branchId)
                         ->where('delivery_boy_id', $deliveryBoyId)
                         ->where('status', DeliveryBoyCashSession::STATUS_OPEN)
@@ -136,8 +138,9 @@ class DeliveryBoyCashSessionService
 
         $result = DB::transaction(function () use ($sessionId, $closingAmount) {
             try {
+                // [Z6-P1-WGS 2026-05-19] singular — branch fence bypass only.
                 $session = DeliveryBoyCashSession::query()
-                    ->withoutGlobalScopes() // service-layer — branch enforced upstream
+                    ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class) // service-layer — branch enforced upstream
                     ->whereKey($sessionId)
                     ->lockForUpdate()
                     ->firstOrFail();
@@ -196,8 +199,9 @@ class DeliveryBoyCashSessionService
 
         $result = DB::transaction(function () use ($sessionId, $varianceReason, $actor) {
             try {
+                // [Z6-P1-WGS 2026-05-19] singular — branch fence bypass only.
                 $session = DeliveryBoyCashSession::query()
-                    ->withoutGlobalScopes()
+                    ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                     ->whereKey($sessionId)
                     ->lockForUpdate()
                     ->firstOrFail();
@@ -219,8 +223,10 @@ class DeliveryBoyCashSessionService
                 ];
             }
 
+            // [Z6-P1-WGS 2026-05-19] singular — DeliveryBoyCashMovement has no
+            // SoftDeletes; explicit BranchScope::class arg.
             $movementsSum = DeliveryBoyCashMovement::query()
-                ->withoutGlobalScopes()
+                ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                 ->where('delivery_boy_cash_session_id', $session->id)
                 ->get()
                 ->sum(fn (DeliveryBoyCashMovement $m) => $m->signedAmount());
@@ -325,8 +331,9 @@ class DeliveryBoyCashSessionService
         }
 
         return DB::transaction(function () use ($sessionId, $type, $amount, $direction, $orderId, $notes, $strict) {
+            // [Z6-P1-WGS 2026-05-19] singular — branch fence bypass only.
             $session = DeliveryBoyCashSession::query()
-                ->withoutGlobalScopes()
+                ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                 ->whereKey($sessionId)
                 ->lockForUpdate()
                 ->first();
@@ -380,8 +387,9 @@ class DeliveryBoyCashSessionService
      */
     public function findOpenSessionForDeliveryBoy(int $branchId, int $deliveryBoyId): ?DeliveryBoyCashSession
     {
+        // [Z6-P1-WGS 2026-05-19] singular — branch fence bypass only.
         return DeliveryBoyCashSession::query()
-            ->withoutGlobalScopes()
+            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
             ->where('branch_id', $branchId)
             ->where('delivery_boy_id', $deliveryBoyId)
             ->where('status', DeliveryBoyCashSession::STATUS_OPEN)

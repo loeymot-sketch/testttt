@@ -58,7 +58,11 @@ class RetryFiscalAllocCommand extends Command
         $branchId = $this->option('branch');
         $branchId = $branchId !== null && $branchId !== '' ? (int) $branchId : null;
 
-        $query = FrontendOrder::withoutGlobalScopes()
+        // [Z6-P1-WGS 2026-05-19] singular — FrontendOrder HAS SoftDeletes.
+        // We MUST NOT retry fiscal alloc on a soft-deleted order (an admin
+        // who soft-deleted a kiosk order does not want the cron to revive
+        // it). Keep SoftDeletingScope active by dropping only BranchScope.
+        $query = FrontendOrder::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
             ->where('payment_status', PaymentStatus::PAID)
             ->whereNull('fiscal_sequence_no')
             ->whereNotNull('fiscal_alloc_error_at')

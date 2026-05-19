@@ -192,7 +192,13 @@ final class PosRedemptionService
             $newDiscount     = round($currentDiscount + $discountEur, 2);
             $newTotal        = round($subtotal - $newDiscount + $currentTax + $currentDelivery, 2);
 
-            Order::withoutGlobalScopes()
+            // [Z6-P1-WGS 2026-05-19] singular form — Order HAS SoftDeletes;
+            // a soft-deleted Order must NOT receive a loyalty redeem update,
+            // so we keep SoftDeletingScope active (preserves NF525 audit
+            // surface). The caller (PosLoyaltyController:45) already asserts
+            // post-fetch branch ownership, so dropping BranchScope only is
+            // safe here.
+            Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                 ->where('id', $order->id)
                 ->update([
                     'discount'              => $newDiscount,
@@ -201,8 +207,9 @@ final class PosRedemptionService
                     'updated_at'            => now(),
                 ]);
 
-            // Refresh for caller.
-            $freshOrder = Order::withoutGlobalScopes()->findOrFail($order->id);
+            // Refresh for caller. Same intent — singular bypass, SoftDeletes ON.
+            $freshOrder = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->findOrFail($order->id);
 
             Log::info('[Loyalty] POS redeem applied', [
                 'order_id'       => $order->id,

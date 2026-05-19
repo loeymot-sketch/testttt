@@ -170,7 +170,9 @@ class RefundWithCounterEntryService
             // BranchScope on OrderPayment: query parent payments WITHOUT global
             // scope so cross-branch refund tools (admin) still work in tests
             // where the test user's branch may differ from the parent's branch.
-            $parentPayments = OrderPayment::withoutGlobalScopes()
+            // [Z6-P1-WGS 2026-05-19] singular form — OrderPayment has no
+            // SoftDeletes; explicit BranchScope::class arg documents intent.
+            $parentPayments = OrderPayment::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                 ->where('order_id', $parent->id)
                 ->get();
 

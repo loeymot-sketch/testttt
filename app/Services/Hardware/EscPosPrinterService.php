@@ -89,14 +89,19 @@ final class EscPosPrinterService
                 return ['success' => false, 'error' => 'invalid_branch'];
             }
 
+            // [Z6-P1-WGS 2026-05-19] singular form — Printer has no SoftDeletes,
+            // so behaviour is unchanged; the explicit BranchScope::class arg
+            // documents that the bypass is intentional (admin-driven cash
+            // drawer open targets the explicit $branchId, not the caller's
+            // own branch).
             if ($printerId !== null && $printerId > 0) {
-                $printer = Printer::withoutGlobalScopes()
+                $printer = Printer::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                     ->where('branch_id', $branchId)
                     ->where('id', $printerId)
                     ->first();
             } else {
                 // Receipt role is stored in `station` (schema: type = escpos_tcp|…, station = receipt|kitchen_…).
-                $printer = Printer::withoutGlobalScopes()
+                $printer = Printer::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                     ->where('branch_id', $branchId)
                     ->where('station', 'receipt')
                     ->orderBy('id')

@@ -228,7 +228,11 @@ class PosOrderRequest extends FormRequest
                     );
                     continue;
                 }
-                $exists = PaymentTerminal::withoutGlobalScopes()
+                // [Z6-P1-WGS 2026-05-19] singular form — PaymentTerminal has no
+                // SoftDeletingScope so this is a no-op refactor, but the explicit
+                // BranchScope::class arg documents that the bypass is intentional
+                // (caller already constrains branch_id explicitly below).
+                $exists = PaymentTerminal::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                     ->where('id', $terminalId)
                     ->where('branch_id', $orderBranchId)
                     ->where('status', PaymentTerminal::STATUS_ACTIVE)

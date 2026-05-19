@@ -131,8 +131,10 @@ class DeliveryBoyCashSessionController extends AdminController
 
         // Source branch_id from the livreur's User row. FormRequest already
         // asserted the role + branch presence ; we just look it up here.
+        // [Z6-P1-WGS 2026-05-19] singular — preserves SoftDeletingScope so a
+        // soft-deleted livreur cannot have a new session opened against them.
         $livreur = User::query()
-            ->withoutGlobalScopes()
+            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
             ->findOrFail((int) $data['delivery_boy_id']);
 
         $branchId = (int) $livreur->branch_id;

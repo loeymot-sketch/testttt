@@ -124,7 +124,9 @@ final class SplitPaymentService
                         "payment_breakdown.{$idx}.terminal_id" => 'CARD tranche requires a valid terminal_id.',
                     ]);
                 }
-                $terminalOk = PaymentTerminal::withoutGlobalScopes()
+                // [Z6-P1-WGS 2026-05-19] singular form — PaymentTerminal has no
+                // SoftDeletes; explicit BranchScope::class arg documents intent.
+                $terminalOk = PaymentTerminal::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                     ->where('id', $terminalId)
                     ->where('branch_id', $branchId)
                     ->where('status', PaymentTerminal::STATUS_ACTIVE)
