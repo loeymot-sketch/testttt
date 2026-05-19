@@ -56,6 +56,11 @@ export function resolveRealtimeFallbackConfig(runtime = {}) {
         runtime.hintWhenOff ?? realtimeConfig.hintWhenOff,
         true
     );
+    // [HEAL B.3 2026-05-19] POS polling cadence reads MIX_BROADCAST_POLLING_FALLBACK_MS
+    // (webpack build-time env, baked at `npm run prod`) — NOT the PHP config
+    // (broadcasting.polling_fallback.interval_ms was deleted as dead-weight).
+    // Per-surface SoT: this constant is the POS-specific value; KDS and Kiosk
+    // own their own constants (see config/broadcasting.php note). RED-Z3 §B-6 closed.
     const pollingIntervalMs = normalizePositiveInteger(
         runtime.pollingIntervalMs
         ?? realtimeConfig.pollingFallbackMs

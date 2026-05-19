@@ -1747,9 +1747,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../services/kioskHardware */ "./resources/js/services/kioskHardware.js");
 /* harmony import */ var _config_kioskHardware__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../config/kioskHardware */ "./resources/js/config/kioskHardware.js");
 /* harmony import */ var _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../helpers/kioskAnalytics */ "./resources/js/helpers/kioskAnalytics.js");
-/* harmony import */ var _composables_useKioskSpeech__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../composables/useKioskSpeech */ "./resources/js/composables/useKioskSpeech.js");
-/* harmony import */ var _store_modules_kioskCart__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../../store/modules/kioskCart */ "./resources/js/store/modules/kioskCart.js");
-/* harmony import */ var _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../../../enums/modules/orderStatusEnum */ "./resources/js/enums/modules/orderStatusEnum.js");
+/* harmony import */ var _helpers_idempotencyHeaders__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../helpers/idempotencyHeaders */ "./resources/js/helpers/idempotencyHeaders.js");
+/* harmony import */ var _composables_useKioskSpeech__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../../composables/useKioskSpeech */ "./resources/js/composables/useKioskSpeech.js");
+/* harmony import */ var _store_modules_kioskCart__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../../../store/modules/kioskCart */ "./resources/js/store/modules/kioskCart.js");
+/* harmony import */ var _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../../../enums/modules/orderStatusEnum */ "./resources/js/enums/modules/orderStatusEnum.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _regeneratorValues(e) { if (null != e) { var t = e["function" == typeof Symbol && Symbol.iterator || "@@iterator"], r = 0; if (t) return t.call(e); if ("function" == typeof e.next) return e; if (!isNaN(e.length)) return { next: function next() { return e && r >= e.length && (e = void 0), { value: e && e[r++], done: !e }; } }; } throw new TypeError(_typeof(e) + " is not iterable"); }
 function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
@@ -1769,6 +1770,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 
 
 // [PHASE-6.4] Analytics instrumentation (gated par consent, no-op si opt-out).
+
 
 // Kiosk Phase 9.1.8 — TTS sur erreurs de paiement (EAA 2025).
 // Les malvoyants n'avaient aucun retour audio en cas de refus TPE → risque
@@ -1822,7 +1824,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     // Kiosk Phase 9.1.8 — prépare le composable TTS (no-op si audio off ou
     // absence de Web Speech API sur le navigateur kiosk).
     try {
-      this._kioskSpeech = (0,_composables_useKioskSpeech__WEBPACK_IMPORTED_MODULE_6__.useKioskSpeech)({
+      this._kioskSpeech = (0,_composables_useKioskSpeech__WEBPACK_IMPORTED_MODULE_7__.useKioskSpeech)({
         store: this.$store
       });
     } catch (_) {
@@ -1878,7 +1880,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return this.networkOffline && this.isElectronicMethod(method);
     },
     offlinePaymentMessage: function offlinePaymentMessage() {
-      return 'Paiement CB/TR indisponible hors ligne.';
+      return this.$t('kiosk.pay_screen.offline_short');
     },
     selectMethod: function selectMethod(m) {
       if (this.isElectronicMethodBlocked(m)) {
@@ -2111,7 +2113,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               error.code = 'KIOSK_QUOTE_NO_TOKEN';
               throw error;
             case 1:
-              payload = (0,_store_modules_kioskCart__WEBPACK_IMPORTED_MODULE_7__.buildKioskOrderPayload)(_this3.$store.state.kioskCart, {
+              payload = (0,_store_modules_kioskCart__WEBPACK_IMPORTED_MODULE_8__.buildKioskOrderPayload)(_this3.$store.state.kioskCart, {
                 orderType: _this3.orderType,
                 paymentMethod: _this3.method
               });
@@ -2136,7 +2138,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       var _this4 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
         var _this4$_lastOrder2;
-        var tpeKey, TPE_TIMEOUT_MS, amountEuros, tpeMethod, paymentResult, _this4$_lastOrder, tpeReasonCode, expectedCents, echoedCents;
+        var tpeKey, TPE_TIMEOUT_MS, amountEuros, tpeMethod, paymentResult, _this4$_lastOrder, tpeReasonCode, tpeVoidPayload, expectedCents, echoedCents;
         return _regenerator().w(function (_context3) {
           while (1) switch (_context3.n) {
             case 0:
@@ -2182,9 +2184,12 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                 // 'tpe_declined' covers generic refusal. Backend OrderStatusRequest 422s on missing
                 // or non-whitelisted code when actor is kiosk machine token.
                 tpeReasonCode = (paymentResult === null || paymentResult === void 0 ? void 0 : paymentResult.error_code) === 'timeout' ? 'tpe_timeout' : 'tpe_declined';
-                axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this4._lastOrder.id), {
-                  status: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_8__["default"].CANCELED,
+                tpeVoidPayload = {
+                  status: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_9__["default"].CANCELED,
                   reason: tpeReasonCode
+                };
+                axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this4._lastOrder.id), tpeVoidPayload, {
+                  headers: (0,_helpers_idempotencyHeaders__WEBPACK_IMPORTED_MODULE_6__.buildIdempotencyHeaders)(tpeVoidPayload)
                 })["catch"](function (e) {
                   return console.warn('[KioskPayment] void order failed:', e.message);
                 });
@@ -2386,6 +2391,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       var _this7 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
         var _this7$_lastOrder;
+        var userCancelPayload;
         return _regenerator().w(function (_context6) {
           while (1) switch (_context6.n) {
             case 0:
@@ -2412,9 +2418,12 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               // [AUDIT-P1] Void the server order created before TPE — prevents orphan PENDING orders.
               if ((_this7$_lastOrder = _this7._lastOrder) !== null && _this7$_lastOrder !== void 0 && _this7$_lastOrder.id && !String(_this7._lastOrder.id).startsWith('offline_')) {
                 // [AUDIT-F-004] Customer pressed Cancel on the TPE prompt → 'tpe_cancel_user'.
-                axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this7._lastOrder.id), {
-                  status: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_8__["default"].CANCELED,
+                userCancelPayload = {
+                  status: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_9__["default"].CANCELED,
                   reason: 'tpe_cancel_user'
+                };
+                axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this7._lastOrder.id), userCancelPayload, {
+                  headers: (0,_helpers_idempotencyHeaders__WEBPACK_IMPORTED_MODULE_6__.buildIdempotencyHeaders)(userCancelPayload)
                 })["catch"](function (e) {
                   return console.warn('[KioskPayment] void on cancel failed:', e.message);
                 });
@@ -2923,6 +2932,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../enums/modules/paymentStatusEnum */ "./resources/js/enums/modules/paymentStatusEnum.js");
 /* harmony import */ var _services_eventContract__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../services/eventContract */ "./resources/js/services/eventContract.js");
 /* harmony import */ var _services_kioskHardware__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../services/kioskHardware */ "./resources/js/services/kioskHardware.js");
+/* harmony import */ var _helpers_idempotencyHeaders__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../helpers/idempotencyHeaders */ "./resources/js/helpers/idempotencyHeaders.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
 function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
@@ -2940,8 +2950,12 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 
 
 
+
 // [AUDIT-P1-C] Polling interval is always 15s — Echo provides real-time pushes.
 // Timeout after 15 minutes if order never becomes ready (customer should contact staff).
+// [HEAL B.3 2026-05-19] Intentional per-surface constant, NOT config-driven.
+// Customer-facing screen: 15s balances UX freshness vs network noise. See
+// config/broadcasting.php for the per-surface SoT note. Source: KioskWaitingComponent.vue:154.
 var POLL_INTERVAL_MS = 15000;
 var AUTO_RESET_SECONDS = 20;
 var TIMEOUT_SECONDS = 900; // 15 minutes
@@ -3301,17 +3315,23 @@ var PAYMENT_PENDING_COUNTER = _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED
     cancelOrder: function cancelOrder() {
       var _this9 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
-        var _err$response, msg, _t3;
+        var cancelPayload, _err$response, msg, _t3;
         return _regenerator().w(function (_context4) {
           while (1) switch (_context4.p = _context4.n) {
             case 0:
               _this9.cancelLoading = true;
               _this9.cancelError = null;
               _context4.p = 1;
-              _context4.n = 2;
-              return axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this9.orderId), {
+              // [AUDIT-F-004] Kiosk customer cancellation from waiting screen → 'customer_request'
+              // (OrderCancelReason enum). Backend OrderStatusRequest 422s without whitelisted reason
+              // when actor is kiosk machine token.
+              cancelPayload = {
                 status: STATUS_CANCELLED,
                 reason: 'customer_request'
+              };
+              _context4.n = 2;
+              return axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this9.orderId), cancelPayload, {
+                headers: (0,_helpers_idempotencyHeaders__WEBPACK_IMPORTED_MODULE_6__.buildIdempotencyHeaders)(cancelPayload)
               });
             case 2:
               // Success — clean up and return to idle
@@ -5397,7 +5417,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "stroke-width": "2.5",
     "stroke-linecap": "round",
     "stroke-linejoin": "round"
-  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_3), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.total_prefix')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.cartTotal)), 1 /* TEXT */)])])]), $data.networkOffline ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_7, " Paiement CB/TR indisponible hors ligne. Le menu reste consultable; choisissez les espèces au comptoir ou réessayez quand la connexion revient. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), !$data.submitting && !$data.submitted && !$data.tpeWaiting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.total_prefix')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.cartTotal)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Modes de paiement — grille borne (cartes, pas bandeaux pleine largeur) "), !$data.submitting && !$data.submitted ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_3), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.total_prefix')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.cartTotal)), 1 /* TEXT */)])])]), $data.networkOffline ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.offline_alert')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), !$data.submitting && !$data.submitted && !$data.tpeWaiting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.total_prefix')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.cartTotal)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Modes de paiement — grille borne (cartes, pas bandeaux pleine largeur) "), !$data.submitting && !$data.submitted ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
     key: 2,
     "class": "kiosk-pay-methods-outer",
     role: "radiogroup",

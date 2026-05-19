@@ -1757,6 +1757,12 @@ export default {
       if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
     },
     _pollingInterval() {
+      // [HEAL B.3 2026-05-19] KDS polling cadence is intentionally hardcoded
+      // per-surface (not config-driven). 5000ms when WS down protects the
+      // kitchen-staleness budget (orders must surface within ~5s of payment).
+      // 60000ms when WS up because Echo handles the live push and polling
+      // becomes a passive sanity-check. NOT a config-read miss — see
+      // config/broadcasting.php for the per-surface SoT note (RED-Z3 §B-6).
       return this.wsConnected ? 60000 : 5000;
     },
     _restartPolling() {

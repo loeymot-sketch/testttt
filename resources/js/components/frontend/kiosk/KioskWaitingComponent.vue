@@ -151,6 +151,9 @@ import { buildIdempotencyHeaders } from '../../../helpers/idempotencyHeaders';
 
 // [AUDIT-P1-C] Polling interval is always 15s — Echo provides real-time pushes.
 // Timeout after 15 minutes if order never becomes ready (customer should contact staff).
+// [HEAL B.3 2026-05-19] Intentional per-surface constant, NOT config-driven.
+// Customer-facing screen: 15s balances UX freshness vs network noise. See
+// config/broadcasting.php for the per-surface SoT note (RED-Z3 §B-6 closed).
 const POLL_INTERVAL_MS   = 15000;
 const AUTO_RESET_SECONDS = 20;
 const TIMEOUT_SECONDS    = 900; // 15 minutes

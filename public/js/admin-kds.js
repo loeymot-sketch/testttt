@@ -391,7 +391,7 @@ __webpack_require__.r(__webpack_exports__);
       return translated === key ? this.line.group : translated;
     },
     allergenLabel: function allergenLabel() {
-      return this.$t('label.kds_allergen_warning_prefix') || 'Allergènes :';
+      return this.$t('label.kds_allergen_warning_prefix');
     },
     joinedCodes: function joinedCodes() {
       var _this = this;
@@ -1563,6 +1563,10 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
     },
     _pollingInterval: function _pollingInterval() {
+      // [HEAL B.3 2026-05-19] KDS polling cadence is intentionally hardcoded
+      // per-surface (not config-driven). 5000ms when WS down protects the
+      // kitchen-staleness budget. 60000ms when WS up because Echo handles
+      // the live push. Source: KitchenDisplaySystemComponent.vue:1759.
       return this.wsConnected ? 60000 : 5000;
     },
     _restartPolling: function _restartPolling() {
@@ -2355,11 +2359,7 @@ var _hoisted_1 = {
 var _hoisted_2 = {
   "class": "kds-line__qty"
 };
-var _hoisted_3 = {
-  key: 0,
-  "class": "kds-line__allergen-icon",
-  "aria-label": "allergen"
-};
+var _hoisted_3 = ["aria-label"];
 var _hoisted_4 = {
   "class": "kds-line__name"
 };
@@ -2405,7 +2405,11 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kds-line", "kds-line--".concat($props.line.type)])
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" header — qty + name + allergen icon "), $props.line.type === 'header' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.qty), 1 /* TEXT */), _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kds-line__qty-x"
-  }, "×", -1 /* CACHED */))]), $props.line.hasAllergen ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_3, "⚠")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)])) : $props.line.type === 'variation' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, "×", -1 /* CACHED */))]), $props.line.hasAllergen ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+    key: 0,
+    "class": "kds-line__allergen-icon",
+    "aria-label": _ctx.$t('label.kds_line_allergen_icon_aria')
+  }, "⚠", 8 /* PROPS */, _hoisted_3)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.line.label), 1 /* TEXT */)])) : $props.line.type === 'variation' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" grouped variation: \"Pain : Baguette\" "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.groupLabel), 1 /* TEXT */), _cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kds-line__sep"

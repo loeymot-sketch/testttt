@@ -17,22 +17,18 @@ return [
 
     'default' => env('BROADCAST_DRIVER'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Polling Fallback Contract
-    |--------------------------------------------------------------------------
-    |
-    | POS/KDS/OSS surfaces must stay correct when websocket broadcasting is
-    | disabled or unavailable. The backend remains the source of truth and the
-    | frontend switches to REST polling with a visible operator hint.
-    |
-    */
-
-    'polling_fallback' => [
-        'enabled' => env('BROADCAST_POLLING_FALLBACK_ENABLED', true),
-        'interval_ms' => (int) env('BROADCAST_POLLING_FALLBACK_MS', 30000),
-        'hint_when_off' => env('BROADCAST_POLLING_FALLBACK_HINT_WHEN_OFF', true),
-    ],
+    // [HEAL B.3 2026-05-19] `polling_fallback` PHP config block removed —
+    // had 0 PHP-side readers (no config('broadcasting.polling_fallback')
+    // call anywhere in app/). The actual polling cadence is owned per-surface:
+    //   - POS:   MIX_BROADCAST_POLLING_FALLBACK_MS webpack env (default 30000ms)
+    //            -> resources/js/store/modules/posOrder.js:59-64
+    //   - KDS:   hardcoded 5000ms (WS down) / 60000ms (WS up) — intentional tuning
+    //            -> resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1759-1761
+    //   - Kiosk: hardcoded 15000ms (always) — intentional tuning
+    //            -> resources/js/components/frontend/kiosk/KioskWaitingComponent.vue:152-154
+    // Per-surface values are deliberate (operator-density vs kitchen-staleness
+    // budget vs customer wait-time UX). Single SoT wire is V1.0.2 backlog;
+    // V1 LOCAL ships with documented divergence. RED-Z3 §B-6 P1 closed.
 
     /*
     |--------------------------------------------------------------------------
