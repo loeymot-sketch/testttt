@@ -78,6 +78,31 @@ class PosOrderController extends AdminController
             ], 422);
         } catch (HttpException $http) {
             throw $http;
+        } catch (\Illuminate\Database\QueryException $qe) {
+            // [HEAL-A.3-bis 2026-05-19 / Z8 P0-1] UNIQUE(parent_order_id) violation.
+            // A mirror already exists for this parent — surface as a stable 409
+            // with friendly code, NOT a generic 500. The DB-level UNIQUE (heal
+            // A.3, migration 2026_05_19_200000) is the primary defense above
+            // the dormant RefundWithCounterEntryService:73-78 status-flip guard.
+            // Two distinct X-Idempotency-Key values that both pass the
+            // idempotency middleware would otherwise produce a double mirror
+            // (double Z negative against a single sale) before this catch.
+            if (($qe->errorInfo[0] ?? null) === '23000') {
+                return response()->json([
+                    'success' => false,
+                    'code'    => 'MIRROR_ALREADY_EXISTS',
+                    'message' => 'Counter-entry already exists for this parent order.',
+                ], 409);
+            }
+            \Illuminate\Support\Facades\Log::error('refund-with-counter-entry db error', [
+                'order_id' => $order->id,
+                'sqlstate' => $qe->errorInfo[0] ?? null,
+                'error'    => $qe->getMessage(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Database error during counter-entry refund.',
+            ], 500);
         } catch (\Throwable $t) {
             \Illuminate\Support\Facades\Log::error('refund-with-counter-entry failed', [
                 'order_id' => $order->id,

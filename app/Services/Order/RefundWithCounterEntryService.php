@@ -70,6 +70,16 @@ class RefundWithCounterEntryService
         app(\App\Services\Order\SealedOrderGuard::class)
             ->assertSealed($parent, 'refund-with-counter-entry');
 
+        // [HEAL-A.4 verdict 2026-05-19 / Z8 P0-1] Defense-in-depth above the
+        // UNIQUE(orders.parent_order_id) constraint introduced by migration
+        // 2026_05_19_200000 (heal A.3). This predicate fires ONLY when an
+        // out-of-band process has flipped parent.status=RETURNED (admin
+        // tooling, console script, stale-state migration) — the normal NF525
+        // counter-entry path itself NEVER mutates parent.status (the parent
+        // stays IMMUTABLE; the mirror carries RETURNED). Primary uniqueness
+        // is now enforced at DB level; this guard remains belt-and-suspenders
+        // for the status-flip case covered by RefundMirrorSplitPaymentTest:189
+        // and RefundCounterEntryRequiresSealedParentSentinelTest:115.
         if ((int) $parent->status === OrderStatus::RETURNED) {
             throw new InvalidArgumentException(
                 'Parent order is already RETURNED — refusing duplicate mirror.',
