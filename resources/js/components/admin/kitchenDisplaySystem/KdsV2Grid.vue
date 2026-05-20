@@ -97,7 +97,13 @@ export default {
         fallbackMode: { type: Boolean, default: false },
         adminPollingHint: { type: Boolean, default: false },
         bumpLocalOnlyNotice: { type: Boolean, default: false },
-        autoTransitionEnabled: { type: Boolean, default: true },
+        // [Wave Q-2 2026-05-20] Default OFF. Owner override of the RESEARCH §4.3
+        // single-chef auto-promote heuristic: cashier needs a consistent
+        // CONFIRMÉE → EN PRÉPARATION → PRÊT flow across all tickets so the POS
+        // suivi screen stays predictable. The parent KitchenDisplaySystemComponent
+        // also pins `v2AutoTransitionEnabled = false` so this stays off
+        // independently of the prop default for any caller that omits the binding.
+        autoTransitionEnabled: { type: Boolean, default: false },
     },
     emits: ['change-status', 'auto-promote'],
     data() {
@@ -177,23 +183,38 @@ export default {
                 }
             }
         },
-        // Chef taps Prêt → optimistic toast 3s → PATCH PREPARING→READY.
+        // [Wave Q-2 2026-05-20] Chef taps Prêt → optimistic toast 3s → PATCH single
+        // step transition. Owner-reported bug: emitting PREPARED unconditionally
+        // made an ACCEPT-state order skip PREPARING (server rejected with 422,
+        // but the optimistic toast hid the failure). Mirror the legacy
+        // `kdsBump` step ladder in `KitchenDisplaySystemComponent.vue:1716-1728`
+        // and the server `OrderStateMachine::allows` rule (ACCEPT→PREPARING |
+        // PREPARING→PREPARED). Single tap = one step; chef taps twice on a
+        // CONFIRMÉE ticket to reach PRÊT.
         onCtaTap(orderId, queueNo) {
             // Cancel any previous pending bump (single-slot toast)
             if (this.pendingTimeoutId) {
                 window.clearTimeout(this.pendingTimeoutId);
             }
+            const order = this.visibleOrders.find((o) => o.id === orderId);
+            const currentStatus = parseInt(order?.status ?? order?.rawStatus, 10);
+            const nextStatus = currentStatus === ORDER_STATUS.ACCEPT
+                ? ORDER_STATUS.PREPARING
+                : ORDER_STATUS.PREPARED;
+            const isFinalStep = nextStatus === ORDER_STATUS.PREPARED;
             const toastId = `bump-${orderId}-${Date.now()}`;
             this.activeToast = { id: toastId, orderId, queueNo, expiresAt: Date.now() + 3000 };
             this.pendingTimeoutId = window.setTimeout(() => {
                 // Window expired — fire the PATCH for real.
                 this.$emit('change-status', {
                     orderId,
-                    status: ORDER_STATUS.PREPARED,
+                    status: nextStatus,
                 });
                 this.activeToast = null;
                 this.pendingTimeoutId = null;
-                this.liveMessage = this.$t('label.kds_aria_live_ready', { id: queueNo || orderId });
+                this.liveMessage = isFinalStep
+                    ? this.$t('label.kds_aria_live_ready', { id: queueNo || orderId })
+                    : this.$t('label.kds_aria_live_preparing', { id: queueNo || orderId });
             }, 3000);
         },
         onUndo(toastId) {

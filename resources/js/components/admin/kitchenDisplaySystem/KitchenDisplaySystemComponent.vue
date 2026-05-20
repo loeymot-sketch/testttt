@@ -1158,9 +1158,16 @@ export default {
       // Owner GO confirmed 2026-05-11. Activation:
       //   - URL `?v2=1` (per-session preview)
       //   - localStorage `kds.v2_enabled` = '1' (per-device opt-in)
-      // Auto-transition is on by default per RESEARCH §4.3 (V1 single-chef).
+      // [Wave Q-2 2026-05-20] Auto-transition forced OFF. Owner override of the
+      // RESEARCH §4.3 single-chef heuristic: when two paid tickets land, the
+      // first auto-promoted to PREPARING and the second stayed in ACCEPT,
+      // creating an inconsistent suivi page (one in PRÉPARATION, one in
+      // CONFIRMÉE). Owner expects ALL tickets to follow CONFIRMÉE → EN
+      // PRÉPARATION → PRÊT under explicit chef action. The chef now taps Prêt
+      // twice on a fresh ticket (advance, then ready) — single-step ladder
+      // matches the server `OrderStateMachine::allows` rule.
       v2OfflineSince: null,
-      v2AutoTransitionEnabled: true,
+      v2AutoTransitionEnabled: false,
     };
   },
   computed: {
