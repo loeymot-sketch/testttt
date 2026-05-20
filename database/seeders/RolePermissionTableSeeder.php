@@ -72,6 +72,9 @@ class RolePermissionTableSeeder extends Seeder
                 'chefs_show',
                 'transactions',
                 'sales-report',
+                // [Wave O — O4 2026-05-20] Branch Manager voit le rapport des
+                // caisses quotidiennes (scoped à sa branche via BranchScope).
+                'cash-sessions-report',
                 // [Sprint 1D / F-4] Branch Manager may approve cash variance
                 // beyond the configured threshold (default 2€). Cashiers
                 // (POS Operator) must escalate to a manager.

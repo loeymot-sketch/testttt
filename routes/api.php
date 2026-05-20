@@ -1022,6 +1022,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/export', [CreditBalanceReportController::class, 'export']);
     });
 
+    // [Wave O — O4 2026-05-20] Admin daily cash sessions read-only report.
+    // Owner request : « voir les caisses chaque jour, début + fin, et toutes
+    // les transactions de chaque jour ». Reuses pos-manage-fiscal permission
+    // (cohérent avec Z/X reports — cash drawer reconciliation EST fiscal data).
+    Route::prefix('cash-sessions-report')->name('cash-sessions-report.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\CashSessionReportController::class, 'index'])->name('index');
+    });
+
     Route::prefix('message')->name('message.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [MessageController::class, 'index']);
         Route::get('/show/{message}', [MessageController::class, 'show']);

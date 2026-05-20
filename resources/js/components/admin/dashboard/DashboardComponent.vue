@@ -126,6 +126,10 @@ export default {
             push('/admin/items/studio', this.$t('menu.catalog'), 'lab lab-list', 'items', false);
             push('/admin/ingredients', this.$t('menu.ingredients'), 'lab lab-item-attributes', 'ingredients_manage', false);
             push('/admin/stock/rupture', this.$t('menu.stock_rupture'), 'lab lab-stock', 'items', false);
+            // [Wave O — O4 2026-05-20] Lien Quick Access vers le rapport
+            // quotidien des caisses. Owner request : « voir caisses chaque
+            // jour, début + fin, transactions ».
+            push('/admin/cash-sessions-report', this.$t('menu.cash_sessions_report'), 'lab lab-pos-bold', 'cash-sessions-report', false);
             return links;
         },
     },

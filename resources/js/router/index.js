@@ -31,6 +31,7 @@ import profileRoutes from "./modules/profileRoutes";
 import posOrderRoutes from "./modules/posOrderRoutes";
 import transactionRoutes from "./modules/transactionRoutes";
 import creditBalanceReportRoutes from "./modules/creditBalanceReportRoutes";
+import cashSessionReportRoutes from "./modules/cashSessionReportRoutes";
 import tableOrderRoutes from "./modules/tableOrderRoutes";
 import adminTableOrderRoutes from "./modules/adminTableOrderRoutes";
 import diningTableRoutes from "./modules/diningTableRoutes";
@@ -176,6 +177,7 @@ export const routes = baseRoutes.concat(
     posOrderRoutes,
     transactionRoutes,
     creditBalanceReportRoutes,
+    cashSessionReportRoutes,
     tableOrderRoutes,
     adminTableOrderRoutes,
     diningTableRoutes,

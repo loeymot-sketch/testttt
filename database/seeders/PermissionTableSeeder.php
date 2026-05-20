@@ -646,6 +646,20 @@ class PermissionTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            // [Wave O — O4 2026-05-20] Admin daily cash sessions read-only report.
+            // Owner request : profil admin doit voir chaque jour début/fin caisse
+            // + transactions. Permission propre (vs pos-manage-fiscal) pour que
+            // le menu sidebar puisse l'auto-afficher / l'auto-cacher.
+            // Granted à Admin (via Permission::all()) et Branch Manager
+            // explicitement dans RolePermissionTableSeeder.
+            [
+                'title'      => 'Cash Sessions Report',
+                'name'       => 'cash-sessions-report',
+                'guard_name' => 'sanctum',
+                'url'        => 'cash-sessions-report',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
             [
                 'title'      => 'Settings',
                 'name'       => 'settings',
