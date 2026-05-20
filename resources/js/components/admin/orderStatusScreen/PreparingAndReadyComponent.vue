@@ -10,23 +10,34 @@
   -->
 
   <!-- Colonne EN PRÉPARATION -->
+  <!--
+    [Wave S-3 TV-optim P-OWNER 2026-05-20] Customer wall must be readable from ≥3m.
+    - Header bumped text-lg (~18px) → text-[40px] (40px) to surface column intent at distance.
+    - Order tokens bumped text-[40px] → text-[56px] for triple-distance comfort margin (>= 40px mandate).
+    - Brand colors #B0004D (preparing) / #1AB759 (ready) preserved per CLAUDE.md flat/organized doctrine
+      + previous Wave Q-3 attestation (red-600/green-600 hint in spec = intent = already met).
+    - Auto-scroll: items.length > 8 toggles `.oss-autoscroll` (pure-CSS keyframe loop, no JS RAF
+      to avoid fighting transition-group on enter/leave).
+  -->
   <div
     class="col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden"
     role="region"
     :aria-label="$t('label.preparing')"
   >
-    <h3 class="text-lg font-semibold text-white p-3 pb-2 bg-[#B0004D] mb-2 rounded-t-[10px] text-center">
+    <h3 class="oss-column-header text-[40px] font-bold text-white p-4 pb-3 bg-[#B0004D] mb-2 rounded-t-[10px] text-center tracking-wide">
       {{ $t("label.preparing") }}
     </h3>
-    <div class="content-wrapper p-3 overflow-auto thin-scrolling h-full">
+    <div class="content-wrapper p-3 overflow-hidden thin-scrolling h-full">
       <transition-group name="oss-slide" tag="ul"
-        class="[&_li]:mb-6 [&_li]:text-[40px] [&_li]:font-semibold [&_li]:leading-10 w-full text-center text-[#1F1F39] mb-20">
+        :class="['oss-order-list', preparingItems.length > 8 ? 'oss-autoscroll' : '',
+                 '[&_li]:mb-8 [&_li]:text-[56px] [&_li]:font-extrabold [&_li]:leading-[1.1] w-full text-center text-[#1F1F39] mb-20']">
         <li v-for="item in preparingItems" :key="item.id"
+          class="oss-order-number"
           :class="item.queue_number ? 'text-[#991B1B]' : 'text-[#1F1F39]'">
           {{ item.queue_number ? 'N°' + item.queue_number : item.token }}
         </li>
       </transition-group>
-      <p v-if="preparingItems.length === 0" class="text-center text-[#A0A3BD] text-base mt-8">—</p>
+      <p v-if="preparingItems.length === 0" class="text-center text-[#A0A3BD] text-[28px] mt-12">—</p>
     </div>
   </div>
 
@@ -35,19 +46,20 @@
     :class="newReadyFlash ? 'oss-ready-flash' : ''"
     role="region"
     :aria-label="$t('label.ready')">
-    <h3 class="text-lg font-semibold text-[#1F1F39] p-3 pb-2 bg-[#1AB759] mb-2 rounded-t-[10px] text-center">
+    <h3 class="oss-column-header text-[40px] font-bold text-[#1F1F39] p-4 pb-3 bg-[#1AB759] mb-2 rounded-t-[10px] text-center tracking-wide">
       {{ $t("label.ready") }}
     </h3>
-    <div class="content-wrapper p-3 overflow-auto thin-scrolling h-full">
+    <div class="content-wrapper p-3 overflow-hidden thin-scrolling h-full">
       <transition-group name="oss-pop" tag="ul"
-        class="[&_li]:mb-6 [&_li]:text-[40px] [&_li]:font-semibold [&_li]:leading-10 w-full text-center text-[#1F1F39] mb-20">
+        :class="['oss-order-list', preparedItems.length > 8 ? 'oss-autoscroll' : '',
+                 '[&_li]:mb-8 [&_li]:text-[56px] [&_li]:font-extrabold [&_li]:leading-[1.1] w-full text-center text-[#1F1F39] mb-20']">
         <li v-for="item in preparedItems" :key="item.id"
-          class="text-[#0E7C3A] font-extrabold"
-          :class="newReadyIds.has(item.id) ? 'oss-new-ready' : ''">
+          class="oss-order-number text-[#0E7C3A] font-extrabold"
+          :class="newReadyIds.has(item.id) ? 'oss-new-ready oss-pulse-ready' : ''">
           {{ item.queue_number ? 'N°' + item.queue_number : item.token }}
         </li>
       </transition-group>
-      <p v-if="preparedItems.length === 0" class="text-center text-[#A0A3BD] text-base mt-8">—</p>
+      <p v-if="preparedItems.length === 0" class="text-center text-[#A0A3BD] text-[28px] mt-12">—</p>
     </div>
   </div>
 </template>
@@ -287,7 +299,14 @@ export default {
       }
       this._eventSub = null;
     },
-    // Mark an order as newly ready: plays sound + triggers flash animation for 4s
+    // Mark an order as newly ready: plays sound + triggers flash animation.
+    // [Wave S-3 TV-optim P-OWNER 2026-05-20] Window extended 6s → 10s total
+    // (4s column-flash + 6s per-card pulse) per owner directive — TV walls
+    // are scanned at ≥3m so attention-grabbing needs to persist long enough
+    // for a customer who looks up from a 2-3s task to catch the transition.
+    // CSS `.oss-pulse-ready` runs `oss-pulse 1.6s ease infinite` while the
+    // class is applied (not a fixed-duration keyframe), so the visual cue
+    // tracks `newReadyIds` exactly.
     _markNewReady(orderId) {
       if (!orderId) return;
       this.newReadyIds = new Set([...this.newReadyIds, parseInt(orderId)]);
@@ -296,12 +315,14 @@ export default {
       if (this._flashTimer) clearTimeout(this._flashTimer);
       this._flashTimer = setTimeout(() => {
         this.newReadyFlash = false;
-        // Clear the highlight after 6s so it doesn't persist forever
+        // Clear the highlight after a further 6s so the per-card pulse
+        // persists ~10s total — readable at distance, dismissable before
+        // the next batch arrives.
         setTimeout(() => {
           const ids = new Set(this.newReadyIds);
           ids.delete(parseInt(orderId));
           this.newReadyIds = ids;
-        }, 2000);
+        }, 6000);
       }, 4000);
     },
     // Splash-inspired: 3-tone ascending chime when order is ready
@@ -396,13 +417,34 @@ export default {
 .oss-pop-enter-from   { opacity: 0; transform: scale(0.6); }
 .oss-pop-leave-to     { opacity: 0; transform: scale(0.8); }
 
-/* Highlight for newly-ready orders */
+/* Highlight for newly-ready orders — initial bounce burst */
 .oss-new-ready {
   animation: oss-bounce 0.6s ease 2;
 }
 @keyframes oss-bounce {
   0%, 100% { transform: scale(1); }
   50%       { transform: scale(1.12); }
+}
+
+/* [Wave S-3 TV-optim P-OWNER 2026-05-20] Long-tail pulse to attract customer
+   attention at ≥3m for the full 10s window while the order ID is in
+   newReadyIds. Subtle scale + green halo via text-shadow — does NOT shift
+   layout (transform-only) so neighbouring items don't reflow. Pulse runs
+   alongside the initial .oss-new-ready bounce (different keyframe names,
+   no conflict) and continues as `infinite` until the class is removed by
+   the JS timeout in _markNewReady. */
+.oss-pulse-ready {
+  animation: oss-pulse 1.6s ease-in-out infinite;
+}
+@keyframes oss-pulse {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow: 0 0 0 rgba(14, 124, 58, 0);
+  }
+  50% {
+    transform: scale(1.04);
+    text-shadow: 0 0 24px rgba(14, 124, 58, 0.55);
+  }
 }
 
 /* Flash the entire ready column green when a new order is ready */
@@ -412,5 +454,36 @@ export default {
 @keyframes oss-flash {
   0%, 100% { background-color: transparent; }
   50%       { background-color: rgba(26, 183, 89, 0.15); }
+}
+
+/* [Wave S-3 TV-optim P-OWNER 2026-05-20] Vertical auto-scroll loop for busy
+   columns (>8 orders). Pure-CSS keyframe — no JS RAF — so it never fights
+   <transition-group> on enter/leave. Loops every 30s with a 2s pause at the
+   start so freshly-arrived orders sit visible before scroll begins. We
+   translateY a copy-free list and rely on overflow-hidden on the parent;
+   when the column drops below the threshold the class is removed and the
+   list snaps back to translateY(0) cleanly. Limit applies to either column
+   independently. */
+.oss-order-list {
+  will-change: transform;
+}
+.oss-autoscroll {
+  animation: oss-scroll-loop 30s linear infinite;
+}
+@keyframes oss-scroll-loop {
+  0%   { transform: translateY(0); }
+  10%  { transform: translateY(0); }
+  90%  { transform: translateY(-50%); }
+  100% { transform: translateY(0); }
+}
+
+/* Respect operator preferences — disable motion for sensitive contexts. */
+@media (prefers-reduced-motion: reduce) {
+  .oss-pulse-ready,
+  .oss-autoscroll,
+  .oss-new-ready,
+  .oss-ready-flash {
+    animation: none !important;
+  }
 }
 </style>
