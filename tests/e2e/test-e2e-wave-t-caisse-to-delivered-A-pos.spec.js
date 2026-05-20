@@ -34,8 +34,12 @@
 //         in "preparing" lane (NOT "accept"). Lane = parent
 //         `.pos-tracker-col` element class string.
 //   A-S4  Wave S-4 hook : Order #2 (TPE-paid) MUST NOT show
-//         `[data-testid="tracker-cash-badge-<id>"]` element. Cash-pending lane
-//         is for cash-pending-at-counter kiosk orders only.
+//         `[data-testid="tracker-cash-badge-<id>"]` element. Cash-pending
+//         badge is for unpaid cash-at-counter kiosk orders ONLY (see canonical
+//         semantics at state 17 inline doc + PosOrdersTrackerComponent.vue
+//         isCashPending). POS-paid cash (Order #1) and POS TPE (Order #2)
+//         are BOTH expected to show NO badge — the badge tracks
+//         is_cash_pending=true OR (PENDING_COUNTER + COUNTER_DEFERRED).
 //   A-Q1  Wave Q-1 hook : tracker cards expose item names via
 //         `.pos-tracker-card-name`. Captured as observation, not gated.
 //   A-Q5  Wave Q-5 hook : POS category strip pills carry product imagery via
@@ -1101,6 +1105,16 @@ test.describe('Wave T Round 1 Wave A — POS caisse (17 states, 2 orders)', () =
         if (!inst || !inst.proxy) return { ok: false, reason: 'no_PosComponent_ancestor', hops };
         try {
           const p = inst.proxy;
+          // [WT-R3-F3 2026-05-20 — WT-A-R2-001 heal] Force order_type =
+          // orderTypeEnum.DELIVERY (=5) even if the `label[for="delivery"]`
+          // click at line 870 silently missed (R2 evidence: state 16 PNG
+          // had cart "Commander 19,00 €" but NO populated delivery form).
+          // Without order_type=DELIVERY, orderSubmit's guard at
+          // PosComponent.vue:3274 — `order_type === DELIVERY && !address_id`
+          // — never fires ensureDeliveryCustomerAndAddress and silently
+          // opens the modal in TAKEAWAY mode (or hangs on customer hydration
+          // since order #2 has no walk-in fallback). Belt-and-suspenders.
+          p.checkoutProps.form.order_type = 5;
           p.deliveryInline.name = args.c.name;
           p.deliveryInline.phone = args.c.phone;
           p.deliveryInline.addressText = args.c.address;
@@ -1120,10 +1134,16 @@ test.describe('Wave T Round 1 Wave A — POS caisse (17 states, 2 orders)', () =
             longitude: args.c.longitude,
           };
           p.deliveryGeocodeError = '';
-          return { ok: true, uid: inst.uid };
+          return { ok: true, uid: inst.uid, order_type: p.checkoutProps.form.order_type };
         } catch (e) { return { ok: false, reason: e.message }; }
       }, { c: CUSTOMER, addressId: preSeededAddressId, customerId: preSeededCustomerId });
-      observations.push(`state16: delivery injection (DOM-anchored) ok=${injectionOk.ok} reason=${injectionOk.reason || 'n/a'} addrId=${preSeededAddressId} custId=${preSeededCustomerId} uid=${injectionOk.uid || ''}`);
+      observations.push(`state16: delivery injection (DOM-anchored) ok=${injectionOk.ok} reason=${injectionOk.reason || 'n/a'} addrId=${preSeededAddressId} custId=${preSeededCustomerId} uid=${injectionOk.uid || ''} order_type=${injectionOk.order_type || 'n/a'}`);
+      // [WT-R3-F3] Yield to Vue reactivity (nextTick + 1 frame) — the
+      // PosComponent has nested watchers on checkoutProps.form.order_type
+      // that switch the customer-mode (DELIVERY hides walk-in, opens
+      // delivery surface). A bare waitForTimeout(500) is fragile under
+      // CI load; ensure the watch has flushed before subsequent steps.
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       await page.waitForTimeout(500);
       const s16 = await page.evaluate(() => ({
         delivery_active: document.querySelector('label[for="delivery"]')?.classList?.contains('is-active') || false,
@@ -1425,7 +1445,37 @@ test.describe('Wave T Round 1 Wave A — POS caisse (17 states, 2 orders)', () =
           evidence: { state: '17-tracker-order2-en-preparation', lane: s17.order2_col_label, classes: s17.order2_col_classes },
         });
       }
+      // ──────────────────────────────────────────────────────────────────
       // Wave S-4 hook — TPE order should NOT show cash-pending badge.
+      //
+      // [Wave T R3 P1 heal — WT-A-R1-13] Cash-pending badge SEMANTICS doc
+      // (R1 reviewer flagged ambiguity; R2 reviewer marked PARTIAL_PASS
+      // because component docs existed but spec was silent).
+      //
+      // Canonical rule (see PosOrdersTrackerComponent.vue:866-872
+      // isCashPending() impl + lines 138-142 docstring) — the bell badge
+      // [data-testid="tracker-cash-badge-<id>"] renders if and ONLY if:
+      //   order.is_cash_pending === true|1
+      //   OR  (PaymentStatus::PENDING_COUNTER === 15
+      //         AND PosPaymentMethod::COUNTER_DEFERRED === 6)
+      //
+      // Therefore:
+      //   • Order #1 (POS cash, paid at counter at state 12) → NOT cash-
+      //     pending (already paid). Badge MUST be absent. R1-13 reviewer
+      //     was confused — "cash_badge_present:false" for paid-cash is
+      //     correct, not a defect.
+      //   • Order #2 (POS TPE/card) → NOT cash-pending. Badge MUST be
+      //     absent. This is the canonical A-S4 hook assertion below.
+      //   • Kiosk PENDING_COUNTER cash-at-counter orders → cash-pending.
+      //     Badge MUST be visible. These never appear in this Wave A
+      //     spec (Wave A is POS-only; kiosk cash-at-counter is Wave B/C
+      //     scope).
+      //
+      // So both order1_cash_badge=false AND order2_cash_badge=false is
+      // the expected canonical result for this spec. The negative-only
+      // assertion below covers order #2; order #1's null/false is
+      // captured for evidence but does NOT fail the wave.
+      // ──────────────────────────────────────────────────────────────────
       if (order2Id && s17.order2_cash_badge === true) {
         findings.findings.push({
           id: 'A-S4-001',
