@@ -107,6 +107,60 @@ class AutoPrepareOnPaidTest extends TestCase
         );
     }
 
+    /**
+     * [Wave T R3 F2 — 2026-05-20] Regression sentinel.
+     *
+     * Wave T R2 Wave B adversarial flagged a DELIVERY-order (#70) appearing
+     * on KDS at status=PREPARED (8) and mis-read it as "auto-PREPA promoted
+     * to PREPARED instead of PREPARING". Investigation (see commit message)
+     * proved the actual cause was test-data carryover: the fixture pointed
+     * at an order already bumped through PREPARING → PREPARED by a prior
+     * E2E cycle. The policy itself is and must remain ORDER-TYPE-AGNOSTIC:
+     * the only inputs that matter are (surface, posPaymentMethod,
+     * isCounterCollect). This test pins that invariant — DELIVERY,
+     * TAKEAWAY, KIOSK and DINE_IN must all promote to PREPARING (7),
+     * never PREPARED (8).
+     */
+    public function test_policy_next_status_is_preparing_never_prepared(): void
+    {
+        $this->assertSame(
+            OrderStatus::PREPARING,
+            AutoPrepareOnPaidPolicy::nextStatus(),
+            'Auto-PREPA target must be PREPARING (7), NEVER PREPARED (8).'
+        );
+        $this->assertNotSame(
+            OrderStatus::PREPARED,
+            AutoPrepareOnPaidPolicy::nextStatus(),
+            'Wave T R3 F2 sentinel: nextStatus() must not return PREPARED.'
+        );
+    }
+
+    public function test_policy_order_type_agnostic_delivery_promotes_like_takeaway(): void
+    {
+        // The policy intentionally does NOT consume $order->order_type — kiosk
+        // online TPE delivery orders, POS counter-collect TPE delivery orders
+        // and POS direct CASH takeaway orders must all yield the same
+        // shouldPromote() answer when surface + payment-mode + isCounterCollect
+        // match. This sentinel prevents a future refactor from sneaking a
+        // delivery-only carve-out that lands DELIVERY orders in PREPARED
+        // (the Wave T R3 F2 false-positive shape).
+        foreach ([
+            ['pos', PosPaymentMethod::CASH, false],
+            ['pos', PosPaymentMethod::CARD, false],
+            ['kiosk', null, false],
+            ['kiosk', PosPaymentMethod::CARD, true],
+        ] as [$surface, $mode, $isCC]) {
+            $this->assertTrue(
+                AutoPrepareOnPaidPolicy::shouldPromote(
+                    surface: $surface,
+                    posPaymentMethod: $mode,
+                    isCounterCollect: $isCC,
+                ),
+                "Path surface={$surface} mode=" . ($mode ?? 'null') . ' isCounterCollect=' . ($isCC ? 'true' : 'false') . ' must promote regardless of order_type'
+            );
+        }
+    }
+
     public function test_policy_respects_config_flag(): void
     {
         Config::set('pos.auto_prepare_on_paid', false);
