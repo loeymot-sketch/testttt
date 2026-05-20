@@ -84,6 +84,17 @@
         <span class="kiosk-waiting-preparing-hint">
           {{ $t('kiosk.waiting_subtitle') }}
         </span>
+        <!-- [Owner 2026-05-21] Home button always visible during preparation +
+             auto-redirect 10s — owner instructed "normalement ça redirige
+             après 10 secondes... bouton de retourner à l'accueil au bout de
+             10 secondes automatique". Customer keeps their queue number on
+             KDS/OSS regardless of which screen they're on. -->
+        <button type="button" class="kiosk-waiting-new-order" @click="newOrder">
+          {{ $t('kiosk.new_order') }}
+        </button>
+        <span class="kiosk-waiting-auto-reset" v-if="preparingAutoRedirectSeconds > 0">
+          {{ $t('kiosk.auto_redirect', { n: preparingAutoRedirectSeconds }) }}
+        </span>
         <!-- Allow cancellation during preparation (before kitchen starts) -->
         <button type="button"
           v-if="showCancelButton"
@@ -157,6 +168,10 @@ import { buildIdempotencyHeaders } from '../../../helpers/idempotencyHeaders';
 const POLL_INTERVAL_MS   = 15000;
 const AUTO_RESET_SECONDS = 20;
 const TIMEOUT_SECONDS    = 900; // 15 minutes
+// [Owner 2026-05-21] Preparing-state auto-redirect to idle. Customer keeps
+// their queue number on KDS/OSS — leaving the waiting screen doesn't
+// cancel anything. 10s = owner instruction.
+const PREPARING_AUTO_REDIRECT_SECONDS = 10;
 // Use shared enum — keeps in sync with PHP OrderStatus and KDS component
 const STATUS_PREPARED  = orderStatusEnum.PREPARED;   // 8
 const STATUS_DELIVERED = orderStatusEnum.DELIVERED;  // 13
@@ -195,6 +210,9 @@ export default {
       _eventSub: null,
       _pollInFlight: false, // [AUDIT-P2-G] prevent overlapping poll requests
       _readyFlashActive: false,
+      // [Owner 2026-05-21] Countdown to auto-redirect home during preparing state.
+      preparingAutoRedirectSeconds: PREPARING_AUTO_REDIRECT_SECONDS,
+      preparingAutoRedirectTimer: null,
     };
   },
   mounted() {
@@ -204,6 +222,8 @@ export default {
       return;
     }
     this.startPolling();
+    // [Owner 2026-05-21] Start the 10s preparing-state auto-redirect countdown.
+    this.startPreparingAutoRedirect();
     this._subscribeEcho();
     this.startElapsedTimer();
   },
@@ -358,6 +378,29 @@ export default {
       }, 1000);
     },
 
+    // [Owner 2026-05-21] Preparing-state auto-redirect: customer doesn't have
+    // to stay on the waiting screen — their queue number is broadcast to KDS
+    // and OSS. After 10s in preparing state we route back to idle so the
+    // kiosk is ready for the next customer. Cleared by stopAll() when order
+    // transitions to PREPARED (then startAutoReset handles ready-state).
+    startPreparingAutoRedirect() {
+      this.preparingAutoRedirectSeconds = PREPARING_AUTO_REDIRECT_SECONDS;
+      this.preparingAutoRedirectTimer = setInterval(() => {
+        this.preparingAutoRedirectSeconds--;
+        if (this.preparingAutoRedirectSeconds <= 0) {
+          this.stopAll();
+          this.newOrder();
+        }
+      }, 1000);
+    },
+
+    stopPreparingAutoRedirect() {
+      if (this.preparingAutoRedirectTimer) {
+        clearInterval(this.preparingAutoRedirectTimer);
+        this.preparingAutoRedirectTimer = null;
+      }
+    },
+
     async playReadySound() {
       try {
         const Ctor = window.AudioContext || window.webkitAudioContext;
@@ -456,6 +499,8 @@ export default {
       clearInterval(this.pollTimer);
       clearInterval(this.countdownTimer);
       clearInterval(this.elapsedTimer);
+      // [Owner 2026-05-21] Also clear preparing-state auto-redirect.
+      this.stopPreparingAutoRedirect();
     },
 
     // [AUDIT-P47-BUG9] Dismiss timeout overlay and resume polling (customer may want to keep waiting)

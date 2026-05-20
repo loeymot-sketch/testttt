@@ -14,7 +14,8 @@
  *
  * No frozen-zone touch. No JS change. CSS-only override.
  */
-.kiosk-theme-toggle {
+.kiosk-theme-toggle,
+.ks-theme-toggle {
   display: none !important;
 }
 
