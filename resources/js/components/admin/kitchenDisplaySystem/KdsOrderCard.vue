@@ -22,7 +22,7 @@
     role="region"
     :aria-label="ariaLabel"
     :data-order-id="order.id"
-    @keydown.enter="onCta"
+    @keydown.enter="onCardKeydownEnter"
   >
     <!-- TOP ACCENT STRIPE — dominant 2m signal -->
     <div class="kds-card__stripe" :style="{ background: stripeColor }"></div>
@@ -122,12 +122,36 @@
       <div class="kds-card__body-fade"></div>
     </div>
 
-    <!-- FOOTER CTA -->
+    <!-- FOOTER CTA (paid orders) or CASH-PENDING badge (cash-at-counter waiting collection) -->
+    <!-- [Wave S-2 P-OWNER 2026-05-20] Owner decision: 1 clic CTA = PREPARING→PREPARED
+         direct for paid orders (S-1 auto-promotes ACCEPT→PREPARING on payment).
+         For cash-at-counter orders still awaiting cashier encaissement
+         (payment_pending_counter=true), the chef MUST NOT bump — show a
+         passive badge "EN ATTENTE ENCAISSEMENT" instead. This prevents
+         the kitchen from preparing food before the cashier collects cash
+         (regulatory + revenue-protection requirement).
+         Server-side, OrderStateMachine still blocks if the chef tries
+         anyway via direct axios, but this UI gate is the primary signal. -->
+    <div
+      v-if="isCashPending"
+      class="kds-card__cash-pending"
+      role="status"
+      :aria-label="$t('label.kds_card_cash_pending_aria')"
+      data-testid="kds-card-cash-pending"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+      <span>{{ $t('label.kds_card_cash_pending') }}</span>
+    </div>
     <button
+      v-else
       type="button"
       class="kds-card__cta"
       @click.prevent="onCta"
       :aria-label="$t('label.kds_card_cta_ready')"
+      data-testid="kds-card-cta-ready"
     >
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M5 12l5 5L20 7" />
@@ -333,13 +357,36 @@ export default {
             }
             return phone;
         },
+        // [Wave S-2 P-OWNER 2026-05-20] Cash-at-counter detection. Wire signal
+        // `payment_pending_counter` comes from KDSOrderDetailsResource:44
+        // (= payment_status === PaymentStatus::PENDING_COUNTER). When true,
+        // the chef MUST wait for the cashier to collect cash (Wave S-5) before
+        // bumping — the CTA is replaced by a passive badge in the template,
+        // keyboard Enter is no-op (see onCardKeydownEnter), and the [A]–[H]
+        // slot shortcut is skipped at the grid level (see KdsV2Grid.onKey).
+        isCashPending() {
+            return this.order?.payment_pending_counter === true;
+        },
     },
     methods: {
         renderItemLines(item) {
             return renderItem(item).lines;
         },
         onCta() {
+            if (this.isCashPending) {
+                // Defense-in-depth: even if the CTA somehow renders for a
+                // cash-pending order (e.g. transient state), refuse to emit.
+                return;
+            }
             this.$emit('ready', this.order.id);
+        },
+        // [Wave S-2 P-OWNER 2026-05-20] Keyboard Enter on card root must NOT
+        // bump cash-pending orders — same gate as the click handler.
+        onCardKeydownEnter() {
+            if (this.isCashPending) {
+                return;
+            }
+            this.onCta();
         },
     },
 };
@@ -622,6 +669,29 @@ export default {
 .kds-card__cta:focus-visible {
     outline: 4px solid #4B5563;
     outline-offset: 2px;
+}
+
+/* [Wave S-2 P-OWNER 2026-05-20] Cash-pending passive badge.
+   Replaces the CTA when the order is awaiting cashier encaissement.
+   Visual contract: amber/orange tones signal "wait", NEVER green-go.
+   Same vertical footprint as the CTA (52px tall + 8px margin) so the
+   grid card height stays stable. WCAG: #92400E on #FEF3C7 = 7.94:1 AAA. */
+.kds-card__cash-pending {
+    margin: 4px 8px 8px;
+    height: 52px;
+    background: #FEF3C7;
+    color: #92400E;
+    border: 2px dashed #F59E0B;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: default;
 }
 
 /* age critical pulse on time digit (1Hz) */

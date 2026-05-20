@@ -987,6 +987,8 @@
         "kds_allergen_warning_prefix": "مسببات الحساسية:",
         "kds_line_allergen_icon_aria": "صنف يحتوي على مسببات حساسية",
         "kds_card_cta_ready": "جاهز",
+        "kds_card_cash_pending": "بانتظار الدفع نقدًا",
+        "kds_card_cash_pending_aria": "طلب بانتظار تحصيل النقد من قِبَل أمين الصندوق — التحضير معلّق",
         "kds_undo_bump": "تراجع",
         "kds_undo_bump_aria": "تراجع عن آخر طلب تم تجهيزه",
         "kds_undo_done": "تم التراجع",

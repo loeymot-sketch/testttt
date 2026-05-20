@@ -178,6 +178,14 @@ export default {
             if (idx >= 0 && idx < this.visibleOrders.length) {
                 const o = this.visibleOrders[idx];
                 if (o) {
+                    // [Wave S-2 P-OWNER 2026-05-20] Cash-pending orders MUST NOT
+                    // be bumped by keyboard shortcut. Mirror the UI gate that
+                    // replaces the CTA with a passive badge for cash-at-counter
+                    // orders awaiting cashier encaissement (Wave S-5). Without
+                    // this, [A]–[H] would silently contradict the badge.
+                    if (o.payment_pending_counter === true) {
+                        return;
+                    }
                     e.preventDefault();
                     this.onCtaTap(o.id, o.queue_number);
                 }
