@@ -33,6 +33,10 @@ class OrderDetailsResource extends JsonResource
             'discount' => round((float) ($this->discount ?? 0), 2),
             'total_tax' => round((float) ($this->total_tax ?? 0), 2),
             'total' => round((float) ($this->total ?? 0), 2),
+            // [WT-D-R1-F4 2026-05-20] Raw numeric `delivery_charge` to feed
+            // the canonical `formatPrice()` admin renderer (mirrors the
+            // sibling subtotal/discount/total_tax/total raw projections).
+            'delivery_charge' => round((float) ($this->delivery_charge ?? 0), 2),
             'subtotal_currency_price' => AppLibrary::currencyAmountFormat($this->subtotal),
             'subtotal_without_tax_currency_price' => AppLibrary::currencyAmountFormat($this->subtotal - $this->total_tax),
             'discount_currency_price' => AppLibrary::currencyAmountFormat($this->discount),

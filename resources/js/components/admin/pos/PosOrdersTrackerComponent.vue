@@ -175,14 +175,22 @@
                             </ul>
                             <footer class="pos-tracker-card-foot">
                                 <!--
-                                  [iter15-mega-fix B-001/C-002 2026-05-10] Tracker cards used to read
-                                  `order.total` / `order.order_amount`, but `SimpleOrderResource`
-                                  (the projection feeding `admin/pos-order`) only exposes the
-                                  formatted strings `total_amount_price` (numeric "2.00") and
-                                  `total_currency_price` ("2.00€"). Both raw fields were undefined,
-                                  so `Number(undefined) || 0` → `0,00 €` on every card. We now
-                                  prefer `total_amount_price` (Number-parseable) and fall back to
-                                  the legacy raw fields if a future projection re-adds them.
+                                  [WT-D-R1-F4 2026-05-20] `order.total` is now
+                                  shipped raw by `SimpleOrderResource` (Wave T
+                                  R1 F4 heal). It's the SSOT we should prefer;
+                                  the `total_amount_price` / `order_amount`
+                                  fallbacks remain for callers that consume
+                                  the resource pre-WT (cache, legacy mirrors)
+                                  and to keep the existing failing-safe
+                                  pattern. The shared `formatPrice()` (from
+                                  `adminPriceMixin`) renders any of them as
+                                  the canonical "19,00 €".
+
+                                  Historical context (kept for archeology):
+                                  iter15-mega-fix B-001/C-002 2026-05-10
+                                  patched the `Number(undefined) || 0` →
+                                  `0,00 €` regression that the old projection
+                                  caused.
                                 -->
                                 <span
                                     :class="['pos-tracker-card-total', isCashPending(order) ? 'pos-tracker-card-total--cash' : '']"
@@ -197,7 +205,7 @@
                                     <span v-if="isCashPending(order)" class="pos-tracker-card-total-prefix">
                                         {{ $t('pos.tracker.cash_due_label') }} :
                                     </span>
-                                    {{ formatPrice(order.cash_pending_amount ?? order.total_amount_price ?? order.total ?? order.order_amount) }}
+                                    {{ formatPrice(order.cash_pending_amount ?? order.total ?? order.total_amount_price ?? order.order_amount) }}
                                 </span>
                                 <div class="pos-tracker-card-actions">
                                     <!--
@@ -319,7 +327,7 @@
                         <strong>{{ cancelDialog.order.queue_number ? 'N°' + cancelDialog.order.queue_number : '#' + (cancelDialog.order.order_serial_no || cancelDialog.order.id) }}</strong>
                         <span v-if="customerLabel(cancelDialog.order)"> — {{ customerLabel(cancelDialog.order) }}</span>
                         <!-- [iter15-mega-fix B-001/C-002 2026-05-10] Same field-projection mismatch as the card total. -->
-                        <span> — {{ formatPrice(cancelDialog.order.total_amount_price ?? cancelDialog.order.total ?? cancelDialog.order.order_amount) }}</span>
+                        <span> — {{ formatPrice(cancelDialog.order.total ?? cancelDialog.order.total_amount_price ?? cancelDialog.order.order_amount) }}</span>
                     </p>
                     <label for="pos-tracker-cancel-reason" class="pos-tracker-cancel-label">
                         {{ $t('pos.cancel_order_reason_label') }}
@@ -397,6 +405,9 @@ import alertService from '../../../services/alertService';
 import appService from '../../../services/appService';
 import ConnectionStatusBanner from '../../common/ConnectionStatusBanner.vue';
 import ReceiptComponent from './ReceiptComponent.vue';
+// [WT-D-R1-F4 2026-05-20] Shared admin FR EUR price formatter — canonical
+// "19,00 €" rendering shared with PosOrderList / PosOrderShow.
+import { adminPriceMixin } from '../../../helpers/formatPrice';
 
 const POLL_WS_MS = 60000;
 const POLL_NO_WS_MS = 8000;
@@ -412,6 +423,7 @@ const FRESH_HIGHLIGHT_MS = 6000;
 export default {
     name: 'PosOrdersTrackerComponent',
     components: { ConnectionStatusBanner, ReceiptComponent },
+    mixins: [adminPriceMixin],
     data() {
         return {
             loading: false,
@@ -476,7 +488,7 @@ export default {
             });
         },
         ordersByStatus() {
-            const buckets = { accept: [], preparing: [], prepared: [], delivered: [] };
+            const buckets = { accept: [], preparing: [], prepared: [], onTheWay: [], delivered: [] };
             for (const o of this.filteredOrders) {
                 const s = parseInt(o.order_status ?? o.status ?? 0, 10);
                 // [Wave S-4 P-OWNER 2026-05-20] The ACCEPT lane is now reserved
@@ -497,12 +509,21 @@ export default {
                 }
                 else if (s === orderStatusEnum.PREPARING) buckets.preparing.push(o);
                 else if (s === orderStatusEnum.PREPARED) buckets.prepared.push(o);
+                // [Wave T R1 F1 P0 2026-05-20] EN LIVRAISON lane: any order at
+                // OUT_FOR_DELIVERY (status=10) — driver has picked it up and is
+                // in transit. Previously vanished from tracker for the 30+min
+                // delivery window. Lane is delivery-specific by domain (only
+                // DELIVERY orders transition through OUT_FOR_DELIVERY) but we
+                // filter on status alone — same approach as the other lanes —
+                // so any order arriving at this status surfaces here.
+                else if (s === orderStatusEnum.OUT_FOR_DELIVERY) buckets.onTheWay.push(o);
                 else if (s === orderStatusEnum.DELIVERED) buckets.delivered.push(o);
             }
             // Sort each bucket: oldest first for active queues, newest first for delivered.
             buckets.accept.sort((a, b) => this._tsOf(a) - this._tsOf(b));
             buckets.preparing.sort((a, b) => this._tsOf(a) - this._tsOf(b));
             buckets.prepared.sort((a, b) => this._tsOf(a) - this._tsOf(b));
+            buckets.onTheWay.sort((a, b) => this._tsOf(a) - this._tsOf(b));
             buckets.delivered.sort((a, b) => this._tsOf(b) - this._tsOf(a));
             return buckets;
         },
@@ -555,6 +576,22 @@ export default {
                     orders: b.prepared,
                     emptyIcon: '—',
                     emptyLabel: this.$t('pos.tracker.empty_prepared'),
+                },
+                // [Wave T R1 F1 P0 2026-05-20] EN LIVRAISON lane inserted before
+                // LIVRÉS so the cashier keeps visibility on in-flight delivery
+                // orders during the 30+min driver window. Tone 'blue' separates
+                // it visually from PRÊTS (green) and LIVRÉS (muted). Backend
+                // status code is OrderStatus::OUT_FOR_DELIVERY (10) — set when
+                // the driver picks up via DeliveryBoyController, cleared when
+                // they tap "Livré" which flips to status=13.
+                {
+                    id: 'onTheWay',
+                    label: this.$t('pos.tracker.col_on_the_way'),
+                    icon: '🛵',
+                    tone: 'blue',
+                    orders: b.onTheWay,
+                    emptyIcon: '—',
+                    emptyLabel: this.$t('pos.tracker.empty_on_the_way'),
                 },
                 {
                     id: 'delivered',
@@ -879,14 +916,12 @@ export default {
             const items = Array.isArray(o.order_items) ? o.order_items : [];
             return Math.max(0, items.length - 3);
         },
-        formatPrice(v) {
-            const n = Number(v) || 0;
-            try {
-                return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
-            } catch (e) {
-                return n.toFixed(2) + ' €';
-            }
-        },
+        // [WT-D-R1-F4 2026-05-20] `formatPrice()` is now provided by the
+        // shared `adminPriceMixin` (helpers/formatPrice.js) so every admin
+        // surface — tracker, orders list, detail page — renders the exact
+        // same "19,00 €" string for the same numeric input. Behaviour is
+        // byte-identical to the previous inline implementation (Intl
+        // fr-FR EUR with NBSP separator + fallback).
         formatTime(iso) {
             if (!iso) return '';
             try {
@@ -934,6 +969,12 @@ export default {
     --pos-tracker-green: var(--pos-v5-success);
     --pos-tracker-green-soft: var(--pos-v5-success-soft);
     --pos-tracker-muted-soft: var(--pos-v5-bg-subtle);
+    /* [Wave T R1 F1 P0 2026-05-20] Blue tone for EN LIVRAISON lane.
+       Hardcoded blue (not V5 token) — V5 palette has no info/blue role.
+       Hue chosen high-contrast on white (≥4.5:1) and distinct from
+       primary-red / amber / green to keep cashier scan unambiguous. */
+    --pos-tracker-blue: #1d4ed8;
+    --pos-tracker-blue-soft: #dbeafe;
 
     min-height: 100dvh;
     background: var(--pos-tracker-bg);
@@ -1128,12 +1169,20 @@ export default {
 
 .pos-tracker-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /* [Wave T R1 F1 P0 2026-05-20] 5-column layout: À ENCAISSER / EN
+       PRÉPARATION / PRÊTS / EN LIVRAISON / LIVRÉS. Wave S-4 left the
+       grid at 4 cols; with the new on-the-way lane the cashier keeps
+       full caisse-to-delivered visibility on a single screen. Wide
+       breakpoints unchanged for laptops & vertical caisse displays. */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 14px;
     align-items: start;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1480px) {
+    .pos-tracker-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 1100px) {
     .pos-tracker-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 720px) {
@@ -1220,6 +1269,7 @@ export default {
 .pos-tracker-col--amber .pos-tracker-col-count { background: var(--pos-tracker-amber-soft); color: var(--pos-tracker-amber); }
 .pos-tracker-col--primary .pos-tracker-col-count { background: var(--pos-tracker-primary-soft); color: var(--pos-tracker-primary); }
 .pos-tracker-col--green .pos-tracker-col-count { background: var(--pos-tracker-green-soft); color: #166534; }
+.pos-tracker-col--blue .pos-tracker-col-count { background: var(--pos-tracker-blue-soft); color: var(--pos-tracker-blue); }
 .pos-tracker-col--muted .pos-tracker-col-count { background: var(--pos-tracker-muted-soft); color: var(--pos-tracker-muted); }
 
 .pos-tracker-col--green {
@@ -1286,6 +1336,7 @@ export default {
 .pos-tracker-card--amber { border-left: 4px solid var(--pos-tracker-amber); }
 .pos-tracker-card--primary { border-left: 4px solid var(--pos-tracker-primary); }
 .pos-tracker-card--green { border-left: 4px solid var(--pos-tracker-green); }
+.pos-tracker-card--blue { border-left: 4px solid var(--pos-tracker-blue); }
 .pos-tracker-card--muted { border-left: 4px solid var(--pos-v5-border-strong); opacity: 0.85; }
 
 .pos-tracker-card.is-fresh { animation: pos-tracker-card-pop 1.2s ease-out 1; border-color: var(--pos-tracker-green); }

@@ -35,6 +35,17 @@ class SimpleOrderResource extends JsonResource
             'order_serial_no'              => $this->order_serial_no,
             'queue_number'                 => $this->queue_number,
             'order_datetime'               => AppLibrary::datetime($this->order_datetime),
+            // [WT-D-R1-F4 2026-05-20] Raw numeric `total` for canonical FR EUR
+            // rendering via the shared `formatPrice()` helper on admin surfaces
+            // (PosOrderListComponent, tracker). Mirrors OrderDetailsResource
+            // shape — `*_currency_price` / `*_amount_price` strings stay for
+            // backward-compat consumers (exports, legacy templates) but new
+            // admin renders should prefer the raw numeric so every surface
+            // produces the same "19,00 €" instead of "19.00" / "19.00€".
+            'total'                        => round((float) ($this->total ?? 0), 2),
+            'subtotal'                     => round((float) ($this->subtotal ?? 0), 2),
+            'discount'                     => round((float) ($this->discount ?? 0), 2),
+            'delivery_charge'              => round((float) ($this->delivery_charge ?? 0), 2),
             "total_currency_price"         => AppLibrary::currencyAmountFormat($this->total),
             "total_amount_price"           => AppLibrary::flatAmountFormat($this->total),
             "discount_amount_price"        => AppLibrary::flatAmountFormat($this->discount),

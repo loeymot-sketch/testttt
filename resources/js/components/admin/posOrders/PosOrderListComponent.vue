@@ -114,7 +114,16 @@
                             <td class="db-table-body-td">
                                 {{ order.customer_name }}
                             </td>
-                            <td class="db-table-body-td">{{ order.total_amount_price }}</td>
+                            <!-- [WT-D-R1-F4 2026-05-20] Canonical FR EUR
+                                 rendering via shared `formatPrice()` helper.
+                                 Previously used `order.total_amount_price`
+                                 which renders as "19.00" (no €, US decimal)
+                                 while the tracker shows "19,00 €" and the
+                                 detail page shows "19.00€" — three layouts
+                                 for the same value across surfaces.
+                                 `order.total` is now exposed as a raw numeric
+                                 by SimpleOrderResource (Wave T R1 F4 heal). -->
+                            <td class="db-table-body-td">{{ formatPrice(order.total) }}</td>
                             <td class="db-table-body-td">{{ order.order_datetime }}</td>
                             <td class="db-table-body-td">
                                 <span :class="orderStatusClass(order.status)">
@@ -182,9 +191,11 @@ import statusEnum from "../../../enums/modules/statusEnum";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import SourceEnum from "../../../enums/modules/sourceEnum";
 import ENV from "../../../config/env";
+import { adminPriceMixin } from "../../../helpers/formatPrice";
 
 export default {
     name: "PosOrderListComponent",
+    mixins: [adminPriceMixin],
     components: {
         TableLimitComponent,
         PaginationSMBox,

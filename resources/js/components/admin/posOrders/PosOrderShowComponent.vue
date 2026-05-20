@@ -166,7 +166,8 @@
                                             v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
                                     </span>
                                 </p>
-                                <h3 class="text-xs font-semibold">{{ item.total_currency_price }}</h3>
+                                <!-- [WT-D-R1-F4 2026-05-20] Canonical FR EUR via shared `formatPrice()` — `item.total_price` shipped raw by OrderItemResource. -->
+                                <h3 class="text-xs font-semibold">{{ formatPrice(item.total_price) }}</h3>
                             </div>
                         </div>
                         <ul v-if="item.item_extras.length > 0 || item.instruction !== ''"
@@ -196,26 +197,28 @@
             <div class="col-12">
                 <div class="db-card p-1">
                     <ul class="flex flex-col gap-2 p-3 border-b border-dashed border-[#EFF0F6]">
+                        <!-- [WT-D-R1-F4 2026-05-20] Canonical FR EUR rendering via shared `formatPrice()` helper.
+                             `OrderDetailsResource` ships raw numeric `subtotal/discount/delivery_charge/total`. -->
                         <li class="flex items-center justify-between text-heading">
                             <span class="text-sm leading-6 capitalize">{{ $t('label.subtotal') }}</span>
-                            <span class="text-sm leading-6 capitalize">{{ order.subtotal_currency_price }}</span>
+                            <span class="text-sm leading-6 capitalize">{{ formatPrice(order.subtotal) }}</span>
                         </li>
                         <li class="flex items-center justify-between text-heading">
                             <span class="text-sm leading-6 capitalize">{{ $t('label.discount') }}</span>
-                            <span class="text-sm leading-6 capitalize">{{ order.discount_currency_price }}</span>
+                            <span class="text-sm leading-6 capitalize">{{ formatPrice(order.discount) }}</span>
                         </li>
                         <li v-if="order.order_type === enums.orderTypeEnum.DELIVERY"
                             class="flex items-center justify-between text-heading">
                             <span class="text-sm leading-6 capitalize">{{ $t('label.delivery_charge') }}</span>
                             <span class="text-sm leading-6 capitalize font-semibold text-[#1AB759]">
-                                {{ order.delivery_charge_currency_price }}
+                                {{ formatPrice(order.delivery_charge) }}
                             </span>
                         </li>
                     </ul>
                     <div class="flex items-center justify-between p-3">
                         <h4 class="text-sm leading-6 font-bold capitalize">{{ $t('label.total') }}</h4>
                         <h5 class="text-sm leading-6 font-bold capitalize">
-                            {{ order.total_currency_price }}
+                            {{ formatPrice(order.total) }}
                         </h5>
                     </div>
                     <!-- [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier
@@ -311,9 +314,12 @@ import PosOrderMapComponent from "./PosOrderMapComponent";
 // modal itself is server-permission-gated so it's safe to render the CTA
 // unconditionally — backend will 403 unauthorized cashiers.
 import PosLoyaltyRedeemModal from "../pos/PosLoyaltyRedeemModal.vue";
+// [WT-D-R1-F4 2026-05-20] Shared admin FR EUR price formatter.
+import { adminPriceMixin } from "../../../helpers/formatPrice";
 
 export default {
     name: "PosOrderShowComponent",
+    mixins: [adminPriceMixin],
     components: {
         TableLimitComponent,
         PaginationSMBox,
