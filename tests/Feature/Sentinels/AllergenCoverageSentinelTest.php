@@ -9,28 +9,54 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * [V1 Le Cayenne — Wave P Round 2-B sentinel 2026-05-19]
+ * [V1 Le Cayenne — Wave P Round 2-B sentinel, downgraded by Wave Q-4 2026-05-20]
  *
- * EU Regulation 1169/2011 (FIC) + EAA 2025 legal compliance guardrail.
- * France requires per-item disclosure of 14 mandatory allergens on
- * prepared food sold in restaurants/kiosks.
+ * ## Why this test is currently @group manual (not run in CI)
  *
- * Baseline lock pattern (mirrors `FormRequestAuthzDriftSentinelTest` and
- * `BranchScopeCoverageSentinelTest`): asserts that the Le Cayenne menu
- * has >= 80% allergen coverage AND that signature items have their
- * expected allergens. Diverging coverage = CI fails = ship blocked
- * until heal.
+ * The original sentinel (2026-05-19) asserted `>=80%` per-item allergen
+ * coverage on the Le Cayenne menu, backed by `LeCayenneAllergenSeeder`. On
+ * 2026-05-20 the owner identified that the seeded allergens were guessed by
+ * the orchestrator (not chef-confirmed) — they were retracted (the seeder is
+ * now a NOOP, `items.allergen_flags = []` for all items, `item_allergen`
+ * pivot truncated). See `database/seeders/LeCayenneAllergenSeeder.php`
+ * docblock for the full audit trail.
  *
- * Why a sentinel and not just a one-shot seeder verification:
- * - If a migration repopulates items but skips the seeder, the JSON
- *   cache + pivot would silently drop to zero (Wave P-2 P0 root cause).
- * - If a future "wipe and reseed" omits `LeCayenneAllergenSeeder`,
- *   CI catches the regression before it reaches production.
+ * The CI threshold no longer holds. Rather than delete the assertions
+ * (which would erase the FIC-compliance acceptance criteria), we mark them
+ * `@group manual`:
  *
- * Owner override path: if a chef provides corrections to the mapping,
- * edit `database/seeders/LeCayenneAllergenSeeder.php` $mapping, re-seed,
- * and (if specific assertions change) update this test's known-allergens
- * table below.
+ *  - CI: skipped (does not block ship of V1 LOCAL post owner decision).
+ *  - Manual run: `vendor/bin/phpunit --group manual --filter
+ *    AllergenCoverageSentinelTest` once real chef data is populated AND the
+ *    seeder body is restored to a non-empty mapping.
+ *
+ * ## Re-enabling for production ship to France
+ *
+ * EU Regulation 1169/2011 (FIC) Annex II + EAA 2025 require disclosure of
+ * the 14 mandatory allergens on prepared foods. To re-enable this sentinel
+ * as a CI gate, follow these steps:
+ *
+ *  1. Owner / chef provides real per-item allergens (signed-off list).
+ *  2. Either populate them via an admin UI editor (preferred — restaurant
+ *     team owns the data) OR replace the body of
+ *     `LeCayenneAllergenSeeder::run()` with the confirmed mapping.
+ *  3. Update `REQUIRED_ALLERGENS` and `EXPLICITLY_NONE` below to match the
+ *     real menu (the existing values are heuristic and were defined against
+ *     the retracted guess).
+ *  4. Remove the `@group manual` annotations (or convert them to `@test`)
+ *     so the sentinel runs in CI.
+ *  5. Document the gate in `docs/BUSINESS_RULES.md` ("FIC compliance gate
+ *     active").
+ *
+ * ## SSOT consistency assertion preserved
+ *
+ * The `ssot_cache_consistency_holds_post_seed` test pattern (JSON cache
+ * vs pivot equality) remains valuable regardless of data content — but
+ * because it depends on `LeCayenneAllergenSeeder` populating data, it is
+ * also `@group manual` until the seeder is restored. A non-content-
+ * dependent SSOT sentinel (`Item::all()->each(fn $i => ...)`) belongs in a
+ * separate test class; intentionally not added here to avoid drift between
+ * "this test class = FIC compliance gate" and "general SSOT health".
  */
 class AllergenCoverageSentinelTest extends TestCase
 {
@@ -43,9 +69,9 @@ class AllergenCoverageSentinelTest extends TestCase
      * Specific items + their REQUIRED allergens (test asserts these are
      * a SUBSET of the seeded flags — extra is OK, missing is not).
      *
-     * Slugs taken from `database/seeders/_data/*` and verified via
-     * `php artisan tinker --execute='App\Models\Item::pluck("slug")'`
-     * on 2026-05-19. French codes per `AllergensSeeder`.
+     * NOTE (Wave Q-4 2026-05-20): the values below were defined against the
+     * retracted Wave P R2-B guess. They MUST be reviewed against real
+     * chef-confirmed data before this sentinel is re-enabled in CI.
      *
      * @var array<string, list<string>>
      */
@@ -112,7 +138,10 @@ class AllergenCoverageSentinelTest extends TestCase
         $this->seed(LeCayenneAllergenSeeder::class);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @group manual
+     */
     public function coverage_meets_eu_1169_minimum_threshold(): void
     {
         $total = Item::query()
@@ -144,7 +173,10 @@ class AllergenCoverageSentinelTest extends TestCase
         );
     }
 
-    /** @test */
+    /**
+     * @test
+     * @group manual
+     */
     public function required_allergens_are_set_per_signature_item(): void
     {
         foreach (self::REQUIRED_ALLERGENS as $slug => $required) {
@@ -170,7 +202,10 @@ class AllergenCoverageSentinelTest extends TestCase
         }
     }
 
-    /** @test */
+    /**
+     * @test
+     * @group manual
+     */
     public function explicitly_none_items_are_empty_array_not_null(): void
     {
         foreach (self::EXPLICITLY_NONE as $slug) {
@@ -191,7 +226,10 @@ class AllergenCoverageSentinelTest extends TestCase
         }
     }
 
-    /** @test */
+    /**
+     * @test
+     * @group manual
+     */
     public function ssot_cache_consistency_holds_post_seed(): void
     {
         // For every item the seeder touched, allergen_flags JSON cache
