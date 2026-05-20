@@ -10,9 +10,23 @@
     subtext 13px #94A3B8
     undo button white bg, #0F172A text, shadow #CBD5E1
     shrink-bar 3s linear green #16A34A
+
+  [Wave T R1 F3 WT-B-R1-001 2026-05-20] Repositioned bottom-right corner with
+  smaller min-width (360px). Previously position:absolute top:110px center
+  min-width:620px geometrically covered Card B (Order#70 A0002 header)
+  during the 3s undo window — chef could not read the adjacent red-critical
+  card's queue number. Now pinned to viewport corner via position:fixed bottom
+  right so it never overlaps the 4×2 grid cards. Width reduced to 360px so it
+  fits inline "N°X marquée prête · Annuler" without wrapping.
 -->
 <template>
-  <div v-if="toast" class="kds-toast">
+  <div
+    v-if="toast"
+    class="kds-toast"
+    role="status"
+    aria-live="assertive"
+    aria-atomic="true"
+  >
     <div class="kds-toast__inner">
       <div class="kds-toast__row">
         <div class="kds-toast__check" aria-hidden="true">
@@ -77,14 +91,25 @@ export default {
 </script>
 
 <style scoped>
+/* [Wave T R1 F3 WT-B-R1-001 2026-05-20] position:fixed bottom-right corner.
+   Previously position:absolute top:110px center min-width:620px landed on
+   top of Row 1 grid cards inside `.kds-v2` (position:relative). Now anchored
+   to the viewport so it never overlaps the 4×2 card grid regardless of
+   viewport size. Mobile/RTL handled below via media query / [dir="rtl"]. */
 .kds-toast {
-    position: absolute;
-    top: 110px;
-    left: 50%;
-    transform: translate(-50%, 0);
-    min-width: 620px;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    left: auto;
+    top: auto;
+    min-width: 320px;
+    max-width: 420px;
     z-index: 30;
     animation: kds-toast-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+[dir="rtl"] .kds-toast {
+    right: auto;
+    left: 24px;
 }
 .kds-toast__inner {
     border-radius: 12px;
@@ -97,12 +122,12 @@ export default {
 .kds-toast__row {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 16px 20px;
+    gap: 12px;
+    padding: 12px 14px;
 }
 .kds-toast__check {
-    width: 48px;
-    height: 48px;
+    width: 36px;
+    height: 36px;
     border-radius: 9999px;
     background: #16A34A;
     display: inline-flex;
@@ -114,34 +139,35 @@ export default {
     flex: 1;
 }
 .kds-toast__title {
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 700;
     line-height: 1.2;
     color: #FFFFFF;
 }
 .kds-toast__sub {
-    margin-top: 4px;
+    margin-top: 2px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 13px;
+    gap: 6px;
+    font-size: 11px;
     color: #94A3B8;
 }
 .kds-toast__undo {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 0 24px;
-    height: 48px;
+    gap: 6px;
+    padding: 0 14px;
+    height: 36px;
     border: 0;
     border-radius: 8px;
     background: #FFFFFF;
     color: #0F172A;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 800;
     cursor: pointer;
     box-shadow: 0 2px 0 0 #CBD5E1;
     transition: transform 100ms ease;
+    flex-shrink: 0;
 }
 .kds-toast__undo:active {
     transform: translateY(1px);
@@ -164,9 +190,12 @@ export default {
 [dir="rtl"] .kds-toast__progress-bar {
     transform-origin: right center;
 }
+/* [Wave T R1 F3 WT-B-R1-001 2026-05-20] Slide up from below — matches the
+   new bottom-right anchor (was slide-down from translate(-50%,-120%)
+   when toast was top-center). */
 @keyframes kds-toast-in {
-    from { transform: translate(-50%, -120%); opacity: 0; }
-    to   { transform: translate(-50%, 0);     opacity: 1; }
+    from { transform: translateY(120%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
 }
 @keyframes kds-toast-shrink {
     from { transform: scaleX(1); }

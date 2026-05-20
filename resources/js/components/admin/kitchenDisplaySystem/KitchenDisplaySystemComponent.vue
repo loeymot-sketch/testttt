@@ -1249,8 +1249,32 @@ export default {
         return false;
       }
     },
+    // [Wave T R1 F3 WT-B-R1-007 2026-05-20] Gate the "Compte central" polling
+    // hint on (a) admin/central role (branch_id<=0) AND (b) multi-branch
+    // install (branchCount>1). On single-branch installs like Le Cayenne the
+    // banner copy "Compte central (multi-succursales) : le flux en direct
+    // n'est pas abonné" is misleading — there is no multi-branch context AND
+    // the wording "n'est pas abonné" reads as a real-time sync failure to a
+    // chef. We hide the banner entirely when only one branch exists; the
+    // central admin still sees the standard sync stamp + fallback banner if
+    // the WS is actually down. branchCount is exposed by master.blade.php
+    // (cached 5min) so this is a zero-network check.
     kdsIsCentralAdmin() {
-      return this.authBranchId() <= 0;
+      const isCentralRole = this.authBranchId() <= 0;
+      if (!isCentralRole) {
+        return false;
+      }
+      try {
+        const count = parseInt(
+          (typeof window !== 'undefined' && window.foodkingConfig?.branchCount) || 0,
+          10
+        );
+        // Multi-branch install only — single-branch (or unknown count) hides.
+        return Number.isFinite(count) && count > 1;
+      } catch (_e) {
+        // Fail-safe: if config probe throws, do NOT show the misleading banner.
+        return false;
+      }
     },
     /** 45–49: backend plafond 50 — avertir avant d’atteindre la limite d’affichage */
     kdsOrderApproachingCap() {

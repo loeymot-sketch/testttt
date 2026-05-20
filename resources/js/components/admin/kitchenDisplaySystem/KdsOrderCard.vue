@@ -505,28 +505,37 @@ export default {
     box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.30);
 }
 
+/* [Wave T R1 F3 WT-B-R1-002 2026-05-20] Responsive type scale with clamp().
+   At 1280px viewport the 4-col grid yields ~300px per card. The previous
+   52px queue + 34px elapsed + 26px prefix + 0.15em letter-spaced ATTENTE
+   label overflowed and `.kds-card { overflow: hidden }` clipped the seconds
+   off the elapsed timer (Wave T R1 evidence: "14:26" rendering as "14:2",
+   "ATTENTE" rendering as "ATTEN"). Now sized to fit inside 300px at the
+   tightest breakpoint while preserving 2m-readability at ≥1600px. */
 .kds-card__main {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    gap: 12px; /* KDS-R1-01 heal: prevent queue + elapsed overlap on long times */
-    padding: 2px 16px 10px;
+    gap: 8px; /* tightened from 12px to recover horizontal budget */
+    padding: 2px 12px 10px; /* tightened from 16px to recover ~8px */
 }
 .kds-card__queue,
 .kds-card__elapsed-wrap {
     flex-shrink: 0; /* KDS-R1-01 heal: never compress, never overlap */
+    min-width: 0; /* allow children to participate in the flex shrink calc */
+    overflow: visible; /* ensure timer descenders/digits never clipped */
 }
 .kds-card__queue {
     color: #111827;
     font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-size: 52px;
+    font-size: clamp(36px, 4.2vw, 52px);
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.03em;
     font-variant-numeric: tabular-nums;
 }
 .kds-card__queue-prefix {
-    font-size: 26px;
+    font-size: clamp(16px, 2vw, 26px);
     font-weight: 700;
     opacity: 0.55;
     margin-inline-end: 2px;
@@ -536,21 +545,27 @@ export default {
     flex-direction: column;
     align-items: flex-end;
     gap: 2px;
+    overflow: visible;
 }
 .kds-card__elapsed-label {
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.15em;
+    /* [Wave T R1 F3 WT-B-R1-002 2026-05-20] letter-spacing reduced 0.15em→0.06em
+       so "ATTENTE" fits the elapsed-wrap column without clipping at 1280px.
+       Still visually distinct as a small-caps eyebrow above the big timer. */
+    letter-spacing: 0.06em;
     text-transform: uppercase;
+    white-space: nowrap;
     /* KDS-R1-02 heal: removed opacity:0.75 which dropped contrast below WCAG AA. */
 }
 .kds-card__elapsed {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-size: 34px;
+    font-size: clamp(22px, 2.8vw, 34px);
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .kds-card__body {

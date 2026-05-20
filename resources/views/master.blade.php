@@ -174,6 +174,18 @@
             // environments where Pusher/Soketi is not running. Production keeps
             // the banner — it's still useful messaging during real outages.
             appEnv: @json((string) app()->environment()),
+            // [Wave T R1 F3 WT-B-R1-007 2026-05-20] Expose branch count so the
+            // admin SPA can hide messaging that only makes sense in a multi-
+            // branch deployment (e.g. KDS "Compte central multi-succursales"
+            // polling hint). Single-branch installs like Le Cayenne render
+            // branch_count=1 and the KDS computes kdsIsCentralAdmin=false so
+            // the misleading banner is suppressed. Cached 5min to avoid a
+            // SELECT COUNT(*) on every SPA boot. NF525-irrelevant query.
+            branchCount: @json((int) \Illuminate\Support\Facades\Cache::remember(
+                'fk:branches:count',
+                300,
+                fn () => \App\Models\Branch::query()->count()
+            )),
             features: {
                 wizard_per_item_demo: @json(\App\Support\WizardPerItemDemo::enabled(request())),
             },

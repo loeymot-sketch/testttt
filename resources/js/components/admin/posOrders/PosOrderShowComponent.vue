@@ -52,11 +52,18 @@
                                 {{ order.delivery_date }} {{ order.delivery_time }}
                             </span>
                         </li>
-                        <li class="text-xs" v-if="order.token">{{
-                            $t('label.token_no')
-                        }}:
-                            <span class="text-heading">
-                                #{{ order.token }}
+                        <!-- [WT-D-R1-07 2026-05-20] Internal token reference
+                             (kiosk/online flows). Relabelled FR "Référence
+                             interne" to avoid collision with `order_serial_no`
+                             (the real "N° commande" displayed at top). Hidden
+                             entirely if the token visually duplicates the
+                             customer first word (defensive guard against
+                             noisy fixture-injected tokens that bleed into
+                             the customer name field). -->
+                        <li class="text-xs" v-if="displayedToken">
+                            {{ $t('label.order_token') }}:
+                            <span class="text-heading text-[10px] opacity-75 font-mono">
+                                {{ displayedToken }}
                             </span>
                         </li>
                         <li class="text-xs" v-if="order.table_name">
@@ -70,26 +77,56 @@
 
                 <div class="flex flex-wrap gap-3"
                     v-if="order.status !== enums.orderStatusEnum.REJECTED && order.status !== enums.orderStatusEnum.CANCELED">
-                    <div class="dropdown-group" v-if="order.order_type === enums.orderTypeEnum.DELIVERY">
-                        <button
-                            class="min-w-[162px] flex items-center justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn">
+                    <!-- [WT-D-R1-09 / WT-D-R1-02 2026-05-20] Delivery-boy
+                         assignment dropdown — WCAG AA combobox+listbox
+                         pattern overlaid on existing dropdown-group hover
+                         behaviour. data-testid hooks added for E2E.
+                         A live-region chip is rendered below the button when
+                         a driver is assigned so the cashier sees confirmation
+                         without consulting the toast. -->
+                    <div class="dropdown-group" v-if="order.order_type === enums.orderTypeEnum.DELIVERY"
+                        role="combobox" aria-haspopup="listbox" aria-expanded="false"
+                        :aria-label="$t('label.select_delivery_boy')"
+                        :class="{ 'driver-assigned-flash': driverFlashHighlight }"
+                        data-testid="pos-driver-assign-group">
+                        <button type="button"
+                            class="min-w-[162px] flex items-center justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn"
+                            :aria-label="order?.delivery_boy?.id
+                                ? $t('label.driver_assigned') + ': ' + order.delivery_boy.name
+                                : $t('label.select_delivery_boy')"
+                            data-testid="pos-driver-assign-btn">
                             <span class="flex-1 text-start">{{ order?.delivery_boy?.id ? order?.delivery_boy?.name :
                                 $t('label.select_delivery_boy') }}
                             </span>
-                            <i class="lab lab-arrow-down-2 lab-font-size-17 mx-1"></i>
+                            <i class="lab lab-arrow-down-2 lab-font-size-17 mx-1" aria-hidden="true"></i>
                         </button>
-                        <ul
+                        <ul role="listbox"
+                            :aria-label="$t('label.select_delivery_boy')"
                             class="p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full">
-                            <li class="active flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100"
+                            <li role="option"
+                                :aria-selected="order?.delivery_boy?.id === deliveryBoy.id ? 'true' : 'false'"
+                                tabindex="0"
+                                class="active flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100 focus:outline focus:outline-2 focus:outline-primary"
                                 v-for="deliveryBoy in deliveryBoys" :key="deliveryBoy.id"
-                                @click="selectDeliveryBoy(deliveryBoy.id)">
+                                @click="selectDeliveryBoy(deliveryBoy.id, deliveryBoy.name)"
+                                @keydown.enter.prevent="selectDeliveryBoy(deliveryBoy.id, deliveryBoy.name)"
+                                @keydown.space.prevent="selectDeliveryBoy(deliveryBoy.id, deliveryBoy.name)"
+                                :data-testid="'pos-driver-option-' + deliveryBoy.id">
                                 <span class="text-heading capitalize text-sm"
                                     :class="order?.delivery_boy?.id === deliveryBoy.id ? 'text-primary' : ''">{{
                                         deliveryBoy.name
                                     }}</span>
-
                             </li>
                         </ul>
+                        <!-- Live-region success chip — visible UI confirmation
+                             that assignment landed (WT-D-R1-02 fix). -->
+                        <p v-if="order?.delivery_boy?.id"
+                            class="driver-assigned-chip mt-1.5 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-[#E6F8EE] text-[#1AB759] font-semibold"
+                            role="status" aria-live="polite"
+                            data-testid="pos-driver-assigned-chip">
+                            <i class="lab lab-tick-square lab-font-size-12" aria-hidden="true"></i>
+                            {{ $t('label.driver_assigned') }}: {{ order.delivery_boy.name }}
+                        </p>
                     </div>
 
                     <div class="dropdown-group">
@@ -197,8 +234,13 @@
             <div class="col-12">
                 <div class="db-card p-1">
                     <ul class="flex flex-col gap-2 p-3 border-b border-dashed border-[#EFF0F6]">
-                        <!-- [WT-D-R1-F4 2026-05-20] Canonical FR EUR rendering via shared `formatPrice()` helper.
-                             `OrderDetailsResource` ships raw numeric `subtotal/discount/delivery_charge/total`. -->
+                        <!-- [WT-D-R1-F4 2026-05-20] Canonical FR EUR
+                             rendering via shared `formatPrice()` helper.
+                             `OrderDetailsResource` already ships raw numeric
+                             `subtotal` / `discount` / `delivery_charge` /
+                             `total` — we feed them through `formatPrice()` so
+                             every admin surface renders "19,00 €" instead of
+                             "19.00€" (glued, no space). -->
                         <li class="flex items-center justify-between text-heading">
                             <span class="text-sm leading-6 capitalize">{{ $t('label.subtotal') }}</span>
                             <span class="text-sm leading-6 capitalize">{{ formatPrice(order.subtotal) }}</span>
@@ -314,7 +356,8 @@ import PosOrderMapComponent from "./PosOrderMapComponent";
 // modal itself is server-permission-gated so it's safe to render the CTA
 // unconditionally — backend will 403 unauthorized cashiers.
 import PosLoyaltyRedeemModal from "../pos/PosLoyaltyRedeemModal.vue";
-// [WT-D-R1-F4 2026-05-20] Shared admin FR EUR price formatter.
+// [WT-D-R1-F4 2026-05-20] Shared admin FR EUR price formatter — canonicalises
+// "19,00 €" across PosOrderShow / PosOrderList / tracker.
 import { adminPriceMixin } from "../../../helpers/formatPrice";
 
 export default {
@@ -354,6 +397,10 @@ export default {
             delivery_boy: null,
             // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Loyalty redeem modal flag.
             loyaltyRedeemOpen: false,
+            // [WT-D-R1-02 2026-05-20] Brief CSS flash highlight (2s) after
+            // successful driver assignment so the cashier visually perceives
+            // the state change beyond the toast.
+            driverFlashHighlight: false,
         }
     },
     mounted() {
@@ -457,6 +504,23 @@ export default {
                 [orderTypeEnum.DINING_TABLE]: this.$t("label.dining_table")
             }
         },
+        // [WT-D-R1-07 2026-05-20] Token is an internal kiosk/online reference,
+        // NOT the order number. Suppress it from the visible detail summary
+        // when it visibly duplicates the customer name first word (fixture-
+        // injected noise) so the cashier sees only "N° {order_serial_no}" up
+        // top — no more "N° commande: #Wave" confusion.
+        displayedToken: function () {
+            const raw = (this.order && this.order.token) ? String(this.order.token).trim() : '';
+            if (!raw) return '';
+            const customer = (this.orderUser && this.orderUser.name) ? String(this.orderUser.name).trim() : '';
+            if (customer) {
+                const firstWord = customer.split(/\s+/)[0];
+                if (firstWord && raw.toLowerCase().startsWith(firstWord.toLowerCase())) {
+                    return '';
+                }
+            }
+            return raw;
+        },
     },
     methods: {
         // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] On successful redemption,
@@ -527,25 +591,44 @@ export default {
                 alertService.error(err.response.data.message);
             }
         },
-        selectDeliveryBoy: function (id) {
+        // [WT-D-R1-02 2026-05-20] Driver assignment now : (1) shows a
+        // human-readable toast naming the driver + order, (2) refreshes the
+        // order so the chip+button render the new state, (3) triggers a 2s
+        // CSS flash highlight on the dropdown wrapper for visual feedback.
+        selectDeliveryBoy: function (id, name) {
             try {
                 this.loading.isActive = true;
+                const orderSerial = this.order?.order_serial_no || '';
                 this.$store.dispatch("posOrder/selectDeliveryBoy", {
                     id: this.$route.params.id,
                     delivery_boy_id: id,
+                }).then(() => {
+                    // Refresh so order.delivery_boy populates -> chip renders.
+                    return this.$store.dispatch('posOrder/show', this.$route.params.id);
                 }).then((res) => {
+                    this.payment_status = res.data.data.payment_status;
+                    this.order_status = res.data.data.status;
+                    this.delivery_boy = res.data.data.delivery_boy ? res.data.data.delivery_boy.id : 0;
                     this.loading.isActive = false;
-                    alertService.successInfo(
-                        1,
-                        this.$t("message.delivery_boy_add")
-                    );
+
+                    // 2s flash highlight on the assignment group.
+                    this.driverFlashHighlight = true;
+                    setTimeout(() => { this.driverFlashHighlight = false; }, 2000);
+
+                    const driverName = name
+                        || (res.data.data.delivery_boy ? res.data.data.delivery_boy.name : '');
+                    const msg = this.$t('message.delivery_boy_assigned_to_order', {
+                        name: driverName,
+                        order: orderSerial,
+                    });
+                    alertService.success(msg);
                 }).catch((err) => {
                     this.loading.isActive = false;
-                    alertService.error(err.response.data.message);
+                    alertService.error(err?.response?.data?.message || this.$t('label.error'));
                 });
             } catch (err) {
                 this.loading.isActive = false;
-                alertService.error(err.response.data.message);
+                alertService.error(err?.response?.data?.message || this.$t('label.error'));
             }
         },
     },
@@ -609,5 +692,26 @@ export default {
 :deep(.bg-\[\#FFDADA\]) {
     background: var(--pos-v5-danger-soft) !important;
     color: var(--pos-v5-danger-dark) !important;
+}
+
+/* [WT-D-R1-02 2026-05-20] Driver-assignment visual feedback. */
+.driver-assigned-flash {
+    animation: pos-driver-flash 2s ease-out 1;
+    border-radius: var(--pos-v5-radius-md, 8px);
+}
+@keyframes pos-driver-flash {
+    0%   { box-shadow: 0 0 0 0 rgba(26, 183, 89, 0.55); }
+    35%  { box-shadow: 0 0 0 6px rgba(26, 183, 89, 0.20); }
+    100% { box-shadow: 0 0 0 0 rgba(26, 183, 89, 0); }
+}
+.driver-assigned-chip {
+    line-height: 1;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+    .driver-assigned-flash { animation: none; }
 }
 </style>
