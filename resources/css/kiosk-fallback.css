@@ -19,53 +19,66 @@
   display: none !important;
 }
 
-.kiosk-app[data-kiosk-theme="dark"] {
-  --kiosk-primary:       #F4501E;
-  --kiosk-primary-dark:  #A90014;
-  --kiosk-primary-soft:  #FFF0F2;
-  --kiosk-primary-light: rgba(244, 80, 30, 0.08);
-  --kiosk-success:       #1B8A3A;
-  --kiosk-error:         #C21E2F;
-  --kiosk-warning:       #B8730B;
-  --kiosk-info:          #2563EB;
+/*
+ * !important on every var is mandatory: KioskAppComponent.vue defines the
+ * dark defaults inside `<style scoped>`, which Vue compiles into the
+ * `kiosk-shell.js` CSS-in-JS chunk loaded AFTER this global file. Without
+ * !important, the scoped declarations win on equal specificity → home/idle/
+ * main pages stayed dark while later pages (whose vars cascade from this
+ * override) flipped light. Owner-reported "moitié Dark moitié Light" 2026-05-21.
+ *
+ * Targeting BOTH the attribute selector AND the class selector so we win
+ * regardless of whether Vue is currently flipping between them on mount.
+ */
+.kiosk-app[data-kiosk-theme="dark"],
+.kiosk-app.kiosk-theme--dark,
+.kiosk-app {
+  --kiosk-primary:       #F4501E !important;
+  --kiosk-primary-dark:  #A90014 !important;
+  --kiosk-primary-soft:  #FFF0F2 !important;
+  --kiosk-primary-light: rgba(244, 80, 30, 0.08) !important;
+  --kiosk-success:       #1B8A3A !important;
+  --kiosk-error:         #C21E2F !important;
+  --kiosk-warning:       #B8730B !important;
+  --kiosk-info:          #2563EB !important;
 
-  --kiosk-bg:            #FFFBF5;
-  --kiosk-bg-2:          #FFFFFF;
-  --kiosk-bg-3:          #F7F3EC;
-  --kiosk-surface:       #FFFFFF;
-  --kiosk-surface-alt:   #F7F3EC;
-  --kiosk-surface-strong:#FFFFFF;
-  --kiosk-border:        #EEE6D9;
-  --kiosk-border-strong: #D9C9B8;
+  --kiosk-bg:            #FFFBF5 !important;
+  --kiosk-bg-2:          #FFFFFF !important;
+  --kiosk-bg-3:          #F7F3EC !important;
+  --kiosk-surface:       #FFFFFF !important;
+  --kiosk-surface-alt:   #F7F3EC !important;
+  --kiosk-surface-strong:#FFFFFF !important;
+  --kiosk-border:        #EEE6D9 !important;
+  --kiosk-border-strong: #D9C9B8 !important;
 
-  --kiosk-dark:          var(--kiosk-bg);
-  --kiosk-dark-2:        var(--kiosk-bg-2);
-  --kiosk-dark-3:        var(--kiosk-bg-3);
+  --kiosk-dark:          #FFFBF5 !important;
+  --kiosk-dark-2:        #FFFFFF !important;
+  --kiosk-dark-3:        #F7F3EC !important;
 
-  --kiosk-text:          #1A1A1A;
-  --kiosk-text-2:        #3F3435;
-  --kiosk-text-muted:    #5A5A5A;
-  --kiosk-text-mute:     #7D7374;
-  --kiosk-text-on-red:   #FFFFFF;
-  --kiosk-border-light:  rgba(0, 0, 0, 0.06);
+  --kiosk-text:          #1A1A1A !important;
+  --kiosk-text-2:        #3F3435 !important;
+  --kiosk-text-muted:    #5A5A5A !important;
+  --kiosk-text-mute:     #7D7374 !important;
+  --kiosk-text-on-red:   #FFFFFF !important;
+  --kiosk-border-light:  rgba(0, 0, 0, 0.06) !important;
 
   --kiosk-page-bg:
-    linear-gradient(180deg, #FFF9F0 0%, #FFFFFF 48%, #FFF0F2 100%);
+    linear-gradient(180deg, #FFF9F0 0%, #FFFFFF 48%, #FFF0F2 100%) !important;
   --kiosk-idle-bg:
-    linear-gradient(180deg, #FFFFFF 0%, #FFF1F3 44%, #F4501E 100%);
-  --kiosk-idle-text: #210006;
-  --kiosk-idle-muted: #4A2A2F;
-  --kiosk-idle-card-bg: #111111;
-  --kiosk-idle-card-text: #FFFFFF;
-  --kiosk-product-media-bg: radial-gradient(circle at 32% 24%, #FFFFFF, #F7F3EC 68%);
-  --kiosk-theme-control-bg: rgba(255, 255, 255, 0.90);
+    linear-gradient(180deg, #FFFFFF 0%, #FFF1F3 44%, #F4501E 100%) !important;
+  --kiosk-idle-text: #210006 !important;
+  --kiosk-idle-muted: #4A2A2F !important;
+  --kiosk-idle-card-bg: #111111 !important;
+  --kiosk-idle-card-text: #FFFFFF !important;
+  --kiosk-product-media-bg: radial-gradient(circle at 32% 24%, #FFFFFF, #F7F3EC 68%) !important;
+  --kiosk-theme-control-bg: rgba(255, 255, 255, 0.90) !important;
 
-  --kiosk-shadow:        0 2px 8px rgba(20, 20, 20, 0.06);
-  --kiosk-shadow-card:   0 8px 24px rgba(20, 20, 20, 0.09);
-  --kiosk-shadow-lift:   0 18px 42px rgba(20, 20, 20, 0.14);
-  --kiosk-shadow-cta:    0 14px 30px rgba(244, 80, 30, 0.28);
-  --kiosk-shadow-modal:  0 24px 48px rgba(26, 26, 26, 0.24);
-  --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.08);
+  --kiosk-shadow:        0 2px 8px rgba(20, 20, 20, 0.06) !important;
+  --kiosk-shadow-card:   0 8px 24px rgba(20, 20, 20, 0.09) !important;
+  --kiosk-shadow-lift:   0 18px 42px rgba(20, 20, 20, 0.14) !important;
+  --kiosk-shadow-cta:    0 14px 30px rgba(244, 80, 30, 0.28) !important;
+  --kiosk-shadow-modal:  0 24px 48px rgba(26, 26, 26, 0.24) !important;
+  --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.08) !important;
 }
 
 /**
