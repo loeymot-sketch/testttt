@@ -87,7 +87,14 @@ return [
     |
     | Default = Le Cayenne best-sellers per menu reset 2026-05-13:
     |   sandwich-cayenne, galette, sandwich-classique, tacos,
-    |   bols-gourmands, frites, burgers.
+    |   bols-gourmands, frites, burgers, boissons.
+    |
+    | [2026-05-20 Wave O O10] Owner adds `boissons` to the featured strip —
+    | drinks are a high-velocity attach for cashier upsell on the POS landing
+    | screen. The 8 boisson items (coca, coca-zero, fanta, sprite, oasis,
+    | orangina, eau-plate, capri-sun) all have media attached via O8
+    | RestoreLeCayenneItemImagesSeeder (byte-identical owner uploads in
+    | `storage/app/public/51-58/`), so the strip will surface the photos.
     |
     | Override via env CSV (slugs):
     |   POS_FEATURED_CATEGORY_SLUGS=sandwich-cayenne,burgers,tacos,...
@@ -105,7 +112,7 @@ return [
         static fn (string $s): string => trim($s),
         explode(',', (string) env(
             'POS_FEATURED_CATEGORY_SLUGS',
-            'sandwich-cayenne,burgers,tacos,bols-gourmands,sandwich-classique,frites,galette',
+            'sandwich-cayenne,burgers,tacos,bols-gourmands,sandwich-classique,frites,galette,boissons',
         )),
     ))),
 
