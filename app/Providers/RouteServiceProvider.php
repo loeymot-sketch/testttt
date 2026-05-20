@@ -90,16 +90,25 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
         });
 
+        // [Wave O O-5 P-OWNER-5 2026-05-20] env-configurable ceilings
+        // (config/pos.php → POS_RATE_LIMIT_*). Defaults match the prior
+        // hard-coded values so production behaviour is unchanged; local
+        // dev raises the ceiling in `.env` to absorb owner manual-test
+        // bursts (repeated TPE retries while wiring simulation fixes
+        // burned the 60/min order-create bucket → blanket 429).
         RateLimiter::for('pos-quote', function (Request $request) {
-            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+            $perMinute = max(1, (int) config('pos.rate_limit.quote', 120));
+            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
         });
 
         RateLimiter::for('pos-order-create', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            $perMinute = max(1, (int) config('pos.rate_limit.order_create', 60));
+            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
         });
 
         RateLimiter::for('pos-order-update', function (Request $request) {
-            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+            $perMinute = max(1, (int) config('pos.rate_limit.order_update', 120));
+            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
         });
 
         // [iter15-mega-fix D-001 2026-05-10] Kiosk-machine login uses a dedicated
