@@ -86,7 +86,15 @@
       :aria-label="$t('kiosk.order_type_label')"
       data-testid="kiosk-cart-order-type"
     >
-      <button type="button"
+      <!--
+        [wave-p-kiosk-2026-05-20 BORNE-001 heal] V1 dine-in gate.
+        Mirrors KioskIdleScreenComponent + PosComponent v-if="dineInEnabled"
+        per feedback_v1_dine_in_disabled_2026-05-06. The "Sur place" tile must
+        stay hidden until V2 floorplan ships — backend OrderRequest:213
+        rejects KIOSK order_type when pos_dine_in_enabled=false, so leaving
+        this button clickable creates a guaranteed 422 UX dead-end on V1.
+      -->
+      <button v-if="dineInEnabled" type="button"
         class="kiosk-order-type-btn"
         :class="{ active: orderType === ORDER_TYPE_KIOSK }"
         role="radio"
@@ -411,6 +419,21 @@ export default {
       promoLoading: 'promoLoading',
     }),
     ...mapGetters('kioskMenu', ['categories', 'selectedCategoryId', 'allItems']),
+    ...mapGetters('frontendSetting', { frontendSettingsList: 'lists' }),
+    /**
+     * [wave-p-kiosk-2026-05-20 BORNE-001 heal] V1 dine-in flag.
+     * Mirror of KioskIdleScreenComponent.dineInEnabled (verbatim guard
+     * pattern — typeof check rejects arrays/objects before string coerce so
+     * `String([1]) === '1'` cannot accidentally activate the flag).
+     * Defaults to FALSE so a regressed/empty backend stays safe (V1 mandate).
+     */
+    dineInEnabled() {
+      const s = this.frontendSettingsList || {};
+      const raw = s.pos_dine_in_enabled ?? s['pos.dine_in_enabled'] ?? 0;
+      const t = typeof raw;
+      if (t !== 'boolean' && t !== 'number' && t !== 'string') return false;
+      return String(raw) === '1' || raw === true;
+    },
     customerAllergenCodes() {
       const profile = this.$store?.getters?.['kioskSettings/customerProfile'];
       if (!profile || !Array.isArray(profile.declared_allergens)) return [];
@@ -420,6 +443,21 @@ export default {
     shouldSkipKioskUpsell() {
       return shouldSkipKioskUpsellScreen(this.cartItems, this.categories);
     },
+  },
+  /**
+   * [wave-p-kiosk-2026-05-20 BORNE-001 heal] Ensure frontendSetting/lists is
+   * populated so dineInEnabled computed can read pos_dine_in_enabled.
+   * KioskAppComponent loads via raw axios into globalState, NOT into the
+   * Vuex frontendSetting module — so the cart must dispatch independently.
+   * Best-effort: swallow errors and let the default (false) hold.
+   */
+  mounted() {
+    try {
+      const current = this.$store?.getters?.['frontendSetting/lists'];
+      if (!current || (Array.isArray(current) && current.length === 0)) {
+        this.$store?.dispatch?.('frontendSetting/lists').catch(() => {});
+      }
+    } catch (_e) { /* defaults to dineInEnabled=false — safe */ }
   },
   methods: {
     ...mapActions('kioskCart', [

@@ -220,7 +220,11 @@ export default {
         formatDate(d) {
             if (!d) return '';
             try {
-                return new Date(d).toLocaleDateString(undefined, {
+                // [Wave P-5 2026-05-20] Pin locale to active i18n (FR-fr by default in
+                // FoodKing) so Playwright/Chromium-headless ne renvoie pas "Wednesday, May 20"
+                // alors que l'UI complète est en français.
+                const locale = this.$i18n?.locale || 'fr-FR';
+                return new Date(d).toLocaleDateString(locale, {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -234,7 +238,8 @@ export default {
             if (!iso) return '';
             try {
                 const d = new Date(iso);
-                return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+                const locale = this.$i18n?.locale || 'fr-FR';
+                return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
             } catch (e) {
                 return iso;
             }

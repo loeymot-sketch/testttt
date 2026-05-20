@@ -472,6 +472,17 @@ export default {
             return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
         },
         itemsCount: function () {
+            // [Wave P-5 2026-05-20] Prefer the paginated total (full catalog size)
+            // over `items.length` (currently visible page = 10). Owner viewed
+            // "10 produits" on a 46-item Le Cayenne menu — defect Wave O O7.
+            const pageTotal = this.paginationPage && Number(this.paginationPage.total);
+            if (Number.isFinite(pageTotal) && pageTotal > 0) {
+                return pageTotal;
+            }
+            const paginationTotal = this.pagination && Number(this.pagination.total);
+            if (Number.isFinite(paginationTotal) && paginationTotal > 0) {
+                return paginationTotal;
+            }
             return Array.isArray(this.items) ? this.items.length : 0;
         },
         categoriesCount: function () {

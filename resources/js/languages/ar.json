@@ -267,6 +267,7 @@
     "label": {
         "previous": "السابق",
         "next": "التالي",
+        "transactions": "المعاملات",
         "default": "الافتراضي",
         "dismiss": "إغلاق",
         "configure_wizard": "تكوين المعالج",

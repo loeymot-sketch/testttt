@@ -373,6 +373,7 @@
     "label": {
         "previous": "Previous",
         "next": "Next",
+        "transactions": "Transactions",
         "default": "Default",
         "dismiss": "Fermer",
         "quick_access": "Quick access",

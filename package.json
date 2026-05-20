@@ -1,6 +1,7 @@
 {
     "private": true,
     "scripts": {
+        "postinstall": "patch-package",
         "codex:complex": "bash scripts/codex-extension-execute.sh",
         "codex:execute": "bash scripts/codex-extension-execute.sh",
         "codex:prepare": "node agents/codex.prepare.mjs",
@@ -58,7 +59,9 @@
         "jsdom": "^29.0.1",
         "laravel-mix": "^6.0.15",
         "lodash": "^4.17.19",
+        "patch-package": "^8.0.1",
         "postcss": "^8.1.14",
+        "postinstall-postinstall": "^2.1.0",
         "sass": "^1.32.11",
         "tailwindcss": "^3.4.1",
         "vitest": "^1.6.0",

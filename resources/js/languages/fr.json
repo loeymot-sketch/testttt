@@ -361,6 +361,7 @@
     "label": {
         "previous": "Précédent",
         "next": "Suivant",
+        "transactions": "Transactions",
         "default": "Par défaut",
         "dismiss": "Fermer",
         "quick_access": "Accès rapides",
