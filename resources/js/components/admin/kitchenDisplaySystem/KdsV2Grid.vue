@@ -6,7 +6,9 @@
     - FIFO sort using created_at_iso/created_at (helpers/kdsDisplay::parseOrderCreatedMs)
     - Slot assignment for bump-bar shortcut [A]–[H]
     - Auto-transition watcher (single-chef ACCEPT → PREPARING) via shouldAutoTransition
-    - 3s pending bump queue (chef taps Prêt → toast 3s → PATCH; undo cancels)
+    - Immediate PATCH on Prêt tap (Wave V 2026-05-21 — was 3s pending+undo,
+      but single-slot serialization killed the previous order's PATCH when chef
+      chained 3+ orders back-to-back; owner mandate "enlève cette sécurité").
     - Keyboard [A]–[H] to bump corresponding slot
     - aria-live region for new card insertions / state changes
 
@@ -83,8 +85,14 @@
       </div>
     </div>
 
-    <!-- Undo Toast (single at a time) -->
-    <KdsUndoToast :toast="activeToast" @undo="onUndo" />
+    <!-- [Wave V 2026-05-21] KdsUndoToast removed — chef Prêt tap now PATCHes
+         immediately. The 3s undo window + single-slot serialization
+         (clearTimeout(pendingTimeoutId)) caused a cross-order race: when chef
+         chained "Prêt" on 3+ orders within 3s, the previous order's PATCH
+         was cancelled by the next click → only the LAST order transitioned,
+         the rest stayed EN COURS until chef re-clicked (perceived as a 30s
+         retry-after toast). Per owner mandate "enlève cette sécurité".
+         Component file kept for instant rollback. -->
 
     <!-- aria-live region for screen readers -->
     <div class="sr-only" aria-live="polite" aria-atomic="true">{{ liveMessage }}</div>
@@ -94,7 +102,8 @@
 <script>
 import KdsOrderCard from './KdsOrderCard.vue';
 import KdsStatusBanner from './KdsStatusBanner.vue';
-import KdsUndoToast from './KdsUndoToast.vue';
+// [Wave V 2026-05-21] KdsUndoToast import removed — see template comment.
+// File kept on disk for instant rollback (git revert single commit restores).
 import {
     parseOrderCreatedMs,
 } from '../../../helpers/kdsDisplay.js';
@@ -110,7 +119,7 @@ const SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
 export default {
     name: 'KdsV2Grid',
-    components: { KdsOrderCard, KdsStatusBanner, KdsUndoToast },
+    components: { KdsOrderCard, KdsStatusBanner },
     props: {
         orders: { type: Array, default: () => [] },
         dir: { type: String, default: 'ltr' },
@@ -132,8 +141,10 @@ export default {
         return {
             now: Date.now(),
             tickerId: null,
-            activeToast: null,
-            pendingTimeoutId: null,
+            // [Wave V 2026-05-21] activeToast + pendingTimeoutId removed — the
+            // pending bump queue is gone (immediate PATCH). aria-live message
+            // is still emitted via `liveMessage` so screen-reader announcements
+            // remain functional.
             liveMessage: '',
         };
     },
@@ -222,10 +233,8 @@ export default {
             window.clearInterval(this.tickerId);
             this.tickerId = null;
         }
-        if (this.pendingTimeoutId) {
-            window.clearTimeout(this.pendingTimeoutId);
-            this.pendingTimeoutId = null;
-        }
+        // [Wave V 2026-05-21] No pendingTimeoutId to clean — onCtaTap fires
+        // synchronously, no in-flight setTimeout owned by this component.
         window.removeEventListener('keydown', this.onKey);
     },
     methods: {
@@ -251,49 +260,61 @@ export default {
                 }
             }
         },
-        // [Wave Q-2 2026-05-20] Chef taps Prêt → optimistic toast 3s → PATCH single
-        // step transition. Owner-reported bug: emitting PREPARED unconditionally
-        // made an ACCEPT-state order skip PREPARING (server rejected with 422,
-        // but the optimistic toast hid the failure). Mirror the legacy
-        // `kdsBump` step ladder in `KitchenDisplaySystemComponent.vue:1716-1728`
-        // and the server `OrderStateMachine::allows` rule (ACCEPT→PREPARING |
-        // PREPARING→PREPARED). Single tap = one step; chef taps twice on a
-        // CONFIRMÉE ticket to reach PRÊT.
+        // [Wave V 2026-05-21 P-OWNER] Chef taps Prêt → IMMEDIATE PATCH dispatch.
+        //
+        // Previous design (Wave Q-2 2026-05-20): optimistic toast 3s window
+        // → PATCH after timer expired. The single-slot serialization (a
+        // shared `pendingTimeoutId`) cancelled any in-flight pending bump
+        // whenever the chef clicked Prêt on a SECOND order within 3s. Net
+        // effect when chef chained 3 tickets back-to-back:
+        //   t=0    click A → pending(A), timer A
+        //   t=500  click B → clearTimeout(A), pending(B), timer B
+        //   t=1000 click C → clearTimeout(B), pending(C), timer C
+        //   t=3000+timer C fires → only C transitions; A & B never PATCHed.
+        // Chef saw A & B still in queue, re-clicked → server pipeline kept
+        // up with the natural cadence (no race when individual clicks),
+        // but UX read "trop de requêtes, réessayer dans 30s" toast because
+        // bootstrap.js maps any incidental 429 from upstream paths to the
+        // generic rate-limited copy.
+        //
+        // Owner mandate: "enlève cette sécurité — je veux valider 3 commandes
+        // en même temps, puis 3 commandes livrées." So we remove the 3s
+        // undo window entirely. Each tap fires a PATCH immediately with
+        // its own X-Idempotency-Key (UUID v4 generated by
+        // buildIdempotencyHeaders), and the backend OrderStateMachine
+        // serialises per-order via lockForUpdate — concurrent PATCHes on
+        // DIFFERENT orders are fully independent. Duplicate PATCH on the
+        // SAME order returns 409 (idempotency conflict OR state machine
+        // InvalidTransition) and is silently swallowed by
+        // KitchenDisplaySystemComponent::onV2ChangeStatus → refresh.
+        //
+        // Step-ladder logic preserved from Wave Q-2: a single tap on a
+        // CONFIRMÉE (ACCEPT=4) ticket advances to EN PRÉPARATION (PREPARING=7);
+        // a second tap advances to PRÊT (PREPARED=8). Matches the server
+        // `OrderStateMachine::allows` rule and the legacy `kdsBump` step
+        // ladder in KitchenDisplaySystemComponent.vue:1716-1728.
         onCtaTap(orderId, queueNo) {
-            // Cancel any previous pending bump (single-slot toast)
-            if (this.pendingTimeoutId) {
-                window.clearTimeout(this.pendingTimeoutId);
-            }
             const order = this.activeOrders.find((o) => o.id === orderId);
+            if (!order) {
+                return;
+            }
             const currentStatus = parseInt(order?.status ?? order?.rawStatus, 10);
             const nextStatus = currentStatus === ORDER_STATUS.ACCEPT
                 ? ORDER_STATUS.PREPARING
                 : ORDER_STATUS.PREPARED;
             const isFinalStep = nextStatus === ORDER_STATUS.PREPARED;
-            const toastId = `bump-${orderId}-${Date.now()}`;
-            this.activeToast = { id: toastId, orderId, queueNo, expiresAt: Date.now() + 3000 };
-            this.pendingTimeoutId = window.setTimeout(() => {
-                // Window expired — fire the PATCH for real.
-                this.$emit('change-status', {
-                    orderId,
-                    status: nextStatus,
-                });
-                this.activeToast = null;
-                this.pendingTimeoutId = null;
-                this.liveMessage = isFinalStep
-                    ? this.$t('label.kds_aria_live_ready', { id: queueNo || orderId })
-                    : this.$t('label.kds_aria_live_preparing', { id: queueNo || orderId });
-            }, 3000);
-        },
-        onUndo(toastId) {
-            if (this.activeToast && this.activeToast.id === toastId) {
-                if (this.pendingTimeoutId) {
-                    window.clearTimeout(this.pendingTimeoutId);
-                    this.pendingTimeoutId = null;
-                }
-                this.activeToast = null;
-                this.liveMessage = this.$t('label.kds_undo_done');
-            }
+
+            // Fire PATCH immediately — no 3s wait, no single-slot serialization.
+            this.$emit('change-status', {
+                orderId,
+                status: nextStatus,
+            });
+
+            // a11y: announce the transition for screen readers via the
+            // existing sr-only aria-live="polite" region. No visual toast.
+            this.liveMessage = isFinalStep
+                ? this.$t('label.kds_aria_live_ready', { id: queueNo || orderId })
+                : this.$t('label.kds_aria_live_preparing', { id: queueNo || orderId });
         },
         // [Wave U 2026-05-21] Compact "il y a Xm" relative label for the
         // recently-served strip. Reads `now` reactively so each pill updates

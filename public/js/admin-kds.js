@@ -70,29 +70,6 @@ ___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-banner[data-v-665158fe] {\n    
 
 /***/ },
 
-/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css"
-/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css ***!
-  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
-(module, __webpack_exports__, __webpack_require__) {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
-/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
-// Imports
-
-var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
-// Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n/* [Wave T R1 F3 WT-B-R1-001 2026-05-20] position:fixed bottom-right corner.\n   Previously position:absolute top:110px center min-width:620px landed on\n   top of Row 1 grid cards inside `.kds-v2` (position:relative). Now anchored\n   to the viewport so it never overlaps the 4×2 card grid regardless of\n   viewport size. Mobile/RTL handled below via media query / [dir=\"rtl\"]. */\n.kds-toast[data-v-d4f74b20] {\n    position: fixed;\n    bottom: 24px;\n    right: 24px;\n    left: auto;\n    top: auto;\n    min-width: 320px;\n    max-width: 420px;\n    z-index: 30;\n    animation: kds-toast-in-d4f74b20 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;\n}\n[dir=\"rtl\"] .kds-toast[data-v-d4f74b20] {\n    right: auto;\n    left: 24px;\n}\n.kds-toast__inner[data-v-d4f74b20] {\n    border-radius: 12px;\n    overflow: hidden;\n    background: #0F172A;\n    color: #FFFFFF;\n    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.4);\n    border: 1px solid rgba(255, 255, 255, 0.06);\n}\n.kds-toast__row[data-v-d4f74b20] {\n    display: flex;\n    align-items: center;\n    gap: 12px;\n    padding: 12px 14px;\n}\n.kds-toast__check[data-v-d4f74b20] {\n    width: 36px;\n    height: 36px;\n    border-radius: 9999px;\n    background: #16A34A;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    flex-shrink: 0;\n}\n.kds-toast__content[data-v-d4f74b20] {\n    flex: 1;\n}\n.kds-toast__title[data-v-d4f74b20] {\n    font-size: 15px;\n    font-weight: 700;\n    line-height: 1.2;\n    color: #FFFFFF;\n}\n.kds-toast__sub[data-v-d4f74b20] {\n    margin-top: 2px;\n    display: flex;\n    align-items: center;\n    gap: 6px;\n    font-size: 11px;\n    color: #94A3B8;\n}\n.kds-toast__undo[data-v-d4f74b20] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 14px;\n    height: 36px;\n    border: 0;\n    border-radius: 8px;\n    background: #FFFFFF;\n    color: #0F172A;\n    font-size: 14px;\n    font-weight: 800;\n    cursor: pointer;\n    box-shadow: 0 2px 0 0 #CBD5E1;\n    transition: transform 100ms ease;\n    flex-shrink: 0;\n}\n.kds-toast__undo[data-v-d4f74b20]:active {\n    transform: translateY(1px);\n}\n.kds-toast__undo[data-v-d4f74b20]:focus-visible {\n    outline: 4px solid #EA580C;\n    outline-offset: 2px;\n}\n.kds-toast__progress[data-v-d4f74b20] {\n    height: 4px;\n    background: rgba(255, 255, 255, 0.1);\n}\n.kds-toast__progress-bar[data-v-d4f74b20] {\n    height: 100%;\n    background: #16A34A;\n    width: 100%;\n    transform-origin: left center;\n    animation: kds-toast-shrink-d4f74b20 3s linear forwards;\n}\n[dir=\"rtl\"] .kds-toast__progress-bar[data-v-d4f74b20] {\n    transform-origin: right center;\n}\n/* [Wave T R1 F3 WT-B-R1-001 2026-05-20] Slide up from below — matches the\n   new bottom-right anchor (was slide-down from translate(-50%,-120%)\n   when toast was top-center). */\n@keyframes kds-toast-in-d4f74b20 {\nfrom { transform: translateY(120%); opacity: 0;\n}\nto   { transform: translateY(0);    opacity: 1;\n}\n}\n@keyframes kds-toast-shrink-d4f74b20 {\nfrom { transform: scaleX(1);\n}\nto   { transform: scaleX(0);\n}\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-toast[data-v-d4f74b20],\n    .kds-toast__progress-bar[data-v-d4f74b20],\n    .kds-toast__undo[data-v-d4f74b20] {\n        animation: none !important;\n        transition: none !important;\n}\n}\n", ""]);
-// Exports
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
-
-
-/***/ },
-
 /***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css"
 /*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css ***!
@@ -543,47 +520,6 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ },
 
-/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=script&lang=js"
-/*!**********************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=script&lang=js ***!
-  \**********************************************************************************************************************************************************************************************************************************************************/
-(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
-  name: 'KdsUndoToast',
-  props: {
-    toast: {
-      type: Object,
-      "default": null
-      // expected shape: { id, queueNo, expiresAt }
-    }
-  },
-  emits: ['undo'],
-  computed: {
-    titleText: function titleText() {
-      if (!this.toast) {
-        return '';
-      }
-      return this.$t('label.kds_toast_bumped', {
-        n: this.toast.queueNo
-      });
-    }
-  },
-  methods: {
-    onUndo: function onUndo() {
-      if (this.toast) {
-        this.$emit('undo', this.toast.id);
-      }
-    }
-  }
-});
-
-/***/ },
-
 /***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js"
 /*!*******************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js ***!
@@ -596,10 +532,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _KdsOrderCard_vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsOrderCard.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue");
 /* harmony import */ var _KdsStatusBanner_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsStatusBanner.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue");
-/* harmony import */ var _KdsUndoToast_vue__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KdsUndoToast.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue");
-/* harmony import */ var _helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../helpers/kdsDisplay.js */ "./resources/js/helpers/kdsDisplay.js");
-/* harmony import */ var _helpers_kdsAutoTransition_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../helpers/kdsAutoTransition.js */ "./resources/js/helpers/kdsAutoTransition.js");
-/* harmony import */ var _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../helpers/kdsState.js */ "./resources/js/helpers/kdsState.js");
+/* harmony import */ var _helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../helpers/kdsDisplay.js */ "./resources/js/helpers/kdsDisplay.js");
+/* harmony import */ var _helpers_kdsAutoTransition_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../helpers/kdsAutoTransition.js */ "./resources/js/helpers/kdsAutoTransition.js");
+/* harmony import */ var _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../helpers/kdsState.js */ "./resources/js/helpers/kdsState.js");
 function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
@@ -608,7 +543,8 @@ function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 
 
-
+// [Wave V 2026-05-21] KdsUndoToast import removed — see template comment.
+// File kept on disk for instant rollback (git revert single commit restores).
 
 
 
@@ -617,8 +553,7 @@ var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
   name: 'KdsV2Grid',
   components: {
     KdsOrderCard: _KdsOrderCard_vue__WEBPACK_IMPORTED_MODULE_0__["default"],
-    KdsStatusBanner: _KdsStatusBanner_vue__WEBPACK_IMPORTED_MODULE_1__["default"],
-    KdsUndoToast: _KdsUndoToast_vue__WEBPACK_IMPORTED_MODULE_2__["default"]
+    KdsStatusBanner: _KdsStatusBanner_vue__WEBPACK_IMPORTED_MODULE_1__["default"]
   },
   props: {
     orders: {
@@ -667,8 +602,10 @@ var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
     return {
       now: Date.now(),
       tickerId: null,
-      activeToast: null,
-      pendingTimeoutId: null,
+      // [Wave V 2026-05-21] activeToast + pendingTimeoutId removed — the
+      // pending bump queue is gone (immediate PATCH). aria-live message
+      // is still emitted via `liveMessage` so screen-reader announcements
+      // remain functional.
       liveMessage: ''
     };
   },
@@ -686,8 +623,8 @@ var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
     visibleOrders: function visibleOrders() {
       var arr = Array.isArray(this.orders) ? _toConsumableArray(this.orders) : [];
       arr.sort(function (a, b) {
-        var ta = (0,_helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_3__.parseOrderCreatedMs)(a);
-        var tb = (0,_helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_3__.parseOrderCreatedMs)(b);
+        var ta = (0,_helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_2__.parseOrderCreatedMs)(a);
+        var tb = (0,_helpers_kdsDisplay_js__WEBPACK_IMPORTED_MODULE_2__.parseOrderCreatedMs)(b);
         if (ta !== tb) {
           return ta - tb;
         }
@@ -702,7 +639,7 @@ var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
       return this.visibleOrders.filter(function (o) {
         var _o$status;
         var s = parseInt((_o$status = o === null || o === void 0 ? void 0 : o.status) !== null && _o$status !== void 0 ? _o$status : o === null || o === void 0 ? void 0 : o.rawStatus, 10);
-        return s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_5__.ORDER_STATUS.ACCEPT || s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_5__.ORDER_STATUS.PREPARING;
+        return s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.ACCEPT || s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARING;
       });
     },
     // [Wave U 2026-05-21] Récemment servies — last 4 PREPARED orders by
@@ -714,7 +651,7 @@ var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
       var prepared = this.visibleOrders.filter(function (o) {
         var _o$status2;
         var s = parseInt((_o$status2 = o === null || o === void 0 ? void 0 : o.status) !== null && _o$status2 !== void 0 ? _o$status2 : o === null || o === void 0 ? void 0 : o.rawStatus, 10);
-        return s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_5__.ORDER_STATUS.PREPARED;
+        return s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARED;
       });
       prepared.sort(function (a, b) {
         var ta = Date.parse((a === null || a === void 0 ? void 0 : a.updated_at) || '') || 0;
@@ -735,8 +672,8 @@ var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
         if (!this.autoTransitionEnabled) {
           return;
         }
-        var candidate = (0,_helpers_kdsAutoTransition_js__WEBPACK_IMPORTED_MODULE_4__.pickOldestAutoPromoteCandidate)(newQ);
-        if (candidate && (0,_helpers_kdsAutoTransition_js__WEBPACK_IMPORTED_MODULE_4__.shouldAutoTransition)(candidate, newQ, true)) {
+        var candidate = (0,_helpers_kdsAutoTransition_js__WEBPACK_IMPORTED_MODULE_3__.pickOldestAutoPromoteCandidate)(newQ);
+        if (candidate && (0,_helpers_kdsAutoTransition_js__WEBPACK_IMPORTED_MODULE_3__.shouldAutoTransition)(candidate, newQ, true)) {
           // Emit so the orchestrator can dispatch the PATCH through
           // the existing store action — no duplicate axios pathway.
           this.$emit('auto-promote', candidate.id);
@@ -762,10 +699,8 @@ var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
       window.clearInterval(this.tickerId);
       this.tickerId = null;
     }
-    if (this.pendingTimeoutId) {
-      window.clearTimeout(this.pendingTimeoutId);
-      this.pendingTimeoutId = null;
-    }
+    // [Wave V 2026-05-21] No pendingTimeoutId to clean — onCtaTap fires
+    // synchronously, no in-flight setTimeout owned by this component.
     window.removeEventListener('keydown', this.onKey);
   },
   methods: {
@@ -791,58 +726,64 @@ var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
         }
       }
     },
-    // [Wave Q-2 2026-05-20] Chef taps Prêt → optimistic toast 3s → PATCH single
-    // step transition. Owner-reported bug: emitting PREPARED unconditionally
-    // made an ACCEPT-state order skip PREPARING (server rejected with 422,
-    // but the optimistic toast hid the failure). Mirror the legacy
-    // `kdsBump` step ladder in `KitchenDisplaySystemComponent.vue:1716-1728`
-    // and the server `OrderStateMachine::allows` rule (ACCEPT→PREPARING |
-    // PREPARING→PREPARED). Single tap = one step; chef taps twice on a
-    // CONFIRMÉE ticket to reach PRÊT.
+    // [Wave V 2026-05-21 P-OWNER] Chef taps Prêt → IMMEDIATE PATCH dispatch.
+    //
+    // Previous design (Wave Q-2 2026-05-20): optimistic toast 3s window
+    // → PATCH after timer expired. The single-slot serialization (a
+    // shared `pendingTimeoutId`) cancelled any in-flight pending bump
+    // whenever the chef clicked Prêt on a SECOND order within 3s. Net
+    // effect when chef chained 3 tickets back-to-back:
+    //   t=0    click A → pending(A), timer A
+    //   t=500  click B → clearTimeout(A), pending(B), timer B
+    //   t=1000 click C → clearTimeout(B), pending(C), timer C
+    //   t=3000+timer C fires → only C transitions; A & B never PATCHed.
+    // Chef saw A & B still in queue, re-clicked → server pipeline kept
+    // up with the natural cadence (no race when individual clicks),
+    // but UX read "trop de requêtes, réessayer dans 30s" toast because
+    // bootstrap.js maps any incidental 429 from upstream paths to the
+    // generic rate-limited copy.
+    //
+    // Owner mandate: "enlève cette sécurité — je veux valider 3 commandes
+    // en même temps, puis 3 commandes livrées." So we remove the 3s
+    // undo window entirely. Each tap fires a PATCH immediately with
+    // its own X-Idempotency-Key (UUID v4 generated by
+    // buildIdempotencyHeaders), and the backend OrderStateMachine
+    // serialises per-order via lockForUpdate — concurrent PATCHes on
+    // DIFFERENT orders are fully independent. Duplicate PATCH on the
+    // SAME order returns 409 (idempotency conflict OR state machine
+    // InvalidTransition) and is silently swallowed by
+    // KitchenDisplaySystemComponent::onV2ChangeStatus → refresh.
+    //
+    // Step-ladder logic preserved from Wave Q-2: a single tap on a
+    // CONFIRMÉE (ACCEPT=4) ticket advances to EN PRÉPARATION (PREPARING=7);
+    // a second tap advances to PRÊT (PREPARED=8). Matches the server
+    // `OrderStateMachine::allows` rule and the legacy `kdsBump` step
+    // ladder in KitchenDisplaySystemComponent.vue:1716-1728.
     onCtaTap: function onCtaTap(orderId, queueNo) {
-      var _order$status,
-        _this2 = this;
-      // Cancel any previous pending bump (single-slot toast)
-      if (this.pendingTimeoutId) {
-        window.clearTimeout(this.pendingTimeoutId);
-      }
+      var _order$status;
       var order = this.activeOrders.find(function (o) {
         return o.id === orderId;
       });
-      var currentStatus = parseInt((_order$status = order === null || order === void 0 ? void 0 : order.status) !== null && _order$status !== void 0 ? _order$status : order === null || order === void 0 ? void 0 : order.rawStatus, 10);
-      var nextStatus = currentStatus === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_5__.ORDER_STATUS.ACCEPT ? _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_5__.ORDER_STATUS.PREPARING : _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_5__.ORDER_STATUS.PREPARED;
-      var isFinalStep = nextStatus === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_5__.ORDER_STATUS.PREPARED;
-      var toastId = "bump-".concat(orderId, "-").concat(Date.now());
-      this.activeToast = {
-        id: toastId,
-        orderId: orderId,
-        queueNo: queueNo,
-        expiresAt: Date.now() + 3000
-      };
-      this.pendingTimeoutId = window.setTimeout(function () {
-        // Window expired — fire the PATCH for real.
-        _this2.$emit('change-status', {
-          orderId: orderId,
-          status: nextStatus
-        });
-        _this2.activeToast = null;
-        _this2.pendingTimeoutId = null;
-        _this2.liveMessage = isFinalStep ? _this2.$t('label.kds_aria_live_ready', {
-          id: queueNo || orderId
-        }) : _this2.$t('label.kds_aria_live_preparing', {
-          id: queueNo || orderId
-        });
-      }, 3000);
-    },
-    onUndo: function onUndo(toastId) {
-      if (this.activeToast && this.activeToast.id === toastId) {
-        if (this.pendingTimeoutId) {
-          window.clearTimeout(this.pendingTimeoutId);
-          this.pendingTimeoutId = null;
-        }
-        this.activeToast = null;
-        this.liveMessage = this.$t('label.kds_undo_done');
+      if (!order) {
+        return;
       }
+      var currentStatus = parseInt((_order$status = order === null || order === void 0 ? void 0 : order.status) !== null && _order$status !== void 0 ? _order$status : order === null || order === void 0 ? void 0 : order.rawStatus, 10);
+      var nextStatus = currentStatus === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.ACCEPT ? _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARING : _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARED;
+      var isFinalStep = nextStatus === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARED;
+
+      // Fire PATCH immediately — no 3s wait, no single-slot serialization.
+      this.$emit('change-status', {
+        orderId: orderId,
+        status: nextStatus
+      });
+
+      // a11y: announce the transition for screen readers via the
+      // existing sr-only aria-live="polite" region. No visual toast.
+      this.liveMessage = isFinalStep ? this.$t('label.kds_aria_live_ready', {
+        id: queueNo || orderId
+      }) : this.$t('label.kds_aria_live_preparing', {
+        id: queueNo || orderId
+      });
     },
     // [Wave U 2026-05-21] Compact "il y a Xm" relative label for the
     // recently-served strip. Reads `now` reactively so each pill updates
@@ -2679,89 +2620,6 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
 
 /***/ },
 
-/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true"
-/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true ***!
-  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
-(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   render: () => (/* binding */ render)
-/* harmony export */ });
-/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
-
-var _hoisted_1 = {
-  key: 0,
-  "class": "kds-toast",
-  role: "status",
-  "aria-live": "assertive",
-  "aria-atomic": "true"
-};
-var _hoisted_2 = {
-  "class": "kds-toast__inner"
-};
-var _hoisted_3 = {
-  "class": "kds-toast__row"
-};
-var _hoisted_4 = {
-  "class": "kds-toast__content"
-};
-var _hoisted_5 = {
-  "class": "kds-toast__title"
-};
-var _hoisted_6 = {
-  "class": "kds-toast__sub"
-};
-var _hoisted_7 = ["aria-label"];
-function render(_ctx, _cache, $props, $setup, $data, $options) {
-  return $props.toast ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-    "class": "kds-toast__check",
-    "aria-hidden": "true"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
-    width: "26",
-    height: "26",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "white",
-    "stroke-width": "3.5",
-    "stroke-linecap": "round",
-    "stroke-linejoin": "round"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
-    d: "M5 12l5 5L20 7"
-  })])], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.titleText), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [_cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
-    "class": "kds-toast__printer",
-    "aria-hidden": "true"
-  }, "🖨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_print_done')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
-    type: "button",
-    "class": "kds-toast__undo",
-    onClick: _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
-      return $options.onUndo && $options.onUndo.apply($options, arguments);
-    }, ["prevent"])),
-    "aria-label": _ctx.$t('label.kds_undo_bump_aria')
-  }, [_cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
-    width: "18",
-    height: "18",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    "stroke-width": "2.5",
-    "stroke-linecap": "round",
-    "stroke-linejoin": "round",
-    "aria-hidden": "true"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
-    d: "M3 7v6h6"
-  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
-    d: "M3 13a9 9 0 1 0 3-7"
-  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_undo_bump')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_7)]), _cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-    "class": "kds-toast__progress"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-    "class": "kds-toast__progress-bar"
-  })], -1 /* CACHED */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
-}
-
-/***/ },
-
 /***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true"
 /*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true ***!
@@ -2810,7 +2668,6 @@ var _hoisted_12 = {
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_KdsStatusBanner = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsStatusBanner");
   var _component_KdsOrderCard = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsOrderCard");
-  var _component_KdsUndoToast = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsUndoToast");
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
     "class": "kds-v2",
     dir: $props.dir
@@ -2851,10 +2708,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         queue: o.queue_number || o.id
       })
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_10, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(o.queue_number || o.id), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.servedAgoLabel(o)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_9);
-  }), 128 /* KEYED_FRAGMENT */))])], 8 /* PROPS */, _hoisted_6)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Undo Toast (single at a time) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_KdsUndoToast, {
-    toast: $data.activeToast,
-    onUndo: $options.onUndo
-  }, null, 8 /* PROPS */, ["toast", "onUndo"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" aria-live region for screen readers "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.liveMessage), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_1);
+  }), 128 /* KEYED_FRAGMENT */))])], 8 /* PROPS */, _hoisted_6)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Wave V 2026-05-21] KdsUndoToast removed — chef Prêt tap now PATCHes\n         immediately. The 3s undo window + single-slot serialization\n         (clearTimeout(pendingTimeoutId)) caused a cross-order race: when chef\n         chained \"Prêt\" on 3+ orders within 3s, the previous order's PATCH\n         was cancelled by the next click → only the LAST order transitioned,\n         the rest stayed EN COURS until chef re-clicked (perceived as a 30s\n         retry-after toast). Per owner mandate \"enlève cette sécurité\".\n         Component file kept for instant rollback. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" aria-live region for screen readers "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.liveMessage), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_1);
 }
 
 /***/ },
@@ -6035,35 +5889,6 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 
 /***/ },
 
-/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css"
-/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css ***!
-  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
-(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
-/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_style_index_0_id_d4f74b20_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css");
-
-            
-
-var options = {};
-
-options.insert = "head";
-options.singleton = false;
-
-var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_style_index_0_id_d4f74b20_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
-
-
-
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_style_index_0_id_d4f74b20_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
-
-/***/ },
-
 /***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css"
 /*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=style&index=0&id=3992cfe5&scoped=true&lang=css ***!
@@ -6215,37 +6040,6 @@ if (false) // removed by dead control flow
 
 /***/ },
 
-/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue"
-/*!*****************************************************************************!*\
-  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue ***!
-  \*****************************************************************************/
-(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _KdsUndoToast_vue_vue_type_template_id_d4f74b20_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true */ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true");
-/* harmony import */ var _KdsUndoToast_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsUndoToast.vue?vue&type=script&lang=js */ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=script&lang=js");
-/* harmony import */ var _KdsUndoToast_vue_vue_type_style_index_0_id_d4f74b20_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css */ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css");
-/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
-
-
-
-
-;
-
-
-const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KdsUndoToast_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KdsUndoToast_vue_vue_type_template_id_d4f74b20_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-d4f74b20"],['__file',"resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue"]])
-/* hot reload */
-if (false) // removed by dead control flow
-{}
-
-
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
-
-/***/ },
-
 /***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue"
 /*!**************************************************************************!*\
   !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue ***!
@@ -6353,21 +6147,6 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ },
 
-/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=script&lang=js"
-/*!*****************************************************************************************************!*\
-  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=script&lang=js ***!
-  \*****************************************************************************************************/
-(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
-/* harmony export */ });
-/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsUndoToast.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=script&lang=js");
- 
-
-/***/ },
-
 /***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js"
 /*!**************************************************************************************************!*\
   !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=script&lang=js ***!
@@ -6443,21 +6222,6 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ },
 
-/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true"
-/*!***********************************************************************************************************************!*\
-  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true ***!
-  \***********************************************************************************************************************/
-(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_template_id_d4f74b20_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
-/* harmony export */ });
-/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_template_id_d4f74b20_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=template&id=d4f74b20&scoped=true");
-
-
-/***/ },
-
 /***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true"
 /*!********************************************************************************************************************!*\
   !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue?vue&type=template&id=3992cfe5&scoped=true ***!
@@ -6520,18 +6284,6 @@ __webpack_require__.r(__webpack_exports__);
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsStatusBanner_vue_vue_type_style_index_0_id_665158fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsStatusBanner.vue?vue&type=style&index=0&id=665158fe&scoped=true&lang=css");
-
-
-/***/ },
-
-/***/ "./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css"
-/*!*************************************************************************************************************************************!*\
-  !*** ./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css ***!
-  \*************************************************************************************************************************************/
-(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KdsUndoToast_vue_vue_type_style_index_0_id_d4f74b20_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue?vue&type=style&index=0&id=d4f74b20&scoped=true&lang=css");
 
 
 /***/ },
