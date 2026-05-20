@@ -78,14 +78,22 @@ class FinalizePaidKioskOrderBroadcastFreshnessTest extends TestCase
             'OrderCreated must fire for this order'
         );
 
+        // [Wave S-1 — 2026-05-20] Owner P-OWNER Wave S-1: finalizePaidKioskOrder
+        // promotes PENDING → ACCEPT → PREPARING inside the same transaction.
+        // OrderCreated::dispatch fires AFTER the PREPARING flip, so the
+        // broadcast carries the final status. The original Z2 freshness
+        // invariant (payload must NOT be PENDING) still holds — any future
+        // drift that re-introduces the stale-reference defect would surface
+        // here as `PENDING (1)` rather than `PREPARING (7)`.
         $this->assertSame(
-            OrderStatus::ACCEPT,
+            OrderStatus::PREPARING,
             $capturedStatus,
             'OrderCreated event payload MUST carry the post-promotion status '
-            . '(ACCEPT, 4). If this test reads PENDING (1), the dispatch inside '
-            . 'finalizePaidKioskOrder is passing the caller\'s stale '
-            . '$frontendOrder reference instead of the locked-and-mutated '
-            . '$locked instance — see RED-Z2 advisor pivot 2026-05-19.'
+            . '(PREPARING, 7) per Wave S-1. If this test reads PENDING (1), '
+            . 'the dispatch inside finalizePaidKioskOrder is passing the '
+            . 'caller\'s stale $frontendOrder reference instead of the '
+            . 'locked-and-mutated $locked instance — see RED-Z2 advisor '
+            . 'pivot 2026-05-19 + Wave S-1 auto-prepare-on-paid 2026-05-20.'
         );
     }
 

@@ -91,10 +91,13 @@ class POSComprehensiveTest extends TestCase
         
         $response->assertStatus(201);
         
-        // Vérifier que l'ordre est créé avec status ACCEPT
+        // [Wave S-1 — 2026-05-20] Owner P-OWNER Wave S-1: a POS direct paid
+        // sale auto-advances to PREPARING the moment the cashier confirms
+        // payment (no S-5 exception applies — POS direct sales never use
+        // the kiosk cash-at-counter / COUNTER_DEFERRED path).
         $order = Order::first();
         $this->assertNotNull($order);
-        $this->assertEquals(\App\Enums\OrderStatus::ACCEPT, $order->status);
+        $this->assertEquals(\App\Enums\OrderStatus::PREPARING, $order->status);
         $this->assertEquals(\App\Enums\PaymentStatus::PAID, $order->payment_status);
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Order\AutoPrepareOnPaidPolicy;
 use App\Domain\Order\PaymentStateMachine;
 use App\Domain\Order\OrderStateMachine;
 use App\Enums\OrderStatus;
@@ -247,7 +248,50 @@ class PaymentService
                 ? ($received ?? (float) $locked->total)
                 : null;
             $locked->pos_payment_note = $note;
+
+            // [Wave S-1 — P-OWNER 2026-05-20] Auto-transition ACCEPT → PREPARING
+            // the moment a counter-deferred kiosk order is collected by card /
+            // MOBILE / TICKET / OTHER. The kitchen sees the ticket already
+            // "en cours" without a second tap from the chef. Skipped for
+            // mode=CASH per the S-5 sister-mission carve-out: cash physically
+            // tendered at the counter waits for explicit cashier validation
+            // through the "à encaisser" UI before kitchen release.
+            //
+            // The transition happens INSIDE the same transaction as the
+            // PAID flip so an outer rollback (e.g. fiscal-sequence DB hiccup)
+            // discards BOTH the status and payment_status mutations together
+            // — no PREPARING-but-not-PAID half-state can leak to KDS.
+            //
+            // OrderStateMachine::allows(ACCEPT, PREPARING) is true (line 45
+            // of OrderStateMachine.php) — we use the historical
+            // `$locked->status = PREPARING; ->save();` pattern documented at
+            // line 21-23 of OrderStateMachine.php for legacy frozen-zone
+            // call sites. recordTransition is emitted after save() to keep
+            // the audit trail per CLAUDE.md §8.
+            $prePaidStatus = (int) $locked->status;
+            if ($prePaidStatus === OrderStatus::ACCEPT
+                && AutoPrepareOnPaidPolicy::shouldPromote(
+                    surface: (string) ($locked->source_surface ?? 'kiosk'),
+                    posPaymentMethod: $mode,
+                    isCounterCollect: true,
+                )
+            ) {
+                $locked->status = AutoPrepareOnPaidPolicy::nextStatus();
+            }
+
             $locked->save();
+
+            if ($prePaidStatus === OrderStatus::ACCEPT
+                && (int) $locked->status === OrderStatus::PREPARING) {
+                OrderStateMachine::recordTransition(
+                    \App\Models\Order::class,
+                    (int) $locked->id,
+                    OrderStatus::ACCEPT,
+                    OrderStatus::PREPARING,
+                    Auth::check() ? (int) Auth::id() : null,
+                    'auto_prepare_on_paid (Wave S-1 counter-collect)',
+                );
+            }
 
             Transaction::query()->firstOrCreate(
                 [
@@ -283,6 +327,31 @@ class PaymentService
 
         if ($paid) {
             OrderPaidAtCounter::dispatch($order, $mode);
+
+            // [Wave S-1 — P-OWNER 2026-05-20] When the auto-prepare policy
+            // promoted the locked row to PREPARING inside the transaction,
+            // surface the ACCEPT→PREPARING transition on the OrderStatusChanged
+            // bus so the realtime Suivi / KDS UIs see the status flip without
+            // waiting for a poll cycle. The OrderPaidAtCounter listener
+            // encodes payment_status + fiscal_sequence_no but NOT status, so
+            // a dedicated OrderStatusChanged broadcast is the canonical
+            // signal for the new column movement. Best-effort try/catch
+            // mirrors the existing cancel path (line 497) so a Pusher hiccup
+            // never escalates to an HTTP 5xx for the cashier.
+            if ((int) $order->status === OrderStatus::PREPARING) {
+                try {
+                    OrderStatusChanged::dispatch(
+                        $order,
+                        OrderStatus::ACCEPT,
+                        OrderStatus::PREPARING
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning('[PaymentService] OrderStatusChanged broadcast (auto-prepare Wave S-1) failed: ' . $e->getMessage(), [
+                        'order_id' => (int) $order->id,
+                        'mode' => $mode,
+                    ]);
+                }
+            }
 
             // [AUDIT-F-003] Cash drawer movement hook — best-effort.
             // Si une session caisse OPEN existe pour le caissier sur la branch,

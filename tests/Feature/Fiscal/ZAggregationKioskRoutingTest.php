@@ -48,7 +48,11 @@ class ZAggregationKioskRoutingTest extends TestCase
 
         // [K11] fiscal_sequence_no must be allocated (NOT null) under default flag
         $persisted = Order::withoutGlobalScopes()->findOrFail($kioskOrder->id);
-        $this->assertSame(OrderStatus::ACCEPT, (int) $persisted->status);
+        // [Wave S-1 — 2026-05-20] Owner P-OWNER Wave S-1: kiosk paid TPE
+        // auto-prepares to PREPARING after finalize. Z-aggregation still
+        // gates on payment_status=PAID + fiscal_sequence_no, both invariants
+        // preserved here.
+        $this->assertSame(OrderStatus::PREPARING, (int) $persisted->status);
         $this->assertSame(PaymentStatus::PAID, (int) $persisted->payment_status);
         $this->assertNotNull($persisted->fiscal_sequence_no, 'KR1: kiosk direct TPE must auto-allocate fiscal_sequence_no');
         $this->assertGreaterThan(0, (int) $persisted->fiscal_sequence_no);
@@ -75,7 +79,11 @@ class ZAggregationKioskRoutingTest extends TestCase
 
         $this->assertDatabaseHas('orders', [
             'id'                 => $kioskOrder->id,
-            'status'             => OrderStatus::ACCEPT,
+            // [Wave S-1 — 2026-05-20] Auto-prepare still applies even when
+            // the fiscal flag is off — the two policies are independent
+            // (fiscal allocation gated by `fiscal.kiosk_auto_allocate_sequence`
+            // vs status promotion gated by `pos.auto_prepare_on_paid`).
+            'status'             => OrderStatus::PREPARING,
             'payment_status'     => PaymentStatus::PAID,
             'fiscal_sequence_no' => null,
         ]);

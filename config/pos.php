@@ -120,4 +120,34 @@ return [
         'intval',
         explode(',', (string) env('POS_FEATURED_CATEGORY_IDS', '')),
     ))),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Wave S-1 — auto-transition ACCEPT → PREPARING on payment confirmed
+    |--------------------------------------------------------------------------
+    |
+    | Owner decision 2026-05-20 (P-OWNER Wave S-1):
+    | When a paid order lands in ACCEPT (CONFIRMÉE), advance it immediately
+    | to PREPARING (EN PRÉPARATION) so the kitchen sees it as "en cours"
+    | without a second tap from the cashier.
+    |
+    | Exception (Wave S-5 sister mission): kiosk orders that the customer
+    | chose to pay in CASH at the counter (`PosPaymentMethod::CASH` on
+    | `confirmCounterPayment`) must stay in ACCEPT until the cashier
+    | explicitly validates the cash collection through the S-5 cash-pending
+    | UI. The policy class encapsulates this exception
+    | ({@see \App\Domain\Order\AutoPrepareOnPaidPolicy}).
+    |
+    | Default = true (production). Set POS_AUTO_PREPARE_ON_PAID=false in env
+    | for emergency rollback to the legacy "stay in ACCEPT" behaviour without
+    | redeploying code. The KDS auto-transition watcher
+    | (`KdsV2Grid.vue::autoTransitionEnabled`) defaults to FALSE post Wave
+    | Q-2, so this backend hook is now the single source of truth for the
+    | transition — no double-fire from the frontend.
+    */
+    'auto_prepare_on_paid' => filter_var(
+        env('POS_AUTO_PREPARE_ON_PAID', true),
+        FILTER_VALIDATE_BOOLEAN,
+        FILTER_NULL_ON_FAILURE,
+    ) ?? true,
 ];

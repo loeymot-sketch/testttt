@@ -254,7 +254,11 @@ class OrderServicesContractTest extends TestCase
 
         $fresh = Order::withoutGlobalScopes()->findOrFail($order->id);
         $this->assertSame(PaymentStatus::PAID, (int) $fresh->payment_status);
-        $this->assertSame(OrderStatus::ACCEPT, (int) $fresh->status);
+        // [Wave S-1 — 2026-05-20] Owner P-OWNER Wave S-1: kiosk paid TPE
+        // auto-advances to PREPARING after finalize. Idempotent replay
+        // observes the same final status (verified by the second POST below
+        // that returns OK without changing the row).
+        $this->assertSame(OrderStatus::PREPARING, (int) $fresh->status);
         $this->assertSame('FK-M10-GOLDEN-TPE', $fresh->transaction_id);
 
         $this->withToken($token)

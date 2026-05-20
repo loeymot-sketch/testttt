@@ -74,7 +74,17 @@ class PaymentConfirmConcurrencySentinelTest extends TestCase
         $secondResponse = $this->withHeaders(['X-Idempotency-Key' => 'sentinel-pcc-2-' . uniqid()])
             ->postJson('/api/frontend/order/' . $secondOrder->id . '/payment-confirm', $payload);
 
-        Event::assertDispatchedTimes(OrderStatusChanged::class, 1);
+        // [Wave S-1 — 2026-05-20] Owner P-OWNER Wave S-1: finalizePaidKioskOrder
+        // now dispatches the OrderStatusChanged transition in two legs —
+        // PENDING → ACCEPT (canonical "order accepted" broadcast) and
+        // ACCEPT → PREPARING (the auto-prepare-on-paid hook). The second
+        // duplicate TPE call must STILL be rejected so the total stays at
+        // 2 events for one successful payment, not 4 for two successful
+        // payments. The original intent of this sentinel (one TPE
+        // transaction_id pays one and only one order) is preserved by the
+        // `expected=2 actual=2` invariant below — any future drift that
+        // re-introduces a duplicate-allowing race would push this to 4.
+        Event::assertDispatchedTimes(OrderStatusChanged::class, 2);
         $this->assertContains($secondResponse->status(), [409, 422], 'The same TPE transaction_id must not pay two orders.');
         $this->assertSame(
             PaymentStatus::UNPAID,

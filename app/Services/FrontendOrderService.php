@@ -40,6 +40,7 @@ use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
 use Smartisan\Settings\Facades\Settings;
 use App\Http\Requests\OrderStatusRequest;
+use App\Domain\Order\AutoPrepareOnPaidPolicy;
 use App\Domain\Order\OrderStateMachine;
 use App\Services\CouponService;
 use App\Services\Pricing\DiscountCalculator;
@@ -1212,6 +1213,49 @@ class FrontendOrderService
             $locked->save();
             $promoted = true;
 
+            // [Wave S-1 — P-OWNER 2026-05-20] Auto-transition ACCEPT → PREPARING
+            // for kiosk orders settled online via TPE (CARD / TICKET_RESTAURANT)
+            // — the kitchen receives the ticket already "en cours" without a
+            // second tap. Kiosk cash-at-counter never reaches this path
+            // (it stays UNPAID at creation and is collected via
+            // PaymentService::confirmCounterPayment), so no S-5 exception
+            // needed here.
+            //
+            // The transition lives INSIDE the same DB::transaction so an
+            // outer rollback (e.g. broadcast registration glitch) discards
+            // both the ACCEPT promotion and the PREPARING flip atomically —
+            // status never observed half-applied. OrderCreated::dispatch
+            // below picks up the fresh `$locked->status` (PREPARING when the
+            // policy fires) so PersistOrderCreatedToOutbox encodes the
+            // correct payload for KDS.
+            //
+            // OrderStateMachine::allows(ACCEPT, PREPARING) is true (line 45
+            // of OrderStateMachine.php). We use the historical
+            // `$locked->status = NEXT; ->save();` pattern per CLAUDE.md §7
+            // frozen-zone rule for FrontendOrderService — recordTransition
+            // is best-effort and called after save() to keep the audit
+            // chain consistent.
+            $sourceSurface = (string) ($locked->source_surface ?? 'kiosk');
+            if (AutoPrepareOnPaidPolicy::shouldPromote(
+                surface: $sourceSurface,
+                posPaymentMethod: $locked->pos_payment_method !== null
+                    ? (int) $locked->pos_payment_method
+                    : null,
+                isCounterCollect: false,
+            )) {
+                $locked->status = AutoPrepareOnPaidPolicy::nextStatus();
+                $locked->save();
+
+                OrderStateMachine::recordTransition(
+                    FrontendOrder::class,
+                    (int) $locked->id,
+                    OrderStatus::ACCEPT,
+                    OrderStatus::PREPARING,
+                    null,
+                    'auto_prepare_on_paid (Wave S-1 kiosk paid TPE)',
+                );
+            }
+
             // [Wave M / Heal Z2 P1 — 2026-05-19 + advisor pivot 2026-05-19]
             // OrderCreated::dispatch moved INSIDE the closure so
             // DispatchableAfterCommit engages (transactionLevel()>0 →
@@ -1295,6 +1339,23 @@ class FrontendOrderService
         SendOrderSms::dispatch(['order_id' => $frontendOrder->id, 'status' => OrderStatus::ACCEPT]);
         SendOrderPush::dispatch(['order_id' => $frontendOrder->id, 'status' => OrderStatus::ACCEPT]);
         $this->dispatchOrderStatusSignals($frontendOrder, OrderStatus::PENDING, OrderStatus::ACCEPT);
+
+        // [Wave S-1 — P-OWNER 2026-05-20] When the auto-prepare policy fires,
+        // the order ended up in PREPARING (not ACCEPT) at the close of the
+        // transaction above. Fire a second OrderStatusChanged ACCEPT→PREPARING
+        // broadcast so PersistOrderStatusChangedToOutbox encodes both legs of
+        // the transition for the realtime KDS / Suivi UIs — passing the
+        // pre-`refresh()` ACCEPT alone (the legacy line) would leave KDS
+        // subscribers without an explicit "now en préparation" signal and
+        // they would only converge via the next poll. Dual-broadcast pattern
+        // matches OrderService::changeStatus' multi-leg historical contract.
+        if ((int) $frontendOrder->status === OrderStatus::PREPARING) {
+            $this->dispatchOrderStatusSignals(
+                $frontendOrder,
+                OrderStatus::ACCEPT,
+                OrderStatus::PREPARING
+            );
+        }
 
         return true;
     }

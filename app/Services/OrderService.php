@@ -48,6 +48,7 @@ use App\Libraries\QueryExceptionLibrary;
 use Smartisan\Settings\Facades\Settings;
 use App\Http\Requests\OrderStatusRequest;
 use App\Http\Requests\PaymentStatusRequest;
+use App\Domain\Order\AutoPrepareOnPaidPolicy;
 use App\Domain\Order\OrderStateMachine;
 use App\Http\Requests\TableOrderTokenRequest;
 use App\Services\Fiscal\AuditLogService;
@@ -662,10 +663,32 @@ class OrderService
                     );
                 }
 
+                // [Wave S-1 — P-OWNER 2026-05-20] POS direct sale (cash or
+                // TPE) is always paid + created at the same moment, so the
+                // legacy `status = ACCEPT` is the perfect hook for the
+                // owner's "auto-prepare on paid" decision. The policy
+                // resolves to PREPARING when `pos.auto_prepare_on_paid=true`
+                // (default), or ACCEPT when env-overridden to false for
+                // emergency rollback. No S-5 exception applies here —
+                // POS direct sales never use the kiosk cash-at-counter
+                // (counter-deferred) path.
+                //
+                // Setting the final status at creation avoids an extra
+                // save() + UPDATE round-trip and ensures OrderCreated
+                // (dispatched at line 1088 inside the same tx) encodes
+                // the correct status payload for KDS.
+                $posInitialStatus = AutoPrepareOnPaidPolicy::shouldPromote(
+                    surface: 'pos',
+                    posPaymentMethod: null,
+                    isCounterCollect: false,
+                )
+                    ? AutoPrepareOnPaidPolicy::nextStatus()
+                    : OrderStatus::ACCEPT;
+
                 $this->order = Order::create(
                     $validated + [
                         'user_id' => $request->customer_id,
-                        'status' => OrderStatus::ACCEPT,
+                        'status' => $posInitialStatus,
                         'token' => $request->token,
                         'payment_status' => PaymentStatus::PAID,
                         'order_datetime' => date('Y-m-d H:i:s'),
@@ -675,6 +698,28 @@ class OrderService
                         'discount' => 0,
                     ]
                 );
+
+                // [Wave S-1] Record the auto-prepare transition for the
+                // OrderStatusTransition audit trail. The order was created
+                // directly in PREPARING (no intermediate ACCEPT row), so we
+                // mirror the conceptual PENDING → ACCEPT → PREPARING ladder
+                // by recording PENDING → PREPARING — the same single-row
+                // collapsing pattern used at line ~599 of myOrderStore for
+                // the auto-accept variant (PENDING → ACCEPT). The reason
+                // field tags this as auto-prepare so downstream reconciliation
+                // can distinguish from a chef-tap PREPARING. Best-effort:
+                // recordTransition swallows its own DB exceptions (see
+                // OrderStateMachine line 156-158) and is safe to call here.
+                if ($posInitialStatus === OrderStatus::PREPARING) {
+                    OrderStateMachine::recordTransition(
+                        Order::class,
+                        (int) $this->order->id,
+                        OrderStatus::PENDING,
+                        OrderStatus::PREPARING,
+                        Auth::check() ? (int) Auth::id() : null,
+                        'auto_prepare_on_paid (Wave S-1 POS direct sale)',
+                    );
+                }
 
                 $requestItems = $this->safeJsonDecode($request->items);
                 $requestItems = is_array($requestItems) ? $requestItems : [];

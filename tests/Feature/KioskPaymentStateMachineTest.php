@@ -181,9 +181,15 @@ class KioskPaymentStateMachineTest extends TestCase
 
         $confirm->assertOk();
 
+        // [Wave S-1 — 2026-05-20] Owner decision P-OWNER Wave S-1: kiosk paid
+        // TPE auto-promotes to PREPARING the moment payment is confirmed, so
+        // the chef sees "en cours" without a second tap. The order is created
+        // PENDING → finalize promotes PENDING → ACCEPT then S-1 hook flips to
+        // PREPARING inside the same DB::transaction (kept atomic so a
+        // rollback leaves status=PENDING and not a half-flipped state).
         $this->assertDatabaseHas('orders', [
             'id' => $orderId,
-            'status' => OrderStatus::ACCEPT,
+            'status' => OrderStatus::PREPARING,
             'payment_status' => PaymentStatus::PAID,
             'transaction_id' => 'TXN-STATE-001',
         ]);
@@ -271,9 +277,12 @@ class KioskPaymentStateMachineTest extends TestCase
 
         $response->assertOk();
 
+        // [Wave S-1 — 2026-05-20] Auto-prepare hook applies on payment-confirm
+        // finalize regardless of how the row got into the PAID-but-PENDING
+        // half-state. The order lands in PREPARING per the owner decision.
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
-            'status' => OrderStatus::ACCEPT,
+            'status' => OrderStatus::PREPARING,
             'payment_status' => PaymentStatus::PAID,
         ]);
 
@@ -357,11 +366,17 @@ class KioskPaymentStateMachineTest extends TestCase
         $service = app(FrontendOrderService::class);
         $promoted = $service->finalizePaidKioskOrder($paidOrder);
 
-        $this->assertTrue($promoted, 'Service must promote a paid kiosk order to ACCEPT.');
+        $this->assertTrue($promoted, 'Service must promote a paid kiosk order.');
 
+        // [Wave S-1 — 2026-05-20] Direct-call service path also flips the
+        // newly-promoted order to PREPARING when the auto-prepare policy
+        // fires. The (PaymentStatus::PAID, source_surface='kiosk') tuple
+        // satisfies AutoPrepareOnPaidPolicy::shouldPromote with no S-5
+        // exception (kiosk cash-at-counter never reaches finalizePaidKioskOrder
+        // — it routes via PaymentService::confirmCounterPayment instead).
         $this->assertDatabaseHas('orders', [
             'id' => $paidOrder->id,
-            'status' => OrderStatus::ACCEPT,
+            'status' => OrderStatus::PREPARING,
             'payment_status' => PaymentStatus::PAID,
         ]);
 
