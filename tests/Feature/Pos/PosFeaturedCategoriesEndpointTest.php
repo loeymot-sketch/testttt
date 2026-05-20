@@ -4,7 +4,9 @@ namespace Tests\Feature\Pos;
 
 use App\Enums\Status;
 use App\Models\Branch;
+use App\Models\Item;
 use App\Models\ItemCategory;
+use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -54,6 +56,21 @@ class PosFeaturedCategoriesEndpointTest extends TestCase
             ItemCategory::factory()->create(['name' => 'Desserts', 'status' => Status::ACTIVE]),
             ItemCategory::factory()->create(['name' => 'Boissons', 'status' => Status::ACTIVE]),
         ];
+
+        // [2026-05-20 P-OWNER-6] Seed at least one POS-channel item per
+        // category. The controller now applies a universal `whereHas('items')`
+        // filter so empty categories no longer appear on the POS strip
+        // (was: only runtime-branch-scoped users got this filter; admin
+        // path was unfiltered → 9 empty cats polluted the strip).
+        $tax = Tax::factory()->create(['status' => Status::ACTIVE]);
+        foreach ($cats as $cat) {
+            Item::factory()->create([
+                'item_category_id' => $cat->id,
+                'tax_id' => $tax->id,
+                'status' => Status::ACTIVE,
+            ]);
+        }
+
         return $cats;
     }
 
@@ -201,6 +218,141 @@ class PosFeaturedCategoriesEndpointTest extends TestCase
         $unfeaturedSlugs = $rows->where('featured', false)->pluck('slug')->all();
         $this->assertContains('desserts', $unfeaturedSlugs);
         $this->assertContains('boissons', $unfeaturedSlugs);
+    }
+
+    /**
+     * [2026-05-20 P-OWNER-6 graceful-degradation sentinel — fallback path]
+     *
+     * Owner reported "POS tout les catégories sont vide" 2026-05-19 after
+     * the Le Cayenne menu was reset to 11 categories but only 2 actually
+     * seeded with items (cat 1 = 3 items, cat 8 = 8 items). The featured
+     * allowlist resolved to 7 cats — only ONE (cat 1) had items — and the
+     * frontend `displayedItems` filter (PosComponent.vue) excluded cat 8's
+     * 8 supplements because their cat wasn't featured. Cashier saw ~3
+     * items on landing.
+     *
+     * Fallback rule: if FEWER than 2 featured categories actually have
+     * items, drop the featured filter entirely → mark all (non-empty)
+     * categories as featured so the cashier sees the full catalog.
+     *
+     * This sentinel locks in the contract: when only ONE featured cat has
+     * items, the response must mark EVERY returned category as featured
+     * (not just the configured allowlist).
+     */
+    public function test_degraded_fallback_when_fewer_than_two_featured_cats_have_items(): void
+    {
+        // Seed 4 categories all with items.
+        $cats = $this->makeCategories();
+        $cats[0]->update(['slug' => 'sandwich-cayenne']);
+        $cats[1]->update(['slug' => 'galette']);
+        $cats[2]->update(['slug' => 'desserts']);
+        $cats[3]->update(['slug' => 'boissons']);
+
+        // Featured allowlist points to slugs where ONLY ONE has items.
+        // Create 2 EXTRA cats matching the slug but with ZERO items so the
+        // resolver picks them up but they get filtered out by the
+        // controller's whereHas('items') guard — leaving only `sandwich-
+        // cayenne` as a non-empty featured cat (count = 1 < 2 → fallback).
+        Config::set('pos.featured_category_ids', []);
+        Config::set('pos.featured_category_slugs', ['sandwich-cayenne', 'nonexistent-slug-a', 'nonexistent-slug-b']);
+
+        $this->actingAs($this->operator, 'sanctum');
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->getJson('/api/admin/pos-category');
+        $response->assertStatus(200);
+
+        $rows = collect($response->json('data'));
+        // Strip the sentinel.
+        $realRows = $rows->reject(fn (array $r): bool => (int) $r['id'] === 0);
+        $this->assertGreaterThanOrEqual(4, $realRows->count(),
+            'All 4 categories with items must be returned (none have zero items).');
+
+        // CRITICAL: every returned cat must be featured=true (degraded fallback).
+        foreach ($realRows as $row) {
+            $this->assertTrue(
+                (bool) $row['featured'],
+                "Degraded fallback: cat `{$row['slug']}` must be marked featured because <2 featured cats had items.",
+            );
+        }
+    }
+
+    /**
+     * [2026-05-20 P-OWNER-6 graceful-degradation sentinel — happy path preserved]
+     *
+     * Verify the regression guard: when 2+ featured cats DO have items, the
+     * normal best-seller filter still engages. Owner-visible behaviour
+     * after menu seeding completes must match Wave O O3 spec.
+     */
+    public function test_normal_filter_engages_when_two_or_more_featured_cats_have_items(): void
+    {
+        $cats = $this->makeCategories();
+        $cats[0]->update(['slug' => 'sandwich-cayenne']);
+        $cats[1]->update(['slug' => 'galette']);
+        $cats[2]->update(['slug' => 'desserts']);
+        $cats[3]->update(['slug' => 'boissons']);
+
+        // Both featured slugs have items → normal filter engages, others unfeatured.
+        Config::set('pos.featured_category_ids', []);
+        Config::set('pos.featured_category_slugs', ['sandwich-cayenne', 'galette']);
+
+        $this->actingAs($this->operator, 'sanctum');
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->getJson('/api/admin/pos-category');
+        $response->assertStatus(200);
+
+        $rows = collect($response->json('data'));
+        $featuredSlugs = $rows->where('featured', true)
+            ->pluck('slug')
+            ->reject(fn (string $slug): bool => $slug === 'all-items')
+            ->values()
+            ->all();
+        $unfeaturedSlugs = $rows->where('featured', false)->pluck('slug')->all();
+
+        $this->assertEqualsCanonicalizing(
+            ['sandwich-cayenne', 'galette'],
+            $featuredSlugs,
+            'When 2+ featured cats have items, normal filter must engage (not degrade).',
+        );
+        $this->assertContains('desserts', $unfeaturedSlugs,
+            'Desserts must remain unfeatured when degraded-fallback does NOT trigger.');
+        $this->assertContains('boissons', $unfeaturedSlugs,
+            'Boissons must remain unfeatured when degraded-fallback does NOT trigger.');
+    }
+
+    /**
+     * [2026-05-20 P-OWNER-6 universal empty-cat filter sentinel]
+     *
+     * Empty categories (zero POS-channel items) must NOT appear on the
+     * POS strip, regardless of user type. Historically only POS runtime
+     * branch-scoped users had this guard; admin / tenant admin / branch
+     * manager paths returned every cat including empty ones.
+     */
+    public function test_empty_categories_are_filtered_out_for_admin_path(): void
+    {
+        $cats = $this->makeCategories();
+        // Normalize slug of cats[0] so the assertion can check by slug.
+        $cats[0]->update(['slug' => 'sandwich-cayenne']);
+
+        // Add a 5th category with NO items.
+        ItemCategory::factory()->create([
+            'name' => 'Empty Category',
+            'slug' => 'empty-category',
+            'status' => Status::ACTIVE,
+        ]);
+
+        Config::set('pos.featured_category_ids', []);
+        Config::set('pos.featured_category_slugs', []);
+
+        $this->actingAs($this->operator, 'sanctum');
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->getJson('/api/admin/pos-category');
+        $response->assertStatus(200);
+
+        $slugs = collect($response->json('data'))->pluck('slug')->all();
+        $this->assertNotContains('empty-category', $slugs,
+            'Empty Category must NOT appear in the POS strip (universal whereHas items filter).');
+        $this->assertContains('sandwich-cayenne', $slugs,
+            'Populated category must remain in the strip.');
     }
 
     /**
