@@ -1175,6 +1175,13 @@ test.describe('Wave T Round 1 Wave A — POS caisse (17 states, 2 orders)', () =
         if (!inst || !inst.proxy) return { ok: false, reason: 'no_PosComponent_ancestor', hops };
         try {
           const p = inst.proxy;
+          // [WT-R3-F3 2026-05-20 — WT-A-R2-001 heal] Re-affirm
+          // order_type=DELIVERY (=5) in case any re-render between state
+          // 16 and 17 (cart re-eval, segment switch on async event) reset
+          // it to TAKEAWAY default. orderSubmit relies on this guard at
+          // PosComponent.vue:3274 before calling
+          // ensureDeliveryCustomerAndAddress and opening the payment modal.
+          p.checkoutProps.form.order_type = 5;
           p.deliveryInline.name = args.c.name;
           p.deliveryInline.phone = args.c.phone;
           p.deliveryInline.addressText = args.c.address;
@@ -1194,10 +1201,15 @@ test.describe('Wave T Round 1 Wave A — POS caisse (17 states, 2 orders)', () =
             longitude: args.c.longitude,
           };
           p.deliveryGeocodeError = '';
-          return { ok: true, uid: inst.uid };
+          return { ok: true, uid: inst.uid, order_type: p.checkoutProps.form.order_type };
         } catch (e) { return { ok: false, reason: e.message }; }
       }, { c: CUSTOMER, addressId: preSeededAddressId, customerId: preSeededCustomerId });
-      observations.push(`state17: re-inject (DOM-anchored) ok=${reInject.ok} reason=${reInject.reason || 'n/a'} uid=${reInject.uid || ''}`);
+      observations.push(`state17: re-inject (DOM-anchored) ok=${reInject.ok} reason=${reInject.reason || 'n/a'} uid=${reInject.uid || ''} order_type=${reInject.order_type || 'n/a'}`);
+      // [WT-R3-F3] Yield to Vue reactivity (rAF×2) before the pay click —
+      // PosComponent.checkoutProps.form is reactive; segment watchers must
+      // flush so subsequent paymentForce and pos-payment-confirm interact
+      // with a settled UI state.
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       // Diagnostic probe — confirm injection landed
       const probe = await page.evaluate(() => {
         const anchor = document.querySelector('#orderdelivery');

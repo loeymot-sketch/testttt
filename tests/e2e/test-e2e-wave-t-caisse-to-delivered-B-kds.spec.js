@@ -246,6 +246,76 @@ test.describe('Wave T Round 1 — Wave B — KDS chef bump (orders #1 + #2)', ()
     report.nf525_pre = nf525Snapshot();
     persistReport();
 
+    // ──── [WT-R3-F3 2026-05-20 — B-R2-014 heal] STALE-CLEAN PREFLIGHT ────────
+    //
+    // R2 reviewer flagged: V2 grid renders 3 cards (A0002 / A0003 / A0004)
+    // while spec fixture seeded only 2 orders (#70 + #72). A0004 was a
+    // leftover Wave T-R1 (or Wave S) order whose token also matches the
+    // `AUDIT-WAVE-T-` prefix the cleanup-test-orders command uses. The
+    // backend server_statuses_post_bump were CORRECT (only #70 + #72
+    // bumped) — the visual capture was misleading because adversarial
+    // reviewers reading screenshots in isolation can't trivially map
+    // queue-letter aliases (A0002/A0003/A0004) to backend order IDs.
+    //
+    // Fixture-aware sweep: transition any AUDIT-WAVE-T-* order that is
+    //   • NOT in the current Wave A fixture set, AND
+    //   • status in the KDS active window (ACCEPT=4, PREPARING=7, PREPARED=8)
+    // to status=DELIVERED (=13) so they exit the V2 grid. This is
+    // bounded by:
+    //   • token prefix gate ⇒ only test orders, never real ones
+    //   • fixture-id exclusion ⇒ current run's orders are preserved
+    //   • status whitelist ⇒ only KDS-visible rows are touched
+    //
+    // NF525 implication: this is a raw Eloquent `$r->save()` — it bypasses
+    // OrderStateMachine + the dispatched listener path that grows the
+    // audit_logs HMAC chain. That's intentional: the test sweep does NOT
+    // append chain entries (zero delta) because the token-prefix gate
+    // ensures we only touch synthetic test orders that never belonged in
+    // the production audit trail to begin with. NF525 chain bit-equality
+    // is preserved — the post-bump `fiscal:verify-chain` still passes
+    // "CHAIN OK" with the same `count` + `last_hash` modulo what the real
+    // chef bumps in this test add.
+    {
+      const fixtureKeepIds = [fixture.order_1.id, fixture.order_2.id]
+        .filter((id) => typeof id === 'number' && id > 0);
+      if (fixtureKeepIds.length === 2) {
+        const keepList = fixtureKeepIds.join(',');
+        const sweepScript =
+          'use App\\Models\\Order; '
+          + `$keep=[${keepList}]; `
+          + '$active=[4,7,8]; '
+          + '$rows=Order::withoutGlobalScopes()'
+          + '->where("token","like","AUDIT-WAVE-T-%")'
+          + '->whereNotIn("id",$keep)'
+          + '->whereIn("status",$active)'
+          + '->get(["id","token","status"]); '
+          + '$swept=[]; '
+          + 'foreach($rows as $r){ '
+          + '$r->status=13; '
+          + '$r->save(); '
+          + '$swept[]=["id"=>$r->id,"token"=>substr($r->token,0,32),"from"=>$r->getOriginal("status")]; '
+          + '} '
+          + 'echo json_encode(["keep"=>$keep,"swept_count"=>count($swept),"swept"=>$swept]);';
+        const sweepOut = artisan(sweepScript);
+        try {
+          const jsonStart = sweepOut.indexOf('{');
+          const jsonEnd = sweepOut.lastIndexOf('}');
+          const parsed = (jsonStart >= 0 && jsonEnd > jsonStart)
+            ? JSON.parse(sweepOut.slice(jsonStart, jsonEnd + 1))
+            : null;
+          obs(`stale-clean (WT-R3-F3): keep=[${keepList}] swept=${parsed ? parsed.swept_count : 'PARSE_FAIL'} detail=${parsed ? JSON.stringify(parsed.swept).slice(0, 400) : sweepOut.slice(0, 200)}`);
+          if (parsed && parsed.swept_count > 0) {
+            finding('INFO', 'B-S0-STALE-SWEPT',
+              `Stale AUDIT-WAVE-T-* orders swept pre-test: ${parsed.swept_count} row(s) — fixture-id-aware`);
+          }
+        } catch (_e) {
+          obs(`stale-clean (WT-R3-F3): JSON parse failed; raw output=${sweepOut.slice(0, 300)}`);
+        }
+      } else {
+        obs(`stale-clean (WT-R3-F3): SKIPPED — fixture keep-ids invalid: ${JSON.stringify(fixtureKeepIds)}`);
+      }
+    }
+
     // ──── attach mega-audit recorder ────────────────────────────────────────
     const { snap, dispose } = attachMegaAuditRecorder(page, SCREENSHOT_DIR);
 
@@ -354,6 +424,25 @@ test.describe('Wave T Round 1 — Wave B — KDS chef bump (orders #1 + #2)', ()
       obs(`state02 wait order#${order2Id}: visible after mount+${report.sync_latency_ms.mount_to_visible_order_2}ms`);
     } catch (_e) {
       finding('P0', 'B-S1-B', `Order #${order2Id} (DELIVERY) not visible on KDS within 8s`);
+    }
+
+    // [WT-R3-F3 — B-R2-014 verification] Pre-snap card-count audit.
+    // After stale-clean preflight, the V2 grid SHOULD contain exactly
+    // the 2 fixture cards. Capture the count + any extra data-order-id
+    // values so an adversarial reviewer can see whether the sweep was
+    // effective (or whether a sibling spec run between sweep and snap
+    // re-introduced stale orders). Informational only — does not fail
+    // the test (the bumps still target card1Sel/card2Sel by ID).
+    const gridIds = await page.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll('.kds-v2__grid [data-order-id]'));
+      return cards.map((c) => c.getAttribute('data-order-id')).filter(Boolean);
+    });
+    const expectedIds = new Set([String(order1Id), String(order2Id)]);
+    const unexpected = gridIds.filter((id) => !expectedIds.has(id));
+    obs(`state02 grid-id audit: count=${gridIds.length} ids=${JSON.stringify(gridIds)} expected=[${order1Id},${order2Id}] unexpected=${JSON.stringify(unexpected)}`);
+    if (unexpected.length > 0) {
+      finding('P2', 'B-S0-STALE-LEAK',
+        `Stale orders still in V2 grid after WT-R3-F3 preflight: ${JSON.stringify(unexpected)} (expected only [${order1Id},${order2Id}]). Sweep prefix or status-window may need broadening.`);
     }
 
     // ──── State 02 — empty-to-populated populated state ────────────────────
