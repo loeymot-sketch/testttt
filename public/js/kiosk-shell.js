@@ -1,2 +1,8325 @@
-/*! For license information please see kiosk-shell.js.LICENSE.txt */
-"use strict";(self.webpackChunk=self.webpackChunk||[]).push([[161],{923(e,t,o){o.d(t,{A:()=>n});var r=o(6314),a=o.n(r)()(function(e){return e[1]});a.push([e.id,".kiosk-cart[data-v-40f2b918]{background:var(--kiosk-page-bg,var(--kiosk-bg));display:flex;flex-direction:column;height:100vh;overflow:hidden;width:100vw}.kiosk-order-type-bar[data-v-40f2b918]{display:flex;flex-shrink:0;gap:16px;padding:20px 30px 0}.kiosk-order-type-btn[data-v-40f2b918]{align-items:center;background:var(--kiosk-surface);border:2px solid var(--kiosk-border);border-radius:24px;color:var(--kiosk-text-muted);cursor:pointer;display:flex;flex:1;flex-direction:column;gap:4px;height:auto;justify-content:center;min-height:82px;transition:all .2s ease}.kiosk-order-type-btn.active[data-v-40f2b918]{background:var(--kiosk-primary);border-color:var(--kiosk-primary);box-shadow:var(--kiosk-shadow-cta);color:var(--kiosk-text-on-red)}.kiosk-order-type-btn[data-v-40f2b918]:active{transform:scale(.97)}.kiosk-btn-primary[disabled][data-v-40f2b918]{cursor:wait;opacity:.62}.kiosk-cart-quote-error[data-v-40f2b918]{color:var(--kiosk-error,#b91c1c);font-size:13px;font-weight:700;margin:8px 0 0;text-align:center;width:100%}.kiosk-order-type-icon[data-v-40f2b918]{font-size:22px;line-height:1}.kiosk-order-type-label[data-v-40f2b918]{font-size:17px;font-weight:900}.kiosk-cart-item-selections[data-v-40f2b918]{color:var(--kiosk-text-mute);font-size:11px;margin:2px 0 4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kiosk-cart-header[data-v-40f2b918]{border-bottom:1px solid var(--kiosk-border);box-shadow:var(--kiosk-shadow-sticky);gap:16px;padding:24px 32px 20px}.kiosk-cart-back[data-v-40f2b918],.kiosk-cart-header[data-v-40f2b918]{align-items:center;background:var(--kiosk-surface);display:flex;flex-shrink:0}.kiosk-cart-back[data-v-40f2b918]{border:1.5px solid var(--kiosk-border);border-radius:18px;color:var(--kiosk-text);cursor:pointer;height:60px;justify-content:center;transition:all .15s ease;width:60px}.kiosk-cart-back[data-v-40f2b918]:active{background:var(--kiosk-surface-alt);transform:scale(.95)}.kiosk-cart-header-info[data-v-40f2b918]{flex:1}.kiosk-cart-title[data-v-40f2b918]{color:var(--kiosk-text);font-size:clamp(30px,4vw,44px);font-weight:900;margin:0 0 2px;text-transform:uppercase}.kiosk-cart-item-count[data-v-40f2b918]{color:var(--kiosk-text-mute);font-size:16px;margin:0}.kiosk-cart-clear[data-v-40f2b918]{background:var(--kiosk-surface);border:2px solid var(--kiosk-border);border-radius:999px;color:var(--kiosk-primary);cursor:pointer;font-size:14px;font-weight:600;min-height:52px;padding:8px 20px;transition:all .15s ease}.kiosk-cart-clear[data-v-40f2b918]:active{background:var(--kiosk-surface-alt)}.kiosk-cart-empty[data-v-40f2b918]{align-items:center;display:flex;flex:1;flex-direction:column;gap:16px;justify-content:center;padding:40px;text-align:center}.kiosk-cart-empty-icon[data-v-40f2b918]{font-size:72px;line-height:1}.kiosk-cart-empty h2[data-v-40f2b918]{color:var(--kiosk-text);font-size:24px;font-weight:800;margin:0}.kiosk-cart-empty p[data-v-40f2b918]{color:var(--kiosk-text-mute);font-size:15px;margin:0}.kiosk-cart-body[data-v-40f2b918]{display:flex;flex:1;flex-direction:column;overflow-y:auto;scrollbar-width:none}.kiosk-cart-body[data-v-40f2b918]::-webkit-scrollbar{display:none}.kiosk-cart-items[data-v-40f2b918]{display:flex;flex:1;flex-direction:column;gap:16px;padding:22px 30px}.kiosk-cart-item[data-v-40f2b918]{align-items:center;background:#fff;border:1.5px solid #e5e5e5;border-radius:20px;box-shadow:0 4px 14px hsla(0,0%,6%,.04);display:flex;gap:18px;padding:16px 18px;transition:border-color .16s ease,box-shadow .16s ease}.kiosk-cart-item[data-v-40f2b918]:hover{border-color:#f4501e;box-shadow:0 6px 18px rgba(244,80,30,.12)}.kiosk-cart-item-img[data-v-40f2b918]{align-items:center;background:#fafafa;border:1px solid #efefef;border-radius:18px;display:flex;flex-shrink:0;height:104px;justify-content:center;overflow:hidden;position:relative;width:104px}.kiosk-cart-item-img img[data-v-40f2b918]{height:100%;-o-object-fit:cover;object-fit:cover;width:100%}.kiosk-cart-item-emoji[data-v-40f2b918]{font-size:56px;line-height:1}.kiosk-cart-item-info[data-v-40f2b918]{flex:1;min-width:0}.kiosk-cart-item-name-row[data-v-40f2b918]{align-items:center;display:flex;gap:.4rem}.kiosk-cart-edit-btn[data-v-40f2b918]{align-items:center;background:var(--kiosk-surface-alt);border:1px solid var(--kiosk-border);border-radius:50%;color:var(--kiosk-text-mute);cursor:pointer;display:flex;flex-shrink:0;height:34px;justify-content:center;padding:0;transition:background .15s,color .15s;width:34px}.kiosk-cart-edit-btn[data-v-40f2b918]:hover{background:var(--kiosk-primary-soft);border-color:rgba(244,80,30,.24);color:var(--kiosk-primary)}.kiosk-cart-item-name[data-v-40f2b918]{color:#0f0f0f;font-size:22px;font-weight:900;letter-spacing:-.2px;margin:0 0 4px}.kiosk-cart-item-name[data-v-40f2b918],.kiosk-cart-item-note[data-v-40f2b918]{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kiosk-cart-item-note[data-v-40f2b918]{color:var(--kiosk-text-mute);font-size:11px;margin:0 0 2px}.kiosk-cart-item-unit[data-v-40f2b918]{color:var(--kiosk-text-mute);font-size:14px}.kiosk-cart-item-controls[data-v-40f2b918]{align-items:end;display:flex;flex-direction:column;flex-shrink:0;gap:8px;position:relative}.kiosk-cart-item-trash[data-v-40f2b918]{-webkit-tap-highlight-color:transparent;align-items:center;background:var(--kiosk-surface,#fff);border:1px solid var(--kiosk-border,#e5e5e5);border-radius:50%;box-shadow:0 2px 6px hsla(0,0%,6%,.06);color:var(--kiosk-text-muted,#5a5a5a);cursor:pointer;display:inline-flex;height:36px;justify-content:center;position:absolute;right:-8px;top:-8px;transition:background .12s ease,color .12s ease,transform .12s ease;width:36px}.kiosk-cart-item-trash[data-v-40f2b918]:hover{background:var(--kiosk-bold-primary-soft,#ffe8dd);color:var(--kiosk-bold-primary,#f4501e)}.kiosk-cart-item-trash[data-v-40f2b918]:active{transform:scale(.92)}.kiosk-cart-item-trash[data-v-40f2b918]:focus-visible{outline:3px solid var(--kiosk-focus-ring,#2563eb);outline-offset:2px}.kiosk-qty-ctrl[data-v-40f2b918]{align-items:center;background:var(--kiosk-surface-alt);border:1.5px solid var(--kiosk-border);border-radius:999px;display:flex;gap:0;overflow:hidden}[dir=rtl] .kiosk-qty-ctrl[data-v-40f2b918]{direction:ltr}.kiosk-qty-btn[data-v-40f2b918]{align-items:center;background:transparent;border:none;color:var(--kiosk-text);cursor:pointer;display:flex;height:50px;justify-content:center;transition:background .15s ease;width:50px}.kiosk-qty-btn[data-v-40f2b918]:active{background:rgba(0,0,0,.05)}.kiosk-qty-btn.minus[data-v-40f2b918]{color:var(--kiosk-text-muted)}.kiosk-qty-btn.minus[data-v-40f2b918]:active{color:var(--kiosk-primary)}.kiosk-qty-num[data-v-40f2b918]{color:var(--kiosk-text);font-size:20px;font-weight:900;min-width:38px;text-align:center}.kiosk-cart-item-total[data-v-40f2b918]{color:#f4501e;font-size:24px;font-weight:900;letter-spacing:-.4px}.kiosk-cart-summary[data-v-40f2b918]{background:var(--kiosk-surface);border:1.5px solid var(--kiosk-border);border-radius:26px;display:flex;flex-direction:column;gap:10px;margin:0 30px;padding:20px 24px}.kiosk-cart-summary-row[data-v-40f2b918]{align-items:center;color:var(--kiosk-text-muted);display:flex;font-size:16px;justify-content:space-between}.kiosk-cart-summary-row.total[data-v-40f2b918]{border-top:1px solid var(--kiosk-border);color:var(--kiosk-text);font-size:24px;font-weight:900;margin-top:4px;padding-top:10px}.kiosk-cart-summary-row.loyalty[data-v-40f2b918]{color:var(--kiosk-text-muted)}.green[data-v-40f2b918]{color:var(--kiosk-success);font-weight:700}.kiosk-cart-grand-total[data-v-40f2b918]{color:var(--kiosk-primary);font-size:32px;font-weight:900}.kiosk-cart-actions[data-v-40f2b918]{display:flex;flex-direction:column;gap:10px;padding:18px 30px 32px}.kiosk-cart-promo[data-v-40f2b918]{padding:14px 30px 0}.kiosk-cart-promo-label[data-v-40f2b918]{color:var(--kiosk-text-muted,#5a5a5a);display:block;font-size:13px;font-weight:600;margin-bottom:6px}.kiosk-cart-promo-row[data-v-40f2b918]{display:flex;gap:8px}.kiosk-cart-promo-input[data-v-40f2b918]{background:var(--kiosk-surface);border:1.5px solid var(--kiosk-border);border-radius:10px;color:var(--kiosk-text);flex:1;font-size:15px;height:48px;letter-spacing:.03em;min-height:44px;padding:0 14px;text-transform:uppercase}.kiosk-cart-promo-input[data-v-40f2b918]:focus{border-color:var(--kiosk-primary,#f4501e);outline:none}.kiosk-cart-promo-input[aria-invalid=true][data-v-40f2b918]{border-color:var(--kiosk-error,#c21e2f)}.kiosk-cart-promo-apply[data-v-40f2b918]{background:var(--kiosk-primary,#f4501e);border:none;border-radius:10px;color:#fff;cursor:pointer;font-size:14px;font-weight:700;height:48px;min-height:44px;padding:0 18px}.kiosk-cart-promo-apply[data-v-40f2b918]:disabled{cursor:not-allowed;opacity:.5}.kiosk-cart-promo-error[data-v-40f2b918]{color:var(--kiosk-error,#c21e2f);font-size:13px;font-weight:500;margin:6px 0 0}.kiosk-cart-promo-applied[data-v-40f2b918]{align-items:center;background:rgba(27,138,58,.12);border:1.5px solid var(--kiosk-success,#1b8a3a);border-radius:10px;color:var(--kiosk-success,#1b8a3a);display:flex;font-weight:600;gap:10px;padding:10px 14px}.kiosk-cart-promo-applied-icon[data-v-40f2b918]{font-size:18px}.kiosk-cart-promo-applied-text[data-v-40f2b918]{flex:1}.kiosk-cart-promo-remove[data-v-40f2b918]{background:transparent;border:none;color:var(--kiosk-error,#c21e2f);cursor:pointer;font-size:13px;font-weight:600;text-decoration:underline}.kiosk-cart-summary-row.promo .green[data-v-40f2b918]{color:var(--kiosk-success,#1b8a3a)}.kiosk-btn-loyalty[data-v-40f2b918]{align-items:center;background:rgba(255,215,0,.08);border:1.5px solid rgba(255,215,0,.3);border-radius:18px;color:var(--kiosk-warning);cursor:pointer;display:flex;font-size:16px;font-weight:600;height:auto;justify-content:space-between;margin:0 30px 4px;min-height:60px;padding:0 16px;transition:background .2s;width:100%;width:calc(100% - 60px)}.kiosk-btn-loyalty[data-v-40f2b918]:active{background:rgba(255,215,0,.15)}.kiosk-btn-loyalty-star[data-v-40f2b918]{font-size:18px}.kiosk-btn-loyalty-arrow[data-v-40f2b918]{font-size:20px;opacity:.7}.kiosk-btn-primary[data-v-40f2b918]{align-items:center;background:var(--kiosk-primary);border:none;border-radius:24px;box-shadow:var(--kiosk-shadow-cta);color:var(--kiosk-text-on-red);cursor:pointer;display:flex;font-size:22px;font-weight:900;height:auto;justify-content:space-between;min-height:76px;padding:0 24px;transition:all .15s ease;width:100%}.kiosk-btn-primary[data-v-40f2b918]:active{transform:scale(.98)}.kiosk-btn-price[data-v-40f2b918]{background:hsla(0,0%,100%,.2);border-radius:10px;font-size:18px;font-weight:800;padding:4px 14px}.kiosk-btn-secondary[data-v-40f2b918]{background:var(--kiosk-surface);border:1.5px solid var(--kiosk-border);border-radius:18px;color:var(--kiosk-text-muted);cursor:pointer;font-size:17px;font-weight:800;height:auto;min-height:60px;transition:all .15s ease;width:100%}.kiosk-btn-secondary[data-v-40f2b918]:active{background:var(--kiosk-surface-alt)}.kiosk-clear-overlay[data-v-40f2b918]{align-items:center;background:var(--kiosk-overlay-modal);display:flex;inset:0;justify-content:center;position:fixed;z-index:999}.kiosk-clear-modal[data-v-40f2b918]{background:var(--kiosk-surface);border:1.5px solid var(--kiosk-border);border-radius:20px;box-shadow:var(--kiosk-shadow-modal);padding:2rem;text-align:center;width:340px}.kiosk-clear-title[data-v-40f2b918]{color:var(--kiosk-text);font-size:1.3rem;font-weight:700;margin:0 0 .4rem}.kiosk-clear-sub[data-v-40f2b918]{color:var(--kiosk-text-mute);font-size:.95rem;margin:0 0 1.5rem}.kiosk-clear-actions[data-v-40f2b918]{display:flex;gap:.75rem}.kiosk-clear-yes[data-v-40f2b918]{background:var(--kiosk-primary);border:none;border-radius:12px;color:var(--kiosk-text-on-red);font-weight:700}.kiosk-clear-no[data-v-40f2b918],.kiosk-clear-yes[data-v-40f2b918]{cursor:pointer;flex:1;font-size:1rem;padding:.85rem 1rem}.kiosk-clear-no[data-v-40f2b918]{background:var(--kiosk-surface-alt);border:1px solid var(--kiosk-border);border-radius:12px;color:var(--kiosk-text-muted)}",""]);const n=a},802(e,t,o){o.d(t,{A:()=>n});var r=o(6314),a=o.n(r)()(function(e){return e[1]});a.push([e.id,".kiosk-cash[data-v-0232e5ed]{background:var(--kiosk-page-bg,var(--kiosk-bg));box-sizing:border-box;display:grid;grid-template-rows:1fr auto;min-height:100vh;padding:var(--kiosk-space-8) var(--kiosk-space-8) var(--kiosk-space-6);position:relative;width:100%}.kiosk-cash__main[data-v-0232e5ed]{align-items:center;display:flex;flex-direction:column;gap:var(--kiosk-space-6);justify-content:center;padding:var(--kiosk-space-8) 0}.kiosk-cash__header[data-v-0232e5ed]{margin-bottom:var(--kiosk-space-4);text-align:center}.kiosk-cash__badge[data-v-0232e5ed]{align-items:center;background:var(--kiosk-primary);border-radius:50%;box-shadow:var(--kiosk-shadow-cta);color:var(--kiosk-text-on-red);display:flex;font-size:80px;height:140px;justify-content:center;margin:0 auto var(--kiosk-space-6);width:140px}.kiosk-cash__title[data-v-0232e5ed]{color:var(--kiosk-text);font-size:calc(var(--kiosk-font-size-hero)*var(--kiosk-text-scale));font-weight:var(--kiosk-font-weight-black);line-height:var(--kiosk-line-height-tight);margin:0 0 var(--kiosk-space-3)}.kiosk-cash__subtitle[data-v-0232e5ed]{color:var(--kiosk-text-muted);font-size:calc(var(--kiosk-font-size-subtitle)*var(--kiosk-text-scale));line-height:var(--kiosk-line-height-snug);margin:0 auto;max-width:760px}.kiosk-cash__board[data-v-0232e5ed]{align-items:center;display:flex;flex-direction:column;gap:var(--kiosk-space-6);justify-content:center;width:100%}.kiosk-cash__card[data-v-0232e5ed]{border-radius:30px;max-width:720px;width:100%}.kiosk-cash__row[data-v-0232e5ed]{align-items:center;display:flex;gap:var(--kiosk-space-6);justify-content:space-between;padding:var(--kiosk-space-4) 0}.kiosk-cash__label[data-v-0232e5ed]{color:var(--kiosk-text-muted);font-size:calc(var(--kiosk-font-size-subtitle)*var(--kiosk-text-scale));font-weight:var(--kiosk-font-weight-medium)}.kiosk-cash__number[data-v-0232e5ed]{color:var(--kiosk-primary);font-size:calc(96px*var(--kiosk-text-scale));font-variant-numeric:tabular-nums;font-weight:var(--kiosk-font-weight-black);letter-spacing:var(--kiosk-letter-spacing-tight);line-height:1}.kiosk-cash__divider[data-v-0232e5ed]{background:var(--kiosk-border);height:1px;margin:var(--kiosk-space-3) 0}.kiosk-cash__help[data-v-0232e5ed]{color:var(--kiosk-text-muted);font-size:calc(var(--kiosk-font-size-body)*var(--kiosk-text-scale));line-height:var(--kiosk-line-height-snug);max-width:540px;text-align:center}.kiosk-cash__footer[data-v-0232e5ed]{align-items:center;border-top:1px solid var(--kiosk-border);display:flex;flex-direction:column;gap:var(--kiosk-space-4);padding-top:var(--kiosk-space-6)}.kiosk-cash__countdown[data-v-0232e5ed]{color:var(--kiosk-text-muted);font-size:calc(var(--kiosk-font-size-caption)*var(--kiosk-text-scale));font-weight:var(--kiosk-font-weight-medium)}",""]);const n=a},7914(e,t,o){o.d(t,{A:()=>n});var r=o(6314),a=o.n(r)()(function(e){return e[1]});a.push([e.id,".kiosk-confirmation[data-v-42aa4547]{align-items:center;background:var(--kiosk-page-bg,var(--kiosk-bg));color:var(--kiosk-text);display:flex;flex-direction:column;gap:1.25rem;justify-content:center;min-height:100vh;padding:2.5rem 2rem;text-align:center}.kiosk-confirmation-anim[data-v-42aa4547]{height:140px;position:relative;width:140px}.kiosk-check-svg[data-v-42aa4547]{height:140px;overflow:visible;width:140px}.kiosk-ring-fill[data-v-42aa4547]{animation:drawRing-42aa4547 .8s ease-out .1s forwards}.kiosk-check-path[data-v-42aa4547]{stroke-dasharray:80;stroke-dashoffset:80;animation:drawCheck-42aa4547 .4s ease-out .9s forwards}@keyframes drawRing-42aa4547{to{stroke-dashoffset:0}}@keyframes drawCheck-42aa4547{to{stroke-dashoffset:0}}.kiosk-confirmation-title[data-v-42aa4547]{animation:fadeUp-42aa4547 .5s ease-out .8s both;font-size:clamp(2.4rem,6vw,4.8rem);font-weight:900;letter-spacing:-.01em;margin:0}.kiosk-confirmation-card[data-v-42aa4547]{animation:fadeUp-42aa4547 .5s ease-out 1s both;background:var(--kiosk-surface);border:1.5px solid var(--kiosk-border);border-radius:30px;display:flex;flex-direction:column;gap:1rem;max-width:400px;padding:1.8rem 2.8rem;width:100%}.kiosk-confirmation-row[data-v-42aa4547]{display:flex;flex-direction:column;gap:.3rem}.kiosk-confirmation-label[data-v-42aa4547]{color:var(--kiosk-text-muted);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase}.kiosk-confirmation-number[data-v-42aa4547]{color:var(--kiosk-primary);font-size:4rem;font-weight:900;line-height:1}.kiosk-confirmation-price[data-v-42aa4547]{color:var(--kiosk-warning);font-size:1.8rem;font-weight:800}.kiosk-confirmation-message[data-v-42aa4547]{animation:fadeUp-42aa4547 .5s ease-out 1.1s both;color:var(--kiosk-text-muted);font-size:1rem;line-height:1.7}.kiosk-confirmation-message p[data-v-42aa4547]{margin:0}.kiosk-confirmation-points[data-v-42aa4547]{align-items:center;animation:fadeUp-42aa4547 .5s ease-out 1.15s both;background:rgba(245,158,11,.12);border:1px solid rgba(255,193,7,.24);border-radius:16px;display:flex;gap:12px;max-width:360px;padding:14px 20px;width:100%}.kiosk-points-icon[data-v-42aa4547]{animation:pulse 1.5s ease-in-out infinite;flex-shrink:0;font-size:1.8rem}.kiosk-points-text[data-v-42aa4547]{display:flex;flex-direction:column;gap:2px}.kiosk-points-name[data-v-42aa4547]{color:var(--kiosk-text-muted);font-size:.85rem}.kiosk-points-value[data-v-42aa4547]{color:var(--kiosk-warning);font-size:1rem}.kiosk-points-value strong[data-v-42aa4547]{color:var(--kiosk-warning);font-weight:700}.fade-up-enter-active[data-v-42aa4547]{transition:all .4s ease-out}.fade-up-enter-from[data-v-42aa4547]{opacity:0;transform:translateY(12px)}.kiosk-confirmation-timer[data-v-42aa4547]{animation:fadeUp-42aa4547 .5s ease-out 1.2s both;display:flex;flex-direction:column;gap:.5rem;max-width:320px;width:100%}.kiosk-timer-label[data-v-42aa4547]{color:var(--kiosk-text-muted);font-size:.85rem}.kiosk-timer-bar[data-v-42aa4547]{background:var(--kiosk-surface-alt);border-radius:3px;height:5px;overflow:hidden}.kiosk-timer-fill[data-v-42aa4547]{background:linear-gradient(90deg,var(--kiosk-success),#00b894);border-radius:3px;height:100%;transition:width 1s linear}.kiosk-btn-home[data-v-42aa4547]{animation:fadeUp-42aa4547 .5s ease-out 1.3s both;background:linear-gradient(135deg,var(--kiosk-primary),var(--kiosk-primary-dark));border:none;border-radius:28px;box-shadow:0 8px 24px rgba(244,80,30,.22);color:var(--kiosk-text-on-red);cursor:pointer;font-size:1.25rem;font-weight:900;padding:1.15rem 2.8rem;transition:transform .1s,box-shadow .1s}.kiosk-btn-home[data-v-42aa4547]:active{box-shadow:0 4px 14px rgba(244,80,30,.34);transform:scale(.96)}@keyframes fadeUp-42aa4547{0%{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}.kiosk-btn-print[data-v-42aa4547]{background:var(--kiosk-surface);border:1.5px solid var(--kiosk-border);border-radius:50px;color:var(--kiosk-text-muted);cursor:pointer;font-family:inherit;font-size:1rem;padding:.75rem 2rem;transition:all .2s}.kiosk-btn-print[data-v-42aa4547]:hover:not(:disabled){background:var(--kiosk-surface-alt);color:var(--kiosk-text)}.kiosk-btn-print[data-v-42aa4547]:disabled{cursor:default;opacity:.6}.kiosk-btn-print.is-done[data-v-42aa4547]{border-color:rgba(46,204,113,.5);color:var(--kiosk-success)}.kiosk-btn-print.is-error[data-v-42aa4547]{border-color:rgba(194,30,47,.5);color:var(--kiosk-error)}.kiosk-receipt-zone[data-v-42aa4547]{display:none}.kiosk-receipt-zone[data-print-failed=true][data-v-42aa4547]{-webkit-overflow-scrolling:touch;background:#fff;border:1px solid #e2e2e4;border-radius:16px;box-shadow:0 10px 32px rgba(0,0,0,.08);color:#1f1f1f;display:block!important;margin:1.25rem auto;max-height:80vh;max-width:500px;overflow-y:auto;overscroll-behavior:contain;padding:1.25rem 1.5rem 1.5rem;text-align:center}.kiosk-fallback-receipt-title[data-v-42aa4547]{font-size:1.35rem;font-weight:800;margin:0 0 .75rem}.kiosk-fallback-receipt-help[data-v-42aa4547]{color:#555;font-size:.95rem;line-height:1.45;margin:0 0 1rem}@media print{body[data-v-42aa4547]>*{display:none!important}#kiosk-print-receipt[data-v-42aa4547]{color:#000;display:block!important;font-family:monospace;font-size:14px;margin:0 auto;padding:12px;width:300px}}.kiosk-printer-fallback[data-v-42aa4547]{background:#fef3cd;border:2px solid #f59e0b;border-radius:12px;margin:16px 0;padding:20px;text-align:center}.kiosk-printer-fallback-label[data-v-42aa4547]{color:#92400e;font-size:1.1rem;margin-bottom:8px}.kiosk-printer-fallback-number[data-v-42aa4547]{color:#1f2937;font-size:3.5rem;font-weight:800;line-height:1.2;margin:8px 0}.kiosk-printer-fallback-hint[data-v-42aa4547]{color:#78350f;font-size:1rem}",""]);const n=a},1433(e,t,o){o.d(t,{A:()=>n});var r=o(6314),a=o.n(r)()(function(e){return e[1]});a.push([e.id,".kiosk-login-screen[data-v-4fdaa139]{align-items:center;background:linear-gradient(160deg,#0f0f1a,#1a1a2e);display:flex;justify-content:center;min-height:100vh;padding:2rem}.kiosk-login-card[data-v-4fdaa139]{background:hsla(0,0%,100%,.04);border:1px solid hsla(0,0%,100%,.1);border-radius:24px;display:flex;flex-direction:column;gap:2rem;max-width:420px;padding:3rem 2.5rem;width:100%}.kiosk-login-logo[data-v-4fdaa139]{align-items:center;display:flex;flex-direction:column;gap:.5rem;text-align:center}.kiosk-login-icon[data-v-4fdaa139]{font-size:3rem}.kiosk-login-title[data-v-4fdaa139]{color:#fff;font-size:1.6rem;font-weight:800;margin:0}.kiosk-login-sub[data-v-4fdaa139]{color:hsla(0,0%,100%,.4);font-size:.9rem;letter-spacing:.08em;margin:0;text-transform:uppercase}.kiosk-login-form[data-v-4fdaa139]{display:flex;flex-direction:column;gap:1.25rem}.kiosk-login-auto[data-v-4fdaa139]{align-items:stretch}.kiosk-login-status[data-v-4fdaa139]{align-items:center;display:flex;flex-direction:column;gap:.85rem}.kiosk-login-status-icon[data-v-4fdaa139]{align-items:center;background:hsla(0,0%,100%,.14);border-radius:999px;color:hsla(0,0%,100%,.72);display:inline-flex;font-weight:800;height:22px;justify-content:center;width:22px}.kiosk-login-status-text[data-v-4fdaa139]{color:hsla(0,0%,100%,.78);font-size:1rem;font-weight:600;margin:0;text-align:center}.kiosk-login-field[data-v-4fdaa139]{display:flex;flex-direction:column;gap:.4rem}.kiosk-login-label[data-v-4fdaa139]{color:hsla(0,0%,100%,.55);font-size:.85rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase}.kiosk-login-input[data-v-4fdaa139]{background:hsla(0,0%,100%,.07);border:1px solid hsla(0,0%,100%,.14);border-radius:12px;color:#fff;font-size:1rem;outline:none;padding:.85rem 1rem;transition:border-color .2s}.kiosk-login-input[data-v-4fdaa139]:focus{border-color:#f4501e}.kiosk-login-input[data-v-4fdaa139]::-moz-placeholder{color:hsla(0,0%,100%,.25)}.kiosk-login-input[data-v-4fdaa139]::placeholder{color:hsla(0,0%,100%,.25)}.kiosk-login-input[data-v-4fdaa139]:disabled{opacity:.5}.kiosk-login-hint[data-v-4fdaa139]{color:hsla(0,0%,100%,.38);font-size:.78rem;line-height:1.35;margin:0}.kiosk-login-hint-center[data-v-4fdaa139]{text-align:center}.kiosk-login-hint strong[data-v-4fdaa139]{color:hsla(0,0%,100%,.55);font-weight:600}.kiosk-login-devhint[data-v-4fdaa139]{color:hsla(0,0%,100%,.32);font-size:.74rem;line-height:1.4;margin:0;text-align:center}.kiosk-login-devhint code[data-v-4fdaa139]{background:hsla(0,0%,100%,.08);border-radius:4px;color:hsla(0,0%,100%,.65);font-size:.85em;padding:.1em .35em}.kiosk-login-error[data-v-4fdaa139]{background:rgba(244,80,30,.12);border:1px solid rgba(244,80,30,.3);border-radius:10px;color:#ff6b7a;font-size:.9rem;margin:0;padding:.7rem 1rem;text-align:center}.kiosk-login-btn[data-v-4fdaa139]{align-items:center;background:#f4501e;border:none;border-radius:50px;color:#fff;cursor:pointer;display:flex;font-size:1.05rem;font-weight:700;justify-content:center;min-height:52px;padding:1rem;transition:background .2s,opacity .2s}.kiosk-login-btn[data-v-4fdaa139]:hover:not(:disabled){background:#c0001a}.kiosk-login-btn[data-v-4fdaa139]:disabled{cursor:default;opacity:.45}.kiosk-login-secondary-btn[data-v-4fdaa139]{background:transparent;border:1px solid hsla(0,0%,100%,.16);border-radius:50px;color:hsla(0,0%,100%,.82);cursor:pointer;font-size:.96rem;font-weight:700;padding:.95rem 1rem}.kiosk-login-spinner[data-v-4fdaa139]{animation:kspin-4fdaa139 .7s linear infinite;border:3px solid hsla(0,0%,100%,.3);border-radius:50%;border-top-color:#fff;display:inline-block;height:22px;width:22px}@keyframes kspin-4fdaa139{to{transform:rotate(1turn)}}.kiosk-login-footer[data-v-4fdaa139]{color:hsla(0,0%,100%,.22);font-size:.78rem;margin:0;text-align:center}.fade-enter-active[data-v-4fdaa139],.fade-leave-active[data-v-4fdaa139]{transition:opacity .25s}.fade-enter-from[data-v-4fdaa139],.fade-leave-to[data-v-4fdaa139]{opacity:0}",""]);const n=a},5560(e,t,o){o.d(t,{A:()=>n});var r=o(6314),a=o.n(r)()(function(e){return e[1]});a.push([e.id,'.kiosk-loyalty-screen[data-v-7d85ca6a]{background:radial-gradient(ellipse at top,#fff7ed 0,#fff 45%),radial-gradient(ellipse at bottom,#fff7e0 0,#fff 50%),#fff;color:#0f0f0f;display:flex;flex-direction:column;min-height:100vh;padding-bottom:2rem}.kiosk-loyalty-header[data-v-7d85ca6a]{align-items:center;border-bottom:none;display:flex;gap:1rem;padding:1.25rem 2rem}.kiosk-back-btn[data-v-7d85ca6a]{align-items:center;background:#f7f7f7;border:1px solid #e5e5e5;border-radius:12px;color:#0f0f0f;cursor:pointer;display:flex;height:52px;justify-content:center;transition:background .2s;width:52px}.kiosk-back-btn[data-v-7d85ca6a]:hover{background:#ffe8dd;color:#f4501e}.kiosk-loyalty-title[data-v-7d85ca6a]{color:#0f0f0f;font-size:1.6rem;font-weight:700;letter-spacing:.02em}.kiosk-loyalty-step[data-v-7d85ca6a]{align-items:center;display:flex;flex:1;justify-content:center;padding:1rem 1.5rem}.kiosk-loyalty-card[data-v-7d85ca6a]{background:#fff;border:1.5px solid #ffe8dd;border-radius:28px;box-shadow:0 12px 40px rgba(244,80,30,.12),0 4px 12px hsla(0,0%,6%,.04);display:flex;flex-direction:column;gap:1.25rem;max-width:600px;padding:2.5rem 2rem 2rem;position:relative;width:100%}.kiosk-loyalty-card[data-v-7d85ca6a]:before{background:linear-gradient(90deg,#f5c518,#f4501e);border-radius:0 0 6px 6px;content:"";height:6px;left:24px;position:absolute;right:24px;top:0}.kiosk-loyalty-subtitle[data-v-7d85ca6a]{color:#5a5a5a;font-size:1.1rem;text-align:center}.kiosk-loyalty-input-row[data-v-7d85ca6a]{position:relative}.kiosk-loyalty-input[data-v-7d85ca6a]{background:#fff;border:2px solid #e5e5e5;border-radius:14px;box-sizing:border-box;color:#0f0f0f;font-size:1.5rem;letter-spacing:.1em;outline:none;padding:1rem 3rem 1rem 1.25rem;text-align:center;transition:border-color .2s;width:100%}.kiosk-loyalty-input--active[data-v-7d85ca6a],.kiosk-loyalty-input[data-v-7d85ca6a]:focus{border-color:#f4501e}.kiosk-loyalty-input[data-v-7d85ca6a]::-moz-placeholder{color:#8a8a8a}.kiosk-loyalty-input[data-v-7d85ca6a]::placeholder{color:#8a8a8a}.kiosk-btn-clear[data-v-7d85ca6a]{background:none;border:none;color:#8a8a8a;cursor:pointer;font-size:1.2rem;padding:.25rem;position:absolute;right:1rem;top:50%;transform:translateY(-50%)}.kiosk-numpad[data-v-7d85ca6a]{display:grid;gap:.75rem;grid-template-columns:repeat(3,1fr)}.kiosk-numpad-btn[data-v-7d85ca6a]{align-items:center;background:#fff;border:1.5px solid #e5e5e5;border-radius:14px;color:#0f0f0f;cursor:pointer;display:flex;font-size:1.5rem;font-weight:700;height:64px;justify-content:center;transition:background .15s,transform .1s,border-color .15s;-webkit-user-select:none;-moz-user-select:none;user-select:none}.kiosk-numpad-btn[data-v-7d85ca6a]:hover{background:#fafafa;border-color:#f4501e}.kiosk-numpad-btn[data-v-7d85ca6a]:active{background:#ffe8dd;border-color:#f4501e;color:#f4501e;transform:scale(.95)}.kiosk-numpad-btn.wide[data-v-7d85ca6a]{background:#fafafa;color:#5a5a5a}.kiosk-numpad-btn.wide[data-v-7d85ca6a]:active{background:#ffe8dd;color:#f4501e}.kiosk-loyalty-error[data-v-7d85ca6a]{background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.4);border-radius:10px;color:#c21e2f;font-size:.95rem;padding:.75rem 1rem;text-align:center}.kiosk-btn-primary[data-v-7d85ca6a]{align-items:center;background:#f4501e;border:none;border-radius:16px;color:#fff;cursor:pointer;display:flex;font-size:1.1rem;font-weight:700;gap:.5rem;justify-content:center;padding:1rem 2rem;transition:opacity .2s,transform .1s}.kiosk-btn-primary[data-v-7d85ca6a]:disabled{cursor:default;opacity:.4}.kiosk-btn-primary.full[data-v-7d85ca6a]{width:100%}.kiosk-btn-primary[data-v-7d85ca6a]:not(:disabled):active{transform:scale(.97)}.kiosk-loyalty-skip[data-v-7d85ca6a]{background:none;border:none;color:#5a5a5a;cursor:pointer;font-size:1rem;font-weight:600;padding:.75rem;text-align:center;text-decoration:underline}.kiosk-loyalty-skip[data-v-7d85ca6a]:hover{color:#f4501e}.kiosk-loyalty-register-btn[data-v-7d85ca6a]{background:linear-gradient(135deg,#f5c518,#e0b214);border:none;border-radius:14px;box-shadow:0 4px 12px rgba(245,197,24,.32);color:#0f0f0f;cursor:pointer;font-size:1rem;font-weight:800;letter-spacing:.2px;padding:.85rem 1.25rem;text-align:center;transition:transform .15s ease,box-shadow .15s ease,filter .15s ease}.kiosk-loyalty-register-btn[data-v-7d85ca6a]:hover{box-shadow:0 6px 16px rgba(245,197,24,.42);filter:brightness(1.05);transform:translateY(-1px)}.kiosk-loyalty-register-btn[data-v-7d85ca6a]:active{transform:translateY(0)}.kiosk-register-fields[data-v-7d85ca6a]{display:flex;flex-direction:column;gap:1rem}.kiosk-field-group[data-v-7d85ca6a]{display:flex;flex-direction:column;gap:.35rem}.kiosk-field-label[data-v-7d85ca6a]{color:#8a8a8a;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}.kiosk-spinner-inline[data-v-7d85ca6a]{animation:spin-7d85ca6a .7s linear infinite;border:3px solid rgba(0,0,0,.3);border-radius:50%;border-top-color:#000;display:inline-block;height:20px;width:20px}@keyframes spin-7d85ca6a{to{transform:rotate(1turn)}}.kiosk-loyalty-profile[data-v-7d85ca6a]{align-items:center;display:flex;gap:1rem}.kiosk-loyalty-avatar[data-v-7d85ca6a]{align-items:center;background:linear-gradient(135deg,gold,orange);border-radius:50%;color:#000;display:flex;flex-shrink:0;font-size:1.4rem;font-weight:800;height:64px;justify-content:center;width:64px}.kiosk-loyalty-info h2[data-v-7d85ca6a]{font-size:1.3rem;font-weight:700;margin:0}.kiosk-loyalty-member-since[data-v-7d85ca6a]{color:#8a8a8a;font-size:.85rem;margin:.15rem 0 0}.kiosk-loyalty-points-badge[data-v-7d85ca6a]{background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,165,0,.1));border:1px solid rgba(255,215,0,.3);border-radius:16px;display:flex;flex-direction:column;gap:.25rem;padding:1.25rem;text-align:center}.kiosk-loyalty-points-value[data-v-7d85ca6a]{color:gold;font-size:3rem;font-weight:900;line-height:1}.kiosk-loyalty-points-label[data-v-7d85ca6a]{color:#5a5a5a;font-size:.9rem}.kiosk-loyalty-points-equiv[data-v-7d85ca6a]{color:#4ade80;font-size:1rem;font-weight:600;margin-top:.25rem}.kiosk-loyalty-progress-wrap[data-v-7d85ca6a]{display:flex;flex-direction:column;gap:.4rem}.kiosk-loyalty-progress-bar[data-v-7d85ca6a]{background:#f7f7f7;border-radius:4px;height:8px;overflow:hidden}.kiosk-loyalty-progress-fill[data-v-7d85ca6a]{background:linear-gradient(90deg,gold,orange);border-radius:4px;height:100%;transition:width .6s ease}.kiosk-loyalty-progress-label[data-v-7d85ca6a]{color:#8a8a8a;font-size:.8rem;margin:0;text-align:center}.kiosk-loyalty-options[data-v-7d85ca6a]{display:flex;flex-direction:column;gap:.75rem}.kiosk-loyalty-option[data-v-7d85ca6a]{align-items:center;background:#fafafa;border:1.5px solid #e5e5e5;border-radius:16px;color:#0f0f0f;cursor:pointer;display:flex;gap:1rem;padding:1rem 1.25rem;text-align:left;transition:border-color .2s,background .2s;width:100%}.kiosk-loyalty-option.selected[data-v-7d85ca6a]{background:rgba(255,215,0,.1);border-color:gold}.kiosk-loyalty-option-icon[data-v-7d85ca6a]{align-items:center;border-radius:12px;display:flex;flex-shrink:0;height:52px;justify-content:center;width:52px}.kiosk-loyalty-option-icon.green[data-v-7d85ca6a]{background:rgba(74,222,128,.15);color:#4ade80}.kiosk-loyalty-option-icon.gray[data-v-7d85ca6a]{background:#f7f7f7;color:#8a8a8a}.kiosk-loyalty-option-text[data-v-7d85ca6a]{display:flex;flex-direction:column;gap:.2rem}.kiosk-loyalty-option-text strong[data-v-7d85ca6a]{font-size:1rem;font-weight:700}.kiosk-loyalty-option-text span[data-v-7d85ca6a]{color:#8a8a8a;font-size:.85rem}.kiosk-loyalty-option.selected .kiosk-loyalty-option-text span[data-v-7d85ca6a]{color:rgba(255,215,0,.7)}.kiosk-loyalty-not-enough[data-v-7d85ca6a]{background:#fafafa;border-radius:12px;color:#5a5a5a;font-size:.95rem;line-height:1.6;padding:1rem;text-align:center}.green[data-v-7d85ca6a]{color:#4ade80}.kiosk-loyalty-confirm-card[data-v-7d85ca6a]{align-items:center;padding:3rem 2rem;text-align:center}.kiosk-loyalty-confirm-icon[data-v-7d85ca6a]{margin-bottom:1rem}.kiosk-loyalty-confirm-title[data-v-7d85ca6a]{font-size:1.8rem;font-weight:800;margin:0}.kiosk-loyalty-confirm-amount[data-v-7d85ca6a]{color:#4ade80;font-size:3rem;font-weight:900;margin:.5rem 0}.kiosk-loyalty-confirm-sub[data-v-7d85ca6a]{color:#8a8a8a;font-size:1rem;margin-bottom:1rem}',""]);const n=a},418(e,t,o){o.d(t,{A:()=>n});var r=o(6314),a=o.n(r)()(function(e){return e[1]});a.push([e.id,".kiosk-payment[data-v-4669a876]{background:var(--kiosk-page-bg,var(--kiosk-bg));color:var(--kiosk-text);display:flex;flex-direction:column;height:100vh;overflow:hidden;width:100vw}.kiosk-pay-header[data-v-4669a876]{background:var(--kiosk-surface);border-bottom:1px solid var(--kiosk-border);box-shadow:var(--kiosk-shadow-sticky);gap:20px;padding:26px 34px 22px}.kiosk-pay-back[data-v-4669a876],.kiosk-pay-header[data-v-4669a876]{align-items:center;display:flex;flex-shrink:0}.kiosk-pay-back[data-v-4669a876]{background:var(--kiosk-bg);border:1.5px solid var(--kiosk-border);border-radius:18px;color:var(--kiosk-text);cursor:pointer;height:60px;justify-content:center;transition:all .15s ease;width:60px}.kiosk-pay-back[data-v-4669a876]:active{background:var(--kiosk-surface-alt);transform:scale(.95)}.kiosk-pay-back[data-v-4669a876]:disabled{cursor:not-allowed;opacity:.4}.kiosk-pay-header-info[data-v-4669a876]{flex:1}.kiosk-pay-title[data-v-4669a876]{color:var(--kiosk-text);font-size:clamp(30px,4vw,44px);font-weight:900;margin:0 0 4px;text-transform:uppercase}.kiosk-pay-total-label[data-v-4669a876]{color:var(--kiosk-text-muted);font-size:16px;margin:0}.kiosk-pay-total-label strong[data-v-4669a876]{color:var(--kiosk-text);font-size:18px}.kiosk-pay-amount-card[data-v-4669a876]{align-items:center;background:linear-gradient(135deg,var(--kiosk-primary),var(--kiosk-primary-dark));border-radius:34px;box-shadow:var(--kiosk-shadow-cta);color:var(--kiosk-text-on-red);display:flex;flex-direction:column;gap:10px;justify-content:center;margin:28px auto 0;min-height:168px;text-align:center;width:min(720px,calc(100vw - 64px))}.kiosk-pay-amount-card span[data-v-4669a876]{font-size:18px;font-weight:900;letter-spacing:.12em;opacity:.86;text-transform:uppercase}.kiosk-pay-amount-card strong[data-v-4669a876]{font-size:clamp(56px,9vw,96px);font-weight:900;letter-spacing:0;line-height:.92}.kiosk-pay-methods-outer[data-v-4669a876]{align-items:flex-start;display:flex;flex:1;justify-content:center;overflow-y:auto;padding:28px 32px 20px;scrollbar-width:none}.kiosk-pay-methods-outer[data-v-4669a876]::-webkit-scrollbar{display:none}.kiosk-pay-methods[data-v-4669a876]{align-content:start;display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));max-width:1000px;width:100%}.kiosk-pay-method[data-v-4669a876]{align-items:center;background:var(--kiosk-surface);border:2px solid var(--kiosk-border);border-radius:28px;box-shadow:var(--kiosk-shadow-card);cursor:pointer;display:flex;gap:20px;min-height:138px;padding:26px 28px;position:relative;transition:all .2s ease}.kiosk-pay-method[data-v-4669a876]:active{transform:scale(.99)}.kiosk-pay-method.disabled[data-v-4669a876]{cursor:not-allowed;opacity:.5;transform:none}.kiosk-pay-method.selected[data-v-4669a876]{background:var(--kiosk-surface);border-color:var(--kiosk-primary);box-shadow:0 0 0 2px var(--kiosk-primary),var(--kiosk-shadow-lift)}.kiosk-pay-method-icon[data-v-4669a876]{align-items:center;border-radius:50%;display:flex;flex-shrink:0;height:86px;justify-content:center;width:86px}.kiosk-pay-method-icon.card[data-v-4669a876]{background:linear-gradient(135deg,#1a3a6b,var(--kiosk-info,#2563eb))}.kiosk-pay-method-icon.cash[data-v-4669a876]{background:linear-gradient(135deg,#0a4a20,var(--kiosk-success,#16a34a))}.kiosk-pay-method-icon.tr[data-v-4669a876]{background:linear-gradient(135deg,#7a2000,#ea580c)}.kiosk-pay-method-info[data-v-4669a876]{flex:1;min-width:0}.kiosk-pay-method-info h3[data-v-4669a876]{color:var(--kiosk-text);font-size:25px;font-weight:900;margin:0 0 4px}.kiosk-pay-method-info p[data-v-4669a876]{color:var(--kiosk-text-muted);font-size:15px;margin:0}.kiosk-pay-method-check[data-v-4669a876]{align-items:center;animation:popIn-4669a876 .2s cubic-bezier(.34,1.56,.64,1);background:var(--kiosk-primary);border-radius:50%;display:flex;height:36px;justify-content:center;width:36px}@keyframes popIn-4669a876{0%{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}.kiosk-pay-processing[data-v-4669a876]{flex:1;flex-direction:column;gap:24px;padding:40px;text-align:center}.kiosk-pay-processing[data-v-4669a876],.kiosk-pay-processing-ring[data-v-4669a876]{align-items:center;display:flex;justify-content:center}.kiosk-pay-processing-ring[data-v-4669a876]{animation:spin-4669a876 1.5s linear infinite;border:4px solid var(--kiosk-primary-soft);border-radius:50%;height:120px;width:120px}@keyframes spin-4669a876{to{transform:rotate(1turn)}}.kiosk-pay-processing-ring-inner[data-v-4669a876]{animation:spin-4669a876 .8s linear infinite reverse;background:var(--kiosk-primary-soft);border:4px solid var(--kiosk-primary);border-block-start-color:transparent;border-radius:50%;height:96px;width:96px}.kiosk-pay-processing h2[data-v-4669a876]{color:var(--kiosk-text);font-size:28px;font-weight:800;margin:0}.kiosk-pay-processing p[data-v-4669a876]{color:var(--kiosk-text-muted);font-size:16px;margin:0}.kiosk-pay-error[data-v-4669a876]{background:var(--kiosk-primary-soft);border:1px solid var(--kiosk-primary);border-radius:12px;color:var(--kiosk-error);font-size:15px;margin-bottom:8px;padding:14px 20px;text-align:center}.kiosk-pay-offline-alert[data-v-4669a876]{background:rgba(215,38,61,.08);border:1px solid rgba(215,38,61,.28);border-radius:12px;color:#8f1022;font-size:14px;font-weight:700;line-height:1.35;margin:0 20px 12px;padding:12px 14px;text-align:center}.kiosk-pay-confirm[data-v-4669a876]{flex-shrink:0;padding:20px 32px 34px}.kiosk-pay-confirm-inner[data-v-4669a876]{display:flex;justify-content:center;width:100%}.kiosk-btn-confirm[data-v-4669a876]{align-items:center;background:var(--kiosk-primary,#f4501e);border:none;border-radius:30px;box-shadow:var(--kiosk-shadow-cta);color:var(--kiosk-text-on-red,#fff);cursor:pointer;display:flex;font-size:26px;font-weight:900;gap:16px;height:auto;justify-content:space-between;max-width:680px;min-height:92px;padding:20px 32px;transition:all .15s ease;width:100%}.kiosk-btn-confirm[data-v-4669a876]:disabled{background:#c9c9c9;box-shadow:none;color:#4a4a4a;cursor:not-allowed;opacity:.65}.kiosk-btn-confirm[data-v-4669a876]:not(:disabled):active{box-shadow:var(--kiosk-shadow-card);transform:scale(.98)}.kiosk-tpe-overlay[data-v-4669a876]{background:#fff;color:#0f0f0f;flex-direction:column;gap:1.5rem;inset:0;padding:2rem;position:fixed;text-align:center;z-index:100}.kiosk-tpe-card-anim[data-v-4669a876],.kiosk-tpe-overlay[data-v-4669a876]{align-items:center;display:flex;justify-content:center}.kiosk-tpe-card-anim[data-v-4669a876]{height:160px;position:relative;width:160px}.kiosk-tpe-ring[data-v-4669a876]{animation:tpe-pulse-4669a876 1.8s ease-out infinite;border:3px solid var(--kiosk-primary);border-radius:50%;inset:0;opacity:.4;position:absolute}@keyframes tpe-pulse-4669a876{0%{opacity:.9;transform:scale(.6)}to{opacity:0;transform:scale(1.4)}}.kiosk-tpe-card-icon[data-v-4669a876]{align-items:center;background:#ffe8dd;border:2px solid #f4501e;border-radius:50%;color:#f4501e;display:flex;height:100px;justify-content:center;position:relative;width:100px;z-index:2}.kiosk-tpe-title[data-v-4669a876]{color:#0f0f0f;font-size:1.8rem;font-weight:800;margin:0}.kiosk-tpe-help[data-v-4669a876]{color:#5a5a5a;font-size:.95rem;line-height:1.35;margin:.5rem 0 0;max-width:22rem;text-align:center}.kiosk-tpe-sub[data-v-4669a876]{color:#5a5a5a;font-size:1rem;margin:0;max-width:340px}.kiosk-tpe-spinner[data-v-4669a876]{animation:tpe-spin-4669a876 .8s linear infinite;border:5px solid #ffe8dd;border-radius:50%;border-top-color:#f4501e;height:64px;width:64px}@keyframes tpe-spin-4669a876{to{transform:rotate(1turn)}}.kiosk-tpe-cancel[data-v-4669a876]{background:#fff;border:1.5px solid #e5e5e5;border-radius:14px;color:#5a5a5a;cursor:pointer;font-size:16px;font-weight:600;margin-top:8px;padding:14px 40px;transition:all .15s}.kiosk-tpe-cancel[data-v-4669a876]:hover{background:#ffe8dd;border-color:#f4501e;color:#f4501e}.kiosk-pay-method[data-v-4669a876]:focus-visible{outline:3px solid var(--kiosk-focus-ring,var(--kiosk-primary));outline-offset:3px}",""]);const n=a},2235(e,t,o){o.d(t,{A:()=>n});var r=o(6314),a=o.n(r)()(function(e){return e[1]});a.push([e.id,".kiosk-upsell[data-v-604177bc]{background:var(--kiosk-page-bg,var(--kiosk-bg));display:flex;flex-direction:column;height:100vh;overflow:hidden;width:100vw}.kiosk-upsell-loading[data-v-604177bc]{align-items:center;display:flex;flex:1;justify-content:center}.kiosk-spinner[data-v-604177bc]{animation:spin-604177bc .8s linear infinite;border:3px solid var(--kiosk-border);border-radius:50%;border-top-color:var(--kiosk-primary);height:48px;width:48px}@keyframes spin-604177bc{to{transform:rotate(1turn)}}.kiosk-upsell-header[data-v-604177bc]{background:var(--kiosk-surface);border-bottom:1px solid var(--kiosk-border);box-shadow:var(--kiosk-shadow-sticky);flex-shrink:0;padding:30px 32px 22px;text-align:center}.kiosk-upsell-title[data-v-604177bc]{color:var(--kiosk-text);font-size:clamp(34px,4vw,48px);font-weight:900;letter-spacing:0;margin:0 0 6px;text-transform:uppercase}.kiosk-upsell-subtitle[data-v-604177bc]{color:var(--kiosk-text-muted);font-size:16px;margin:0}.kiosk-upsell-grid[data-v-604177bc]{align-content:start;display:grid;flex:1;gap:22px;grid-template-columns:repeat(3,minmax(0,1fr));overflow-y:auto;padding:26px 30px 12px;scrollbar-width:none}.kiosk-upsell-grid[data-v-604177bc]::-webkit-scrollbar{display:none}.kiosk-upsell-card[data-v-604177bc]{background:var(--kiosk-surface);border:1.5px solid var(--kiosk-border);border-radius:28px;box-shadow:var(--kiosk-shadow-card);cursor:pointer;overflow:hidden;position:relative;transition:all .2s ease}.kiosk-upsell-card.selected[data-v-604177bc]{border-color:var(--kiosk-primary);box-shadow:0 0 0 3px var(--kiosk-primary-soft)}.kiosk-upsell-card[data-v-604177bc]:active{transform:scale(.98)}.kiosk-upsell-card[data-v-604177bc]:focus-visible{outline:3px solid var(--kiosk-focus-ring,var(--kiosk-primary));outline-offset:3px}.kiosk-upsell-img-wrap[data-v-604177bc]{background:var(--kiosk-product-media-bg,var(--kiosk-surface-alt));height:176px;overflow:hidden}.kiosk-upsell-img[data-v-604177bc]{height:100%;-o-object-fit:cover;object-fit:cover;transition:transform .3s ease;width:100%}.kiosk-upsell-card:active .kiosk-upsell-img[data-v-604177bc]{transform:scale(1.03)}.kiosk-upsell-img-fallback[data-v-604177bc]{align-items:center;background:var(--kiosk-surface-alt);display:flex;font-size:56px;height:100%;justify-content:center;width:100%}.kiosk-upsell-info[data-v-604177bc]{display:flex;flex-direction:column;gap:6px;padding:16px 18px 20px}.kiosk-upsell-item-name[data-v-604177bc]{-webkit-line-clamp:2;-webkit-box-orient:vertical;color:var(--kiosk-text);display:-webkit-box;font-size:18px;font-weight:900;line-height:1.25;margin:0;min-height:38px;overflow:hidden}.kiosk-upsell-item-price[data-v-604177bc]{color:var(--kiosk-primary);font-size:22px;font-weight:900}.kiosk-upsell-check[data-v-604177bc]{box-shadow:var(--kiosk-shadow-card);height:32px;top:10px;width:32px}.kiosk-upsell-add[data-v-604177bc],.kiosk-upsell-check[data-v-604177bc]{align-items:center;background:var(--kiosk-primary);border-radius:50%;display:flex;justify-content:center;outline:2px solid var(--kiosk-surface);position:absolute;right:10px}.kiosk-upsell-add[data-v-604177bc]{bottom:10px;color:var(--kiosk-text-on-red);font-size:22px;font-weight:300;height:34px;width:34px}.kiosk-upsell-card.selected .kiosk-upsell-add[data-v-604177bc]{display:none}.kiosk-upsell-actions[data-v-604177bc]{background:var(--kiosk-surface);border-top:1px solid var(--kiosk-border);display:flex;flex-direction:column;flex-shrink:0;gap:12px;padding:20px 30px 28px}.kiosk-btn-primary[data-v-604177bc]{align-items:center;background:var(--kiosk-primary);border:none;border-radius:26px;box-shadow:var(--kiosk-shadow-cta);color:var(--kiosk-text-on-red);cursor:pointer;display:flex;font-size:22px;font-weight:900;height:auto;justify-content:space-between;min-height:76px;padding:0 24px;transition:all .15s ease;width:100%}.kiosk-btn-primary[data-v-604177bc]:active{transform:scale(.98)}.kiosk-btn-price[data-v-604177bc]{background:hsla(0,0%,100%,.18);border-radius:10px;font-size:17px;font-weight:800;padding:6px 14px}.kiosk-upsell-skip[data-v-604177bc]{background:var(--kiosk-surface);border:1.5px solid var(--kiosk-border);border-radius:20px;color:var(--kiosk-text-muted);cursor:pointer;font-size:17px;font-weight:800;height:auto;min-height:60px;transition:all .15s ease;width:100%}.kiosk-upsell-skip[data-v-604177bc]:active{background:var(--kiosk-surface-alt);color:var(--kiosk-text)}.kiosk-upsell-skip-timer[data-v-604177bc]{color:var(--kiosk-text-muted);font-size:.8em;margin-left:.4rem}.kiosk-upsell-autoskip-bar[data-v-604177bc]{background:var(--kiosk-border);border-radius:2px;height:3px;margin-top:.5rem;overflow:hidden;width:100%}.kiosk-upsell-autoskip-fill[data-v-604177bc]{background:var(--kiosk-primary);border-radius:2px;height:100%;transition:width .1s linear}.pop-enter-active[data-v-604177bc]{animation:popIn-604177bc .25s cubic-bezier(.34,1.56,.64,1)}.pop-leave-active[data-v-604177bc]{animation:popIn-604177bc .2s ease reverse}@keyframes popIn-604177bc{0%{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}",""]);const n=a},8206(e,t,o){o.d(t,{A:()=>n});var r=o(6314),a=o.n(r)()(function(e){return e[1]});a.push([e.id,".kiosk-waiting[data-v-1108a098]{align-items:center;display:flex;flex-direction:column;height:100vh;justify-content:space-between;overflow:hidden;position:relative;transition:background .5s ease;width:100vw}.kiosk-waiting[data-v-1108a098],.kiosk-waiting.ready[data-v-1108a098]{background:var(--kiosk-page-bg,var(--kiosk-bg))}.kiosk-waiting-bg[data-v-1108a098]{animation:bgPulse-1108a098 4s ease-in-out infinite;background:var(--kiosk-product-media-bg,transparent);inset:0;position:absolute}.kiosk-waiting.ready .kiosk-waiting-bg[data-v-1108a098]{background:radial-gradient(ellipse at center,rgba(46,204,113,.14) 0,transparent 70%)}@keyframes bgPulse-1108a098{0%,to{opacity:.5}50%{opacity:1}}.kiosk-waiting-content[data-v-1108a098]{align-items:center;display:flex;flex:1;justify-content:center;padding:40px;width:100%;z-index:1}.kiosk-waiting-preparing[data-v-1108a098],.kiosk-waiting-ready[data-v-1108a098]{align-items:center;display:flex;flex-direction:column;gap:28px;text-align:center;width:100%}.kiosk-waiting-anim[data-v-1108a098]{align-items:center;display:flex;height:120px;justify-content:center;position:relative;width:120px}.kiosk-chef-hat[data-v-1108a098]{animation:chefBounce-1108a098 1.5s ease-in-out infinite;font-size:64px;z-index:2}@keyframes chefBounce-1108a098{0%,to{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-8px) rotate(5deg)}}.kiosk-wave-ring[data-v-1108a098]{animation:waveExpand-1108a098 2s ease-out infinite;border:2px solid rgba(244,80,30,.18);border-radius:50%;inset:-10px;position:absolute}@keyframes waveExpand-1108a098{0%{opacity:.8;transform:scale(.8)}to{opacity:0;transform:scale(1.8)}}.kiosk-waiting-title[data-v-1108a098]{color:var(--kiosk-text);font-size:clamp(32px,4vw,48px);font-weight:900;line-height:1.3;margin:0;max-width:500px}.kiosk-waiting-number-wrap[data-v-1108a098]{align-items:center;display:flex;flex-direction:column;gap:4px}.kiosk-waiting-number-label[data-v-1108a098]{color:var(--kiosk-text-muted);font-size:16px;font-weight:900;letter-spacing:2px;text-transform:uppercase}.kiosk-waiting-number[data-v-1108a098]{color:var(--kiosk-primary);font-size:clamp(112px,16vw,180px);font-weight:900;letter-spacing:-4px;line-height:1;text-shadow:0 6px 24px rgba(244,80,30,.12)}.kiosk-waiting.ready .kiosk-waiting-number[data-v-1108a098]{color:var(--kiosk-success);text-shadow:0 6px 24px rgba(46,204,113,.12)}.kiosk-ready-hint[data-v-1108a098],.kiosk-waiting-hint[data-v-1108a098]{color:var(--kiosk-text-muted);font-size:19px;line-height:1.5;margin:0;max-width:400px}.kiosk-waiting-progress[data-v-1108a098]{background:var(--kiosk-surface-alt);border-radius:999px;height:8px;overflow:hidden;width:min(360px,58vw)}.kiosk-waiting-progress-bar[data-v-1108a098]{animation:progressSlide-1108a098 2s ease-in-out infinite;background:var(--kiosk-primary);border-radius:2px;height:100%}@keyframes progressSlide-1108a098{0%{transform:translateX(-100%)}to{transform:translateX(300%)}}.kiosk-ready-icon[data-v-1108a098]{align-items:center;display:flex;height:120px;justify-content:center;position:relative;width:120px}.kiosk-ready-ring[data-v-1108a098]{animation:readyRing-1108a098 1.5s ease-out infinite;border:3px solid rgba(46,204,113,.22);border-radius:50%;inset:0;position:absolute}@keyframes readyRing-1108a098{to{opacity:0;transform:scale(2)}}.kiosk-ready-check[data-v-1108a098]{align-items:center;animation:popIn-1108a098 .4s cubic-bezier(.34,1.56,.64,1);background:var(--kiosk-success);border-radius:50%;box-shadow:0 0 60px rgba(46,204,113,.5);color:#fff;display:flex;font-size:48px;font-weight:900;height:96px;justify-content:center;width:96px}@keyframes popIn-1108a098{0%{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}.kiosk-ready-title[data-v-1108a098]{animation:fadeInUp-1108a098 .5s ease;color:var(--kiosk-success);font-size:clamp(42px,6vw,68px);font-weight:900;margin:0}@keyframes fadeInUp-1108a098{0%{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.kiosk-waiting-footer[data-v-1108a098]{align-items:center;display:flex;flex-direction:column;gap:10px;padding:20px 32px 40px;width:100%;z-index:1}.kiosk-waiting-new-order[data-v-1108a098]{background:var(--kiosk-primary);border:none;border-radius:28px;box-shadow:0 6px 24px rgba(244,80,30,.2);color:var(--kiosk-text-on-red);cursor:pointer;font-size:22px;font-weight:900;min-height:76px;padding:18px 42px;transition:all .15s ease}.kiosk-waiting-new-order[data-v-1108a098]:active{transform:scale(.97)}.kiosk-waiting-auto-reset[data-v-1108a098]{color:var(--kiosk-text-muted);font-size:16px;margin-top:8px}.kiosk-waiting-preparing-hint[data-v-1108a098]{color:var(--kiosk-text-muted);font-size:18px;font-style:italic}.fade-scale-enter-active[data-v-1108a098],.fade-scale-leave-active[data-v-1108a098]{transition:all .4s ease}.fade-scale-enter-from[data-v-1108a098]{opacity:0;transform:scale(.95)}.fade-scale-leave-to[data-v-1108a098]{opacity:0;transform:scale(1.05)}.kiosk-waiting-offline[data-v-1108a098]{align-items:center;display:flex;flex-direction:column;gap:20px;text-align:center}.kiosk-offline-icon[data-v-1108a098]{animation:chefBounce-1108a098 2s ease-in-out infinite;font-size:72px}.kiosk-offline-spinner[data-v-1108a098]{animation:spin-1108a098 1s linear infinite;border:3px solid var(--kiosk-border);border-radius:50%;border-top-color:var(--kiosk-primary);height:48px;width:48px}@keyframes spin-1108a098{to{transform:rotate(1turn)}}.kiosk-waiting-cancel-btn[data-v-1108a098]{background:none;border:1px solid hsla(0,100%,70%,.4);border-radius:12px;color:hsla(0,100%,70%,.7);cursor:pointer;display:block;font-size:14px;margin-top:12px;padding:10px 24px;transition:all .2s}.kiosk-waiting-cancel-btn[data-v-1108a098]:hover{border-color:hsla(0,100%,70%,.7);color:#ff6464}.kiosk-cancel-overlay[data-v-1108a098]{align-items:center;backdrop-filter:blur(6px);background:var(--kiosk-overlay-modal);display:flex;inset:0;justify-content:center;position:fixed;z-index:1000}.kiosk-cancel-modal[data-v-1108a098]{background:var(--kiosk-surface);border:1px solid var(--kiosk-border);border-radius:22px;color:var(--kiosk-text);max-width:440px;padding:2.5rem 2rem;text-align:center;width:90%}.kiosk-cancel-icon[data-v-1108a098]{font-size:3rem;margin-bottom:.75rem}.kiosk-cancel-modal h2[data-v-1108a098]{font-size:1.5rem;font-weight:700;margin:0 0 .5rem}.kiosk-cancel-modal p[data-v-1108a098]{color:var(--kiosk-text-muted);font-size:.95rem;margin:0 0 1.5rem}.kiosk-cancel-actions[data-v-1108a098]{display:flex;gap:1rem}.kiosk-cancel-yes[data-v-1108a098]{background:var(--kiosk-primary-soft);color:var(--kiosk-primary)}.kiosk-cancel-no[data-v-1108a098],.kiosk-cancel-yes[data-v-1108a098]{border:1px solid var(--kiosk-border);border-radius:14px;cursor:pointer;flex:1;font-size:1rem;font-weight:600;padding:.9rem}.kiosk-cancel-no[data-v-1108a098]{background:var(--kiosk-surface-alt);color:var(--kiosk-text)}.kiosk-cancel-yes[data-v-1108a098]:active{background:rgba(220,38,38,.4)}.kiosk-cancel-no[data-v-1108a098]:active{background:hsla(0,0%,100%,.15)}.kiosk-cancel-error-msg[data-v-1108a098]{color:#ff6b6b;font-size:1rem;margin:.5rem 0}.kiosk-spinner-sm[data-v-1108a098]{animation:spin-sm-1108a098 .7s linear infinite;border:2.5px solid rgba(215,38,61,.15);border-radius:50%;border-top-color:#d7263d;display:inline-block;height:18px;vertical-align:middle;width:18px}@keyframes spin-sm-1108a098{to{transform:rotate(1turn)}}.kiosk-network-banner[data-v-1108a098]{align-items:center;background:var(--kiosk-primary);color:var(--kiosk-text-on-red);display:flex;font-size:.95rem;font-weight:600;gap:.6rem;justify-content:center;left:0;padding:.65rem 1rem;position:fixed;right:0;top:0;z-index:200}.kiosk-network-banner-icon[data-v-1108a098]{font-size:1.2rem}.slide-down-banner-enter-active[data-v-1108a098],.slide-down-banner-leave-active[data-v-1108a098]{transition:transform .35s ease,opacity .35s ease}.slide-down-banner-enter-from[data-v-1108a098],.slide-down-banner-leave-to[data-v-1108a098]{opacity:0;transform:translateY(-100%)}.kiosk-waiting.kiosk-ready-flash[data-v-1108a098]{animation:kioskReadyFlash-1108a098 3s ease-out 1}@keyframes kioskReadyFlash-1108a098{0%{box-shadow:inset 0 0 0 0 rgba(46,204,113,0)}15%{box-shadow:inset 0 0 0 9999px rgba(46,204,113,.12)}to{box-shadow:inset 0 0 0 0 rgba(46,204,113,0)}}@media (prefers-reduced-motion:reduce){.kiosk-waiting.kiosk-ready-flash[data-v-1108a098]{animation:none;box-shadow:inset 0 0 0 9999px rgba(46,204,113,.08)}}",""]);const n=a},7421(e,t,o){o.d(t,{A:()=>n});var r=o(6314),a=o.n(r)()(function(e){return e[1]});a.push([e.id,".ks-consent-backdrop[data-v-e52e1858]{align-items:center;background:var(--kiosk-overlay-modal,rgba(26,26,26,.65));display:flex;inset:0;justify-content:center;padding:40px 24px;position:fixed;z-index:220}.ks-consent-card[data-v-e52e1858]{background:var(--kiosk-surface);border-radius:20px;box-shadow:var(--kiosk-shadow-modal);color:var(--kiosk-text);display:flex;flex-direction:column;gap:18px;max-height:90vh;outline:none;overflow-y:auto;padding:32px 32px 28px;width:min(560px,100%)}.ks-consent-header[data-v-e52e1858]{display:flex;flex-direction:column;gap:4px}.ks-consent-title[data-v-e52e1858]{color:var(--kiosk-text);font-size:26px;font-weight:900;margin:0}.ks-consent-subtitle[data-v-e52e1858]{color:var(--kiosk-text-muted);font-size:15px;font-weight:600;margin:0}.ks-consent-description[data-v-e52e1858]{color:var(--kiosk-text);font-size:15px;line-height:1.5;margin:0}.ks-consent-check[data-v-e52e1858]{align-items:flex-start;background:var(--kiosk-surface-alt);border:1.5px solid var(--kiosk-border);border-radius:12px;color:var(--kiosk-text);cursor:pointer;display:flex;font-size:15px;font-weight:600;gap:12px;min-height:var(--kiosk-tap-min,56px);padding:12px 14px;transition:background .15s ease,border-color .15s ease}.ks-consent-check[data-v-e52e1858]:hover{background:var(--kiosk-primary-soft)}.ks-consent-check input[type=checkbox][data-v-e52e1858]{accent-color:var(--kiosk-primary);flex-shrink:0;height:22px;margin-top:3px;width:22px}.ks-consent-error[data-v-e52e1858]{color:var(--kiosk-error);font-size:13px;font-weight:700;margin:-6px 0 0}.ks-consent-privacy[data-v-e52e1858]{align-self:flex-start;background:transparent;border:none;color:var(--kiosk-primary);cursor:pointer;font-size:14px;font-weight:700;padding:8px 0;text-decoration:underline}.ks-consent-privacy[data-v-e52e1858]:hover{color:var(--kiosk-primary-dark)}.ks-consent-privacy[data-v-e52e1858]:focus-visible{outline:var(--kiosk-focus-width,3px) solid var(--kiosk-focus-ring,var(--kiosk-primary));outline-offset:2px}.ks-consent-actions[data-v-e52e1858]{display:flex;gap:12px;margin-top:8px}.ks-consent-btn[data-v-e52e1858]{border:1.5px solid transparent;border-radius:14px;cursor:pointer;flex:1;font-size:17px;font-weight:800;min-height:var(--kiosk-tap-min,60px);padding:14px 20px;transition:background .15s ease,transform .08s ease}.ks-consent-btn--ghost[data-v-e52e1858]{background:var(--kiosk-surface);border-color:var(--kiosk-border);color:var(--kiosk-text-muted)}.ks-consent-btn--ghost[data-v-e52e1858]:hover{background:var(--kiosk-surface-alt)}.ks-consent-btn--primary[data-v-e52e1858]{background:var(--kiosk-primary);box-shadow:var(--kiosk-shadow-cta);color:var(--kiosk-text-on-red,#fff)}.ks-consent-btn--primary[data-v-e52e1858]:hover{background:var(--kiosk-primary-dark)}.ks-consent-btn--primary[data-v-e52e1858]:active{transform:scale(.98)}.ks-consent-btn--primary[disabled][data-v-e52e1858]{cursor:not-allowed;opacity:.7}.ks-consent-btn[data-v-e52e1858]:focus-visible{outline:var(--kiosk-focus-width,3px) solid var(--kiosk-focus-ring,var(--kiosk-primary));outline-offset:3px}.ks-consent-privacy-overlay[data-v-e52e1858]{align-items:center;background:var(--kiosk-overlay-modal,rgba(26,26,26,.75));display:flex;inset:0;justify-content:center;padding:40px 24px;position:fixed;z-index:230}.ks-consent-privacy-card[data-v-e52e1858]{background:var(--kiosk-surface);border-radius:18px;box-shadow:var(--kiosk-shadow-modal);color:var(--kiosk-text);display:flex;flex-direction:column;gap:18px;max-height:80vh;overflow-y:auto;padding:28px 28px 24px;width:min(620px,100%)}.ks-consent-privacy-title[data-v-e52e1858]{font-size:22px;font-weight:900;margin:0}.ks-consent-privacy-body[data-v-e52e1858]{color:var(--kiosk-text);font-size:15px;line-height:1.55}",""]);const n=a},3801(e,t,o){o.d(t,{A:()=>n});var r=o(6314),a=o.n(r)()(function(e){return e[1]});a.push([e.id,".ks-vkeyb[data-v-0b95432a]{background:var(--kiosk-surface);border-top:1.5px solid var(--kiosk-border);inset-inline:0;bottom:0;box-shadow:var(--kiosk-shadow-modal);color:var(--kiosk-text);display:flex;flex-direction:column;font-family:var(--kiosk-font-sans,system-ui);gap:10px;max-height:36vh;padding:16px 20px 22px;position:fixed;z-index:150}.ks-vkeyb--rtl[data-v-0b95432a]{direction:rtl}.ks-vkeyb__preview[data-v-0b95432a]{align-items:center;background:var(--kiosk-surface-alt);border:1.5px solid var(--kiosk-border);border-radius:12px;color:var(--kiosk-text);display:flex;font-size:20px;font-weight:700;min-height:44px;overflow:hidden;padding:10px 16px;text-overflow:ellipsis;white-space:nowrap}.ks-vkeyb__preview-value[data-v-0b95432a]{flex:1}.ks-vkeyb__row[data-v-0b95432a]{display:grid;gap:8px;grid-template-columns:repeat(10,1fr)}.ks-vkeyb__row--actions[data-v-0b95432a]{grid-template-columns:1fr 4fr 1fr 2fr}.ks-vkeyb__key[data-v-0b95432a]{background:var(--kiosk-surface);border:1.5px solid var(--kiosk-border);border-radius:12px;color:var(--kiosk-text);cursor:pointer;font-size:22px;font-weight:700;height:62px;min-height:var(--kiosk-tap-min,56px);min-width:0;touch-action:manipulation;transition:background .12s ease,transform .08s ease,border-color .12s ease;-webkit-user-select:none;-moz-user-select:none;user-select:none}.ks-vkeyb__key[data-v-0b95432a]:hover{background:var(--kiosk-surface-alt)}.ks-vkeyb__key[data-v-0b95432a]:active{background:var(--kiosk-primary-soft);border-color:var(--kiosk-primary);transform:scale(.96)}.ks-vkeyb__key[data-v-0b95432a]:focus-visible{outline:var(--kiosk-focus-width,3px) solid var(--kiosk-focus-ring,var(--kiosk-primary));outline-offset:2px}.ks-vkeyb__key--wide[data-v-0b95432a]{font-size:16px}.ks-vkeyb__key--action[data-v-0b95432a]{background:var(--kiosk-surface-alt);color:var(--kiosk-text-muted);font-size:16px;font-weight:800;letter-spacing:.02em}.ks-vkeyb__key--active[data-v-0b95432a],.ks-vkeyb__key--submit[data-v-0b95432a]{background:var(--kiosk-primary);border-color:var(--kiosk-primary);color:var(--kiosk-text-on-red)}.ks-vkeyb__key--submit[data-v-0b95432a]:active,.ks-vkeyb__key--submit[data-v-0b95432a]:hover{background:var(--kiosk-primary-dark)}",""]);const n=a},9473(e,t,o){o.d(t,{p:()=>p});var r=o(6934);function a(){var e,t,o="function"==typeof Symbol?Symbol:{},r=o.iterator||"@@iterator",i=o.toStringTag||"@@toStringTag";function s(o,r,a,i){var s=r&&r.prototype instanceof c?r:c,d=Object.create(s.prototype);return n(d,"_invoke",function(o,r,a){var n,i,s,c=0,d=a||[],u=!1,k={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,o){return n=t,i=0,s=e,k.n=o,l}};function p(o,r){for(i=o,s=r,t=0;!u&&c&&!a&&t<d.length;t++){var a,n=d[t],p=k.p,m=n[2];o>3?(a=m===r)&&(s=n[(i=n[4])?5:(i=3,3)],n[4]=n[5]=e):n[0]<=p&&((a=o<2&&p<n[1])?(i=0,k.v=r,k.n=n[1]):p<m&&(a=o<3||n[0]>r||r>m)&&(n[4]=o,n[5]=r,k.n=m,i=0))}if(a||o>1)return l;throw u=!0,r}return function(a,d,m){if(c>1)throw TypeError("Generator is already running");for(u&&1===d&&p(d,m),i=d,s=m;(t=i<2?e:s)||!u;){n||(i?i<3?(i>1&&(k.n=-1),p(i,s)):k.n=s:k.v=s);try{if(c=2,n){if(i||(a="next"),t=n[a]){if(!(t=t.call(n,s)))throw TypeError("iterator result is not an object");if(!t.done)return t;s=t.value,i<2&&(i=0)}else 1===i&&(t=n.return)&&t.call(n),i<2&&(s=TypeError("The iterator does not provide a '"+a+"' method"),i=1);n=e}else if((t=(u=k.n<0)?s:o.call(r,k))!==l)break}catch(t){n=e,i=1,s=t}finally{c=1}}return{value:t,done:u}}}(o,a,i),!0),d}var l={};function c(){}function d(){}function u(){}t=Object.getPrototypeOf;var k=[][r]?t(t([][r]())):(n(t={},r,function(){return this}),t),p=u.prototype=c.prototype=Object.create(k);function m(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,u):(e.__proto__=u,n(e,i,"GeneratorFunction")),e.prototype=Object.create(p),e}return d.prototype=u,n(p,"constructor",u),n(u,"constructor",d),d.displayName="GeneratorFunction",n(u,i,"GeneratorFunction"),n(p),n(p,i,"Generator"),n(p,r,function(){return this}),n(p,"toString",function(){return"[object Generator]"}),(a=function(){return{w:s,m}})()}function n(e,t,o,r){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}n=function(e,t,o,r){function i(t,o){n(e,t,function(e){return this._invoke(t,o,e)})}t?a?a(e,t,{value:o,enumerable:!r,configurable:!r,writable:!r}):e[t]=o:(i("next",0),i("throw",1),i("return",2))},n(e,t,o,r)}function i(e,t,o,r,a,n,i){try{var s=e[n](i),l=s.value}catch(e){return void o(e)}s.done?t(l):Promise.resolve(l).then(r,a)}function s(e,t){var o="undefined"!=typeof Symbol&&e[Symbol.iterator]||e["@@iterator"];if(!o){if(Array.isArray(e)||(o=function(e,t){if(e){if("string"==typeof e)return l(e,t);var o={}.toString.call(e).slice(8,-1);return"Object"===o&&e.constructor&&(o=e.constructor.name),"Map"===o||"Set"===o?Array.from(e):"Arguments"===o||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(o)?l(e,t):void 0}}(e))||t&&e&&"number"==typeof e.length){o&&(e=o);var r=0,a=function(){};return{s:a,n:function(){return r>=e.length?{done:!0}:{done:!1,value:e[r++]}},e:function(e){throw e},f:a}}throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}var n,i=!0,s=!1;return{s:function(){o=o.call(e)},n:function(){var e=o.next();return i=e.done,e},e:function(e){s=!0,n=e},f:function(){try{i||null==o.return||o.return()}finally{if(s)throw n}}}}function l(e,t){(null==t||t>e.length)&&(t=e.length);for(var o=0,r=Array(t);o<t;o++)r[o]=e[o];return r}var c={fr:["fr-FR","fr-CA","fr"],en:["en-GB","en-US","en"],ar:["ar-SA","ar-EG","ar-MA","ar"]};function d(e){return"string"!=typeof e?"":e.replace(/[^a-zA-Z0-9._-]/g,"_").replace(/\./g,"_").slice(0,80)}function u(e,t){if(null==e||!e.length)return null;var o,r=c[t]||[t],a=s(r);try{var n,i=function(){var t=o.value,r=e.find(function(e){return e.lang===t});if(r)return{v:r}};for(a.s();!(o=a.n()).done;)if(n=i())return n.v}catch(e){a.e(e)}finally{a.f()}var l,d=s(r);try{var u,k=function(){var t=l.value,o=e.find(function(e){var o;return null===(o=e.lang)||void 0===o?void 0:o.toLowerCase().startsWith(t.toLowerCase())});if(o)return{v:o}};for(d.s();!(l=d.n()).done;)if(u=k())return u.v}catch(e){d.e(e)}finally{d.f()}return null}function k(){if("undefined"==typeof window||!window.speechSynthesis)return Promise.resolve([]);var e=window.speechSynthesis,t=e.getVoices();return t.length?Promise.resolve(t):new Promise(function(t){var o=function(){e.removeEventListener("voiceschanged",o),t(e.getVoices())};e.addEventListener("voiceschanged",o),setTimeout(function(){e.removeEventListener("voiceschanged",o),t(e.getVoices())},500)})}function p(){var e=(arguments.length>0&&void 0!==arguments[0]?arguments[0]:{}).store,t="undefined"!=typeof window&&void 0!==window.speechSynthesis,o=(0,r.ref)(!1),n=null,s=(0,r.computed)(function(){var t;return!(null==e||null===(t=e.state)||void 0===t||null===(t=t.kioskSettings)||void 0===t||!t.audio)}),l=(0,r.computed)(function(){var t;return(null==e||null===(t=e.state)||void 0===t||null===(t=t.kioskSettings)||void 0===t?void 0:t.locale)||"fr"}),c=(0,r.computed)(function(){return t||"ar"===l.value});function p(){if(n){try{n.pause(),n.src=""}catch(e){}n=null}if(t)try{window.speechSynthesis.cancel()}catch(e){}o.value=!1}function m(){var e;return e=a().m(function e(r){var i,c,m,f,y,h,v,g,b,x=arguments;return a().w(function(e){for(;;)switch(e.p=e.n){case 0:if(i=x.length>1&&void 0!==x[1]?x[1]:{},s.value){e.n=1;break}return e.a(2,!1);case 1:if(r&&"string"==typeof r){e.n=2;break}return e.a(2,!1);case 2:if(c=i.locale||l.value,p(),"ar"!==c||!i.key){e.n=6;break}return e.p=3,m="/kiosk/audio/ar/"+d(i.key)+".mp3",(f=new Audio(m)).volume="number"==typeof i.volume?i.volume:1,n=f,o.value=!0,y=new Promise(function(e){f.addEventListener("ended",function(){o.value=!1,n=null,e(!0)},{once:!0}),f.addEventListener("error",function(){o.value=!1,n=null,e(!1)},{once:!0})}),e.n=4,f.play();case 4:return e.a(2,y);case 5:return e.p=5,e.v,o.value=!1,n=null,e.a(2,!1);case 6:if(t){e.n=7;break}return e.a(2,!1);case 7:return e.p=7,e.n=8,k();case 8:return h=e.v,v=new SpeechSynthesisUtterance(r),(g=u(h,c))&&(v.voice=g),v.lang=(null==g?void 0:g.lang)||c,v.rate="number"==typeof i.rate?i.rate:1,v.pitch="number"==typeof i.pitch?i.pitch:1,v.volume="number"==typeof i.volume?i.volume:1,o.value=!0,b=new Promise(function(e){v.onend=function(){o.value=!1,e(!0)},v.onerror=function(){o.value=!1,e(!1)}}),window.speechSynthesis.speak(v),e.a(2,b);case 9:return e.p=9,e.v,o.value=!1,e.a(2,!1)}},e,null,[[7,9],[3,5]])}),m=function(){var t=this,o=arguments;return new Promise(function(r,a){var n=e.apply(t,o);function s(e){i(n,r,a,s,l,"next",e)}function l(e){i(n,r,a,s,l,"throw",e)}s(void 0)})},m.apply(this,arguments)}try{(0,r.onBeforeUnmount)(function(){p()})}catch(e){}return{speak:function(e){return m.apply(this,arguments)},stop:p,isSupported:c,isSpeaking:o}}},3724(e,t,o){function r(e,t){var o="undefined"!=typeof Symbol&&e[Symbol.iterator]||e["@@iterator"];if(!o){if(Array.isArray(e)||(o=function(e,t){if(e){if("string"==typeof e)return a(e,t);var o={}.toString.call(e).slice(8,-1);return"Object"===o&&e.constructor&&(o=e.constructor.name),"Map"===o||"Set"===o?Array.from(e):"Arguments"===o||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(o)?a(e,t):void 0}}(e))||t&&e&&"number"==typeof e.length){o&&(e=o);var r=0,n=function(){};return{s:n,n:function(){return r>=e.length?{done:!0}:{done:!1,value:e[r++]}},e:function(e){throw e},f:n}}throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}var i,s=!0,l=!1;return{s:function(){o=o.call(e)},n:function(){var e=o.next();return s=e.done,e},e:function(e){l=!0,i=e},f:function(){try{s||null==o.return||o.return()}finally{if(l)throw i}}}}function a(e,t){(null==t||t>e.length)&&(t=e.length);for(var o=0,r=Array(t);o<t;o++)r[o]=e[o];return r}function n(e,t){if(null==e||!e.length)return!1;var o=new Map;(t||[]).forEach(function(e){var t=parseInt(e.id,10);Number.isNaN(t)||o.set(t,e)});var a,n=r(e);try{for(n.s();!(a=n.n()).done;){var i=a.value,s=parseInt(i.item_category_id,10);if(Number.isNaN(s))return!1;var l=o.get(s);if(!l||!l.kiosk_upsell_skip_after_cart)return!1}}catch(e){n.e(e)}finally{n.f()}return!0}o.d(t,{b:()=>n})},9005(e,t,o){o.r(t),o.d(t,{default:()=>Pe});var r=o(6934);function a(e){return function(e){if(Array.isArray(e))return n(e)}(e)||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(e)||function(e,t){if(e){if("string"==typeof e)return n(e,t);var o={}.toString.call(e).slice(8,-1);return"Object"===o&&e.constructor&&(o=e.constructor.name),"Map"===o||"Set"===o?Array.from(e):"Arguments"===o||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(o)?n(e,t):void 0}}(e)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function n(e,t){(null==t||t>e.length)&&(t=e.length);for(var o=0,r=Array(t);o<t;o++)r[o]=e[o];return r}var i={class:"kiosk-cart","data-testid":"kiosk-cart-root"},s={class:"kiosk-cart-header"},l=["aria-label"],c={class:"kiosk-cart-header-info"},d={class:"kiosk-cart-title","data-testid":"kiosk-cart-title"},u={class:"kiosk-cart-item-count","data-testid":"kiosk-cart-count"},k={class:"kiosk-clear-modal"},p={id:"kiosk-cart-clear-title",class:"kiosk-clear-title"},m={class:"kiosk-clear-sub"},f={class:"kiosk-clear-actions"},y={key:0,class:"kiosk-cart-empty",role:"status","aria-live":"polite","data-testid":"kiosk-cart-empty"},h=["aria-label"],v=["aria-checked"],g={class:"kiosk-order-type-label"},b=["aria-checked"],x={class:"kiosk-order-type-label"},w={key:2,class:"kiosk-cart-body"},_={class:"kiosk-cart-items",role:"list","data-testid":"kiosk-cart-items"},E=["data-testid"],N={class:"kiosk-cart-item-img","aria-hidden":"true"},S=["src"],V={key:1,class:"kiosk-cart-item-emoji"},C={class:"kiosk-cart-item-info"},O={class:"kiosk-cart-item-name-row"},B=["data-testid"],T=["onClick","aria-label","data-testid"],P=["data-testid"],D=["data-testid"],A={class:"kiosk-cart-item-unit"},$={class:"kiosk-cart-item-controls"},j=["aria-label"],I=["onClick","aria-label","data-testid"],z=["data-testid"],M=["disabled","onClick","aria-label","data-testid"],L=["onClick","aria-label","data-testid"],F=["data-testid"],R=["aria-label"],q={class:"kiosk-cart-summary-row"},K={"data-testid":"kiosk-cart-subtotal"},G={key:0,class:"kiosk-cart-summary-row loyalty"},U={class:"green","data-testid":"kiosk-cart-loyalty-discount"},Y={key:1,class:"kiosk-cart-summary-row promo"},W={class:"green","data-testid":"kiosk-cart-promo-discount"},Q={class:"kiosk-cart-summary-row total"},H={class:"kiosk-cart-grand-total","data-testid":"kiosk-cart-total"},Z={class:"kiosk-cart-promo","data-testid":"kiosk-cart-promo"},J={key:0,class:"kiosk-cart-promo-form"},X={for:"kiosk-cart-promo-input",class:"kiosk-cart-promo-label"},ee={class:"kiosk-cart-promo-row"},te=["placeholder","aria-invalid","aria-describedby","disabled"],oe=["disabled"],re={key:0,id:"kiosk-cart-promo-error",class:"kiosk-cart-promo-error",role:"alert","data-testid":"kiosk-cart-promo-error"},ae={key:1,class:"kiosk-cart-promo-applied","data-testid":"kiosk-cart-promo-applied"},ne={class:"kiosk-cart-promo-applied-text"},ie={key:0},se={key:1},le={class:"kiosk-cart-actions"},ce=["disabled","aria-busy"],de={class:"kiosk-btn-price"},ue={key:0,class:"kiosk-cart-quote-error",role:"alert","data-testid":"kiosk-cart-quote-error"};var ke=o(834),pe=o(4289),me=o(3724),fe=o(9903),ye=o(358),he=o(4955);function ve(){var e,t,o="function"==typeof Symbol?Symbol:{},r=o.iterator||"@@iterator",a=o.toStringTag||"@@toStringTag";function n(o,r,a,n){var l=r&&r.prototype instanceof s?r:s,c=Object.create(l.prototype);return ge(c,"_invoke",function(o,r,a){var n,s,l,c=0,d=a||[],u=!1,k={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,o){return n=t,s=0,l=e,k.n=o,i}};function p(o,r){for(s=o,l=r,t=0;!u&&c&&!a&&t<d.length;t++){var a,n=d[t],p=k.p,m=n[2];o>3?(a=m===r)&&(l=n[(s=n[4])?5:(s=3,3)],n[4]=n[5]=e):n[0]<=p&&((a=o<2&&p<n[1])?(s=0,k.v=r,k.n=n[1]):p<m&&(a=o<3||n[0]>r||r>m)&&(n[4]=o,n[5]=r,k.n=m,s=0))}if(a||o>1)return i;throw u=!0,r}return function(a,d,m){if(c>1)throw TypeError("Generator is already running");for(u&&1===d&&p(d,m),s=d,l=m;(t=s<2?e:l)||!u;){n||(s?s<3?(s>1&&(k.n=-1),p(s,l)):k.n=l:k.v=l);try{if(c=2,n){if(s||(a="next"),t=n[a]){if(!(t=t.call(n,l)))throw TypeError("iterator result is not an object");if(!t.done)return t;l=t.value,s<2&&(s=0)}else 1===s&&(t=n.return)&&t.call(n),s<2&&(l=TypeError("The iterator does not provide a '"+a+"' method"),s=1);n=e}else if((t=(u=k.n<0)?l:o.call(r,k))!==i)break}catch(t){n=e,s=1,l=t}finally{c=1}}return{value:t,done:u}}}(o,a,n),!0),c}var i={};function s(){}function l(){}function c(){}t=Object.getPrototypeOf;var d=[][r]?t(t([][r]())):(ge(t={},r,function(){return this}),t),u=c.prototype=s.prototype=Object.create(d);function k(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,c):(e.__proto__=c,ge(e,a,"GeneratorFunction")),e.prototype=Object.create(u),e}return l.prototype=c,ge(u,"constructor",c),ge(c,"constructor",l),l.displayName="GeneratorFunction",ge(c,a,"GeneratorFunction"),ge(u),ge(u,a,"Generator"),ge(u,r,function(){return this}),ge(u,"toString",function(){return"[object Generator]"}),(ve=function(){return{w:n,m:k}})()}function ge(e,t,o,r){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}ge=function(e,t,o,r){function n(t,o){ge(e,t,function(e){return this._invoke(t,o,e)})}t?a?a(e,t,{value:o,enumerable:!r,configurable:!r,writable:!r}):e[t]=o:(n("next",0),n("throw",1),n("return",2))},ge(e,t,o,r)}function be(e,t,o,r,a,n,i){try{var s=e[n](i),l=s.value}catch(e){return void o(e)}s.done?t(l):Promise.resolve(l).then(r,a)}function xe(e){return function(){var t=this,o=arguments;return new Promise(function(r,a){var n=e.apply(t,o);function i(e){be(n,r,a,i,s,"next",e)}function s(e){be(n,r,a,i,s,"throw",e)}i(void 0)})}}function we(e){return we="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},we(e)}function _e(e,t){var o=Object.keys(e);if(Object.getOwnPropertySymbols){var r=Object.getOwnPropertySymbols(e);t&&(r=r.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),o.push.apply(o,r)}return o}function Ee(e){for(var t=1;t<arguments.length;t++){var o=null!=arguments[t]?arguments[t]:{};t%2?_e(Object(o),!0).forEach(function(t){Ne(e,t,o[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(o)):_e(Object(o)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(o,t))})}return e}function Ne(e,t,o){return(t=function(e){var t=function(e,t){if("object"!=we(e)||!e)return e;var o=e[Symbol.toPrimitive];if(void 0!==o){var r=o.call(e,t||"default");if("object"!=we(r))return r;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==we(t)?t:t+""}(t))in e?Object.defineProperty(e,t,{value:o,enumerable:!0,configurable:!0,writable:!0}):e[t]=o,e}const Se={name:"KioskCartComponent",mixins:[pe.om],components:{KsAllergenBadge:he.A},inject:{showToast:{default:function(){return function(){}}}},data:function(){var e,t;return{showClearConfirm:!1,ORDER_TYPE_KIOSK:25,ORDER_TYPE_TAKEAWAY:10,maxItemQty:null!==(e=null===(t=window.foodkingConfig)||void 0===t?void 0:t.maxItemQty)&&void 0!==e?e:20,quoteLoading:!1,quoteError:null,promoInput:""}},computed:Ee(Ee(Ee(Ee({},(0,ke.L8)("kioskCart",{cartItems:"items",cartCount:"count",cartSubtotal:"subtotal",cartTotal:"total",loyaltyDiscount:"loyaltyDiscount",upsellShown:"upsellShown",orderType:"orderType",promoCode:"promoCode",promoDiscount:"promoDiscount",promoError:"promoError",promoLoading:"promoLoading"})),(0,ke.L8)("kioskMenu",["categories","selectedCategoryId","allItems"])),(0,ke.L8)("frontendSetting",{frontendSettingsList:"lists"})),{},{dineInEnabled:function(){var e,t,o=this.frontendSettingsList||{},r=null!==(e=null!==(t=o.pos_dine_in_enabled)&&void 0!==t?t:o["pos.dine_in_enabled"])&&void 0!==e?e:0,a=we(r);return("boolean"===a||"number"===a||"string"===a)&&("1"===String(r)||!0===r)},customerAllergenCodes:function(){var e,t=null===(e=this.$store)||void 0===e||null===(e=e.getters)||void 0===e?void 0:e["kioskSettings/customerProfile"];return t&&Array.isArray(t.declared_allergens)?t.declared_allergens.map(String).filter(Boolean):[]},shouldSkipKioskUpsell:function(){return(0,me.b)(this.cartItems,this.categories)}}),mounted:function(){try{var e,t,o,r=null===(e=this.$store)||void 0===e||null===(e=e.getters)||void 0===e?void 0:e["frontendSetting/lists"];if(!r||Array.isArray(r)&&0===r.length)null===(t=this.$store)||void 0===t||null===(o=t.dispatch)||void 0===o||o.call(t,"frontendSetting/lists").catch(function(){})}catch(e){}},methods:Ee(Ee({},(0,ke.i0)("kioskCart",["updateQuantity","removeItem","reset","markUpsellShown","popItem","setOrderType","quoteOrder","validatePromo","clearPromo","startEditingCartItem"])),{},{applyPromo:function(){var e=this;return xe(ve().m(function t(){var o,r;return ve().w(function(t){for(;;)switch(t.n){case 0:if(o=(e.promoInput||"").trim()){t.n=1;break}return t.a(2);case 1:return t.n=2,e.validatePromo(o);case 2:(r=t.v)&&r.valid&&(e.promoInput="");case 3:return t.a(2)}},t)}))()},removePromo:function(){this.clearPromo(),this.promoInput=""},selectOrderType:function(e){this.setOrderType(e)},goBackFromCart:function(){var e=this.selectedCategoryId;null==e||""===e?this.$router.push({name:"kiosk.categories"}):this.$router.push({name:"kiosk.categories",query:{cat:String(e)}})},displayCartItemName:function(e){return(0,fe.q)((null==e?void 0:e.name)||"")},displayCartInstruction:function(e){return null!=e&&e.instruction?(0,fe.q)(e.instruction):""},cartLineCatalogItem:function(e){return null!=e&&e.item_id&&Array.isArray(this.allItems)&&this.allItems.find(function(t){return String(t.id)===String(e.item_id)})||null},cartLineAllergenSelections:function(e){var t=this.cartLineCatalogItem(e);return t?{variations:(e.item_variations||[]).map(function(e){return(0,ye.A9)(t,e.id)}).filter(Boolean),extras:(e.item_extras||[]).map(function(e){return(0,ye.PY)(t,e.id)}).filter(Boolean)}:{variations:[],extras:[]}},getItemSelectionSummary:function(e){var t,o,r=[],a=function(e){return(0,fe.q)(e)};if(Array.isArray(e.item_variations)&&e.item_variations.length>0){var n=e.item_variations.map(function(e){return a(e.name||e.variation_name||"")}).filter(Boolean);n.length&&r.push(n.join(", "))}else if(null!==(t=e.item_variations)&&void 0!==t&&t.names){var i=Object.values(e.item_variations.names).map(a).filter(Boolean);i.length>0&&r.push(i.join(", "))}if(Array.isArray(e.item_extras)&&e.item_extras.length>0){var s=e.item_extras.map(function(e){return a(e.name)}).filter(Boolean);s.length&&r.push(s.join(", "))}else if(null!==(o=e.item_extras)&&void 0!==o&&o.names){var l=(Array.isArray(e.item_extras.names)?e.item_extras.names:Object.values(e.item_extras.names)).map(a).filter(Boolean);l.length&&r.push(l.join(", "))}return r.join(" · ")},changeQty:function(e,t){t<=0?(this.removeItem(e),this.showToast(this.$t("kiosk.item_removed"),"info",1800)):t>this.maxItemQty?this.showToast(this.$t("kiosk.max_quantity_reached")||"Maximum ".concat(this.maxItemQty," atteint"),"warning",1800):this.updateQuantity({index:e,quantity:t})},removeItemDirectly:function(e){var t,o=null===(t=this.cartItems)||void 0===t?void 0:t[e];this.removeItem(e),this.showToast(this.$t("kiosk.item_removed")||"".concat((null==o?void 0:o.name)||"Article"," supprimé"),"info",1500)},editItem:function(e){var t=this;return xe(ve().m(function o(){var r;return ve().w(function(o){for(;;)switch(o.n){case 0:if(null!=(r=t.cartItems[e])&&r.item_id){o.n=1;break}return o.a(2);case 1:return o.n=2,t.startEditingCartItem(e);case 2:if(o.v){o.n=3;break}return o.a(2);case 3:t.$router.push({name:"kiosk.wizard",params:{itemId:String(r.item_id)},query:{edit:"1"}});case 4:return o.a(2)}},o)}))()},confirmClear:function(){this.showClearConfirm=!1,this.reset(),this.$router.push({name:"kiosk.categories"})},proceedToUpsell:function(){var e=this;return xe(ve().m(function t(){var o,r,a;return ve().w(function(t){for(;;)switch(t.p=t.n){case 0:if(!e.quoteLoading&&0!==e.cartCount){t.n=1;break}return t.a(2);case 1:return e.quoteLoading=!0,e.quoteError=null,t.p=2,t.n=3,e.quoteOrder({orderType:e.orderType});case 3:if(!e.upsellShown){t.n=4;break}return e.$router.push({name:"kiosk.payment"}),t.a(2);case 4:if(e.markUpsellShown(),!e.shouldSkipKioskUpsell){t.n=5;break}return e.$router.push({name:"kiosk.payment"}),t.a(2);case 5:e.$router.push({name:"kiosk.upsell"}),t.n=7;break;case 6:t.p=6,a=t.v,r=(null==a||null===(o=a.response)||void 0===o||null===(o=o.data)||void 0===o?void 0:o.message)||(null==a?void 0:a.message)||e.$t("kiosk.pay_screen.invalid_order_response"),e.quoteError=r,e.showToast(r,"error",6e3);case 7:return t.p=7,e.quoteLoading=!1,t.f(7);case 8:return t.a(2)}},t,null,[[2,6,7,8]])}))()}})};var Ve=o(5072),Ce=o.n(Ve),Oe=o(923),Be={insert:"head",singleton:!1};Ce()(Oe.A,Be);Oe.A.locals;const Te=(0,o(6262).A)(Se,[["render",function(e,t,o,n,ke,pe){var me=(0,r.resolveComponent)("KsAllergenBadge");return(0,r.openBlock)(),(0,r.createElementBlock)("div",i,[(0,r.createElementVNode)("div",s,[(0,r.createElementVNode)("button",{type:"button",class:"kiosk-cart-back",onClick:t[0]||(t[0]=function(){return pe.goBackFromCart&&pe.goBackFromCart.apply(pe,arguments)}),"aria-label":e.$t("kiosk.back"),"data-testid":"kiosk-cart-back"},a(t[16]||(t[16]=[(0,r.createElementVNode)("svg",{width:"24",height:"24",viewBox:"0 0 24 24",fill:"none","aria-hidden":"true"},[(0,r.createElementVNode)("path",{d:"M19 12H5M5 12L12 19M5 12L12 5",stroke:"currentColor","stroke-width":"2.5","stroke-linecap":"round","stroke-linejoin":"round"})],-1)])),8,l),(0,r.createElementVNode)("div",c,[(0,r.createElementVNode)("h1",d,(0,r.toDisplayString)(e.$t("kiosk.your_cart")),1),(0,r.createElementVNode)("p",u,(0,r.toDisplayString)(e.cartCount)+" "+(0,r.toDisplayString)(e.cartCount>1?e.$t("kiosk.article_plural"):e.$t("kiosk.article_singular")),1)]),e.cartCount>0?((0,r.openBlock)(),(0,r.createElementBlock)("button",{key:0,type:"button",class:"kiosk-cart-clear",onClick:t[1]||(t[1]=function(e){return ke.showClearConfirm=!0}),"data-testid":"kiosk-cart-clear"},(0,r.toDisplayString)(e.$t("kiosk.clear_cart")),1)):(0,r.createCommentVNode)("",!0)]),(0,r.createVNode)(r.Transition,{name:"fade"},{default:(0,r.withCtx)(function(){return[ke.showClearConfirm?((0,r.openBlock)(),(0,r.createElementBlock)("div",{key:0,class:"kiosk-clear-overlay",role:"dialog","aria-modal":"true","aria-labelledby":"kiosk-cart-clear-title","data-testid":"kiosk-cart-clear-modal",onClick:t[4]||(t[4]=(0,r.withModifiers)(function(e){return ke.showClearConfirm=!1},["self"])),onKeydown:t[5]||(t[5]=(0,r.withKeys)(function(e){return ke.showClearConfirm=!1},["esc"]))},[(0,r.createElementVNode)("div",k,[(0,r.createElementVNode)("p",p,(0,r.toDisplayString)(e.$t("kiosk.clear_cart")),1),(0,r.createElementVNode)("p",m,(0,r.toDisplayString)(e.$t("kiosk.clear_cart_confirm")),1),(0,r.createElementVNode)("div",f,[(0,r.createElementVNode)("button",{type:"button",class:"kiosk-clear-yes",onClick:t[2]||(t[2]=function(){return pe.confirmClear&&pe.confirmClear.apply(pe,arguments)}),"data-testid":"kiosk-cart-clear-yes"},(0,r.toDisplayString)(e.$t("kiosk.yes_clear")),1),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-clear-no",onClick:t[3]||(t[3]=function(e){return ke.showClearConfirm=!1}),"data-testid":"kiosk-cart-clear-no"},(0,r.toDisplayString)(e.$t("kiosk.cancel")),1)])])],32)):(0,r.createCommentVNode)("",!0)]}),_:1}),0===e.cartCount?((0,r.openBlock)(),(0,r.createElementBlock)("div",y,[t[17]||(t[17]=(0,r.createElementVNode)("div",{class:"kiosk-cart-empty-icon","aria-hidden":"true"},"🛒",-1)),(0,r.createElementVNode)("h2",null,(0,r.toDisplayString)(e.$t("kiosk.empty_cart")),1),(0,r.createElementVNode)("p",null,(0,r.toDisplayString)(e.$t("kiosk.empty_cart_hint")),1),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-btn-primary",onClick:t[6]||(t[6]=function(t){return e.$router.push({name:"kiosk.categories"})}),"data-testid":"kiosk-cart-empty-cta"},(0,r.toDisplayString)(e.$t("kiosk.add_items")),1)])):(0,r.createCommentVNode)("",!0),e.cartCount>0?((0,r.openBlock)(),(0,r.createElementBlock)("div",{key:1,class:"kiosk-order-type-bar",role:"radiogroup","aria-label":e.$t("kiosk.order_type_label"),"data-testid":"kiosk-cart-order-type"},[pe.dineInEnabled?((0,r.openBlock)(),(0,r.createElementBlock)("button",{key:0,type:"button",class:(0,r.normalizeClass)(["kiosk-order-type-btn",{active:e.orderType===ke.ORDER_TYPE_KIOSK}]),role:"radio","aria-checked":e.orderType===ke.ORDER_TYPE_KIOSK,"data-testid":"kiosk-cart-order-type-dinein",onClick:t[7]||(t[7]=function(e){return pe.selectOrderType(ke.ORDER_TYPE_KIOSK)})},[t[18]||(t[18]=(0,r.createElementVNode)("span",{class:"kiosk-order-type-icon","aria-hidden":"true"},"🍽️",-1)),(0,r.createElementVNode)("span",g,(0,r.toDisplayString)(e.$t("kiosk.dine_in")),1)],10,v)):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("button",{type:"button",class:(0,r.normalizeClass)(["kiosk-order-type-btn",{active:e.orderType===ke.ORDER_TYPE_TAKEAWAY}]),role:"radio","aria-checked":e.orderType===ke.ORDER_TYPE_TAKEAWAY,"data-testid":"kiosk-cart-order-type-takeaway",onClick:t[8]||(t[8]=function(e){return pe.selectOrderType(ke.ORDER_TYPE_TAKEAWAY)})},[t[19]||(t[19]=(0,r.createElementVNode)("span",{class:"kiosk-order-type-icon","aria-hidden":"true"},"🥡",-1)),(0,r.createElementVNode)("span",x,(0,r.toDisplayString)(e.$t("kiosk.takeaway")),1)],10,b)],8,h)):(0,r.createCommentVNode)("",!0),e.cartCount>0?((0,r.openBlock)(),(0,r.createElementBlock)("div",w,[(0,r.createElementVNode)("div",_,[((0,r.openBlock)(!0),(0,r.createElementBlock)(r.Fragment,null,(0,r.renderList)(e.cartItems,function(o,n){return(0,r.openBlock)(),(0,r.createElementBlock)("div",{key:o.item_id?"".concat(o.item_id,"-").concat(n):n,class:"kiosk-cart-item",role:"listitem","data-testid":"kiosk-cart-item-".concat(n)},[(0,r.createElementVNode)("div",N,[o.image?((0,r.openBlock)(),(0,r.createElementBlock)("img",{key:0,src:o.image,alt:""},null,8,S)):((0,r.openBlock)(),(0,r.createElementBlock)("span",V,"🍽️"))]),(0,r.createElementVNode)("div",C,[(0,r.createElementVNode)("div",O,[(0,r.createElementVNode)("h3",{class:"kiosk-cart-item-name","data-testid":"kiosk-cart-item-name-".concat(n)},(0,r.toDisplayString)(pe.displayCartItemName(o)),9,B),o.item_id?((0,r.openBlock)(),(0,r.createElementBlock)("button",{key:0,type:"button",class:"kiosk-cart-edit-btn",onClick:function(e){return pe.editItem(n)},"aria-label":e.$t("kiosk.edit_item_aria"),"data-testid":"kiosk-cart-item-edit-".concat(n)},a(t[20]||(t[20]=[(0,r.createElementVNode)("svg",{width:"16",height:"16",viewBox:"0 0 16 16",fill:"none","aria-hidden":"true"},[(0,r.createElementVNode)("path",{d:"M11.333 2a1.885 1.885 0 0 1 2.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2Z",stroke:"currentColor","stroke-width":"1.4","stroke-linecap":"round","stroke-linejoin":"round"})],-1)])),8,T)):(0,r.createCommentVNode)("",!0)]),pe.getItemSelectionSummary(o)?((0,r.openBlock)(),(0,r.createElementBlock)("div",{key:0,class:"kiosk-cart-item-selections","data-testid":"kiosk-cart-item-options-".concat(n)},(0,r.toDisplayString)(pe.getItemSelectionSummary(o)),9,P)):(0,r.createCommentVNode)("",!0),pe.cartLineCatalogItem(o)?((0,r.openBlock)(),(0,r.createBlock)(me,{key:1,class:"kiosk-cart-item-allergens",item:pe.cartLineCatalogItem(o),selections:pe.cartLineAllergenSelections(o),allergens:[],"customer-allergens":pe.customerAllergenCodes,"data-testid":"kiosk-cart-item-allergens-".concat(n)},null,8,["item","selections","customer-allergens","data-testid"])):(0,r.createCommentVNode)("",!0),o.instruction?((0,r.openBlock)(),(0,r.createElementBlock)("p",{key:2,class:"kiosk-cart-item-note","data-testid":"kiosk-cart-item-note-".concat(n)},(0,r.toDisplayString)(pe.displayCartInstruction(o)),9,D)):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("span",A,(0,r.toDisplayString)(e.formatPrice((parseFloat(o.convert_price)||0)+(o.item_variation_total||0)+(o.item_extra_total||0)))+" "+(0,r.toDisplayString)(e.$t("kiosk.per_unit")),1)]),(0,r.createElementVNode)("div",$,[(0,r.createElementVNode)("div",{class:"kiosk-qty-ctrl",role:"group","aria-label":e.$t("kiosk.quantity_of",{name:pe.displayCartItemName(o)})},[(0,r.createElementVNode)("button",{type:"button",class:"kiosk-qty-btn minus",onClick:function(e){return pe.changeQty(n,o.quantity-1)},"aria-label":e.$t("kiosk.decrease_qty"),"data-testid":"kiosk-cart-item-qty-minus-".concat(n)},a(t[21]||(t[21]=[(0,r.createElementVNode)("svg",{width:"20",height:"20",viewBox:"0 0 20 20",fill:"none","aria-hidden":"true"},[(0,r.createElementVNode)("path",{d:"M4 10h12",stroke:"currentColor","stroke-width":"2","stroke-linecap":"round"})],-1)])),8,I),(0,r.createElementVNode)("span",{class:"kiosk-qty-num","aria-live":"polite","data-testid":"kiosk-cart-item-qty-".concat(n)},(0,r.toDisplayString)(o.quantity),9,z),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-qty-btn plus",disabled:o.quantity>=ke.maxItemQty,onClick:function(e){return pe.changeQty(n,o.quantity+1)},"aria-label":e.$t("kiosk.increase_qty"),"data-testid":"kiosk-cart-item-qty-plus-".concat(n)},a(t[22]||(t[22]=[(0,r.createElementVNode)("svg",{width:"20",height:"20",viewBox:"0 0 20 20",fill:"none","aria-hidden":"true"},[(0,r.createElementVNode)("path",{d:"M10 4v12M4 10h12",stroke:"currentColor","stroke-width":"2","stroke-linecap":"round"})],-1)])),8,M)],8,j),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-cart-item-trash",onClick:function(e){return pe.removeItemDirectly(n)},"aria-label":e.$t("kiosk.remove_item")||"Supprimer cet article","data-testid":"kiosk-cart-item-remove-".concat(n)},a(t[23]||(t[23]=[(0,r.createElementVNode)("svg",{width:"20",height:"20",viewBox:"0 0 20 20",fill:"none","aria-hidden":"true"},[(0,r.createElementVNode)("path",{d:"M3 6h14M8 6V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2m1 0v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h10Z",stroke:"currentColor","stroke-width":"1.6","stroke-linecap":"round","stroke-linejoin":"round"}),(0,r.createElementVNode)("path",{d:"M9 10v4M11 10v4",stroke:"currentColor","stroke-width":"1.6","stroke-linecap":"round"})],-1)])),8,L),(0,r.createElementVNode)("span",{class:"kiosk-cart-item-total","data-testid":"kiosk-cart-item-total-".concat(n)},(0,r.toDisplayString)(e.formatPrice(o.total)),9,F)])],8,E)}),128))]),(0,r.createElementVNode)("div",{class:"kiosk-cart-summary",role:"region","aria-label":e.$t("kiosk.subtotal"),"aria-live":"polite","data-testid":"kiosk-cart-summary"},[(0,r.createElementVNode)("div",q,[(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.subtotal")),1),(0,r.createElementVNode)("span",K,(0,r.toDisplayString)(e.formatPrice(e.cartSubtotal)),1)]),e.loyaltyDiscount>0?((0,r.openBlock)(),(0,r.createElementBlock)("div",G,[(0,r.createElementVNode)("span",null,[t[24]||(t[24]=(0,r.createElementVNode)("span",{"aria-hidden":"true"},"🎁",-1)),(0,r.createTextVNode)(" "+(0,r.toDisplayString)(e.$t("kiosk.discount_loyalty")),1)]),(0,r.createElementVNode)("span",U,"-"+(0,r.toDisplayString)(e.formatPrice(e.loyaltyDiscount)),1)])):(0,r.createCommentVNode)("",!0),e.promoDiscount>0?((0,r.openBlock)(),(0,r.createElementBlock)("div",Y,[(0,r.createElementVNode)("span",null,[t[25]||(t[25]=(0,r.createElementVNode)("span",{"aria-hidden":"true"},"🏷️",-1)),(0,r.createTextVNode)(" "+(0,r.toDisplayString)(e.$t("kiosk.discount_promo",{code:e.promoCode})),1)]),(0,r.createElementVNode)("span",W,"-"+(0,r.toDisplayString)(e.formatPrice(e.promoDiscount)),1)])):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("div",Q,[(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.total")),1),(0,r.createElementVNode)("span",H,(0,r.toDisplayString)(e.formatPrice(e.cartTotal)),1)])],8,R),(0,r.createElementVNode)("div",Z,[e.promoCode?((0,r.openBlock)(),(0,r.createElementBlock)("div",ae,[t[26]||(t[26]=(0,r.createElementVNode)("span",{class:"kiosk-cart-promo-applied-icon","aria-hidden":"true"},"✓",-1)),(0,r.createElementVNode)("span",ne,(0,r.toDisplayString)(e.$t("kiosk.promo.applied",{code:e.promoCode,amount:e.formatPrice(e.promoDiscount)})),1),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-cart-promo-remove","data-testid":"kiosk-cart-promo-remove",onClick:t[12]||(t[12]=function(){return pe.removePromo&&pe.removePromo.apply(pe,arguments)})},(0,r.toDisplayString)(e.$t("kiosk.promo.remove")),1)])):((0,r.openBlock)(),(0,r.createElementBlock)("div",J,[(0,r.createElementVNode)("label",X,(0,r.toDisplayString)(e.$t("kiosk.promo.label")),1),(0,r.createElementVNode)("div",ee,[(0,r.withDirectives)((0,r.createElementVNode)("input",{id:"kiosk-cart-promo-input","onUpdate:modelValue":t[9]||(t[9]=function(e){return ke.promoInput=e}),type:"text",autocomplete:"off",maxlength:"64",class:"kiosk-cart-promo-input",placeholder:e.$t("kiosk.promo.placeholder"),"aria-invalid":!!e.promoError,"aria-describedby":e.promoError?"kiosk-cart-promo-error":null,disabled:e.promoLoading,"data-testid":"kiosk-cart-promo-input",onKeydown:t[10]||(t[10]=(0,r.withKeys)((0,r.withModifiers)(function(){return pe.applyPromo&&pe.applyPromo.apply(pe,arguments)},["prevent"]),["enter"]))},null,40,te),[[r.vModelText,ke.promoInput]]),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-cart-promo-apply",disabled:e.promoLoading||!ke.promoInput.trim(),"data-testid":"kiosk-cart-promo-apply",onClick:t[11]||(t[11]=function(){return pe.applyPromo&&pe.applyPromo.apply(pe,arguments)})},(0,r.toDisplayString)(e.promoLoading?e.$t("kiosk.promo.loading"):e.$t("kiosk.promo.apply")),9,oe)]),e.promoError?((0,r.openBlock)(),(0,r.createElementBlock)("p",re,(0,r.toDisplayString)(e.$te(e.promoError)?e.$t(e.promoError):e.promoError),1)):(0,r.createCommentVNode)("",!0)]))]),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-btn-loyalty",onClick:t[13]||(t[13]=function(t){return e.$router.push({name:"kiosk.loyalty"})}),"data-testid":"kiosk-cart-loyalty-btn"},[t[27]||(t[27]=(0,r.createElementVNode)("span",{class:"kiosk-btn-loyalty-star","aria-hidden":"true"},"★",-1)),e.loyaltyDiscount>0?((0,r.openBlock)(),(0,r.createElementBlock)("span",ie,(0,r.toDisplayString)(e.$t("kiosk.loyalty_applied",{amount:e.formatPrice(e.loyaltyDiscount)})),1)):((0,r.openBlock)(),(0,r.createElementBlock)("span",se,(0,r.toDisplayString)(e.$t("kiosk.loyalty_prompt")),1)),t[28]||(t[28]=(0,r.createElementVNode)("span",{class:"kiosk-btn-loyalty-arrow","aria-hidden":"true"},"›",-1))]),(0,r.createElementVNode)("div",le,[(0,r.createElementVNode)("button",{type:"button",class:"kiosk-btn-primary full",onClick:t[14]||(t[14]=function(){return pe.proceedToUpsell&&pe.proceedToUpsell.apply(pe,arguments)}),disabled:ke.quoteLoading,"aria-busy":ke.quoteLoading?"true":"false","data-testid":"kiosk-cart-checkout"},[(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.validate_order")),1),(0,r.createElementVNode)("span",de,(0,r.toDisplayString)(e.formatPrice(e.cartTotal)),1)],8,ce),ke.quoteError?((0,r.openBlock)(),(0,r.createElementBlock)("p",ue,(0,r.toDisplayString)(ke.quoteError),1)):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-btn-secondary",onClick:t[15]||(t[15]=function(t){return e.$router.push({name:"kiosk.categories"})}),"data-testid":"kiosk-cart-add-more"}," + "+(0,r.toDisplayString)(e.$t("kiosk.add_more_items")),1)])])):(0,r.createCommentVNode)("",!0)])}],["__scopeId","data-v-40f2b918"]]),Pe=Te},2136(e,t,o){o.r(t),o.d(t,{default:()=>V});var r=o(6934),a={class:"kiosk-cash"},n={class:"kiosk-cash__main"},i={class:"kiosk-cash__header"},s={class:"kiosk-cash__title","data-testid":"kiosk-cash-title"},l={class:"kiosk-cash__subtitle"},c=["aria-label"],d={class:"kiosk-cash__row"},u={class:"kiosk-cash__label"},k={class:"kiosk-cash__number","data-testid":"kiosk-cash-order-number"},p={class:"kiosk-cash__row"},m={class:"kiosk-cash__label"},f={class:"kiosk-cash__help"},y={class:"kiosk-cash__footer"},h={key:0,class:"kiosk-cash__countdown","aria-live":"polite"};var v=o(3041);function g(e){return g="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},g(e)}function b(e,t){var o=Object.keys(e);if(Object.getOwnPropertySymbols){var r=Object.getOwnPropertySymbols(e);t&&(r=r.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),o.push.apply(o,r)}return o}function x(e,t,o){return(t=function(e){var t=function(e,t){if("object"!=g(e)||!e)return e;var o=e[Symbol.toPrimitive];if(void 0!==o){var r=o.call(e,t||"default");if("object"!=g(r))return r;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==g(t)?t:t+""}(t))in e?Object.defineProperty(e,t,{value:o,enumerable:!0,configurable:!0,writable:!0}):e[t]=o,e}const w={name:"KioskCashInstructionComponent",props:{orderNumber:{type:[String,Number],default:""},orderTotal:{type:Number,default:null},autoRedirectSeconds:{type:Number,default:45}},emits:["acknowledged"],data:function(){return{countdown:this.autoRedirectSeconds,timer:null}},mounted:function(){this.logEvent("cash_instruction_shown"),this.startCountdown()},beforeUnmount:function(){this.stopCountdown()},methods:{startCountdown:function(){var e=this;this.autoRedirectSeconds<=0||(this.countdown=this.autoRedirectSeconds,this.timer=setInterval(function(){e.countdown-=1,e.countdown<=0&&(e.stopCountdown(),e.acknowledge("timeout"))},1e3))},stopCountdown:function(){this.timer&&(clearInterval(this.timer),this.timer=null)},acknowledge:function(){var e,t=arguments.length>0&&void 0!==arguments[0]?arguments[0]:"user";this.stopCountdown(),this.logEvent("cash_instruction_ack",{reason:t}),this.$emit("acknowledged",t),null===(e=this.$router)||void 0===e||e.push({name:"kiosk.idle"}).catch(function(){})},logEvent:function(e){var t=function(e){for(var t=1;t<arguments.length;t++){var o=null!=arguments[t]?arguments[t]:{};t%2?b(Object(o),!0).forEach(function(t){x(e,t,o[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(o)):b(Object(o)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(o,t))})}return e}({type:e},arguments.length>1&&void 0!==arguments[1]?arguments[1]:{});this.orderNumber&&(t.order_ref=String(this.orderNumber)),v.A.post("/frontend/kiosk/event",t).catch(function(){})}}};var _=o(5072),E=o.n(_),N=o(802),S={insert:"head",singleton:!1};E()(N.A,S);N.A.locals;const V=(0,o(6262).A)(w,[["render",function(e,t,o,v,g,b){var x=(0,r.resolveComponent)("KsPriceLine"),w=(0,r.resolveComponent)("KsCard"),_=(0,r.resolveComponent)("KsButton");return(0,r.openBlock)(),(0,r.createElementBlock)("section",a,[(0,r.createElementVNode)("div",n,[(0,r.createElementVNode)("header",i,[t[1]||(t[1]=(0,r.createElementVNode)("div",{class:"kiosk-cash__badge","aria-hidden":"true"},"💶",-1)),(0,r.createElementVNode)("h1",s,(0,r.toDisplayString)(e.$t("kiosk.cash_instruction.title")),1),(0,r.createElementVNode)("p",l,(0,r.toDisplayString)(e.$t("kiosk.cash_instruction.subtitle")),1)]),(0,r.createElementVNode)("div",{class:"kiosk-cash__board",role:"group","aria-label":e.$t("kiosk.cash_instruction.title")},[(0,r.createVNode)(w,{elevation:"lift",padding:"lg",class:"kiosk-cash__card"},{default:(0,r.withCtx)(function(){return[(0,r.createElementVNode)("div",d,[(0,r.createElementVNode)("span",u,(0,r.toDisplayString)(e.$t("kiosk.cash_instruction.order_label")),1),(0,r.createElementVNode)("strong",k," #"+(0,r.toDisplayString)(o.orderNumber||"—"),1)]),t[2]||(t[2]=(0,r.createElementVNode)("div",{class:"kiosk-cash__divider","aria-hidden":"true"},null,-1)),(0,r.createElementVNode)("div",p,[(0,r.createElementVNode)("span",m,(0,r.toDisplayString)(e.$t("kiosk.cash_instruction.amount_label")),1),(0,r.createVNode)(x,{size:"lg",emphasis:"",price:"number"==typeof o.orderTotal?o.orderTotal:null,label:"","data-testid":"kiosk-cash-amount"},null,8,["price"])])]}),_:1}),(0,r.createElementVNode)("p",f,(0,r.toDisplayString)(e.$t("kiosk.cash_instruction.help")),1)],8,c)]),(0,r.createElementVNode)("footer",y,[g.countdown>0?((0,r.openBlock)(),(0,r.createElementBlock)("p",h,(0,r.toDisplayString)(e.$t("kiosk.cash_instruction.auto_redirect",{n:g.countdown})),1)):(0,r.createCommentVNode)("",!0),(0,r.createVNode)(_,{variant:"primary",size:"lg","full-width":"","data-testid":"kiosk-cash-cta-understood",onClick:t[0]||(t[0]=function(e){return b.acknowledge("user")})},{default:(0,r.withCtx)(function(){return[(0,r.createTextVNode)((0,r.toDisplayString)(e.$t("kiosk.cash_instruction.cta_understood")),1)]}),_:1})])])}],["__scopeId","data-v-0232e5ed"]])},2690(e,t,o){o.r(t),o.d(t,{default:()=>Ne});var r=o(6934),a={class:"kiosk-confirmation",role:"status","aria-live":"polite","data-testid":"kiosk-confirmation-root"},n={class:"kiosk-confirmation-title","data-testid":"kiosk-confirmation-title"},i={class:"kiosk-confirmation-card","data-testid":"kiosk-confirmation-card"},s={class:"kiosk-confirmation-row"},l={class:"kiosk-confirmation-label"},c={class:"kiosk-confirmation-number","data-testid":"kiosk-confirmation-number"},d={key:0,class:"kiosk-confirmation-row"},u={class:"kiosk-confirmation-label"},k={class:"kiosk-confirmation-price","data-testid":"kiosk-confirmation-total"},p={key:0,class:"kiosk-printer-fallback"},m={class:"kiosk-printer-fallback-label"},f={class:"kiosk-printer-fallback-number"},y={class:"kiosk-printer-fallback-hint"},h={class:"kiosk-confirmation-message"},v={key:0,class:"kiosk-confirmation-points"},g={class:"kiosk-points-text"},b={class:"kiosk-points-name"},x={class:"kiosk-points-value"},w={class:"kiosk-confirmation-timer"},_={class:"kiosk-timer-label"},E={class:"kiosk-timer-bar"},N=["disabled","aria-busy"],S={key:0},V={key:1},C={key:2},O={key:3},B=["data-print-failed","role","aria-live"],T={class:"kiosk-fallback-receipt-title"},P={class:"kiosk-fallback-receipt-help"},D={class:"receipt-header"},A={class:"receipt-restaurant"},$={class:"receipt-date"},j={class:"receipt-queue"},I={class:"receipt-queue-number"},z={key:1,class:"receipt-line receipt-discount"},M={class:"receipt-line receipt-total"},L={class:"receipt-footer receipt-loyalty"},F={class:"receipt-footer"},R={class:"receipt-footer"},q={class:"receipt-footer"};var K=o(5940),G=o(2310);function U(){var e,t,o="function"==typeof Symbol?Symbol:{},r=o.iterator||"@@iterator",a=o.toStringTag||"@@toStringTag";function n(o,r,a,n){var l=r&&r.prototype instanceof s?r:s,c=Object.create(l.prototype);return Y(c,"_invoke",function(o,r,a){var n,s,l,c=0,d=a||[],u=!1,k={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,o){return n=t,s=0,l=e,k.n=o,i}};function p(o,r){for(s=o,l=r,t=0;!u&&c&&!a&&t<d.length;t++){var a,n=d[t],p=k.p,m=n[2];o>3?(a=m===r)&&(l=n[(s=n[4])?5:(s=3,3)],n[4]=n[5]=e):n[0]<=p&&((a=o<2&&p<n[1])?(s=0,k.v=r,k.n=n[1]):p<m&&(a=o<3||n[0]>r||r>m)&&(n[4]=o,n[5]=r,k.n=m,s=0))}if(a||o>1)return i;throw u=!0,r}return function(a,d,m){if(c>1)throw TypeError("Generator is already running");for(u&&1===d&&p(d,m),s=d,l=m;(t=s<2?e:l)||!u;){n||(s?s<3?(s>1&&(k.n=-1),p(s,l)):k.n=l:k.v=l);try{if(c=2,n){if(s||(a="next"),t=n[a]){if(!(t=t.call(n,l)))throw TypeError("iterator result is not an object");if(!t.done)return t;l=t.value,s<2&&(s=0)}else 1===s&&(t=n.return)&&t.call(n),s<2&&(l=TypeError("The iterator does not provide a '"+a+"' method"),s=1);n=e}else if((t=(u=k.n<0)?l:o.call(r,k))!==i)break}catch(t){n=e,s=1,l=t}finally{c=1}}return{value:t,done:u}}}(o,a,n),!0),c}var i={};function s(){}function l(){}function c(){}t=Object.getPrototypeOf;var d=[][r]?t(t([][r]())):(Y(t={},r,function(){return this}),t),u=c.prototype=s.prototype=Object.create(d);function k(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,c):(e.__proto__=c,Y(e,a,"GeneratorFunction")),e.prototype=Object.create(u),e}return l.prototype=c,Y(u,"constructor",c),Y(c,"constructor",l),l.displayName="GeneratorFunction",Y(c,a,"GeneratorFunction"),Y(u),Y(u,a,"Generator"),Y(u,r,function(){return this}),Y(u,"toString",function(){return"[object Generator]"}),(U=function(){return{w:n,m:k}})()}function Y(e,t,o,r){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}Y=function(e,t,o,r){function n(t,o){Y(e,t,function(e){return this._invoke(t,o,e)})}t?a?a(e,t,{value:o,enumerable:!r,configurable:!r,writable:!r}):e[t]=o:(n("next",0),n("throw",1),n("return",2))},Y(e,t,o,r)}function W(e,t,o,r,a,n,i){try{var s=e[n](i),l=s.value}catch(e){return void o(e)}s.done?t(l):Promise.resolve(l).then(r,a)}function Q(e){return new Promise(function(t){return setTimeout(t,e)})}var H="\n",Z={INIT:"@",ALIGN_LEFT:"a\0",ALIGN_CENTER:"a",ALIGN_RIGHT:"a",BOLD_ON:"E",BOLD_OFF:"E\0",DOUBLE_SIZE:"!0",NORMAL_SIZE:"!\0",CUT:"V\0"};function J(e,t){var o=(arguments.length>2&&void 0!==arguments[2]?arguments[2]:32)-t.length;return e.substring(0,o).padEnd(o)+t}function X(){var e=arguments.length>1&&void 0!==arguments[1]?arguments[1]:32;return(arguments.length>0&&void 0!==arguments[0]?arguments[0]:"-").repeat(e)}function ee(e){var t=[],o=e.labels||{};if(t.push(Z.INIT),t.push(Z.ALIGN_CENTER),t.push(Z.DOUBLE_SIZE),t.push(Z.BOLD_ON),t.push(e.restaurantName||"Restaurant"),t.push(H),t.push(Z.NORMAL_SIZE),t.push(Z.BOLD_OFF),t.push(e.orderDate||""),t.push(H),t.push(X()),t.push(H),t.push(Z.ALIGN_CENTER),t.push(Z.BOLD_ON),t.push(o.queueNumberTitle||"YOUR NUMBER"),t.push(H),t.push(Z.DOUBLE_SIZE),t.push(e.queueNumber||"---"),t.push(H),t.push(Z.NORMAL_SIZE),t.push(Z.BOLD_OFF),t.push(X()),t.push(H),t.push(Z.ALIGN_LEFT),(e.items||[]).forEach(function(e){var o=ae((parseFloat(e.unitPrice)||0)*(e.quantity||1)),r="".concat(e.quantity,"x ").concat(e.name);(t.push(Z.BOLD_ON),t.push(J(r,o)),t.push(Z.BOLD_OFF),t.push(H),e.instruction)&&e.instruction.split(". ").forEach(function(e){e.trim()&&(t.push("  > "+e.trim().substring(0,28)),t.push(H))})}),t.push(X()),t.push(H),t.push(Z.ALIGN_LEFT),e.discount&&e.discount>0&&(t.push(J(o.subtotal||"Subtotal",ae(e.subtotal))),t.push(H),t.push(J(o.discount||"Loyalty discount","-"+ae(e.discount))),t.push(H)),t.push(Z.BOLD_ON),t.push(J(o.total||"TOTAL",ae(e.total))),t.push(H),t.push(Z.BOLD_OFF),e.paymentMethod&&(t.push(J(o.payment||"Payment",e.paymentMethod)),t.push(H)),e.loyaltyPointsEarned>0&&e.loyaltyCustomerName){t.push(X()),t.push(H),t.push(Z.ALIGN_CENTER),t.push(Z.BOLD_ON),t.push(o.loyalty||"LOYALTY"),t.push(H),t.push(Z.BOLD_OFF),t.push(Z.NORMAL_SIZE);var r=String(e.loyaltyCustomerName).slice(0,18);t.push("+".concat(e.loyaltyPointsEarned," pts — ").concat(r)),t.push(H)}return t.push(X()),t.push(H),t.push(Z.ALIGN_CENTER),t.push(e.thankYou||"Thank you for your order!"),t.push(H),t.push(o.seeYouSoon||"See you soon!"),t.push("\n\n\n"),t.push(Z.CUT),t}function te(e){return oe.apply(this,arguments)}function oe(){var e;return e=U().m(function e(t){var o,r,a,n,i,s,l,c,d,u,k=arguments;return U().w(function(e){for(;;)switch(e.p=e.n){case 0:if(o=k.length>1&&void 0!==k[1]?k[1]:"kiosk-print-receipt",!G.Ay.isKioskBridge()){e.n=9;break}r={queue_number:t.queueNumber,order_serial_no:t.queueNumber,total:t.total,restaurant_name:t.restaurantName,items:(t.items||[]).map(function(e){return{name:e.name,quantity:e.quantity,total_price:(e.unitPrice||0)*(e.quantity||1),instruction:e.instruction||null}}),payment_method:t.paymentMethod||"",loyalty_points_earned:t.loyaltyPointsEarned||0,loyalty_customer_name:t.loyaltyCustomerName||""},a=Math.max(1,K.Ng.PRINTER_RETRY_MAX||1),n=K.Ng.PRINTER_RETRY_MS||0,i=1;case 1:if(!(i<=a)){e.n=9;break}return e.n=2,G.Ay.printReceipt(r);case 2:if(null==(s=e.v)||!s.ok){e.n=4;break}if(!(null!=(l=s.data||s)&&l.success||null!=l&&l.skipped||s.ok)){e.n=3;break}return e.a(2,{method:"electron"});case 3:console.warn("[kioskPrinter] printReceipt returned non-success:",l),e.n=5;break;case 4:null!=s&&s.error&&"printer_unavailable"!==s.error&&console.warn("[kioskPrinter] printReceipt failed:",s.error);case 5:return c=ee(t),e.n=6,G.Ay.printEscPos(c);case 6:if(null==(d=e.v)||!d.ok){e.n=7;break}return e.a(2,{method:"electron-escpos"});case 7:if(null!=d&&d.error&&"printer_unavailable"!==d.error&&console.warn("[kioskPrinter] printEscPos failed:",d.error),!(i<a&&n>0)){e.n=8;break}return e.n=8,Q(n);case 8:i++,e.n=1;break;case 9:if(!document.getElementById(o)||"function"!=typeof window.print){e.n=12;break}return e.p=10,window.print(),e.a(2,{method:"browser"});case 11:return e.p=11,u=e.v,e.a(2,{method:"none",error:u.message});case 12:return e.a(2,{method:"none",error:"No print method available"})}},e,null,[[10,11]])}),oe=function(){var t=this,o=arguments;return new Promise(function(r,a){var n=e.apply(t,o);function i(e){W(n,r,a,i,s,"next",e)}function s(e){W(n,r,a,i,s,"throw",e)}i(void 0)})},oe.apply(this,arguments)}function re(e,t){try{var o=window.axios;if(!o)return;o.post("frontend/kiosk-event",{type:"printer_failure",details:"order_id=".concat(e," | error=").concat(t||"unknown")}).catch(function(){})}catch(e){}}function ae(e){return(parseFloat(e)||0).toFixed(2)+" EUR"}function ne(e){var t=e.restaurantName,o=e.queueNumber,r=e.cartItems,a=e.subtotal,n=e.discount,i=e.total,s=e.paymentMethod,l=e.loyaltyPointsEarned,c=void 0===l?0:l,d=e.loyaltyCustomerName,u=void 0===d?"":d,k=e.labels,p=void 0===k?{}:k,m=new Date,f=function(e){return String(e).padStart(2,"0")};return{restaurantName:t||"Restaurant",queueNumber:o||"---",orderDate:"".concat(f(m.getDate()),"/").concat(f(m.getMonth()+1),"/").concat(m.getFullYear()," ").concat(f(m.getHours()),":").concat(f(m.getMinutes())),items:(r||[]).map(function(e){return{name:e.name||"Article",quantity:e.quantity||1,unitPrice:(parseFloat(e.convert_price)||0)+(parseFloat(e.item_variation_total)||0)+(parseFloat(e.item_extra_total)||0),instruction:e.instruction||null}}),subtotal:parseFloat(a)||0,discount:parseFloat(n)||0,total:parseFloat(i)||0,paymentMethod:s||"",loyaltyPointsEarned:parseInt(c,10)||0,loyaltyCustomerName:u||"",labels:p}}var ie=o(4289),se=o(9903);function le(e){return le="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},le(e)}var ce="kiosk.lastReceipt",de=36e5;function ue(){try{return"undefined"==typeof window?null:window.localStorage?window.localStorage:null}catch(e){return null}}function ke(e){var t,o,r=ue();if(!r||!e||"object"!==le(e))return!1;var a={v:1,savedAt:Date.now(),paidAt:e.paidAt||(new Date).toISOString(),orderId:null!==(t=e.orderId)&&void 0!==t?t:null,queueNumber:null!==(o=e.queueNumber)&&void 0!==o?o:null,total:Number.isFinite(e.total)?e.total:0,discount:Number.isFinite(e.discount)?e.discount:0,subtotal:Number.isFinite(e.subtotal)?e.subtotal:null,items:Array.isArray(e.items)?e.items.map(function(e){var t,o;return{item_id:null!==(t=null!==(o=e.item_id)&&void 0!==o?o:e.id)&&void 0!==t?t:null,name:"string"==typeof e.name?e.name:"",quantity:Number.isFinite(e.quantity)?e.quantity:1,total:Number.isFinite(e.total)?e.total:0}}):[],paymentMethod:e.paymentMethod||"",loyaltyCustomerName:e.loyaltyCustomerName||null,pointsEarned:Number.isFinite(e.pointsEarned)?e.pointsEarned:0,restaurantName:e.restaurantName||null};try{return r.setItem(ce,JSON.stringify(a)),!0}catch(e){return!1}}function pe(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:{},t=ue();if(!t)return null;var o,r,a=Number.isFinite(e.ttlMs)&&e.ttlMs>0?e.ttlMs:de;try{o=t.getItem(ce)}catch(e){return null}if(!o)return null;try{r=JSON.parse(o)}catch(e){return me(),null}if(!r||"object"!==le(r))return null;if(1!==r.v)return null;var n=Number(r.savedAt)||0;return!n||Date.now()-n>a?(me(),null):r}function me(){var e=ue();if(e)try{e.removeItem(ce)}catch(e){}}var fe=o(9473);function ye(){var e,t,o="function"==typeof Symbol?Symbol:{},r=o.iterator||"@@iterator",a=o.toStringTag||"@@toStringTag";function n(o,r,a,n){var l=r&&r.prototype instanceof s?r:s,c=Object.create(l.prototype);return he(c,"_invoke",function(o,r,a){var n,s,l,c=0,d=a||[],u=!1,k={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,o){return n=t,s=0,l=e,k.n=o,i}};function p(o,r){for(s=o,l=r,t=0;!u&&c&&!a&&t<d.length;t++){var a,n=d[t],p=k.p,m=n[2];o>3?(a=m===r)&&(l=n[(s=n[4])?5:(s=3,3)],n[4]=n[5]=e):n[0]<=p&&((a=o<2&&p<n[1])?(s=0,k.v=r,k.n=n[1]):p<m&&(a=o<3||n[0]>r||r>m)&&(n[4]=o,n[5]=r,k.n=m,s=0))}if(a||o>1)return i;throw u=!0,r}return function(a,d,m){if(c>1)throw TypeError("Generator is already running");for(u&&1===d&&p(d,m),s=d,l=m;(t=s<2?e:l)||!u;){n||(s?s<3?(s>1&&(k.n=-1),p(s,l)):k.n=l:k.v=l);try{if(c=2,n){if(s||(a="next"),t=n[a]){if(!(t=t.call(n,l)))throw TypeError("iterator result is not an object");if(!t.done)return t;l=t.value,s<2&&(s=0)}else 1===s&&(t=n.return)&&t.call(n),s<2&&(l=TypeError("The iterator does not provide a '"+a+"' method"),s=1);n=e}else if((t=(u=k.n<0)?l:o.call(r,k))!==i)break}catch(t){n=e,s=1,l=t}finally{c=1}}return{value:t,done:u}}}(o,a,n),!0),c}var i={};function s(){}function l(){}function c(){}t=Object.getPrototypeOf;var d=[][r]?t(t([][r]())):(he(t={},r,function(){return this}),t),u=c.prototype=s.prototype=Object.create(d);function k(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,c):(e.__proto__=c,he(e,a,"GeneratorFunction")),e.prototype=Object.create(u),e}return l.prototype=c,he(u,"constructor",c),he(c,"constructor",l),l.displayName="GeneratorFunction",he(c,a,"GeneratorFunction"),he(u),he(u,a,"Generator"),he(u,r,function(){return this}),he(u,"toString",function(){return"[object Generator]"}),(ye=function(){return{w:n,m:k}})()}function he(e,t,o,r){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}he=function(e,t,o,r){function n(t,o){he(e,t,function(e){return this._invoke(t,o,e)})}t?a?a(e,t,{value:o,enumerable:!r,configurable:!r,writable:!r}):e[t]=o:(n("next",0),n("throw",1),n("return",2))},he(e,t,o,r)}function ve(e,t,o,r,a,n,i){try{var s=e[n](i),l=s.value}catch(e){return void o(e)}s.done?t(l):Promise.resolve(l).then(r,a)}const ge={name:"KioskConfirmationComponent",mixins:[ie.om],emits:["add-to-cart","go-to-cart","start-order","reset-kiosk"],props:{orderNumber:{type:String,default:""},orderTotal:{type:Number,default:null}},data:function(){var e,t,o,r=(o=Number(null!==(e=null===(t=window.foodkingConfig)||void 0===t?void 0:t.kioskConfirmationAutoReturnSeconds)&&void 0!==e?e:30),Number.isFinite(o)&&o>0?Math.floor(o):30);return{autoReturnSeconds:r,countdown:r,progressWidth:100,timer:null,printStatus:null,printFailed:!1,_snapshotItems:null,_snapshotDiscount:null,_snapshotSubtotal:null,_snapshotPayment:null,_snapshotLoyaltyName:null,_snapshotOrderTotal:null}},computed:{pointsEarned:function(){var e,t=this._snapshotOrderTotal||0,o=null===(e=this.$store.state.globalState)||void 0===e?void 0:e.lists,r=parseInt(null==o?void 0:o.loyalty_points_per_euro,10)||0;return t<=0||r<=0?0:Math.floor(t*r)},loyaltyCustomerName:function(){return this._snapshotLoyaltyName||null},displayNumber:function(){var e;return this.orderNumber?this.orderNumber:(null===(e=this.$store.state.kioskCart)||void 0===e?void 0:e.queueNumber)||"—"},displayTotal:function(){return null!=this.orderTotal?this.orderTotal:this.$store.getters["kioskCart/total"]||null},receiptItems:function(){var e,t,o;return null!==(e=null!==(t=this._snapshotItems)&&void 0!==t?t:null===(o=this.$store.state.kioskCart)||void 0===o?void 0:o.items)&&void 0!==e?e:[]},receiptDiscount:function(){var e,t,o;return null!==(e=null!==(t=this._snapshotDiscount)&&void 0!==t?t:null===(o=this.$store.state.kioskCart)||void 0===o?void 0:o.loyaltyDiscount)&&void 0!==e?e:0},receiptSubtotal:function(){var e,t=this.receiptItems;return null!==(e=this._snapshotSubtotal)&&void 0!==e?e:t.reduce(function(e,t){return e+(parseFloat(t.total)||0)},0)},receiptPaymentMethod:function(){var e;if(null!==this._snapshotPayment)return this._snapshotPayment;var t={card:this.$t("kiosk.card"),cash:this.$t("kiosk.cash"),tr:this.$t("kiosk.pay_screen.tr_title")},o=null===(e=this.$store.state.kioskCart)||void 0===e?void 0:e.paymentMethod;return t[o]||o||""},restaurantName:function(){var e,t=null===(e=this.$store.state.globalState)||void 0===e?void 0:e.lists;return(null==t?void 0:t.company_name)||(null==t?void 0:t.site_name)||"FoodKing"},receiptDate:function(){var e,t=(null===(e=this.$i18n)||void 0===e?void 0:e.locale)||"fr",o="ar"===t?"ar-SA":"en"===t?"en-GB":"fr-FR";return(new Date).toLocaleString(o,{dateStyle:"short",timeStyle:"short"})}},mounted:function(){var e,t=this,o=this.$store.state.kioskCart,r=(null==o?void 0:o.items)||[],a=!Array.isArray(r)||0===r.length,n=a?pe():null;this._snapshotItems=a&&n?JSON.parse(JSON.stringify(n.items||[])):JSON.parse(JSON.stringify(r)),this._snapshotDiscount=a&&n?n.discount||0:(null==o?void 0:o.loyaltyDiscount)||0,this._snapshotSubtotal=a&&n?null!==(e=n.subtotal)&&void 0!==e?e:(n.items||[]).reduce(function(e,t){return e+(parseFloat(t.total)||0)},0):r.reduce(function(e,t){return e+(parseFloat(t.total)||0)},0);var i={card:this.$t("kiosk.card"),cash:this.$t("kiosk.cash"),tr:this.$t("kiosk.pay_screen.tr_title")};if(a&&n)this._snapshotPayment=n.paymentMethod||"";else{var s=null==o?void 0:o.paymentMethod;this._snapshotPayment=i[s]||s||""}if(a&&n)this._snapshotLoyaltyName=n.loyaltyCustomerName||null,this._snapshotOrderTotal=Number.isFinite(n.total)?n.total:0;else{var l=null==o?void 0:o.loyaltyCustomer;this._snapshotLoyaltyName=(null==l?void 0:l.name)||(null==l?void 0:l.first_name)||null,this._snapshotOrderTotal=null!=this.orderTotal?this.orderTotal:Math.max(0,this._snapshotSubtotal-this._snapshotDiscount)}this.$store.dispatch("kioskCart/reset");try{ke({orderId:this.orderNumber||(null==o?void 0:o.lastOrderId)||null,queueNumber:this.displayNumber||(null==o?void 0:o.queueNumber)||null,total:this._snapshotOrderTotal,discount:this._snapshotDiscount,subtotal:this._snapshotSubtotal,items:this._snapshotItems,paymentMethod:this._snapshotPayment,loyaltyCustomerName:this._snapshotLoyaltyName,pointsEarned:this.pointsEarned||0,restaurantName:this.restaurantName})}catch(e){}this.startTimer(),this.$nextTick(function(){G.Ay.isKioskBridge()&&t.printReceipt()});try{this._kioskSpeech=(0,fe.p)({store:this.$store});var c=this.$t("kiosk.confirmation.speech_summary",{number:String(this.displayNumber||"").replace(/[^0-9A-Za-z]/g,""),total:this.formatPrice(this.displayTotal||0)});c&&this._kioskSpeech.speak(c,{key:"kiosk.confirmation.speech_summary"}).catch(function(){})}catch(e){}},beforeUnmount:function(){this.clearTimer();try{var e;null===(e=this._kioskSpeech)||void 0===e||e.stop()}catch(e){}},methods:{startTimer:function(){var e=this;this.clearTimer(),this.countdown=this.autoReturnSeconds,this.progressWidth=100,this.timer=setInterval(function(){e.countdown--,e.progressWidth=e.countdown/e.autoReturnSeconds*100,e.countdown<=0&&e.goHome()},1e3)},clearTimer:function(){this.timer&&(clearInterval(this.timer),this.timer=null)},printReceipt:function(){var e,t=this;return(e=ye().m(function e(){var o,r,a;return ye().w(function(e){for(;;)switch(e.p=e.n){case 0:if("printing"!==t.printStatus){e.n=1;break}return e.a(2);case 1:return t.printStatus="printing",o=ne({restaurantName:t.restaurantName,queueNumber:t.displayNumber,cartItems:t.receiptItems,subtotal:t.receiptSubtotal,discount:t.receiptDiscount,total:t.displayTotal||0,paymentMethod:t.receiptPaymentMethod,loyaltyPointsEarned:t.pointsEarned,loyaltyCustomerName:t.loyaltyCustomerName||"",thankYou:t.$t("kiosk.confirmation.receipt_thanks"),labels:{queueNumberTitle:t.$t("kiosk.confirmation.receipt_number"),subtotal:t.$t("kiosk.subtotal"),discount:t.$t("kiosk.confirmation.receipt_discount"),total:t.$t("kiosk.confirmation.receipt_total"),payment:t.$t("label.payment_method"),loyalty:t.$t("kiosk.loyalty_card"),seeYouSoon:t.$t("message.please_come_again")}}),e.p=2,e.n=3,te(o,"kiosk-print-receipt");case 3:"none"===(r=e.v).method?(t.printStatus="error",t.printFailed=!0,re(t.displayNumber,r.error||"no print method")):(t.printStatus="done",t.printFailed=!1,setTimeout(function(){t.printStatus=null},2e3)),e.n=5;break;case 4:e.p=4,a=e.v,t.printStatus="error",t.printFailed=!0,re(t.displayNumber,(null==a?void 0:a.message)||"exception");case 5:return e.p=5,t.countdown>0&&!t.timer&&t.startTimer(),e.f(5);case 6:return e.a(2)}},e,null,[[2,4,5,6]])}),function(){var t=this,o=arguments;return new Promise(function(r,a){var n=e.apply(t,o);function i(e){ve(n,r,a,i,s,"next",e)}function s(e){ve(n,r,a,i,s,"throw",e)}i(void 0)})})()},goHome:function(){this.clearTimer(),this.$store.dispatch("kioskCart/reset");try{!function(){try{me()}catch(e){}}()}catch(e){}this.$router.push({name:"kiosk.idle"}).catch(function(){})},sanitizeItemName:function(e){return(0,se.q)(e||"")}}};var be=o(5072),xe=o.n(be),we=o(7914),_e={insert:"head",singleton:!1};xe()(we.A,_e);we.A.locals;const Ee=(0,o(6262).A)(ge,[["render",function(e,t,o,K,G,U){return(0,r.openBlock)(),(0,r.createElementBlock)(r.Fragment,null,[(0,r.createElementVNode)("div",a,[t[3]||(t[3]=(0,r.createStaticVNode)('<div class="kiosk-confirmation-anim" aria-hidden="true" data-v-42aa4547><svg class="kiosk-check-svg" viewBox="0 0 120 120" fill="none" data-v-42aa4547><circle cx="60" cy="60" r="54" stroke="rgba(255,255,255,0.1)" stroke-width="6" data-v-42aa4547></circle><circle cx="60" cy="60" r="54" stroke="#2ECC71" stroke-width="6" stroke-linecap="round" stroke-dasharray="339" stroke-dashoffset="339" class="kiosk-ring-fill" data-v-42aa4547></circle><path d="M36 60l18 18 30-30" stroke="#2ECC71" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" class="kiosk-check-path" data-v-42aa4547></path></svg></div>',1)),(0,r.createElementVNode)("h1",n,(0,r.toDisplayString)(e.$t("kiosk.confirmation.title")),1),(0,r.createElementVNode)("div",i,[(0,r.createElementVNode)("div",s,[(0,r.createElementVNode)("span",l,(0,r.toDisplayString)(e.$t("kiosk.confirmation.order_number")),1),(0,r.createElementVNode)("span",c,"#"+(0,r.toDisplayString)(U.displayNumber),1)]),null!==U.displayTotal&&void 0!==U.displayTotal?((0,r.openBlock)(),(0,r.createElementBlock)("div",d,[(0,r.createElementVNode)("span",u,(0,r.toDisplayString)(e.$t("kiosk.confirmation.total_paid")),1),(0,r.createElementVNode)("span",k,(0,r.toDisplayString)(e.formatPrice(U.displayTotal)),1)])):(0,r.createCommentVNode)("",!0)]),G.printFailed?((0,r.openBlock)(),(0,r.createElementBlock)("div",p,[(0,r.createElementVNode)("p",m,(0,r.toDisplayString)(e.$t("kiosk.confirmation.print_failed")),1),(0,r.createElementVNode)("div",f,"#"+(0,r.toDisplayString)(U.displayNumber),1),(0,r.createElementVNode)("p",y,(0,r.toDisplayString)(e.$t("kiosk.confirmation.print_failed_hint")),1)])):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("div",h,[(0,r.createElementVNode)("p",null,(0,r.toDisplayString)(e.$t("kiosk.confirmation.message_kitchen")),1),(0,r.createElementVNode)("p",null,(0,r.toDisplayString)(e.$t("kiosk.confirmation.message_counter")),1)]),(0,r.createVNode)(r.Transition,{name:"fade-up"},{default:(0,r.withCtx)(function(){return[U.pointsEarned>0&&U.loyaltyCustomerName?((0,r.openBlock)(),(0,r.createElementBlock)("div",v,[t[2]||(t[2]=(0,r.createElementVNode)("div",{class:"kiosk-points-icon"},"⭐",-1)),(0,r.createElementVNode)("div",g,[(0,r.createElementVNode)("span",b,(0,r.toDisplayString)(U.loyaltyCustomerName)+",",1),(0,r.createElementVNode)("span",x,(0,r.toDisplayString)(e.$t("kiosk.confirmation.loyalty_points",{n:U.pointsEarned})),1)])])):(0,r.createCommentVNode)("",!0)]}),_:1}),(0,r.createElementVNode)("div",w,[(0,r.createElementVNode)("span",_,(0,r.toDisplayString)(e.$t("kiosk.confirmation.auto_return",{n:G.countdown})),1),(0,r.createElementVNode)("div",E,[(0,r.createElementVNode)("div",{class:"kiosk-timer-fill",style:(0,r.normalizeStyle)({width:G.progressWidth+"%"})},null,4)])]),(0,r.createElementVNode)("button",{type:"button",class:(0,r.normalizeClass)(["kiosk-btn-print",{"is-printing":"printing"===G.printStatus,"is-done":"done"===G.printStatus,"is-error":"error"===G.printStatus}]),onClick:t[0]||(t[0]=function(){return U.printReceipt&&U.printReceipt.apply(U,arguments)}),disabled:"printing"===G.printStatus,"aria-busy":"printing"===G.printStatus,"data-testid":"kiosk-confirmation-cta-print"},["printing"===G.printStatus?((0,r.openBlock)(),(0,r.createElementBlock)("span",S,"⏳ "+(0,r.toDisplayString)(e.$t("kiosk.confirmation.printing")),1)):"done"===G.printStatus?((0,r.openBlock)(),(0,r.createElementBlock)("span",V,"✅ "+(0,r.toDisplayString)(e.$t("kiosk.confirmation.printed")),1)):"error"===G.printStatus?((0,r.openBlock)(),(0,r.createElementBlock)("span",C,"❌ "+(0,r.toDisplayString)(e.$t("kiosk.confirmation.print_error")),1)):((0,r.openBlock)(),(0,r.createElementBlock)("span",O,"🖨️ "+(0,r.toDisplayString)(e.$t("kiosk.confirmation.print_button")),1))],10,N),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-btn-home",onClick:t[1]||(t[1]=function(){return U.goHome&&U.goHome.apply(U,arguments)}),"data-testid":"kiosk-confirmation-cta-home"},(0,r.toDisplayString)(e.$t("kiosk.confirmation.new_order"))+" → ",1)]),(0,r.createElementVNode)("div",{id:"kiosk-print-receipt",class:"kiosk-receipt-zone","data-print-failed":G.printFailed,"data-testid":"kiosk-print-receipt",role:G.printFailed?"status":void 0,"aria-live":G.printFailed?"polite":void 0},[G.printFailed?((0,r.openBlock)(),(0,r.createElementBlock)(r.Fragment,{key:0},[(0,r.createElementVNode)("h2",T,(0,r.toDisplayString)(e.$t("kiosk.confirmation.fallback_receipt_title")),1),(0,r.createElementVNode)("p",P,(0,r.toDisplayString)(e.$t("kiosk.confirmation.fallback_receipt_help")),1)],64)):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("div",D,[(0,r.createElementVNode)("p",A,(0,r.toDisplayString)(U.restaurantName),1),(0,r.createElementVNode)("p",$,(0,r.toDisplayString)(U.receiptDate),1)]),t[5]||(t[5]=(0,r.createElementVNode)("div",{class:"receipt-divider"},"- - - - - - - - - - - - - - - - - -",-1)),(0,r.createElementVNode)("div",j,[(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.confirmation.receipt_number")),1),(0,r.createElementVNode)("span",I,"#"+(0,r.toDisplayString)(U.displayNumber),1)]),t[6]||(t[6]=(0,r.createElementVNode)("div",{class:"receipt-divider"},"- - - - - - - - - - - - - - - - - -",-1)),((0,r.openBlock)(!0),(0,r.createElementBlock)(r.Fragment,null,(0,r.renderList)(U.receiptItems,function(t,o){return(0,r.openBlock)(),(0,r.createElementBlock)("div",{key:t.item_id+"_"+o,class:"receipt-line"},[(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(t.quantity)+"x "+(0,r.toDisplayString)(U.sanitizeItemName(t.name)),1),(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.formatPrice(t.total)),1)])}),128)),t[7]||(t[7]=(0,r.createElementVNode)("div",{class:"receipt-divider"},"- - - - - - - - - - - - - - - - - -",-1)),U.receiptDiscount>0?((0,r.openBlock)(),(0,r.createElementBlock)("div",z,[(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.confirmation.receipt_discount")),1),(0,r.createElementVNode)("span",null,"-"+(0,r.toDisplayString)(e.formatPrice(U.receiptDiscount)),1)])):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("div",M,[(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.confirmation.receipt_total")),1),(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.formatPrice(U.displayTotal||0)),1)]),U.pointsEarned>0&&U.loyaltyCustomerName?((0,r.openBlock)(),(0,r.createElementBlock)(r.Fragment,{key:2},[t[4]||(t[4]=(0,r.createElementVNode)("div",{class:"receipt-divider"},"- - - - - - - - - - - - - - - - - -",-1)),(0,r.createElementVNode)("p",L,(0,r.toDisplayString)(e.$t("kiosk.confirmation.receipt_loyalty",{n:U.pointsEarned})),1),(0,r.createElementVNode)("p",F,(0,r.toDisplayString)(U.loyaltyCustomerName),1)],64)):(0,r.createCommentVNode)("",!0),t[8]||(t[8]=(0,r.createElementVNode)("div",{class:"receipt-divider"},"- - - - - - - - - - - - - - - - - -",-1)),(0,r.createElementVNode)("p",R,(0,r.toDisplayString)(e.$t("kiosk.confirmation.receipt_thanks")),1),(0,r.createElementVNode)("p",q,(0,r.toDisplayString)(e.$t("kiosk.confirmation.receipt_present")),1)],8,B)],64)}],["__scopeId","data-v-42aa4547"]]),Ne=Ee},6930(e,t,o){o.r(t),o.d(t,{default:()=>A});var r=o(6934),a={class:"kiosk-login-screen"},n={class:"kiosk-login-card"},i={class:"kiosk-login-logo"},s={class:"kiosk-login-title"},l={class:"kiosk-login-sub"},c={class:"kiosk-login-form kiosk-login-auto"},d={class:"kiosk-login-status"},u={key:0,class:"kiosk-login-spinner"},k={key:1,class:"kiosk-login-status-icon"},p={class:"kiosk-login-status-text"},m={key:0,class:"kiosk-login-error"},f={class:"kiosk-login-hint kiosk-login-hint-center"},y=["disabled"],h={key:0},v={key:1,class:"kiosk-login-spinner"},g={key:0,class:"kiosk-login-devhint"},b={class:"kiosk-login-footer"};function x(e){return x="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},x(e)}function w(){var e,t,o="function"==typeof Symbol?Symbol:{},r=o.iterator||"@@iterator",a=o.toStringTag||"@@toStringTag";function n(o,r,a,n){var l=r&&r.prototype instanceof s?r:s,c=Object.create(l.prototype);return _(c,"_invoke",function(o,r,a){var n,s,l,c=0,d=a||[],u=!1,k={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,o){return n=t,s=0,l=e,k.n=o,i}};function p(o,r){for(s=o,l=r,t=0;!u&&c&&!a&&t<d.length;t++){var a,n=d[t],p=k.p,m=n[2];o>3?(a=m===r)&&(l=n[(s=n[4])?5:(s=3,3)],n[4]=n[5]=e):n[0]<=p&&((a=o<2&&p<n[1])?(s=0,k.v=r,k.n=n[1]):p<m&&(a=o<3||n[0]>r||r>m)&&(n[4]=o,n[5]=r,k.n=m,s=0))}if(a||o>1)return i;throw u=!0,r}return function(a,d,m){if(c>1)throw TypeError("Generator is already running");for(u&&1===d&&p(d,m),s=d,l=m;(t=s<2?e:l)||!u;){n||(s?s<3?(s>1&&(k.n=-1),p(s,l)):k.n=l:k.v=l);try{if(c=2,n){if(s||(a="next"),t=n[a]){if(!(t=t.call(n,l)))throw TypeError("iterator result is not an object");if(!t.done)return t;l=t.value,s<2&&(s=0)}else 1===s&&(t=n.return)&&t.call(n),s<2&&(l=TypeError("The iterator does not provide a '"+a+"' method"),s=1);n=e}else if((t=(u=k.n<0)?l:o.call(r,k))!==i)break}catch(t){n=e,s=1,l=t}finally{c=1}}return{value:t,done:u}}}(o,a,n),!0),c}var i={};function s(){}function l(){}function c(){}t=Object.getPrototypeOf;var d=[][r]?t(t([][r]())):(_(t={},r,function(){return this}),t),u=c.prototype=s.prototype=Object.create(d);function k(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,c):(e.__proto__=c,_(e,a,"GeneratorFunction")),e.prototype=Object.create(u),e}return l.prototype=c,_(u,"constructor",c),_(c,"constructor",l),l.displayName="GeneratorFunction",_(c,a,"GeneratorFunction"),_(u),_(u,a,"Generator"),_(u,r,function(){return this}),_(u,"toString",function(){return"[object Generator]"}),(w=function(){return{w:n,m:k}})()}function _(e,t,o,r){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}_=function(e,t,o,r){function n(t,o){_(e,t,function(e){return this._invoke(t,o,e)})}t?a?a(e,t,{value:o,enumerable:!r,configurable:!r,writable:!r}):e[t]=o:(n("next",0),n("throw",1),n("return",2))},_(e,t,o,r)}function E(e,t,o,r,a,n,i){try{var s=e[n](i),l=s.value}catch(e){return void o(e)}s.done?t(l):Promise.resolve(l).then(r,a)}function N(e,t){var o=Object.keys(e);if(Object.getOwnPropertySymbols){var r=Object.getOwnPropertySymbols(e);t&&(r=r.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),o.push.apply(o,r)}return o}function S(e){for(var t=1;t<arguments.length;t++){var o=null!=arguments[t]?arguments[t]:{};t%2?N(Object(o),!0).forEach(function(t){V(e,t,o[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(o)):N(Object(o)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(o,t))})}return e}function V(e,t,o){return(t=function(e){var t=function(e,t){if("object"!=x(e)||!e)return e;var o=e[Symbol.toPrimitive];if(void 0!==o){var r=o.call(e,t||"default");if("object"!=x(r))return r;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==x(t)?t:t+""}(t))in e?Object.defineProperty(e,t,{value:o,enumerable:!0,configurable:!0,writable:!0}):e[t]=o,e}const C={name:"KioskLoginComponent",computed:{showDevSeedHint:function(){return!1}},data:function(){return{loading:!1,error:null,setupRequired:!1,retryTimer:null,retryAttempts:0}},mounted:function(){this.startAutoLogin()},beforeUnmount:function(){clearTimeout(this.retryTimer)},methods:S(S({},(0,o(834).i0)("kioskCart",["kioskLogin"])),{},{getAutoCredentials:function(){var e,t=(null===(e=window.foodkingConfig)||void 0===e?void 0:e.kioskAutoLogin)||null;return null!=t&&t.username&&void 0!==t.password&&null!==t.password&&""!==String(t.password)?{username:String(t.username).trim(),password:String(t.password)}:null},scheduleRetry:function(){var e=this;if(!(this.retryAttempts>=10)){clearTimeout(this.retryTimer);var t=Math.min(3e4,4e3*Math.max(1,Math.pow(2,Math.max(0,this.retryAttempts-1))));this.retryTimer=setTimeout(function(){e.startAutoLogin()},t)}},startAutoLogin:function(){var e,t=this;return(e=w().m(function e(){var o,r,a,n,i,s,l,c,d;return w().w(function(e){for(;;)switch(e.p=e.n){case 0:if(o=t.getAutoCredentials()){e.n=1;break}return t.setupRequired=!0,t.error=t.$t("kiosk.login_screen.err_no_credentials"),e.a(2);case 1:return t.setupRequired=!1,clearTimeout(t.retryTimer),t.loading=!0,t.error=null,e.p=2,e.n=3,t.kioskLogin(o);case 3:t.retryAttempts=0,t.$router.replace({name:"kiosk.idle"}),e.n=5;break;case 4:e.p=4,d=e.v,a=null==d||null===(r=d.response)||void 0===r?void 0:r.status,n=429===a?t.$t("kiosk.login_screen.err_rate_limited"):(null==d||null===(i=d.response)||void 0===i||null===(i=i.data)||void 0===i||null===(i=i.errors)||void 0===i?void 0:i.validation)||(null==d||null===(s=d.response)||void 0===s||null===(s=s.data)||void 0===s||null===(s=s.errors)||void 0===s||null===(s=s.username)||void 0===s?void 0:s[0])||(null==d||null===(l=d.response)||void 0===l||null===(l=l.data)||void 0===l||null===(l=l.errors)||void 0===l||null===(l=l.password)||void 0===l?void 0:l[0])||(null==d||null===(c=d.response)||void 0===c||null===(c=c.data)||void 0===c?void 0:c.message)||t.$t("kiosk.login_screen.err_login_failed"),t.error=n,t.retryAttempts+=1,t.scheduleRetry();case 5:return e.p=5,t.loading=!1,e.f(5);case 6:return e.a(2)}},e,null,[[2,4,5,6]])}),function(){var t=this,o=arguments;return new Promise(function(r,a){var n=e.apply(t,o);function i(e){E(n,r,a,i,s,"next",e)}function s(e){E(n,r,a,i,s,"throw",e)}i(void 0)})})()},retryAutoLogin:function(){this.retryAttempts=0,this.startAutoLogin()}})};var O=o(5072),B=o.n(O),T=o(1433),P={insert:"head",singleton:!1};B()(T.A,P);T.A.locals;const D=(0,o(6262).A)(C,[["render",function(e,t,o,x,w,_){return(0,r.openBlock)(),(0,r.createElementBlock)("div",a,[(0,r.createElementVNode)("div",n,[(0,r.createElementVNode)("div",i,[t[1]||(t[1]=(0,r.createElementVNode)("div",{class:"kiosk-login-icon"},"🖥️",-1)),(0,r.createElementVNode)("h1",s,(0,r.toDisplayString)(e.$t("kiosk.login_screen.title")),1),(0,r.createElementVNode)("p",l,(0,r.toDisplayString)(e.$t("kiosk.login_screen.sub")),1)]),(0,r.createElementVNode)("div",c,[(0,r.createElementVNode)("div",d,[w.loading?((0,r.openBlock)(),(0,r.createElementBlock)("span",u)):((0,r.openBlock)(),(0,r.createElementBlock)("span",k,"!")),(0,r.createElementVNode)("p",p,[w.loading?((0,r.openBlock)(),(0,r.createElementBlock)(r.Fragment,{key:0},[(0,r.createTextVNode)((0,r.toDisplayString)(e.$t("kiosk.login_screen.status_loading")),1)],64)):w.setupRequired?((0,r.openBlock)(),(0,r.createElementBlock)(r.Fragment,{key:1},[(0,r.createTextVNode)((0,r.toDisplayString)(e.$t("kiosk.login_screen.status_missing_env")),1)],64)):((0,r.openBlock)(),(0,r.createElementBlock)(r.Fragment,{key:2},[(0,r.createTextVNode)((0,r.toDisplayString)(e.$t("kiosk.login_screen.status_retrying")),1)],64))])]),(0,r.createVNode)(r.Transition,{name:"fade"},{default:(0,r.withCtx)(function(){return[w.error?((0,r.openBlock)(),(0,r.createElementBlock)("p",m,(0,r.toDisplayString)(w.error),1)):(0,r.createCommentVNode)("",!0)]}),_:1}),(0,r.createElementVNode)("p",f,(0,r.toDisplayString)(e.$t("kiosk.login_screen.public_hint")),1),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-login-btn",disabled:w.loading,onClick:t[0]||(t[0]=function(){return _.retryAutoLogin&&_.retryAutoLogin.apply(_,arguments)})},[w.loading?((0,r.openBlock)(),(0,r.createElementBlock)("span",v)):((0,r.openBlock)(),(0,r.createElementBlock)("span",h,(0,r.toDisplayString)(e.$t("kiosk.login_screen.retry")),1))],8,y)]),_.showDevSeedHint?((0,r.openBlock)(),(0,r.createElementBlock)("p",g,(0,r.toDisplayString)(e.$t("kiosk.login_screen.devhint")),1)):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("p",b,(0,r.toDisplayString)(e.$t("kiosk.login_screen.footer")),1)])])}],["__scopeId","data-v-4fdaa139"]]),A=D},544(e,t,o){o.r(t),o.d(t,{default:()=>Pe});var r=o(6934);function a(e){return function(e){if(Array.isArray(e))return n(e)}(e)||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(e)||function(e,t){if(e){if("string"==typeof e)return n(e,t);var o={}.toString.call(e).slice(8,-1);return"Object"===o&&e.constructor&&(o=e.constructor.name),"Map"===o||"Set"===o?Array.from(e):"Arguments"===o||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(o)?n(e,t):void 0}}(e)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function n(e,t){(null==t||t>e.length)&&(t=e.length);for(var o=0,r=Array(t);o<t;o++)r[o]=e[o];return r}var i={class:"kiosk-loyalty-screen"},s={class:"kiosk-loyalty-header"},l={class:"kiosk-loyalty-title"},c={key:0,class:"kiosk-loyalty-step"},d={class:"kiosk-loyalty-card"},u={class:"kiosk-loyalty-subtitle"},k={class:"kiosk-loyalty-input-row"},p=["placeholder"],m={class:"kiosk-numpad"},f=["onClick"],y={key:0,width:"24",height:"24",viewBox:"0 0 24 24",fill:"none"},h={key:0,class:"kiosk-loyalty-error"},v=["disabled"],g={key:0},b={key:1,class:"kiosk-spinner-inline"},x={key:1,class:"kiosk-loyalty-step"},w={class:"kiosk-loyalty-card"},_={class:"kiosk-loyalty-subtitle"},E={class:"kiosk-register-fields"},N={class:"kiosk-field-group"},S={class:"kiosk-field-label"},V=["placeholder"],C={class:"kiosk-field-group"},O={class:"kiosk-field-label"},B=["placeholder"],T={class:"kiosk-field-group"},P={class:"kiosk-field-label"},D=["placeholder"],A={key:0,class:"kiosk-loyalty-error"},$=["disabled"],j={key:0},I={key:1,class:"kiosk-spinner-inline"},z={key:2,class:"kiosk-loyalty-step"},M={class:"kiosk-loyalty-card"},L={class:"kiosk-loyalty-profile"},F={class:"kiosk-loyalty-avatar"},R={class:"kiosk-loyalty-info"},q={class:"kiosk-loyalty-member-since"},K={class:"kiosk-loyalty-points-badge"},G={class:"kiosk-loyalty-points-value"},U={class:"kiosk-loyalty-points-label"},Y={key:0,class:"kiosk-loyalty-points-equiv"},W={key:0,class:"kiosk-loyalty-progress-wrap"},Q={class:"kiosk-loyalty-progress-bar"},H={class:"kiosk-loyalty-progress-label"},Z={key:1,class:"kiosk-loyalty-options"},J={class:"kiosk-loyalty-option-text"},X={class:"kiosk-loyalty-option-text"},ee={key:2,class:"kiosk-loyalty-not-enough"},te={class:"green"},oe=["disabled"],re={key:3,class:"kiosk-loyalty-step"},ae={class:"kiosk-loyalty-card kiosk-loyalty-confirm-card"},ne={key:0,class:"kiosk-loyalty-confirm-title"},ie={key:1,class:"kiosk-loyalty-confirm-title"},se={key:2,class:"kiosk-loyalty-confirm-amount"},le={class:"kiosk-loyalty-confirm-sub"};var ce=o(834),de=o(4289),ue=o(3724),ke=o(3041),pe=o(7407),me=o(7488),fe=o(4253);function ye(e){return ye="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},ye(e)}function he(){var e,t,o="function"==typeof Symbol?Symbol:{},r=o.iterator||"@@iterator",a=o.toStringTag||"@@toStringTag";function n(o,r,a,n){var l=r&&r.prototype instanceof s?r:s,c=Object.create(l.prototype);return ve(c,"_invoke",function(o,r,a){var n,s,l,c=0,d=a||[],u=!1,k={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,o){return n=t,s=0,l=e,k.n=o,i}};function p(o,r){for(s=o,l=r,t=0;!u&&c&&!a&&t<d.length;t++){var a,n=d[t],p=k.p,m=n[2];o>3?(a=m===r)&&(l=n[(s=n[4])?5:(s=3,3)],n[4]=n[5]=e):n[0]<=p&&((a=o<2&&p<n[1])?(s=0,k.v=r,k.n=n[1]):p<m&&(a=o<3||n[0]>r||r>m)&&(n[4]=o,n[5]=r,k.n=m,s=0))}if(a||o>1)return i;throw u=!0,r}return function(a,d,m){if(c>1)throw TypeError("Generator is already running");for(u&&1===d&&p(d,m),s=d,l=m;(t=s<2?e:l)||!u;){n||(s?s<3?(s>1&&(k.n=-1),p(s,l)):k.n=l:k.v=l);try{if(c=2,n){if(s||(a="next"),t=n[a]){if(!(t=t.call(n,l)))throw TypeError("iterator result is not an object");if(!t.done)return t;l=t.value,s<2&&(s=0)}else 1===s&&(t=n.return)&&t.call(n),s<2&&(l=TypeError("The iterator does not provide a '"+a+"' method"),s=1);n=e}else if((t=(u=k.n<0)?l:o.call(r,k))!==i)break}catch(t){n=e,s=1,l=t}finally{c=1}}return{value:t,done:u}}}(o,a,n),!0),c}var i={};function s(){}function l(){}function c(){}t=Object.getPrototypeOf;var d=[][r]?t(t([][r]())):(ve(t={},r,function(){return this}),t),u=c.prototype=s.prototype=Object.create(d);function k(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,c):(e.__proto__=c,ve(e,a,"GeneratorFunction")),e.prototype=Object.create(u),e}return l.prototype=c,ve(u,"constructor",c),ve(c,"constructor",l),l.displayName="GeneratorFunction",ve(c,a,"GeneratorFunction"),ve(u),ve(u,a,"Generator"),ve(u,r,function(){return this}),ve(u,"toString",function(){return"[object Generator]"}),(he=function(){return{w:n,m:k}})()}function ve(e,t,o,r){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}ve=function(e,t,o,r){function n(t,o){ve(e,t,function(e){return this._invoke(t,o,e)})}t?a?a(e,t,{value:o,enumerable:!r,configurable:!r,writable:!r}):e[t]=o:(n("next",0),n("throw",1),n("return",2))},ve(e,t,o,r)}function ge(e,t,o,r,a,n,i){try{var s=e[n](i),l=s.value}catch(e){return void o(e)}s.done?t(l):Promise.resolve(l).then(r,a)}function be(e){return function(){var t=this,o=arguments;return new Promise(function(r,a){var n=e.apply(t,o);function i(e){ge(n,r,a,i,s,"next",e)}function s(e){ge(n,r,a,i,s,"throw",e)}i(void 0)})}}function xe(e){return function(e){if(Array.isArray(e))return we(e)}(e)||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(e)||function(e,t){if(e){if("string"==typeof e)return we(e,t);var o={}.toString.call(e).slice(8,-1);return"Object"===o&&e.constructor&&(o=e.constructor.name),"Map"===o||"Set"===o?Array.from(e):"Arguments"===o||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(o)?we(e,t):void 0}}(e)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function we(e,t){(null==t||t>e.length)&&(t=e.length);for(var o=0,r=Array(t);o<t;o++)r[o]=e[o];return r}function _e(e,t){var o=Object.keys(e);if(Object.getOwnPropertySymbols){var r=Object.getOwnPropertySymbols(e);t&&(r=r.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),o.push.apply(o,r)}return o}function Ee(e){for(var t=1;t<arguments.length;t++){var o=null!=arguments[t]?arguments[t]:{};t%2?_e(Object(o),!0).forEach(function(t){Ne(e,t,o[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(o)):_e(Object(o)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(o,t))})}return e}function Ne(e,t,o){return(t=function(e){var t=function(e,t){if("object"!=ye(e)||!e)return e;var o=e[Symbol.toPrimitive];if(void 0!==o){var r=o.call(e,t||"default");if("object"!=ye(r))return r;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==ye(t)?t:t+""}(t))in e?Object.defineProperty(e,t,{value:o,enumerable:!0,configurable:!0,writable:!0}):e[t]=o,e}const Se={name:"KioskLoyaltyComponent",mixins:[de.om],components:{KsConsentModal:pe.A,KsVirtualKeyboard:me.A},inject:{showToast:{default:function(){return function(){}}}},LOYALTY_HTTP_TIMEOUT_MS:25e3,data:function(){return{step:"input",code:"",loading:!1,error:null,customer:null,discountValue:0,minRedeemPoints:100,rewardTiers:[100,250,500,1e3,2e3],redeemChoice:null,appliedDiscount:0,numpadKeys:["1","2","3","4","5","6","7","8","9","del","0"],registerName:"",registerPhone:"",registerEmail:"",registerLoading:!1,registerError:null,showConsentModal:!1,_pendingRegister:null,vkeybActiveField:null}},computed:Ee(Ee(Ee({},(0,ce.L8)("kioskCart",["total","upsellShown","items"])),(0,ce.L8)("kioskMenu",["categories"])),{},{shouldSkipKioskUpsell:function(){return(0,ue.b)(this.items,this.categories)},customerInitials:function(){var e;return null!==(e=this.customer)&&void 0!==e&&e.name?this.customer.name.split(" ").map(function(e){return e[0]}).join("").toUpperCase().slice(0,2):"?"},canRedeem:function(){return this.customer&&this.customer.loyalty_point>=this.minRedeemPoints},nextTierPoints:function(){if(!this.customer)return 0;var e=this.customer.loyalty_point;return this.rewardTiers.find(function(t){return t>e})||0},progressPercent:function(){var e=this;if(!this.nextTierPoints||!this.customer)return 100;var t=[0].concat(xe(this.rewardTiers))[this.rewardTiers.findIndex(function(t){return t>e.customer.loyalty_point})]||0,o=this.nextTierPoints-t;return Math.min(100,Math.round((this.customer.loyalty_point-t)/o*100))},vkeybLayout:function(){var e,t=null===(e=this.$store.state.kioskSettings)||void 0===e?void 0:e.locale;return"en"===t||"ar"===t||"fr"===t?t:"fr"},vkeybValue:function(){var e=this.vkeybActiveField;return"registerName"===e?this.registerName:"registerPhone"===e?this.registerPhone:"registerEmail"===e?this.registerEmail:""},vkeybAllowSpace:function(){return"registerName"===this.vkeybActiveField},vkeybMaxLength:function(){return"registerName"===this.vkeybActiveField?60:"registerEmail"===this.vkeybActiveField?80:"registerPhone"===this.vkeybActiveField?20:200}}),mounted:function(){var e=this;this.loadConfig(),this.$nextTick(function(){var t;return null===(t=e.$refs.codeInput)||void 0===t?void 0:t.focus()})},methods:Ee(Ee({},(0,ce.i0)("kioskCart",["setLoyalty","markUpsellShown"])),{},{loadConfig:function(){var e=this;return be(he().m(function t(){var o,r,a,n;return he().w(function(t){for(;;)switch(t.p=t.n){case 0:return o=e.$options.LOYALTY_HTTP_TIMEOUT_MS,t.p=1,t.n=2,ke.A.get("frontend/loyalty/config",{timeout:o});case 2:a=t.v,n=(null===(r=a.data)||void 0===r?void 0:r.data)||a.data||{},e.minRedeemPoints=n.min_redeem_points||100,Array.isArray(n.tiers)&&n.tiers.length>0&&(e.rewardTiers=n.tiers.map(function(e){return parseInt(e,10)}).filter(function(e){return Number.isFinite(e)&&e>0}).sort(function(e,t){return e-t})),t.n=4;break;case 3:t.p=3,t.v;case 4:return t.a(2)}},t,null,[[1,3]])}))()},handleNumpad:function(e){"del"===e?this.code=this.code.slice(0,-1):this.code.length<20&&(this.code+=e)},onFocusRegisterField:function(e){["registerName","registerPhone","registerEmail"].includes(e)&&(this.vkeybActiveField=e)},onVkeybInput:function(e){var t=this.vkeybActiveField;t&&(this[t]=e)},onVkeybSubmit:function(){"registerName"!==this.vkeybActiveField||""!==this.registerPhone?"registerPhone"!==this.vkeybActiveField||""!==this.registerEmail?(this.vkeybActiveField=null,this.registerName.trim()&&this.registerPhone.trim()&&!this.registerLoading&&this.submitRegister()):this.vkeybActiveField="registerEmail":this.vkeybActiveField="registerPhone"},onVkeybClose:function(){this.vkeybActiveField=null},checkLoyalty:function(){var e=this;return be(he().m(function t(){var o,r,a,n,i,s,l,c,d,u,k;return he().w(function(t){for(;;)switch(t.p=t.n){case 0:if(e.code.trim()){t.n=1;break}return t.a(2);case 1:return e.loading=!0,e.error=null,o=e.$options.LOYALTY_HTTP_TIMEOUT_MS,t.p=2,t.n=3,ke.A.post("frontend/loyalty/check",{code:e.code.trim()},{timeout:o});case 3:i=t.v,s=(null===(r=i.data)||void 0===r?void 0:r.data)||i.data||{},e.customer=Ee(Ee({},s),{},{loyalty_point:parseInt(null!==(a=null!==(n=s.loyalty_point)&&void 0!==n?n:s.points)&&void 0!==a?a:0,10)}),e.discountValue=parseFloat(s.discount_value||0),e.step="balance",t.n=5;break;case 4:t.p=4,"ECONNABORTED"===(k=t.v).code||null!==(l=k.message)&&void 0!==l&&l.includes("timeout")?e.error=e.$t("kiosk.loyalty_screen.request_timeout"):(u=(null===(c=k.response)||void 0===c||null===(c=c.data)||void 0===c?void 0:c.message)||(null===(d=k.response)||void 0===d||null===(d=d.data)||void 0===d||null===(d=d.errors)||void 0===d||null===(d=d.code)||void 0===d?void 0:d[0]),e.error=u||e.$t("kiosk.loyalty_screen.error_not_found"));case 5:return t.p=5,e.loading=!1,t.f(5);case 6:return t.a(2)}},t,null,[[2,4,5,6]])}))()},applyLoyalty:function(){var e=this;return be(he().m(function t(){return he().w(function(t){for(;;)switch(t.n){case 0:if(!e.canRedeem||"yes"!==e.redeemChoice){t.n=2;break}return e.appliedDiscount=Math.min(e.discountValue,e.total),t.n=1,e.setLoyalty({customer:e.customer,discount:e.appliedDiscount});case 1:e.showToast(e.$t("kiosk.loyalty_screen.toast_discount",{amount:e.formatPrice(e.appliedDiscount)}),"success",3e3),t.n=4;break;case 2:return t.n=3,e.setLoyalty({customer:e.customer,discount:0});case 3:e.appliedDiscount=0,e.showToast(e.$t("kiosk.loyalty_screen.toast_saved"),"info",3e3);case 4:e.step="confirmed";case 5:return t.a(2)}},t)}))()},submitRegister:function(){var e=this;return be(he().m(function t(){var o;return he().w(function(t){for(;;)switch(t.n){case 0:if(e.registerName.trim()&&e.registerPhone.trim()){t.n=1;break}return t.a(2);case 1:if(!(null===(o=e.$store.state.kioskSettings)||void 0===o||!o.consentLoyalty)){t.n=2;break}return e._pendingRegister={name:e.registerName.trim(),phone:e.registerPhone.trim(),email:e.registerEmail.trim()||void 0},e.showConsentModal=!0,t.a(2);case 2:return t.n=3,e._doSubmitRegister({name:e.registerName.trim(),phone:e.registerPhone.trim(),email:e.registerEmail.trim()||void 0});case 3:return t.a(2)}},t)}))()},_doSubmitRegister:function(e){var t=this;return be(he().m(function o(){var r,a,n,i,s,l,c;return he().w(function(o){for(;;)switch(o.p=o.n){case 0:return t.registerLoading=!0,t.registerError=null,o.p=1,o.n=2,ke.A.post("frontend/loyalty/register",e);case 2:n=o.v,i=(null===(r=n.data)||void 0===r?void 0:r.data)||{},t.customer={name:i.name||e.name,loyalty_point:parseInt(null!==(a=i.points)&&void 0!==a?a:0,10),loyalty_code:i.loyalty_code||""},t.discountValue=0,t.code=i.loyalty_code||"",t.showToast(t.$t("kiosk.loyalty_screen.toast_welcome",{name:t.customer.name}),"success",3500),t.step="balance";try{fe.Ay.track("loyalty_scanned",{registration:!0})}catch(e){}o.n=4;break;case 3:o.p=3,c=o.v,l=(null===(s=c.response)||void 0===s||null===(s=s.data)||void 0===s?void 0:s.message)||t.$t("kiosk.loyalty_screen.register_error_generic"),t.registerError=l;case 4:return o.p=4,t.registerLoading=!1,o.f(4);case 5:return o.a(2)}},o,null,[[1,3,4,5]])}))()},onConsentAccept:function(){var e=this;return be(he().m(function t(){var o;return he().w(function(t){for(;;)switch(t.n){case 0:if(e.showConsentModal=!1,o=e._pendingRegister,e._pendingRegister=null,o){t.n=1;break}return t.a(2);case 1:return t.n=2,e._doSubmitRegister(o);case 2:return t.a(2)}},t)}))()},onConsentDecline:function(){this.showConsentModal=!1,this._pendingRegister=null,this.registerError=this.$t("kiosk.loyalty_screen.consent_required")},proceedToPayment:function(){this.upsellShown?this.$router.push({name:"kiosk.payment"}):(this.markUpsellShown(),this.shouldSkipKioskUpsell?this.$router.push({name:"kiosk.payment"}):this.$router.push({name:"kiosk.upsell"}))},goBack:function(){this.$router.push({name:"kiosk.cart"})}})};var Ve=o(5072),Ce=o.n(Ve),Oe=o(5560),Be={insert:"head",singleton:!1};Ce()(Oe.A,Be);Oe.A.locals;const Te=(0,o(6262).A)(Se,[["render",function(e,t,o,n,ce,de){var ue=(0,r.resolveComponent)("KsConsentModal"),ke=(0,r.resolveComponent)("KsVirtualKeyboard");return(0,r.openBlock)(),(0,r.createElementBlock)("div",i,[(0,r.createElementVNode)("div",s,[(0,r.createElementVNode)("button",{type:"button",class:"kiosk-back-btn",onClick:t[0]||(t[0]=function(){return de.goBack&&de.goBack.apply(de,arguments)})},a(t[24]||(t[24]=[(0,r.createElementVNode)("svg",{width:"28",height:"28",viewBox:"0 0 24 24",fill:"none"},[(0,r.createElementVNode)("path",{d:"M19 12H5M12 5l-7 7 7 7",stroke:"currentColor","stroke-width":"2.5","stroke-linecap":"round","stroke-linejoin":"round"})],-1)]))),t[25]||(t[25]=(0,r.createElementVNode)("div",{class:"kiosk-loyalty-logo"},[(0,r.createElementVNode)("svg",{width:"36",height:"36",viewBox:"0 0 24 24",fill:"none"},[(0,r.createElementVNode)("path",{d:"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21.02l1.18-6.88L2 9.27l6.91-1.01L12 2z",fill:"#FFD700",stroke:"#FFA500","stroke-width":"1.5"})])],-1)),(0,r.createElementVNode)("h1",l,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.title")),1)]),"input"===ce.step?((0,r.openBlock)(),(0,r.createElementBlock)("div",c,[(0,r.createElementVNode)("div",d,[(0,r.createElementVNode)("p",u,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.input_sub")),1),(0,r.createElementVNode)("div",k,[(0,r.withDirectives)((0,r.createElementVNode)("input",{ref:"codeInput","onUpdate:modelValue":t[1]||(t[1]=function(e){return ce.code=e}),type:"text",class:"kiosk-loyalty-input",placeholder:e.$t("kiosk.loyalty_screen.code_placeholder"),maxlength:"20",onKeyup:t[2]||(t[2]=(0,r.withKeys)(function(){return de.checkLoyalty&&de.checkLoyalty.apply(de,arguments)},["enter"]))},null,40,p),[[r.vModelText,ce.code]]),ce.code?((0,r.openBlock)(),(0,r.createElementBlock)("button",{key:0,type:"button",class:"kiosk-btn-clear",onClick:t[3]||(t[3]=function(e){return ce.code=""})},"✕")):(0,r.createCommentVNode)("",!0)]),(0,r.createElementVNode)("div",m,[((0,r.openBlock)(!0),(0,r.createElementBlock)(r.Fragment,null,(0,r.renderList)(ce.numpadKeys,function(e){return(0,r.openBlock)(),(0,r.createElementBlock)("button",{type:"button",key:e,class:(0,r.normalizeClass)(["kiosk-numpad-btn",{wide:"del"===e,zero:"0"===e}]),onClick:function(t){return de.handleNumpad(e)}},["del"===e?((0,r.openBlock)(),(0,r.createElementBlock)("svg",y,a(t[26]||(t[26]=[(0,r.createElementVNode)("path",{d:"M21 4H8l-7 8 7 8h13V4z",stroke:"currentColor","stroke-width":"2","stroke-linecap":"round","stroke-linejoin":"round"},null,-1),(0,r.createElementVNode)("path",{d:"M18 9l-6 6M12 9l6 6",stroke:"currentColor","stroke-width":"2","stroke-linecap":"round"},null,-1)])))):((0,r.openBlock)(),(0,r.createElementBlock)(r.Fragment,{key:1},[(0,r.createTextVNode)((0,r.toDisplayString)(e),1)],64))],10,f)}),128))]),ce.error?((0,r.openBlock)(),(0,r.createElementBlock)("div",h,(0,r.toDisplayString)(ce.error),1)):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-btn-primary full",disabled:!ce.code.trim()||ce.loading,onClick:t[4]||(t[4]=function(){return de.checkLoyalty&&de.checkLoyalty.apply(de,arguments)})},[ce.loading?((0,r.openBlock)(),(0,r.createElementBlock)("span",b)):((0,r.openBlock)(),(0,r.createElementBlock)("span",g,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.verify_btn")),1))],8,v),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-loyalty-skip",onClick:t[5]||(t[5]=function(){return de.goBack&&de.goBack.apply(de,arguments)})},(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.skip")),1),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-loyalty-register-btn",onClick:t[6]||(t[6]=function(e){return ce.step="register"})},(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.register_cta")),1)])])):(0,r.createCommentVNode)("",!0),"register"===ce.step?((0,r.openBlock)(),(0,r.createElementBlock)("div",x,[(0,r.createElementVNode)("div",w,[(0,r.createElementVNode)("p",_,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.register_title")),1),(0,r.createElementVNode)("div",E,[(0,r.createElementVNode)("div",N,[(0,r.createElementVNode)("label",S,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.label_name")),1),(0,r.withDirectives)((0,r.createElementVNode)("input",{"onUpdate:modelValue":t[7]||(t[7]=function(e){return ce.registerName=e}),type:"text",class:(0,r.normalizeClass)(["kiosk-loyalty-input",{"kiosk-loyalty-input--active":"registerName"===ce.vkeybActiveField}]),placeholder:e.$t("kiosk.loyalty_screen.placeholder_name"),maxlength:"60",readonly:"","data-testid":"kiosk-loyalty-register-name",onFocus:t[8]||(t[8]=function(e){return de.onFocusRegisterField("registerName")}),onClick:t[9]||(t[9]=function(e){return de.onFocusRegisterField("registerName")})},null,42,V),[[r.vModelText,ce.registerName]])]),(0,r.createElementVNode)("div",C,[(0,r.createElementVNode)("label",O,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.label_phone")),1),(0,r.withDirectives)((0,r.createElementVNode)("input",{"onUpdate:modelValue":t[10]||(t[10]=function(e){return ce.registerPhone=e}),type:"tel",class:(0,r.normalizeClass)(["kiosk-loyalty-input",{"kiosk-loyalty-input--active":"registerPhone"===ce.vkeybActiveField}]),placeholder:e.$t("kiosk.loyalty_screen.placeholder_phone"),maxlength:"20",readonly:"","data-testid":"kiosk-loyalty-register-phone",onFocus:t[11]||(t[11]=function(e){return de.onFocusRegisterField("registerPhone")}),onClick:t[12]||(t[12]=function(e){return de.onFocusRegisterField("registerPhone")})},null,42,B),[[r.vModelText,ce.registerPhone]])]),(0,r.createElementVNode)("div",T,[(0,r.createElementVNode)("label",P,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.label_email")),1),(0,r.withDirectives)((0,r.createElementVNode)("input",{"onUpdate:modelValue":t[13]||(t[13]=function(e){return ce.registerEmail=e}),type:"email",class:(0,r.normalizeClass)(["kiosk-loyalty-input",{"kiosk-loyalty-input--active":"registerEmail"===ce.vkeybActiveField}]),placeholder:e.$t("kiosk.loyalty_screen.placeholder_email"),maxlength:"80",readonly:"","data-testid":"kiosk-loyalty-register-email",onFocus:t[14]||(t[14]=function(e){return de.onFocusRegisterField("registerEmail")}),onClick:t[15]||(t[15]=function(e){return de.onFocusRegisterField("registerEmail")})},null,42,D),[[r.vModelText,ce.registerEmail]])])]),ce.registerError?((0,r.openBlock)(),(0,r.createElementBlock)("div",A,(0,r.toDisplayString)(ce.registerError),1)):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-btn-primary full",disabled:!ce.registerName.trim()||!ce.registerPhone.trim()||ce.registerLoading,onClick:t[16]||(t[16]=function(){return de.submitRegister&&de.submitRegister.apply(de,arguments)})},[ce.registerLoading?((0,r.openBlock)(),(0,r.createElementBlock)("span",I)):((0,r.openBlock)(),(0,r.createElementBlock)("span",j,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.register_submit")),1))],8,$),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-loyalty-skip",onClick:t[17]||(t[17]=function(e){return ce.step="input"})},"← "+(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.back")),1)])])):(0,r.createCommentVNode)("",!0),"balance"===ce.step?((0,r.openBlock)(),(0,r.createElementBlock)("div",z,[(0,r.createElementVNode)("div",M,[(0,r.createElementVNode)("div",L,[(0,r.createElementVNode)("div",F,(0,r.toDisplayString)(de.customerInitials),1),(0,r.createElementVNode)("div",R,[(0,r.createElementVNode)("h2",null,(0,r.toDisplayString)(ce.customer.name),1),(0,r.createElementVNode)("p",q,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.member_badge")),1)])]),(0,r.createElementVNode)("div",K,[(0,r.createElementVNode)("span",G,(0,r.toDisplayString)(ce.customer.loyalty_point),1),(0,r.createElementVNode)("span",U,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.points_label")),1),ce.discountValue>0?((0,r.openBlock)(),(0,r.createElementBlock)("span",Y,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.points_equiv",{amount:e.formatPrice(Math.min(ce.discountValue,e.total))})),1)):(0,r.createCommentVNode)("",!0)]),de.nextTierPoints>0?((0,r.openBlock)(),(0,r.createElementBlock)("div",W,[(0,r.createElementVNode)("div",Q,[(0,r.createElementVNode)("div",{class:"kiosk-loyalty-progress-fill",style:(0,r.normalizeStyle)({width:de.progressPercent+"%"})},null,4)]),(0,r.createElementVNode)("p",H,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.tier_progress",{n:de.nextTierPoints-ce.customer.loyalty_point})),1)])):(0,r.createCommentVNode)("",!0),de.canRedeem?((0,r.openBlock)(),(0,r.createElementBlock)("div",Z,[(0,r.createElementVNode)("button",{type:"button",class:(0,r.normalizeClass)(["kiosk-loyalty-option",{selected:"yes"===ce.redeemChoice}]),onClick:t[18]||(t[18]=function(e){return ce.redeemChoice="yes"})},[t[27]||(t[27]=(0,r.createElementVNode)("div",{class:"kiosk-loyalty-option-icon green"},[(0,r.createElementVNode)("svg",{width:"28",height:"28",viewBox:"0 0 24 24",fill:"none"},[(0,r.createElementVNode)("path",{d:"M20 7l-11 11-5-5",stroke:"currentColor","stroke-width":"3","stroke-linecap":"round","stroke-linejoin":"round"})])],-1)),(0,r.createElementVNode)("div",J,[(0,r.createElementVNode)("strong",null,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.redeem_use")),1),(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.redeem_use_sub",{amount:e.formatPrice(Math.min(ce.discountValue,e.total))})),1)])],2),(0,r.createElementVNode)("button",{type:"button",class:(0,r.normalizeClass)(["kiosk-loyalty-option",{selected:"no"===ce.redeemChoice}]),onClick:t[19]||(t[19]=function(e){return ce.redeemChoice="no"})},[t[28]||(t[28]=(0,r.createElementVNode)("div",{class:"kiosk-loyalty-option-icon gray"},[(0,r.createElementVNode)("svg",{width:"28",height:"28",viewBox:"0 0 24 24",fill:"none"},[(0,r.createElementVNode)("path",{d:"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21.02l1.18-6.88L2 9.27l6.91-1.01L12 2z",stroke:"currentColor","stroke-width":"2"})])],-1)),(0,r.createElementVNode)("div",X,[(0,r.createElementVNode)("strong",null,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.redeem_keep")),1),(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.redeem_keep_sub")),1)])],2)])):((0,r.openBlock)(),(0,r.createElementBlock)("div",ee,[(0,r.createElementVNode)("p",null,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.not_enough",{current:ce.customer.loyalty_point,min:ce.minRedeemPoints})),1),(0,r.createElementVNode)("p",te,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.not_enough_green")),1)])),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-btn-primary full",onClick:t[20]||(t[20]=function(){return de.applyLoyalty&&de.applyLoyalty.apply(de,arguments)}),disabled:de.canRedeem&&!ce.redeemChoice},(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.confirm")),9,oe),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-loyalty-skip",onClick:t[21]||(t[21]=function(){return de.goBack&&de.goBack.apply(de,arguments)})},(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.cancel")),1)])])):(0,r.createCommentVNode)("",!0),(0,r.createVNode)(ue,{"model-value":ce.showConsentModal,onAccepted:de.onConsentAccept,onDeclined:de.onConsentDecline,"onUpdate:modelValue":t[22]||(t[22]=function(e){e||(ce.showConsentModal=!1)})},null,8,["model-value","onAccepted","onDeclined"]),(0,r.createVNode)(ke,{"model-value":de.vkeybValue,visible:null!==ce.vkeybActiveField,layout:de.vkeybLayout,"allow-space":de.vkeybAllowSpace,"max-length":de.vkeybMaxLength,"show-preview":!0,"onUpdate:modelValue":de.onVkeybInput,onSubmit:de.onVkeybSubmit,onClose:de.onVkeybClose},null,8,["model-value","visible","layout","allow-space","max-length","onUpdate:modelValue","onSubmit","onClose"]),"confirmed"===ce.step?((0,r.openBlock)(),(0,r.createElementBlock)("div",re,[(0,r.createElementVNode)("div",ae,[t[29]||(t[29]=(0,r.createElementVNode)("div",{class:"kiosk-loyalty-confirm-icon"},[(0,r.createElementVNode)("svg",{width:"64",height:"64",viewBox:"0 0 24 24",fill:"none"},[(0,r.createElementVNode)("circle",{cx:"12",cy:"12",r:"10",fill:"#22c55e"}),(0,r.createElementVNode)("path",{d:"M8 12l3 3 5-5",stroke:"white","stroke-width":"2.5","stroke-linecap":"round","stroke-linejoin":"round"})])],-1)),ce.appliedDiscount>0?((0,r.openBlock)(),(0,r.createElementBlock)("h2",ne,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.confirm_discount_title")),1)):((0,r.openBlock)(),(0,r.createElementBlock)("h2",ie,(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.confirm_saved_title")),1)),ce.appliedDiscount>0?((0,r.openBlock)(),(0,r.createElementBlock)("p",se," -"+(0,r.toDisplayString)(e.formatPrice(ce.appliedDiscount)),1)):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("p",le,(0,r.toDisplayString)(ce.appliedDiscount>0?e.$t("kiosk.loyalty_screen.confirm_discount_sub"):e.$t("kiosk.loyalty_screen.confirm_saved_sub")),1),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-btn-primary full",onClick:t[23]||(t[23]=function(){return de.proceedToPayment&&de.proceedToPayment.apply(de,arguments)})},(0,r.toDisplayString)(e.$t("kiosk.loyalty_screen.continue_payment")),1)])])):(0,r.createCommentVNode)("",!0)])}],["__scopeId","data-v-7d85ca6a"]]),Pe=Te},5359(e,t,o){o.r(t),o.d(t,{default:()=>ce});var r=o(6934);function a(e){return function(e){if(Array.isArray(e))return n(e)}(e)||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(e)||function(e,t){if(e){if("string"==typeof e)return n(e,t);var o={}.toString.call(e).slice(8,-1);return"Object"===o&&e.constructor&&(o=e.constructor.name),"Map"===o||"Set"===o?Array.from(e):"Arguments"===o||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(o)?n(e,t):void 0}}(e)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function n(e,t){(null==t||t>e.length)&&(t=e.length);for(var o=0,r=Array(t);o<t;o++)r[o]=e[o];return r}var i={class:"kiosk-payment","data-testid":"kiosk-payment-root"},s={class:"kiosk-pay-header"},l=["disabled","aria-label"],c={class:"kiosk-pay-header-info"},d={class:"kiosk-pay-title","data-testid":"kiosk-payment-title"},u={class:"kiosk-pay-total-label","data-testid":"kiosk-payment-total"},k={key:0,class:"kiosk-pay-offline-alert",role:"status","aria-live":"polite","data-testid":"kiosk-payment-offline-alert"},p={key:1,class:"kiosk-pay-amount-card",role:"status","aria-live":"polite","data-testid":"kiosk-payment-amount-card"},m=["aria-label"],f={class:"kiosk-pay-methods"},y=["tabindex","aria-checked","aria-disabled"],h={class:"kiosk-pay-method-info"},v={key:0,class:"kiosk-pay-method-check"},g=["aria-checked"],b={class:"kiosk-pay-method-info"},x={key:0,class:"kiosk-pay-method-check"},w=["tabindex","aria-checked","aria-disabled"],_={class:"kiosk-pay-method-info"},E={key:0,class:"kiosk-pay-method-check"},N={key:3,class:"kiosk-pay-processing",role:"status","aria-live":"polite","data-testid":"kiosk-payment-processing"},S={key:0,class:"kiosk-tpe-overlay",role:"dialog","aria-modal":"true","aria-labelledby":"kiosk-tpe-title","data-testid":"kiosk-payment-tpe-overlay"},V={class:"kiosk-tpe-card-anim","aria-hidden":"true"},C={class:"kiosk-tpe-card-icon"},O={key:0,width:"72",height:"72",viewBox:"0 0 72 72",fill:"none"},B={key:1,style:{"font-size":"4rem"}},T={id:"kiosk-tpe-title",class:"kiosk-tpe-title","aria-live":"polite"},P={class:"kiosk-tpe-sub"},D={class:"kiosk-tpe-help",id:"kiosk-tpe-stuck-help"},A={key:4,class:"kiosk-pay-confirm"},$={key:0,class:"kiosk-pay-error",role:"alert","data-testid":"kiosk-payment-error"},j={class:"kiosk-pay-confirm-inner"},I=["disabled","aria-label"];var z=o(834),M=o(3041),L=o(4289),F=o(2310),R=o(5940),q=o(4253),K=o(8901),G=o(9473),U=o(2177),Y=o(908);function W(e){return W="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},W(e)}function Q(e){if(null!=e){var t=e["function"==typeof Symbol&&Symbol.iterator||"@@iterator"],o=0;if(t)return t.call(e);if("function"==typeof e.next)return e;if(!isNaN(e.length))return{next:function(){return e&&o>=e.length&&(e=void 0),{value:e&&e[o++],done:!e}}}}throw new TypeError(W(e)+" is not iterable")}function H(){var e,t,o="function"==typeof Symbol?Symbol:{},r=o.iterator||"@@iterator",a=o.toStringTag||"@@toStringTag";function n(o,r,a,n){var l=r&&r.prototype instanceof s?r:s,c=Object.create(l.prototype);return Z(c,"_invoke",function(o,r,a){var n,s,l,c=0,d=a||[],u=!1,k={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,o){return n=t,s=0,l=e,k.n=o,i}};function p(o,r){for(s=o,l=r,t=0;!u&&c&&!a&&t<d.length;t++){var a,n=d[t],p=k.p,m=n[2];o>3?(a=m===r)&&(l=n[(s=n[4])?5:(s=3,3)],n[4]=n[5]=e):n[0]<=p&&((a=o<2&&p<n[1])?(s=0,k.v=r,k.n=n[1]):p<m&&(a=o<3||n[0]>r||r>m)&&(n[4]=o,n[5]=r,k.n=m,s=0))}if(a||o>1)return i;throw u=!0,r}return function(a,d,m){if(c>1)throw TypeError("Generator is already running");for(u&&1===d&&p(d,m),s=d,l=m;(t=s<2?e:l)||!u;){n||(s?s<3?(s>1&&(k.n=-1),p(s,l)):k.n=l:k.v=l);try{if(c=2,n){if(s||(a="next"),t=n[a]){if(!(t=t.call(n,l)))throw TypeError("iterator result is not an object");if(!t.done)return t;l=t.value,s<2&&(s=0)}else 1===s&&(t=n.return)&&t.call(n),s<2&&(l=TypeError("The iterator does not provide a '"+a+"' method"),s=1);n=e}else if((t=(u=k.n<0)?l:o.call(r,k))!==i)break}catch(t){n=e,s=1,l=t}finally{c=1}}return{value:t,done:u}}}(o,a,n),!0),c}var i={};function s(){}function l(){}function c(){}t=Object.getPrototypeOf;var d=[][r]?t(t([][r]())):(Z(t={},r,function(){return this}),t),u=c.prototype=s.prototype=Object.create(d);function k(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,c):(e.__proto__=c,Z(e,a,"GeneratorFunction")),e.prototype=Object.create(u),e}return l.prototype=c,Z(u,"constructor",c),Z(c,"constructor",l),l.displayName="GeneratorFunction",Z(c,a,"GeneratorFunction"),Z(u),Z(u,a,"Generator"),Z(u,r,function(){return this}),Z(u,"toString",function(){return"[object Generator]"}),(H=function(){return{w:n,m:k}})()}function Z(e,t,o,r){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}Z=function(e,t,o,r){function n(t,o){Z(e,t,function(e){return this._invoke(t,o,e)})}t?a?a(e,t,{value:o,enumerable:!r,configurable:!r,writable:!r}):e[t]=o:(n("next",0),n("throw",1),n("return",2))},Z(e,t,o,r)}function J(e,t,o,r,a,n,i){try{var s=e[n](i),l=s.value}catch(e){return void o(e)}s.done?t(l):Promise.resolve(l).then(r,a)}function X(e){return function(){var t=this,o=arguments;return new Promise(function(r,a){var n=e.apply(t,o);function i(e){J(n,r,a,i,s,"next",e)}function s(e){J(n,r,a,i,s,"throw",e)}i(void 0)})}}function ee(e,t){var o=Object.keys(e);if(Object.getOwnPropertySymbols){var r=Object.getOwnPropertySymbols(e);t&&(r=r.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),o.push.apply(o,r)}return o}function te(e){for(var t=1;t<arguments.length;t++){var o=null!=arguments[t]?arguments[t]:{};t%2?ee(Object(o),!0).forEach(function(t){oe(e,t,o[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(o)):ee(Object(o)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(o,t))})}return e}function oe(e,t,o){return(t=function(e){var t=function(e,t){if("object"!=W(e)||!e)return e;var o=e[Symbol.toPrimitive];if(void 0!==o){var r=o.call(e,t||"default");if("object"!=W(r))return r;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==W(t)?t:t+""}(t))in e?Object.defineProperty(e,t,{value:o,enumerable:!0,configurable:!0,writable:!0}):e[t]=o,e}const re={name:"KioskPaymentComponent",mixins:[L.om],inject:{showToast:{default:function(){return function(){}}}},data:function(){return{method:null,submitting:!1,submitted:!1,error:null,tpeWaiting:!1,tpeMessage:"",tpeCanCancel:!1,_lastOrder:null,_lastQuote:null,networkOffline:"undefined"!=typeof navigator&&!navigator.onLine,paymentFailureCount:0}},MAX_PAYMENT_FAILURES:2,computed:te(te({},(0,z.L8)("kioskCart",["total","branchId","orderType"])),{},{cartTotal:function(){var e,t;return null!==(e=null===(t=this._lastQuote)||void 0===t?void 0:t.total_ttc)&&void 0!==e?e:this.total}}),mounted:function(){var e=this;try{this._kioskSpeech=(0,G.p)({store:this.$store})}catch(e){this._kioskSpeech=null}this.syncNetworkState(),window.addEventListener("online",this.syncNetworkState),window.addEventListener("offline",this.syncNetworkState);try{this._reconcilePendingPayments()}catch(e){}try{this._reconcileInterval=setInterval(function(){e._reconcilePendingPayments()},6e4)}catch(e){this._reconcileInterval=null}},beforeUnmount:function(){this._lastOrder=null,window.removeEventListener("online",this.syncNetworkState),window.removeEventListener("offline",this.syncNetworkState);try{var e;null===(e=this._kioskSpeech)||void 0===e||e.stop()}catch(e){}if(this._reconcileInterval){try{clearInterval(this._reconcileInterval)}catch(e){}this._reconcileInterval=null}},methods:te(te({},(0,z.i0)("kioskCart",["submitOrder","reset"])),{},{syncNetworkState:function(){this.networkOffline="undefined"!=typeof navigator&&!navigator.onLine,this.networkOffline&&this.isElectronicMethod(this.method)&&(this.method=null)},isElectronicMethod:function(e){return"card"===e||"tr"===e},isElectronicMethodBlocked:function(e){return this.networkOffline&&this.isElectronicMethod(e)},offlinePaymentMessage:function(){return this.$t("kiosk.pay_screen.offline_short")},selectMethod:function(e){if(this.isElectronicMethodBlocked(e)){var t=this.offlinePaymentMessage();return this.method=null,this.error=t,void this.showToast(t,"warning",4e3)}this.method=e,this.error=null,this.paymentFailureCount=0;try{q.Ay.track("payment_method_selected",{method:e})}catch(e){}},confirmPayment:function(){var e=this;return X(H().m(function t(){var o,r,a,n,i,s,l,c,d,u,k,p,m,f,y,h,v,g,b,x,w,_,E,N,S,V,C,O,B;return H().w(function(t){for(;;)switch(t.p=t.n){case 0:if(e.method&&!e.submitting){t.n=1;break}return t.a(2);case 1:if(!e.isElectronicMethodBlocked(e.method)){t.n=2;break}return o=e.offlinePaymentMessage(),e.error=o,e.showToast(o,"warning",4e3),t.a(2);case 2:return e.submitting=!0,e.error=null,t.p=3,t.n=4,e.refreshQuote();case 4:k=t.v;try{q.Ay.track("checkout_started",{method:e.method,total_cents:Math.round(100*k.total_ttc)})}catch(e){}return t.n=5,e.submitOrder({paymentMethod:e.method,orderType:e.orderType,quote:k});case 5:if(p=t.v,m=(null==p||null===(r=p.data)||void 0===r||null===(r=r.data)||void 0===r?void 0:r.id)||(null==p||null===(a=p.data)||void 0===a?void 0:a.id),f=(null==p||null===(n=p.data)||void 0===n||null===(n=n.data)||void 0===n?void 0:n.queue_number)||(null==p||null===(i=p.data)||void 0===i?void 0:i.queue_number),!(y="string"==typeof m&&String(m).startsWith("offline_"))||!e.isElectronicMethod(e.method)){t.n=6;break}throw new Error(e.offlinePaymentMessage());case 6:if(h=null!==(s=null==p||null===(l=p.data)||void 0===l||null===(l=l.data)||void 0===l?void 0:l.total)&&void 0!==s?s:null==p||null===(c=p.data)||void 0===c||null===(c=c.data)||void 0===c?void 0:c.order_amount,!y){t.n=7;break}v=e.cartTotal,t.n=9;break;case 7:if(g=null!=h&&""!==h?Number(h):NaN,Number.isFinite(g)){t.n=8;break}throw new Error(e.$t("kiosk.pay_screen.invalid_order_response"));case 8:v=Number.isFinite(Number(k.total_ttc))?Number(k.total_ttc):g;case 9:if(b=(null===(d=e.$store.state.kioskCart)||void 0===d?void 0:d.loyaltyDiscount)>0,x=null==p||null===(u=p.data)||void 0===u?void 0:u.loyalty_applied,b&&!1===x&&e.showToast(e.$t("kiosk.pay_screen.loyalty_not_applied_toast"),"warning",6e3),m||y){t.n=10;break}throw new Error(e.$t("kiosk.pay_screen.invalid_order_response"));case 10:if(e._lastOrder={id:m,queue_number:f,total:v},w="cash"===e.method?{name:"kiosk.cash-instruction",query:{number:f,total:v,timeout:45}}:{name:"kiosk.waiting",params:{orderId:String(m)},query:{queue:f,total:v}},"card"!==e.method&&"tr"!==e.method){t.n=12;break}return t.n=11,e.processCardPayment(w);case 11:t.n=13;break;case 12:return t.n=13,e.processCashPayment(w);case 13:t.n=15;break;case 14:t.p=14,B=t.v,e.tpeWaiting=!1,e.tpeCanCancel=!1,_="TPE_TIMEOUT"===(null==B?void 0:B.message)?e.$t("kiosk.payment.tpe_timeout_message"):null!=B&&null!==(E=B.response)&&void 0!==E&&null!==(E=E.data)&&void 0!==E&&E.errors?Object.values(B.response.data.errors).flat().join(" "):(null==B?void 0:B.message)||e.$t("kiosk.pay_screen.payment_error_generic"),e.error=_,e.showToast(_,"error",6e3),e.submitting=!1,e.submitted=!1;try{null===(N=e._kioskSpeech)||void 0===N||N.speak(e.$t("kiosk.pay_screen.speech_error",{msg:_}),{key:"kiosk.pay_screen.speech_error"}).catch(function(){})}catch(e){}if(e.paymentFailureCount+=1,e.paymentFailureCount>=e.$options.MAX_PAYMENT_FAILURES){C=(null==B?void 0:B.code)||(null==B||null===(S=B.response)||void 0===S||null===(S=S.data)||void 0===S?void 0:S.code)||"declined",O=null!==(V=e._lastOrder)&&void 0!==V&&V.id?String(e._lastOrder.id):null,e.paymentFailureCount=0;try{e.$router.push({name:"kiosk.error.payment-refused",query:te({code:C},O?{order_id:O}:{})})}catch(e){}}case 15:return t.a(2)}},t,null,[[3,14]])}))()},refreshQuote:function(){var e=this;return X(H().m(function t(){var o,r,a,n,i,s;return H().w(function(t){for(;;)switch(t.n){case 0:if(null!==(o=e.$store.state.kioskCart)&&void 0!==o&&o.kioskToken){t.n=1;break}throw"undefined"!=typeof console&&"function"==typeof console.debug&&console.debug("[KioskPayment] refreshQuote skipped — kioskToken absent"),(a=new Error("KIOSK_QUOTE_NO_TOKEN")).code="KIOSK_QUOTE_NO_TOKEN",a;case 1:return n=(0,U.MR)(e.$store.state.kioskCart,{orderType:e.orderType,paymentMethod:e.method}),t.n=2,M.A.post("frontend/order/quote",n);case 2:if(i=t.v,(s=null==i||null===(r=i.data)||void 0===r?void 0:r.data)&&void 0!==s.total_ttc&&s.quote_token&&s.signature){t.n=3;break}throw new Error(e.$t("kiosk.pay_screen.invalid_order_response"));case 3:return e._lastQuote=s,t.a(2,s)}},t)}))()},processCardPayment:function(e){var t=this;return X(H().m(function o(){var r,a,n,i,s,l,c,d,u,k,p;return H().w(function(o){for(;;)switch(o.n){case 0:return t.tpeWaiting=!0,a="card"===t.method?"tpe_card":"tr"===t.method?"tpe_tr":"tpe_default",t.tpeMessage=t.$t("kiosk.pay_screen.".concat(a)),t.tpeCanCancel=!0,n=R.Ng.TPE_TIMEOUT_MS,i=t._lastOrder.total||t.cartTotal,s="tr"===t.method?"TR":"CB",o.n=1,Promise.race([t._invokeTpe(i,s),new Promise(function(e,t){return setTimeout(function(){return t(new Error("TPE_TIMEOUT"))},n)})]);case 1:if(l=o.v,t.tpeCanCancel=!1,l.approved){o.n=2;break}t.tpeWaiting=!1;try{q.Ay.track("payment_failed",{method:t.method,reason_code:l.error_code||"declined",total_cents:Math.round(100*(t._lastOrder.total||t.cartTotal))})}catch(e){}throw null!==(c=t._lastOrder)&&void 0!==c&&c.id&&!String(t._lastOrder.id).startsWith("offline_")&&(d="timeout"===(null==l?void 0:l.error_code)?"tpe_timeout":"tpe_declined",u={status:Y.A.CANCELED,reason:d},M.A.post("frontend/order/change-status/".concat(t._lastOrder.id),u,{headers:(0,K.Y)(u)}).catch(function(e){return console.warn("[KioskPayment] void order failed:",e.message)})),new Error(l.error||t.$t("kiosk.pay_screen.payment_declined"));case 2:t.tpeMessage=t.$t("kiosk.pay_screen.tpe_accepted");try{q.Ay.track("payment_completed",{method:t.method,total_cents:Math.round(100*(t._lastOrder.total||t.cartTotal))})}catch(e){}if(null===(r=t._lastOrder)||void 0===r||!r.id||!l.transaction_id){o.n=3;break}return k=Math.round(100*(t._lastOrder.total||t.cartTotal)),p=Number.isInteger(l.amount_cents_approved)?l.amount_cents_approved:k,o.n=3,t.confirmBackendPayment(t._lastOrder.id,{transaction_id:l.transaction_id,card_type:l.card_type||"CARD",payment_method:"tr"===t.method?5:4,amount_cents:p});case 3:return o.n=4,new Promise(function(e){return setTimeout(e,800)});case 4:t.tpeWaiting=!1,t.submitting=!1,t.$router.push(e);case 5:return o.a(2)}},o)}))()},_invokeTpe:function(e){var t=arguments,o=this;return X(H().m(function r(){var a,n,i,s,l,c,d;return H().w(function(r){for(;;)switch(r.n){case 0:a=t.length>1&&void 0!==t[1]?t[1]:"CB",n=Math.round(100*Number(e)),r.n=3;break;case 1:if("timeout"!==i){r.n=3;break}return r.n=2,new Promise(function(e){return setTimeout(e,500)});case 2:throw new Error("TPE_TIMEOUT");case 3:if(F.Ay.isKioskBridge()){r.n=5;break}return o.tpeMessage=o.$t("kiosk.pay_screen.tpe_browser_sim"),r.n=4,new Promise(function(e){return setTimeout(e,2e3)});case 4:return r.a(2,{approved:!0,transaction_id:"STUB-".concat(Date.now()),card_type:"VISA",amount_cents_approved:n});case 5:return r.n=6,F.Ay.tpeCharge(n,a);case 6:if(null!=(s=r.v)&&s.ok){r.n=7;break}return r.a(2,{approved:!1,error:(null==s?void 0:s.error)||"tpe_unknown_error",error_code:(null==s?void 0:s.error_code)||null});case 7:return l=s.data||s,c=!(!1===s.ok||"approved"!==l.status&&!0!==l.approved&&!l.transaction_id&&!l.tx_ref),d=Number.isInteger(l.amount_cents_approved)?l.amount_cents_approved:Number.isInteger(s.amount_cents_approved)?s.amount_cents_approved:n,r.a(2,{approved:c,transaction_id:l.transaction_id||l.tx_ref||s.tx_ref||null,card_type:l.card_type||l.cardType||"CARD",error:c?null:l.error||s.error||"declined",error_code:l.error_code||s.error_code||null,amount_cents_approved:d})}},r)}))()},processCashPayment:function(e){var t=this;return X(H().m(function o(){var r;return H().w(function(o){for(;;)switch(o.n){case 0:try{q.Ay.track("payment_completed",{method:"cash",total_cents:Math.round(100*((null===(r=t._lastOrder)||void 0===r?void 0:r.total)||t.cartTotal))})}catch(e){}t.submitting=!1,t.$router.push(e);case 1:return o.a(2)}},o)}))()},_reportDrawerFailure:function(e){try{var t;null===(t=window.axios)||void 0===t||t.post("frontend/kiosk-event",{type:"cash_drawer_failure",details:"error=".concat(e||"unknown")}).catch(function(){})}catch(e){}},cancelCardPayment:function(){var e=this;return X(H().m(function t(){var o,r;return H().w(function(t){for(;;)switch(t.n){case 0:if(!F.Ay.isKioskBridge()){t.n=1;break}return t.n=1,F.Ay.cancelPayment().catch(function(){});case 1:e.tpeWaiting=!1,e.tpeCanCancel=!1,e.submitted=!1,e.submitting=!1,e.error=e.$t("kiosk.pay_screen.payment_cancelled"),e.showToast(e.$t("kiosk.pay_screen.payment_cancelled_toast"),"warning",2500);try{q.Ay.track("order_cancelled",{method:e.method,stage:"tpe_cancel"})}catch(e){}null!==(o=e._lastOrder)&&void 0!==o&&o.id&&!String(e._lastOrder.id).startsWith("offline_")&&(r={status:Y.A.CANCELED,reason:"tpe_cancel_user"},M.A.post("frontend/order/change-status/".concat(e._lastOrder.id),r,{headers:(0,K.Y)(r)}).catch(function(e){return console.warn("[KioskPayment] void on cancel failed:",e.message)}),e._lastOrder=null);case 2:return t.a(2)}},t)}))()},confirmBackendPayment:function(e,t){var o=this;return X(H().m(function r(){var a,n,i,s,l,c,d,u,k;return H().w(function(r){for(;;)switch(r.n){case 0:i=null,s="kiosk-payment-confirm-".concat(e,"-").concat(null!==(a=null==t?void 0:t.transaction_id)&&void 0!==a?a:"no-tx"),l={headers:{"X-Idempotency-Key":s}},c=H().m(function r(a){var n;return H().w(function(r){for(;;)switch(r.p=r.n){case 0:return r.p=0,r.n=1,M.A.post("frontend/order/".concat(e,"/payment-confirm"),t,l);case 1:if(a>1)try{o.showToast(o.$t("kiosk.pay_screen.payment_sync_retried"),"warning",2500)}catch(e){}return r.a(2,{v:void 0});case 2:if(r.p=2,n=r.v,i=n,!(a<3)){r.n=3;break}return r.n=3,new Promise(function(e){return setTimeout(e,700*a)});case 3:return r.a(2)}},r,null,[[0,2]])}),u=1;case 1:if(!(u<=3)){r.n=4;break}return r.d(Q(c(u)),2);case 2:if(!(d=r.v)){r.n=3;break}return r.a(2,d.v);case 3:u++,r.n=1;break;case 4:console.warn("[KioskPayment] payment-confirm failed after retries:",null===(n=i)||void 0===n?void 0:n.message);try{o._appendPendingReconcile({order_id:e,transaction_id:t.transaction_id,amount_cents:t.amount_cents,card_type:t.card_type,payment_method:t.payment_method})}catch(e){}try{null===(k=window.axios)||void 0===k||k.post("frontend/kiosk-event",{type:"sync_failed",subtype:"payment_confirm_retry_exhausted",order_ref:String(e),details:"tx=".concat(t.transaction_id)}).catch(function(){})}catch(e){}throw new Error(o.$t("kiosk.pay_screen.payment_sync_failed"));case 5:return r.a(2)}},r)}))()},_readPendingReconcile:function(){try{var e,t=null===(e=window)||void 0===e||null===(e=e.localStorage)||void 0===e?void 0:e.getItem("pending_payment_confirms");if(!t)return[];var o=JSON.parse(t);return Array.isArray(o)?o:[]}catch(e){return[]}},_writePendingReconcile:function(e){try{var t,o=Array.isArray(e)?e.slice(0,50):[];null===(t=window)||void 0===t||null===(t=t.localStorage)||void 0===t||t.setItem("pending_payment_confirms",JSON.stringify(o))}catch(e){}},_appendPendingReconcile:function(e){var t=this._readPendingReconcile();t.push(te(te({},e),{},{attempted_at:(new Date).toISOString()})),this._writePendingReconcile(t)},_isPendingReconcileExpired:function(e){try{return Date.now()-new Date(e.attempted_at).getTime()>18e5}catch(e){return!0}},_reconcilePendingPayments:function(){var e=this;return X(H().m(function t(){var o,r,a,n,i,s,l,c,d,u;return H().w(function(t){for(;;)switch(t.p=t.n){case 0:if(0!==(o=e._readPendingReconcile()).length){t.n=1;break}return t.a(2);case 1:if(r=o.filter(function(t){return!e._isPendingReconcileExpired(t)}),(a=o.filter(function(t){return e._isPendingReconcileExpired(t)})).length>0)try{null===(n=window.axios)||void 0===n||n.post("frontend/kiosk-event",{type:"sync_failed",subtype:"payment_reconcile_expired",details:"expired_count="+a.length}).catch(function(){})}catch(e){}if(0!==r.length){t.n=2;break}return e._writePendingReconcile([]),t.a(2);case 2:return t.p=2,s=r.map(function(e){return{order_id:e.order_id,transaction_id:e.transaction_id,amount_cents:e.amount_cents,card_type:e.card_type,payment_method:e.payment_method}}),t.n=3,M.A.post("frontend/payment/reconcile-pending",{entries:s});case 3:l=t.v,c=(null==l||null===(i=l.data)||void 0===i?void 0:i.data)||[],d=c.filter(function(e){return"reconciled"===e.status||"already_paid"===e.status}).map(function(e){return e.transaction_id}),u=r.filter(function(e){return!d.includes(e.transaction_id)}),e._writePendingReconcile(u),t.n=5;break;case 4:t.p=4,t.v,a.length>0&&e._writePendingReconcile(r);case 5:return t.a(2)}},t,null,[[2,4]])}))()}})};var ae=o(5072),ne=o.n(ae),ie=o(418),se={insert:"head",singleton:!1};ne()(ie.A,se);ie.A.locals;const le=(0,o(6262).A)(re,[["render",function(e,t,o,n,z,M){return(0,r.openBlock)(),(0,r.createElementBlock)("div",i,[(0,r.createElementVNode)("div",s,[(0,r.createElementVNode)("button",{type:"button",class:"kiosk-pay-back",onClick:t[0]||(t[0]=function(t){return e.$router.replace({name:"kiosk.cart"})}),disabled:z.submitting,"aria-label":e.$t("kiosk.back"),"data-testid":"kiosk-payment-back"},a(t[12]||(t[12]=[(0,r.createElementVNode)("svg",{width:"24",height:"24",viewBox:"0 0 24 24",fill:"none","aria-hidden":"true"},[(0,r.createElementVNode)("path",{d:"M19 12H5M5 12L12 19M5 12L12 5",stroke:"currentColor","stroke-width":"2.5","stroke-linecap":"round","stroke-linejoin":"round"})],-1)])),8,l),(0,r.createElementVNode)("div",c,[(0,r.createElementVNode)("h1",d,(0,r.toDisplayString)(e.$t("kiosk.pay_screen.title")),1),(0,r.createElementVNode)("p",u,[(0,r.createTextVNode)((0,r.toDisplayString)(e.$t("kiosk.pay_screen.total_prefix"))+" ",1),(0,r.createElementVNode)("strong",null,(0,r.toDisplayString)(e.formatPrice(M.cartTotal)),1)])])]),z.networkOffline?((0,r.openBlock)(),(0,r.createElementBlock)("div",k,(0,r.toDisplayString)(e.$t("kiosk.pay_screen.offline_alert")),1)):(0,r.createCommentVNode)("",!0),z.submitting||z.submitted||z.tpeWaiting?(0,r.createCommentVNode)("",!0):((0,r.openBlock)(),(0,r.createElementBlock)("div",p,[(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.pay_screen.total_prefix")),1),(0,r.createElementVNode)("strong",null,(0,r.toDisplayString)(e.formatPrice(M.cartTotal)),1)])),z.submitting||z.submitted?(0,r.createCommentVNode)("",!0):((0,r.openBlock)(),(0,r.createElementBlock)("div",{key:2,class:"kiosk-pay-methods-outer",role:"radiogroup","aria-label":e.$t("kiosk.pay_screen.title")},[(0,r.createElementVNode)("div",f,[(0,r.createElementVNode)("div",{class:(0,r.normalizeClass)(["kiosk-pay-method",{selected:"card"===z.method,disabled:M.isElectronicMethodBlocked("card")}]),role:"radio",tabindex:M.isElectronicMethodBlocked("card")?-1:0,"aria-checked":"card"===z.method,"aria-disabled":M.isElectronicMethodBlocked("card")?"true":"false","data-testid":"kiosk-payment-method-card",onClick:t[1]||(t[1]=function(e){return M.selectMethod("card")}),onKeydown:[t[2]||(t[2]=(0,r.withKeys)((0,r.withModifiers)(function(e){return M.selectMethod("card")},["prevent"]),["enter"])),t[3]||(t[3]=(0,r.withKeys)((0,r.withModifiers)(function(e){return M.selectMethod("card")},["prevent"]),["space"]))]},[t[14]||(t[14]=(0,r.createStaticVNode)('<div class="kiosk-pay-method-icon card" data-v-4669a876><svg width="52" height="52" viewBox="0 0 52 52" fill="none" data-v-4669a876><rect x="4" y="12" width="44" height="30" rx="6" fill="white" fill-opacity="0.12" stroke="white" stroke-opacity="0.3" stroke-width="1.5" data-v-4669a876></rect><rect x="4" y="20" width="44" height="8" fill="white" fill-opacity="0.2" data-v-4669a876></rect><rect x="10" y="32" width="12" height="4" rx="2" fill="white" fill-opacity="0.5" data-v-4669a876></rect><rect x="26" y="32" width="8" height="4" rx="2" fill="white" fill-opacity="0.5" data-v-4669a876></rect></svg></div>',1)),(0,r.createElementVNode)("div",h,[(0,r.createElementVNode)("h3",null,(0,r.toDisplayString)(e.$t("kiosk.pay_screen.card_title")),1),(0,r.createElementVNode)("p",null,(0,r.toDisplayString)(e.$t("kiosk.pay_screen.card_sub")),1)]),"card"===z.method?((0,r.openBlock)(),(0,r.createElementBlock)("div",v,a(t[13]||(t[13]=[(0,r.createElementVNode)("svg",{width:"24",height:"24",viewBox:"0 0 24 24",fill:"none"},[(0,r.createElementVNode)("path",{d:"M5 12l5 5 9-10",stroke:"white","stroke-width":"2.5","stroke-linecap":"round","stroke-linejoin":"round"})],-1)])))):(0,r.createCommentVNode)("",!0)],42,y),(0,r.createElementVNode)("div",{class:(0,r.normalizeClass)(["kiosk-pay-method",{selected:"cash"===z.method}]),role:"radio",tabindex:"0","aria-checked":"cash"===z.method,"data-testid":"kiosk-payment-method-cash",onClick:t[4]||(t[4]=function(e){return M.selectMethod("cash")}),onKeydown:[t[5]||(t[5]=(0,r.withKeys)((0,r.withModifiers)(function(e){return M.selectMethod("cash")},["prevent"]),["enter"])),t[6]||(t[6]=(0,r.withKeys)((0,r.withModifiers)(function(e){return M.selectMethod("cash")},["prevent"]),["space"]))]},[t[16]||(t[16]=(0,r.createStaticVNode)('<div class="kiosk-pay-method-icon cash" data-v-4669a876><svg width="52" height="52" viewBox="0 0 52 52" fill="none" data-v-4669a876><rect x="4" y="14" width="44" height="26" rx="6" fill="white" fill-opacity="0.12" stroke="white" stroke-opacity="0.3" stroke-width="1.5" data-v-4669a876></rect><circle cx="26" cy="27" r="8" stroke="white" stroke-opacity="0.5" stroke-width="1.5" data-v-4669a876></circle><text x="26" y="32" text-anchor="middle" font-size="12" fill="white" fill-opacity="0.8" font-weight="bold" data-v-4669a876>€</text></svg></div>',1)),(0,r.createElementVNode)("div",b,[(0,r.createElementVNode)("h3",null,(0,r.toDisplayString)(e.$t("kiosk.pay_screen.cash_title")),1),(0,r.createElementVNode)("p",null,(0,r.toDisplayString)(e.$t("kiosk.pay_screen.cash_sub")),1)]),"cash"===z.method?((0,r.openBlock)(),(0,r.createElementBlock)("div",x,a(t[15]||(t[15]=[(0,r.createElementVNode)("svg",{width:"24",height:"24",viewBox:"0 0 24 24",fill:"none"},[(0,r.createElementVNode)("path",{d:"M5 12l5 5 9-10",stroke:"white","stroke-width":"2.5","stroke-linecap":"round","stroke-linejoin":"round"})],-1)])))):(0,r.createCommentVNode)("",!0)],42,g),(0,r.createElementVNode)("div",{class:(0,r.normalizeClass)(["kiosk-pay-method",{selected:"tr"===z.method,disabled:M.isElectronicMethodBlocked("tr")}]),role:"radio",tabindex:M.isElectronicMethodBlocked("tr")?-1:0,"aria-checked":"tr"===z.method,"aria-disabled":M.isElectronicMethodBlocked("tr")?"true":"false","data-testid":"kiosk-payment-method-tr",onClick:t[7]||(t[7]=function(e){return M.selectMethod("tr")}),onKeydown:[t[8]||(t[8]=(0,r.withKeys)((0,r.withModifiers)(function(e){return M.selectMethod("tr")},["prevent"]),["enter"])),t[9]||(t[9]=(0,r.withKeys)((0,r.withModifiers)(function(e){return M.selectMethod("tr")},["prevent"]),["space"]))]},[t[18]||(t[18]=(0,r.createStaticVNode)('<div class="kiosk-pay-method-icon tr" data-v-4669a876><svg width="52" height="52" viewBox="0 0 52 52" fill="none" data-v-4669a876><rect x="4" y="12" width="44" height="28" rx="6" fill="white" fill-opacity="0.12" stroke="white" stroke-opacity="0.3" stroke-width="1.5" data-v-4669a876></rect><path d="M14 22h24M14 28h16" stroke="white" stroke-opacity="0.6" stroke-width="2" stroke-linecap="round" data-v-4669a876></path><path d="M36 28l4 4" stroke="white" stroke-opacity="0.6" stroke-width="2" stroke-linecap="round" data-v-4669a876></path></svg></div>',1)),(0,r.createElementVNode)("div",_,[(0,r.createElementVNode)("h3",null,(0,r.toDisplayString)(e.$t("kiosk.pay_screen.tr_title")),1),(0,r.createElementVNode)("p",null,(0,r.toDisplayString)(e.$t("kiosk.pay_screen.tr_sub")),1)]),"tr"===z.method?((0,r.openBlock)(),(0,r.createElementBlock)("div",E,a(t[17]||(t[17]=[(0,r.createElementVNode)("svg",{width:"24",height:"24",viewBox:"0 0 24 24",fill:"none"},[(0,r.createElementVNode)("path",{d:"M5 12l5 5 9-10",stroke:"white","stroke-width":"2.5","stroke-linecap":"round","stroke-linejoin":"round"})],-1)])))):(0,r.createCommentVNode)("",!0)],42,w)])],8,m)),z.submitting&&!z.tpeWaiting?((0,r.openBlock)(),(0,r.createElementBlock)("div",N,[t[19]||(t[19]=(0,r.createElementVNode)("div",{class:"kiosk-pay-processing-ring","aria-hidden":"true"},[(0,r.createElementVNode)("div",{class:"kiosk-pay-processing-ring-inner"})],-1)),(0,r.createElementVNode)("h2",null,(0,r.toDisplayString)(e.$t("kiosk.pay_screen.processing_title")),1),(0,r.createElementVNode)("p",null,(0,r.toDisplayString)(e.$t("kiosk.pay_screen.processing_sub")),1)])):(0,r.createCommentVNode)("",!0),(0,r.createVNode)(r.Transition,{name:"fade-scale"},{default:(0,r.withCtx)(function(){return[z.tpeWaiting?((0,r.openBlock)(),(0,r.createElementBlock)("div",S,[(0,r.createElementVNode)("div",V,[((0,r.openBlock)(),(0,r.createElementBlock)(r.Fragment,null,(0,r.renderList)(3,function(e){return(0,r.createElementVNode)("div",{class:"kiosk-tpe-ring",key:e,style:(0,r.normalizeStyle)({animationDelay:.5*e+"s"})},null,4)}),64)),(0,r.createElementVNode)("div",C,["card"===z.method?((0,r.openBlock)(),(0,r.createElementBlock)("svg",O,a(t[20]||(t[20]=[(0,r.createElementVNode)("rect",{x:"6",y:"16",width:"60",height:"40",rx:"8",fill:"white","fill-opacity":"0.1",stroke:"white","stroke-opacity":"0.5","stroke-width":"2"},null,-1),(0,r.createElementVNode)("rect",{x:"6",y:"28",width:"60",height:"10",fill:"white","fill-opacity":"0.15"},null,-1),(0,r.createElementVNode)("rect",{x:"14",y:"44",width:"16",height:"5",rx:"2.5",fill:"white","fill-opacity":"0.5"},null,-1),(0,r.createElementVNode)("rect",{x:"34",y:"44",width:"10",height:"5",rx:"2.5",fill:"white","fill-opacity":"0.5"},null,-1)])))):((0,r.openBlock)(),(0,r.createElementBlock)("span",B,"🎫"))])]),(0,r.createElementVNode)("h2",T,(0,r.toDisplayString)(z.tpeMessage),1),(0,r.createElementVNode)("p",P,(0,r.toDisplayString)(e.$t("kiosk.pay_screen.tpe_follow")),1),(0,r.createElementVNode)("p",D,(0,r.toDisplayString)(e.$t("kiosk.pay_screen.tpe_stuck_help")),1),t[21]||(t[21]=(0,r.createElementVNode)("div",{class:"kiosk-tpe-spinner","aria-hidden":"true"},null,-1)),z.tpeCanCancel?((0,r.openBlock)(),(0,r.createElementBlock)("button",{key:0,type:"button",class:"kiosk-tpe-cancel",onClick:t[10]||(t[10]=function(){return M.cancelCardPayment&&M.cancelCardPayment.apply(M,arguments)}),"data-testid":"kiosk-payment-tpe-cancel"},(0,r.toDisplayString)(e.$t("kiosk.pay_screen.cancel_payment")),1)):(0,r.createCommentVNode)("",!0)])):(0,r.createCommentVNode)("",!0)]}),_:1}),z.submitting||z.submitted||z.tpeWaiting?(0,r.createCommentVNode)("",!0):((0,r.openBlock)(),(0,r.createElementBlock)("div",A,[z.error?((0,r.openBlock)(),(0,r.createElementBlock)("div",$,(0,r.toDisplayString)(z.error),1)):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("div",j,[(0,r.createElementVNode)("button",{type:"button",class:"kiosk-btn-confirm",disabled:!z.method||M.isElectronicMethodBlocked(z.method),onClick:t[11]||(t[11]=function(){return M.confirmPayment&&M.confirmPayment.apply(M,arguments)}),"aria-label":e.$t("kiosk.pay_screen.confirm",{amount:e.formatPrice(M.cartTotal)}),"data-testid":"kiosk-payment-confirm"},[(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.pay_screen.confirm",{amount:e.formatPrice(M.cartTotal)})),1),t[22]||(t[22]=(0,r.createElementVNode)("svg",{width:"28",height:"28",viewBox:"0 0 28 28",fill:"none","aria-hidden":"true"},[(0,r.createElementVNode)("path",{d:"M6 14h16M16 8l6 6-6 6",stroke:"currentColor","stroke-width":"2.5","stroke-linecap":"round","stroke-linejoin":"round"})],-1))],8,I)])]))])}],["__scopeId","data-v-4669a876"]]),ce=le},9528(e,t,o){o.r(t),o.d(t,{default:()=>Q});var r=o(6934);function a(e){return function(e){if(Array.isArray(e))return n(e)}(e)||function(e){if("undefined"!=typeof Symbol&&null!=e[Symbol.iterator]||null!=e["@@iterator"])return Array.from(e)}(e)||function(e,t){if(e){if("string"==typeof e)return n(e,t);var o={}.toString.call(e).slice(8,-1);return"Object"===o&&e.constructor&&(o=e.constructor.name),"Map"===o||"Set"===o?Array.from(e):"Arguments"===o||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(o)?n(e,t):void 0}}(e)||function(){throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function n(e,t){(null==t||t>e.length)&&(t=e.length);for(var o=0,r=Array(t);o<t;o++)r[o]=e[o];return r}var i={class:"kiosk-upsell","data-testid":"kiosk-upsell-root"},s=["aria-label"],l={class:"kiosk-upsell-header"},c={class:"kiosk-upsell-title","data-testid":"kiosk-upsell-title"},d={class:"kiosk-upsell-subtitle"},u=["aria-label"],k=["aria-pressed","aria-label","data-testid","onClick","onKeydown"],p={class:"kiosk-upsell-img-wrap","aria-hidden":"true"},m=["src","alt"],f={key:1,class:"kiosk-upsell-img-fallback"},y={class:"kiosk-upsell-info"},h=["data-testid"],v=["data-testid"],g={key:0,class:"kiosk-upsell-check","aria-hidden":"true"},b={class:"kiosk-upsell-add","aria-hidden":"true"},x={key:0,class:"kiosk-upsell-plus"},w={key:1,class:"kiosk-upsell-minus"},_={class:"kiosk-upsell-actions"},E=["disabled"],N={class:"kiosk-btn-price","aria-hidden":"true"},S=["aria-label"],V={key:0,class:"kiosk-upsell-skip-timer"},C=["aria-valuenow","aria-label"];var O=o(834),B=o(4289),T=o(9903),P=o(4253);function D(e){return D="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},D(e)}function A(e,t){return function(e){if(Array.isArray(e))return e}(e)||function(e,t){var o=null==e?null:"undefined"!=typeof Symbol&&e[Symbol.iterator]||e["@@iterator"];if(null!=o){var r,a,n,i,s=[],l=!0,c=!1;try{if(n=(o=o.call(e)).next,0===t){if(Object(o)!==o)return;l=!1}else for(;!(l=(r=n.call(o)).done)&&(s.push(r.value),s.length!==t);l=!0);}catch(e){c=!0,a=e}finally{try{if(!l&&null!=o.return&&(i=o.return(),Object(i)!==i))return}finally{if(c)throw a}}return s}}(e,t)||function(e,t){if(e){if("string"==typeof e)return $(e,t);var o={}.toString.call(e).slice(8,-1);return"Object"===o&&e.constructor&&(o=e.constructor.name),"Map"===o||"Set"===o?Array.from(e):"Arguments"===o||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(o)?$(e,t):void 0}}(e,t)||function(){throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function $(e,t){(null==t||t>e.length)&&(t=e.length);for(var o=0,r=Array(t);o<t;o++)r[o]=e[o];return r}function j(){var e,t,o="function"==typeof Symbol?Symbol:{},r=o.iterator||"@@iterator",a=o.toStringTag||"@@toStringTag";function n(o,r,a,n){var l=r&&r.prototype instanceof s?r:s,c=Object.create(l.prototype);return I(c,"_invoke",function(o,r,a){var n,s,l,c=0,d=a||[],u=!1,k={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,o){return n=t,s=0,l=e,k.n=o,i}};function p(o,r){for(s=o,l=r,t=0;!u&&c&&!a&&t<d.length;t++){var a,n=d[t],p=k.p,m=n[2];o>3?(a=m===r)&&(l=n[(s=n[4])?5:(s=3,3)],n[4]=n[5]=e):n[0]<=p&&((a=o<2&&p<n[1])?(s=0,k.v=r,k.n=n[1]):p<m&&(a=o<3||n[0]>r||r>m)&&(n[4]=o,n[5]=r,k.n=m,s=0))}if(a||o>1)return i;throw u=!0,r}return function(a,d,m){if(c>1)throw TypeError("Generator is already running");for(u&&1===d&&p(d,m),s=d,l=m;(t=s<2?e:l)||!u;){n||(s?s<3?(s>1&&(k.n=-1),p(s,l)):k.n=l:k.v=l);try{if(c=2,n){if(s||(a="next"),t=n[a]){if(!(t=t.call(n,l)))throw TypeError("iterator result is not an object");if(!t.done)return t;l=t.value,s<2&&(s=0)}else 1===s&&(t=n.return)&&t.call(n),s<2&&(l=TypeError("The iterator does not provide a '"+a+"' method"),s=1);n=e}else if((t=(u=k.n<0)?l:o.call(r,k))!==i)break}catch(t){n=e,s=1,l=t}finally{c=1}}return{value:t,done:u}}}(o,a,n),!0),c}var i={};function s(){}function l(){}function c(){}t=Object.getPrototypeOf;var d=[][r]?t(t([][r]())):(I(t={},r,function(){return this}),t),u=c.prototype=s.prototype=Object.create(d);function k(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,c):(e.__proto__=c,I(e,a,"GeneratorFunction")),e.prototype=Object.create(u),e}return l.prototype=c,I(u,"constructor",c),I(c,"constructor",l),l.displayName="GeneratorFunction",I(c,a,"GeneratorFunction"),I(u),I(u,a,"Generator"),I(u,r,function(){return this}),I(u,"toString",function(){return"[object Generator]"}),(j=function(){return{w:n,m:k}})()}function I(e,t,o,r){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}I=function(e,t,o,r){function n(t,o){I(e,t,function(e){return this._invoke(t,o,e)})}t?a?a(e,t,{value:o,enumerable:!r,configurable:!r,writable:!r}):e[t]=o:(n("next",0),n("throw",1),n("return",2))},I(e,t,o,r)}function z(e,t,o,r,a,n,i){try{var s=e[n](i),l=s.value}catch(e){return void o(e)}s.done?t(l):Promise.resolve(l).then(r,a)}function M(e,t){var o=Object.keys(e);if(Object.getOwnPropertySymbols){var r=Object.getOwnPropertySymbols(e);t&&(r=r.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),o.push.apply(o,r)}return o}function L(e){for(var t=1;t<arguments.length;t++){var o=null!=arguments[t]?arguments[t]:{};t%2?M(Object(o),!0).forEach(function(t){F(e,t,o[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(o)):M(Object(o)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(o,t))})}return e}function F(e,t,o){return(t=function(e){var t=function(e,t){if("object"!=D(e)||!e)return e;var o=e[Symbol.toPrimitive];if(void 0!==o){var r=o.call(e,t||"default");if("object"!=D(r))return r;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==D(t)?t:t+""}(t))in e?Object.defineProperty(e,t,{value:o,enumerable:!0,configurable:!0,writable:!0}):e[t]=o,e}var R={dessert:"🍰",gâteau:"🎂",glace:"🍦",boisson:"🥤",café:"☕",jus:"🧃",eau:"💧",coca:"🥤",frite:"🍟"};const q={name:"KioskUpsellComponent",mixins:[B.om],inject:{showToast:{default:function(){return function(){}}}},data:function(){return{suggestions:[],selectedItems:[],loading:!0,autoSkipRemaining:30,autoSkipPct:100,_autoSkipTimer:null,_adding:!1}},computed:{selectedIds:function(){return this.selectedItems.map(function(e){return e.id})},addedTotal:function(){return this.selectedItems.reduce(function(e,t){return e+parseFloat(t.convert_price||0)},0)},AUTO_SKIP_SECONDS:function(){return 30}},mounted:function(){this.loadSuggestions()},beforeUnmount:function(){this.clearAutoSkip()},methods:L(L({},(0,O.i0)("kioskCart",["addItem"])),{},{loadSuggestions:function(){var e,t=this;return(e=j().m(function e(){var o,r,a;return j().w(function(e){for(;;)switch(e.p=e.n){case 0:return t.loading=!0,e.p=1,e.n=2,t.$store.dispatch("kioskCart/fetchUpsellItems");case 2:if(r=e.v,a=(null==r||null===(o=r.data)||void 0===o?void 0:o.data)||[],t.suggestions=a.slice(0,6),0!==t.suggestions.length){e.n=3;break}return t.skip("no_suggestions"),e.a(2);case 3:try{P.Ay.track("upsell_shown",{suggested_count:t.suggestions.length})}catch(e){}t.startAutoSkip(),e.n=5;break;case 4:return e.p=4,e.v,t.skip("load_error"),e.a(2);case 5:return e.p=5,t.loading=!1,e.f(5);case 6:return e.a(2)}},e,null,[[1,4,5,6]])}),function(){var t=this,o=arguments;return new Promise(function(r,a){var n=e.apply(t,o);function i(e){z(n,r,a,i,s,"next",e)}function s(e){z(n,r,a,i,s,"throw",e)}i(void 0)})})()},startAutoSkip:function(){var e=this;this.autoSkipRemaining=30,this.autoSkipPct=100;var t=100/300;this._autoSkipTimer=setInterval(function(){e.autoSkipPct=Math.max(0,e.autoSkipPct-t),e.autoSkipRemaining=Math.ceil(e.autoSkipPct/100*30),e.autoSkipPct<=0&&(e.clearAutoSkip(),e.skip("auto_timer"))},100)},clearAutoSkip:function(){this._autoSkipTimer&&(clearInterval(this._autoSkipTimer),this._autoSkipTimer=null)},toggleItem:function(e){this.clearAutoSkip(),this.startAutoSkip();var t=this.selectedItems.findIndex(function(t){return t.id===e.id});t>=0?this.selectedItems.splice(t,1):this.selectedItems.push(e)},addAndContinue:function(){var e,t=this;if(!this._adding&&0!==this.selectedItems.length){this._adding=!0,this.selectedItems.forEach(function(e){t.addItem({item_id:e.id,name:e.name,image:e.thumb||e.image,quantity:1,convert_price:parseFloat(e.convert_price)||0,currency_price:e.currency_price,discount:0,item_variation_total:0,item_extra_total:0,item_variations:{variations:{},names:{}},item_extras:{extras:[],names:[]},instruction:null})});var o=this.selectedItems.length,r=this.sanitizeItemName((null===(e=this.selectedItems[0])||void 0===e?void 0:e.name)||"");this.showToast(1===o?this.$t("kiosk.upsell_screen.toast_added_one",{name:r}):this.$t("kiosk.upsell_screen.toast_added_many",{n:o}),"success");try{P.Ay.track("upsell_accepted",{items_count:o,suggested_count:Array.isArray(this.suggestions)?this.suggestions.length:0})}catch(e){}this.$router.push({name:"kiosk.payment"}).catch(function(){t._adding=!1})}},skip:function(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:"user";try{P.Ay.track("upsell_rejected",{reason:"string"==typeof e?e:"user",suggested_count:Array.isArray(this.suggestions)?this.suggestions.length:0})}catch(e){}this.$router.push({name:"kiosk.payment"})},getEmoji:function(e){for(var t=(e||"").toLowerCase(),o=0,r=Object.entries(R);o<r.length;o++){var a=A(r[o],2),n=a[0],i=a[1];if(t.includes(n))return i}return"🍽️"},sanitizeItemName:function(e){return(0,T.q)(e||"")}})};var K=o(5072),G=o.n(K),U=o(2235),Y={insert:"head",singleton:!1};G()(U.A,Y);U.A.locals;const W=(0,o(6262).A)(q,[["render",function(e,t,o,n,O,B){return(0,r.openBlock)(),(0,r.createElementBlock)("div",i,[O.loading?((0,r.openBlock)(),(0,r.createElementBlock)("div",{key:0,class:"kiosk-upsell-loading",role:"status","aria-live":"polite","aria-label":e.$t("kiosk.upsell_screen.title"),"data-testid":"kiosk-upsell-loading"},a(t[2]||(t[2]=[(0,r.createElementVNode)("div",{class:"kiosk-spinner","aria-hidden":"true"},null,-1)])),8,s)):((0,r.openBlock)(),(0,r.createElementBlock)(r.Fragment,{key:1},[(0,r.createElementVNode)("div",l,[(0,r.createElementVNode)("h1",c,(0,r.toDisplayString)(e.$t("kiosk.upsell_screen.title")),1),(0,r.createElementVNode)("p",d,(0,r.toDisplayString)(e.$t("kiosk.upsell_screen.subtitle")),1)]),O.suggestions.length>0?((0,r.openBlock)(),(0,r.createElementBlock)("div",{key:0,class:"kiosk-upsell-grid",role:"list","aria-label":e.$t("kiosk.upsell_screen.title"),"data-testid":"kiosk-upsell-grid"},[((0,r.openBlock)(!0),(0,r.createElementBlock)(r.Fragment,null,(0,r.renderList)(O.suggestions,function(o){return(0,r.openBlock)(),(0,r.createElementBlock)("div",{key:o.id,class:(0,r.normalizeClass)(["kiosk-upsell-card",{selected:B.selectedIds.includes(o.id)}]),role:"listitem",tabindex:"0","aria-pressed":B.selectedIds.includes(o.id),"aria-label":B.sanitizeItemName(o.name)+" — "+e.formatPrice(o.convert_price),"data-testid":"kiosk-upsell-card-"+o.id,onClick:function(e){return B.toggleItem(o)},onKeydown:[(0,r.withKeys)((0,r.withModifiers)(function(e){return B.toggleItem(o)},["prevent"]),["enter"]),(0,r.withKeys)((0,r.withModifiers)(function(e){return B.toggleItem(o)},["prevent"]),["space"])]},[(0,r.createElementVNode)("div",p,[o.thumb||o.image?((0,r.openBlock)(),(0,r.createElementBlock)("img",{key:0,src:o.thumb||o.image,alt:o.name,class:"kiosk-upsell-img"},null,8,m)):((0,r.openBlock)(),(0,r.createElementBlock)("div",f,(0,r.toDisplayString)(B.getEmoji(o.name)),1))]),(0,r.createElementVNode)("div",y,[(0,r.createElementVNode)("h3",{class:"kiosk-upsell-item-name","data-testid":"kiosk-upsell-card-name-"+o.id},(0,r.toDisplayString)(B.sanitizeItemName(o.name)),9,h),(0,r.createElementVNode)("span",{class:"kiosk-upsell-item-price","data-testid":"kiosk-upsell-card-price-"+o.id},(0,r.toDisplayString)(e.formatPrice(o.convert_price)),9,v)]),(0,r.createVNode)(r.Transition,{name:"pop"},{default:(0,r.withCtx)(function(){return[B.selectedIds.includes(o.id)?((0,r.openBlock)(),(0,r.createElementBlock)("div",g,a(t[3]||(t[3]=[(0,r.createElementVNode)("svg",{width:"20",height:"20",viewBox:"0 0 20 20",fill:"none"},[(0,r.createElementVNode)("path",{d:"M4 10l5 5 7-8",stroke:"currentColor","stroke-width":"2.5","stroke-linecap":"round","stroke-linejoin":"round"})],-1)])))):(0,r.createCommentVNode)("",!0)]}),_:2},1024),(0,r.createElementVNode)("div",b,[B.selectedIds.includes(o.id)?((0,r.openBlock)(),(0,r.createElementBlock)("span",w,"−")):((0,r.openBlock)(),(0,r.createElementBlock)("span",x,"+"))])],42,k)}),128))],8,u)):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("div",_,[B.selectedIds.length>0?((0,r.openBlock)(),(0,r.createElementBlock)("button",{key:0,type:"button",class:"kiosk-btn-primary",disabled:O._adding,onClick:t[0]||(t[0]=function(){return B.addAndContinue&&B.addAndContinue.apply(B,arguments)}),"data-testid":"kiosk-upsell-add-continue"},[(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.upsell_screen.add_continue",{n:B.selectedIds.length})),1),(0,r.createElementVNode)("span",N,"+"+(0,r.toDisplayString)(e.formatPrice(B.addedTotal)),1)],8,E)):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-upsell-skip",onClick:t[1]||(t[1]=function(){return B.skip&&B.skip.apply(B,arguments)}),"data-testid":"kiosk-upsell-skip","aria-label":e.$t("kiosk.upsell_screen.skip")},[(0,r.createTextVNode)((0,r.toDisplayString)(e.$t("kiosk.upsell_screen.skip"))+" ",1),O.autoSkipRemaining<B.AUTO_SKIP_SECONDS?((0,r.openBlock)(),(0,r.createElementBlock)("span",V,(0,r.toDisplayString)(e.$t("kiosk.upsell_screen.skip_timer",{n:O.autoSkipRemaining})),1)):(0,r.createCommentVNode)("",!0)],8,S),O.loading?(0,r.createCommentVNode)("",!0):((0,r.openBlock)(),(0,r.createElementBlock)("div",{key:1,class:"kiosk-upsell-autoskip-bar",role:"progressbar","aria-valuenow":Math.round(O.autoSkipPct),"aria-valuemin":"0","aria-valuemax":"100","aria-label":e.$t("kiosk.upsell_screen.skip_timer",{n:O.autoSkipRemaining}),"data-testid":"kiosk-upsell-autoskip-bar"},[(0,r.createElementVNode)("div",{class:"kiosk-upsell-autoskip-fill",style:(0,r.normalizeStyle)({width:O.autoSkipPct+"%"})},null,4)],8,C))])],64))])}],["__scopeId","data-v-604177bc"]]),Q=W},257(e,t,o){o.r(t),o.d(t,{default:()=>ce});var r=o(6934),a={key:0,class:"kiosk-waiting-content"},n={class:"kiosk-waiting-offline"},i={class:"kiosk-waiting-title"},s={class:"kiosk-waiting-hint"},l={class:"kiosk-waiting-hint",style:{"font-size":"14px","margin-top":"8px"}},c={key:1,class:"kiosk-waiting-content"},d={key:"preparing",class:"kiosk-waiting-preparing"},u={class:"kiosk-waiting-anim"},k={class:"kiosk-waiting-title"},p={class:"kiosk-waiting-number-wrap"},m={class:"kiosk-waiting-number-label"},f={class:"kiosk-waiting-number"},y={class:"kiosk-waiting-hint"},h={key:"ready",class:"kiosk-waiting-ready"},v={class:"kiosk-ready-title"},g={class:"kiosk-waiting-number-wrap"},b={class:"kiosk-waiting-number-label"},x={class:"kiosk-waiting-number"},w={class:"kiosk-ready-hint"},_={key:2,class:"kiosk-waiting-footer"},E={key:3,class:"kiosk-waiting-footer"},N={class:"kiosk-waiting-auto-reset"},S={class:"kiosk-waiting-preparing-hint"},V={key:0,class:"kiosk-network-banner"},C={class:"kiosk-timeout-modal"},O={class:"kiosk-cancel-modal"},B={key:0},T={key:1,class:"kiosk-cancel-error-msg"},P={class:"kiosk-cancel-actions"},D=["disabled"],A={key:0},$={key:1,class:"kiosk-spinner-sm"};var j=o(834),I=o(3041),z=o(908),M=o(970),L=o(8859),F=o(2310),R=o(8901);function q(e){return q="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},q(e)}function K(){var e,t,o="function"==typeof Symbol?Symbol:{},r=o.iterator||"@@iterator",a=o.toStringTag||"@@toStringTag";function n(o,r,a,n){var l=r&&r.prototype instanceof s?r:s,c=Object.create(l.prototype);return G(c,"_invoke",function(o,r,a){var n,s,l,c=0,d=a||[],u=!1,k={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,o){return n=t,s=0,l=e,k.n=o,i}};function p(o,r){for(s=o,l=r,t=0;!u&&c&&!a&&t<d.length;t++){var a,n=d[t],p=k.p,m=n[2];o>3?(a=m===r)&&(l=n[(s=n[4])?5:(s=3,3)],n[4]=n[5]=e):n[0]<=p&&((a=o<2&&p<n[1])?(s=0,k.v=r,k.n=n[1]):p<m&&(a=o<3||n[0]>r||r>m)&&(n[4]=o,n[5]=r,k.n=m,s=0))}if(a||o>1)return i;throw u=!0,r}return function(a,d,m){if(c>1)throw TypeError("Generator is already running");for(u&&1===d&&p(d,m),s=d,l=m;(t=s<2?e:l)||!u;){n||(s?s<3?(s>1&&(k.n=-1),p(s,l)):k.n=l:k.v=l);try{if(c=2,n){if(s||(a="next"),t=n[a]){if(!(t=t.call(n,l)))throw TypeError("iterator result is not an object");if(!t.done)return t;l=t.value,s<2&&(s=0)}else 1===s&&(t=n.return)&&t.call(n),s<2&&(l=TypeError("The iterator does not provide a '"+a+"' method"),s=1);n=e}else if((t=(u=k.n<0)?l:o.call(r,k))!==i)break}catch(t){n=e,s=1,l=t}finally{c=1}}return{value:t,done:u}}}(o,a,n),!0),c}var i={};function s(){}function l(){}function c(){}t=Object.getPrototypeOf;var d=[][r]?t(t([][r]())):(G(t={},r,function(){return this}),t),u=c.prototype=s.prototype=Object.create(d);function k(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,c):(e.__proto__=c,G(e,a,"GeneratorFunction")),e.prototype=Object.create(u),e}return l.prototype=c,G(u,"constructor",c),G(c,"constructor",l),l.displayName="GeneratorFunction",G(c,a,"GeneratorFunction"),G(u),G(u,a,"Generator"),G(u,r,function(){return this}),G(u,"toString",function(){return"[object Generator]"}),(K=function(){return{w:n,m:k}})()}function G(e,t,o,r){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}G=function(e,t,o,r){function n(t,o){G(e,t,function(e){return this._invoke(t,o,e)})}t?a?a(e,t,{value:o,enumerable:!r,configurable:!r,writable:!r}):e[t]=o:(n("next",0),n("throw",1),n("return",2))},G(e,t,o,r)}function U(e,t,o,r,a,n,i){try{var s=e[n](i),l=s.value}catch(e){return void o(e)}s.done?t(l):Promise.resolve(l).then(r,a)}function Y(e){return function(){var t=this,o=arguments;return new Promise(function(r,a){var n=e.apply(t,o);function i(e){U(n,r,a,i,s,"next",e)}function s(e){U(n,r,a,i,s,"throw",e)}i(void 0)})}}function W(e,t){var o=Object.keys(e);if(Object.getOwnPropertySymbols){var r=Object.getOwnPropertySymbols(e);t&&(r=r.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),o.push.apply(o,r)}return o}function Q(e){for(var t=1;t<arguments.length;t++){var o=null!=arguments[t]?arguments[t]:{};t%2?W(Object(o),!0).forEach(function(t){H(e,t,o[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(o)):W(Object(o)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(o,t))})}return e}function H(e,t,o){return(t=function(e){var t=function(e,t){if("object"!=q(e)||!e)return e;var o=e[Symbol.toPrimitive];if(void 0!==o){var r=o.call(e,t||"default");if("object"!=q(r))return r;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===t?String:Number)(e)}(e,"string");return"symbol"==q(t)?t:t+""}(t))in e?Object.defineProperty(e,t,{value:o,enumerable:!0,configurable:!0,writable:!0}):e[t]=o,e}var Z=z.A.PREPARED,J=z.A.DELIVERED,X=z.A.PREPARING,ee=z.A.CANCELED,te=M.A.PAID,oe=M.A.PENDING_COUNTER;const re={name:"KioskWaitingComponent",inject:{showToast:{default:function(){return function(){}}}},props:{orderId:{type:[String,Number],required:!0}},data:function(){return{queueNumber:this.$route.query.queue||"—",isReady:!1,isOfflineOrder:!1,pollTimer:null,countdownTimer:null,autoResetSeconds:20,elapsedSeconds:0,elapsedTimer:null,showCancelButton:!1,showCancelConfirm:!1,cancelError:null,cancelLoading:!1,pollFailCount:0,networkLost:!1,timedOut:!1,_eventSub:null,_pollInFlight:!1,_readyFlashActive:!1}},mounted:function(){String(this.orderId).startsWith("offline_")?this.isOfflineOrder=!0:(this.startPolling(),this._subscribeEcho(),this.startElapsedTimer())},beforeUnmount:function(){this.stopAll(),this._unsubscribeEcho()},methods:Q(Q({},(0,j.i0)("kioskCart",["fetchOrderStatus","reset"])),{},{_subscribeEcho:function(){var e=this;if(window.Echo){var t=parseInt(this.$store.getters["kioskCart/branchId"]||0);if(!(t<=0)){this._unsubscribeEcho();try{this._eventSub=(0,L.dy)(t,[{broadcastAs:"OrderCreated",handler:function(t){var o=t.payload||{};parseInt(o.order_id,10)===parseInt(e.orderId,10)&&o.queue_number&&(e.queueNumber=o.queue_number)}},{broadcastAs:"OrderStatusChanged",handler:function(t){var o=t.payload||{};parseInt(o.order_id,10)===parseInt(e.orderId,10)&&e._doPoll()}}])}catch(e){console.warn("[KioskWaiting] Echo subscription failed:",e.message)}}}},_unsubscribeEcho:function(){if(!(parseInt(this.$store.getters["kioskCart/branchId"]||0)<=0)){try{var e;null===(e=this._eventSub)||void 0===e||e.unsubscribe()}catch(e){console.warn("[KioskWaiting] Echo unsubscribe error:",e.message)}this._eventSub=null}},startPolling:function(){var e=this,t=this.orderId;t&&"undefined"!==t&&"null"!==t&&""!==String(t).trim()?(this._doPoll(),this.pollTimer=setInterval(function(){return e._doPoll()},15e3)):console.warn("[KioskWaiting] Polling skipped — invalid orderId:",t)},_doPoll:function(){var e=this;return Y(K().m(function t(){var o,r,a,n,i,s;return K().w(function(t){for(;;)switch(t.p=t.n){case 0:if(!e.isReady){t.n=1;break}return t.a(2);case 1:if(!e._pollInFlight){t.n=2;break}return t.a(2);case 2:return e._pollInFlight=!0,t.p=3,t.n=4,e.fetchOrderStatus(e.orderId);case 4:if(n=t.v,i=(null==n||null===(o=n.data)||void 0===o?void 0:o.data)||(null==n?void 0:n.data)||{},s=parseInt(null!==(r=null!==(a=i.status)&&void 0!==a?a:i.order_status)&&void 0!==r?r:-1,10),i.queue_number&&(e.queueNumber=i.queue_number),s!==Z&&s!==J){t.n=5;break}e.markReady(),t.n=9;break;case 5:if(s!==ee){t.n=6;break}e.stopAll(),e.reset(),e.$router.push({name:"kiosk.idle"}),t.n=9;break;case 6:if(!e.shouldRouteToConfirmation(i,s)){t.n=8;break}return t.n=7,e.routeToConfirmation(i);case 7:t.n=9;break;case 8:s>=X&&(e.showCancelButton=!1);case 9:e.pollFailCount=0,e.networkLost=!1,t.n=11;break;case 10:t.p=10,t.v,e.pollFailCount+=1,e.pollFailCount>=3&&(e.networkLost=!0);case 11:return t.p=11,e._pollInFlight=!1,t.f(11);case 12:return t.a(2)}},t,null,[[3,10,11,12]])}))()},shouldRouteToConfirmation:function(e,t){if(!e||t===ee)return!1;if(t===Z||t===J)return!1;if(t>=X)return!1;var o=parseInt(e.payment_status,10);return o===te||o===oe||!0===e.payment_pending_counter},routeToConfirmation:function(e){var t=this;return Y(K().m(function o(){var r,a,n,i;return K().w(function(o){for(;;)switch(o.n){case 0:return t.stopAll(),(n=e.queue_number||t.queueNumber)&&(t.queueNumber=n),t.$store.commit("kioskCart/SET_ORDER_REF",{orderId:e.id||t.orderId,queueNumber:n}),i=null!==(r=null!==(a=e.total)&&void 0!==a?a:t.$route.query.total)&&void 0!==r?r:null,o.n=1,t.$router.push({name:"kiosk.confirmation",query:Q(Q({},n?{number:n}:{}),null!=i&&""!==i?{total:i}:{})}).catch(function(){});case 1:return o.a(2)}},o)}))()},markReady:function(){clearInterval(this.pollTimer),this.isReady=!0,this.playReadySound(),this.startAutoReset()},startAutoReset:function(){var e=this;this.autoResetSeconds=20,this.countdownTimer=setInterval(function(){e.autoResetSeconds--,e.autoResetSeconds<=0&&e.newOrder()},1e3)},playReadySound:function(){var e=this;return Y(K().m(function t(){var o,r;return K().w(function(t){for(;;)switch(t.p=t.n){case 0:if(t.p=0,o=window.AudioContext||window.webkitAudioContext){t.n=1;break}throw new Error("AudioContext unavailable");case 1:if("suspended"!==(r=new o).state){t.n=2;break}return t.n=2,r.resume().catch(function(){});case 2:if("running"===r.state){t.n=3;break}throw new Error("AudioContext not running");case 3:[523,659,784].forEach(function(e,t){var o=r.createOscillator(),a=r.createGain();o.connect(a),a.connect(r.destination),o.frequency.value=e,o.type="sine",a.gain.setValueAtTime(.3,r.currentTime+.18*t),a.gain.exponentialRampToValueAtTime(.001,r.currentTime+.18*t+.4),o.start(r.currentTime+.18*t),o.stop(r.currentTime+.18*t+.5)}),setTimeout(function(){try{r.close()}catch(e){}},1200),t.n=5;break;case 4:t.p=4,t.v,e.triggerReadyVisualFallback();case 5:return t.a(2)}},t,null,[[0,4]])}))()},triggerReadyVisualFallback:function(){var e=this;this.showToast(this.$t("kiosk.waiting.ready_visual_fallback"),"info",4e3),this._readyFlashActive=!0,window.setTimeout(function(){e._readyFlashActive=!1},3e3);try{F.Ay.haptic("success")}catch(e){}},startElapsedTimer:function(){var e=this;clearInterval(this.elapsedTimer),this.elapsedTimer=setInterval(function(){e.elapsedSeconds++,30!==e.elapsedSeconds||e.isReady||(e.showCancelButton=!0),e.elapsedSeconds>=900&&!e.isReady&&(e.stopAll(),e.timedOut=!0)},1e3)},confirmCancel:function(){this.cancelError=null,this.showCancelConfirm=!0},closeCancelModal:function(){this.showCancelConfirm=!1,this.cancelError=null,this.cancelLoading=!1},cancelOrder:function(){var e=this;return Y(K().m(function t(){var o,r,a,n;return K().w(function(t){for(;;)switch(t.p=t.n){case 0:return e.cancelLoading=!0,e.cancelError=null,t.p=1,o={status:ee,reason:"customer_request"},t.n=2,I.A.post("frontend/order/change-status/".concat(e.orderId),o,{headers:(0,R.Y)(o)});case 2:e.showCancelConfirm=!1,e.stopAll(),e.reset(),e.$router.push({name:"kiosk.idle"}),t.n=4;break;case 3:t.p=3,n=t.v,a=(null===(r=n.response)||void 0===r||null===(r=r.data)||void 0===r?void 0:r.message)||e.$t("kiosk.waiting_screen.cancel_blocked"),e.cancelError=a;case 4:return t.p=4,e.cancelLoading=!1,t.f(4);case 5:return t.a(2)}},t,null,[[1,3,4,5]])}))()},stopAll:function(){clearInterval(this.pollTimer),clearInterval(this.countdownTimer),clearInterval(this.elapsedTimer)},dismissTimeoutAndResume:function(){this.timedOut=!1,this.elapsedSeconds=0,clearInterval(this.pollTimer),clearInterval(this.elapsedTimer),this.startPolling(),this.startElapsedTimer()},newOrder:function(){this.stopAll(),this.reset(),this.$router.push({name:"kiosk.idle"})}})};var ae=o(5072),ne=o.n(ae),ie=o(8206),se={insert:"head",singleton:!1};ne()(ie.A,se);ie.A.locals;const le=(0,o(6262).A)(re,[["render",function(e,t,o,j,I,z){return(0,r.openBlock)(),(0,r.createElementBlock)("div",{class:(0,r.normalizeClass)(["kiosk-waiting",{ready:I.isReady,"kiosk-ready-flash":I._readyFlashActive}]),"data-testid":"kiosk-waiting-root"},[t[17]||(t[17]=(0,r.createElementVNode)("div",{class:"kiosk-waiting-bg"},null,-1)),I.isOfflineOrder?((0,r.openBlock)(),(0,r.createElementBlock)("div",a,[(0,r.createElementVNode)("div",n,[t[9]||(t[9]=(0,r.createElementVNode)("div",{class:"kiosk-offline-icon"},"📡",-1)),(0,r.createElementVNode)("h1",i,(0,r.toDisplayString)(e.$t("kiosk.offline_queue.title")),1),(0,r.createElementVNode)("p",s,[(0,r.createTextVNode)((0,r.toDisplayString)(e.$t("kiosk.offline_queue.saved")),1),t[8]||(t[8]=(0,r.createElementVNode)("br",null,null,-1)),(0,r.createTextVNode)((0,r.toDisplayString)(e.$t("kiosk.offline_queue.will_send")),1)]),t[10]||(t[10]=(0,r.createElementVNode)("div",{class:"kiosk-offline-spinner"},null,-1)),(0,r.createElementVNode)("p",l,(0,r.toDisplayString)(e.$t("kiosk.offline_queue.activity")),1)])])):((0,r.openBlock)(),(0,r.createElementBlock)("div",c,[(0,r.createVNode)(r.Transition,{name:"fade-scale",mode:"out-in"},{default:(0,r.withCtx)(function(){return[I.isReady?((0,r.openBlock)(),(0,r.createElementBlock)("div",h,[t[13]||(t[13]=(0,r.createElementVNode)("div",{class:"kiosk-ready-icon"},[(0,r.createElementVNode)("div",{class:"kiosk-ready-ring"}),(0,r.createElementVNode)("div",{class:"kiosk-ready-check"},"✓")],-1)),(0,r.createElementVNode)("h1",v,(0,r.toDisplayString)(e.$t("kiosk.order_ready_title")),1),(0,r.createElementVNode)("div",g,[(0,r.createElementVNode)("span",b,(0,r.toDisplayString)(e.$t("kiosk.waiting_ui.number_label")),1),(0,r.createElementVNode)("div",x,(0,r.toDisplayString)(I.queueNumber),1)]),(0,r.createElementVNode)("p",w,(0,r.toDisplayString)(e.$t("kiosk.waiting_ui.ready_hint")),1)])):((0,r.openBlock)(),(0,r.createElementBlock)("div",d,[(0,r.createElementVNode)("div",u,[t[11]||(t[11]=(0,r.createElementVNode)("div",{class:"kiosk-chef-hat"},"👨‍🍳",-1)),((0,r.openBlock)(),(0,r.createElementBlock)(r.Fragment,null,(0,r.renderList)(3,function(e){return(0,r.createElementVNode)("div",{class:"kiosk-wave-ring",key:e,style:(0,r.normalizeStyle)({animationDelay:.4*e+"s"})},null,4)}),64))]),(0,r.createElementVNode)("h1",k,(0,r.toDisplayString)(e.$t("kiosk.waiting_title")),1),(0,r.createElementVNode)("div",p,[(0,r.createElementVNode)("span",m,(0,r.toDisplayString)(e.$t("kiosk.waiting_ui.number_label")),1),(0,r.createElementVNode)("div",f,(0,r.toDisplayString)(I.queueNumber),1)]),(0,r.createElementVNode)("p",y,(0,r.toDisplayString)(e.$t("kiosk.waiting_ui.preparing_hint")),1),t[12]||(t[12]=(0,r.createElementVNode)("div",{class:"kiosk-waiting-progress"},[(0,r.createElementVNode)("div",{class:"kiosk-waiting-progress-bar"})],-1))]))]}),_:1})])),I.isOfflineOrder?((0,r.openBlock)(),(0,r.createElementBlock)("div",_,[(0,r.createElementVNode)("button",{type:"button",class:"kiosk-waiting-new-order",onClick:t[0]||(t[0]=function(){return z.newOrder&&z.newOrder.apply(z,arguments)})},(0,r.toDisplayString)(e.$t("kiosk.new_order")),1)])):((0,r.openBlock)(),(0,r.createElementBlock)("div",E,[I.isReady?((0,r.openBlock)(),(0,r.createElementBlock)(r.Fragment,{key:0},[(0,r.createElementVNode)("button",{type:"button",class:"kiosk-waiting-new-order",onClick:t[1]||(t[1]=function(){return z.newOrder&&z.newOrder.apply(z,arguments)})},(0,r.toDisplayString)(e.$t("kiosk.new_order")),1),(0,r.createElementVNode)("span",N,(0,r.toDisplayString)(e.$t("kiosk.auto_redirect",{n:I.autoResetSeconds})),1)],64)):((0,r.openBlock)(),(0,r.createElementBlock)(r.Fragment,{key:1},[(0,r.createElementVNode)("span",S,(0,r.toDisplayString)(e.$t("kiosk.waiting_subtitle")),1),I.showCancelButton?((0,r.openBlock)(),(0,r.createElementBlock)("button",{key:0,type:"button",class:"kiosk-waiting-cancel-btn",onClick:t[2]||(t[2]=function(){return z.confirmCancel&&z.confirmCancel.apply(z,arguments)})},(0,r.toDisplayString)(e.$t("kiosk.waiting_screen.cancel_order_btn")),1)):(0,r.createCommentVNode)("",!0)],64))])),(0,r.createVNode)(r.Transition,{name:"slide-down-banner"},{default:(0,r.withCtx)(function(){return[I.networkLost?((0,r.openBlock)(),(0,r.createElementBlock)("div",V,[t[14]||(t[14]=(0,r.createElementVNode)("span",{class:"kiosk-network-banner-icon"},"📡",-1)),(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.waiting_screen.network_lost")),1)])):(0,r.createCommentVNode)("",!0)]}),_:1}),(0,r.createVNode)(r.Transition,{name:"fade-scale"},{default:(0,r.withCtx)(function(){return[I.timedOut?((0,r.openBlock)(),(0,r.createElementBlock)("div",{key:0,class:"kiosk-timeout-overlay",onClick:t[4]||(t[4]=(0,r.withModifiers)(function(){return z.dismissTimeoutAndResume&&z.dismissTimeoutAndResume.apply(z,arguments)},["self"]))},[(0,r.createElementVNode)("div",C,[t[15]||(t[15]=(0,r.createElementVNode)("div",{class:"kiosk-timeout-icon"},"⏱️",-1)),(0,r.createElementVNode)("h2",null,(0,r.toDisplayString)(e.$t("kiosk.waiting_screen.timeout_title")),1),(0,r.createElementVNode)("p",null,(0,r.toDisplayString)(e.$t("kiosk.waiting_screen.timeout_body_1")),1),(0,r.createElementVNode)("p",null,(0,r.toDisplayString)(e.$t("kiosk.waiting_screen.timeout_body_2")),1),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-timeout-btn",onClick:t[3]||(t[3]=function(){return z.newOrder&&z.newOrder.apply(z,arguments)})},(0,r.toDisplayString)(e.$t("kiosk.waiting_screen.timeout_home")),1)])])):(0,r.createCommentVNode)("",!0)]}),_:1}),(0,r.createVNode)(r.Transition,{name:"fade-scale"},{default:(0,r.withCtx)(function(){return[I.showCancelConfirm?((0,r.openBlock)(),(0,r.createElementBlock)("div",{key:0,class:"kiosk-cancel-overlay",onClick:t[7]||(t[7]=(0,r.withModifiers)(function(e){return I.showCancelConfirm=!1},["self"]))},[(0,r.createElementVNode)("div",O,[t[16]||(t[16]=(0,r.createElementVNode)("div",{class:"kiosk-cancel-icon"},"⚠️",-1)),(0,r.createElementVNode)("h2",null,(0,r.toDisplayString)(e.$t("kiosk.waiting_screen.cancel_modal_title")),1),I.cancelError?((0,r.openBlock)(),(0,r.createElementBlock)("p",T,(0,r.toDisplayString)(I.cancelError),1)):((0,r.openBlock)(),(0,r.createElementBlock)("p",B,(0,r.toDisplayString)(e.$t("kiosk.waiting_screen.cancel_modal_body")),1)),(0,r.createElementVNode)("div",P,[I.cancelError?(0,r.createCommentVNode)("",!0):((0,r.openBlock)(),(0,r.createElementBlock)("button",{key:0,type:"button",class:"kiosk-cancel-yes",disabled:I.cancelLoading,onClick:t[5]||(t[5]=function(){return z.cancelOrder&&z.cancelOrder.apply(z,arguments)})},[I.cancelLoading?((0,r.openBlock)(),(0,r.createElementBlock)("span",$)):((0,r.openBlock)(),(0,r.createElementBlock)("span",A,(0,r.toDisplayString)(e.$t("kiosk.waiting_screen.cancel_yes")),1))],8,D)),(0,r.createElementVNode)("button",{type:"button",class:"kiosk-cancel-no",onClick:t[6]||(t[6]=function(){return z.closeCancelModal&&z.closeCancelModal.apply(z,arguments)})},(0,r.toDisplayString)(I.cancelError?e.$t("kiosk.waiting_screen.close"):e.$t("kiosk.waiting_screen.cancel_no")),1)])])])):(0,r.createCommentVNode)("",!0)]}),_:1})],2)}],["__scopeId","data-v-1108a098"]]),ce=le},7407(e,t,o){o.d(t,{A:()=>A});var r=o(6934),a=["aria-labelledby","aria-describedby"],n={class:"ks-consent-card",tabindex:"-1",ref:"cardRef"},i={class:"ks-consent-header"},s=["id"],l=["id"],c={class:"ks-consent-description"},d={class:"ks-consent-check","data-testid":"kiosk-consent-loyalty-label"},u=["checked","aria-describedby"],k=["id"],p={class:"ks-consent-check","data-testid":"kiosk-consent-analytics-label"},m=["checked"],f={class:"ks-consent-check","data-testid":"kiosk-consent-mobile-transfer-label"},y=["checked"],h={class:"ks-consent-actions"},v=["disabled"],g=["aria-busy","disabled"],b=["aria-label"],x={class:"ks-consent-privacy-card"},w={class:"ks-consent-privacy-title"},_={class:"ks-consent-privacy-body"},E=["aria-label"];function N(){var e,t,o="function"==typeof Symbol?Symbol:{},r=o.iterator||"@@iterator",a=o.toStringTag||"@@toStringTag";function n(o,r,a,n){var l=r&&r.prototype instanceof s?r:s,c=Object.create(l.prototype);return S(c,"_invoke",function(o,r,a){var n,s,l,c=0,d=a||[],u=!1,k={p:0,n:0,v:e,a:p,f:p.bind(e,4),d:function(t,o){return n=t,s=0,l=e,k.n=o,i}};function p(o,r){for(s=o,l=r,t=0;!u&&c&&!a&&t<d.length;t++){var a,n=d[t],p=k.p,m=n[2];o>3?(a=m===r)&&(l=n[(s=n[4])?5:(s=3,3)],n[4]=n[5]=e):n[0]<=p&&((a=o<2&&p<n[1])?(s=0,k.v=r,k.n=n[1]):p<m&&(a=o<3||n[0]>r||r>m)&&(n[4]=o,n[5]=r,k.n=m,s=0))}if(a||o>1)return i;throw u=!0,r}return function(a,d,m){if(c>1)throw TypeError("Generator is already running");for(u&&1===d&&p(d,m),s=d,l=m;(t=s<2?e:l)||!u;){n||(s?s<3?(s>1&&(k.n=-1),p(s,l)):k.n=l:k.v=l);try{if(c=2,n){if(s||(a="next"),t=n[a]){if(!(t=t.call(n,l)))throw TypeError("iterator result is not an object");if(!t.done)return t;l=t.value,s<2&&(s=0)}else 1===s&&(t=n.return)&&t.call(n),s<2&&(l=TypeError("The iterator does not provide a '"+a+"' method"),s=1);n=e}else if((t=(u=k.n<0)?l:o.call(r,k))!==i)break}catch(t){n=e,s=1,l=t}finally{c=1}}return{value:t,done:u}}}(o,a,n),!0),c}var i={};function s(){}function l(){}function c(){}t=Object.getPrototypeOf;var d=[][r]?t(t([][r]())):(S(t={},r,function(){return this}),t),u=c.prototype=s.prototype=Object.create(d);function k(e){return Object.setPrototypeOf?Object.setPrototypeOf(e,c):(e.__proto__=c,S(e,a,"GeneratorFunction")),e.prototype=Object.create(u),e}return l.prototype=c,S(u,"constructor",c),S(c,"constructor",l),l.displayName="GeneratorFunction",S(c,a,"GeneratorFunction"),S(u),S(u,a,"Generator"),S(u,r,function(){return this}),S(u,"toString",function(){return"[object Generator]"}),(N=function(){return{w:n,m:k}})()}function S(e,t,o,r){var a=Object.defineProperty;try{a({},"",{})}catch(e){a=0}S=function(e,t,o,r){function n(t,o){S(e,t,function(e){return this._invoke(t,o,e)})}t?a?a(e,t,{value:o,enumerable:!r,configurable:!r,writable:!r}):e[t]=o:(n("next",0),n("throw",1),n("return",2))},S(e,t,o,r)}function V(e,t,o,r,a,n,i){try{var s=e[n](i),l=s.value}catch(e){return void o(e)}s.done?t(l):Promise.resolve(l).then(r,a)}const C={name:"KsConsentModal",props:{modelValue:{type:Boolean,default:!1},privacyNoticeVersion:{type:String,default:"2026-04-18"},phone:{type:String,default:""},email:{type:String,default:""},name:{type:String,default:""},persistLoyalty:{type:Boolean,default:!0}},emits:["update:modelValue","accepted","declined","error"],data:function(){var e="ks-consent-"+Math.random().toString(36).slice(2,10);return{titleId:e+"-title",descId:e+"-desc",loyaltyErrorId:e+"-loyalty-err",loyaltyChecked:!1,analyticsChecked:!1,mobileTransferChecked:!1,privacyOpen:!1,submitting:!1,showLoyaltyError:!1}},computed:{privacyBody:function(){return this.$te("kiosk.consent.privacy_body")?this.$t("kiosk.consent.privacy_body"):["FoodKing collecte uniquement les données nécessaires à votre programme fidélité : nom, téléphone, email, préférences alimentaires, allergènes déclarés.","Vos préférences peuvent être supprimées sur demande (contact indiqué en caisse ou via le site officiel).","Aucune donnée personnelle n'est partagée avec des partenaires commerciaux.","Les analyses d'utilisation, si acceptées, sont anonymes et agrégées — sans lien avec votre identité."].join(" ")}},watch:{modelValue:function(e){var t=this;e&&(this.loyaltyChecked=!1,this.analyticsChecked=!1,this.mobileTransferChecked=!1,this.showLoyaltyError=!1,this.privacyOpen=!1,this.submitting=!1,this.$nextTick(function(){try{var e;null===(e=t.$refs.cardRef)||void 0===e||e.focus()}catch(e){}}),this.reportEvent("modal_open"))}},methods:{toggleLoyalty:function(e){this.loyaltyChecked=!!e.target.checked,this.loyaltyChecked&&(this.showLoyaltyError=!1)},toggleAnalytics:function(e){this.analyticsChecked=!!e.target.checked},toggleMobileTransfer:function(e){this.mobileTransferChecked=!!e.target.checked},openPrivacy:function(){this.privacyOpen=!0},closePrivacy:function(){this.privacyOpen=!1},handleBackdrop:function(){this.handleDecline()},handleAccept:function(){var e,t=this;return(e=N().m(function e(){var o,r,a,n,i,s,l,c,d,u;return N().w(function(e){for(;;)switch(e.p=e.n){case 0:if(!t.submitting){e.n=1;break}return e.a(2);case 1:if(t.loyaltyChecked||t.analyticsChecked||t.mobileTransferChecked){e.n=2;break}return t.showLoyaltyError=!0,e.a(2);case 2:try{null===(o=t.$store)||void 0===o||null===(r=o.dispatch)||void 0===r||r.call(o,"kioskSettings/setConsentLoyalty",!!t.loyaltyChecked),null===(a=t.$store)||void 0===a||null===(n=a.dispatch)||void 0===n||n.call(a,"kioskSettings/setConsentAnalytics",!!t.analyticsChecked),null===(i=t.$store)||void 0===i||null===(s=i.dispatch)||void 0===s||s.call(i,"kioskSettings/setConsentMobileTransfer",!!t.mobileTransferChecked)}catch(e){}if(l={loyalty:t.loyaltyChecked,analytics:t.analyticsChecked,mobileTransfer:t.mobileTransferChecked,apiResult:null},!t.loyaltyChecked||!t.persistLoyalty){e.n=9;break}if(t.phone){e.n=3;break}l.apiResult={skipped:"no_phone"},e.n=9;break;case 3:if(t.submitting=!0,e.p=4,null==(c=window.axios)||!c.post){e.n=6;break}return e.n=5,c.post("frontend/loyalty/opt-in",{phone:t.phone,email:t.email||null,name:t.name||null,consent_accepted:!0,privacy_notice_version:t.privacyNoticeVersion});case 5:d=e.v,l.apiResult=(null==d?void 0:d.data)||{status:!0};case 6:e.n=8;break;case 7:return e.p=7,u=e.v,t.$emit("error",u),t.reportEvent("opt_in_error"),t.submitting=!1,e.a(2);case 8:t.submitting=!1;case 9:t.reportEvent("accept",{loyalty:t.loyaltyChecked,analytics:t.analyticsChecked,mobile_transfer:t.mobileTransferChecked}),t.trackAnalyticsConsent("loyalty_scan",t.loyaltyChecked),t.trackAnalyticsConsent("heatmap",t.analyticsChecked),t.trackAnalyticsConsent("mobile_transfer",t.mobileTransferChecked),t.$emit("accepted",l),t.$emit("update:modelValue",!1);case 10:return e.a(2)}},e,null,[[4,7]])}),function(){var t=this,o=arguments;return new Promise(function(r,a){var n=e.apply(t,o);function i(e){V(n,r,a,i,s,"next",e)}function s(e){V(n,r,a,i,s,"throw",e)}i(void 0)})})()},handleDecline:function(){if(!this.submitting){try{var e,t,o,r,a,n;null===(e=this.$store)||void 0===e||null===(t=e.dispatch)||void 0===t||t.call(e,"kioskSettings/setConsentLoyalty",!1),null===(o=this.$store)||void 0===o||null===(r=o.dispatch)||void 0===r||r.call(o,"kioskSettings/setConsentAnalytics",!1),null===(a=this.$store)||void 0===a||null===(n=a.dispatch)||void 0===n||n.call(a,"kioskSettings/setConsentMobileTransfer",!1)}catch(e){}this.reportEvent("decline"),this.trackAnalyticsConsent("loyalty_scan",!1),this.trackAnalyticsConsent("heatmap",!1),this.trackAnalyticsConsent("mobile_transfer",!1),this.$emit("declined"),this.$emit("update:modelValue",!1)}},reportEvent:function(e){var t=arguments.length>1&&void 0!==arguments[1]?arguments[1]:{};try{var o=window.axios;if(null==o||!o.post)return;var r=e+(Object.keys(t).length?" | "+JSON.stringify(t):"");o.post("frontend/kiosk-event",{type:"consent_event",details:r.slice(0,490)}).catch(function(){})}catch(e){}},trackAnalyticsConsent:function(e,t){try{var o=window.axios;if(null==o||!o.post)return;o.post("frontend/kiosk-event",{type:"analytics",event_name:"consent_given",payload:{consent_type:e,granted:!!t}}).catch(function(){})}catch(e){}}}};var O=o(5072),B=o.n(O),T=o(7421),P={insert:"head",singleton:!1};B()(T.A,P);T.A.locals;const D=(0,o(6262).A)(C,[["render",function(e,t,o,N,S,V){return o.modelValue?((0,r.openBlock)(),(0,r.createElementBlock)("div",{key:0,class:"ks-consent-backdrop",role:"dialog","aria-modal":"true","aria-labelledby":S.titleId,"aria-describedby":S.descId,"data-testid":"kiosk-consent-modal",onClick:t[8]||(t[8]=(0,r.withModifiers)(function(){return V.handleBackdrop&&V.handleBackdrop.apply(V,arguments)},["self"])),onKeydown:t[9]||(t[9]=(0,r.withKeys)(function(){return V.handleDecline&&V.handleDecline.apply(V,arguments)},["esc"]))},[(0,r.createElementVNode)("div",n,[(0,r.createElementVNode)("header",i,[(0,r.createElementVNode)("h2",{id:S.titleId,class:"ks-consent-title","data-testid":"kiosk-consent-title"},(0,r.toDisplayString)(e.$t("kiosk.consent.title")),9,s),(0,r.createElementVNode)("p",{class:"ks-consent-subtitle",id:S.descId},(0,r.toDisplayString)(e.$t("kiosk.consent.subtitle")),9,l)]),(0,r.createElementVNode)("p",c,(0,r.toDisplayString)(e.$t("kiosk.consent.description")),1),(0,r.createElementVNode)("label",d,[(0,r.createElementVNode)("input",{type:"checkbox",checked:S.loyaltyChecked,onChange:t[0]||(t[0]=function(){return V.toggleLoyalty&&V.toggleLoyalty.apply(V,arguments)}),"aria-describedby":S.loyaltyErrorId,"data-testid":"kiosk-consent-loyalty"},null,40,u),(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.consent.checkbox_loyalty")),1)]),S.showLoyaltyError?((0,r.openBlock)(),(0,r.createElementBlock)("p",{key:0,id:S.loyaltyErrorId,class:"ks-consent-error",role:"alert","data-testid":"kiosk-consent-loyalty-error"},(0,r.toDisplayString)(e.$t("kiosk.consent.required_loyalty")),9,k)):(0,r.createCommentVNode)("",!0),(0,r.createElementVNode)("label",p,[(0,r.createElementVNode)("input",{type:"checkbox",checked:S.analyticsChecked,onChange:t[1]||(t[1]=function(){return V.toggleAnalytics&&V.toggleAnalytics.apply(V,arguments)}),"data-testid":"kiosk-consent-analytics"},null,40,m),(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.consent.checkbox_analytics")),1)]),(0,r.createElementVNode)("label",f,[(0,r.createElementVNode)("input",{type:"checkbox",checked:S.mobileTransferChecked,onChange:t[2]||(t[2]=function(){return V.toggleMobileTransfer&&V.toggleMobileTransfer.apply(V,arguments)}),"data-testid":"kiosk-consent-mobile-transfer"},null,40,y),(0,r.createElementVNode)("span",null,(0,r.toDisplayString)(e.$t("kiosk.consent.checkbox_mobile_transfer")),1)]),(0,r.createElementVNode)("button",{type:"button",class:"ks-consent-privacy","data-testid":"kiosk-consent-privacy-link",onClick:t[3]||(t[3]=function(){return V.openPrivacy&&V.openPrivacy.apply(V,arguments)})},(0,r.toDisplayString)(e.$t("kiosk.consent.privacy_link")),1),(0,r.createElementVNode)("div",h,[(0,r.createElementVNode)("button",{type:"button",class:"ks-consent-btn ks-consent-btn--ghost","data-testid":"kiosk-consent-decline",onClick:t[4]||(t[4]=function(){return V.handleDecline&&V.handleDecline.apply(V,arguments)}),disabled:S.submitting},(0,r.toDisplayString)(e.$t("kiosk.consent.cta_decline")),9,v),(0,r.createElementVNode)("button",{type:"button",class:"ks-consent-btn ks-consent-btn--primary","data-testid":"kiosk-consent-accept","aria-busy":S.submitting,disabled:S.submitting,onClick:t[5]||(t[5]=function(){return V.handleAccept&&V.handleAccept.apply(V,arguments)})},(0,r.toDisplayString)(S.submitting?"…":e.$t("kiosk.consent.cta_accept")),9,g)]),S.privacyOpen?((0,r.openBlock)(),(0,r.createElementBlock)("div",{key:1,class:"ks-consent-privacy-overlay",role:"dialog","aria-modal":"true","aria-label":e.$t("kiosk.consent.privacy_link"),"data-testid":"kiosk-consent-privacy-modal",onClick:t[7]||(t[7]=(0,r.withModifiers)(function(){return V.closePrivacy&&V.closePrivacy.apply(V,arguments)},["self"]))},[(0,r.createElementVNode)("div",x,[(0,r.createElementVNode)("h3",w,(0,r.toDisplayString)(e.$t("kiosk.consent.privacy_link")),1),(0,r.createElementVNode)("div",_,[(0,r.createElementVNode)("p",null,(0,r.toDisplayString)(V.privacyBody),1)]),(0,r.createElementVNode)("button",{type:"button",class:"ks-consent-btn ks-consent-btn--primary","aria-label":e.$t("kiosk.consent.privacy_close"),"data-testid":"kiosk-consent-privacy-close",onClick:t[6]||(t[6]=function(){return V.closePrivacy&&V.closePrivacy.apply(V,arguments)})},(0,r.toDisplayString)(e.$t("kiosk.consent.privacy_close")),9,E)])],8,b)):(0,r.createCommentVNode)("",!0)],512)],40,a)):(0,r.createCommentVNode)("",!0)}],["__scopeId","data-v-e52e1858"]]),A=D},7488(e,t,o){o.d(t,{A:()=>x});var r=o(6934),a=["aria-label"],n={key:0,class:"ks-vkeyb__preview","aria-hidden":"true","data-testid":"kiosk-vkeyb-preview"},i={class:"ks-vkeyb__preview-value"},s=["aria-label","data-testid","onClick"],l={class:"ks-vkeyb__row ks-vkeyb__row--actions"},c=["aria-label"],d=["aria-label"],u=["aria-label"],k=["aria-label"];var p=["1","2","3","4","5","6","7","8","9","0"],m={fr:{normal:[p,["a","z","e","r","t","y","u","i","o","p"],["q","s","d","f","g","h","j","k","l","m"],["w","x","c","v","b","n","-","_",".","@"]],shift:[p,["A","Z","E","R","T","Y","U","I","O","P"],["Q","S","D","F","G","H","J","K","L","M"],["W","X","C","V","B","N","-","_",".","@"]]},en:{normal:[p,["q","w","e","r","t","y","u","i","o","p"],["a","s","d","f","g","h","j","k","l","m"],["z","x","c","v","b","n","-","_",".","@"]],shift:[p,["Q","W","E","R","T","Y","U","I","O","P"],["A","S","D","F","G","H","J","K","L","M"],["Z","X","C","V","B","N","-","_",".","@"]]},ar:{normal:[p,["ض","ص","ث","ق","ف","غ","ع","ه","خ","ح"],["ش","س","ي","ب","ل","ا","ت","ن","م","ك"],["ئ","ء","ؤ","ر","لا","ى","ة","و","ز","ظ"]],shift:[p,["ّ","َ","ً","ُ","ٌ","ِ","ٍ","ْ","ٰ","ٓ"],["ش","س","ي","ب","ل","أ","ت","ن","م","ك"],["ئ","ء","ؤ","ر","لا","آ","إ","و","ز","ظ"]]}};const f={name:"KsVirtualKeyboard",props:{modelValue:{type:String,default:""},layout:{type:String,default:"fr",validator:function(e){return["fr","en","ar"].includes(e)}},visible:{type:Boolean,default:!0},maxLength:{type:Number,default:200},allowSpace:{type:Boolean,default:!0},showPreview:{type:Boolean,default:!0}},emits:["update:modelValue","submit","close"],data:function(){return{shift:!1}},computed:{isRtl:function(){return"ar"===this.layout},rows:function(){var e=this,t=m[this.layout]||m.fr;return(this.shift&&t.shift?t.shift:t.normal).map(function(t){return t.map(function(t){return{label:t,char:t,testid:e.safeTestid(t)}})})},displayValue:function(){return this.modelValue||""}},methods:{safeTestid:function(e){return/^[a-zA-Z0-9@._-]$/.test(e)?e:"u"+e.codePointAt(0).toString(16)},displayLabel:function(e){return e.label},pressKey:function(e){if(e.action)return"backspace"===e.action?this.backspace():"submit"===e.action?this.submit():"shift"===e.action?this.shift=!this.shift:void 0;e.char&&this.pressChar(e.char)},pressChar:function(e){if(e&&(this.allowSpace||" "!==e)){var t=(this.modelValue||"")+e;t.length>this.maxLength||(this.$emit("update:modelValue",t),this.shift&&"ar"!==this.layout&&(this.shift=!1))}},backspace:function(){var e=this.modelValue||"";if(e){var t=Array.from(e);t.pop(),this.$emit("update:modelValue",t.join(""))}},clearAll:function(){this.modelValue&&this.$emit("update:modelValue","")},submit:function(){this.$emit("submit",this.modelValue||"")},toggleShift:function(){this.shift=!this.shift}}};var y=o(5072),h=o.n(y),v=o(3801),g={insert:"head",singleton:!1};h()(v.A,g);v.A.locals;const b=(0,o(6262).A)(f,[["render",function(e,t,o,p,m,f){return o.visible?((0,r.openBlock)(),(0,r.createElementBlock)("div",{key:0,class:(0,r.normalizeClass)(["ks-vkeyb",["ks-vkeyb--"+o.layout,m.shift?"ks-vkeyb--shift":"",f.isRtl?"ks-vkeyb--rtl":""]]),role:"group","aria-label":e.$t("kiosk.a11y.virtual_keyboard_label"),"data-testid":"kiosk-vkeyb"},[o.showPreview?((0,r.openBlock)(),(0,r.createElementBlock)("div",n,[(0,r.createElementVNode)("span",i,(0,r.toDisplayString)(f.displayValue),1)])):(0,r.createCommentVNode)("",!0),((0,r.openBlock)(!0),(0,r.createElementBlock)(r.Fragment,null,(0,r.renderList)(f.rows,function(e,t){return(0,r.openBlock)(),(0,r.createElementBlock)("div",{key:"row-"+t,class:"ks-vkeyb__row"},[((0,r.openBlock)(!0),(0,r.createElementBlock)(r.Fragment,null,(0,r.renderList)(e,function(e,o){return(0,r.openBlock)(),(0,r.createElementBlock)("button",{type:"button",key:"k-"+t+"-"+o,class:(0,r.normalizeClass)(["ks-vkeyb__key",[e.wide?"ks-vkeyb__key--wide":"",e.action?"ks-vkeyb__key--action":"",e.toggle&&"shift"===e.toggle&&m.shift?"ks-vkeyb__key--active":""]]),"aria-label":e.ariaLabel||e.label,"data-testid":"kiosk-vkeyb-key-"+(e.testid||e.label.toLowerCase()),onClick:function(t){return f.pressKey(e)}},(0,r.toDisplayString)(f.displayLabel(e)),11,s)}),128))])}),128)),(0,r.createElementVNode)("div",l,[(0,r.createElementVNode)("button",{type:"button",class:"ks-vkeyb__key ks-vkeyb__key--action","aria-label":e.$t("kiosk.a11y.vkeyb_clear"),"data-testid":"kiosk-vkeyb-clear",onClick:t[0]||(t[0]=function(){return f.clearAll&&f.clearAll.apply(f,arguments)})},(0,r.toDisplayString)(e.$t("kiosk.a11y.vkeyb_clear_short")),9,c),(0,r.createElementVNode)("button",{type:"button",class:"ks-vkeyb__key ks-vkeyb__key--action ks-vkeyb__key--wide","aria-label":e.$t("kiosk.a11y.vkeyb_space"),"data-testid":"kiosk-vkeyb-space",onClick:t[1]||(t[1]=function(e){return f.pressChar(" ")})},(0,r.toDisplayString)(e.$t("kiosk.a11y.vkeyb_space_short")),9,d),(0,r.createElementVNode)("button",{type:"button",class:"ks-vkeyb__key ks-vkeyb__key--action","aria-label":e.$t("kiosk.a11y.vkeyb_backspace"),"data-testid":"kiosk-vkeyb-backspace",onClick:t[2]||(t[2]=function(){return f.backspace&&f.backspace.apply(f,arguments)})},"⌫",8,u),(0,r.createElementVNode)("button",{type:"button",class:"ks-vkeyb__key ks-vkeyb__key--action ks-vkeyb__key--submit","aria-label":e.$t("kiosk.a11y.vkeyb_submit"),"data-testid":"kiosk-vkeyb-submit",onClick:t[3]||(t[3]=function(){return f.submit&&f.submit.apply(f,arguments)})},(0,r.toDisplayString)(e.$t("kiosk.a11y.vkeyb_submit_short")),9,k)])],10,a)):(0,r.createCommentVNode)("",!0)}],["__scopeId","data-v-0b95432a"]]),x=b}}]);
+"use strict";
+(self["webpackChunk"] = self["webpackChunk"] || []).push([["kiosk-shell"],{
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=style&index=0&id=f1497108&scoped=true&lang=css"
+/*!****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=style&index=0&id=f1497108&scoped=true&lang=css ***!
+  \****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-cart[data-v-f1497108] {\n  width: 100vw;\n  height: 100vh;\n  background: var(--kiosk-page-bg, var(--kiosk-bg));\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n}\n.kiosk-order-type-bar[data-v-f1497108] {\n  display: flex;\n  gap: 16px;\n  padding: 20px 30px 0;\n  flex-shrink: 0;\n}\n.kiosk-order-type-btn[data-v-f1497108] {\n  flex: 1;\n  min-height: 82px;\n  height: auto;\n  border-radius: 24px;\n  border: 2px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text-muted);\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 4px;\n  cursor: pointer;\n  transition: all 0.2s ease;\n}\n.kiosk-order-type-btn.active[data-v-f1497108] {\n  border-color: var(--kiosk-primary);\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  box-shadow: var(--kiosk-shadow-cta);\n}\n.kiosk-order-type-btn[data-v-f1497108]:active { transform: scale(0.97);\n}\n.kiosk-btn-primary[disabled][data-v-f1497108] {\n  opacity: 0.62;\n  cursor: wait;\n}\n.kiosk-cart-quote-error[data-v-f1497108] {\n  width: 100%;\n  margin: 8px 0 0;\n  color: var(--kiosk-error, #b91c1c);\n  font-size: 13px;\n  font-weight: 700;\n  text-align: center;\n}\n.kiosk-order-type-icon[data-v-f1497108] { font-size: 22px; line-height: 1;\n}\n.kiosk-order-type-label[data-v-f1497108] {\n  font-size: 17px;\n  font-weight: 900;\n}\n.kiosk-cart-item-selections[data-v-f1497108] {\n  font-size: 11px;\n  color: var(--kiosk-text-mute);\n  margin: 2px 0 4px;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  max-width: 100%;\n}\n.kiosk-cart-header[data-v-f1497108] {\n  display: flex;\n  align-items: center;\n  gap: 16px;\n  padding: 24px 32px 20px;\n  background: var(--kiosk-surface);\n  border-bottom: 1px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-sticky);\n  flex-shrink: 0;\n}\n.kiosk-cart-back[data-v-f1497108] {\n  width: 60px;\n  height: 60px;\n  border-radius: 18px;\n  border: 1.5px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: all 0.15s ease;\n}\n.kiosk-cart-back[data-v-f1497108]:active { transform: scale(0.95); background: var(--kiosk-surface-alt);\n}\n.kiosk-cart-header-info[data-v-f1497108] { flex: 1;\n}\n.kiosk-cart-title[data-v-f1497108] {\n  font-size: clamp(30px, 4vw, 44px);\n  font-weight: 900;\n  color: var(--kiosk-text);\n  margin: 0 0 2px;\n  text-transform: uppercase;\n}\n.kiosk-cart-item-count[data-v-f1497108] {\n  font-size: 16px;\n  color: var(--kiosk-text-mute);\n  margin: 0;\n}\n.kiosk-cart-clear[data-v-f1497108] {\n  min-height: 52px;\n  padding: 8px 20px;\n  border-radius: 999px;\n  border: 2px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-primary);\n  font-size: 14px;\n  font-weight: 600;\n  cursor: pointer;\n  transition: all 0.15s ease;\n}\n.kiosk-cart-clear[data-v-f1497108]:active { background: var(--kiosk-surface-alt);\n}\n.kiosk-cart-empty[data-v-f1497108] {\n  flex: 1;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 16px;\n  padding: 40px;\n  text-align: center;\n}\n.kiosk-cart-empty-icon[data-v-f1497108] { font-size: 72px; line-height: 1;\n}\n.kiosk-cart-empty h2[data-v-f1497108] {\n  font-size: 24px;\n  font-weight: 800;\n  color: var(--kiosk-text);\n  margin: 0;\n}\n.kiosk-cart-empty p[data-v-f1497108] {\n  font-size: 15px;\n  color: var(--kiosk-text-mute);\n  margin: 0;\n}\n.kiosk-cart-body[data-v-f1497108] {\n  flex: 1;\n  overflow-y: auto;\n  display: flex;\n  flex-direction: column;\n  scrollbar-width: none;\n}\n.kiosk-cart-body[data-v-f1497108]::-webkit-scrollbar { display: none;\n}\n.kiosk-cart-items[data-v-f1497108] {\n  flex: 1;\n  padding: 22px 30px;\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n}\n\n/* FoodKing brand V2 (2026-05-10) — modernisation cart recap (owner :\n   \"année 2000, c'est weird, trop basique\"). Card plus aérée, image carrée\n   arrondie style modern app, accents Cayenne, hierarchy typo plus marquée. */\n.kiosk-cart-item[data-v-f1497108] {\n  background: #FFFFFF;\n  border-radius: 20px;\n  border: 1.5px solid #E5E5E5;\n  padding: 16px 18px;\n  display: flex;\n  align-items: center;\n  gap: 18px;\n  box-shadow: 0 4px 14px rgba(15, 15, 15, 0.04);\n  transition: border-color 160ms ease, box-shadow 160ms ease;\n}\n.kiosk-cart-item[data-v-f1497108]:hover {\n  border-color: #F4501E;\n  box-shadow: 0 6px 18px rgba(244, 80, 30, 0.12);\n}\n.kiosk-cart-item-img[data-v-f1497108] {\n  width: 104px;\n  height: 104px;\n  border-radius: 18px;\n  overflow: hidden;\n  flex-shrink: 0;\n  background: #FAFAFA;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  position: relative;\n  border: 1px solid #EFEFEF;\n}\n.kiosk-cart-item-img img[data-v-f1497108] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-cart-item-emoji[data-v-f1497108] { font-size: 56px; line-height: 1;\n}\n.kiosk-cart-item-info[data-v-f1497108] { flex: 1; min-width: 0;\n}\n.kiosk-cart-item-name-row[data-v-f1497108] {\n  display: flex;\n  align-items: center;\n  gap: 0.4rem;\n}\n.kiosk-cart-edit-btn[data-v-f1497108] {\n  flex-shrink: 0;\n  background: var(--kiosk-surface-alt);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 50%;\n  color: var(--kiosk-text-mute);\n  width: 34px; height: 34px;\n  display: flex; align-items: center; justify-content: center;\n  cursor: pointer;\n  transition: background 0.15s, color 0.15s;\n  padding: 0;\n}\n.kiosk-cart-edit-btn[data-v-f1497108]:hover {\n  background: var(--kiosk-primary-soft);\n  color: var(--kiosk-primary);\n  border-color: rgba(244, 80, 30, 0.24);\n}\n.kiosk-cart-item-name[data-v-f1497108] {\n  font-size: 22px;\n  font-weight: 900;\n  color: #0F0F0F;\n  margin: 0 0 4px;\n  letter-spacing: -0.2px;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.kiosk-cart-item-note[data-v-f1497108] {\n  font-size: 11px;\n  color: var(--kiosk-text-mute);\n  margin: 0 0 2px;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.kiosk-cart-item-unit[data-v-f1497108] {\n  font-size: 14px;\n  color: var(--kiosk-text-mute);\n}\n.kiosk-cart-item-controls[data-v-f1497108] {\n  display: flex;\n  flex-direction: column;\n  align-items: end;\n  gap: 8px;\n  flex-shrink: 0;\n  position: relative;\n}\n\n/* FoodKing brand V2 (2026-05-10) — bouton trash explicite à côté du qty stepper */\n.kiosk-cart-item-trash[data-v-f1497108] {\n  position: absolute;\n  top: -8px;\n  right: -8px;\n  width: 36px;\n  height: 36px;\n  border: 1px solid var(--kiosk-border, #E5E5E5);\n  border-radius: 50%;\n  background: var(--kiosk-surface, #FFFFFF);\n  color: var(--kiosk-text-muted, #5A5A5A);\n  cursor: pointer;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  transition: background 120ms ease, color 120ms ease, transform 120ms ease;\n  -webkit-tap-highlight-color: transparent;\n  box-shadow: 0 2px 6px rgba(15, 15, 15, 0.06);\n}\n.kiosk-cart-item-trash[data-v-f1497108]:hover {\n  background: var(--kiosk-bold-primary-soft, #FFE8DD);\n  color: var(--kiosk-bold-primary, #F4501E);\n}\n.kiosk-cart-item-trash[data-v-f1497108]:active {\n  transform: scale(0.92);\n}\n.kiosk-cart-item-trash[data-v-f1497108]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563EB);\n  outline-offset: 2px;\n}\n.kiosk-qty-ctrl[data-v-f1497108] {\n  display: flex;\n  align-items: center;\n  gap: 0;\n  background: var(--kiosk-surface-alt);\n  border-radius: 999px;\n  border: 1.5px solid var(--kiosk-border);\n  overflow: hidden;\n}\n[dir=\"rtl\"] .kiosk-qty-ctrl[data-v-f1497108] {\n  direction: ltr;\n}\n.kiosk-qty-btn[data-v-f1497108] {\n  width: 50px;\n  height: 50px;\n  border: none;\n  background: transparent;\n  color: var(--kiosk-text);\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition: background 0.15s ease;\n}\n.kiosk-qty-btn[data-v-f1497108]:active { background: rgba(0,0,0,0.05);\n}\n.kiosk-qty-btn.minus[data-v-f1497108] { color: var(--kiosk-text-muted);\n}\n.kiosk-qty-btn.minus[data-v-f1497108]:active { color: var(--kiosk-primary);\n}\n.kiosk-qty-num[data-v-f1497108] {\n  min-width: 38px;\n  text-align: center;\n  font-size: 20px;\n  font-weight: 900;\n  color: var(--kiosk-text);\n}\n.kiosk-cart-item-total[data-v-f1497108] {\n  font-size: 24px;\n  font-weight: 900;\n  color: #F4501E;\n  letter-spacing: -0.4px;\n}\n.kiosk-cart-summary[data-v-f1497108] {\n  margin: 0 30px;\n  background: var(--kiosk-surface);\n  border-radius: 26px;\n  border: 1.5px solid var(--kiosk-border);\n  padding: 20px 24px;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n}\n.kiosk-cart-summary-row[data-v-f1497108] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  font-size: 16px;\n  color: var(--kiosk-text-muted);\n}\n.kiosk-cart-summary-row.total[data-v-f1497108] {\n  font-size: 24px;\n  font-weight: 900;\n  color: var(--kiosk-text);\n  padding-top: 10px;\n  border-top: 1px solid var(--kiosk-border);\n  margin-top: 4px;\n}\n.kiosk-cart-summary-row.loyalty[data-v-f1497108] { color: var(--kiosk-text-muted);\n}\n.green[data-v-f1497108] { color: var(--kiosk-success); font-weight: 700;\n}\n.kiosk-cart-grand-total[data-v-f1497108] {\n  font-size: 32px;\n  font-weight: 900;\n  color: var(--kiosk-primary);\n}\n.kiosk-cart-actions[data-v-f1497108] {\n  padding: 18px 30px 32px;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n}\n\n/* Kiosk Phase 9.1.6 — Section code promo panier. */\n.kiosk-cart-promo[data-v-f1497108] {\n  padding: 14px 30px 0;\n}\n.kiosk-cart-promo-label[data-v-f1497108] {\n  display: block;\n  font-size: 13px;\n  font-weight: 600;\n  color: var(--kiosk-text-muted, #5A5A5A);\n  margin-bottom: 6px;\n}\n.kiosk-cart-promo-row[data-v-f1497108] {\n  display: flex;\n  gap: 8px;\n}\n.kiosk-cart-promo-input[data-v-f1497108] {\n  flex: 1;\n  height: 48px;\n  padding: 0 14px;\n  border-radius: 10px;\n  border: 1.5px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text);\n  font-size: 15px;\n  letter-spacing: 0.03em;\n  text-transform: uppercase;\n  min-height: 44px;\n}\n.kiosk-cart-promo-input[data-v-f1497108]:focus {\n  border-color: var(--kiosk-primary, #F4501E);\n  outline: none;\n}\n.kiosk-cart-promo-input[aria-invalid=\"true\"][data-v-f1497108] {\n  border-color: var(--kiosk-error, #C21E2F);\n}\n.kiosk-cart-promo-apply[data-v-f1497108] {\n  height: 48px;\n  padding: 0 18px;\n  border-radius: 10px;\n  border: none;\n  background: var(--kiosk-primary, #F4501E);\n  color: #fff;\n  font-weight: 700;\n  font-size: 14px;\n  cursor: pointer;\n  min-height: 44px;\n}\n.kiosk-cart-promo-apply[data-v-f1497108]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.kiosk-cart-promo-error[data-v-f1497108] {\n  color: var(--kiosk-error, #C21E2F);\n  font-size: 13px;\n  margin: 6px 0 0;\n  font-weight: 500;\n}\n.kiosk-cart-promo-applied[data-v-f1497108] {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  padding: 10px 14px;\n  background: rgba(27, 138, 58, 0.12);\n  border: 1.5px solid var(--kiosk-success, #1B8A3A);\n  border-radius: 10px;\n  color: var(--kiosk-success, #1B8A3A);\n  font-weight: 600;\n}\n.kiosk-cart-promo-applied-icon[data-v-f1497108] {\n  font-size: 18px;\n}\n.kiosk-cart-promo-applied-text[data-v-f1497108] {\n  flex: 1;\n}\n.kiosk-cart-promo-remove[data-v-f1497108] {\n  background: transparent;\n  border: none;\n  color: var(--kiosk-error, #C21E2F);\n  font-weight: 600;\n  cursor: pointer;\n  text-decoration: underline;\n  font-size: 13px;\n}\n.kiosk-cart-summary-row.promo .green[data-v-f1497108] {\n  color: var(--kiosk-success, #1B8A3A);\n}\n.kiosk-btn-loyalty[data-v-f1497108] {\n  width: 100%;\n  min-height: 60px;\n  height: auto;\n  background: rgba(255,215,0,0.08);\n  border: 1.5px solid rgba(255,215,0,0.3);\n  border-radius: 18px;\n  color: var(--kiosk-warning);\n  font-size: 16px;\n  font-weight: 600;\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 0 16px;\n  transition: background 0.2s;\n  margin: 0 30px 4px;\n  width: calc(100% - 60px);\n}\n.kiosk-btn-loyalty[data-v-f1497108]:active { background: rgba(255,215,0,0.15);\n}\n.kiosk-btn-loyalty-star[data-v-f1497108] { font-size: 18px;\n}\n.kiosk-btn-loyalty-arrow[data-v-f1497108] { font-size: 20px; opacity: 0.7;\n}\n.kiosk-btn-primary[data-v-f1497108] {\n  width: 100%;\n  min-height: 76px;\n  height: auto;\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border: none;\n  border-radius: 24px;\n  font-size: 22px;\n  font-weight: 900;\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 0 24px;\n  box-shadow: var(--kiosk-shadow-cta);\n  transition: all 0.15s ease;\n}\n.kiosk-btn-primary[data-v-f1497108]:active { transform: scale(0.98);\n}\n.kiosk-btn-price[data-v-f1497108] {\n  font-size: 18px;\n  font-weight: 800;\n  background: rgba(255,255,255,0.2);\n  padding: 4px 14px;\n  border-radius: 10px;\n}\n.kiosk-btn-secondary[data-v-f1497108] {\n  width: 100%;\n  min-height: 60px;\n  height: auto;\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text-muted);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 18px;\n  font-size: 17px;\n  font-weight: 800;\n  cursor: pointer;\n  transition: all 0.15s ease;\n}\n.kiosk-btn-secondary[data-v-f1497108]:active { background: var(--kiosk-surface-alt);\n}\n.kiosk-clear-overlay[data-v-f1497108] {\n  position: fixed; inset: 0;\n  background: var(--kiosk-overlay-modal);\n  display: flex; align-items: center; justify-content: center;\n  z-index: 999;\n}\n.kiosk-clear-modal[data-v-f1497108] {\n  background: var(--kiosk-surface);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 20px;\n  padding: 2rem;\n  width: 340px;\n  text-align: center;\n  box-shadow: var(--kiosk-shadow-modal);\n}\n.kiosk-clear-title[data-v-f1497108] {\n  font-size: 1.3rem;\n  font-weight: 700;\n  margin: 0 0 0.4rem;\n  color: var(--kiosk-text);\n}\n.kiosk-clear-sub[data-v-f1497108] {\n  color: var(--kiosk-text-mute);\n  font-size: 0.95rem;\n  margin: 0 0 1.5rem;\n}\n.kiosk-clear-actions[data-v-f1497108] {\n  display: flex;\n  gap: 0.75rem;\n}\n.kiosk-clear-yes[data-v-f1497108] {\n  flex: 1;\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border: none;\n  border-radius: 12px;\n  padding: 0.85rem 1rem;\n  font-size: 1rem;\n  font-weight: 700;\n  cursor: pointer;\n}\n.kiosk-clear-no[data-v-f1497108] {\n  flex: 1;\n  background: var(--kiosk-surface-alt);\n  color: var(--kiosk-text-muted);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 12px;\n  padding: 0.85rem 1rem;\n  font-size: 1rem;\n  cursor: pointer;\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=style&index=0&id=1852351a&scoped=true&lang=css"
+/*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=style&index=0&id=1852351a&scoped=true&lang=css ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n/* FoodKing brand V3.3 (2026-05-10) — Center vertically for 32\" portrait kiosk\n   ergonomics. Owner gate: contenu confort visuel mid-screen, pas top-heavy.\n   Footer anchored bottom via grid template. */\n.kiosk-cash[data-v-1852351a] {\n    position: relative;\n    width: 100%;\n    min-height: 100vh;\n    background: var(--kiosk-page-bg, var(--kiosk-bg));\n    display: grid;\n    grid-template-rows: 1fr auto;\n    padding: var(--kiosk-space-8) var(--kiosk-space-8) var(--kiosk-space-6);\n    box-sizing: border-box;\n}\n.kiosk-cash__main[data-v-1852351a] {\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    gap: var(--kiosk-space-6);\n    padding: var(--kiosk-space-8) 0;\n}\n.kiosk-cash__header[data-v-1852351a] {\n    text-align: center;\n    margin-bottom: var(--kiosk-space-4);\n}\n.kiosk-cash__badge[data-v-1852351a] {\n    width: 140px;\n    height: 140px;\n    margin: 0 auto var(--kiosk-space-6);\n    border-radius: 50%;\n    background: var(--kiosk-primary);\n    color: var(--kiosk-text-on-red);\n    box-shadow: var(--kiosk-shadow-cta);\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    font-size: 80px;\n}\n.kiosk-cash__title[data-v-1852351a] {\n    margin: 0 0 var(--kiosk-space-3);\n    font-size: calc(var(--kiosk-font-size-hero) * var(--kiosk-text-scale));\n    font-weight: var(--kiosk-font-weight-black);\n    color: var(--kiosk-text);\n    line-height: var(--kiosk-line-height-tight);\n}\n.kiosk-cash__subtitle[data-v-1852351a] {\n    margin: 0 auto;\n    max-width: 760px;\n    font-size: calc(var(--kiosk-font-size-subtitle) * var(--kiosk-text-scale));\n    color: var(--kiosk-text-muted);\n    line-height: var(--kiosk-line-height-snug);\n}\n.kiosk-cash__board[data-v-1852351a] {\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    gap: var(--kiosk-space-6);\n    width: 100%;\n}\n.kiosk-cash__card[data-v-1852351a] {\n    max-width: 720px;\n    width: 100%;\n    border-radius: 30px;\n}\n.kiosk-cash__row[data-v-1852351a] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: var(--kiosk-space-6);\n    padding: var(--kiosk-space-4) 0;\n}\n.kiosk-cash__label[data-v-1852351a] {\n    font-size: calc(var(--kiosk-font-size-subtitle) * var(--kiosk-text-scale));\n    font-weight: var(--kiosk-font-weight-medium);\n    color: var(--kiosk-text-muted);\n}\n.kiosk-cash__number[data-v-1852351a] {\n    font-size: calc(96px * var(--kiosk-text-scale));\n    font-weight: var(--kiosk-font-weight-black);\n    color: var(--kiosk-primary);\n    letter-spacing: var(--kiosk-letter-spacing-tight);\n    line-height: 1;\n    font-variant-numeric: tabular-nums;\n}\n.kiosk-cash__divider[data-v-1852351a] {\n    height: 1px;\n    background: var(--kiosk-border);\n    margin: var(--kiosk-space-3) 0;\n}\n.kiosk-cash__help[data-v-1852351a] {\n    font-size: calc(var(--kiosk-font-size-body) * var(--kiosk-text-scale));\n    color: var(--kiosk-text-muted);\n    max-width: 540px;\n    text-align: center;\n    line-height: var(--kiosk-line-height-snug);\n}\n.kiosk-cash__footer[data-v-1852351a] {\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    gap: var(--kiosk-space-4);\n    padding-top: var(--kiosk-space-6);\n    border-top: 1px solid var(--kiosk-border);\n}\n.kiosk-cash__countdown[data-v-1852351a] {\n    font-size: calc(var(--kiosk-font-size-caption) * var(--kiosk-text-scale));\n    color: var(--kiosk-text-muted);\n    font-weight: var(--kiosk-font-weight-medium);\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=style&index=0&id=255fc987&scoped=true&lang=css"
+/*!************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=style&index=0&id=255fc987&scoped=true&lang=css ***!
+  \************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-confirmation[data-v-255fc987] {\n  min-height: 100vh;\n  background: var(--kiosk-page-bg, var(--kiosk-bg));\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  padding: 2.5rem 2rem;\n  text-align: center;\n  color: var(--kiosk-text);\n  gap: 1.25rem;\n}\n\n/* Animated SVG ring + check */\n.kiosk-confirmation-anim[data-v-255fc987] {\n  position: relative;\n  width: 140px;\n  height: 140px;\n}\n.kiosk-check-svg[data-v-255fc987] {\n  width: 140px;\n  height: 140px;\n  overflow: visible;\n}\n.kiosk-ring-fill[data-v-255fc987] {\n  animation: drawRing-255fc987 0.8s ease-out 0.1s forwards;\n}\n.kiosk-check-path[data-v-255fc987] {\n  stroke-dasharray: 80;\n  stroke-dashoffset: 80;\n  animation: drawCheck-255fc987 0.4s ease-out 0.9s forwards;\n}\n@keyframes drawRing-255fc987 {\nto { stroke-dashoffset: 0;\n}\n}\n@keyframes drawCheck-255fc987 {\nto { stroke-dashoffset: 0;\n}\n}\n\n/* Title */\n.kiosk-confirmation-title[data-v-255fc987] {\n  font-size: clamp(2.4rem, 6vw, 4.8rem);\n  font-weight: 900;\n  letter-spacing: -0.01em;\n  margin: 0;\n  animation: fadeUp-255fc987 0.5s ease-out 0.8s both;\n}\n\n/* Detail card */\n.kiosk-confirmation-card[data-v-255fc987] {\n  background: var(--kiosk-surface);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 30px;\n  padding: 1.8rem 2.8rem;\n  width: 100%;\n  max-width: 400px;\n  display: flex;\n  flex-direction: column;\n  gap: 1rem;\n  animation: fadeUp-255fc987 0.5s ease-out 1s both;\n}\n.kiosk-confirmation-row[data-v-255fc987] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.3rem;\n}\n.kiosk-confirmation-label[data-v-255fc987] {\n  font-size: 0.75rem;\n  text-transform: uppercase;\n  letter-spacing: 0.12em;\n  color: var(--kiosk-text-muted);\n}\n.kiosk-confirmation-number[data-v-255fc987] {\n  font-size: 4rem;\n  font-weight: 900;\n  color: var(--kiosk-primary);\n  line-height: 1;\n}\n.kiosk-confirmation-price[data-v-255fc987] {\n  font-size: 1.8rem;\n  font-weight: 800;\n  color: var(--kiosk-warning);\n}\n\n/* Message */\n.kiosk-confirmation-message[data-v-255fc987] {\n  font-size: 1rem;\n  color: var(--kiosk-text-muted);\n  line-height: 1.7;\n  animation: fadeUp-255fc987 0.5s ease-out 1.1s both;\n}\n.kiosk-confirmation-message p[data-v-255fc987] { margin: 0;\n}\n\n/* [GAP-35-7] Loyalty points earned banner */\n.kiosk-confirmation-points[data-v-255fc987] {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  background: rgba(245, 158, 11, 0.12);\n  border: 1px solid rgba(255, 193, 7, 0.24);\n  border-radius: 16px;\n  padding: 14px 20px;\n  max-width: 360px;\n  width: 100%;\n  animation: fadeUp-255fc987 0.5s ease-out 1.15s both;\n}\n.kiosk-points-icon[data-v-255fc987] {\n  font-size: 1.8rem;\n  flex-shrink: 0;\n  animation: pulse 1.5s ease-in-out infinite;\n}\n.kiosk-points-text[data-v-255fc987] {\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n}\n.kiosk-points-name[data-v-255fc987] {\n  font-size: 0.85rem;\n  color: var(--kiosk-text-muted);\n}\n.kiosk-points-value[data-v-255fc987] {\n  font-size: 1rem;\n  color: var(--kiosk-warning);\n}\n.kiosk-points-value strong[data-v-255fc987] {\n  color: var(--kiosk-warning);\n  font-weight: 700;\n}\n/* Fade-up transition for v-if */\n.fade-up-enter-active[data-v-255fc987] { transition: all 0.4s ease-out;\n}\n.fade-up-enter-from[data-v-255fc987] { opacity: 0; transform: translateY(12px);\n}\n\n/* Timer */\n.kiosk-confirmation-timer[data-v-255fc987] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.5rem;\n  width: 100%;\n  max-width: 320px;\n  animation: fadeUp-255fc987 0.5s ease-out 1.2s both;\n}\n.kiosk-timer-label[data-v-255fc987] {\n  font-size: 0.85rem;\n  color: var(--kiosk-text-muted);\n}\n.kiosk-timer-bar[data-v-255fc987] {\n  height: 5px;\n  background: var(--kiosk-surface-alt);\n  border-radius: 3px;\n  overflow: hidden;\n}\n.kiosk-timer-fill[data-v-255fc987] {\n  height: 100%;\n  background: linear-gradient(90deg, var(--kiosk-success), #00b894);\n  border-radius: 3px;\n  transition: width 1s linear;\n}\n\n/* CTA */\n.kiosk-btn-home[data-v-255fc987] {\n  background: linear-gradient(135deg, var(--kiosk-primary), var(--kiosk-primary-dark));\n  color: var(--kiosk-text-on-red);\n  border: none;\n  border-radius: 28px;\n  padding: 1.15rem 2.8rem;\n  font-size: 1.25rem;\n  font-weight: 900;\n  cursor: pointer;\n  box-shadow: 0 8px 24px rgba(244, 80, 30, 0.22);\n  transition: transform 0.1s, box-shadow 0.1s;\n  animation: fadeUp-255fc987 0.5s ease-out 1.3s both;\n}\n.kiosk-btn-home[data-v-255fc987]:active {\n  transform: scale(0.96);\n  box-shadow: 0 4px 14px rgba(244, 80, 30, 0.34);\n}\n@keyframes fadeUp-255fc987 {\nfrom { opacity: 0; transform: translateY(16px);\n}\nto   { opacity: 1; transform: translateY(0);\n}\n}\n.kiosk-btn-print[data-v-255fc987] {\n  background: var(--kiosk-surface);\n  border: 1.5px solid var(--kiosk-border);\n  color: var(--kiosk-text-muted);\n  border-radius: 50px;\n  font-size: 1rem;\n  padding: 0.75rem 2rem;\n  cursor: pointer;\n  transition: all 0.2s;\n  font-family: inherit;\n}\n.kiosk-btn-print[data-v-255fc987]:hover:not(:disabled) { background: var(--kiosk-surface-alt); color: var(--kiosk-text);\n}\n.kiosk-btn-print[data-v-255fc987]:disabled { opacity: 0.6; cursor: default;\n}\n.kiosk-btn-print.is-done[data-v-255fc987] { border-color: rgba(46,204,113,0.5); color: var(--kiosk-success);\n}\n.kiosk-btn-print.is-error[data-v-255fc987] { border-color: rgba(194, 30, 47, 0.5); color: var(--kiosk-error);\n}\n\n/* Receipt zone — visible when printing or fallback after print failure */\n.kiosk-receipt-zone[data-v-255fc987] { display: none;\n}\n.kiosk-receipt-zone[data-print-failed=\"true\"][data-v-255fc987] {\n  display: block !important;\n  max-width: 500px;\n  max-height: 80vh;\n  margin: 1.25rem auto;\n  padding: 1.25rem 1.5rem 1.5rem;\n  background: #fff;\n  border: 1px solid #e2e2e4;\n  border-radius: 16px;\n  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.08);\n  text-align: center;\n  color: #1f1f1f;\n  overflow-y: auto;\n  overscroll-behavior: contain;\n  -webkit-overflow-scrolling: touch;\n}\n.kiosk-fallback-receipt-title[data-v-255fc987] {\n  font-size: 1.35rem;\n  font-weight: 800;\n  margin: 0 0 0.75rem;\n}\n.kiosk-fallback-receipt-help[data-v-255fc987] {\n  font-size: 0.95rem;\n  color: #555;\n  margin: 0 0 1rem;\n  line-height: 1.45;\n}\n@media print {\nbody[data-v-255fc987] > * { display: none !important;\n}\n#kiosk-print-receipt[data-v-255fc987] {\n    display: block !important;\n    font-family: monospace;\n    width: 300px;\n    margin: 0 auto;\n    padding: 12px;\n    font-size: 14px;\n    color: #000;\n}\n}\n.kiosk-printer-fallback[data-v-255fc987] {\n  background: #fef3cd;\n  border: 2px solid #f59e0b;\n  border-radius: 12px;\n  padding: 20px;\n  margin: 16px 0;\n  text-align: center;\n}\n.kiosk-printer-fallback-label[data-v-255fc987] {\n  font-size: 1.1rem;\n  color: #92400e;\n  margin-bottom: 8px;\n}\n.kiosk-printer-fallback-number[data-v-255fc987] {\n  font-size: 3.5rem;\n  font-weight: 800;\n  color: #1f2937;\n  line-height: 1.2;\n  margin: 8px 0;\n}\n.kiosk-printer-fallback-hint[data-v-255fc987] {\n  font-size: 1rem;\n  color: #78350f;\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=style&index=0&id=8fd6c936&scoped=true&lang=css"
+/*!*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=style&index=0&id=8fd6c936&scoped=true&lang=css ***!
+  \*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-login-screen[data-v-8fd6c936] {\n  min-height: 100vh;\n  background: linear-gradient(160deg, #0f0f1a 0%, #1a1a2e 100%);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 2rem;\n}\n.kiosk-login-card[data-v-8fd6c936] {\n  background: rgba(255,255,255,0.04);\n  border: 1px solid rgba(255,255,255,0.1);\n  border-radius: 24px;\n  padding: 3rem 2.5rem;\n  width: 100%;\n  max-width: 420px;\n  display: flex;\n  flex-direction: column;\n  gap: 2rem;\n}\n.kiosk-login-logo[data-v-8fd6c936] {\n  text-align: center;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 0.5rem;\n}\n.kiosk-login-icon[data-v-8fd6c936] { font-size: 3rem;\n}\n.kiosk-login-title[data-v-8fd6c936] {\n  margin: 0;\n  font-size: 1.6rem;\n  font-weight: 800;\n  color: #fff;\n}\n.kiosk-login-sub[data-v-8fd6c936] {\n  margin: 0;\n  font-size: 0.9rem;\n  color: rgba(255,255,255,0.4);\n  text-transform: uppercase;\n  letter-spacing: 0.08em;\n}\n.kiosk-login-form[data-v-8fd6c936] {\n  display: flex;\n  flex-direction: column;\n  gap: 1.25rem;\n}\n.kiosk-login-auto[data-v-8fd6c936] {\n  align-items: stretch;\n}\n.kiosk-login-status[data-v-8fd6c936] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 0.85rem;\n}\n.kiosk-login-status-icon[data-v-8fd6c936] {\n  width: 22px;\n  height: 22px;\n  border-radius: 999px;\n  background: rgba(255,255,255,0.14);\n  color: rgba(255,255,255,0.72);\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  font-weight: 800;\n}\n.kiosk-login-status-text[data-v-8fd6c936] {\n  margin: 0;\n  color: rgba(255,255,255,0.78);\n  text-align: center;\n  font-size: 1rem;\n  font-weight: 600;\n}\n.kiosk-login-field[data-v-8fd6c936] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.4rem;\n}\n.kiosk-login-label[data-v-8fd6c936] {\n  font-size: 0.85rem;\n  font-weight: 600;\n  color: rgba(255,255,255,0.55);\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n}\n.kiosk-login-input[data-v-8fd6c936] {\n  background: rgba(255,255,255,0.07);\n  border: 1px solid rgba(255,255,255,0.14);\n  border-radius: 12px;\n  color: #fff;\n  font-size: 1rem;\n  padding: 0.85rem 1rem;\n  outline: none;\n  transition: border-color 0.2s;\n}\n.kiosk-login-input[data-v-8fd6c936]:focus { border-color: #f4501e;\n}\n.kiosk-login-input[data-v-8fd6c936]::-moz-placeholder { color: rgba(255,255,255,0.25);\n}\n.kiosk-login-input[data-v-8fd6c936]::placeholder { color: rgba(255,255,255,0.25);\n}\n.kiosk-login-input[data-v-8fd6c936]:disabled { opacity: 0.5;\n}\n.kiosk-login-hint[data-v-8fd6c936] {\n  margin: 0;\n  font-size: 0.78rem;\n  line-height: 1.35;\n  color: rgba(255,255,255,0.38);\n}\n.kiosk-login-hint-center[data-v-8fd6c936] {\n  text-align: center;\n}\n.kiosk-login-hint strong[data-v-8fd6c936] { color: rgba(255,255,255,0.55); font-weight: 600;\n}\n.kiosk-login-devhint[data-v-8fd6c936] {\n  margin: 0;\n  font-size: 0.74rem;\n  line-height: 1.4;\n  color: rgba(255,255,255,0.32);\n  text-align: center;\n}\n.kiosk-login-devhint code[data-v-8fd6c936] {\n  font-size: 0.85em;\n  padding: 0.1em 0.35em;\n  border-radius: 4px;\n  background: rgba(255,255,255,0.08);\n  color: rgba(255,255,255,0.65);\n}\n.kiosk-login-error[data-v-8fd6c936] {\n  margin: 0;\n  background: rgba(244,80,30,0.12);\n  border: 1px solid rgba(244,80,30,0.3);\n  border-radius: 10px;\n  padding: 0.7rem 1rem;\n  color: #ff6b7a;\n  font-size: 0.9rem;\n  text-align: center;\n}\n.kiosk-login-btn[data-v-8fd6c936] {\n  background: #f4501e;\n  color: #fff;\n  border: none;\n  border-radius: 50px;\n  padding: 1rem;\n  font-size: 1.05rem;\n  font-weight: 700;\n  cursor: pointer;\n  transition: background 0.2s, opacity 0.2s;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 52px;\n}\n.kiosk-login-btn[data-v-8fd6c936]:hover:not(:disabled) { background: #c0001a;\n}\n.kiosk-login-btn[data-v-8fd6c936]:disabled { opacity: 0.45; cursor: default;\n}\n.kiosk-login-secondary-btn[data-v-8fd6c936] {\n  background: transparent;\n  color: rgba(255,255,255,0.82);\n  border: 1px solid rgba(255,255,255,0.16);\n  border-radius: 50px;\n  padding: 0.95rem 1rem;\n  font-size: 0.96rem;\n  font-weight: 700;\n  cursor: pointer;\n}\n.kiosk-login-spinner[data-v-8fd6c936] {\n  width: 22px; height: 22px;\n  border: 3px solid rgba(255,255,255,0.3);\n  border-top-color: #fff;\n  border-radius: 50%;\n  animation: kspin-8fd6c936 0.7s linear infinite;\n  display: inline-block;\n}\n@keyframes kspin-8fd6c936 {\nto { transform: rotate(360deg);\n}\n}\n.kiosk-login-footer[data-v-8fd6c936] {\n  text-align: center;\n  font-size: 0.78rem;\n  color: rgba(255,255,255,0.22);\n  margin: 0;\n}\n.fade-enter-active[data-v-8fd6c936], .fade-leave-active[data-v-8fd6c936] { transition: opacity 0.25s;\n}\n.fade-enter-from[data-v-8fd6c936], .fade-leave-to[data-v-8fd6c936] { opacity: 0;\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=style&index=0&id=48956b68&scoped=true&lang=css"
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=style&index=0&id=48956b68&scoped=true&lang=css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n/* FoodKing brand V3.3 (2026-05-10) — Loyalty page warmth + ergonomie 32\".\n   Owner gate : \"trop blanc-sur-blanc bancaire, faut chaleur restaurant\".\n   Subtle warm gradient + yellow loyalty icon prominent + card centered. */\n.kiosk-loyalty-screen[data-v-48956b68] {\n  min-height: 100vh;\n  background:\n    radial-gradient(ellipse at top, #FFF7ED 0%, #FFFFFF 45%),\n    radial-gradient(ellipse at bottom, #FFF7E0 0%, #FFFFFF 50%),\n    #FFFFFF;\n  display: flex;\n  flex-direction: column;\n  color: #0F0F0F;\n  padding-bottom: 2rem;\n}\n.kiosk-loyalty-header[data-v-48956b68] {\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n  padding: 1.25rem 2rem;\n  border-bottom: none;\n}\n.kiosk-back-btn[data-v-48956b68] {\n  background: #F7F7F7;\n  border: 1px solid #E5E5E5;\n  border-radius: 12px;\n  width: 52px;\n  height: 52px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  color: #0F0F0F;\n  transition: background 0.2s;\n}\n.kiosk-back-btn[data-v-48956b68]:hover { background: #FFE8DD; color: #F4501E;\n}\n.kiosk-loyalty-title[data-v-48956b68] {\n  font-size: 1.6rem;\n  font-weight: 700;\n  letter-spacing: 0.02em;\n  color: #0F0F0F;\n}\n.kiosk-loyalty-step[data-v-48956b68] {\n  flex: 1;\n  display: flex;\n  align-items: center; /* V3.3: vertical center pour ergo 32\" portrait */\n  justify-content: center;\n  padding: 1rem 1.5rem;\n}\n\n/* Card warmth V3.3 — yellow ribbon top + Cayenne shadow + plus accueillant */\n.kiosk-loyalty-card[data-v-48956b68] {\n  position: relative;\n  width: 100%;\n  max-width: 600px;\n  background: #FFFFFF;\n  border-radius: 28px;\n  padding: 2.5rem 2rem 2rem;\n  border: 1.5px solid #FFE8DD;\n  box-shadow:\n    0 12px 40px rgba(244, 80, 30, 0.12),\n    0 4px 12px rgba(15, 15, 15, 0.04);\n  display: flex;\n  flex-direction: column;\n  gap: 1.25rem;\n}\n\n/* Decorative yellow accent banner top of card (warm restaurant feel) */\n.kiosk-loyalty-card[data-v-48956b68]::before {\n  content: '';\n  position: absolute;\n  top: 0;\n  left: 24px;\n  right: 24px;\n  height: 6px;\n  background: linear-gradient(90deg, #F5C518 0%, #F4501E 100%);\n  border-radius: 0 0 6px 6px;\n}\n.kiosk-loyalty-subtitle[data-v-48956b68] {\n  font-size: 1.1rem;\n  color: #5A5A5A;\n  text-align: center;\n}\n.kiosk-loyalty-input-row[data-v-48956b68] {\n  position: relative;\n}\n.kiosk-loyalty-input[data-v-48956b68] {\n  width: 100%;\n  background: #FFFFFF;\n  border: 2px solid #E5E5E5;\n  border-radius: 14px;\n  padding: 1rem 3rem 1rem 1.25rem;\n  font-size: 1.5rem;\n  color: #0F0F0F;\n  text-align: center;\n  letter-spacing: 0.1em;\n  outline: none;\n  transition: border-color 0.2s;\n  box-sizing: border-box;\n}\n.kiosk-loyalty-input[data-v-48956b68]:focus,\n.kiosk-loyalty-input--active[data-v-48956b68] {\n  border-color: #F4501E;\n}\n.kiosk-loyalty-input[data-v-48956b68]::-moz-placeholder { color: #8A8A8A;\n}\n.kiosk-loyalty-input[data-v-48956b68]::placeholder { color: #8A8A8A;\n}\n.kiosk-btn-clear[data-v-48956b68] {\n  position: absolute;\n  right: 1rem;\n  top: 50%;\n  transform: translateY(-50%);\n  background: none;\n  border: none;\n  color: #8A8A8A;\n  font-size: 1.2rem;\n  cursor: pointer;\n  padding: 0.25rem;\n}\n\n/* Numpad */\n.kiosk-numpad[data-v-48956b68] {\n  display: grid;\n  grid-template-columns: repeat(3, 1fr);\n  gap: 0.75rem;\n}\n.kiosk-numpad-btn[data-v-48956b68] {\n  background: #FFFFFF;\n  border: 1.5px solid #E5E5E5;\n  border-radius: 14px;\n  height: 64px;\n  font-size: 1.5rem;\n  font-weight: 700;\n  color: #0F0F0F;\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition: background 0.15s, transform 0.1s, border-color 0.15s;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.kiosk-numpad-btn[data-v-48956b68]:hover {\n  background: #FAFAFA;\n  border-color: #F4501E;\n}\n.kiosk-numpad-btn[data-v-48956b68]:active {\n  background: #FFE8DD;\n  border-color: #F4501E;\n  color: #F4501E;\n  transform: scale(0.95);\n}\n.kiosk-numpad-btn.wide[data-v-48956b68] {\n  background: #FAFAFA;\n  color: #5A5A5A;\n}\n.kiosk-numpad-btn.wide[data-v-48956b68]:active {\n  background: #FFE8DD;\n  color: #F4501E;\n}\n.kiosk-loyalty-error[data-v-48956b68] {\n  background: rgba(220,38,38,0.08);\n  border: 1px solid rgba(220,38,38,0.4);\n  border-radius: 10px;\n  padding: 0.75rem 1rem;\n  color: #C21E2F;\n  text-align: center;\n  font-size: 0.95rem;\n}\n.kiosk-btn-primary[data-v-48956b68] {\n  background: #F4501E;\n  color: #FFFFFF;\n  border: none;\n  border-radius: 16px;\n  padding: 1rem 2rem;\n  font-size: 1.1rem;\n  font-weight: 700;\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 0.5rem;\n  transition: opacity 0.2s, transform 0.1s;\n}\n.kiosk-btn-primary[data-v-48956b68]:disabled {\n  opacity: 0.4;\n  cursor: default;\n}\n.kiosk-btn-primary.full[data-v-48956b68] { width: 100%;\n}\n.kiosk-btn-primary[data-v-48956b68]:not(:disabled):active { transform: scale(0.97);\n}\n\n/* V3.4 (2026-05-10) — Owner gate: bouton skip + register invisibles\n   (couleurs trop pâles sur fond blanc). Renforcement contraste accessibilité. */\n.kiosk-loyalty-skip[data-v-48956b68] {\n  background: none;\n  border: none;\n  color: #5A5A5A;\n  font-size: 1rem;\n  font-weight: 600;\n  text-decoration: underline;\n  cursor: pointer;\n  text-align: center;\n  padding: 0.75rem;\n}\n.kiosk-loyalty-skip[data-v-48956b68]:hover { color: #F4501E;\n}\n.kiosk-loyalty-register-btn[data-v-48956b68] {\n  background: linear-gradient(135deg, #F5C518 0%, #E0B214 100%);\n  border: none;\n  border-radius: 14px;\n  color: #0F0F0F;\n  font-size: 1rem;\n  font-weight: 800;\n  padding: 0.85rem 1.25rem;\n  cursor: pointer;\n  text-align: center;\n  letter-spacing: 0.2px;\n  box-shadow: 0 4px 12px rgba(245, 197, 24, 0.32);\n  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;\n}\n.kiosk-loyalty-register-btn[data-v-48956b68]:hover {\n  transform: translateY(-1px);\n  filter: brightness(1.05);\n  box-shadow: 0 6px 16px rgba(245, 197, 24, 0.42);\n}\n.kiosk-loyalty-register-btn[data-v-48956b68]:active { transform: translateY(0);\n}\n.kiosk-register-fields[data-v-48956b68] {\n  display: flex;\n  flex-direction: column;\n  gap: 1rem;\n}\n.kiosk-field-group[data-v-48956b68] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.35rem;\n}\n.kiosk-field-label[data-v-48956b68] {\n  font-size: 0.8rem;\n  text-transform: uppercase;\n  letter-spacing: 0.08em;\n  color: #8A8A8A;\n}\n.kiosk-spinner-inline[data-v-48956b68] {\n  display: inline-block;\n  width: 20px;\n  height: 20px;\n  border: 3px solid rgba(0,0,0,0.3);\n  border-top-color: #000;\n  border-radius: 50%;\n  animation: spin-48956b68 0.7s linear infinite;\n}\n@keyframes spin-48956b68 {\nto { transform: rotate(360deg);\n}\n}\n\n/* Profil client */\n.kiosk-loyalty-profile[data-v-48956b68] {\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n}\n.kiosk-loyalty-avatar[data-v-48956b68] {\n  width: 64px;\n  height: 64px;\n  border-radius: 50%;\n  background: linear-gradient(135deg, #FFD700, #FFA500);\n  color: #000;\n  font-size: 1.4rem;\n  font-weight: 800;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n}\n.kiosk-loyalty-info h2[data-v-48956b68] {\n  font-size: 1.3rem;\n  font-weight: 700;\n  margin: 0;\n}\n.kiosk-loyalty-member-since[data-v-48956b68] {\n  color: #8A8A8A;\n  font-size: 0.85rem;\n  margin: 0.15rem 0 0;\n}\n\n/* Points badge */\n.kiosk-loyalty-points-badge[data-v-48956b68] {\n  background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.1));\n  border: 1px solid rgba(255,215,0,0.3);\n  border-radius: 16px;\n  padding: 1.25rem;\n  text-align: center;\n  display: flex;\n  flex-direction: column;\n  gap: 0.25rem;\n}\n.kiosk-loyalty-points-value[data-v-48956b68] {\n  font-size: 3rem;\n  font-weight: 900;\n  color: #FFD700;\n  line-height: 1;\n}\n.kiosk-loyalty-points-label[data-v-48956b68] {\n  color: #5A5A5A;\n  font-size: 0.9rem;\n}\n.kiosk-loyalty-points-equiv[data-v-48956b68] {\n  font-size: 1rem;\n  font-weight: 600;\n  color: #4ade80;\n  margin-top: 0.25rem;\n}\n\n/* Progress bar */\n.kiosk-loyalty-progress-wrap[data-v-48956b68] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.4rem;\n}\n.kiosk-loyalty-progress-bar[data-v-48956b68] {\n  height: 8px;\n  background: #F7F7F7;\n  border-radius: 4px;\n  overflow: hidden;\n}\n.kiosk-loyalty-progress-fill[data-v-48956b68] {\n  height: 100%;\n  background: linear-gradient(90deg, #FFD700, #FFA500);\n  border-radius: 4px;\n  transition: width 0.6s ease;\n}\n.kiosk-loyalty-progress-label[data-v-48956b68] {\n  font-size: 0.8rem;\n  color: #8A8A8A;\n  text-align: center;\n  margin: 0;\n}\n\n/* Options */\n.kiosk-loyalty-options[data-v-48956b68] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.75rem;\n}\n.kiosk-loyalty-option[data-v-48956b68] {\n  display: flex;\n  align-items: center;\n  gap: 1rem;\n  padding: 1rem 1.25rem;\n  background: #FAFAFA;\n  border: 1.5px solid #E5E5E5;\n  border-radius: 16px;\n  cursor: pointer;\n  text-align: left;\n  transition: border-color 0.2s, background 0.2s;\n  color: #0F0F0F;\n  width: 100%;\n}\n.kiosk-loyalty-option.selected[data-v-48956b68] {\n  border-color: #FFD700;\n  background: rgba(255,215,0,0.1);\n}\n.kiosk-loyalty-option-icon[data-v-48956b68] {\n  width: 52px;\n  height: 52px;\n  border-radius: 12px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n}\n.kiosk-loyalty-option-icon.green[data-v-48956b68] { background: rgba(74,222,128,0.15); color: #4ade80;\n}\n.kiosk-loyalty-option-icon.gray[data-v-48956b68]  { background: #F7F7F7; color: #8A8A8A;\n}\n.kiosk-loyalty-option-text[data-v-48956b68] {\n  display: flex;\n  flex-direction: column;\n  gap: 0.2rem;\n}\n.kiosk-loyalty-option-text strong[data-v-48956b68] { font-size: 1rem; font-weight: 700;\n}\n.kiosk-loyalty-option-text span[data-v-48956b68]   { font-size: 0.85rem; color: #8A8A8A;\n}\n.kiosk-loyalty-option.selected .kiosk-loyalty-option-text span[data-v-48956b68] { color: rgba(255,215,0,0.7);\n}\n.kiosk-loyalty-not-enough[data-v-48956b68] {\n  background: #FAFAFA;\n  border-radius: 12px;\n  padding: 1rem;\n  font-size: 0.95rem;\n  color: #5A5A5A;\n  text-align: center;\n  line-height: 1.6;\n}\n.green[data-v-48956b68] { color: #4ade80;\n}\n\n/* Confirmation step */\n.kiosk-loyalty-confirm-card[data-v-48956b68] {\n  align-items: center;\n  text-align: center;\n  padding: 3rem 2rem;\n}\n.kiosk-loyalty-confirm-icon[data-v-48956b68] {\n  margin-bottom: 1rem;\n}\n.kiosk-loyalty-confirm-title[data-v-48956b68] {\n  font-size: 1.8rem;\n  font-weight: 800;\n  margin: 0;\n}\n.kiosk-loyalty-confirm-amount[data-v-48956b68] {\n  font-size: 3rem;\n  font-weight: 900;\n  color: #4ade80;\n  margin: 0.5rem 0;\n}\n.kiosk-loyalty-confirm-sub[data-v-48956b68] {\n  color: #8A8A8A;\n  font-size: 1rem;\n  margin-bottom: 1rem;\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=style&index=0&id=7f6954b0&scoped=true&lang=css"
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=style&index=0&id=7f6954b0&scoped=true&lang=css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-payment[data-v-7f6954b0] {\n  width: 100vw;\n  height: 100vh;\n  background: var(--kiosk-page-bg, var(--kiosk-bg));\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n  color: var(--kiosk-text);\n}\n\n/* Header — thème clair : texte foncé lisible */\n.kiosk-pay-header[data-v-7f6954b0] {\n  display: flex;\n  align-items: center;\n  gap: 20px;\n  padding: 26px 34px 22px;\n  background: var(--kiosk-surface);\n  border-bottom: 1px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-sticky);\n  flex-shrink: 0;\n}\n.kiosk-pay-back[data-v-7f6954b0] {\n  width: 60px;\n  height: 60px;\n  border-radius: 18px;\n  border: 1.5px solid var(--kiosk-border);\n  background: var(--kiosk-bg);\n  color: var(--kiosk-text);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: all 0.15s ease;\n}\n.kiosk-pay-back[data-v-7f6954b0]:active { background: var(--kiosk-surface-alt); transform: scale(0.95);\n}\n.kiosk-pay-back[data-v-7f6954b0]:disabled { opacity: 0.4; cursor: not-allowed;\n}\n.kiosk-pay-header-info[data-v-7f6954b0] { flex: 1;\n}\n.kiosk-pay-title[data-v-7f6954b0] {\n  font-size: clamp(30px, 4vw, 44px);\n  font-weight: 900;\n  color: var(--kiosk-text);\n  margin: 0 0 4px;\n  text-transform: uppercase;\n}\n.kiosk-pay-total-label[data-v-7f6954b0] {\n  font-size: 16px;\n  color: var(--kiosk-text-muted);\n  margin: 0;\n}\n.kiosk-pay-total-label strong[data-v-7f6954b0] { color: var(--kiosk-text); font-size: 18px;\n}\n.kiosk-pay-amount-card[data-v-7f6954b0] {\n  margin: 28px auto 0;\n  width: min(720px, calc(100vw - 64px));\n  min-height: 168px;\n  border-radius: 34px;\n  background: linear-gradient(135deg, var(--kiosk-primary), var(--kiosk-primary-dark));\n  color: var(--kiosk-text-on-red);\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 10px;\n  box-shadow: var(--kiosk-shadow-cta);\n  text-align: center;\n}\n.kiosk-pay-amount-card span[data-v-7f6954b0] {\n  font-size: 18px;\n  font-weight: 900;\n  letter-spacing: 0.12em;\n  text-transform: uppercase;\n  opacity: 0.86;\n}\n.kiosk-pay-amount-card strong[data-v-7f6954b0] {\n  font-size: clamp(56px, 9vw, 96px);\n  font-weight: 900;\n  line-height: 0.92;\n  letter-spacing: 0;\n}\n\n/* Grille méthodes — cartes centrées, pas bandeaux edge-to-edge */\n.kiosk-pay-methods-outer[data-v-7f6954b0] {\n  flex: 1;\n  overflow-y: auto;\n  padding: 28px 32px 20px;\n  scrollbar-width: none;\n  display: flex;\n  justify-content: center;\n  align-items: flex-start;\n}\n.kiosk-pay-methods-outer[data-v-7f6954b0]::-webkit-scrollbar { display: none;\n}\n.kiosk-pay-methods[data-v-7f6954b0] {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));\n  gap: 22px;\n  width: 100%;\n  max-width: 1000px;\n  align-content: start;\n}\n.kiosk-pay-method[data-v-7f6954b0] {\n  display: flex;\n  align-items: center;\n  gap: 20px;\n  padding: 26px 28px;\n  min-height: 138px;\n  background: var(--kiosk-surface);\n  border-radius: 28px;\n  border: 2px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-card);\n  cursor: pointer;\n  transition: all 0.2s ease;\n  position: relative;\n}\n.kiosk-pay-method[data-v-7f6954b0]:active { transform: scale(0.99);\n}\n.kiosk-pay-method.disabled[data-v-7f6954b0] {\n  cursor: not-allowed;\n  opacity: 0.5;\n  transform: none;\n}\n.kiosk-pay-method.selected[data-v-7f6954b0] {\n  border-color: var(--kiosk-primary);\n  background: var(--kiosk-surface);\n  box-shadow: 0 0 0 2px var(--kiosk-primary), var(--kiosk-shadow-lift);\n}\n.kiosk-pay-method-icon[data-v-7f6954b0] {\n  width: 86px;\n  height: 86px;\n  border-radius: 50%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n}\n\n/* Icônes métier payment : gradient brand spécifique carte/cash/TR.\n   Couleurs conservées hors tokens car elles encodent la sémantique de moyen de\n   paiement (bleu CB / vert cash / orange TR), reconnues internationalement. */\n.kiosk-pay-method-icon.card[data-v-7f6954b0]   { background: linear-gradient(135deg, #1a3a6b, var(--kiosk-info, #2563EB));\n}\n.kiosk-pay-method-icon.cash[data-v-7f6954b0]   { background: linear-gradient(135deg, #0a4a20, var(--kiosk-success, #16a34a));\n}\n.kiosk-pay-method-icon.tr[data-v-7f6954b0]     { background: linear-gradient(135deg, #7a2000, #ea580c);\n}\n.kiosk-pay-method-info[data-v-7f6954b0] { flex: 1; min-width: 0;\n}\n.kiosk-pay-method-info h3[data-v-7f6954b0] {\n  font-size: 25px;\n  font-weight: 900;\n  color: var(--kiosk-text);\n  margin: 0 0 4px;\n}\n.kiosk-pay-method-info p[data-v-7f6954b0] {\n  font-size: 15px;\n  color: var(--kiosk-text-muted);\n  margin: 0;\n}\n.kiosk-pay-method-check[data-v-7f6954b0] {\n  width: 36px;\n  height: 36px;\n  border-radius: 50%;\n  background: var(--kiosk-primary);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  animation: popIn-7f6954b0 0.2s cubic-bezier(0.34,1.56,0.64,1);\n}\n@keyframes popIn-7f6954b0 {\nfrom { transform: scale(0); opacity: 0;\n}\nto   { transform: scale(1); opacity: 1;\n}\n}\n\n/* Processing */\n.kiosk-pay-processing[data-v-7f6954b0] {\n  flex: 1;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 24px;\n  padding: 40px;\n  text-align: center;\n}\n.kiosk-pay-processing-ring[data-v-7f6954b0] {\n  width: 120px;\n  height: 120px;\n  border-radius: 50%;\n  border: 4px solid var(--kiosk-primary-soft);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  animation: spin-7f6954b0 1.5s linear infinite;\n}\n@keyframes spin-7f6954b0 {\nto { transform: rotate(360deg);\n}\n}\n.kiosk-pay-processing-ring-inner[data-v-7f6954b0] {\n  width: 96px;\n  height: 96px;\n  border-radius: 50%;\n  background: var(--kiosk-primary-soft);\n  border: 4px solid var(--kiosk-primary);\n  border-block-start-color: transparent;\n  animation: spin-7f6954b0 0.8s linear infinite reverse;\n}\n.kiosk-pay-processing h2[data-v-7f6954b0] {\n  font-size: 28px;\n  font-weight: 800;\n  color: var(--kiosk-text);\n  margin: 0;\n}\n.kiosk-pay-processing p[data-v-7f6954b0] {\n  font-size: 16px;\n  color: var(--kiosk-text-muted);\n  margin: 0;\n}\n\n/* Erreur */\n.kiosk-pay-error[data-v-7f6954b0] {\n  background: var(--kiosk-primary-soft);\n  border: 1px solid var(--kiosk-primary);\n  color: var(--kiosk-error);\n  padding: 14px 20px;\n  border-radius: 12px;\n  font-size: 15px;\n  text-align: center;\n  margin-bottom: 8px;\n}\n.kiosk-pay-offline-alert[data-v-7f6954b0] {\n  margin: 0 20px 12px;\n  border: 1px solid rgba(215, 38, 61, 0.28);\n  border-radius: 12px;\n  background: rgba(215, 38, 61, 0.08);\n  color: #8f1022;\n  font-size: 14px;\n  font-weight: 700;\n  line-height: 1.35;\n  padding: 12px 14px;\n  text-align: center;\n}\n\n/* Confirmer — largeur max centrée (borne) */\n.kiosk-pay-confirm[data-v-7f6954b0] {\n  padding: 20px 32px 34px;\n  flex-shrink: 0;\n}\n.kiosk-pay-confirm-inner[data-v-7f6954b0] {\n  display: flex;\n  justify-content: center;\n  width: 100%;\n}\n.kiosk-btn-confirm[data-v-7f6954b0] {\n  width: 100%;\n  max-width: 680px;\n  min-height: 92px;\n  height: auto;\n  padding: 20px 32px;\n  /* [iter15-mega-fix C-012 round-7 2026-05-10] Pin the Confirmer CTA to the\n     Cayenne brand-red token directly with a solid fallback (#F4501E) instead\n     of relying on the resolved `--kiosk-primary` chain. With the default\n     theme now being light (C-011), `--kiosk-primary` = #F4501E ; we still\n     keep the var() so dark-mode operators get the correct brand red. */\n  background: var(--kiosk-primary, #F4501E);\n  color: var(--kiosk-text-on-red, #FFFFFF);\n  border: none;\n  border-radius: 30px;\n  font-size: 26px;\n  font-weight: 900;\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  box-shadow: var(--kiosk-shadow-cta);\n  transition: all 0.15s ease;\n}\n.kiosk-btn-confirm[data-v-7f6954b0]:disabled {\n  /* [iter15-mega-fix C-012 round-7 2026-05-10] Raise opacity from 0.4 to\n     0.65 so disabled state stays readable (WCAG AA against white kiosk bg).\n     Add an explicit dark-grey overlay so the disabled button no longer reads\n     as \"pale pink\" against the soft Cayenne bg. */\n  opacity: 0.65;\n  background: #C9C9C9;\n  color: #4A4A4A;\n  cursor: not-allowed;\n  box-shadow: none;\n}\n.kiosk-btn-confirm[data-v-7f6954b0]:not(:disabled):active {\n  transform: scale(0.98);\n  box-shadow: var(--kiosk-shadow-card);\n}\n\n/* TPE terminal waiting overlay — V3.4 owner gate (2026-05-10) :\n   ramené en light mode pour cohérence avec rest of kiosk flow. Le focus\n   haptique sur CB reste assuré par l'animation pulse + spinner Cayenne. */\n.kiosk-tpe-overlay[data-v-7f6954b0] {\n  position: fixed; inset: 0; z-index: 100;\n  background: #FFFFFF;\n  display: flex; flex-direction: column;\n  align-items: center; justify-content: center;\n  gap: 1.5rem; text-align: center; padding: 2rem;\n  color: #0F0F0F;\n}\n.kiosk-tpe-card-anim[data-v-7f6954b0] {\n  position: relative;\n  width: 160px; height: 160px;\n  display: flex; align-items: center; justify-content: center;\n}\n.kiosk-tpe-ring[data-v-7f6954b0] {\n  position: absolute; inset: 0;\n  border: 3px solid var(--kiosk-primary);\n  border-radius: 50%;\n  opacity: 0.4;\n  animation: tpe-pulse-7f6954b0 1.8s ease-out infinite;\n}\n@keyframes tpe-pulse-7f6954b0 {\n0% { transform: scale(0.6); opacity: 0.9;\n}\n100% { transform: scale(1.4); opacity: 0;\n}\n}\n.kiosk-tpe-card-icon[data-v-7f6954b0] {\n  position: relative; z-index: 2;\n  background: #FFE8DD;\n  border: 2px solid #F4501E;\n  border-radius: 50%;\n  width: 100px; height: 100px;\n  display: flex; align-items: center; justify-content: center;\n  color: #F4501E;\n}\n.kiosk-tpe-title[data-v-7f6954b0] {\n  font-size: 1.8rem; font-weight: 800; color: #0F0F0F; margin: 0;\n}\n.kiosk-tpe-help[data-v-7f6954b0] {\n  margin: 0.5rem 0 0;\n  font-size: 0.95rem;\n  line-height: 1.35;\n  color: #5A5A5A;\n  max-width: 22rem;\n  text-align: center;\n}\n.kiosk-tpe-sub[data-v-7f6954b0] {\n  font-size: 1rem; color: #5A5A5A; margin: 0; max-width: 340px;\n}\n.kiosk-tpe-spinner[data-v-7f6954b0] {\n  width: 64px; height: 64px;\n  border: 5px solid #FFE8DD;\n  border-top-color: #F4501E;\n  border-radius: 50%;\n  animation: tpe-spin-7f6954b0 0.8s linear infinite;\n}\n@keyframes tpe-spin-7f6954b0 {\nto { transform: rotate(360deg);\n}\n}\n.kiosk-tpe-cancel[data-v-7f6954b0] {\n  margin-top: 8px;\n  padding: 14px 40px;\n  background: #FFFFFF;\n  border: 1.5px solid #E5E5E5;\n  border-radius: 14px;\n  color: #5A5A5A;\n  font-size: 16px;\n  font-weight: 600;\n  cursor: pointer;\n  transition: all 0.15s;\n}\n.kiosk-tpe-cancel[data-v-7f6954b0]:hover { background: #FFE8DD; color: #F4501E; border-color: #F4501E;\n}\n\n/* Focus visible WCAG 2.4.7 — méthodes paiement navigables au clavier */\n.kiosk-pay-method[data-v-7f6954b0]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, var(--kiosk-primary));\n  outline-offset: 3px;\n}\n\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=style&index=0&id=b8cebce2&scoped=true&lang=css"
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=style&index=0&id=b8cebce2&scoped=true&lang=css ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-upsell[data-v-b8cebce2] {\n  width: 100vw;\n  height: 100vh;\n  background: var(--kiosk-page-bg, var(--kiosk-bg));\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n}\n.kiosk-upsell-loading[data-v-b8cebce2] {\n  flex: 1;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-spinner[data-v-b8cebce2] {\n  width: 48px;\n  height: 48px;\n  border: 3px solid var(--kiosk-border);\n  border-top-color: var(--kiosk-primary);\n  border-radius: 50%;\n  animation: spin-b8cebce2 0.8s linear infinite;\n}\n@keyframes spin-b8cebce2 {\nto { transform: rotate(360deg);\n}\n}\n.kiosk-upsell-header[data-v-b8cebce2] {\n  padding: 30px 32px 22px;\n  text-align: center;\n  flex-shrink: 0;\n  border-bottom: 1px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  box-shadow: var(--kiosk-shadow-sticky);\n}\n.kiosk-upsell-title[data-v-b8cebce2] {\n  font-size: clamp(34px, 4vw, 48px);\n  font-weight: 900;\n  color: var(--kiosk-text);\n  margin: 0 0 6px;\n  letter-spacing: 0;\n  text-transform: uppercase;\n}\n.kiosk-upsell-subtitle[data-v-b8cebce2] {\n  font-size: 16px;\n  color: var(--kiosk-text-muted);\n  margin: 0;\n}\n.kiosk-upsell-grid[data-v-b8cebce2] {\n  flex: 1;\n  overflow-y: auto;\n  padding: 26px 30px 12px;\n  display: grid;\n  grid-template-columns: repeat(3, minmax(0, 1fr));\n  gap: 22px;\n  align-content: start;\n  scrollbar-width: none;\n}\n.kiosk-upsell-grid[data-v-b8cebce2]::-webkit-scrollbar { display: none;\n}\n.kiosk-upsell-card[data-v-b8cebce2] {\n  background: var(--kiosk-surface);\n  border-radius: 28px;\n  border: 1.5px solid var(--kiosk-border);\n  overflow: hidden;\n  cursor: pointer;\n  position: relative;\n  transition: all 0.2s ease;\n  box-shadow: var(--kiosk-shadow-card);\n}\n.kiosk-upsell-card.selected[data-v-b8cebce2] {\n  border-color: var(--kiosk-primary);\n  box-shadow: 0 0 0 3px var(--kiosk-primary-soft);\n}\n.kiosk-upsell-card[data-v-b8cebce2]:active { transform: scale(0.98);\n}\n.kiosk-upsell-card[data-v-b8cebce2]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, var(--kiosk-primary));\n  outline-offset: 3px;\n}\n.kiosk-upsell-img-wrap[data-v-b8cebce2] {\n  height: 176px;\n  overflow: hidden;\n  background: var(--kiosk-product-media-bg, var(--kiosk-surface-alt));\n}\n.kiosk-upsell-img[data-v-b8cebce2] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n  transition: transform 0.3s ease;\n}\n.kiosk-upsell-card:active .kiosk-upsell-img[data-v-b8cebce2] { transform: scale(1.03);\n}\n.kiosk-upsell-img-fallback[data-v-b8cebce2] {\n  width: 100%;\n  height: 100%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 56px;\n  background: var(--kiosk-surface-alt);\n}\n.kiosk-upsell-info[data-v-b8cebce2] {\n  padding: 16px 18px 20px;\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n}\n.kiosk-upsell-item-name[data-v-b8cebce2] {\n  font-size: 18px;\n  font-weight: 900;\n  color: var(--kiosk-text);\n  margin: 0;\n  line-height: 1.25;\n  min-height: 38px;\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n.kiosk-upsell-item-price[data-v-b8cebce2] {\n  font-size: 22px;\n  font-weight: 900;\n  color: var(--kiosk-primary);\n}\n.kiosk-upsell-check[data-v-b8cebce2] {\n  position: absolute;\n  top: 10px;\n  right: 10px;\n  width: 32px;\n  height: 32px;\n  background: var(--kiosk-primary);\n  border-radius: 50%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  box-shadow: var(--kiosk-shadow-card);\n  outline: 2px solid var(--kiosk-surface);\n}\n.kiosk-upsell-add[data-v-b8cebce2] {\n  position: absolute;\n  bottom: 10px;\n  right: 10px;\n  width: 34px;\n  height: 34px;\n  border-radius: 50%;\n  background: var(--kiosk-primary);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 22px;\n  font-weight: 300;\n  color: var(--kiosk-text-on-red);\n  outline: 2px solid var(--kiosk-surface);\n}\n.kiosk-upsell-card.selected .kiosk-upsell-add[data-v-b8cebce2] { display: none;\n}\n.kiosk-upsell-actions[data-v-b8cebce2] {\n  padding: 20px 30px 28px;\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  flex-shrink: 0;\n  background: var(--kiosk-surface);\n  border-top: 1px solid var(--kiosk-border);\n}\n.kiosk-btn-primary[data-v-b8cebce2] {\n  width: 100%;\n  min-height: 76px;\n  height: auto;\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border: none;\n  border-radius: 26px;\n  font-size: 22px;\n  font-weight: 900;\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 0 24px;\n  box-shadow: var(--kiosk-shadow-cta);\n  transition: all 0.15s ease;\n}\n.kiosk-btn-primary[data-v-b8cebce2]:active { transform: scale(0.98);\n}\n.kiosk-btn-price[data-v-b8cebce2] {\n  font-size: 17px;\n  font-weight: 800;\n  background: rgba(255,255,255,0.18);\n  padding: 6px 14px;\n  border-radius: 10px;\n}\n.kiosk-upsell-skip[data-v-b8cebce2] {\n  width: 100%;\n  min-height: 60px;\n  height: auto;\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text-muted);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 20px;\n  font-size: 17px;\n  font-weight: 800;\n  cursor: pointer;\n  transition: all 0.15s ease;\n}\n.kiosk-upsell-skip[data-v-b8cebce2]:active { background: var(--kiosk-surface-alt); color: var(--kiosk-text);\n}\n.kiosk-upsell-skip-timer[data-v-b8cebce2] {\n  font-size: 0.8em;\n  color: var(--kiosk-text-muted);\n  margin-left: 0.4rem;\n}\n.kiosk-upsell-autoskip-bar[data-v-b8cebce2] {\n  width: 100%;\n  height: 3px;\n  background: var(--kiosk-border);\n  border-radius: 2px;\n  overflow: hidden;\n  margin-top: 0.5rem;\n}\n.kiosk-upsell-autoskip-fill[data-v-b8cebce2] {\n  height: 100%;\n  background: var(--kiosk-primary);\n  border-radius: 2px;\n  transition: width 0.1s linear;\n}\n.pop-enter-active[data-v-b8cebce2] { animation: popIn-b8cebce2 0.25s cubic-bezier(0.34,1.56,0.64,1);\n}\n.pop-leave-active[data-v-b8cebce2] { animation: popIn-b8cebce2 0.2s ease reverse;\n}\n@keyframes popIn-b8cebce2 {\nfrom { transform: scale(0); opacity: 0;\n}\nto   { transform: scale(1); opacity: 1;\n}\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=style&index=0&id=0f435cc1&scoped=true&lang=css"
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=style&index=0&id=0f435cc1&scoped=true&lang=css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-waiting[data-v-0f435cc1] {\n  width: 100vw;\n  height: 100vh;\n  background: var(--kiosk-page-bg, var(--kiosk-bg));\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: space-between;\n  overflow: hidden;\n  position: relative;\n  transition: background 0.5s ease;\n}\n.kiosk-waiting.ready[data-v-0f435cc1] { background: var(--kiosk-page-bg, var(--kiosk-bg));\n}\n\n/* Fond animé */\n.kiosk-waiting-bg[data-v-0f435cc1] {\n  position: absolute;\n  inset: 0;\n  background: var(--kiosk-product-media-bg, transparent);\n  animation: bgPulse-0f435cc1 4s ease-in-out infinite;\n}\n.kiosk-waiting.ready .kiosk-waiting-bg[data-v-0f435cc1] {\n  background: radial-gradient(ellipse at center, rgba(46,204,113,0.14) 0%, transparent 70%);\n}\n@keyframes bgPulse-0f435cc1 {\n0%,100% { opacity: 0.5;\n}\n50% { opacity: 1;\n}\n}\n\n/* Contenu */\n.kiosk-waiting-content[data-v-0f435cc1] {\n  flex: 1;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  z-index: 1;\n  padding: 40px;\n  width: 100%;\n}\n\n/* Préparation */\n.kiosk-waiting-preparing[data-v-0f435cc1],\n.kiosk-waiting-ready[data-v-0f435cc1] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 28px;\n  text-align: center;\n  width: 100%;\n}\n\n/* Animation chef */\n.kiosk-waiting-anim[data-v-0f435cc1] {\n  position: relative;\n  width: 120px;\n  height: 120px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-chef-hat[data-v-0f435cc1] {\n  font-size: 64px;\n  z-index: 2;\n  animation: chefBounce-0f435cc1 1.5s ease-in-out infinite;\n}\n@keyframes chefBounce-0f435cc1 {\n0%,100% { transform: translateY(0) rotate(-5deg);\n}\n50%      { transform: translateY(-8px) rotate(5deg);\n}\n}\n.kiosk-wave-ring[data-v-0f435cc1] {\n  position: absolute;\n  inset: -10px;\n  border-radius: 50%;\n  border: 2px solid rgba(244, 80, 30,0.18);\n  animation: waveExpand-0f435cc1 2s ease-out infinite;\n}\n@keyframes waveExpand-0f435cc1 {\n0%   { transform: scale(0.8); opacity: 0.8;\n}\n100% { transform: scale(1.8); opacity: 0;\n}\n}\n.kiosk-waiting-title[data-v-0f435cc1] {\n  font-size: clamp(32px, 4vw, 48px);\n  font-weight: 900;\n  color: var(--kiosk-text);\n  margin: 0;\n  max-width: 500px;\n  line-height: 1.3;\n}\n\n/* Numéro commande */\n.kiosk-waiting-number-wrap[data-v-0f435cc1] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 4px;\n}\n.kiosk-waiting-number-label[data-v-0f435cc1] {\n  font-size: 16px;\n  font-weight: 900;\n  color: var(--kiosk-text-muted);\n  text-transform: uppercase;\n  letter-spacing: 2px;\n}\n.kiosk-waiting-number[data-v-0f435cc1] {\n  font-size: clamp(112px, 16vw, 180px);\n  font-weight: 900;\n  color: var(--kiosk-primary);\n  line-height: 1;\n  letter-spacing: -4px;\n  text-shadow: 0 6px 24px rgba(244, 80, 30,0.12);\n}\n.kiosk-waiting.ready .kiosk-waiting-number[data-v-0f435cc1] {\n  color: var(--kiosk-success);\n  text-shadow: 0 6px 24px rgba(46,204,113,0.12);\n}\n.kiosk-waiting-hint[data-v-0f435cc1], .kiosk-ready-hint[data-v-0f435cc1] {\n  font-size: 19px;\n  color: var(--kiosk-text-muted);\n  margin: 0;\n  max-width: 400px;\n  line-height: 1.5;\n}\n\n/* Barre progress */\n.kiosk-waiting-progress[data-v-0f435cc1] {\n  width: min(360px, 58vw);\n  height: 8px;\n  background: var(--kiosk-surface-alt);\n  border-radius: 999px;\n  overflow: hidden;\n}\n.kiosk-waiting-progress-bar[data-v-0f435cc1] {\n  height: 100%;\n  background: var(--kiosk-primary);\n  border-radius: 2px;\n  animation: progressSlide-0f435cc1 2s ease-in-out infinite;\n}\n@keyframes progressSlide-0f435cc1 {\n0%   { transform: translateX(-100%);\n}\n100% { transform: translateX(300%);\n}\n}\n\n/* Écran PRÊT */\n.kiosk-ready-icon[data-v-0f435cc1] {\n  position: relative;\n  width: 120px;\n  height: 120px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-ready-ring[data-v-0f435cc1] {\n  position: absolute;\n  inset: 0;\n  border-radius: 50%;\n  border: 3px solid rgba(46,204,113,0.22);\n  animation: readyRing-0f435cc1 1.5s ease-out infinite;\n}\n@keyframes readyRing-0f435cc1 {\nto { transform: scale(2); opacity: 0;\n}\n}\n.kiosk-ready-check[data-v-0f435cc1] {\n  width: 96px;\n  height: 96px;\n  border-radius: 50%;\n  background: var(--kiosk-success);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 48px;\n  color: white;\n  font-weight: 900;\n  box-shadow: 0 0 60px rgba(46,204,113,0.5);\n  animation: popIn-0f435cc1 0.4s cubic-bezier(0.34,1.56,0.64,1);\n}\n@keyframes popIn-0f435cc1 {\nfrom { transform: scale(0); opacity: 0;\n}\nto   { transform: scale(1); opacity: 1;\n}\n}\n.kiosk-ready-title[data-v-0f435cc1] {\n  font-size: clamp(42px, 6vw, 68px);\n  font-weight: 900;\n  color: var(--kiosk-success);\n  margin: 0;\n  animation: fadeInUp-0f435cc1 0.5s ease;\n}\n@keyframes fadeInUp-0f435cc1 {\nfrom { transform: translateY(20px); opacity: 0;\n}\nto   { transform: translateY(0); opacity: 1;\n}\n}\n\n/* Footer */\n.kiosk-waiting-footer[data-v-0f435cc1] {\n  padding: 20px 32px 40px;\n  width: 100%;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 10px;\n  z-index: 1;\n}\n.kiosk-waiting-new-order[data-v-0f435cc1] {\n  min-height: 76px;\n  padding: 18px 42px;\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border: none;\n  border-radius: 28px;\n  font-size: 22px;\n  font-weight: 900;\n  cursor: pointer;\n  box-shadow: 0 6px 24px rgba(244, 80, 30,0.2);\n  transition: all 0.15s ease;\n}\n.kiosk-waiting-new-order[data-v-0f435cc1]:active { transform: scale(0.97);\n}\n.kiosk-waiting-auto-reset[data-v-0f435cc1] {\n  font-size: 16px;\n  color: var(--kiosk-text-muted);\n  margin-top: 8px;\n}\n.kiosk-waiting-preparing-hint[data-v-0f435cc1] {\n  font-size: 18px;\n  color: var(--kiosk-text-muted);\n  font-style: italic;\n}\n\n/* Transitions */\n.fade-scale-enter-active[data-v-0f435cc1], .fade-scale-leave-active[data-v-0f435cc1] { transition: all 0.4s ease;\n}\n.fade-scale-enter-from[data-v-0f435cc1] { opacity: 0; transform: scale(0.95);\n}\n.fade-scale-leave-to[data-v-0f435cc1]   { opacity: 0; transform: scale(1.05);\n}\n\n/* Offline order state */\n.kiosk-waiting-offline[data-v-0f435cc1] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 20px;\n  text-align: center;\n}\n.kiosk-offline-icon[data-v-0f435cc1] {\n  font-size: 72px;\n  animation: chefBounce-0f435cc1 2s ease-in-out infinite;\n}\n.kiosk-offline-spinner[data-v-0f435cc1] {\n  width: 48px;\n  height: 48px;\n  border: 3px solid var(--kiosk-border);\n  border-top-color: var(--kiosk-primary);\n  border-radius: 50%;\n  animation: spin-0f435cc1 1s linear infinite;\n}\n@keyframes spin-0f435cc1 {\nto { transform: rotate(360deg);\n}\n}\n\n/* Cancel button */\n.kiosk-waiting-cancel-btn[data-v-0f435cc1] {\n  margin-top: 12px;\n  background: none;\n  border: 1px solid rgba(255,100,100,0.4);\n  border-radius: 12px;\n  color: rgba(255,100,100,0.7);\n  padding: 10px 24px;\n  font-size: 14px;\n  cursor: pointer;\n  transition: all 0.2s;\n  display: block;\n}\n.kiosk-waiting-cancel-btn[data-v-0f435cc1]:hover { border-color: rgba(255,100,100,0.7); color: #ff6464;\n}\n\n/* Cancel confirm overlay */\n.kiosk-cancel-overlay[data-v-0f435cc1] {\n  position: fixed;\n  inset: 0;\n  background: var(--kiosk-overlay-modal);\n  backdrop-filter: blur(6px);\n  z-index: 1000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-cancel-modal[data-v-0f435cc1] {\n  background: var(--kiosk-surface);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 22px;\n  padding: 2.5rem 2rem;\n  max-width: 440px;\n  width: 90%;\n  text-align: center;\n  color: var(--kiosk-text);\n}\n.kiosk-cancel-icon[data-v-0f435cc1]  { font-size: 3rem; margin-bottom: 0.75rem;\n}\n.kiosk-cancel-modal h2[data-v-0f435cc1] { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.5rem;\n}\n.kiosk-cancel-modal p[data-v-0f435cc1]  { color: var(--kiosk-text-muted); font-size: 0.95rem; margin: 0 0 1.5rem;\n}\n.kiosk-cancel-actions[data-v-0f435cc1]  { display: flex; gap: 1rem;\n}\n.kiosk-cancel-yes[data-v-0f435cc1] {\n  flex: 1;\n  background: var(--kiosk-primary-soft);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 14px;\n  color: var(--kiosk-primary);\n  padding: 0.9rem;\n  font-size: 1rem;\n  font-weight: 600;\n  cursor: pointer;\n}\n.kiosk-cancel-no[data-v-0f435cc1] {\n  flex: 1;\n  background: var(--kiosk-surface-alt);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 14px;\n  color: var(--kiosk-text);\n  padding: 0.9rem;\n  font-size: 1rem;\n  font-weight: 600;\n  cursor: pointer;\n}\n.kiosk-cancel-yes[data-v-0f435cc1]:active { background: rgba(220,38,38,0.4);\n}\n.kiosk-cancel-no[data-v-0f435cc1]:active  { background: rgba(255,255,255,0.15);\n}\n.kiosk-cancel-error-msg[data-v-0f435cc1] {\n  color: #ff6b6b;\n  font-size: 1rem;\n  margin: 0.5rem 0;\n}\n.kiosk-spinner-sm[data-v-0f435cc1] {\n  display: inline-block;\n  width: 18px; height: 18px;\n  border: 2.5px solid rgba(215,38,61,0.15);\n  border-top-color: #d7263d;\n  border-radius: 50%;\n  animation: spin-sm-0f435cc1 0.7s linear infinite;\n  vertical-align: middle;\n}\n@keyframes spin-sm-0f435cc1 {\nto { transform: rotate(360deg);\n}\n}\n\n/* Network lost banner */\n.kiosk-network-banner[data-v-0f435cc1] {\n  position: fixed; top: 0; left: 0; right: 0; z-index: 200;\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  display: flex; align-items: center; justify-content: center; gap: 0.6rem;\n  padding: 0.65rem 1rem;\n  font-size: 0.95rem; font-weight: 600;\n}\n.kiosk-network-banner-icon[data-v-0f435cc1] { font-size: 1.2rem;\n}\n.slide-down-banner-enter-active[data-v-0f435cc1],\n.slide-down-banner-leave-active[data-v-0f435cc1] { transition: transform 0.35s ease, opacity 0.35s ease;\n}\n.slide-down-banner-enter-from[data-v-0f435cc1],\n.slide-down-banner-leave-to[data-v-0f435cc1] { transform: translateY(-100%); opacity: 0;\n}\n\n/* Audio indisponible — flash visuel 3s (WCAG 2.3.3 reduced motion) */\n.kiosk-waiting.kiosk-ready-flash[data-v-0f435cc1] {\n  animation: kioskReadyFlash-0f435cc1 3s ease-out 1;\n}\n@keyframes kioskReadyFlash-0f435cc1 {\n0% { box-shadow: inset 0 0 0 0 rgba(46, 204, 113, 0);\n}\n15% { box-shadow: inset 0 0 0 9999px rgba(46, 204, 113, 0.12);\n}\n100% { box-shadow: inset 0 0 0 0 rgba(46, 204, 113, 0);\n}\n}\n@media (prefers-reduced-motion: reduce) {\n.kiosk-waiting.kiosk-ready-flash[data-v-0f435cc1] {\n    animation: none;\n    box-shadow: inset 0 0 0 9999px rgba(46, 204, 113, 0.08);\n}\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css"
+/*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.ks-consent-backdrop[data-v-04b6acfa] {\n  position: fixed;\n  inset: 0;\n  z-index: 220;\n  background: var(--kiosk-overlay-modal, rgba(26,26,26,0.65));\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 40px 24px;\n}\n.ks-consent-card[data-v-04b6acfa] {\n  width: min(560px, 100%);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text);\n  border-radius: 20px;\n  box-shadow: var(--kiosk-shadow-modal);\n  padding: 32px 32px 28px;\n  display: flex;\n  flex-direction: column;\n  gap: 18px;\n  outline: none;\n  max-height: 90vh;\n  overflow-y: auto;\n}\n.ks-consent-header[data-v-04b6acfa] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.ks-consent-title[data-v-04b6acfa] {\n  margin: 0;\n  font-size: 26px;\n  font-weight: 900;\n  color: var(--kiosk-text);\n}\n.ks-consent-subtitle[data-v-04b6acfa] {\n  margin: 0;\n  font-size: 15px;\n  color: var(--kiosk-text-muted);\n  font-weight: 600;\n}\n.ks-consent-description[data-v-04b6acfa] {\n  margin: 0;\n  font-size: 15px;\n  line-height: 1.5;\n  color: var(--kiosk-text);\n}\n.ks-consent-check[data-v-04b6acfa] {\n  display: flex;\n  align-items: flex-start;\n  gap: 12px;\n  padding: 12px 14px;\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 12px;\n  background: var(--kiosk-surface-alt);\n  cursor: pointer;\n  font-size: 15px;\n  font-weight: 600;\n  color: var(--kiosk-text);\n  min-height: var(--kiosk-tap-min, 56px);\n  transition: background 0.15s ease, border-color 0.15s ease;\n}\n.ks-consent-check[data-v-04b6acfa]:hover { background: var(--kiosk-primary-soft);\n}\n.ks-consent-check input[type=\"checkbox\"][data-v-04b6acfa] {\n  margin-top: 3px;\n  width: 22px;\n  height: 22px;\n  accent-color: var(--kiosk-primary);\n  flex-shrink: 0;\n}\n.ks-consent-error[data-v-04b6acfa] {\n  margin: -6px 0 0;\n  font-size: 13px;\n  color: var(--kiosk-error);\n  font-weight: 700;\n}\n.ks-consent-privacy[data-v-04b6acfa] {\n  align-self: flex-start;\n  padding: 8px 0;\n  background: transparent;\n  border: none;\n  color: var(--kiosk-primary);\n  font-size: 14px;\n  font-weight: 700;\n  cursor: pointer;\n  text-decoration: underline;\n}\n.ks-consent-privacy[data-v-04b6acfa]:hover { color: var(--kiosk-primary-dark);\n}\n.ks-consent-privacy[data-v-04b6acfa]:focus-visible {\n  outline: var(--kiosk-focus-width, 3px) solid var(--kiosk-focus-ring, var(--kiosk-primary));\n  outline-offset: 2px;\n}\n.ks-consent-actions[data-v-04b6acfa] {\n  display: flex;\n  gap: 12px;\n  margin-top: 8px;\n}\n.ks-consent-btn[data-v-04b6acfa] {\n  flex: 1;\n  min-height: var(--kiosk-tap-min, 60px);\n  padding: 14px 20px;\n  border-radius: 14px;\n  font-size: 17px;\n  font-weight: 800;\n  cursor: pointer;\n  transition: background 0.15s ease, transform 0.08s ease;\n  border: 1.5px solid transparent;\n}\n.ks-consent-btn--ghost[data-v-04b6acfa] {\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text-muted);\n  border-color: var(--kiosk-border);\n}\n.ks-consent-btn--ghost[data-v-04b6acfa]:hover { background: var(--kiosk-surface-alt);\n}\n.ks-consent-btn--primary[data-v-04b6acfa] {\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red, #ffffff);\n  box-shadow: var(--kiosk-shadow-cta);\n}\n.ks-consent-btn--primary[data-v-04b6acfa]:hover { background: var(--kiosk-primary-dark);\n}\n.ks-consent-btn--primary[data-v-04b6acfa]:active { transform: scale(0.98);\n}\n.ks-consent-btn--primary[disabled][data-v-04b6acfa] { opacity: 0.7; cursor: not-allowed;\n}\n.ks-consent-btn[data-v-04b6acfa]:focus-visible {\n  outline: var(--kiosk-focus-width, 3px) solid var(--kiosk-focus-ring, var(--kiosk-primary));\n  outline-offset: 3px;\n}\n\n/* Privacy overlay */\n.ks-consent-privacy-overlay[data-v-04b6acfa] {\n  position: fixed;\n  inset: 0;\n  z-index: 230;\n  background: var(--kiosk-overlay-modal, rgba(26,26,26,0.75));\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 40px 24px;\n}\n.ks-consent-privacy-card[data-v-04b6acfa] {\n  width: min(620px, 100%);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text);\n  border-radius: 18px;\n  padding: 28px 28px 24px;\n  display: flex;\n  flex-direction: column;\n  gap: 18px;\n  max-height: 80vh;\n  overflow-y: auto;\n  box-shadow: var(--kiosk-shadow-modal);\n}\n.ks-consent-privacy-title[data-v-04b6acfa] {\n  margin: 0;\n  font-size: 22px;\n  font-weight: 900;\n}\n.ks-consent-privacy-body[data-v-04b6acfa] {\n  font-size: 15px;\n  line-height: 1.55;\n  color: var(--kiosk-text);\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css"
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.ks-vkeyb[data-v-9b4f461c] {\n  position: fixed;\n  inset-inline: 0;\n  bottom: 0;\n  z-index: 150;\n  background: var(--kiosk-surface);\n  border-top: 1.5px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-modal);\n  padding: 16px 20px 22px;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  /* Les chiffres 1080x1920 : le clavier occupe ~30% de la hauteur borne. */\n  max-height: 36vh;\n  font-family: var(--kiosk-font-sans, system-ui);\n  color: var(--kiosk-text);\n}\n.ks-vkeyb--rtl[data-v-9b4f461c] {\n  direction: rtl;\n}\n.ks-vkeyb__preview[data-v-9b4f461c] {\n  min-height: 44px;\n  padding: 10px 16px;\n  background: var(--kiosk-surface-alt);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 12px;\n  font-size: 20px;\n  font-weight: 700;\n  color: var(--kiosk-text);\n  display: flex;\n  align-items: center;\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n}\n.ks-vkeyb__preview-value[data-v-9b4f461c] { flex: 1;\n}\n.ks-vkeyb__row[data-v-9b4f461c] {\n  display: grid;\n  grid-template-columns: repeat(10, 1fr);\n  gap: 8px;\n}\n.ks-vkeyb__row--actions[data-v-9b4f461c] {\n  grid-template-columns: 1fr 4fr 1fr 2fr;\n}\n.ks-vkeyb__key[data-v-9b4f461c] {\n  height: 62px;\n  min-width: 0;\n  min-height: var(--kiosk-tap-min, 56px);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 12px;\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text);\n  font-size: 22px;\n  font-weight: 700;\n  cursor: pointer;\n  transition: background 0.12s ease, transform 0.08s ease, border-color 0.12s ease;\n  touch-action: manipulation;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n          user-select: none;\n}\n.ks-vkeyb__key[data-v-9b4f461c]:hover { background: var(--kiosk-surface-alt);\n}\n.ks-vkeyb__key[data-v-9b4f461c]:active {\n  transform: scale(0.96);\n  background: var(--kiosk-primary-soft);\n  border-color: var(--kiosk-primary);\n}\n.ks-vkeyb__key[data-v-9b4f461c]:focus-visible {\n  outline: var(--kiosk-focus-width, 3px) solid var(--kiosk-focus-ring, var(--kiosk-primary));\n  outline-offset: 2px;\n}\n.ks-vkeyb__key--wide[data-v-9b4f461c] { font-size: 16px;\n}\n.ks-vkeyb__key--action[data-v-9b4f461c] {\n  background: var(--kiosk-surface-alt);\n  color: var(--kiosk-text-muted);\n  font-size: 16px;\n  font-weight: 800;\n  letter-spacing: 0.02em;\n}\n.ks-vkeyb__key--active[data-v-9b4f461c] {\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border-color: var(--kiosk-primary);\n}\n.ks-vkeyb__key--submit[data-v-9b4f461c] {\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border-color: var(--kiosk-primary);\n}\n.ks-vkeyb__key--submit[data-v-9b4f461c]:hover { background: var(--kiosk-primary-dark);\n}\n.ks-vkeyb__key--submit[data-v-9b4f461c]:active { background: var(--kiosk-primary-dark);\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=script&lang=js"
+/*!****************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=script&lang=js ***!
+  \****************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var vuex__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vuex */ "./node_modules/vuex/dist/vuex.esm-bundler.js");
+/* harmony import */ var _helpers_kioskFormatPrice__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../helpers/kioskFormatPrice */ "./resources/js/helpers/kioskFormatPrice.js");
+/* harmony import */ var _helpers_kioskUpsellFlow__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../helpers/kioskUpsellFlow */ "./resources/js/helpers/kioskUpsellFlow.js");
+/* harmony import */ var _helpers_kioskDisplayText__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../helpers/kioskDisplayText */ "./resources/js/helpers/kioskDisplayText.js");
+/* harmony import */ var _helpers_kioskFilters__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../helpers/kioskFilters */ "./resources/js/helpers/kioskFilters.js");
+/* harmony import */ var _ds_KsAllergenBadge_vue__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./ds/KsAllergenBadge.vue */ "./resources/js/components/frontend/kiosk/ds/KsAllergenBadge.vue");
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
+
+
+
+
+
+
+// [GAP-22-1] Order type constants — KIOSK=sur place, TAKEAWAY=à emporter
+var ORDER_TYPE_KIOSK = 25;
+var ORDER_TYPE_TAKEAWAY = 10;
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KioskCartComponent',
+  mixins: [_helpers_kioskFormatPrice__WEBPACK_IMPORTED_MODULE_1__.kioskPriceMixin],
+  components: {
+    KsAllergenBadge: _ds_KsAllergenBadge_vue__WEBPACK_IMPORTED_MODULE_5__["default"]
+  },
+  inject: {
+    showToast: {
+      "default": function _default() {
+        return function () {};
+      }
+    }
+  },
+  data: function data() {
+    var _window$foodkingConfi, _window$foodkingConfi2;
+    return {
+      showClearConfirm: false,
+      ORDER_TYPE_KIOSK: ORDER_TYPE_KIOSK,
+      ORDER_TYPE_TAKEAWAY: ORDER_TYPE_TAKEAWAY,
+      maxItemQty: (_window$foodkingConfi = (_window$foodkingConfi2 = window.foodkingConfig) === null || _window$foodkingConfi2 === void 0 ? void 0 : _window$foodkingConfi2.maxItemQty) !== null && _window$foodkingConfi !== void 0 ? _window$foodkingConfi : 20,
+      quoteLoading: false,
+      quoteError: null,
+      // Kiosk Phase 9.1.6 — Champ local (pas directement dans le store) pour
+      // laisser l'utilisateur taper/effacer sans triggerer de validate sur
+      // chaque frappe. L'appel réseau n'est déclenché qu'au clic Appliquer.
+      promoInput: ''
+    };
+  },
+  computed: _objectSpread(_objectSpread(_objectSpread(_objectSpread({}, (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapGetters)('kioskCart', {
+    cartItems: 'items',
+    cartCount: 'count',
+    cartSubtotal: 'subtotal',
+    cartTotal: 'total',
+    loyaltyDiscount: 'loyaltyDiscount',
+    upsellShown: 'upsellShown',
+    orderType: 'orderType',
+    promoCode: 'promoCode',
+    promoDiscount: 'promoDiscount',
+    promoError: 'promoError',
+    promoLoading: 'promoLoading'
+  })), (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapGetters)('kioskMenu', ['categories', 'selectedCategoryId', 'allItems'])), (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapGetters)('frontendSetting', {
+    frontendSettingsList: 'lists'
+  })), {}, {
+    /**
+     * [wave-p-kiosk-2026-05-20 BORNE-001 heal] V1 dine-in flag.
+     * Mirror of KioskIdleScreenComponent.dineInEnabled (verbatim guard
+     * pattern — typeof check rejects arrays/objects before string coerce so
+     * `String([1]) === '1'` cannot accidentally activate the flag).
+     * Defaults to FALSE so a regressed/empty backend stays safe (V1 mandate).
+     */
+    dineInEnabled: function dineInEnabled() {
+      var _ref, _s$pos_dine_in_enable;
+      var s = this.frontendSettingsList || {};
+      var raw = (_ref = (_s$pos_dine_in_enable = s.pos_dine_in_enabled) !== null && _s$pos_dine_in_enable !== void 0 ? _s$pos_dine_in_enable : s['pos.dine_in_enabled']) !== null && _ref !== void 0 ? _ref : 0;
+      var t = _typeof(raw);
+      if (t !== 'boolean' && t !== 'number' && t !== 'string') return false;
+      return String(raw) === '1' || raw === true;
+    },
+    customerAllergenCodes: function customerAllergenCodes() {
+      var _this$$store;
+      var profile = (_this$$store = this.$store) === null || _this$$store === void 0 || (_this$$store = _this$$store.getters) === null || _this$$store === void 0 ? void 0 : _this$$store['kioskSettings/customerProfile'];
+      if (!profile || !Array.isArray(profile.declared_allergens)) return [];
+      return profile.declared_allergens.map(String).filter(Boolean);
+    },
+    /** Phase A — skip upsell when all lines are in "skip after cart" categories */shouldSkipKioskUpsell: function shouldSkipKioskUpsell() {
+      return (0,_helpers_kioskUpsellFlow__WEBPACK_IMPORTED_MODULE_2__.shouldSkipKioskUpsellScreen)(this.cartItems, this.categories);
+    }
+  }),
+  /**
+   * [wave-p-kiosk-2026-05-20 BORNE-001 heal] Ensure frontendSetting/lists is
+   * populated so dineInEnabled computed can read pos_dine_in_enabled.
+   * KioskAppComponent loads via raw axios into globalState, NOT into the
+   * Vuex frontendSetting module — so the cart must dispatch independently.
+   * Best-effort: swallow errors and let the default (false) hold.
+   */
+  mounted: function mounted() {
+    try {
+      var _this$$store2;
+      var current = (_this$$store2 = this.$store) === null || _this$$store2 === void 0 || (_this$$store2 = _this$$store2.getters) === null || _this$$store2 === void 0 ? void 0 : _this$$store2['frontendSetting/lists'];
+      if (!current || Array.isArray(current) && current.length === 0) {
+        var _this$$store3, _this$$store3$dispatc;
+        (_this$$store3 = this.$store) === null || _this$$store3 === void 0 || (_this$$store3$dispatc = _this$$store3.dispatch) === null || _this$$store3$dispatc === void 0 || _this$$store3$dispatc.call(_this$$store3, 'frontendSetting/lists')["catch"](function () {});
+      }
+    } catch (_e) {/* defaults to dineInEnabled=false — safe */}
+  },
+  methods: _objectSpread(_objectSpread({}, (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapActions)('kioskCart', ['updateQuantity', 'removeItem', 'reset', 'markUpsellShown', 'popItem', 'setOrderType', 'quoteOrder',
+  // Kiosk Phase 9.1.6 — actions promo (validate lecture-seule + clear local).
+  'validatePromo', 'clearPromo',
+  // [P-MEGA-05] Édition d'une ligne sans suppression intermédiaire.
+  'startEditingCartItem'])), {}, {
+    // Kiosk Phase 9.1.6 — Applique un code promo via /api/frontend/promo/validate.
+    // UX: on ne bloque pas l'utilisateur, on affiche un message d'erreur inline
+    // et on conserve ce qu'il a tapé si la saisie est invalide (pas de reset input).
+    applyPromo: function applyPromo() {
+      var _this = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var code, res;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.n) {
+            case 0:
+              code = (_this.promoInput || '').trim();
+              if (code) {
+                _context.n = 1;
+                break;
+              }
+              return _context.a(2);
+            case 1:
+              _context.n = 2;
+              return _this.validatePromo(code);
+            case 2:
+              res = _context.v;
+              if (res && res.valid) {
+                _this.promoInput = '';
+              }
+            case 3:
+              return _context.a(2);
+          }
+        }, _callee);
+      }))();
+    },
+    removePromo: function removePromo() {
+      this.clearPromo();
+      this.promoInput = '';
+    },
+    // [GAP-22-1] Select order type and give haptic-like visual feedback
+    selectOrderType: function selectOrderType(type) {
+      this.setOrderType(type);
+    },
+    // Retour explicite vers le catalogue — jamais router.go(-1) car apres
+    // panier -> paiement -> replace(panier), l'historique contient encore
+    // [panier, paiement, panier] et go(-1) retomberait sur paiement.
+    goBackFromCart: function goBackFromCart() {
+      var cat = this.selectedCategoryId;
+      if (cat != null && cat !== '') {
+        this.$router.push({
+          name: 'kiosk.categories',
+          query: {
+            cat: String(cat)
+          }
+        });
+        return;
+      }
+      this.$router.push({
+        name: 'kiosk.categories'
+      });
+    },
+    displayCartItemName: function displayCartItemName(item) {
+      return (0,_helpers_kioskDisplayText__WEBPACK_IMPORTED_MODULE_3__.sanitizeKioskCustomerFacingText)((item === null || item === void 0 ? void 0 : item.name) || '');
+    },
+    displayCartInstruction: function displayCartInstruction(item) {
+      if (!(item !== null && item !== void 0 && item.instruction)) return '';
+      return (0,_helpers_kioskDisplayText__WEBPACK_IMPORTED_MODULE_3__.sanitizeKioskCustomerFacingText)(item.instruction);
+    },
+    cartLineCatalogItem: function cartLineCatalogItem(line) {
+      if (!(line !== null && line !== void 0 && line.item_id) || !Array.isArray(this.allItems)) return null;
+      return this.allItems.find(function (i) {
+        return String(i.id) === String(line.item_id);
+      }) || null;
+    },
+    cartLineAllergenSelections: function cartLineAllergenSelections(line) {
+      var cat = this.cartLineCatalogItem(line);
+      if (!cat) return {
+        variations: [],
+        extras: []
+      };
+      var vars = (line.item_variations || []).map(function (v) {
+        return (0,_helpers_kioskFilters__WEBPACK_IMPORTED_MODULE_4__.findVariationObjectById)(cat, v.id);
+      }).filter(Boolean);
+      var ext = (line.item_extras || []).map(function (e) {
+        return (0,_helpers_kioskFilters__WEBPACK_IMPORTED_MODULE_4__.findExtraObjectById)(cat, e.id);
+      }).filter(Boolean);
+      return {
+        variations: vars,
+        extras: ext
+      };
+    },
+    // [GAP-22-2] Récap des choix : supporte item_variations en tableau (wizard) + ancien format names
+    getItemSelectionSummary: function getItemSelectionSummary(item) {
+      var _item$item_variations, _item$item_extras;
+      var parts = [];
+      var clean = function clean(s) {
+        return (0,_helpers_kioskDisplayText__WEBPACK_IMPORTED_MODULE_3__.sanitizeKioskCustomerFacingText)(s);
+      };
+      if (Array.isArray(item.item_variations) && item.item_variations.length > 0) {
+        var bits = item.item_variations.map(function (v) {
+          return clean(v.name || v.variation_name || '');
+        }).filter(Boolean);
+        if (bits.length) parts.push(bits.join(', '));
+      } else if ((_item$item_variations = item.item_variations) !== null && _item$item_variations !== void 0 && _item$item_variations.names) {
+        var names = Object.values(item.item_variations.names).map(clean).filter(Boolean);
+        if (names.length > 0) parts.push(names.join(', '));
+      }
+      if (Array.isArray(item.item_extras) && item.item_extras.length > 0) {
+        var extras = item.item_extras.map(function (e) {
+          return clean(e.name);
+        }).filter(Boolean);
+        if (extras.length) parts.push(extras.join(', '));
+      } else if ((_item$item_extras = item.item_extras) !== null && _item$item_extras !== void 0 && _item$item_extras.names) {
+        var raw = Array.isArray(item.item_extras.names) ? item.item_extras.names : Object.values(item.item_extras.names);
+        var _extras = raw.map(clean).filter(Boolean);
+        if (_extras.length) parts.push(_extras.join(', '));
+      }
+      return parts.join(' · ');
+    },
+    changeQty: function changeQty(index, qty) {
+      if (qty <= 0) {
+        this.removeItem(index);
+        this.showToast(this.$t('kiosk.item_removed'), 'info', 1800);
+      } else if (qty > this.maxItemQty) {
+        this.showToast(this.$t('kiosk.max_quantity_reached') || "Maximum ".concat(this.maxItemQty, " atteint"), 'warning', 1800);
+      } else {
+        this.updateQuantity({
+          index: index,
+          quantity: qty
+        });
+      }
+    },
+    /**
+     * FoodKing brand V2 (2026-05-10) — direct remove from explicit trash button
+     * (owner demand : voir + ajouter + supprimer "correctement"). Le toast info
+     * confirme l'action puisqu'elle est explicite (vs add-to-cart où owner ne
+     * veut pas de toast).
+     */
+    removeItemDirectly: function removeItemDirectly(index) {
+      var _this$cartItems;
+      var item = (_this$cartItems = this.cartItems) === null || _this$cartItems === void 0 ? void 0 : _this$cartItems[index];
+      this.removeItem(index);
+      this.showToast(this.$t('kiosk.item_removed') || "".concat((item === null || item === void 0 ? void 0 : item.name) || 'Article', " supprim\xE9"), 'info', 1500);
+    },
+    /**
+     * Remove the item from the cart and re-open the wizard so the customer
+     * can change customizations. The wizard is opened in normal mode — the
+     * quantity from the old line is NOT pre-set (wizard default = 1 to keep
+     * things simple and avoid complexity with selections state).
+     */
+    /**
+     * [P-MEGA-05] Édition d'une ligne du panier — version "safe" :
+     * 1. Le store mémorise la cart line via startEditingCartItem (no pop).
+     * 2. Le wizard, à son montage, restaure les sélections depuis le
+     *    snapshot (`_wizardSelections`) et bascule en mode "edit".
+     * 3. À la validation, le wizard fait `replaceEditingCartItem` :
+     *    la ligne est remplacée en place (préserve l'ordre, l'index, les
+     *    coupons attachés à un slot précis).
+     * 4. Si l'utilisateur abandonne (close/abandon), `cancelEditingCartItem`
+     *    laisse la ligne intacte. AUCUN risque de perte.
+     *
+     * Compat ascendante : si pour une raison X le wizard ne bascule pas
+     * en mode edit (item supprimé du catalogue, etc.), la ligne originale
+     * reste dans le panier (pas de double dépense, pas de panier cassé).
+     */
+    editItem: function editItem(index) {
+      var _this2 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+        var item, ok;
+        return _regenerator().w(function (_context2) {
+          while (1) switch (_context2.n) {
+            case 0:
+              item = _this2.cartItems[index];
+              if (item !== null && item !== void 0 && item.item_id) {
+                _context2.n = 1;
+                break;
+              }
+              return _context2.a(2);
+            case 1:
+              _context2.n = 2;
+              return _this2.startEditingCartItem(index);
+            case 2:
+              ok = _context2.v;
+              if (ok) {
+                _context2.n = 3;
+                break;
+              }
+              return _context2.a(2);
+            case 3:
+              _this2.$router.push({
+                name: 'kiosk.wizard',
+                params: {
+                  itemId: String(item.item_id)
+                },
+                query: {
+                  edit: '1'
+                }
+              });
+            case 4:
+              return _context2.a(2);
+          }
+        }, _callee2);
+      }))();
+    },
+    confirmClear: function confirmClear() {
+      this.showClearConfirm = false;
+      this.reset();
+      this.$router.push({
+        name: 'kiosk.categories'
+      });
+    },
+    proceedToUpsell: function proceedToUpsell() {
+      var _this3 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+        var _err$response, message, _t;
+        return _regenerator().w(function (_context3) {
+          while (1) switch (_context3.p = _context3.n) {
+            case 0:
+              if (!(_this3.quoteLoading || _this3.cartCount === 0)) {
+                _context3.n = 1;
+                break;
+              }
+              return _context3.a(2);
+            case 1:
+              _this3.quoteLoading = true;
+              _this3.quoteError = null;
+              _context3.p = 2;
+              _context3.n = 3;
+              return _this3.quoteOrder({
+                orderType: _this3.orderType
+              });
+            case 3:
+              if (!_this3.upsellShown) {
+                _context3.n = 4;
+                break;
+              }
+              _this3.$router.push({
+                name: 'kiosk.payment'
+              });
+              return _context3.a(2);
+            case 4:
+              _this3.markUpsellShown();
+              if (!_this3.shouldSkipKioskUpsell) {
+                _context3.n = 5;
+                break;
+              }
+              _this3.$router.push({
+                name: 'kiosk.payment'
+              });
+              return _context3.a(2);
+            case 5:
+              _this3.$router.push({
+                name: 'kiosk.upsell'
+              });
+              _context3.n = 7;
+              break;
+            case 6:
+              _context3.p = 6;
+              _t = _context3.v;
+              message = (_t === null || _t === void 0 || (_err$response = _t.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || (_t === null || _t === void 0 ? void 0 : _t.message) || _this3.$t('kiosk.pay_screen.invalid_order_response');
+              _this3.quoteError = message;
+              _this3.showToast(message, 'error', 6000);
+            case 7:
+              _context3.p = 7;
+              _this3.quoteLoading = false;
+              return _context3.f(7);
+            case 8:
+              return _context3.a(2);
+          }
+        }, _callee3, null, [[2, 6, 7, 8]]);
+      }))();
+    } // formatPrice() is provided by kioskPriceMixin — reads currency from globalState.lists
+  })
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=script&lang=js"
+/*!***************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=script&lang=js ***!
+  \***************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
+
+/**
+ * KioskCashInstructionComponent — Kiosk Design V1 Phase 3.1
+ *
+ * Écran distinct du waiting : affiche explicitement au client de se rendre
+ * au comptoir avec son numéro de commande et le montant dû en espèces.
+ * Exigence AUDIT_FINAL.md §Issue #1 + master prompt §3.1.
+ *
+ * Props :
+ *  - orderNumber : string | number — affichage central
+ *  - orderTotal  : number (EUR)    — affichage via KsPriceLine (format FR)
+ *  - autoRedirectSeconds : number  — défaut 45 s, redirige /kiosk/idle
+ *
+ * Events :
+ *  - "acknowledged" (reason: 'user'|'timeout')
+ *
+ * Observabilité : POST /api/frontend/kiosk/event (type=cash_instruction_shown
+ * puis cash_instruction_ack) — conforme KIOSK_ANALYTICS_EVENTS.md Phase 1.9.
+ */
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KioskCashInstructionComponent',
+  props: {
+    orderNumber: {
+      type: [String, Number],
+      "default": ''
+    },
+    orderTotal: {
+      type: Number,
+      "default": null
+    },
+    autoRedirectSeconds: {
+      type: Number,
+      "default": 45
+    }
+  },
+  emits: ['acknowledged'],
+  data: function data() {
+    return {
+      countdown: this.autoRedirectSeconds,
+      timer: null
+    };
+  },
+  mounted: function mounted() {
+    this.logEvent('cash_instruction_shown');
+    this.startCountdown();
+  },
+  beforeUnmount: function beforeUnmount() {
+    this.stopCountdown();
+  },
+  methods: {
+    startCountdown: function startCountdown() {
+      var _this = this;
+      if (this.autoRedirectSeconds <= 0) return;
+      this.countdown = this.autoRedirectSeconds;
+      this.timer = setInterval(function () {
+        _this.countdown -= 1;
+        if (_this.countdown <= 0) {
+          _this.stopCountdown();
+          _this.acknowledge('timeout');
+        }
+      }, 1000);
+    },
+    stopCountdown: function stopCountdown() {
+      if (this.timer) {
+        clearInterval(this.timer);
+        this.timer = null;
+      }
+    },
+    acknowledge: function acknowledge() {
+      var _this$$router;
+      var reason = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'user';
+      this.stopCountdown();
+      this.logEvent('cash_instruction_ack', {
+        reason: reason
+      });
+      this.$emit('acknowledged', reason);
+      // Soft fallback navigation si pas d'écoute parent.
+      (_this$$router = this.$router) === null || _this$$router === void 0 || _this$$router.push({
+        name: 'kiosk.idle'
+      })["catch"](function () {});
+    },
+    logEvent: function logEvent(type) {
+      var meta = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      var payload = _objectSpread({
+        type: type
+      }, meta);
+      if (this.orderNumber) payload.order_ref = String(this.orderNumber);
+      // Route alias slash (Phase 1.9) ; fallback tiret non nécessaire.
+      axios__WEBPACK_IMPORTED_MODULE_0__["default"].post('/frontend/kiosk/event', payload)["catch"](function () {
+        /* observabilité best-effort — ne bloque jamais l'UX */
+      });
+    }
+  }
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=script&lang=js"
+/*!************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=script&lang=js ***!
+  \************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _helpers_kioskPrinter__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../helpers/kioskPrinter */ "./resources/js/helpers/kioskPrinter.js");
+/* harmony import */ var _helpers_kioskFormatPrice__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../helpers/kioskFormatPrice */ "./resources/js/helpers/kioskFormatPrice.js");
+/* harmony import */ var _helpers_kioskDisplayText__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../helpers/kioskDisplayText */ "./resources/js/helpers/kioskDisplayText.js");
+/* harmony import */ var _services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../services/kioskHardware */ "./resources/js/services/kioskHardware.js");
+/* harmony import */ var _helpers_kioskReceiptPersistence__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../helpers/kioskReceiptPersistence */ "./resources/js/helpers/kioskReceiptPersistence.js");
+/* harmony import */ var _composables_useKioskSpeech__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../composables/useKioskSpeech */ "./resources/js/composables/useKioskSpeech.js");
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+
+
+
+
+// Kiosk Phase 9.1.12 — snapshot localStorage pour survie F5 du ticket.
+
+
+// Wrapper tolérant (ne lève jamais dans les tests jsdom sans localStorage).
+function clearKioskReceiptSnapshotSafe() {
+  try {
+    (0,_helpers_kioskReceiptPersistence__WEBPACK_IMPORTED_MODULE_4__.clearKioskReceiptSnapshot)();
+  } catch (_) {}
+}
+function confirmationAutoReturnSeconds() {
+  var _window$foodkingConfi, _window$foodkingConfi2;
+  var configured = Number((_window$foodkingConfi = (_window$foodkingConfi2 = window.foodkingConfig) === null || _window$foodkingConfi2 === void 0 ? void 0 : _window$foodkingConfi2.kioskConfirmationAutoReturnSeconds) !== null && _window$foodkingConfi !== void 0 ? _window$foodkingConfi : 30);
+  return Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : 30;
+}
+// Kiosk Phase 9.1.8 — TTS sur l'écran de confirmation.
+// Énoncé du numéro de commande + total pour les malvoyants (EAA 2025).
+// Le composable no-op si `kioskSettings.audio` est off — aucun effet de bord.
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KioskConfirmationComponent',
+  mixins: [_helpers_kioskFormatPrice__WEBPACK_IMPORTED_MODULE_1__.kioskPriceMixin],
+  // [iter15-mega-fix Vue-warn-cluster round-7 2026-05-10]
+  // KioskAppComponent's <router-view> binds shell-level listeners
+  // (add-to-cart / go-to-cart / start-order / reset-kiosk) on every routed
+  // child. This component renders a fragment (two sibling root elements:
+  // `.kiosk-confirmation` + `#kiosk-print-receipt`), so Vue 3 cannot auto-
+  // inherit those listeners and warns:
+  //   "Extraneous non-emits event listeners (addToCart, goToCart, startOrder,
+  //    resetKiosk) were passed to component but could not be automatically
+  //    inherited because component renders fragment or text root nodes."
+  // Declaring them in `emits` tells Vue these events are intentionally not
+  // emitted from this confirmation screen (the cart shell drives them
+  // elsewhere) and silences the warning without weakening the contract.
+  emits: ['add-to-cart', 'go-to-cart', 'start-order', 'reset-kiosk'],
+  props: {
+    // Populated from route.query by kioskRoutes.js
+    orderNumber: {
+      type: String,
+      "default": ''
+    },
+    orderTotal: {
+      type: Number,
+      "default": null
+    }
+  },
+  data: function data() {
+    var autoReturnSeconds = confirmationAutoReturnSeconds();
+    return {
+      autoReturnSeconds: autoReturnSeconds,
+      countdown: autoReturnSeconds,
+      progressWidth: 100,
+      timer: null,
+      printStatus: null,
+      // null | 'printing' | 'done' | 'error'
+      printFailed: false,
+      // Snapshot cart data at mount time — captured before cart reset
+      _snapshotItems: null,
+      _snapshotDiscount: null,
+      _snapshotSubtotal: null,
+      _snapshotPayment: null,
+      // [GAP-35-7] Snapshot loyalty customer before cart reset
+      _snapshotLoyaltyName: null,
+      _snapshotOrderTotal: null
+    };
+  },
+  computed: {
+    // [GAP-35-7] Points earned = floor(total * rate) — same formula as AwardLoyaltyPointsOnDelivery
+    pointsEarned: function pointsEarned() {
+      var _this$$store$state$gl;
+      var total = this._snapshotOrderTotal || 0;
+      var lists = (_this$$store$state$gl = this.$store.state.globalState) === null || _this$$store$state$gl === void 0 ? void 0 : _this$$store$state$gl.lists;
+      var rate = parseInt(lists === null || lists === void 0 ? void 0 : lists.loyalty_points_per_euro, 10) || 0;
+      if (total <= 0 || rate <= 0) return 0;
+      return Math.floor(total * rate);
+    },
+    loyaltyCustomerName: function loyaltyCustomerName() {
+      return this._snapshotLoyaltyName || null;
+    },
+    displayNumber: function displayNumber() {
+      var _this$$store$state$ki;
+      if (this.orderNumber) return this.orderNumber;
+      return ((_this$$store$state$ki = this.$store.state.kioskCart) === null || _this$$store$state$ki === void 0 ? void 0 : _this$$store$state$ki.queueNumber) || '—';
+    },
+    displayTotal: function displayTotal() {
+      if (this.orderTotal != null) return this.orderTotal;
+      return this.$store.getters['kioskCart/total'] || null;
+    },
+    receiptItems: function receiptItems() {
+      var _ref, _this$_snapshotItems, _this$$store$state$ki2;
+      // Use snapshot if available (after cart reset)
+      return (_ref = (_this$_snapshotItems = this._snapshotItems) !== null && _this$_snapshotItems !== void 0 ? _this$_snapshotItems : (_this$$store$state$ki2 = this.$store.state.kioskCart) === null || _this$$store$state$ki2 === void 0 ? void 0 : _this$$store$state$ki2.items) !== null && _ref !== void 0 ? _ref : [];
+    },
+    receiptDiscount: function receiptDiscount() {
+      var _ref2, _this$_snapshotDiscou, _this$$store$state$ki3;
+      return (_ref2 = (_this$_snapshotDiscou = this._snapshotDiscount) !== null && _this$_snapshotDiscou !== void 0 ? _this$_snapshotDiscou : (_this$$store$state$ki3 = this.$store.state.kioskCart) === null || _this$$store$state$ki3 === void 0 ? void 0 : _this$$store$state$ki3.loyaltyDiscount) !== null && _ref2 !== void 0 ? _ref2 : 0;
+    },
+    receiptSubtotal: function receiptSubtotal() {
+      var _this$_snapshotSubtot;
+      var items = this.receiptItems;
+      // [KIOSK-17] Use item.total (always present after ADD_ITEM fix) for accuracy
+      return (_this$_snapshotSubtot = this._snapshotSubtotal) !== null && _this$_snapshotSubtot !== void 0 ? _this$_snapshotSubtot : items.reduce(function (sum, item) {
+        return sum + (parseFloat(item.total) || 0);
+      }, 0);
+    },
+    receiptPaymentMethod: function receiptPaymentMethod() {
+      var _this$$store$state$ki4;
+      if (this._snapshotPayment !== null) return this._snapshotPayment;
+      var map = {
+        card: this.$t('kiosk.card'),
+        cash: this.$t('kiosk.cash'),
+        tr: this.$t('kiosk.pay_screen.tr_title')
+      };
+      var method = (_this$$store$state$ki4 = this.$store.state.kioskCart) === null || _this$$store$state$ki4 === void 0 ? void 0 : _this$$store$state$ki4.paymentMethod;
+      return map[method] || method || '';
+    },
+    restaurantName: function restaurantName() {
+      var _this$$store$state$gl2;
+      // globalState stores data in state.lists (not state.settings)
+      var lists = (_this$$store$state$gl2 = this.$store.state.globalState) === null || _this$$store$state$gl2 === void 0 ? void 0 : _this$$store$state$gl2.lists;
+      return (lists === null || lists === void 0 ? void 0 : lists.company_name) || (lists === null || lists === void 0 ? void 0 : lists.site_name) || 'FoodKing';
+    },
+    receiptDate: function receiptDate() {
+      var _this$$i18n;
+      var locale = ((_this$$i18n = this.$i18n) === null || _this$$i18n === void 0 ? void 0 : _this$$i18n.locale) || 'fr';
+      var browserLocale = locale === 'ar' ? 'ar-SA' : locale === 'en' ? 'en-GB' : 'fr-FR';
+      return new Date().toLocaleString(browserLocale, {
+        dateStyle: 'short',
+        timeStyle: 'short'
+      });
+    }
+  },
+  mounted: function mounted() {
+    var _snapshot$subtotal,
+      _this = this;
+    // Snapshot cart data BEFORE resetting, so receipt can still be printed
+    var state = this.$store.state.kioskCart;
+    var items = (state === null || state === void 0 ? void 0 : state.items) || [];
+
+    // Kiosk Phase 9.1.12 — si le panier est déjà vide (reload F5 sur
+    // /confirmation après un premier mount), on tente de réhydrater depuis
+    // le snapshot localStorage. Cela couvre le cas "le client appuie sur F5
+    // juste après la confirmation et perd son ticket" — la persistance
+    // localStorage recharge items/total/queueNumber pour afficher le ticket.
+    // SSOT : ces données ne sont JAMAIS utilisées pour refaire un paiement.
+    var cartIsEmpty = !Array.isArray(items) || items.length === 0;
+    var snapshot = cartIsEmpty ? (0,_helpers_kioskReceiptPersistence__WEBPACK_IMPORTED_MODULE_4__.readKioskReceiptSnapshot)() : null;
+    this._snapshotItems = cartIsEmpty && snapshot ? JSON.parse(JSON.stringify(snapshot.items || [])) : JSON.parse(JSON.stringify(items));
+    this._snapshotDiscount = cartIsEmpty && snapshot ? snapshot.discount || 0 : (state === null || state === void 0 ? void 0 : state.loyaltyDiscount) || 0;
+    // [KIOSK-17] Use item.total (always present after ADD_ITEM fix) for accuracy
+    this._snapshotSubtotal = cartIsEmpty && snapshot ? (_snapshot$subtotal = snapshot.subtotal) !== null && _snapshot$subtotal !== void 0 ? _snapshot$subtotal : (snapshot.items || []).reduce(function (s, it) {
+      return s + (parseFloat(it.total) || 0);
+    }, 0) : items.reduce(function (sum, item) {
+      return sum + (parseFloat(item.total) || 0);
+    }, 0);
+    var methodMap = {
+      card: this.$t('kiosk.card'),
+      cash: this.$t('kiosk.cash'),
+      tr: this.$t('kiosk.pay_screen.tr_title')
+    };
+    if (cartIsEmpty && snapshot) {
+      // Le snapshot stocke déjà le libellé traduit à l'instant où il a
+      // été posé (locale au paiement) → on ne re-traduit pas pour rester
+      // cohérent avec le ticket imprimé.
+      this._snapshotPayment = snapshot.paymentMethod || '';
+    } else {
+      var rawMethod = state === null || state === void 0 ? void 0 : state.paymentMethod;
+      this._snapshotPayment = methodMap[rawMethod] || rawMethod || '';
+    }
+    // [GAP-35-7] Snapshot loyalty customer name and order total for points display
+    if (cartIsEmpty && snapshot) {
+      this._snapshotLoyaltyName = snapshot.loyaltyCustomerName || null;
+      this._snapshotOrderTotal = Number.isFinite(snapshot.total) ? snapshot.total : 0;
+    } else {
+      var loyaltyCustomer = state === null || state === void 0 ? void 0 : state.loyaltyCustomer;
+      this._snapshotLoyaltyName = (loyaltyCustomer === null || loyaltyCustomer === void 0 ? void 0 : loyaltyCustomer.name) || (loyaltyCustomer === null || loyaltyCustomer === void 0 ? void 0 : loyaltyCustomer.first_name) || null;
+      // Use orderTotal prop first, then compute from items
+      this._snapshotOrderTotal = this.orderTotal != null ? this.orderTotal : Math.max(0, this._snapshotSubtotal - this._snapshotDiscount);
+    }
+
+    // Reset cart immediately — confirmation screen owns the data via snapshot
+    this.$store.dispatch('kioskCart/reset');
+
+    // Kiosk Phase 9.1.12 — persiste le reçu APRES avoir capturé le snapshot
+    // in-memory (et avant reset, idéalement — mais le dispatch synchrone
+    // ne recharge pas les items, donc ok ici). Aucun PII n'est persisté
+    // (email/phone exclus), seul le prénom loyalty déjà imprimé sur le
+    // ticket papier est stocké.
+    try {
+      (0,_helpers_kioskReceiptPersistence__WEBPACK_IMPORTED_MODULE_4__.saveKioskReceiptSnapshot)({
+        orderId: this.orderNumber || (state === null || state === void 0 ? void 0 : state.lastOrderId) || null,
+        queueNumber: this.displayNumber || (state === null || state === void 0 ? void 0 : state.queueNumber) || null,
+        total: this._snapshotOrderTotal,
+        discount: this._snapshotDiscount,
+        subtotal: this._snapshotSubtotal,
+        items: this._snapshotItems,
+        paymentMethod: this._snapshotPayment,
+        loyaltyCustomerName: this._snapshotLoyaltyName,
+        pointsEarned: this.pointsEarned || 0,
+        restaurantName: this.restaurantName
+      });
+    } catch (_) {/* localStorage peut être indisponible → no-op */}
+    this.startTimer();
+
+    // Auto-print only on the real kiosk bridge. Browser window.print() can
+    // suspend timers in dev/simulated payment and leave the kiosk on this page.
+    this.$nextTick(function () {
+      if (_services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__["default"].isKioskBridge()) {
+        _this.printReceipt();
+      }
+    });
+
+    // Kiosk Phase 9.1.8 — annonce vocale de la confirmation (audio only if
+    // user opted in via a11y toggles). No-op si audio=off, et l'appel est
+    // placé après `$nextTick` pour respecter la règle autoplay Chrome
+    // (lancé en réponse à la navigation utilisateur sur /confirmation).
+    try {
+      this._kioskSpeech = (0,_composables_useKioskSpeech__WEBPACK_IMPORTED_MODULE_5__.useKioskSpeech)({
+        store: this.$store
+      });
+      var text = this.$t('kiosk.confirmation.speech_summary', {
+        number: String(this.displayNumber || '').replace(/[^0-9A-Za-z]/g, ''),
+        total: this.formatPrice(this.displayTotal || 0)
+      });
+      if (text) {
+        this._kioskSpeech.speak(text, {
+          key: 'kiosk.confirmation.speech_summary'
+        })["catch"](function () {});
+      }
+    } catch (_) {/* tolérant à l'absence d'API Web Speech */}
+  },
+  beforeUnmount: function beforeUnmount() {
+    this.clearTimer();
+    // Kiosk Phase 9.1.8 — stoppe proprement le TTS si l'utilisateur quitte
+    // l'écran avant la fin de la lecture (sinon fuite d'utterance sur idle).
+    try {
+      var _this$_kioskSpeech;
+      (_this$_kioskSpeech = this._kioskSpeech) === null || _this$_kioskSpeech === void 0 || _this$_kioskSpeech.stop();
+    } catch (_) {}
+  },
+  methods: {
+    startTimer: function startTimer() {
+      var _this2 = this;
+      this.clearTimer();
+      this.countdown = this.autoReturnSeconds;
+      this.progressWidth = 100;
+      this.timer = setInterval(function () {
+        _this2.countdown--;
+        _this2.progressWidth = _this2.countdown / _this2.autoReturnSeconds * 100;
+        if (_this2.countdown <= 0) _this2.goHome();
+      }, 1000);
+    },
+    clearTimer: function clearTimer() {
+      if (this.timer) {
+        clearInterval(this.timer);
+        this.timer = null;
+      }
+    },
+    printReceipt: function printReceipt() {
+      var _this3 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var receiptData, result, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              if (!(_this3.printStatus === 'printing')) {
+                _context.n = 1;
+                break;
+              }
+              return _context.a(2);
+            case 1:
+              _this3.printStatus = 'printing';
+              receiptData = (0,_helpers_kioskPrinter__WEBPACK_IMPORTED_MODULE_0__.buildReceiptData)({
+                restaurantName: _this3.restaurantName,
+                queueNumber: _this3.displayNumber,
+                cartItems: _this3.receiptItems,
+                subtotal: _this3.receiptSubtotal,
+                discount: _this3.receiptDiscount,
+                total: _this3.displayTotal || 0,
+                paymentMethod: _this3.receiptPaymentMethod,
+                loyaltyPointsEarned: _this3.pointsEarned,
+                loyaltyCustomerName: _this3.loyaltyCustomerName || '',
+                thankYou: _this3.$t('kiosk.confirmation.receipt_thanks'),
+                labels: {
+                  queueNumberTitle: _this3.$t('kiosk.confirmation.receipt_number'),
+                  subtotal: _this3.$t('kiosk.subtotal'),
+                  discount: _this3.$t('kiosk.confirmation.receipt_discount'),
+                  total: _this3.$t('kiosk.confirmation.receipt_total'),
+                  payment: _this3.$t('label.payment_method'),
+                  loyalty: _this3.$t('kiosk.loyalty_card'),
+                  seeYouSoon: _this3.$t('message.please_come_again')
+                }
+              });
+              _context.p = 2;
+              _context.n = 3;
+              return (0,_helpers_kioskPrinter__WEBPACK_IMPORTED_MODULE_0__.printReceipt)(receiptData, 'kiosk-print-receipt');
+            case 3:
+              result = _context.v;
+              if (result.method === 'none') {
+                _this3.printStatus = 'error';
+                _this3.printFailed = true;
+                (0,_helpers_kioskPrinter__WEBPACK_IMPORTED_MODULE_0__.reportPrinterFailure)(_this3.displayNumber, result.error || 'no print method');
+              } else {
+                _this3.printStatus = 'done';
+                _this3.printFailed = false;
+                setTimeout(function () {
+                  _this3.printStatus = null;
+                }, 2000);
+              }
+              _context.n = 5;
+              break;
+            case 4:
+              _context.p = 4;
+              _t = _context.v;
+              _this3.printStatus = 'error';
+              _this3.printFailed = true;
+              (0,_helpers_kioskPrinter__WEBPACK_IMPORTED_MODULE_0__.reportPrinterFailure)(_this3.displayNumber, (_t === null || _t === void 0 ? void 0 : _t.message) || 'exception');
+            case 5:
+              _context.p = 5;
+              if (_this3.countdown > 0 && !_this3.timer) {
+                _this3.startTimer();
+              }
+              return _context.f(5);
+            case 6:
+              return _context.a(2);
+          }
+        }, _callee, null, [[2, 4, 5, 6]]);
+      }))();
+    },
+    goHome: function goHome() {
+      this.clearTimer();
+      this.$store.dispatch('kioskCart/reset');
+      // Kiosk Phase 9.1.12 — retour idle = fin de session visible. On purge
+      // le snapshot localStorage (le client n'a plus besoin de son ticket
+      // à la borne) pour ne pas polluer la prochaine commande.
+      try {
+        // require-style pour garder le chunk kiosk léger — import déjà fait
+        // en haut du fichier; utiliser la fonction importée directement.
+        clearKioskReceiptSnapshotSafe();
+      } catch (_) {/* noop */}
+      // Router child — parent does not handle @close; must navigate here.
+      this.$router.push({
+        name: 'kiosk.idle'
+      })["catch"](function () {});
+    },
+    sanitizeItemName: function sanitizeItemName(name) {
+      return (0,_helpers_kioskDisplayText__WEBPACK_IMPORTED_MODULE_2__.sanitizeKioskCustomerFacingText)(name || '');
+    } // formatPrice() provided by kioskPriceMixin
+  }
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=script&lang=js"
+/*!*****************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=script&lang=js ***!
+  \*****************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var vuex__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vuex */ "./node_modules/vuex/dist/vuex.esm-bundler.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KioskLoginComponent',
+  computed: {
+    showDevSeedHint: function showDevSeedHint() {
+      return "development" !== 'production';
+    }
+  },
+  data: function data() {
+    return {
+      loading: false,
+      error: null,
+      /** True when KIOSK_MACHINE_* / kioskAutoLogin absent — not a "reconnecting" WebSocket state */
+      setupRequired: false,
+      retryTimer: null,
+      retryAttempts: 0
+    };
+  },
+  mounted: function mounted() {
+    this.startAutoLogin();
+  },
+  beforeUnmount: function beforeUnmount() {
+    clearTimeout(this.retryTimer);
+  },
+  methods: _objectSpread(_objectSpread({}, (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapActions)('kioskCart', ['kioskLogin'])), {}, {
+    getAutoCredentials: function getAutoCredentials() {
+      var _window$foodkingConfi;
+      var auto = ((_window$foodkingConfi = window.foodkingConfig) === null || _window$foodkingConfi === void 0 ? void 0 : _window$foodkingConfi.kioskAutoLogin) || null;
+      if (!(auto !== null && auto !== void 0 && auto.username) || auto.password === undefined || auto.password === null || String(auto.password) === '') {
+        return null;
+      }
+      return {
+        username: String(auto.username).trim(),
+        password: String(auto.password)
+      };
+    },
+    scheduleRetry: function scheduleRetry() {
+      var _this = this;
+      if (this.retryAttempts >= 10) {
+        return;
+      }
+      clearTimeout(this.retryTimer);
+      var delayMs = Math.min(30000, 4000 * Math.max(1, Math.pow(2, Math.max(0, this.retryAttempts - 1))));
+      this.retryTimer = setTimeout(function () {
+        _this.startAutoLogin();
+      }, delayMs);
+    },
+    startAutoLogin: function startAutoLogin() {
+      var _this2 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var auto, _err$response, status, msg, _err$response2, _err$response3, _err$response4, _err$response5, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              auto = _this2.getAutoCredentials();
+              if (auto) {
+                _context.n = 1;
+                break;
+              }
+              _this2.setupRequired = true;
+              _this2.error = _this2.$t('kiosk.login_screen.err_no_credentials');
+              return _context.a(2);
+            case 1:
+              _this2.setupRequired = false;
+              clearTimeout(_this2.retryTimer);
+              _this2.loading = true;
+              _this2.error = null;
+              _context.p = 2;
+              _context.n = 3;
+              return _this2.kioskLogin(auto);
+            case 3:
+              _this2.retryAttempts = 0;
+              _this2.$router.replace({
+                name: 'kiosk.idle'
+              });
+              _context.n = 5;
+              break;
+            case 4:
+              _context.p = 4;
+              _t = _context.v;
+              // [iter15-mega-fix D-007 2026-05-10] 429 must surface a localized
+              // user-facing message — not the raw axios `Request failed with
+              // status code 429`. The Laravel response body carries `{message,
+              // retry_after}`, but the UI prefers the i18n key when available so
+              // the wording matches the locale of the borne and never leaks
+              // internal axios strings (D-007 i18n leak observed on iter15
+              // mega-audit Wave D state 05).
+              status = _t === null || _t === void 0 || (_err$response = _t.response) === null || _err$response === void 0 ? void 0 : _err$response.status;
+              if (status === 429) {
+                msg = _this2.$t('kiosk.login_screen.err_rate_limited');
+              } else {
+                msg = (_t === null || _t === void 0 || (_err$response2 = _t.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.errors) === null || _err$response2 === void 0 ? void 0 : _err$response2.validation) || (_t === null || _t === void 0 || (_err$response3 = _t.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.errors) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.username) === null || _err$response3 === void 0 ? void 0 : _err$response3[0]) || (_t === null || _t === void 0 || (_err$response4 = _t.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.errors) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.password) === null || _err$response4 === void 0 ? void 0 : _err$response4[0]) || (_t === null || _t === void 0 || (_err$response5 = _t.response) === null || _err$response5 === void 0 || (_err$response5 = _err$response5.data) === null || _err$response5 === void 0 ? void 0 : _err$response5.message) || _this2.$t('kiosk.login_screen.err_login_failed');
+              }
+              _this2.error = msg;
+              _this2.retryAttempts += 1;
+              _this2.scheduleRetry();
+            case 5:
+              _context.p = 5;
+              _this2.loading = false;
+              return _context.f(5);
+            case 6:
+              return _context.a(2);
+          }
+        }, _callee, null, [[2, 4, 5, 6]]);
+      }))();
+    },
+    retryAutoLogin: function retryAutoLogin() {
+      this.retryAttempts = 0;
+      this.startAutoLogin();
+    }
+  })
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=script&lang=js"
+/*!*******************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=script&lang=js ***!
+  \*******************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var vuex__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vuex */ "./node_modules/vuex/dist/vuex.esm-bundler.js");
+/* harmony import */ var _helpers_kioskFormatPrice__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../helpers/kioskFormatPrice */ "./resources/js/helpers/kioskFormatPrice.js");
+/* harmony import */ var _helpers_kioskUpsellFlow__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../helpers/kioskUpsellFlow */ "./resources/js/helpers/kioskUpsellFlow.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
+/* harmony import */ var _ds_KsConsentModal_vue__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./ds/KsConsentModal.vue */ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue");
+/* harmony import */ var _ds_KsVirtualKeyboard_vue__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./ds/KsVirtualKeyboard.vue */ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue");
+/* harmony import */ var _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../helpers/kioskAnalytics */ "./resources/js/helpers/kioskAnalytics.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
+
+
+
+// [PHASE-6.3] RGPD — modale de consentement loyalty + analytics injectée
+//             juste avant l'appel API `frontend/loyalty/register` qui persiste les PII.
+
+// Kiosk Phase 9.1.7 — clavier virtuel maison pour les inputs loyalty register.
+// Les bornes Windows kiosk désactivent TabTip → sans ce composant, les champs
+// name/phone/email sont inutilisables. Le numpad pour le code reste inchangé
+// (UX dédié aux codes fidélité numériques courts).
+
+// [PHASE-6.4] Instrumentation analytics (gated par consent).
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KioskLoyaltyComponent',
+  mixins: [_helpers_kioskFormatPrice__WEBPACK_IMPORTED_MODULE_1__.kioskPriceMixin],
+  components: {
+    KsConsentModal: _ds_KsConsentModal_vue__WEBPACK_IMPORTED_MODULE_4__["default"],
+    KsVirtualKeyboard: _ds_KsVirtualKeyboard_vue__WEBPACK_IMPORTED_MODULE_5__["default"]
+  },
+  inject: {
+    showToast: {
+      "default": function _default() {
+        return function () {};
+      }
+    }
+  },
+  // [MEGA 2.E / F-09] Hard cap on loyalty check latency (QR/keyboard path uses same API).
+  LOYALTY_HTTP_TIMEOUT_MS: 25000,
+  data: function data() {
+    return {
+      step: 'input',
+      code: '',
+      loading: false,
+      error: null,
+      customer: null,
+      discountValue: 0,
+      minRedeemPoints: 100,
+      rewardTiers: [100, 250, 500, 1000, 2000],
+      redeemChoice: null,
+      appliedDiscount: 0,
+      numpadKeys: ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0'],
+      // Register new customer
+      registerName: '',
+      registerPhone: '',
+      registerEmail: '',
+      registerLoading: false,
+      registerError: null,
+      // [PHASE-6.3] RGPD consent state
+      showConsentModal: false,
+      _pendingRegister: null,
+      // Kiosk Phase 9.1.7 — état clavier virtuel.
+      // `vkeybActiveField` = clé du champ actuellement édité ('registerName'
+      // | 'registerPhone' | 'registerEmail'). null → clavier masqué.
+      vkeybActiveField: null
+    };
+  },
+  computed: _objectSpread(_objectSpread(_objectSpread({}, (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapGetters)('kioskCart', ['total', 'upsellShown', 'items'])), (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapGetters)('kioskMenu', ['categories'])), {}, {
+    shouldSkipKioskUpsell: function shouldSkipKioskUpsell() {
+      return (0,_helpers_kioskUpsellFlow__WEBPACK_IMPORTED_MODULE_2__.shouldSkipKioskUpsellScreen)(this.items, this.categories);
+    },
+    customerInitials: function customerInitials() {
+      var _this$customer;
+      if (!((_this$customer = this.customer) !== null && _this$customer !== void 0 && _this$customer.name)) return '?';
+      return this.customer.name.split(' ').map(function (w) {
+        return w[0];
+      }).join('').toUpperCase().slice(0, 2);
+    },
+    canRedeem: function canRedeem() {
+      return this.customer && this.customer.loyalty_point >= this.minRedeemPoints;
+    },
+    nextTierPoints: function nextTierPoints() {
+      if (!this.customer) return 0;
+      var pts = this.customer.loyalty_point;
+      return this.rewardTiers.find(function (t) {
+        return t > pts;
+      }) || 0;
+    },
+    progressPercent: function progressPercent() {
+      var _this = this;
+      if (!this.nextTierPoints || !this.customer) return 100;
+      var prev = [0].concat(_toConsumableArray(this.rewardTiers));
+      var tierIdx = this.rewardTiers.findIndex(function (t) {
+        return t > _this.customer.loyalty_point;
+      });
+      var start = prev[tierIdx] || 0;
+      var range = this.nextTierPoints - start;
+      return Math.min(100, Math.round((this.customer.loyalty_point - start) / range * 100));
+    },
+    // Kiosk Phase 9.1.7 — layout clavier virtuel basé sur la locale borne
+    // (kioskSettings.locale). Toujours fallback 'fr'.
+    vkeybLayout: function vkeybLayout() {
+      var _this$$store$state$ki;
+      var loc = (_this$$store$state$ki = this.$store.state.kioskSettings) === null || _this$$store$state$ki === void 0 ? void 0 : _this$$store$state$ki.locale;
+      if (loc === 'en' || loc === 'ar' || loc === 'fr') return loc;
+      return 'fr';
+    },
+    // Kiosk Phase 9.1.7 — valeur pilotée par le champ actif. Renvoie '' si
+    // aucun champ n'est édité (le clavier est alors masqué via `visible`).
+    vkeybValue: function vkeybValue() {
+      var f = this.vkeybActiveField;
+      if (f === 'registerName') return this.registerName;
+      if (f === 'registerPhone') return this.registerPhone;
+      if (f === 'registerEmail') return this.registerEmail;
+      return '';
+    },
+    // Kiosk Phase 9.1.7 — interdit l'espace pour email (format RFC) et pour
+    // phone (format E.164 strict, l'utilisateur peut taper +, chiffres,
+    // tirets via clavier mais JAMAIS d'espace).
+    vkeybAllowSpace: function vkeybAllowSpace() {
+      return this.vkeybActiveField === 'registerName';
+    },
+    // Kiosk Phase 9.1.7 — maxLength alignée sur les attributs `maxlength`
+    // posés sur les <input> pour rester cohérent si un utilisateur mixe
+    // clavier virtuel + numpad matériel (hyp: admin).
+    vkeybMaxLength: function vkeybMaxLength() {
+      if (this.vkeybActiveField === 'registerName') return 60;
+      if (this.vkeybActiveField === 'registerEmail') return 80;
+      if (this.vkeybActiveField === 'registerPhone') return 20;
+      return 200;
+    }
+  }),
+  mounted: function mounted() {
+    var _this2 = this;
+    this.loadConfig();
+    this.$nextTick(function () {
+      var _this2$$refs$codeInpu;
+      return (_this2$$refs$codeInpu = _this2.$refs.codeInput) === null || _this2$$refs$codeInpu === void 0 ? void 0 : _this2$$refs$codeInpu.focus();
+    });
+  },
+  methods: _objectSpread(_objectSpread({}, (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapActions)('kioskCart', ['setLoyalty', 'markUpsellShown'])), {}, {
+    loadConfig: function loadConfig() {
+      var _this3 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var ms, _res$data, res, cfg, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              ms = _this3.$options.LOYALTY_HTTP_TIMEOUT_MS;
+              _context.p = 1;
+              _context.n = 2;
+              return axios__WEBPACK_IMPORTED_MODULE_3__["default"].get('frontend/loyalty/config', {
+                timeout: ms
+              });
+            case 2:
+              res = _context.v;
+              cfg = ((_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || res.data || {};
+              _this3.minRedeemPoints = cfg.min_redeem_points || 100;
+              if (Array.isArray(cfg.tiers) && cfg.tiers.length > 0) {
+                _this3.rewardTiers = cfg.tiers.map(function (tier) {
+                  return parseInt(tier, 10);
+                }).filter(function (tier) {
+                  return Number.isFinite(tier) && tier > 0;
+                }).sort(function (a, b) {
+                  return a - b;
+                });
+              }
+              _context.n = 4;
+              break;
+            case 3:
+              _context.p = 3;
+              _t = _context.v;
+            case 4:
+              return _context.a(2);
+          }
+        }, _callee, null, [[1, 3]]);
+      }))();
+    },
+    handleNumpad: function handleNumpad(key) {
+      if (key === 'del') {
+        this.code = this.code.slice(0, -1);
+      } else if (this.code.length < 20) {
+        this.code += key;
+      }
+    },
+    // Kiosk Phase 9.1.7 — handlers du clavier virtuel.
+    // onFocusRegisterField(field) : appelé sur focus/click d'un <input>
+    // pour ouvrir le clavier sur le bon champ.
+    onFocusRegisterField: function onFocusRegisterField(field) {
+      if (['registerName', 'registerPhone', 'registerEmail'].includes(field)) {
+        this.vkeybActiveField = field;
+      }
+    },
+    onVkeybInput: function onVkeybInput(next) {
+      var f = this.vkeybActiveField;
+      if (!f) return;
+      this[f] = next;
+    },
+    onVkeybSubmit: function onVkeybSubmit() {
+      // La touche ✓ valide le formulaire si tout est rempli ; sinon elle
+      // passe juste au champ suivant. Cela reproduit le comportement
+      // attendu d'un clavier matériel avec "Enter".
+      if (this.vkeybActiveField === 'registerName' && this.registerPhone === '') {
+        this.vkeybActiveField = 'registerPhone';
+        return;
+      }
+      if (this.vkeybActiveField === 'registerPhone' && this.registerEmail === '') {
+        this.vkeybActiveField = 'registerEmail';
+        return;
+      }
+      // Sur le dernier champ → tenter la soumission.
+      this.vkeybActiveField = null;
+      if (this.registerName.trim() && this.registerPhone.trim() && !this.registerLoading) {
+        this.submitRegister();
+      }
+    },
+    onVkeybClose: function onVkeybClose() {
+      this.vkeybActiveField = null;
+    },
+    checkLoyalty: function checkLoyalty() {
+      var _this4 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+        var ms, _res$data2, _ref, _data$loyalty_point, res, data, _err$message, _err$response, _err$response2, msg, _t2;
+        return _regenerator().w(function (_context2) {
+          while (1) switch (_context2.p = _context2.n) {
+            case 0:
+              if (_this4.code.trim()) {
+                _context2.n = 1;
+                break;
+              }
+              return _context2.a(2);
+            case 1:
+              _this4.loading = true;
+              _this4.error = null;
+              ms = _this4.$options.LOYALTY_HTTP_TIMEOUT_MS;
+              _context2.p = 2;
+              _context2.n = 3;
+              return axios__WEBPACK_IMPORTED_MODULE_3__["default"].post('frontend/loyalty/check', {
+                code: _this4.code.trim()
+              }, {
+                timeout: ms
+              });
+            case 3:
+              res = _context2.v;
+              data = ((_res$data2 = res.data) === null || _res$data2 === void 0 ? void 0 : _res$data2.data) || res.data || {}; // Normalize field names: API returns `points`, UI uses `loyalty_point`
+              _this4.customer = _objectSpread(_objectSpread({}, data), {}, {
+                loyalty_point: parseInt((_ref = (_data$loyalty_point = data.loyalty_point) !== null && _data$loyalty_point !== void 0 ? _data$loyalty_point : data.points) !== null && _ref !== void 0 ? _ref : 0, 10)
+              });
+              _this4.discountValue = parseFloat(data.discount_value || 0);
+              _this4.step = 'balance';
+              _context2.n = 5;
+              break;
+            case 4:
+              _context2.p = 4;
+              _t2 = _context2.v;
+              if (_t2.code === 'ECONNABORTED' || (_err$message = _t2.message) !== null && _err$message !== void 0 && _err$message.includes('timeout')) {
+                _this4.error = _this4.$t('kiosk.loyalty_screen.request_timeout');
+              } else {
+                msg = ((_err$response = _t2.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || ((_err$response2 = _t2.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.errors) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.code) === null || _err$response2 === void 0 ? void 0 : _err$response2[0]);
+                _this4.error = msg || _this4.$t('kiosk.loyalty_screen.error_not_found');
+              }
+            case 5:
+              _context2.p = 5;
+              _this4.loading = false;
+              return _context2.f(5);
+            case 6:
+              return _context2.a(2);
+          }
+        }, _callee2, null, [[2, 4, 5, 6]]);
+      }))();
+    },
+    applyLoyalty: function applyLoyalty() {
+      var _this5 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+        return _regenerator().w(function (_context3) {
+          while (1) switch (_context3.n) {
+            case 0:
+              if (!(_this5.canRedeem && _this5.redeemChoice === 'yes')) {
+                _context3.n = 2;
+                break;
+              }
+              _this5.appliedDiscount = Math.min(_this5.discountValue, _this5.total);
+              _context3.n = 1;
+              return _this5.setLoyalty({
+                customer: _this5.customer,
+                discount: _this5.appliedDiscount
+              });
+            case 1:
+              _this5.showToast(_this5.$t('kiosk.loyalty_screen.toast_discount', {
+                amount: _this5.formatPrice(_this5.appliedDiscount)
+              }), 'success', 3000);
+              _context3.n = 4;
+              break;
+            case 2:
+              _context3.n = 3;
+              return _this5.setLoyalty({
+                customer: _this5.customer,
+                discount: 0
+              });
+            case 3:
+              _this5.appliedDiscount = 0;
+              _this5.showToast(_this5.$t('kiosk.loyalty_screen.toast_saved'), 'info', 3000);
+            case 4:
+              _this5.step = 'confirmed';
+            case 5:
+              return _context3.a(2);
+          }
+        }, _callee3);
+      }))();
+    },
+    /**
+     * [PHASE-6.3] submitRegister avec gate RGPD.
+     *
+     * Flow :
+     *   1. L'utilisateur remplit nom/téléphone/email puis clique "Je m'inscris".
+     *   2. Si le consent loyalty n'est pas déjà stocké (kioskSettings.consentLoyalty),
+     *      on ouvre la modale KsConsentModal — la requête `/loyalty/register` N'EST
+     *      PAS émise tant que l'utilisateur n'a pas explicitement accepté.
+     *   3. Sur `@accept` : on pose les consents dans le store ET on exécute le POST.
+     *   4. Sur `@decline` : on ferme la modale, on nettoie le payload en attente.
+     *      L'utilisateur peut corriger/retenter.
+     *
+     * Rationale : conforme RGPD opt-in strict (§1.6 master prompt). Les PII
+     * (name/phone/email) ne doivent JAMAIS quitter la borne sans consent explicite.
+     */
+    submitRegister: function submitRegister() {
+      var _this6 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+        var _this6$$store$state$k;
+        var consentGiven;
+        return _regenerator().w(function (_context4) {
+          while (1) switch (_context4.n) {
+            case 0:
+              if (!(!_this6.registerName.trim() || !_this6.registerPhone.trim())) {
+                _context4.n = 1;
+                break;
+              }
+              return _context4.a(2);
+            case 1:
+              consentGiven = !!((_this6$$store$state$k = _this6.$store.state.kioskSettings) !== null && _this6$$store$state$k !== void 0 && _this6$$store$state$k.consentLoyalty);
+              if (consentGiven) {
+                _context4.n = 2;
+                break;
+              }
+              // Prépare le payload et ouvre la modale — l'exécution effective est reprise
+              // dans `onConsentAccept` si l'utilisateur valide.
+              _this6._pendingRegister = {
+                name: _this6.registerName.trim(),
+                phone: _this6.registerPhone.trim(),
+                email: _this6.registerEmail.trim() || undefined
+              };
+              _this6.showConsentModal = true;
+              return _context4.a(2);
+            case 2:
+              _context4.n = 3;
+              return _this6._doSubmitRegister({
+                name: _this6.registerName.trim(),
+                phone: _this6.registerPhone.trim(),
+                email: _this6.registerEmail.trim() || undefined
+              });
+            case 3:
+              return _context4.a(2);
+          }
+        }, _callee4);
+      }))();
+    },
+    /**
+     * [PHASE-6.3] Exécute l'appel `/loyalty/register` avec les PII saisies,
+     * après que le consent RGPD a été validé. Peut être appelée directement
+     * (consent pré-existant) ou via `onConsentAccept`.
+     */
+    _doSubmitRegister: function _doSubmitRegister(payload) {
+      var _this7 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
+        var _res$data3, _data$points, res, data, _err$response3, msg, _t3;
+        return _regenerator().w(function (_context5) {
+          while (1) switch (_context5.p = _context5.n) {
+            case 0:
+              _this7.registerLoading = true;
+              _this7.registerError = null;
+              _context5.p = 1;
+              _context5.n = 2;
+              return axios__WEBPACK_IMPORTED_MODULE_3__["default"].post('frontend/loyalty/register', payload);
+            case 2:
+              res = _context5.v;
+              data = ((_res$data3 = res.data) === null || _res$data3 === void 0 ? void 0 : _res$data3.data) || {};
+              _this7.customer = {
+                name: data.name || payload.name,
+                loyalty_point: parseInt((_data$points = data.points) !== null && _data$points !== void 0 ? _data$points : 0, 10),
+                loyalty_code: data.loyalty_code || ''
+              };
+              _this7.discountValue = 0;
+              _this7.code = data.loyalty_code || '';
+              _this7.showToast(_this7.$t('kiosk.loyalty_screen.toast_welcome', {
+                name: _this7.customer.name
+              }), 'success', 3500);
+              _this7.step = 'balance';
+              // [PHASE-6.4] Analytics : registration réussie (anonyme — pas de phone/email ici).
+              try {
+                _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_6__["default"].track('loyalty_scanned', {
+                  registration: true
+                });
+              } catch (_) {}
+              _context5.n = 4;
+              break;
+            case 3:
+              _context5.p = 3;
+              _t3 = _context5.v;
+              msg = ((_err$response3 = _t3.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || _this7.$t('kiosk.loyalty_screen.register_error_generic');
+              _this7.registerError = msg;
+            case 4:
+              _context5.p = 4;
+              _this7.registerLoading = false;
+              return _context5.f(4);
+            case 5:
+              return _context5.a(2);
+          }
+        }, _callee5, null, [[1, 3, 4, 5]]);
+      }))();
+    },
+    /**
+     * [PHASE-6.3] Callback du consent modal : si l'utilisateur accepte, on
+     * exécute le register en attente. Le modal gère déjà la persistance store
+     * des consents + le POST `/loyalty/opt-in` interne.
+     */
+    onConsentAccept: function onConsentAccept() {
+      var _this8 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
+        var payload;
+        return _regenerator().w(function (_context6) {
+          while (1) switch (_context6.n) {
+            case 0:
+              _this8.showConsentModal = false;
+              payload = _this8._pendingRegister;
+              _this8._pendingRegister = null;
+              if (payload) {
+                _context6.n = 1;
+                break;
+              }
+              return _context6.a(2);
+            case 1:
+              _context6.n = 2;
+              return _this8._doSubmitRegister(payload);
+            case 2:
+              return _context6.a(2);
+          }
+        }, _callee6);
+      }))();
+    },
+    onConsentDecline: function onConsentDecline() {
+      this.showConsentModal = false;
+      this._pendingRegister = null;
+      // Pas d'erreur utilisateur — le decline est un choix légitime (RGPD).
+      // L'utilisateur peut soit saisir un code existant, soit quitter l'écran.
+      this.registerError = this.$t('kiosk.loyalty_screen.consent_required');
+    },
+    proceedToPayment: function proceedToPayment() {
+      // Same routing as KioskCartComponent::proceedToUpsell (category skip + upsell once per session).
+      if (this.upsellShown) {
+        this.$router.push({
+          name: 'kiosk.payment'
+        });
+        return;
+      }
+      this.markUpsellShown();
+      if (this.shouldSkipKioskUpsell) {
+        this.$router.push({
+          name: 'kiosk.payment'
+        });
+        return;
+      }
+      this.$router.push({
+        name: 'kiosk.upsell'
+      });
+    },
+    goBack: function goBack() {
+      this.$router.push({
+        name: 'kiosk.cart'
+      });
+    } // formatPrice() provided by kioskPriceMixin
+  })
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=script&lang=js"
+/*!*******************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=script&lang=js ***!
+  \*******************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var vuex__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vuex */ "./node_modules/vuex/dist/vuex.esm-bundler.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
+/* harmony import */ var _helpers_kioskFormatPrice__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../helpers/kioskFormatPrice */ "./resources/js/helpers/kioskFormatPrice.js");
+/* harmony import */ var _services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../services/kioskHardware */ "./resources/js/services/kioskHardware.js");
+/* harmony import */ var _config_kioskHardware__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../config/kioskHardware */ "./resources/js/config/kioskHardware.js");
+/* harmony import */ var _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../helpers/kioskAnalytics */ "./resources/js/helpers/kioskAnalytics.js");
+/* harmony import */ var _helpers_idempotencyHeaders__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../helpers/idempotencyHeaders */ "./resources/js/helpers/idempotencyHeaders.js");
+/* harmony import */ var _composables_useKioskSpeech__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../../composables/useKioskSpeech */ "./resources/js/composables/useKioskSpeech.js");
+/* harmony import */ var _store_modules_kioskCart__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../../../store/modules/kioskCart */ "./resources/js/store/modules/kioskCart.js");
+/* harmony import */ var _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../../../enums/modules/orderStatusEnum */ "./resources/js/enums/modules/orderStatusEnum.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regeneratorValues(e) { if (null != e) { var t = e["function" == typeof Symbol && Symbol.iterator || "@@iterator"], r = 0; if (t) return t.call(e); if ("function" == typeof e.next) return e; if (!isNaN(e.length)) return { next: function next() { return e && r >= e.length && (e = void 0), { value: e && e[r++], done: !e }; } }; } throw new TypeError(_typeof(e) + " is not iterable"); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
+
+
+// [PHASE-6.1] Unified hardware wrapper — remplace les appels window.borne.* directs
+//             par le contrat {ok, error?} + reporting automatique des erreurs hardware.
+
+
+// [PHASE-6.4] Analytics instrumentation (gated par consent, no-op si opt-out).
+
+
+// Kiosk Phase 9.1.8 — TTS sur erreurs de paiement (EAA 2025).
+// Les malvoyants n'avaient aucun retour audio en cas de refus TPE → risque
+// que le client ne réalise pas que la transaction a échoué.
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KioskPaymentComponent',
+  mixins: [_helpers_kioskFormatPrice__WEBPACK_IMPORTED_MODULE_2__.kioskPriceMixin],
+  inject: {
+    showToast: {
+      "default": function _default() {
+        return function () {};
+      }
+    }
+  },
+  data: function data() {
+    return {
+      method: null,
+      submitting: false,
+      submitted: false,
+      error: null,
+      tpeWaiting: false,
+      tpeMessage: '',
+      tpeCanCancel: false,
+      _lastOrder: null,
+      _lastQuote: null,
+      networkOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
+      // Kiosk Phase 9.1.11 — compteur d'échecs TPE.
+      // Conformément à l'UX concurrence (McDonald's, Quick, Burger King),
+      // on laisse l'utilisateur retenter UNE fois après un premier refus.
+      // Au deuxième refus, on route vers l'écran d'erreur dédié qui propose
+      // les 3 CTAs : retenter / payer au comptoir / annuler. Évite la boucle
+      // "essaye, refusé, toast, essaye encore" frustrante et indéfinie.
+      paymentFailureCount: 0
+    };
+  },
+  // Kiosk Phase 9.1.11 — seuil d'échecs au-delà duquel on redirige vers
+  // l'écran d'erreur dédié. Exposé en constante d'instance pour faciliter
+  // l'override en test (`wrapper.vm.$options.MAX_PAYMENT_FAILURES = ...`).
+  MAX_PAYMENT_FAILURES: 2,
+  computed: _objectSpread(_objectSpread({}, (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapGetters)('kioskCart', ['total', 'branchId', 'orderType'])), {}, {
+    cartTotal: function cartTotal() {
+      var _this$_lastQuote$tota, _this$_lastQuote;
+      return (_this$_lastQuote$tota = (_this$_lastQuote = this._lastQuote) === null || _this$_lastQuote === void 0 ? void 0 : _this$_lastQuote.total_ttc) !== null && _this$_lastQuote$tota !== void 0 ? _this$_lastQuote$tota : this.total;
+    }
+  }),
+  mounted: function mounted() {
+    var _this = this;
+    // Kiosk Phase 9.1.8 — prépare le composable TTS (no-op si audio off ou
+    // absence de Web Speech API sur le navigateur kiosk).
+    try {
+      this._kioskSpeech = (0,_composables_useKioskSpeech__WEBPACK_IMPORTED_MODULE_7__.useKioskSpeech)({
+        store: this.$store
+      });
+    } catch (_) {
+      this._kioskSpeech = null;
+    }
+    this.syncNetworkState();
+    window.addEventListener('online', this.syncNetworkState);
+    window.addEventListener('offline', this.syncNetworkState);
+    // [AUDIT-F-008] Boot-time reconcile : récupère les transactions TPE
+    // approuvées par hardware mais dont le confirm backend a échoué (network
+    // blip / app crash post-TPE). Replay best-effort : aucune erreur ne doit
+    // bloquer le rendu de l'écran paiement. Périodique toutes les 60s tant
+    // que le composant est monté.
+    try {
+      this._reconcilePendingPayments();
+    } catch (_) {}
+    try {
+      this._reconcileInterval = setInterval(function () {
+        _this._reconcilePendingPayments();
+      }, 60000);
+    } catch (_) {
+      this._reconcileInterval = null;
+    }
+  },
+  beforeUnmount: function beforeUnmount() {
+    this._lastOrder = null;
+    window.removeEventListener('online', this.syncNetworkState);
+    window.removeEventListener('offline', this.syncNetworkState);
+    // Kiosk Phase 9.1.8 — stoppe le TTS si on quitte l'écran pendant la lecture.
+    try {
+      var _this$_kioskSpeech;
+      (_this$_kioskSpeech = this._kioskSpeech) === null || _this$_kioskSpeech === void 0 || _this$_kioskSpeech.stop();
+    } catch (_) {}
+    // [AUDIT-F-008] Stoppe la boucle de reconcile périodique.
+    if (this._reconcileInterval) {
+      try {
+        clearInterval(this._reconcileInterval);
+      } catch (_) {}
+      this._reconcileInterval = null;
+    }
+  },
+  methods: _objectSpread(_objectSpread({}, (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapActions)('kioskCart', ['submitOrder', 'reset'])), {}, {
+    syncNetworkState: function syncNetworkState() {
+      this.networkOffline = typeof navigator !== 'undefined' ? !navigator.onLine : false;
+      if (this.networkOffline && this.isElectronicMethod(this.method)) {
+        this.method = null;
+      }
+    },
+    isElectronicMethod: function isElectronicMethod(method) {
+      return method === 'card' || method === 'tr';
+    },
+    isElectronicMethodBlocked: function isElectronicMethodBlocked(method) {
+      return this.networkOffline && this.isElectronicMethod(method);
+    },
+    offlinePaymentMessage: function offlinePaymentMessage() {
+      return this.$t('kiosk.pay_screen.offline_short');
+    },
+    selectMethod: function selectMethod(m) {
+      if (this.isElectronicMethodBlocked(m)) {
+        var msg = this.offlinePaymentMessage();
+        this.method = null;
+        this.error = msg;
+        this.showToast(msg, 'warning', 4000);
+        return;
+      }
+      this.method = m;
+      this.error = null;
+      // Kiosk Phase 9.1.11 — changer de mode réinitialise le compteur d'échec.
+      // Motif : si un client re-sélectionne "Espèces" après un CB refusé,
+      // on ne veut pas l'envoyer direct sur /error au premier problème cash.
+      this.paymentFailureCount = 0;
+      // [PHASE-6.4] Analytics : sélection d'un moyen de paiement (avant confirm).
+      try {
+        _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_5__["default"].track('payment_method_selected', {
+          method: m
+        });
+      } catch (_) {}
+    },
+    confirmPayment: function confirmPayment() {
+      var _this2 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var msg, _res$data, _res$data2, _res$data3, _res$data4, _res$data$data$total, _res$data5, _res$data6, _this2$$store$state$k, _res$data7, quote, res, orderId, queueNum, isOfflineId, rawTotal, total, n, loyaltyWasRequested, loyaltyApplied, navTarget, _msg, _err$response, _this2$_kioskSpeech, _err$response2, _this2$_lastOrder, code, _orderId, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              if (!(!_this2.method || _this2.submitting)) {
+                _context.n = 1;
+                break;
+              }
+              return _context.a(2);
+            case 1:
+              if (!_this2.isElectronicMethodBlocked(_this2.method)) {
+                _context.n = 2;
+                break;
+              }
+              msg = _this2.offlinePaymentMessage();
+              _this2.error = msg;
+              _this2.showToast(msg, 'warning', 4000);
+              return _context.a(2);
+            case 2:
+              _this2.submitting = true;
+              _this2.error = null;
+              _context.p = 3;
+              _context.n = 4;
+              return _this2.refreshQuote();
+            case 4:
+              quote = _context.v;
+              // [PHASE-6.4] Analytics : démarrage du checkout (intent de payer).
+              try {
+                _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_5__["default"].track('checkout_started', {
+                  method: _this2.method,
+                  total_cents: Math.round(quote.total_ttc * 100)
+                });
+              } catch (_) {}
+
+              // Step 1 — Submit order to Laravel API
+              // [GAP-22-4] Pass orderType (sur place=25 / à emporter=10) chosen by customer in cart
+              _context.n = 5;
+              return _this2.submitOrder({
+                paymentMethod: _this2.method,
+                orderType: _this2.orderType,
+                quote: quote
+              });
+            case 5:
+              res = _context.v;
+              orderId = (res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 || (_res$data = _res$data.data) === null || _res$data === void 0 ? void 0 : _res$data.id) || (res === null || res === void 0 || (_res$data2 = res.data) === null || _res$data2 === void 0 ? void 0 : _res$data2.id);
+              queueNum = (res === null || res === void 0 || (_res$data3 = res.data) === null || _res$data3 === void 0 || (_res$data3 = _res$data3.data) === null || _res$data3 === void 0 ? void 0 : _res$data3.queue_number) || (res === null || res === void 0 || (_res$data4 = res.data) === null || _res$data4 === void 0 ? void 0 : _res$data4.queue_number);
+              isOfflineId = typeof orderId === 'string' && String(orderId).startsWith('offline_');
+              if (!(isOfflineId && _this2.isElectronicMethod(_this2.method))) {
+                _context.n = 6;
+                break;
+              }
+              throw new Error(_this2.offlinePaymentMessage());
+            case 6:
+              // [AUDIT-52 / T06] SSOT paiement : total numérique serveur (`OrderDetailsResource.total` / POS `order_amount`).
+              // Hors-ligne seulement : pas de total serveur → repli sur le panier local pour l’UX TPE.
+              rawTotal = (_res$data$data$total = res === null || res === void 0 || (_res$data5 = res.data) === null || _res$data5 === void 0 || (_res$data5 = _res$data5.data) === null || _res$data5 === void 0 ? void 0 : _res$data5.total) !== null && _res$data$data$total !== void 0 ? _res$data$data$total : res === null || res === void 0 || (_res$data6 = res.data) === null || _res$data6 === void 0 || (_res$data6 = _res$data6.data) === null || _res$data6 === void 0 ? void 0 : _res$data6.order_amount;
+              if (!isOfflineId) {
+                _context.n = 7;
+                break;
+              }
+              total = _this2.cartTotal;
+              _context.n = 9;
+              break;
+            case 7:
+              n = rawTotal != null && rawTotal !== '' ? Number(rawTotal) : NaN;
+              if (Number.isFinite(n)) {
+                _context.n = 8;
+                break;
+              }
+              throw new Error(_this2.$t('kiosk.pay_screen.invalid_order_response'));
+            case 8:
+              total = Number.isFinite(Number(quote.total_ttc)) ? Number(quote.total_ttc) : n;
+            case 9:
+              // [AUDIT-P2] Check if loyalty discount was silently dropped server-side.
+              // This happens when points were consumed by another order between the loyalty check
+              // and the order commit (race condition). The order still succeeds but without the discount.
+              loyaltyWasRequested = ((_this2$$store$state$k = _this2.$store.state.kioskCart) === null || _this2$$store$state$k === void 0 ? void 0 : _this2$$store$state$k.loyaltyDiscount) > 0;
+              loyaltyApplied = res === null || res === void 0 || (_res$data7 = res.data) === null || _res$data7 === void 0 ? void 0 : _res$data7.loyalty_applied;
+              if (loyaltyWasRequested && loyaltyApplied === false) {
+                _this2.showToast(_this2.$t('kiosk.pay_screen.loyalty_not_applied_toast'), 'warning', 6000);
+              }
+
+              // [AUDIT-P0] Guard: if the API response is malformed and orderId is missing,
+              // do NOT navigate to /waiting/undefined — show a clear error instead.
+              // This prevents an infinite poll loop on GET frontend/order/undefined.
+              // [AUDIT-P48-BUG3] Clearer logic: throw if no orderId AND it's not an offline queued order.
+              if (!(!orderId && !isOfflineId)) {
+                _context.n = 10;
+                break;
+              }
+              throw new Error(_this2.$t('kiosk.pay_screen.invalid_order_response'));
+            case 10:
+              _this2._lastOrder = {
+                id: orderId,
+                queue_number: queueNum,
+                total: total
+              };
+
+              // [Lot 2.H / F-13] Keep submitting=true through TPE/cash so the confirm
+              // control cannot re-fire; clear only after payment path completes or in catch.
+              navTarget = _this2.method === 'cash' ? {
+                name: 'kiosk.cash-instruction',
+                query: {
+                  number: queueNum,
+                  total: total,
+                  timeout: 45
+                }
+              } : {
+                name: 'kiosk.waiting',
+                params: {
+                  orderId: String(orderId)
+                },
+                query: {
+                  queue: queueNum,
+                  total: total
+                }
+              }; // Step 2 — Payment processing
+              if (!(_this2.method === 'card' || _this2.method === 'tr')) {
+                _context.n = 12;
+                break;
+              }
+              _context.n = 11;
+              return _this2.processCardPayment(navTarget);
+            case 11:
+              _context.n = 13;
+              break;
+            case 12:
+              _context.n = 13;
+              return _this2.processCashPayment(navTarget);
+            case 13:
+              _context.n = 15;
+              break;
+            case 14:
+              _context.p = 14;
+              _t = _context.v;
+              _this2.tpeWaiting = false;
+              _this2.tpeCanCancel = false;
+              // [AUDIT-52-BUG7] Specific user-friendly message for TPE timeout
+
+              if ((_t === null || _t === void 0 ? void 0 : _t.message) === 'TPE_TIMEOUT') {
+                _msg = _this2.$t('kiosk.payment.tpe_timeout_message');
+              } else {
+                _msg = _t !== null && _t !== void 0 && (_err$response = _t.response) !== null && _err$response !== void 0 && (_err$response = _err$response.data) !== null && _err$response !== void 0 && _err$response.errors ? Object.values(_t.response.data.errors).flat().join(' ') : (_t === null || _t === void 0 ? void 0 : _t.message) || _this2.$t('kiosk.pay_screen.payment_error_generic');
+              }
+              _this2.error = _msg;
+              _this2.showToast(_msg, 'error', 6000);
+              _this2.submitting = false;
+              _this2.submitted = false;
+              // Kiosk Phase 9.1.8 — annonce vocale de l'erreur (no-op si audio off).
+              // On énonce un message court + clef i18n pour le fallback AR mp3 statique.
+              try {
+                (_this2$_kioskSpeech = _this2._kioskSpeech) === null || _this2$_kioskSpeech === void 0 || _this2$_kioskSpeech.speak(_this2.$t('kiosk.pay_screen.speech_error', {
+                  msg: _msg
+                }), {
+                  key: 'kiosk.pay_screen.speech_error'
+                })["catch"](function () {});
+              } catch (_) {}
+
+              // Kiosk Phase 9.1.11 — au-delà de MAX_PAYMENT_FAILURES refus TPE
+              // consécutifs, on route vers l'écran d'erreur dédié qui offre des
+              // CTA clairs (retry / cash / cancel). On passe en query :
+              //  - `code`     : code d'erreur TPE (pour le diag staff).
+              //  - `order_id` : référence de la commande pending pour void.
+              // Le compteur est remis à 0 quand l'utilisateur change de method ou
+              // re-sélectionne : resetPaymentFailureCount() ci-dessous.
+              _this2.paymentFailureCount += 1;
+              if (_this2.paymentFailureCount >= _this2.$options.MAX_PAYMENT_FAILURES) {
+                code = (_t === null || _t === void 0 ? void 0 : _t.code) || (_t === null || _t === void 0 || (_err$response2 = _t.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.code) || 'declined';
+                _orderId = (_this2$_lastOrder = _this2._lastOrder) !== null && _this2$_lastOrder !== void 0 && _this2$_lastOrder.id ? String(_this2._lastOrder.id) : null; // Reset avant navigation pour ne pas empiler les seuils si l'utilisateur
+                // revient (back) sur /payment après l'écran d'erreur.
+                _this2.paymentFailureCount = 0;
+                try {
+                  _this2.$router.push({
+                    name: 'kiosk.error.payment-refused',
+                    query: _objectSpread({
+                      code: code
+                    }, _orderId ? {
+                      order_id: _orderId
+                    } : {})
+                  });
+                } catch (_) {/* navigation garde hors dispo (tests) → no-op */}
+              }
+            case 15:
+              return _context.a(2);
+          }
+        }, _callee, null, [[3, 14]]);
+      }))();
+    },
+    refreshQuote: function refreshQuote() {
+      var _this3 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+        var _this3$$store$state$k, _res$data8;
+        var error, payload, res, quote;
+        return _regenerator().w(function (_context2) {
+          while (1) switch (_context2.n) {
+            case 0:
+              if ((_this3$$store$state$k = _this3.$store.state.kioskCart) !== null && _this3$$store$state$k !== void 0 && _this3$$store$state$k.kioskToken) {
+                _context2.n = 1;
+                break;
+              }
+              if (typeof console !== 'undefined' && typeof console.debug === 'function') {
+                console.debug('[KioskPayment] refreshQuote skipped — kioskToken absent');
+              }
+              error = new Error('KIOSK_QUOTE_NO_TOKEN');
+              error.code = 'KIOSK_QUOTE_NO_TOKEN';
+              throw error;
+            case 1:
+              payload = (0,_store_modules_kioskCart__WEBPACK_IMPORTED_MODULE_8__.buildKioskOrderPayload)(_this3.$store.state.kioskCart, {
+                orderType: _this3.orderType,
+                paymentMethod: _this3.method
+              });
+              _context2.n = 2;
+              return axios__WEBPACK_IMPORTED_MODULE_1__["default"].post('frontend/order/quote', payload);
+            case 2:
+              res = _context2.v;
+              quote = res === null || res === void 0 || (_res$data8 = res.data) === null || _res$data8 === void 0 ? void 0 : _res$data8.data;
+              if (!(!quote || quote.total_ttc === undefined || !quote.quote_token || !quote.signature)) {
+                _context2.n = 3;
+                break;
+              }
+              throw new Error(_this3.$t('kiosk.pay_screen.invalid_order_response'));
+            case 3:
+              _this3._lastQuote = quote;
+              return _context2.a(2, quote);
+          }
+        }, _callee2);
+      }))();
+    },
+    processCardPayment: function processCardPayment(navTarget) {
+      var _this4 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+        var _this4$_lastOrder2;
+        var tpeKey, TPE_TIMEOUT_MS, amountEuros, tpeMethod, paymentResult, _this4$_lastOrder, tpeReasonCode, tpeVoidPayload, expectedCents, echoedCents;
+        return _regenerator().w(function (_context3) {
+          while (1) switch (_context3.n) {
+            case 0:
+              _this4.tpeWaiting = true;
+              tpeKey = _this4.method === 'card' ? 'tpe_card' : _this4.method === 'tr' ? 'tpe_tr' : 'tpe_default';
+              _this4.tpeMessage = _this4.$t("kiosk.pay_screen.".concat(tpeKey));
+              _this4.tpeCanCancel = true;
+
+              // [PHASE-6.1] Passage par kioskHardware — stub auto en navigateur (dev/tests),
+              // contrat {ok, error?} uniforme, auto-report vers /frontend/kiosk-event en cas de throw.
+              // [AUDIT-52-BUG7] Wrap dans un timeout global (TPE peut figer sur chip+PIN). SSOT: config/kioskHardware.js
+              TPE_TIMEOUT_MS = _config_kioskHardware__WEBPACK_IMPORTED_MODULE_4__.KIOSK_HARDWARE.TPE_TIMEOUT_MS;
+              amountEuros = _this4._lastOrder.total || _this4.cartTotal;
+              tpeMethod = _this4.method === 'tr' ? 'TR' : 'CB';
+              _context3.n = 1;
+              return Promise.race([_this4._invokeTpe(amountEuros, tpeMethod), new Promise(function (_, reject) {
+                return setTimeout(function () {
+                  return reject(new Error('TPE_TIMEOUT'));
+                }, TPE_TIMEOUT_MS);
+              })]);
+            case 1:
+              paymentResult = _context3.v;
+              _this4.tpeCanCancel = false;
+              if (paymentResult.approved) {
+                _context3.n = 2;
+                break;
+              }
+              _this4.tpeWaiting = false;
+              // [PHASE-6.4] Analytics : échec paiement (code normalisé, jamais de PII).
+              try {
+                _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_5__["default"].track('payment_failed', {
+                  method: _this4.method,
+                  reason_code: paymentResult.error_code || 'declined',
+                  total_cents: Math.round((_this4._lastOrder.total || _this4.cartTotal) * 100)
+                });
+              } catch (_) {}
+              // [AUDIT-P1] Void the server-side order when TPE declines/cancels.
+              // Without this, a PENDING order stays in DB forever (orphan order).
+              // We fire-and-forget: if the void fails, staff can cancel manually from admin.
+              if ((_this4$_lastOrder = _this4._lastOrder) !== null && _this4$_lastOrder !== void 0 && _this4$_lastOrder.id && !String(_this4._lastOrder.id).startsWith('offline_')) {
+                // [AUDIT-F-004] Reason whitelist for kiosk-originated cancels (OrderCancelReason).
+                // Mapping: TPE bridge declined / timed out → distinct codes for analytics; fallback
+                // 'tpe_declined' covers generic refusal. Backend OrderStatusRequest 422s on missing
+                // or non-whitelisted code when actor is kiosk machine token.
+                tpeReasonCode = (paymentResult === null || paymentResult === void 0 ? void 0 : paymentResult.error_code) === 'timeout' ? 'tpe_timeout' : 'tpe_declined';
+                tpeVoidPayload = {
+                  status: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_9__["default"].CANCELED,
+                  reason: tpeReasonCode
+                };
+                axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this4._lastOrder.id), tpeVoidPayload, {
+                  headers: (0,_helpers_idempotencyHeaders__WEBPACK_IMPORTED_MODULE_6__.buildIdempotencyHeaders)(tpeVoidPayload)
+                })["catch"](function (e) {
+                  return console.warn('[KioskPayment] void order failed:', e.message);
+                });
+              }
+              throw new Error(paymentResult.error || _this4.$t('kiosk.pay_screen.payment_declined'));
+            case 2:
+              _this4.tpeMessage = _this4.$t('kiosk.pay_screen.tpe_accepted');
+
+              // [PHASE-6.4] Analytics : paiement validé au TPE (avant confirm API).
+              try {
+                _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_5__["default"].track('payment_completed', {
+                  method: _this4.method,
+                  total_cents: Math.round((_this4._lastOrder.total || _this4.cartTotal) * 100)
+                });
+              } catch (_) {}
+
+              // Step 3 — Confirm payment on backend (stores transaction_id)
+              if (!((_this4$_lastOrder2 = _this4._lastOrder) !== null && _this4$_lastOrder2 !== void 0 && _this4$_lastOrder2.id && paymentResult.transaction_id)) {
+                _context3.n = 3;
+                break;
+              }
+              // [AUDIT-F-002] Echo amount_cents to backend so the controller can verify
+              // that the TPE-approved amount matches order.total (±1 cent tolerance).
+              // Without this, a compromised TPE could approve an arbitrary amount and
+              // the backend would mark PAID without detecting the discrepancy.
+              // The amount source is `paymentResult.amount_cents_approved` if the bridge
+              // returned it (real TPE driver), else fallback on the locally computed
+              // cart total (stub mode + legacy bridges that don't echo amount).
+              expectedCents = Math.round((_this4._lastOrder.total || _this4.cartTotal) * 100);
+              echoedCents = Number.isInteger(paymentResult.amount_cents_approved) ? paymentResult.amount_cents_approved : expectedCents;
+              _context3.n = 3;
+              return _this4.confirmBackendPayment(_this4._lastOrder.id, {
+                transaction_id: paymentResult.transaction_id,
+                card_type: paymentResult.card_type || 'CARD',
+                payment_method: _this4.method === 'tr' ? 5 : 4,
+                amount_cents: echoedCents
+              });
+            case 3:
+              _context3.n = 4;
+              return new Promise(function (r) {
+                return setTimeout(r, 800);
+              });
+            case 4:
+              _this4.tpeWaiting = false;
+              _this4.submitting = false;
+              _this4.$router.push(navTarget);
+            case 5:
+              return _context3.a(2);
+          }
+        }, _callee3);
+      }))();
+    },
+    /**
+     * [PHASE-6.1] Invoque le TPE via kioskHardware.tpeCharge et normalise le
+     * résultat au shape historique `{approved, transaction_id, card_type, error}`
+     * attendu par processCardPayment. En dev (stub), retourne un stub synthétique.
+     *
+     * Contrat `tpeCharge(amountCents, method)` du service :
+     *   → { ok: true, tx_ref, amount_cents_approved?, legacy?, data? } | { ok: false, error }
+     *
+     * [AUDIT-F-002] amount_cents_approved est l'écho strict du montant approuvé.
+     * Le backend OrderController::paymentConfirm vérifie abs(amount_cents - order.total*100) ≤ 1.
+     * Stub mode : echo strict de amountCents (mirroir). Bridges Electron prod : driver TPE
+     * doit retourner amount_cents_approved depuis la trame ISO bancaire.
+     *
+     * Rétro-compat : si le bridge renvoie un shape legacy { status: 'approved', ... }
+     * (vieux firmware Electron), runSafe encapsule déjà dans `data`.
+     */
+    _invokeTpe: function _invokeTpe(amountEuros) {
+      var _arguments = arguments,
+        _this5 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+        var method, amountCents, force, result, raw, approved, echoedAmount;
+        return _regenerator().w(function (_context4) {
+          while (1) switch (_context4.n) {
+            case 0:
+              method = _arguments.length > 1 && _arguments[1] !== undefined ? _arguments[1] : 'CB';
+              amountCents = Math.round(Number(amountEuros) * 100); // [AUDIT-F-014] QA toggle (dev/staging only): force declined/timeout paths.
+              // Production guard non-bypassable: `process.env.NODE_ENV` est remplacé au build par
+              // webpack DefinePlugin (laravel-mix), donc la branche entière disparaît du bundle prod
+              // (dead-code elimination). Aucun query param ne peut activer ce toggle en production.
+              // Placé AVANT la branche stub afin que QA puisse aussi forcer un decline depuis une
+              // borne staging avec bridge=true (utile pour tester la gestion d'erreur côté UI sans
+              // pouvoir reproduire le decline avec un vrai TPE).
+              if (!( true && typeof window !== 'undefined')) {
+                _context4.n = 3;
+                break;
+              }
+              force = new URLSearchParams(window.location.search).get('tpe_force');
+              if (!(force === 'declined')) {
+                _context4.n = 1;
+                break;
+              }
+              return _context4.a(2, {
+                approved: false,
+                error: 'forced_decline_qa',
+                error_code: 'QA_FORCE_DECLINED',
+                transaction_id: null,
+                amount_cents_approved: amountCents
+              });
+            case 1:
+              if (!(force === 'timeout')) {
+                _context4.n = 3;
+                break;
+              }
+              _context4.n = 2;
+              return new Promise(function (r) {
+                return setTimeout(r, 500);
+              });
+            case 2:
+              throw new Error('TPE_TIMEOUT');
+            case 3:
+              if (_services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__["default"].isKioskBridge()) {
+                _context4.n = 5;
+                break;
+              }
+              _this5.tpeMessage = _this5.$t('kiosk.pay_screen.tpe_browser_sim');
+              _context4.n = 4;
+              return new Promise(function (r) {
+                return setTimeout(r, 2000);
+              });
+            case 4:
+              return _context4.a(2, {
+                approved: true,
+                transaction_id: "STUB-".concat(Date.now()),
+                card_type: 'VISA',
+                amount_cents_approved: amountCents
+              });
+            case 5:
+              _context4.n = 6;
+              return _services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__["default"].tpeCharge(amountCents, method);
+            case 6:
+              result = _context4.v;
+              if (result !== null && result !== void 0 && result.ok) {
+                _context4.n = 7;
+                break;
+              }
+              return _context4.a(2, {
+                approved: false,
+                error: (result === null || result === void 0 ? void 0 : result.error) || 'tpe_unknown_error',
+                error_code: (result === null || result === void 0 ? void 0 : result.error_code) || null
+              });
+            case 7:
+              // Le bridge peut renvoyer soit un shape direct `{tx_ref}`, soit une capsule
+              // `{data: {status: 'approved', transaction_id, card_type, ...}}` (legacy).
+              raw = result.data || result;
+              approved = result.ok !== false && (raw.status === 'approved' || raw.approved === true || !!raw.transaction_id || !!raw.tx_ref); // [AUDIT-F-002] amount_cents_approved : extracted from bridge response (real TPE
+              // drivers must echo it from ISO bancaire trame). Fallback sur amountCents si absent
+              // (rétro-compat firmware Electron legacy — but the backend will reject if mismatch).
+              echoedAmount = Number.isInteger(raw.amount_cents_approved) ? raw.amount_cents_approved : Number.isInteger(result.amount_cents_approved) ? result.amount_cents_approved : amountCents;
+              return _context4.a(2, {
+                approved: approved,
+                transaction_id: raw.transaction_id || raw.tx_ref || result.tx_ref || null,
+                card_type: raw.card_type || raw.cardType || 'CARD',
+                error: !approved ? raw.error || result.error || 'declined' : null,
+                error_code: raw.error_code || result.error_code || null,
+                amount_cents_approved: echoedAmount
+              });
+          }
+        }, _callee4);
+      }))();
+    },
+    processCashPayment: function processCashPayment(navTarget) {
+      var _this6 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
+        var _this6$_lastOrder;
+        return _regenerator().w(function (_context5) {
+          while (1) switch (_context5.n) {
+            case 0:
+              // [B5b] Paiement espèces borne : aucune ouverture tiroir côté borne.
+              // L'ordre part en cuisine mais reste PENDING_COUNTER jusqu'à encaissement POS.
+              // On émet payment_completed ici même sans validation TPE (cf. KIOSK_ANALYTICS_EVENTS.md).
+              try {
+                _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_5__["default"].track('payment_completed', {
+                  method: 'cash',
+                  total_cents: Math.round((((_this6$_lastOrder = _this6._lastOrder) === null || _this6$_lastOrder === void 0 ? void 0 : _this6$_lastOrder.total) || _this6.cartTotal) * 100)
+                });
+              } catch (_) {}
+              _this6.submitting = false;
+              _this6.$router.push(navTarget);
+            case 1:
+              return _context5.a(2);
+          }
+        }, _callee5);
+      }))();
+    },
+    _reportDrawerFailure: function _reportDrawerFailure(errorMsg) {
+      // [PHASE-6.1] Conservé : reporte un event "cash_drawer_failure" dédié
+      // (séparé du hardware_event générique car utilisé par dashboards ops).
+      try {
+        var _window$axios;
+        (_window$axios = window.axios) === null || _window$axios === void 0 || _window$axios.post('frontend/kiosk-event', {
+          type: 'cash_drawer_failure',
+          details: "error=".concat(errorMsg || 'unknown')
+        })["catch"](function () {});
+      } catch (_) {}
+    },
+    cancelCardPayment: function cancelCardPayment() {
+      var _this7 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
+        var _this7$_lastOrder;
+        var userCancelPayload;
+        return _regenerator().w(function (_context6) {
+          while (1) switch (_context6.n) {
+            case 0:
+              if (!_services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__["default"].isKioskBridge()) {
+                _context6.n = 1;
+                break;
+              }
+              _context6.n = 1;
+              return _services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__["default"].cancelPayment()["catch"](function () {});
+            case 1:
+              _this7.tpeWaiting = false;
+              _this7.tpeCanCancel = false;
+              _this7.submitted = false;
+              _this7.submitting = false;
+              _this7.error = _this7.$t('kiosk.pay_screen.payment_cancelled');
+              _this7.showToast(_this7.$t('kiosk.pay_screen.payment_cancelled_toast'), 'warning', 2500);
+              // [PHASE-6.4] Analytics : abandon explicite utilisateur au TPE.
+              try {
+                _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_5__["default"].track('order_cancelled', {
+                  method: _this7.method,
+                  stage: 'tpe_cancel'
+                });
+              } catch (_) {}
+              // [AUDIT-P1] Void the server order created before TPE — prevents orphan PENDING orders.
+              if ((_this7$_lastOrder = _this7._lastOrder) !== null && _this7$_lastOrder !== void 0 && _this7$_lastOrder.id && !String(_this7._lastOrder.id).startsWith('offline_')) {
+                // [AUDIT-F-004] Customer pressed Cancel on the TPE prompt → 'tpe_cancel_user'.
+                userCancelPayload = {
+                  status: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_9__["default"].CANCELED,
+                  reason: 'tpe_cancel_user'
+                };
+                axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this7._lastOrder.id), userCancelPayload, {
+                  headers: (0,_helpers_idempotencyHeaders__WEBPACK_IMPORTED_MODULE_6__.buildIdempotencyHeaders)(userCancelPayload)
+                })["catch"](function (e) {
+                  return console.warn('[KioskPayment] void on cancel failed:', e.message);
+                });
+                _this7._lastOrder = null;
+              }
+            case 2:
+              return _context6.a(2);
+          }
+        }, _callee6);
+      }))();
+    },
+    confirmBackendPayment: function confirmBackendPayment(orderId, payload) {
+      var _this8 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7() {
+        var _payload$transaction_, _lastError;
+        var lastError, idempotencyKey, requestConfig, _loop, _ret, attempt, _window$axios2;
+        return _regenerator().w(function (_context8) {
+          while (1) switch (_context8.n) {
+            case 0:
+              lastError = null; // [round-5 fix E-NEW-001 2026-05-11] IdempotencyKeyMiddleware requires
+              // X-Idempotency-Key on all POST mutations. Without it the middleware
+              // throws 422 BEFORE the controller runs → kiosk customer never reaches
+              // the confirmation page. The key MUST be stable across the 3-retry loop
+              // so the backend's replay cache deduplicates correctly. Scope
+              // (branch_id, user_id, hash(key)) is server-side; key just needs to be
+              // unique per logical (order, transaction).
+              idempotencyKey = "kiosk-payment-confirm-".concat(orderId, "-").concat((_payload$transaction_ = payload === null || payload === void 0 ? void 0 : payload.transaction_id) !== null && _payload$transaction_ !== void 0 ? _payload$transaction_ : 'no-tx');
+              requestConfig = {
+                headers: {
+                  'X-Idempotency-Key': idempotencyKey
+                }
+              };
+              _loop = /*#__PURE__*/_regenerator().m(function _loop(attempt) {
+                var _t2;
+                return _regenerator().w(function (_context7) {
+                  while (1) switch (_context7.p = _context7.n) {
+                    case 0:
+                      _context7.p = 0;
+                      _context7.n = 1;
+                      return axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/".concat(orderId, "/payment-confirm"), payload, requestConfig);
+                    case 1:
+                      // [round-4 fix E-004 reopened 2026-05-10] If the first or second
+                      // attempt failed (transient 422 race with order state machine, or
+                      // 401 mid-rotation), Playwright captures the 4xx in network.json
+                      // but the UI stays silent because retry-success keeps the happy
+                      // path going. Without a DOM signal the reviewer protocol cat-6
+                      // selector flags it as silent_error. Mirror the kiosk auth-retry
+                      // bridge by surfacing a brief warning toast on recovered retry.
+                      if (attempt > 1) {
+                        try {
+                          _this8.showToast(_this8.$t('kiosk.pay_screen.payment_sync_retried'), 'warning', 2500);
+                        } catch (_) {/* showToast must never break the happy path */}
+                      }
+                      return _context7.a(2, {
+                        v: void 0
+                      });
+                    case 2:
+                      _context7.p = 2;
+                      _t2 = _context7.v;
+                      lastError = _t2;
+                      if (!(attempt < 3)) {
+                        _context7.n = 3;
+                        break;
+                      }
+                      _context7.n = 3;
+                      return new Promise(function (resolve) {
+                        return setTimeout(resolve, attempt * 700);
+                      });
+                    case 3:
+                      return _context7.a(2);
+                  }
+                }, _loop, null, [[0, 2]]);
+              });
+              attempt = 1;
+            case 1:
+              if (!(attempt <= 3)) {
+                _context8.n = 4;
+                break;
+              }
+              return _context8.d(_regeneratorValues(_loop(attempt)), 2);
+            case 2:
+              _ret = _context8.v;
+              if (!_ret) {
+                _context8.n = 3;
+                break;
+              }
+              return _context8.a(2, _ret.v);
+            case 3:
+              attempt++;
+              _context8.n = 1;
+              break;
+            case 4:
+              console.warn('[KioskPayment] payment-confirm failed after retries:', (_lastError = lastError) === null || _lastError === void 0 ? void 0 : _lastError.message);
+              // [AUDIT-F-008] Persist TPE-approved transaction for boot-time reconcile.
+              // Sans ça, un network blip ou crash backend post-TPE laisse l'order
+              // PENDING orphelin alors que le client a payé.
+              try {
+                _this8._appendPendingReconcile({
+                  order_id: orderId,
+                  transaction_id: payload.transaction_id,
+                  amount_cents: payload.amount_cents,
+                  card_type: payload.card_type,
+                  payment_method: payload.payment_method
+                });
+              } catch (_) {}
+              // Observability : log via kiosk-event (whitelisted type 'sync_failed' avec
+              // subtype dédié — évite d'avoir à étendre KioskEventController::ALLOWED_TYPES).
+              try {
+                (_window$axios2 = window.axios) === null || _window$axios2 === void 0 || _window$axios2.post('frontend/kiosk-event', {
+                  type: 'sync_failed',
+                  subtype: 'payment_confirm_retry_exhausted',
+                  order_ref: String(orderId),
+                  details: "tx=".concat(payload.transaction_id)
+                })["catch"](function () {});
+              } catch (_) {}
+              throw new Error(_this8.$t('kiosk.pay_screen.payment_sync_failed'));
+            case 5:
+              return _context8.a(2);
+          }
+        }, _callee7);
+      }))();
+    },
+    // [AUDIT-F-008] localStorage helpers for reconcile queue.
+    // Contrat : aucun PAN, aucune info bancaire — uniquement transaction_id +
+    // amount_cents + label card_type + payment_method (gateway integer).
+    _readPendingReconcile: function _readPendingReconcile() {
+      try {
+        var _window;
+        var raw = (_window = window) === null || _window === void 0 || (_window = _window.localStorage) === null || _window === void 0 ? void 0 : _window.getItem('pending_payment_confirms');
+        if (!raw) return [];
+        var parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) {
+        return [];
+      }
+    },
+    _writePendingReconcile: function _writePendingReconcile(list) {
+      try {
+        var _window2;
+        // Borne dure 50 entries (anti-explosion localStorage).
+        var trimmed = Array.isArray(list) ? list.slice(0, 50) : [];
+        (_window2 = window) === null || _window2 === void 0 || (_window2 = _window2.localStorage) === null || _window2 === void 0 || _window2.setItem('pending_payment_confirms', JSON.stringify(trimmed));
+      } catch (_) {}
+    },
+    _appendPendingReconcile: function _appendPendingReconcile(entry) {
+      var list = this._readPendingReconcile();
+      list.push(_objectSpread(_objectSpread({}, entry), {}, {
+        attempted_at: new Date().toISOString()
+      }));
+      this._writePendingReconcile(list);
+    },
+    _isPendingReconcileExpired: function _isPendingReconcileExpired(entry) {
+      // Borne 30 min — au-delà alert ops, pas de retry indéfini.
+      try {
+        return Date.now() - new Date(entry.attempted_at).getTime() > 30 * 60 * 1000;
+      } catch (_) {
+        return true;
+      }
+    },
+    _reconcilePendingPayments: function _reconcilePendingPayments() {
+      var _this9 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee8() {
+        var list, fresh, expired, _window$axios3, _response$data, entries, response, results, reconciledTxs, remaining, _t3;
+        return _regenerator().w(function (_context9) {
+          while (1) switch (_context9.p = _context9.n) {
+            case 0:
+              list = _this9._readPendingReconcile();
+              if (!(list.length === 0)) {
+                _context9.n = 1;
+                break;
+              }
+              return _context9.a(2);
+            case 1:
+              fresh = list.filter(function (e) {
+                return !_this9._isPendingReconcileExpired(e);
+              });
+              expired = list.filter(function (e) {
+                return _this9._isPendingReconcileExpired(e);
+              });
+              if (expired.length > 0) {
+                // Alert ops — au-delà 30 min, transaction probablement perdue.
+                try {
+                  (_window$axios3 = window.axios) === null || _window$axios3 === void 0 || _window$axios3.post('frontend/kiosk-event', {
+                    type: 'sync_failed',
+                    subtype: 'payment_reconcile_expired',
+                    details: 'expired_count=' + expired.length
+                  })["catch"](function () {});
+                } catch (_) {}
+              }
+              if (!(fresh.length === 0)) {
+                _context9.n = 2;
+                break;
+              }
+              _this9._writePendingReconcile([]);
+              return _context9.a(2);
+            case 2:
+              _context9.p = 2;
+              entries = fresh.map(function (e) {
+                return {
+                  order_id: e.order_id,
+                  transaction_id: e.transaction_id,
+                  amount_cents: e.amount_cents,
+                  card_type: e.card_type,
+                  payment_method: e.payment_method
+                };
+              });
+              _context9.n = 3;
+              return axios__WEBPACK_IMPORTED_MODULE_1__["default"].post('frontend/payment/reconcile-pending', {
+                entries: entries
+              });
+            case 3:
+              response = _context9.v;
+              results = (response === null || response === void 0 || (_response$data = response.data) === null || _response$data === void 0 ? void 0 : _response$data.data) || [];
+              reconciledTxs = results.filter(function (r) {
+                return r.status === 'reconciled' || r.status === 'already_paid';
+              }).map(function (r) {
+                return r.transaction_id;
+              }); // Garde uniquement les fresh non reconciled — drop les expired définitivement.
+              remaining = fresh.filter(function (e) {
+                return !reconciledTxs.includes(e.transaction_id);
+              });
+              _this9._writePendingReconcile(remaining);
+              _context9.n = 5;
+              break;
+            case 4:
+              _context9.p = 4;
+              _t3 = _context9.v;
+              // Réseau / backend KO → on garde le localStorage pour le prochain tick.
+              // Drop les expired malgré tout (alert déjà émis ci-dessus).
+              if (expired.length > 0) {
+                _this9._writePendingReconcile(fresh);
+              }
+            case 5:
+              return _context9.a(2);
+          }
+        }, _callee8, null, [[2, 4]]);
+      }))();
+    } // formatPrice() provided by kioskPriceMixin
+  })
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=script&lang=js"
+/*!******************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=script&lang=js ***!
+  \******************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var vuex__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vuex */ "./node_modules/vuex/dist/vuex.esm-bundler.js");
+/* harmony import */ var _helpers_kioskFormatPrice__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../helpers/kioskFormatPrice */ "./resources/js/helpers/kioskFormatPrice.js");
+/* harmony import */ var _helpers_kioskDisplayText__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../helpers/kioskDisplayText */ "./resources/js/helpers/kioskDisplayText.js");
+/* harmony import */ var _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../helpers/kioskAnalytics */ "./resources/js/helpers/kioskAnalytics.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
+
+
+// [PHASE-6.4] Analytics upsell — shown (via store plugin sur markUpsellShown),
+// accepted (addAndContinue), rejected (skip explicite ou auto).
+
+var DESSERT_EMOJI = {
+  dessert: '🍰',
+  gâteau: '🎂',
+  glace: '🍦',
+  boisson: '🥤',
+  café: '☕',
+  jus: '🧃',
+  eau: '💧',
+  coca: '🥤',
+  frite: '🍟'
+};
+var _AUTO_SKIP_SECONDS = 30;
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KioskUpsellComponent',
+  mixins: [_helpers_kioskFormatPrice__WEBPACK_IMPORTED_MODULE_1__.kioskPriceMixin],
+  inject: {
+    showToast: {
+      "default": function _default() {
+        return function () {};
+      }
+    }
+  },
+  data: function data() {
+    return {
+      suggestions: [],
+      selectedItems: [],
+      loading: true,
+      autoSkipRemaining: _AUTO_SKIP_SECONDS,
+      autoSkipPct: 100,
+      _autoSkipTimer: null,
+      _adding: false
+    };
+  },
+  computed: {
+    selectedIds: function selectedIds() {
+      return this.selectedItems.map(function (i) {
+        return i.id;
+      });
+    },
+    addedTotal: function addedTotal() {
+      return this.selectedItems.reduce(function (s, i) {
+        return s + parseFloat(i.convert_price || 0);
+      }, 0);
+    },
+    AUTO_SKIP_SECONDS: function AUTO_SKIP_SECONDS() {
+      return _AUTO_SKIP_SECONDS;
+    }
+  },
+  mounted: function mounted() {
+    this.loadSuggestions();
+  },
+  beforeUnmount: function beforeUnmount() {
+    this.clearAutoSkip();
+  },
+  methods: _objectSpread(_objectSpread({}, (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapActions)('kioskCart', ['addItem'])), {}, {
+    loadSuggestions: function loadSuggestions() {
+      var _this = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var _res$data, res, items, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              _this.loading = true;
+              _context.p = 1;
+              _context.n = 2;
+              return _this.$store.dispatch('kioskCart/fetchUpsellItems');
+            case 2:
+              res = _context.v;
+              items = (res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || []; // Prendre max 6 suggestions
+              _this.suggestions = items.slice(0, 6);
+              if (!(_this.suggestions.length === 0)) {
+                _context.n = 3;
+                break;
+              }
+              _this.skip('no_suggestions');
+              return _context.a(2);
+            case 3:
+              // [PHASE-6.4] Analytics : l'écran upsell est affiché avec N suggestions.
+              try {
+                _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_3__["default"].track('upsell_shown', {
+                  suggested_count: _this.suggestions.length
+                });
+              } catch (_) {}
+              // Start auto-skip countdown once suggestions are loaded
+              _this.startAutoSkip();
+              _context.n = 5;
+              break;
+            case 4:
+              _context.p = 4;
+              _t = _context.v;
+              _this.skip('load_error');
+              return _context.a(2);
+            case 5:
+              _context.p = 5;
+              _this.loading = false;
+              return _context.f(5);
+            case 6:
+              return _context.a(2);
+          }
+        }, _callee, null, [[1, 4, 5, 6]]);
+      }))();
+    },
+    startAutoSkip: function startAutoSkip() {
+      var _this2 = this;
+      this.autoSkipRemaining = _AUTO_SKIP_SECONDS;
+      this.autoSkipPct = 100;
+      var step = 100 / (_AUTO_SKIP_SECONDS * 10);
+      this._autoSkipTimer = setInterval(function () {
+        _this2.autoSkipPct = Math.max(0, _this2.autoSkipPct - step);
+        _this2.autoSkipRemaining = Math.ceil(_this2.autoSkipPct / 100 * _AUTO_SKIP_SECONDS);
+        if (_this2.autoSkipPct <= 0) {
+          _this2.clearAutoSkip();
+          _this2.skip('auto_timer');
+        }
+      }, 100);
+    },
+    clearAutoSkip: function clearAutoSkip() {
+      if (this._autoSkipTimer) {
+        clearInterval(this._autoSkipTimer);
+        this._autoSkipTimer = null;
+      }
+    },
+    toggleItem: function toggleItem(item) {
+      // Reset countdown on any interaction
+      this.clearAutoSkip();
+      this.startAutoSkip();
+      var idx = this.selectedItems.findIndex(function (i) {
+        return i.id === item.id;
+      });
+      if (idx >= 0) {
+        this.selectedItems.splice(idx, 1);
+      } else {
+        this.selectedItems.push(item);
+      }
+    },
+    addAndContinue: function addAndContinue() {
+      var _this3 = this,
+        _this$selectedItems$;
+      if (this._adding || this.selectedItems.length === 0) return;
+      this._adding = true;
+      this.selectedItems.forEach(function (item) {
+        _this3.addItem({
+          item_id: item.id,
+          name: item.name,
+          image: item.thumb || item.image,
+          quantity: 1,
+          convert_price: parseFloat(item.convert_price) || 0,
+          currency_price: item.currency_price,
+          discount: 0,
+          item_variation_total: 0,
+          item_extra_total: 0,
+          item_variations: {
+            variations: {},
+            names: {}
+          },
+          item_extras: {
+            extras: [],
+            names: []
+          },
+          instruction: null
+        });
+      });
+      var count = this.selectedItems.length;
+      var firstName = this.sanitizeItemName(((_this$selectedItems$ = this.selectedItems[0]) === null || _this$selectedItems$ === void 0 ? void 0 : _this$selectedItems$.name) || '');
+      this.showToast(count === 1 ? this.$t('kiosk.upsell_screen.toast_added_one', {
+        name: firstName
+      }) : this.$t('kiosk.upsell_screen.toast_added_many', {
+        n: count
+      }), 'success');
+      // [PHASE-6.4] Analytics : upsell accepté (nb items ajoutés, pas de nom en clair).
+      try {
+        _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_3__["default"].track('upsell_accepted', {
+          items_count: count,
+          suggested_count: Array.isArray(this.suggestions) ? this.suggestions.length : 0
+        });
+      } catch (_) {}
+      this.$router.push({
+        name: 'kiosk.payment'
+      })["catch"](function () {
+        _this3._adding = false;
+      });
+    },
+    skip: function skip() {
+      var reason = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'user';
+      // [PHASE-6.4] Analytics : upsell refusé ou auto-skippé (timer).
+      try {
+        _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_3__["default"].track('upsell_rejected', {
+          reason: typeof reason === 'string' ? reason : 'user',
+          suggested_count: Array.isArray(this.suggestions) ? this.suggestions.length : 0
+        });
+      } catch (_) {}
+      this.$router.push({
+        name: 'kiosk.payment'
+      });
+    },
+    getEmoji: function getEmoji(name) {
+      var n = (name || '').toLowerCase();
+      for (var _i = 0, _Object$entries = Object.entries(DESSERT_EMOJI); _i < _Object$entries.length; _i++) {
+        var _Object$entries$_i = _slicedToArray(_Object$entries[_i], 2),
+          key = _Object$entries$_i[0],
+          emoji = _Object$entries$_i[1];
+        if (n.includes(key)) return emoji;
+      }
+      return '🍽️';
+    },
+    sanitizeItemName: function sanitizeItemName(name) {
+      return (0,_helpers_kioskDisplayText__WEBPACK_IMPORTED_MODULE_2__.sanitizeKioskCustomerFacingText)(name || '');
+    } // formatPrice() provided by kioskPriceMixin
+  })
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=script&lang=js"
+/*!*******************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=script&lang=js ***!
+  \*******************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var vuex__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vuex */ "./node_modules/vuex/dist/vuex.esm-bundler.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
+/* harmony import */ var _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../enums/modules/orderStatusEnum */ "./resources/js/enums/modules/orderStatusEnum.js");
+/* harmony import */ var _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../enums/modules/paymentStatusEnum */ "./resources/js/enums/modules/paymentStatusEnum.js");
+/* harmony import */ var _services_eventContract__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../services/eventContract */ "./resources/js/services/eventContract.js");
+/* harmony import */ var _services_kioskHardware__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../services/kioskHardware */ "./resources/js/services/kioskHardware.js");
+/* harmony import */ var _helpers_idempotencyHeaders__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../helpers/idempotencyHeaders */ "./resources/js/helpers/idempotencyHeaders.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
+
+
+
+
+
+
+
+// [AUDIT-P1-C] Polling interval is always 15s — Echo provides real-time pushes.
+// Timeout after 15 minutes if order never becomes ready (customer should contact staff).
+// [HEAL B.3 2026-05-19] Intentional per-surface constant, NOT config-driven.
+// Customer-facing screen: 15s balances UX freshness vs network noise. See
+// config/broadcasting.php for the per-surface SoT note (RED-Z3 §B-6 closed).
+var POLL_INTERVAL_MS = 15000;
+var AUTO_RESET_SECONDS = 20;
+var TIMEOUT_SECONDS = 900; // 15 minutes
+// Use shared enum — keeps in sync with PHP OrderStatus and KDS component
+var STATUS_PREPARED = _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_2__["default"].PREPARED; // 8
+var STATUS_DELIVERED = _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_2__["default"].DELIVERED; // 13
+var STATUS_PREPARING = _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_2__["default"].PREPARING; // 7 — kitchen started, cancel no longer allowed
+var STATUS_CANCELLED = _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_2__["default"].CANCELED; // 16 — cancelled by admin/staff
+var PAYMENT_PAID = _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_3__["default"].PAID;
+var PAYMENT_PENDING_COUNTER = _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_3__["default"].PENDING_COUNTER;
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KioskWaitingComponent',
+  inject: {
+    showToast: {
+      "default": function _default() {
+        return function () {};
+      }
+    }
+  },
+  props: {
+    orderId: {
+      type: [String, Number],
+      required: true
+    }
+  },
+  data: function data() {
+    return {
+      queueNumber: this.$route.query.queue || '—',
+      isReady: false,
+      isOfflineOrder: false,
+      pollTimer: null,
+      countdownTimer: null,
+      autoResetSeconds: AUTO_RESET_SECONDS,
+      elapsedSeconds: 0,
+      elapsedTimer: null,
+      showCancelButton: false,
+      showCancelConfirm: false,
+      cancelError: null,
+      cancelLoading: false,
+      pollFailCount: 0,
+      networkLost: false,
+      timedOut: false,
+      // [AUDIT-P1-C] true after 15 min timeout
+      _eventSub: null,
+      _pollInFlight: false,
+      // [AUDIT-P2-G] prevent overlapping poll requests
+      _readyFlashActive: false
+    };
+  },
+  mounted: function mounted() {
+    // If this is an offline-queued order, skip polling and show "syncing" state
+    if (String(this.orderId).startsWith('offline_')) {
+      this.isOfflineOrder = true;
+      return;
+    }
+    this.startPolling();
+    this._subscribeEcho();
+    this.startElapsedTimer();
+  },
+  beforeUnmount: function beforeUnmount() {
+    this.stopAll();
+    this._unsubscribeEcho();
+  },
+  methods: _objectSpread(_objectSpread({}, (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapActions)('kioskCart', ['fetchOrderStatus', 'reset'])), {}, {
+    // Subscribe to branch Echo channel for sub-second order status push.
+    // Falls back gracefully to polling if Echo/Soketi is unavailable.
+    _subscribeEcho: function _subscribeEcho() {
+      var _this = this;
+      if (!window.Echo) return;
+      var branchId = parseInt(this.$store.getters['kioskCart/branchId'] || 0);
+      if (branchId <= 0) return;
+      // [FIX-53-1] Always unsubscribe first to prevent duplicate listeners on re-mount
+      this._unsubscribeEcho();
+      try {
+        this._eventSub = (0,_services_eventContract__WEBPACK_IMPORTED_MODULE_4__.onEvents)(branchId, [{
+          broadcastAs: 'OrderCreated',
+          handler: function handler(event) {
+            var data = event.payload || {};
+            // [AUDIT-P3] React to OrderCreated to confirm queue number immediately
+            if (parseInt(data.order_id, 10) === parseInt(_this.orderId, 10)) {
+              if (data.queue_number) _this.queueNumber = data.queue_number;
+            }
+          }
+        }, {
+          broadcastAs: 'OrderStatusChanged',
+          handler: function handler(event) {
+            var data = event.payload || {};
+            if (parseInt(data.order_id, 10) === parseInt(_this.orderId, 10)) {
+              _this._doPoll();
+            }
+          }
+        }]);
+        // [P13_LOG_HYGIENE] console.log(`[KioskWaiting] Echo subscribed to branch.${branchId}`);
+      } catch (e) {
+        console.warn('[KioskWaiting] Echo subscription failed:', e.message);
+      }
+    },
+    _unsubscribeEcho: function _unsubscribeEcho() {
+      var branchId = parseInt(this.$store.getters['kioskCart/branchId'] || 0);
+      if (branchId <= 0) return;
+      try {
+        var _this$_eventSub;
+        (_this$_eventSub = this._eventSub) === null || _this$_eventSub === void 0 || _this$_eventSub.unsubscribe();
+        // [P13_LOG_HYGIENE] console.log(`[KioskWaiting] Echo listeners removed from branch.${branchId}`);
+      } catch (e) {
+        console.warn('[KioskWaiting] Echo unsubscribe error:', e.message);
+      }
+      this._eventSub = null;
+    },
+    startPolling: function startPolling() {
+      var _this2 = this;
+      // [AUDIT-P50-BUG7] Guard: do not start polling if orderId is missing or invalid
+      var oid = this.orderId;
+      if (!oid || oid === 'undefined' || oid === 'null' || String(oid).trim() === '') {
+        console.warn('[KioskWaiting] Polling skipped — invalid orderId:', oid);
+        return;
+      }
+      // Poll immediately once, then on interval (fallback when Echo unavailable)
+      this._doPoll();
+      this.pollTimer = setInterval(function () {
+        return _this2._doPoll();
+      }, POLL_INTERVAL_MS);
+    },
+    _doPoll: function _doPoll() {
+      var _this3 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var _res$data, _ref, _data$status, res, data, numericStatus, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              if (!_this3.isReady) {
+                _context.n = 1;
+                break;
+              }
+              return _context.a(2);
+            case 1:
+              if (!_this3._pollInFlight) {
+                _context.n = 2;
+                break;
+              }
+              return _context.a(2);
+            case 2:
+              _this3._pollInFlight = true;
+              _context.p = 3;
+              _context.n = 4;
+              return _this3.fetchOrderStatus(_this3.orderId);
+            case 4:
+              res = _context.v;
+              data = (res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || (res === null || res === void 0 ? void 0 : res.data) || {};
+              numericStatus = parseInt((_ref = (_data$status = data.status) !== null && _data$status !== void 0 ? _data$status : data.order_status) !== null && _ref !== void 0 ? _ref : -1, 10);
+              if (data.queue_number) _this3.queueNumber = data.queue_number;
+              if (!(numericStatus === STATUS_PREPARED || numericStatus === STATUS_DELIVERED)) {
+                _context.n = 5;
+                break;
+              }
+              _this3.markReady();
+              _context.n = 9;
+              break;
+            case 5:
+              if (!(numericStatus === STATUS_CANCELLED)) {
+                _context.n = 6;
+                break;
+              }
+              // [SPLASH] Order was cancelled by admin/staff — redirect to idle with message
+              _this3.stopAll();
+              _this3.reset();
+              _this3.$router.push({
+                name: 'kiosk.idle'
+              });
+              _context.n = 9;
+              break;
+            case 6:
+              if (!_this3.shouldRouteToConfirmation(data, numericStatus)) {
+                _context.n = 8;
+                break;
+              }
+              _context.n = 7;
+              return _this3.routeToConfirmation(data);
+            case 7:
+              _context.n = 9;
+              break;
+            case 8:
+              if (numericStatus >= STATUS_PREPARING) {
+                // Kitchen started — hide cancel button (API will refuse anyway)
+                _this3.showCancelButton = false;
+              }
+            case 9:
+              // Success — reset failure counter
+              _this3.pollFailCount = 0;
+              _this3.networkLost = false;
+              _context.n = 11;
+              break;
+            case 10:
+              _context.p = 10;
+              _t = _context.v;
+              _this3.pollFailCount += 1;
+              // Show network banner after 3 consecutive failures (~15s)
+              if (_this3.pollFailCount >= 3) {
+                _this3.networkLost = true;
+              }
+            case 11:
+              _context.p = 11;
+              _this3._pollInFlight = false;
+              return _context.f(11);
+            case 12:
+              return _context.a(2);
+          }
+        }, _callee, null, [[3, 10, 11, 12]]);
+      }))();
+    },
+    shouldRouteToConfirmation: function shouldRouteToConfirmation(order, numericStatus) {
+      if (!order || numericStatus === STATUS_CANCELLED) return false;
+      if (numericStatus === STATUS_PREPARED || numericStatus === STATUS_DELIVERED) return false;
+      if (numericStatus >= STATUS_PREPARING) return false;
+      var paymentStatus = parseInt(order.payment_status, 10);
+      return paymentStatus === PAYMENT_PAID || paymentStatus === PAYMENT_PENDING_COUNTER || order.payment_pending_counter === true;
+    },
+    routeToConfirmation: function routeToConfirmation(order) {
+      var _this4 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+        var _ref2, _order$total;
+        var queueNumber, total;
+        return _regenerator().w(function (_context2) {
+          while (1) switch (_context2.n) {
+            case 0:
+              _this4.stopAll();
+              queueNumber = order.queue_number || _this4.queueNumber;
+              if (queueNumber) _this4.queueNumber = queueNumber;
+              _this4.$store.commit('kioskCart/SET_ORDER_REF', {
+                orderId: order.id || _this4.orderId,
+                queueNumber: queueNumber
+              });
+              total = (_ref2 = (_order$total = order.total) !== null && _order$total !== void 0 ? _order$total : _this4.$route.query.total) !== null && _ref2 !== void 0 ? _ref2 : null;
+              _context2.n = 1;
+              return _this4.$router.push({
+                name: 'kiosk.confirmation',
+                query: _objectSpread(_objectSpread({}, queueNumber ? {
+                  number: queueNumber
+                } : {}), total !== null && total !== undefined && total !== '' ? {
+                  total: total
+                } : {})
+              })["catch"](function () {});
+            case 1:
+              return _context2.a(2);
+          }
+        }, _callee2);
+      }))();
+    },
+    markReady: function markReady() {
+      clearInterval(this.pollTimer);
+      this.isReady = true;
+      this.playReadySound();
+      this.startAutoReset();
+    },
+    startAutoReset: function startAutoReset() {
+      var _this5 = this;
+      this.autoResetSeconds = AUTO_RESET_SECONDS;
+      this.countdownTimer = setInterval(function () {
+        _this5.autoResetSeconds--;
+        if (_this5.autoResetSeconds <= 0) _this5.newOrder();
+      }, 1000);
+    },
+    playReadySound: function playReadySound() {
+      var _this6 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+        var Ctor, ctx, _t2;
+        return _regenerator().w(function (_context3) {
+          while (1) switch (_context3.p = _context3.n) {
+            case 0:
+              _context3.p = 0;
+              Ctor = window.AudioContext || window.webkitAudioContext;
+              if (Ctor) {
+                _context3.n = 1;
+                break;
+              }
+              throw new Error('AudioContext unavailable');
+            case 1:
+              ctx = new Ctor();
+              if (!(ctx.state === 'suspended')) {
+                _context3.n = 2;
+                break;
+              }
+              _context3.n = 2;
+              return ctx.resume()["catch"](function () {});
+            case 2:
+              if (!(ctx.state !== 'running')) {
+                _context3.n = 3;
+                break;
+              }
+              throw new Error('AudioContext not running');
+            case 3:
+              [523, 659, 784].forEach(function (freq, i) {
+                var osc = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = freq;
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.18);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.4);
+                osc.start(ctx.currentTime + i * 0.18);
+                osc.stop(ctx.currentTime + i * 0.18 + 0.5);
+              });
+              setTimeout(function () {
+                try {
+                  ctx.close();
+                } catch (_) {}
+              }, 1200);
+              _context3.n = 5;
+              break;
+            case 4:
+              _context3.p = 4;
+              _t2 = _context3.v;
+              _this6.triggerReadyVisualFallback();
+            case 5:
+              return _context3.a(2);
+          }
+        }, _callee3, null, [[0, 4]]);
+      }))();
+    },
+    triggerReadyVisualFallback: function triggerReadyVisualFallback() {
+      var _this7 = this;
+      this.showToast(this.$t('kiosk.waiting.ready_visual_fallback'), 'info', 4000);
+      this._readyFlashActive = true;
+      window.setTimeout(function () {
+        _this7._readyFlashActive = false;
+      }, 3000);
+      try {
+        _services_kioskHardware__WEBPACK_IMPORTED_MODULE_5__["default"].haptic('success');
+      } catch (_) {}
+    },
+    startElapsedTimer: function startElapsedTimer() {
+      var _this8 = this;
+      clearInterval(this.elapsedTimer);
+      // Show cancel button after 30s — _doPoll() hides it if kitchen already started (PREPARING+)
+      // [AUDIT-P1-C] Timeout after 15 minutes — customer should contact staff
+      this.elapsedTimer = setInterval(function () {
+        _this8.elapsedSeconds++;
+        if (_this8.elapsedSeconds === 30 && !_this8.isReady) {
+          _this8.showCancelButton = true;
+        }
+        if (_this8.elapsedSeconds >= TIMEOUT_SECONDS && !_this8.isReady) {
+          _this8.stopAll();
+          _this8.timedOut = true;
+        }
+      }, 1000);
+    },
+    confirmCancel: function confirmCancel() {
+      this.cancelError = null;
+      this.showCancelConfirm = true;
+    },
+    closeCancelModal: function closeCancelModal() {
+      this.showCancelConfirm = false;
+      this.cancelError = null;
+      this.cancelLoading = false;
+    },
+    cancelOrder: function cancelOrder() {
+      var _this9 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+        var cancelPayload, _err$response, msg, _t3;
+        return _regenerator().w(function (_context4) {
+          while (1) switch (_context4.p = _context4.n) {
+            case 0:
+              _this9.cancelLoading = true;
+              _this9.cancelError = null;
+              _context4.p = 1;
+              // [AUDIT-F-004] Kiosk customer cancellation from waiting screen → 'customer_request'
+              // (OrderCancelReason enum). Backend OrderStatusRequest 422s without whitelisted reason
+              // when actor is kiosk machine token.
+              cancelPayload = {
+                status: STATUS_CANCELLED,
+                reason: 'customer_request'
+              };
+              _context4.n = 2;
+              return axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this9.orderId), cancelPayload, {
+                headers: (0,_helpers_idempotencyHeaders__WEBPACK_IMPORTED_MODULE_6__.buildIdempotencyHeaders)(cancelPayload)
+              });
+            case 2:
+              // Success — clean up and return to idle
+              _this9.showCancelConfirm = false;
+              _this9.stopAll();
+              _this9.reset();
+              _this9.$router.push({
+                name: 'kiosk.idle'
+              });
+              _context4.n = 4;
+              break;
+            case 3:
+              _context4.p = 3;
+              _t3 = _context4.v;
+              // API refused (e.g. kitchen already started PREPARING)
+              msg = ((_err$response = _t3.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this9.$t('kiosk.waiting_screen.cancel_blocked');
+              _this9.cancelError = msg;
+            case 4:
+              _context4.p = 4;
+              _this9.cancelLoading = false;
+              return _context4.f(4);
+            case 5:
+              return _context4.a(2);
+          }
+        }, _callee4, null, [[1, 3, 4, 5]]);
+      }))();
+    },
+    stopAll: function stopAll() {
+      clearInterval(this.pollTimer);
+      clearInterval(this.countdownTimer);
+      clearInterval(this.elapsedTimer);
+    },
+    // [AUDIT-P47-BUG9] Dismiss timeout overlay and resume polling (customer may want to keep waiting)
+    // [AUDIT-P48-BUG2] Reset elapsedSeconds so the 15-minute timeout doesn't re-fire immediately.
+    dismissTimeoutAndResume: function dismissTimeoutAndResume() {
+      this.timedOut = false;
+      this.elapsedSeconds = 0; // CRITICAL: reset counter so timeout can countdown again
+      clearInterval(this.pollTimer);
+      clearInterval(this.elapsedTimer);
+      this.startPolling(); // immediate poll + 15s interval
+      this.startElapsedTimer(); // resume elapsed timer (cancel btn after 30s, timeout after 15min)
+    },
+    newOrder: function newOrder() {
+      this.stopAll();
+      this.reset();
+      this.$router.push({
+        name: 'kiosk.idle'
+      });
+    }
+  })
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=script&lang=js"
+/*!***************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=script&lang=js ***!
+  \***************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+/**
+ * KsConsentModal — dialogue RGPD pour opt-in loyalty + analytics.
+ * -----------------------------------------------------------------------------
+ * FoodKing Kiosk — Phase 5.4.
+ *
+ * Règles RGPD (article 7 & 32, brief §1) :
+ *  - Checkboxes NON pré-cochées par défaut (pas de dark pattern).
+ *  - Séparation stricte loyalty vs analytics — deux consentements distincts.
+ *  - Lien vers politique de confidentialité accessible AVANT validation.
+ *  - Pas de "×" discret — refus explicite via CTA visible.
+ *  - Aucune PII en props/retour — le caller est responsable de fournir
+ *    phone/email séparément si nécessaire (ex. KioskApp dédié).
+ *  - L'événement `consent_given` est émis via /api/frontend/kiosk-event
+ *    à la validation (accept ou decline) — jamais avant.
+ *
+ * Props :
+ *  - modelValue          : boolean v-model open/close.
+ *  - privacyNoticeVersion: string (audit trail LoyaltyConsent).
+ *  - phone               : string optional — si fourni, on appelle
+ *                          /loyalty/opt-in dès accept. Sinon le parent
+ *                          gère la persistance (ex. collecte plus tard).
+ *  - email               : string optional.
+ *  - name                : string optional.
+ *
+ * Émissions :
+ *  - update:modelValue   : ferme le dialog.
+ *  - accepted (payload)  : { loyalty, analytics, apiResult? }.
+ *  - declined            : aucun argument.
+ *  - error (err)         : echec appel opt-in (réseau ou 500).
+ */
+
+var UID = function UID() {
+  return 'ks-consent-' + Math.random().toString(36).slice(2, 10);
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KsConsentModal',
+  props: {
+    modelValue: {
+      type: Boolean,
+      "default": false
+    },
+    privacyNoticeVersion: {
+      type: String,
+      "default": '2026-04-18'
+    },
+    phone: {
+      type: String,
+      "default": ''
+    },
+    email: {
+      type: String,
+      "default": ''
+    },
+    name: {
+      type: String,
+      "default": ''
+    },
+    // Si false, on ne fait aucun POST — pur opt-in client (analytics only).
+    persistLoyalty: {
+      type: Boolean,
+      "default": true
+    }
+  },
+  emits: ['update:modelValue', 'accepted', 'declined', 'error'],
+  data: function data() {
+    var uid = UID();
+    return {
+      titleId: uid + '-title',
+      descId: uid + '-desc',
+      loyaltyErrorId: uid + '-loyalty-err',
+      loyaltyChecked: false,
+      analyticsChecked: false,
+      mobileTransferChecked: false,
+      privacyOpen: false,
+      submitting: false,
+      showLoyaltyError: false
+    };
+  },
+  computed: {
+    privacyBody: function privacyBody() {
+      return this.$te('kiosk.consent.privacy_body') ? this.$t('kiosk.consent.privacy_body') : ['FoodKing collecte uniquement les données nécessaires à votre programme fidélité : nom, téléphone, email, préférences alimentaires, allergènes déclarés.', 'Vos préférences peuvent être supprimées sur demande (contact indiqué en caisse ou via le site officiel).', 'Aucune donnée personnelle n\'est partagée avec des partenaires commerciaux.', 'Les analyses d\'utilisation, si acceptées, sont anonymes et agrégées — sans lien avec votre identité.'].join(' ');
+    }
+  },
+  watch: {
+    modelValue: function modelValue(next) {
+      var _this = this;
+      if (next) {
+        this.loyaltyChecked = false;
+        this.analyticsChecked = false;
+        this.mobileTransferChecked = false;
+        this.showLoyaltyError = false;
+        this.privacyOpen = false;
+        this.submitting = false;
+        this.$nextTick(function () {
+          try {
+            var _this$$refs$cardRef;
+            (_this$$refs$cardRef = _this.$refs.cardRef) === null || _this$$refs$cardRef === void 0 || _this$$refs$cardRef.focus();
+          } catch (_) {}
+        });
+        this.reportEvent('modal_open');
+      }
+    }
+  },
+  methods: {
+    toggleLoyalty: function toggleLoyalty(e) {
+      this.loyaltyChecked = !!e.target.checked;
+      if (this.loyaltyChecked) this.showLoyaltyError = false;
+    },
+    toggleAnalytics: function toggleAnalytics(e) {
+      this.analyticsChecked = !!e.target.checked;
+    },
+    toggleMobileTransfer: function toggleMobileTransfer(e) {
+      this.mobileTransferChecked = !!e.target.checked;
+    },
+    openPrivacy: function openPrivacy() {
+      this.privacyOpen = true;
+    },
+    closePrivacy: function closePrivacy() {
+      this.privacyOpen = false;
+    },
+    handleBackdrop: function handleBackdrop() {
+      // Pas de fermeture "silencieuse" par backdrop — RGPD exige
+      // un choix explicite. Redirige vers decline.
+      this.handleDecline();
+    },
+    handleAccept: function handleAccept() {
+      var _this2 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var _this2$$store, _this2$$store$dispatc, _this2$$store2, _this2$$store2$dispat, _this2$$store3, _this2$$store3$dispat, outcome, axios, res, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              if (!_this2.submitting) {
+                _context.n = 1;
+                break;
+              }
+              return _context.a(2);
+            case 1:
+              if (!(!_this2.loyaltyChecked && !_this2.analyticsChecked && !_this2.mobileTransferChecked)) {
+                _context.n = 2;
+                break;
+              }
+              _this2.showLoyaltyError = true;
+              return _context.a(2);
+            case 2:
+              // Synchronise les trois consents dans le store (source of truth).
+              try {
+                (_this2$$store = _this2.$store) === null || _this2$$store === void 0 || (_this2$$store$dispatc = _this2$$store.dispatch) === null || _this2$$store$dispatc === void 0 || _this2$$store$dispatc.call(_this2$$store, 'kioskSettings/setConsentLoyalty', !!_this2.loyaltyChecked);
+                (_this2$$store2 = _this2.$store) === null || _this2$$store2 === void 0 || (_this2$$store2$dispat = _this2$$store2.dispatch) === null || _this2$$store2$dispat === void 0 || _this2$$store2$dispat.call(_this2$$store2, 'kioskSettings/setConsentAnalytics', !!_this2.analyticsChecked);
+                (_this2$$store3 = _this2.$store) === null || _this2$$store3 === void 0 || (_this2$$store3$dispat = _this2$$store3.dispatch) === null || _this2$$store3$dispat === void 0 || _this2$$store3$dispat.call(_this2$$store3, 'kioskSettings/setConsentMobileTransfer', !!_this2.mobileTransferChecked);
+              } catch (_) {}
+              outcome = {
+                loyalty: _this2.loyaltyChecked,
+                analytics: _this2.analyticsChecked,
+                mobileTransfer: _this2.mobileTransferChecked,
+                apiResult: null
+              }; // Persist loyalty opt-in côté backend si loyalty=true et persistLoyalty=true.
+              if (!(_this2.loyaltyChecked && _this2.persistLoyalty)) {
+                _context.n = 9;
+                break;
+              }
+              if (_this2.phone) {
+                _context.n = 3;
+                break;
+              }
+              // Mode "consent sans collecte" — on skip simplement le POST.
+              outcome.apiResult = {
+                skipped: 'no_phone'
+              };
+              _context.n = 9;
+              break;
+            case 3:
+              _this2.submitting = true;
+              _context.p = 4;
+              axios = window.axios;
+              if (!(axios !== null && axios !== void 0 && axios.post)) {
+                _context.n = 6;
+                break;
+              }
+              _context.n = 5;
+              return axios.post('frontend/loyalty/opt-in', {
+                phone: _this2.phone,
+                email: _this2.email || null,
+                name: _this2.name || null,
+                consent_accepted: true,
+                privacy_notice_version: _this2.privacyNoticeVersion
+              });
+            case 5:
+              res = _context.v;
+              outcome.apiResult = (res === null || res === void 0 ? void 0 : res.data) || {
+                status: true
+              };
+            case 6:
+              _context.n = 8;
+              break;
+            case 7:
+              _context.p = 7;
+              _t = _context.v;
+              _this2.$emit('error', _t);
+              _this2.reportEvent('opt_in_error');
+              _this2.submitting = false;
+              return _context.a(2);
+            case 8:
+              _this2.submitting = false;
+            case 9:
+              _this2.reportEvent('accept', {
+                loyalty: _this2.loyaltyChecked,
+                analytics: _this2.analyticsChecked,
+                mobile_transfer: _this2.mobileTransferChecked
+              });
+
+              // Event analytics (spec : consent_given avec consent_type+granted).
+              _this2.trackAnalyticsConsent('loyalty_scan', _this2.loyaltyChecked);
+              _this2.trackAnalyticsConsent('heatmap', _this2.analyticsChecked);
+              _this2.trackAnalyticsConsent('mobile_transfer', _this2.mobileTransferChecked);
+              _this2.$emit('accepted', outcome);
+              _this2.$emit('update:modelValue', false);
+            case 10:
+              return _context.a(2);
+          }
+        }, _callee, null, [[4, 7]]);
+      }))();
+    },
+    handleDecline: function handleDecline() {
+      if (this.submitting) return;
+      try {
+        var _this$$store, _this$$store$dispatch, _this$$store2, _this$$store2$dispatc, _this$$store3, _this$$store3$dispatc;
+        (_this$$store = this.$store) === null || _this$$store === void 0 || (_this$$store$dispatch = _this$$store.dispatch) === null || _this$$store$dispatch === void 0 || _this$$store$dispatch.call(_this$$store, 'kioskSettings/setConsentLoyalty', false);
+        (_this$$store2 = this.$store) === null || _this$$store2 === void 0 || (_this$$store2$dispatc = _this$$store2.dispatch) === null || _this$$store2$dispatc === void 0 || _this$$store2$dispatc.call(_this$$store2, 'kioskSettings/setConsentAnalytics', false);
+        (_this$$store3 = this.$store) === null || _this$$store3 === void 0 || (_this$$store3$dispatc = _this$$store3.dispatch) === null || _this$$store3$dispatc === void 0 || _this$$store3$dispatc.call(_this$$store3, 'kioskSettings/setConsentMobileTransfer', false);
+      } catch (_) {}
+      this.reportEvent('decline');
+      this.trackAnalyticsConsent('loyalty_scan', false);
+      this.trackAnalyticsConsent('heatmap', false);
+      this.trackAnalyticsConsent('mobile_transfer', false);
+      this.$emit('declined');
+      this.$emit('update:modelValue', false);
+    },
+    /**
+     * Log observabilité vers /api/frontend/kiosk-event.
+     * Non-bloquant, silencieux en cas d'échec.
+     */
+    reportEvent: function reportEvent(subtype) {
+      var meta = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      try {
+        var axios = window.axios;
+        if (!(axios !== null && axios !== void 0 && axios.post)) return;
+        var details = subtype + (Object.keys(meta).length ? ' | ' + JSON.stringify(meta) : '');
+        axios.post('frontend/kiosk-event', {
+          type: 'consent_event',
+          details: details.slice(0, 490)
+        })["catch"](function () {});
+      } catch (_) {}
+    },
+    /**
+     * Émet un event analytics `consent_given` côté observabilité
+     * (distinct du `consent_event` d'observabilité purement technique).
+     */
+    trackAnalyticsConsent: function trackAnalyticsConsent(consent_type, granted) {
+      try {
+        var axios = window.axios;
+        if (!(axios !== null && axios !== void 0 && axios.post)) return;
+        axios.post('frontend/kiosk-event', {
+          type: 'analytics',
+          event_name: 'consent_given',
+          payload: {
+            consent_type: consent_type,
+            granted: !!granted
+          }
+        })["catch"](function () {});
+      } catch (_) {}
+    }
+  }
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=script&lang=js"
+/*!******************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=script&lang=js ***!
+  \******************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/**
+ * KsVirtualKeyboard — clavier virtuel maison (pas de dépendance externe).
+ * -----------------------------------------------------------------------------
+ * FoodKing Kiosk — Phase 4.6.
+ *
+ * Pourquoi maison :
+ *  - Windows kiosk mode désactive TabTip (clavier tactile natif) → besoin d'un
+ *    fallback in-app.
+ *  - Aucune lib UI lourde autorisée (DS maison uniquement — cf. brief).
+ *
+ * Props :
+ *  - modelValue     : v-model de la valeur saisie.
+ *  - layout         : 'fr' | 'en' | 'ar' (défaut = useKioskSettings.locale).
+ *  - visible        : boolean contrôlé par le parent (show/hide).
+ *  - maxLength      : contraintes de saisie (défaut 200).
+ *  - allowSpace     : bool (défaut true) — désactive espaces sur champs emails.
+ *  - showPreview    : bool (défaut true) — affiche la valeur en haut.
+ *
+ * Émissions :
+ *  - update:modelValue (chaque keystroke)
+ *  - submit   (touche ✓ ou Enter)
+ *  - close    (touche Esc virtuelle — non implémentée ici, géré par parent)
+ *
+ * A11y :
+ *  - role="group" + aria-label
+ *  - Chaque touche : élément HTML `button` natif — focus + Enter/Space OK d'office.
+ *  - aria-label custom pour ⌫ / ✓ / espace (lecteurs d'écran).
+ *
+ * Invariants :
+ *  - N'envoie RIEN au backend — c'est une pure UI primitive.
+ *  - Ne modifie pas l'a11y globale (ni lang ni dir) — elle les consomme.
+ *  - Aucun state interne à part `shift` (toggle maj). La valeur est
+ *    contrôlée par le parent via v-model pour éviter les divergences.
+ */
+
+// Kiosk Phase 9.1.7 — rangée numérique (0-9) partagée par tous les layouts.
+// Les champs loyalty (phone + email) ont besoin de chiffres ; sans cette
+// rangée, le KsVirtualKeyboard n'était utilisable que pour des saisies
+// alphabétiques strictes et les bornes Windows sans TabTip n'offraient
+// aucun moyen de saisir un numéro de téléphone.
+var DIGITS_ROW = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+var ROW_DEFS = {
+  // Layout AZERTY simplifié (FR borne)
+  fr: {
+    normal: [DIGITS_ROW, ['a', 'z', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'], ['q', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm'], ['w', 'x', 'c', 'v', 'b', 'n', '-', '_', '.', '@']],
+    shift: [DIGITS_ROW, ['A', 'Z', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'], ['Q', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M'], ['W', 'X', 'C', 'V', 'B', 'N', '-', '_', '.', '@']]
+  },
+  // QWERTY (EN)
+  en: {
+    normal: [DIGITS_ROW, ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'], ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm'], ['z', 'x', 'c', 'v', 'b', 'n', '-', '_', '.', '@']],
+    shift: [DIGITS_ROW, ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'], ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M'], ['Z', 'X', 'C', 'V', 'B', 'N', '-', '_', '.', '@']]
+  },
+  // Layout arabe simplifié (sous-ensemble des lettres les plus communes).
+  // Les lettres n'ont pas de casse — "shift" affiche harakat (tashkeel).
+  ar: {
+    normal: [DIGITS_ROW, ['ض', 'ص', 'ث', 'ق', 'ف', 'غ', 'ع', 'ه', 'خ', 'ح'], ['ش', 'س', 'ي', 'ب', 'ل', 'ا', 'ت', 'ن', 'م', 'ك'], ['ئ', 'ء', 'ؤ', 'ر', 'لا', 'ى', 'ة', 'و', 'ز', 'ظ']],
+    shift: [DIGITS_ROW, ['ّ', 'َ', 'ً', 'ُ', 'ٌ', 'ِ', 'ٍ', 'ْ', 'ٰ', 'ٓ'], ['ش', 'س', 'ي', 'ب', 'ل', 'أ', 'ت', 'ن', 'م', 'ك'], ['ئ', 'ء', 'ؤ', 'ر', 'لا', 'آ', 'إ', 'و', 'ز', 'ظ']]
+  }
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'KsVirtualKeyboard',
+  props: {
+    modelValue: {
+      type: String,
+      "default": ''
+    },
+    layout: {
+      type: String,
+      "default": 'fr',
+      validator: function validator(v) {
+        return ['fr', 'en', 'ar'].includes(v);
+      }
+    },
+    visible: {
+      type: Boolean,
+      "default": true
+    },
+    maxLength: {
+      type: Number,
+      "default": 200
+    },
+    allowSpace: {
+      type: Boolean,
+      "default": true
+    },
+    showPreview: {
+      type: Boolean,
+      "default": true
+    }
+  },
+  emits: ['update:modelValue', 'submit', 'close'],
+  data: function data() {
+    return {
+      shift: false
+    };
+  },
+  computed: {
+    isRtl: function isRtl() {
+      return this.layout === 'ar';
+    },
+    rows: function rows() {
+      var _this = this;
+      var map = ROW_DEFS[this.layout] || ROW_DEFS.fr;
+      var src = this.shift && map.shift ? map.shift : map.normal;
+      // Ajoute la row shift-toggle en dessous des 3 rangées principales,
+      // représentée comme une rangée séparée (la rangée shift-toggle est
+      // ajoutée dans le template via .ks-vkeyb__row--actions).
+      return src.map(function (row) {
+        return row.map(function (_char) {
+          return {
+            label: _char,
+            "char": _char,
+            testid: _this.safeTestid(_char)
+          };
+        });
+      });
+    },
+    displayValue: function displayValue() {
+      return this.modelValue || '';
+    }
+  },
+  methods: {
+    safeTestid: function safeTestid(s) {
+      // Les caractères arabes / spéciaux ne conviennent pas en testid — on
+      // fallback sur le code UTF.
+      if (/^[a-zA-Z0-9@._-]$/.test(s)) return s;
+      return 'u' + s.codePointAt(0).toString(16);
+    },
+    displayLabel: function displayLabel(key) {
+      return key.label;
+    },
+    pressKey: function pressKey(key) {
+      if (key.action) {
+        if (key.action === 'backspace') return this.backspace();
+        if (key.action === 'submit') return this.submit();
+        if (key.action === 'shift') return this.shift = !this.shift;
+        return;
+      }
+      if (key["char"]) this.pressChar(key["char"]);
+    },
+    pressChar: function pressChar(ch) {
+      if (!ch) return;
+      if (!this.allowSpace && ch === ' ') return;
+      var next = (this.modelValue || '') + ch;
+      if (next.length > this.maxLength) return;
+      this.$emit('update:modelValue', next);
+      // Auto-désactiver shift après une frappe majuscule unique.
+      if (this.shift && this.layout !== 'ar') this.shift = false;
+    },
+    backspace: function backspace() {
+      var cur = this.modelValue || '';
+      if (!cur) return;
+      // Supporte la suppression d'un point de code Unicode complet
+      // (important en AR où une lettre peut être composée).
+      var arr = Array.from(cur);
+      arr.pop();
+      this.$emit('update:modelValue', arr.join(''));
+    },
+    clearAll: function clearAll() {
+      if (!this.modelValue) return;
+      this.$emit('update:modelValue', '');
+    },
+    submit: function submit() {
+      this.$emit('submit', this.modelValue || '');
+    },
+    toggleShift: function toggleShift() {
+      this.shift = !this.shift;
+    }
+  }
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=template&id=f1497108&scoped=true"
+/*!********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=template&id=f1497108&scoped=true ***!
+  \********************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
+var _hoisted_1 = {
+  "class": "kiosk-cart",
+  "data-testid": "kiosk-cart-root"
+};
+var _hoisted_2 = {
+  "class": "kiosk-cart-header"
+};
+var _hoisted_3 = ["aria-label"];
+var _hoisted_4 = {
+  "class": "kiosk-cart-header-info"
+};
+var _hoisted_5 = {
+  "class": "kiosk-cart-title",
+  "data-testid": "kiosk-cart-title"
+};
+var _hoisted_6 = {
+  "class": "kiosk-cart-item-count",
+  "data-testid": "kiosk-cart-count"
+};
+var _hoisted_7 = {
+  "class": "kiosk-clear-modal"
+};
+var _hoisted_8 = {
+  id: "kiosk-cart-clear-title",
+  "class": "kiosk-clear-title"
+};
+var _hoisted_9 = {
+  "class": "kiosk-clear-sub"
+};
+var _hoisted_10 = {
+  "class": "kiosk-clear-actions"
+};
+var _hoisted_11 = {
+  key: 0,
+  "class": "kiosk-cart-empty",
+  role: "status",
+  "aria-live": "polite",
+  "data-testid": "kiosk-cart-empty"
+};
+var _hoisted_12 = ["aria-label"];
+var _hoisted_13 = ["aria-checked"];
+var _hoisted_14 = {
+  "class": "kiosk-order-type-label"
+};
+var _hoisted_15 = ["aria-checked"];
+var _hoisted_16 = {
+  "class": "kiosk-order-type-label"
+};
+var _hoisted_17 = {
+  key: 2,
+  "class": "kiosk-cart-body"
+};
+var _hoisted_18 = {
+  "class": "kiosk-cart-items",
+  role: "list",
+  "data-testid": "kiosk-cart-items"
+};
+var _hoisted_19 = ["data-testid"];
+var _hoisted_20 = {
+  "class": "kiosk-cart-item-img",
+  "aria-hidden": "true"
+};
+var _hoisted_21 = ["src"];
+var _hoisted_22 = {
+  key: 1,
+  "class": "kiosk-cart-item-emoji"
+};
+var _hoisted_23 = {
+  "class": "kiosk-cart-item-info"
+};
+var _hoisted_24 = {
+  "class": "kiosk-cart-item-name-row"
+};
+var _hoisted_25 = ["data-testid"];
+var _hoisted_26 = ["onClick", "aria-label", "data-testid"];
+var _hoisted_27 = ["data-testid"];
+var _hoisted_28 = ["data-testid"];
+var _hoisted_29 = {
+  "class": "kiosk-cart-item-unit"
+};
+var _hoisted_30 = {
+  "class": "kiosk-cart-item-controls"
+};
+var _hoisted_31 = ["aria-label"];
+var _hoisted_32 = ["onClick", "aria-label", "data-testid"];
+var _hoisted_33 = ["data-testid"];
+var _hoisted_34 = ["disabled", "onClick", "aria-label", "data-testid"];
+var _hoisted_35 = ["onClick", "aria-label", "data-testid"];
+var _hoisted_36 = ["data-testid"];
+var _hoisted_37 = ["aria-label"];
+var _hoisted_38 = {
+  "class": "kiosk-cart-summary-row"
+};
+var _hoisted_39 = {
+  "data-testid": "kiosk-cart-subtotal"
+};
+var _hoisted_40 = {
+  key: 0,
+  "class": "kiosk-cart-summary-row loyalty"
+};
+var _hoisted_41 = {
+  "class": "green",
+  "data-testid": "kiosk-cart-loyalty-discount"
+};
+var _hoisted_42 = {
+  key: 1,
+  "class": "kiosk-cart-summary-row promo"
+};
+var _hoisted_43 = {
+  "class": "green",
+  "data-testid": "kiosk-cart-promo-discount"
+};
+var _hoisted_44 = {
+  "class": "kiosk-cart-summary-row total"
+};
+var _hoisted_45 = {
+  "class": "kiosk-cart-grand-total",
+  "data-testid": "kiosk-cart-total"
+};
+var _hoisted_46 = {
+  "class": "kiosk-cart-promo",
+  "data-testid": "kiosk-cart-promo"
+};
+var _hoisted_47 = {
+  key: 0,
+  "class": "kiosk-cart-promo-form"
+};
+var _hoisted_48 = {
+  "for": "kiosk-cart-promo-input",
+  "class": "kiosk-cart-promo-label"
+};
+var _hoisted_49 = {
+  "class": "kiosk-cart-promo-row"
+};
+var _hoisted_50 = ["placeholder", "aria-invalid", "aria-describedby", "disabled"];
+var _hoisted_51 = ["disabled"];
+var _hoisted_52 = {
+  key: 0,
+  id: "kiosk-cart-promo-error",
+  "class": "kiosk-cart-promo-error",
+  role: "alert",
+  "data-testid": "kiosk-cart-promo-error"
+};
+var _hoisted_53 = {
+  key: 1,
+  "class": "kiosk-cart-promo-applied",
+  "data-testid": "kiosk-cart-promo-applied"
+};
+var _hoisted_54 = {
+  "class": "kiosk-cart-promo-applied-text"
+};
+var _hoisted_55 = {
+  key: 0
+};
+var _hoisted_56 = {
+  key: 1
+};
+var _hoisted_57 = {
+  "class": "kiosk-cart-actions"
+};
+var _hoisted_58 = ["disabled", "aria-busy"];
+var _hoisted_59 = {
+  "class": "kiosk-btn-price"
+};
+var _hoisted_60 = {
+  key: 0,
+  "class": "kiosk-cart-quote-error",
+  role: "alert",
+  "data-testid": "kiosk-cart-quote-error"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_KsAllergenBadge = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KsAllergenBadge");
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Header "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-cart-back",
+    onClick: _cache[0] || (_cache[0] = function () {
+      return $options.goBackFromCart && $options.goBackFromCart.apply($options, arguments);
+    }),
+    "aria-label": _ctx.$t('kiosk.back'),
+    "data-testid": "kiosk-cart-back"
+  }, _toConsumableArray(_cache[16] || (_cache[16] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "24",
+    height: "24",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M19 12H5M5 12L12 19M5 12L12 5",
+    stroke: "currentColor",
+    "stroke-width": "2.5",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_3), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.your_cart')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.cartCount) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.cartCount > 1 ? _ctx.$t('kiosk.article_plural') : _ctx.$t('kiosk.article_singular')), 1 /* TEXT */)]), _ctx.cartCount > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    key: 0,
+    type: "button",
+    "class": "kiosk-cart-clear",
+    onClick: _cache[1] || (_cache[1] = function ($event) {
+      return $data.showClearConfirm = true;
+    }),
+    "data-testid": "kiosk-cart-clear"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.clear_cart')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Modal : confirmer vider le panier "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+    name: "fade"
+  }, {
+    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [$data.showClearConfirm ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        key: 0,
+        "class": "kiosk-clear-overlay",
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-labelledby": "kiosk-cart-clear-title",
+        "data-testid": "kiosk-cart-clear-modal",
+        onClick: _cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+          return $data.showClearConfirm = false;
+        }, ["self"])),
+        onKeydown: _cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)(function ($event) {
+          return $data.showClearConfirm = false;
+        }, ["esc"]))
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.clear_cart')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.clear_cart_confirm')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "kiosk-clear-yes",
+        onClick: _cache[2] || (_cache[2] = function () {
+          return $options.confirmClear && $options.confirmClear.apply($options, arguments);
+        }),
+        "data-testid": "kiosk-cart-clear-yes"
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.yes_clear')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "kiosk-clear-no",
+        onClick: _cache[3] || (_cache[3] = function ($event) {
+          return $data.showClearConfirm = false;
+        }),
+        "data-testid": "kiosk-cart-clear-no"
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.cancel')), 1 /* TEXT */)])])], 32 /* NEED_HYDRATION */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
+    }),
+    _: 1 /* STABLE */
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Panier vide "), _ctx.cartCount === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_11, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-cart-empty-icon",
+    "aria-hidden": "true"
+  }, "🛒", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.empty_cart')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.empty_cart_hint')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-btn-primary",
+    onClick: _cache[6] || (_cache[6] = function ($event) {
+      return _ctx.$router.push({
+        name: 'kiosk.categories'
+      });
+    }),
+    "data-testid": "kiosk-cart-empty-cta"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.add_items')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [GAP-22-1] Sélecteur Sur place / À emporter — inspiré Splash "), _ctx.cartCount > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 1,
+    "class": "kiosk-order-type-bar",
+    role: "radiogroup",
+    "aria-label": _ctx.$t('kiosk.order_type_label'),
+    "data-testid": "kiosk-cart-order-type"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n        [wave-p-kiosk-2026-05-20 BORNE-001 heal] V1 dine-in gate.\n        Mirrors KioskIdleScreenComponent + PosComponent v-if=\"dineInEnabled\"\n        per feedback_v1_dine_in_disabled_2026-05-06. The \"Sur place\" tile must\n        stay hidden until V2 floorplan ships — backend OrderRequest:213\n        rejects KIOSK order_type when pos_dine_in_enabled=false, so leaving\n        this button clickable creates a guaranteed 422 UX dead-end on V1.\n      "), $options.dineInEnabled ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    key: 0,
+    type: "button",
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-order-type-btn", {
+      active: _ctx.orderType === $data.ORDER_TYPE_KIOSK
+    }]),
+    role: "radio",
+    "aria-checked": _ctx.orderType === $data.ORDER_TYPE_KIOSK,
+    "data-testid": "kiosk-cart-order-type-dinein",
+    onClick: _cache[7] || (_cache[7] = function ($event) {
+      return $options.selectOrderType($data.ORDER_TYPE_KIOSK);
+    })
+  }, [_cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kiosk-order-type-icon",
+    "aria-hidden": "true"
+  }, "🍽️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.dine_in')), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_13)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-order-type-btn", {
+      active: _ctx.orderType === $data.ORDER_TYPE_TAKEAWAY
+    }]),
+    role: "radio",
+    "aria-checked": _ctx.orderType === $data.ORDER_TYPE_TAKEAWAY,
+    "data-testid": "kiosk-cart-order-type-takeaway",
+    onClick: _cache[8] || (_cache[8] = function ($event) {
+      return $options.selectOrderType($data.ORDER_TYPE_TAKEAWAY);
+    })
+  }, [_cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kiosk-order-type-icon",
+    "aria-hidden": "true"
+  }, "🥡", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.takeaway')), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_15)], 8 /* PROPS */, _hoisted_12)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Liste articles "), _ctx.cartCount > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [FIX] Use stable composite key instead of array index to avoid re-render issues "), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(_ctx.cartItems, function (item, idx) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: item.item_id ? "".concat(item.item_id, "-").concat(idx) : idx,
+      "class": "kiosk-cart-item",
+      role: "listitem",
+      "data-testid": "kiosk-cart-item-".concat(idx)
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Image "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [item.image ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+      key: 0,
+      src: item.image,
+      alt: ''
+    }, null, 8 /* PROPS */, _hoisted_21)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_22, "🍽️"))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Infos + bouton édition "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_23, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_24, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", {
+      "class": "kiosk-cart-item-name",
+      "data-testid": "kiosk-cart-item-name-".concat(idx)
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayCartItemName(item)), 9 /* TEXT, PROPS */, _hoisted_25), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Edit: retire l'article et rouvre le wizard pour le même produit "), item.item_id ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      key: 0,
+      type: "button",
+      "class": "kiosk-cart-edit-btn",
+      onClick: function onClick($event) {
+        return $options.editItem(idx);
+      },
+      "aria-label": _ctx.$t('kiosk.edit_item_aria'),
+      "data-testid": "kiosk-cart-item-edit-".concat(idx)
+    }, _toConsumableArray(_cache[20] || (_cache[20] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+      width: "16",
+      height: "16",
+      viewBox: "0 0 16 16",
+      fill: "none",
+      "aria-hidden": "true"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+      d: "M11.333 2a1.885 1.885 0 0 1 2.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2Z",
+      stroke: "currentColor",
+      "stroke-width": "1.4",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round"
+    })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_26)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [GAP-22-2] Afficher les sélections wizard (variations, extras) "), $options.getItemSelectionSummary(item) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: 0,
+      "class": "kiosk-cart-item-selections",
+      "data-testid": "kiosk-cart-item-options-".concat(idx)
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getItemSelectionSummary(item)), 9 /* TEXT, PROPS */, _hoisted_27)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.cartLineCatalogItem(item) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_KsAllergenBadge, {
+      key: 1,
+      "class": "kiosk-cart-item-allergens",
+      item: $options.cartLineCatalogItem(item),
+      selections: $options.cartLineAllergenSelections(item),
+      allergens: [],
+      "customer-allergens": $options.customerAllergenCodes,
+      "data-testid": "kiosk-cart-item-allergens-".concat(idx)
+    }, null, 8 /* PROPS */, ["item", "selections", "customer-allergens", "data-testid"])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), item.instruction ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", {
+      key: 2,
+      "class": "kiosk-cart-item-note",
+      "data-testid": "kiosk-cart-item-note-".concat(idx)
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayCartInstruction(item)), 9 /* TEXT, PROPS */, _hoisted_28)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice((parseFloat(item.convert_price) || 0) + (item.item_variation_total || 0) + (item.item_extra_total || 0))) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.per_unit')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Contrôles quantité + suppression "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      "class": "kiosk-qty-ctrl",
+      role: "group",
+      "aria-label": _ctx.$t('kiosk.quantity_of', {
+        name: $options.displayCartItemName(item)
+      })
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      type: "button",
+      "class": "kiosk-qty-btn minus",
+      onClick: function onClick($event) {
+        return $options.changeQty(idx, item.quantity - 1);
+      },
+      "aria-label": _ctx.$t('kiosk.decrease_qty'),
+      "data-testid": "kiosk-cart-item-qty-minus-".concat(idx)
+    }, _toConsumableArray(_cache[21] || (_cache[21] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+      width: "20",
+      height: "20",
+      viewBox: "0 0 20 20",
+      fill: "none",
+      "aria-hidden": "true"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+      d: "M4 10h12",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
+    })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_32), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "class": "kiosk-qty-num",
+      "aria-live": "polite",
+      "data-testid": "kiosk-cart-item-qty-".concat(idx)
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity), 9 /* TEXT, PROPS */, _hoisted_33), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      type: "button",
+      "class": "kiosk-qty-btn plus",
+      disabled: item.quantity >= $data.maxItemQty,
+      onClick: function onClick($event) {
+        return $options.changeQty(idx, item.quantity + 1);
+      },
+      "aria-label": _ctx.$t('kiosk.increase_qty'),
+      "data-testid": "kiosk-cart-item-qty-plus-".concat(idx)
+    }, _toConsumableArray(_cache[22] || (_cache[22] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+      width: "20",
+      height: "20",
+      viewBox: "0 0 20 20",
+      fill: "none",
+      "aria-hidden": "true"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+      d: "M10 4v12M4 10h12",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
+    })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_34)], 8 /* PROPS */, _hoisted_31), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" FoodKing brand V2 (2026-05-10) — bouton delete explicite (owner\n                 demande \"really see + add/delete correctement\"). Decrement à\n                 qty=1 supprime aussi via changeQty, ce bouton donne une voie\n                 directe sans nécessiter de tap répété. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      type: "button",
+      "class": "kiosk-cart-item-trash",
+      onClick: function onClick($event) {
+        return $options.removeItemDirectly(idx);
+      },
+      "aria-label": _ctx.$t('kiosk.remove_item') || 'Supprimer cet article',
+      "data-testid": "kiosk-cart-item-remove-".concat(idx)
+    }, _toConsumableArray(_cache[23] || (_cache[23] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+      width: "20",
+      height: "20",
+      viewBox: "0 0 20 20",
+      fill: "none",
+      "aria-hidden": "true"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+      d: "M3 6h14M8 6V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2m1 0v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h10Z",
+      stroke: "currentColor",
+      "stroke-width": "1.6",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round"
+    }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+      d: "M9 10v4M11 10v4",
+      stroke: "currentColor",
+      "stroke-width": "1.6",
+      "stroke-linecap": "round"
+    })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_35), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [KIOSK-17] item.total is always present (computed by ADD_ITEM / UPDATE_QUANTITY) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "class": "kiosk-cart-item-total",
+      "data-testid": "kiosk-cart-item-total-".concat(idx)
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(item.total)), 9 /* TEXT, PROPS */, _hoisted_36)])], 8 /* PROPS */, _hoisted_19);
+  }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Récapitulatif totaux "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-cart-summary",
+    role: "region",
+    "aria-label": _ctx.$t('kiosk.subtotal'),
+    "aria-live": "polite",
+    "data-testid": "kiosk-cart-summary"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.subtotal')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(_ctx.cartSubtotal)), 1 /* TEXT */)]), _ctx.loyaltyDiscount > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_40, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [_cache[24] || (_cache[24] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "aria-hidden": "true"
+  }, "🎁", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.discount_loyalty')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_41, "-" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(_ctx.loyaltyDiscount)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Kiosk Phase 9.1.6 — Ligne discount promo, ne s'affiche que si appliquée. "), _ctx.promoDiscount > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [_cache[25] || (_cache[25] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "aria-hidden": "true"
+  }, "🏷️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.discount_promo', {
+    code: _ctx.promoCode
+  })), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_43, "-" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(_ctx.promoDiscount)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.total')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(_ctx.cartTotal)), 1 /* TEXT */)])], 8 /* PROPS */, _hoisted_37), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Kiosk Phase 9.1.6 — Champ code promo (SSOT lecture-seule, revalidé\n           serveur à /order). Affiche success / error inline. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_46, [!_ctx.promoCode ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_47, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_48, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.promo.label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_49, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    id: "kiosk-cart-promo-input",
+    "onUpdate:modelValue": _cache[9] || (_cache[9] = function ($event) {
+      return $data.promoInput = $event;
+    }),
+    type: "text",
+    autocomplete: "off",
+    maxlength: "64",
+    "class": "kiosk-cart-promo-input",
+    placeholder: _ctx.$t('kiosk.promo.placeholder'),
+    "aria-invalid": !!_ctx.promoError,
+    "aria-describedby": _ctx.promoError ? 'kiosk-cart-promo-error' : null,
+    disabled: _ctx.promoLoading,
+    "data-testid": "kiosk-cart-promo-input",
+    onKeydown: _cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.applyPromo && $options.applyPromo.apply($options, arguments);
+    }, ["prevent"]), ["enter"]))
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_50), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.promoInput]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-cart-promo-apply",
+    disabled: _ctx.promoLoading || !$data.promoInput.trim(),
+    "data-testid": "kiosk-cart-promo-apply",
+    onClick: _cache[11] || (_cache[11] = function () {
+      return $options.applyPromo && $options.applyPromo.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.promoLoading ? _ctx.$t('kiosk.promo.loading') : _ctx.$t('kiosk.promo.apply')), 9 /* TEXT, PROPS */, _hoisted_51)]), _ctx.promoError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_52, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$te(_ctx.promoError) ? _ctx.$t(_ctx.promoError) : _ctx.promoError), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_53, [_cache[26] || (_cache[26] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kiosk-cart-promo-applied-icon",
+    "aria-hidden": "true"
+  }, "✓", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.promo.applied', {
+    code: _ctx.promoCode,
+    amount: _ctx.formatPrice(_ctx.promoDiscount)
+  })), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-cart-promo-remove",
+    "data-testid": "kiosk-cart-promo-remove",
+    onClick: _cache[12] || (_cache[12] = function () {
+      return $options.removePromo && $options.removePromo.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.promo.remove')), 1 /* TEXT */)]))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Bouton fidélité "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-btn-loyalty",
+    onClick: _cache[13] || (_cache[13] = function ($event) {
+      return _ctx.$router.push({
+        name: 'kiosk.loyalty'
+      });
+    }),
+    "data-testid": "kiosk-cart-loyalty-btn"
+  }, [_cache[27] || (_cache[27] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kiosk-btn-loyalty-star",
+    "aria-hidden": "true"
+  }, "★", -1 /* CACHED */)), _ctx.loyaltyDiscount > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_55, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_applied', {
+    amount: _ctx.formatPrice(_ctx.loyaltyDiscount)
+  })), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_56, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_prompt')), 1 /* TEXT */)), _cache[28] || (_cache[28] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kiosk-btn-loyalty-arrow",
+    "aria-hidden": "true"
+  }, "›", -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Bouton valider → upsell "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_57, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-btn-primary full",
+    onClick: _cache[14] || (_cache[14] = function () {
+      return $options.proceedToUpsell && $options.proceedToUpsell.apply($options, arguments);
+    }),
+    disabled: $data.quoteLoading,
+    "aria-busy": $data.quoteLoading ? 'true' : 'false',
+    "data-testid": "kiosk-cart-checkout"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.validate_order')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_59, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(_ctx.cartTotal)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_58), $data.quoteError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_60, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.quoteError), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-btn-secondary",
+    onClick: _cache[15] || (_cache[15] = function ($event) {
+      return _ctx.$router.push({
+        name: 'kiosk.categories'
+      });
+    }),
+    "data-testid": "kiosk-cart-add-more"
+  }, " + " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.add_more_items')), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=template&id=1852351a&scoped=true"
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=template&id=1852351a&scoped=true ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = {
+  "class": "kiosk-cash"
+};
+var _hoisted_2 = {
+  "class": "kiosk-cash__main"
+};
+var _hoisted_3 = {
+  "class": "kiosk-cash__header"
+};
+var _hoisted_4 = {
+  "class": "kiosk-cash__title",
+  "data-testid": "kiosk-cash-title"
+};
+var _hoisted_5 = {
+  "class": "kiosk-cash__subtitle"
+};
+var _hoisted_6 = ["aria-label"];
+var _hoisted_7 = {
+  "class": "kiosk-cash__row"
+};
+var _hoisted_8 = {
+  "class": "kiosk-cash__label"
+};
+var _hoisted_9 = {
+  "class": "kiosk-cash__number",
+  "data-testid": "kiosk-cash-order-number"
+};
+var _hoisted_10 = {
+  "class": "kiosk-cash__row"
+};
+var _hoisted_11 = {
+  "class": "kiosk-cash__label"
+};
+var _hoisted_12 = {
+  "class": "kiosk-cash__help"
+};
+var _hoisted_13 = {
+  "class": "kiosk-cash__footer"
+};
+var _hoisted_14 = {
+  key: 0,
+  "class": "kiosk-cash__countdown",
+  "aria-live": "polite"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_KsPriceLine = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KsPriceLine");
+  var _component_KsCard = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KsCard");
+  var _component_KsButton = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KsButton");
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("section", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" V3.3 (2026-05-10) — Wrapper __main centre vertical (32\" portrait ergo) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_3, [_cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-cash__badge",
+    "aria-hidden": "true"
+  }, "💶", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.cash_instruction.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.cash_instruction.subtitle')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-cash__board",
+    role: "group",
+    "aria-label": _ctx.$t('kiosk.cash_instruction.title')
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_KsCard, {
+    elevation: "lift",
+    padding: "lg",
+    "class": "kiosk-cash__card"
+  }, {
+    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.cash_instruction.order_label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", _hoisted_9, " #" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.orderNumber || '—'), 1 /* TEXT */)]), _cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+        "class": "kiosk-cash__divider",
+        "aria-hidden": "true"
+      }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.cash_instruction.amount_label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_KsPriceLine, {
+        size: "lg",
+        emphasis: "",
+        price: typeof $props.orderTotal === 'number' ? $props.orderTotal : null,
+        label: '',
+        "data-testid": "kiosk-cash-amount"
+      }, null, 8 /* PROPS */, ["price"])])];
+    }),
+    _: 1 /* STABLE */
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.cash_instruction.help')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_6)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("footer", _hoisted_13, [$data.countdown > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.cash_instruction.auto_redirect', {
+    n: $data.countdown
+  })), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_KsButton, {
+    variant: "primary",
+    size: "lg",
+    "full-width": "",
+    "data-testid": "kiosk-cash-cta-understood",
+    onClick: _cache[0] || (_cache[0] = function ($event) {
+      return $options.acknowledge('user');
+    })
+  }, {
+    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.cash_instruction.cta_understood')), 1 /* TEXT */)];
+    }),
+    _: 1 /* STABLE */
+  })])]);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=template&id=255fc987&scoped=true"
+/*!****************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=template&id=255fc987&scoped=true ***!
+  \****************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = {
+  "class": "kiosk-confirmation",
+  role: "status",
+  "aria-live": "polite",
+  "data-testid": "kiosk-confirmation-root"
+};
+var _hoisted_2 = {
+  "class": "kiosk-confirmation-title",
+  "data-testid": "kiosk-confirmation-title"
+};
+var _hoisted_3 = {
+  "class": "kiosk-confirmation-card",
+  "data-testid": "kiosk-confirmation-card"
+};
+var _hoisted_4 = {
+  "class": "kiosk-confirmation-row"
+};
+var _hoisted_5 = {
+  "class": "kiosk-confirmation-label"
+};
+var _hoisted_6 = {
+  "class": "kiosk-confirmation-number",
+  "data-testid": "kiosk-confirmation-number"
+};
+var _hoisted_7 = {
+  key: 0,
+  "class": "kiosk-confirmation-row"
+};
+var _hoisted_8 = {
+  "class": "kiosk-confirmation-label"
+};
+var _hoisted_9 = {
+  "class": "kiosk-confirmation-price",
+  "data-testid": "kiosk-confirmation-total"
+};
+var _hoisted_10 = {
+  key: 0,
+  "class": "kiosk-printer-fallback"
+};
+var _hoisted_11 = {
+  "class": "kiosk-printer-fallback-label"
+};
+var _hoisted_12 = {
+  "class": "kiosk-printer-fallback-number"
+};
+var _hoisted_13 = {
+  "class": "kiosk-printer-fallback-hint"
+};
+var _hoisted_14 = {
+  "class": "kiosk-confirmation-message"
+};
+var _hoisted_15 = {
+  key: 0,
+  "class": "kiosk-confirmation-points"
+};
+var _hoisted_16 = {
+  "class": "kiosk-points-text"
+};
+var _hoisted_17 = {
+  "class": "kiosk-points-name"
+};
+var _hoisted_18 = {
+  "class": "kiosk-points-value"
+};
+var _hoisted_19 = {
+  "class": "kiosk-confirmation-timer"
+};
+var _hoisted_20 = {
+  "class": "kiosk-timer-label"
+};
+var _hoisted_21 = {
+  "class": "kiosk-timer-bar"
+};
+var _hoisted_22 = ["disabled", "aria-busy"];
+var _hoisted_23 = {
+  key: 0
+};
+var _hoisted_24 = {
+  key: 1
+};
+var _hoisted_25 = {
+  key: 2
+};
+var _hoisted_26 = {
+  key: 3
+};
+var _hoisted_27 = ["data-print-failed", "role", "aria-live"];
+var _hoisted_28 = {
+  "class": "kiosk-fallback-receipt-title"
+};
+var _hoisted_29 = {
+  "class": "kiosk-fallback-receipt-help"
+};
+var _hoisted_30 = {
+  "class": "receipt-header"
+};
+var _hoisted_31 = {
+  "class": "receipt-restaurant"
+};
+var _hoisted_32 = {
+  "class": "receipt-date"
+};
+var _hoisted_33 = {
+  "class": "receipt-queue"
+};
+var _hoisted_34 = {
+  "class": "receipt-queue-number"
+};
+var _hoisted_35 = {
+  key: 1,
+  "class": "receipt-line receipt-discount"
+};
+var _hoisted_36 = {
+  "class": "receipt-line receipt-total"
+};
+var _hoisted_37 = {
+  "class": "receipt-footer receipt-loyalty"
+};
+var _hoisted_38 = {
+  "class": "receipt-footer"
+};
+var _hoisted_39 = {
+  "class": "receipt-footer"
+};
+var _hoisted_40 = {
+  "class": "receipt-footer"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Animated success checkmark (décoratif) "), _cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"kiosk-confirmation-anim\" aria-hidden=\"true\" data-v-255fc987><svg class=\"kiosk-check-svg\" viewBox=\"0 0 120 120\" fill=\"none\" data-v-255fc987><circle cx=\"60\" cy=\"60\" r=\"54\" stroke=\"rgba(255,255,255,0.1)\" stroke-width=\"6\" data-v-255fc987></circle><circle cx=\"60\" cy=\"60\" r=\"54\" stroke=\"#2ECC71\" stroke-width=\"6\" stroke-linecap=\"round\" stroke-dasharray=\"339\" stroke-dashoffset=\"339\" class=\"kiosk-ring-fill\" data-v-255fc987></circle><path d=\"M36 60l18 18 30-30\" stroke=\"#2ECC71\" stroke-width=\"7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"kiosk-check-path\" data-v-255fc987></path></svg></div>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_2, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.order_number')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_6, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayNumber), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [AUDIT-P2-B] Check null/undefined explicitly so total=0 is shown correctly "), $options.displayTotal !== null && $options.displayTotal !== undefined ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.total_paid')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.displayTotal)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $data.printFailed ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.print_failed')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayNumber), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.print_failed_hint')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.message_kitchen')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.message_counter')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [GAP-35-7] Points fidélité gagnés — style Splash "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+    name: "fade-up"
+  }, {
+    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [$options.pointsEarned > 0 && $options.loyaltyCustomerName ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_15, [_cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+        "class": "kiosk-points-icon"
+      }, "⭐", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.loyaltyCustomerName) + ",", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.loyalty_points', {
+        n: $options.pointsEarned
+      })), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
+    }),
+    _: 1 /* STABLE */
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Progress timer "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.auto_return', {
+    n: $data.countdown
+  })), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-timer-fill",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      width: $data.progressWidth + '%'
+    })
+  }, null, 4 /* STYLE */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-btn-print", {
+      'is-printing': $data.printStatus === 'printing',
+      'is-done': $data.printStatus === 'done',
+      'is-error': $data.printStatus === 'error'
+    }]),
+    onClick: _cache[0] || (_cache[0] = function () {
+      return $options.printReceipt && $options.printReceipt.apply($options, arguments);
+    }),
+    disabled: $data.printStatus === 'printing',
+    "aria-busy": $data.printStatus === 'printing',
+    "data-testid": "kiosk-confirmation-cta-print"
+  }, [$data.printStatus === 'printing' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_23, "⏳ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.printing')), 1 /* TEXT */)) : $data.printStatus === 'done' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_24, "✅ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.printed')), 1 /* TEXT */)) : $data.printStatus === 'error' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_25, "❌ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.print_error')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_26, "🖨️ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.print_button')), 1 /* TEXT */))], 10 /* CLASS, PROPS */, _hoisted_22), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-btn-home",
+    onClick: _cache[1] || (_cache[1] = function () {
+      return $options.goHome && $options.goHome.apply($options, arguments);
+    }),
+    "data-testid": "kiosk-confirmation-cta-home"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.new_order')) + " → ", 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Receipt zone (hidden unless print dialog / print-failed fallback) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    id: "kiosk-print-receipt",
+    "class": "kiosk-receipt-zone",
+    "data-print-failed": $data.printFailed,
+    "data-testid": "kiosk-print-receipt",
+    role: $data.printFailed ? 'status' : undefined,
+    "aria-live": $data.printFailed ? 'polite' : undefined
+  }, [$data.printFailed ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 0
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.fallback_receipt_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.fallback_receipt_help')), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.restaurantName), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.receiptDate), 1 /* TEXT */)]), _cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "receipt-divider"
+  }, "- - - - - - - - - - - - - - - - - -", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_33, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.receipt_number')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_34, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayNumber), 1 /* TEXT */)]), _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "receipt-divider"
+  }, "- - - - - - - - - - - - - - - - - -", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [AUDIT-P2-C] Use index in key to prevent duplicate keys when same item_id appears multiple times "), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.receiptItems, function (item, index) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: item.item_id + '_' + index,
+      "class": "receipt-line"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "x " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sanitizeItemName(item.name)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(item.total)), 1 /* TEXT */)]);
+  }), 128 /* KEYED_FRAGMENT */)), _cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "receipt-divider"
+  }, "- - - - - - - - - - - - - - - - - -", -1 /* CACHED */)), $options.receiptDiscount > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_35, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.receipt_discount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, "-" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.receiptDiscount)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.receipt_total')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.displayTotal || 0)), 1 /* TEXT */)]), $options.pointsEarned > 0 && $options.loyaltyCustomerName ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 2
+  }, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "receipt-divider"
+  }, "- - - - - - - - - - - - - - - - - -", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_37, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.receipt_loyalty', {
+    n: $options.pointsEarned
+  })), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_38, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.loyaltyCustomerName), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), _cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "receipt-divider"
+  }, "- - - - - - - - - - - - - - - - - -", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.receipt_thanks')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.confirmation.receipt_present')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_27)], 64 /* STABLE_FRAGMENT */);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=template&id=8fd6c936&scoped=true"
+/*!*********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=template&id=8fd6c936&scoped=true ***!
+  \*********************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = {
+  "class": "kiosk-login-screen"
+};
+var _hoisted_2 = {
+  "class": "kiosk-login-card"
+};
+var _hoisted_3 = {
+  "class": "kiosk-login-logo"
+};
+var _hoisted_4 = {
+  "class": "kiosk-login-title"
+};
+var _hoisted_5 = {
+  "class": "kiosk-login-sub"
+};
+var _hoisted_6 = {
+  "class": "kiosk-login-form kiosk-login-auto"
+};
+var _hoisted_7 = {
+  "class": "kiosk-login-status"
+};
+var _hoisted_8 = {
+  key: 0,
+  "class": "kiosk-login-spinner"
+};
+var _hoisted_9 = {
+  key: 1,
+  "class": "kiosk-login-status-icon"
+};
+var _hoisted_10 = {
+  "class": "kiosk-login-status-text"
+};
+var _hoisted_11 = {
+  key: 0,
+  "class": "kiosk-login-error"
+};
+var _hoisted_12 = {
+  "class": "kiosk-login-hint kiosk-login-hint-center"
+};
+var _hoisted_13 = ["disabled"];
+var _hoisted_14 = {
+  key: 0
+};
+var _hoisted_15 = {
+  key: 1,
+  "class": "kiosk-login-spinner"
+};
+var _hoisted_16 = {
+  key: 0,
+  "class": "kiosk-login-devhint"
+};
+var _hoisted_17 = {
+  "class": "kiosk-login-footer"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [_cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-login-icon"
+  }, "🖥️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.login_screen.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.login_screen.sub')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [$data.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_8)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_9, "!")), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_10, [$data.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 0
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.login_screen.status_loading')), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */)) : $data.setupRequired ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 1
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.login_screen.status_missing_env')), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 2
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.login_screen.status_retrying')), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+    name: "fade"
+  }, {
+    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [$data.error ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.error), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
+    }),
+    _: 1 /* STABLE */
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.login_screen.public_hint')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-login-btn",
+    disabled: $data.loading,
+    onClick: _cache[0] || (_cache[0] = function () {
+      return $options.retryAutoLogin && $options.retryAutoLogin.apply($options, arguments);
+    })
+  }, [!$data.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.login_screen.retry')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_15))], 8 /* PROPS */, _hoisted_13)]), $options.showDevSeedHint ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.login_screen.devhint')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.login_screen.footer')), 1 /* TEXT */)])]);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=template&id=48956b68&scoped=true"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=template&id=48956b68&scoped=true ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
+var _hoisted_1 = {
+  "class": "kiosk-loyalty-screen"
+};
+var _hoisted_2 = {
+  "class": "kiosk-loyalty-header"
+};
+var _hoisted_3 = {
+  "class": "kiosk-loyalty-title"
+};
+var _hoisted_4 = {
+  key: 0,
+  "class": "kiosk-loyalty-step"
+};
+var _hoisted_5 = {
+  "class": "kiosk-loyalty-card"
+};
+var _hoisted_6 = {
+  "class": "kiosk-loyalty-subtitle"
+};
+var _hoisted_7 = {
+  "class": "kiosk-loyalty-input-row"
+};
+var _hoisted_8 = ["placeholder"];
+var _hoisted_9 = {
+  "class": "kiosk-numpad"
+};
+var _hoisted_10 = ["onClick"];
+var _hoisted_11 = {
+  key: 0,
+  width: "24",
+  height: "24",
+  viewBox: "0 0 24 24",
+  fill: "none"
+};
+var _hoisted_12 = {
+  key: 0,
+  "class": "kiosk-loyalty-error"
+};
+var _hoisted_13 = ["disabled"];
+var _hoisted_14 = {
+  key: 0
+};
+var _hoisted_15 = {
+  key: 1,
+  "class": "kiosk-spinner-inline"
+};
+var _hoisted_16 = {
+  key: 1,
+  "class": "kiosk-loyalty-step"
+};
+var _hoisted_17 = {
+  "class": "kiosk-loyalty-card"
+};
+var _hoisted_18 = {
+  "class": "kiosk-loyalty-subtitle"
+};
+var _hoisted_19 = {
+  "class": "kiosk-register-fields"
+};
+var _hoisted_20 = {
+  "class": "kiosk-field-group"
+};
+var _hoisted_21 = {
+  "class": "kiosk-field-label"
+};
+var _hoisted_22 = ["placeholder"];
+var _hoisted_23 = {
+  "class": "kiosk-field-group"
+};
+var _hoisted_24 = {
+  "class": "kiosk-field-label"
+};
+var _hoisted_25 = ["placeholder"];
+var _hoisted_26 = {
+  "class": "kiosk-field-group"
+};
+var _hoisted_27 = {
+  "class": "kiosk-field-label"
+};
+var _hoisted_28 = ["placeholder"];
+var _hoisted_29 = {
+  key: 0,
+  "class": "kiosk-loyalty-error"
+};
+var _hoisted_30 = ["disabled"];
+var _hoisted_31 = {
+  key: 0
+};
+var _hoisted_32 = {
+  key: 1,
+  "class": "kiosk-spinner-inline"
+};
+var _hoisted_33 = {
+  key: 2,
+  "class": "kiosk-loyalty-step"
+};
+var _hoisted_34 = {
+  "class": "kiosk-loyalty-card"
+};
+var _hoisted_35 = {
+  "class": "kiosk-loyalty-profile"
+};
+var _hoisted_36 = {
+  "class": "kiosk-loyalty-avatar"
+};
+var _hoisted_37 = {
+  "class": "kiosk-loyalty-info"
+};
+var _hoisted_38 = {
+  "class": "kiosk-loyalty-member-since"
+};
+var _hoisted_39 = {
+  "class": "kiosk-loyalty-points-badge"
+};
+var _hoisted_40 = {
+  "class": "kiosk-loyalty-points-value"
+};
+var _hoisted_41 = {
+  "class": "kiosk-loyalty-points-label"
+};
+var _hoisted_42 = {
+  key: 0,
+  "class": "kiosk-loyalty-points-equiv"
+};
+var _hoisted_43 = {
+  key: 0,
+  "class": "kiosk-loyalty-progress-wrap"
+};
+var _hoisted_44 = {
+  "class": "kiosk-loyalty-progress-bar"
+};
+var _hoisted_45 = {
+  "class": "kiosk-loyalty-progress-label"
+};
+var _hoisted_46 = {
+  key: 1,
+  "class": "kiosk-loyalty-options"
+};
+var _hoisted_47 = {
+  "class": "kiosk-loyalty-option-text"
+};
+var _hoisted_48 = {
+  "class": "kiosk-loyalty-option-text"
+};
+var _hoisted_49 = {
+  key: 2,
+  "class": "kiosk-loyalty-not-enough"
+};
+var _hoisted_50 = {
+  "class": "green"
+};
+var _hoisted_51 = ["disabled"];
+var _hoisted_52 = {
+  key: 3,
+  "class": "kiosk-loyalty-step"
+};
+var _hoisted_53 = {
+  "class": "kiosk-loyalty-card kiosk-loyalty-confirm-card"
+};
+var _hoisted_54 = {
+  key: 0,
+  "class": "kiosk-loyalty-confirm-title"
+};
+var _hoisted_55 = {
+  key: 1,
+  "class": "kiosk-loyalty-confirm-title"
+};
+var _hoisted_56 = {
+  key: 2,
+  "class": "kiosk-loyalty-confirm-amount"
+};
+var _hoisted_57 = {
+  "class": "kiosk-loyalty-confirm-sub"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_KsConsentModal = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KsConsentModal");
+  var _component_KsVirtualKeyboard = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KsVirtualKeyboard");
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Header "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-back-btn",
+    onClick: _cache[0] || (_cache[0] = function () {
+      return $options.goBack && $options.goBack.apply($options, arguments);
+    })
+  }, _toConsumableArray(_cache[24] || (_cache[24] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "28",
+    height: "28",
+    viewBox: "0 0 24 24",
+    fill: "none"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M19 12H5M12 5l-7 7 7 7",
+    stroke: "currentColor",
+    "stroke-width": "2.5",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  })], -1 /* CACHED */)]))), _cache[25] || (_cache[25] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-loyalty-logo"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "36",
+    height: "36",
+    viewBox: "0 0 24 24",
+    fill: "none"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21.02l1.18-6.88L2 9.27l6.91-1.01L12 2z",
+    fill: "#FFD700",
+    stroke: "#FFA500",
+    "stroke-width": "1.5"
+  })])], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.title')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Étape 1: Saisie du code "), $data.step === 'input' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.input_sub')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    ref: "codeInput",
+    "onUpdate:modelValue": _cache[1] || (_cache[1] = function ($event) {
+      return $data.code = $event;
+    }),
+    type: "text",
+    "class": "kiosk-loyalty-input",
+    placeholder: _ctx.$t('kiosk.loyalty_screen.code_placeholder'),
+    maxlength: "20",
+    onKeyup: _cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)(function () {
+      return $options.checkLoyalty && $options.checkLoyalty.apply($options, arguments);
+    }, ["enter"]))
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_8), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.code]]), $data.code ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    key: 0,
+    type: "button",
+    "class": "kiosk-btn-clear",
+    onClick: _cache[3] || (_cache[3] = function ($event) {
+      return $data.code = '';
+    })
+  }, "✕")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Clavier numérique tactile "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_9, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.numpadKeys, function (key) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      type: "button",
+      key: key,
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-numpad-btn", {
+        wide: key === 'del',
+        zero: key === '0'
+      }]),
+      onClick: function onClick($event) {
+        return $options.handleNumpad(key);
+      }
+    }, [key === 'del' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("svg", _hoisted_11, _toConsumableArray(_cache[26] || (_cache[26] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+      d: "M21 4H8l-7 8 7 8h13V4z",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round"
+    }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+      d: "M18 9l-6 6M12 9l6 6",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
+    }, null, -1 /* CACHED */)])))) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+      key: 1
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(key), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */))], 10 /* CLASS, PROPS */, _hoisted_10);
+  }), 128 /* KEYED_FRAGMENT */))]), $data.error ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.error), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-btn-primary full",
+    disabled: !$data.code.trim() || $data.loading,
+    onClick: _cache[4] || (_cache[4] = function () {
+      return $options.checkLoyalty && $options.checkLoyalty.apply($options, arguments);
+    })
+  }, [!$data.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.verify_btn')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_15))], 8 /* PROPS */, _hoisted_13), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-loyalty-skip",
+    onClick: _cache[5] || (_cache[5] = function () {
+      return $options.goBack && $options.goBack.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.skip')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Register new customer "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-loyalty-register-btn",
+    onClick: _cache[6] || (_cache[6] = function ($event) {
+      return $data.step = 'register';
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.register_cta')), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Étape 1b: Inscription nouveau client "), $data.step === 'register' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.register_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.label_name')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    "onUpdate:modelValue": _cache[7] || (_cache[7] = function ($event) {
+      return $data.registerName = $event;
+    }),
+    type: "text",
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-loyalty-input", {
+      'kiosk-loyalty-input--active': $data.vkeybActiveField === 'registerName'
+    }]),
+    placeholder: _ctx.$t('kiosk.loyalty_screen.placeholder_name'),
+    maxlength: "60",
+    readonly: "",
+    "data-testid": "kiosk-loyalty-register-name",
+    onFocus: _cache[8] || (_cache[8] = function ($event) {
+      return $options.onFocusRegisterField('registerName');
+    }),
+    onClick: _cache[9] || (_cache[9] = function ($event) {
+      return $options.onFocusRegisterField('registerName');
+    })
+  }, null, 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_22), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.registerName]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_23, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.label_phone')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    "onUpdate:modelValue": _cache[10] || (_cache[10] = function ($event) {
+      return $data.registerPhone = $event;
+    }),
+    type: "tel",
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-loyalty-input", {
+      'kiosk-loyalty-input--active': $data.vkeybActiveField === 'registerPhone'
+    }]),
+    placeholder: _ctx.$t('kiosk.loyalty_screen.placeholder_phone'),
+    maxlength: "20",
+    readonly: "",
+    "data-testid": "kiosk-loyalty-register-phone",
+    onFocus: _cache[11] || (_cache[11] = function ($event) {
+      return $options.onFocusRegisterField('registerPhone');
+    }),
+    onClick: _cache[12] || (_cache[12] = function ($event) {
+      return $options.onFocusRegisterField('registerPhone');
+    })
+  }, null, 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_25), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.registerPhone]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.label_email')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    "onUpdate:modelValue": _cache[13] || (_cache[13] = function ($event) {
+      return $data.registerEmail = $event;
+    }),
+    type: "email",
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-loyalty-input", {
+      'kiosk-loyalty-input--active': $data.vkeybActiveField === 'registerEmail'
+    }]),
+    placeholder: _ctx.$t('kiosk.loyalty_screen.placeholder_email'),
+    maxlength: "80",
+    readonly: "",
+    "data-testid": "kiosk-loyalty-register-email",
+    onFocus: _cache[14] || (_cache[14] = function ($event) {
+      return $options.onFocusRegisterField('registerEmail');
+    }),
+    onClick: _cache[15] || (_cache[15] = function ($event) {
+      return $options.onFocusRegisterField('registerEmail');
+    })
+  }, null, 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_28), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.registerEmail]])])]), $data.registerError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.registerError), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-btn-primary full",
+    disabled: !$data.registerName.trim() || !$data.registerPhone.trim() || $data.registerLoading,
+    onClick: _cache[16] || (_cache[16] = function () {
+      return $options.submitRegister && $options.submitRegister.apply($options, arguments);
+    })
+  }, [!$data.registerLoading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.register_submit')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_32))], 8 /* PROPS */, _hoisted_30), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-loyalty-skip",
+    onClick: _cache[17] || (_cache[17] = function ($event) {
+      return $data.step = 'input';
+    })
+  }, "← " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.back')), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Étape 2: Solde et choix de rachat "), $data.step === 'balance' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_33, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_34, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Profil client "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_35, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerInitials), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_37, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.customer.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_38, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.member_badge')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Points disponibles "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.customer.loyalty_point), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.points_label')), 1 /* TEXT */), $data.discountValue > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.points_equiv', {
+    amount: _ctx.formatPrice(Math.min($data.discountValue, _ctx.total))
+  })), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Barre de progression vers le prochain palier "), $options.nextTierPoints > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_43, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-loyalty-progress-fill",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      width: $options.progressPercent + '%'
+    })
+  }, null, 4 /* STYLE */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.tier_progress', {
+    n: $options.nextTierPoints - $data.customer.loyalty_point
+  })), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Options : utiliser ou pas "), $options.canRedeem ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_46, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-loyalty-option", {
+      selected: $data.redeemChoice === 'yes'
+    }]),
+    onClick: _cache[18] || (_cache[18] = function ($event) {
+      return $data.redeemChoice = 'yes';
+    })
+  }, [_cache[27] || (_cache[27] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-loyalty-option-icon green"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "28",
+    height: "28",
+    viewBox: "0 0 24 24",
+    fill: "none"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M20 7l-11 11-5-5",
+    stroke: "currentColor",
+    "stroke-width": "3",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  })])], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_47, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.redeem_use')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.redeem_use_sub', {
+    amount: _ctx.formatPrice(Math.min($data.discountValue, _ctx.total))
+  })), 1 /* TEXT */)])], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-loyalty-option", {
+      selected: $data.redeemChoice === 'no'
+    }]),
+    onClick: _cache[19] || (_cache[19] = function ($event) {
+      return $data.redeemChoice = 'no';
+    })
+  }, [_cache[28] || (_cache[28] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-loyalty-option-icon gray"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "28",
+    height: "28",
+    viewBox: "0 0 24 24",
+    fill: "none"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21.02l1.18-6.88L2 9.27l6.91-1.01L12 2z",
+    stroke: "currentColor",
+    "stroke-width": "2"
+  })])], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.redeem_keep')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.redeem_keep_sub')), 1 /* TEXT */)])], 2 /* CLASS */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_49, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.not_enough', {
+    current: $data.customer.loyalty_point,
+    min: $data.minRedeemPoints
+  })), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_50, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.not_enough_green')), 1 /* TEXT */)])), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-btn-primary full",
+    onClick: _cache[20] || (_cache[20] = function () {
+      return $options.applyLoyalty && $options.applyLoyalty.apply($options, arguments);
+    }),
+    disabled: $options.canRedeem && !$data.redeemChoice
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.confirm')), 9 /* TEXT, PROPS */, _hoisted_51), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-loyalty-skip",
+    onClick: _cache[21] || (_cache[21] = function () {
+      return $options.goBack && $options.goBack.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.cancel')), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [PHASE-6.3] RGPD consent modal — s'ouvre avant register (qui persiste des PII).\n         Kiosk Phase 9.1.10 — KsConsentModal émet `accepted` / `declined` (past\n         tense, cf. `emits: ['update:modelValue', 'accepted', 'declined', 'error']`).\n         Avant ce fix, le parent écoutait `@accept` / `@decline` (infinitif), donc\n         le handler n'était JAMAIS appelé : la modale semblait \"accepter\" mais\n         `submitRegister` n'était jamais exécuté côté loyalty (RGPD broken). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_KsConsentModal, {
+    "model-value": $data.showConsentModal,
+    onAccepted: $options.onConsentAccept,
+    onDeclined: $options.onConsentDecline,
+    "onUpdate:modelValue": _cache[22] || (_cache[22] = function (v) {
+      if (!v) $data.showConsentModal = false;
+    })
+  }, null, 8 /* PROPS */, ["model-value", "onAccepted", "onDeclined"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Kiosk Phase 9.1.7 — clavier virtuel monté hors du flex,\n         fixed bottom. Uniquement visible quand un champ register est actif.\n         Le numpad du code fidélité n'est pas impacté (UX dédié). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_KsVirtualKeyboard, {
+    "model-value": $options.vkeybValue,
+    visible: $data.vkeybActiveField !== null,
+    layout: $options.vkeybLayout,
+    "allow-space": $options.vkeybAllowSpace,
+    "max-length": $options.vkeybMaxLength,
+    "show-preview": true,
+    "onUpdate:modelValue": $options.onVkeybInput,
+    onSubmit: $options.onVkeybSubmit,
+    onClose: $options.onVkeybClose
+  }, null, 8 /* PROPS */, ["model-value", "visible", "layout", "allow-space", "max-length", "onUpdate:modelValue", "onSubmit", "onClose"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Étape 3: Confirmation appliquée "), $data.step === 'confirmed' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_52, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_53, [_cache[29] || (_cache[29] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-loyalty-confirm-icon"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "64",
+    height: "64",
+    viewBox: "0 0 24 24",
+    fill: "none"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("circle", {
+    cx: "12",
+    cy: "12",
+    r: "10",
+    fill: "#22c55e"
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M8 12l3 3 5-5",
+    stroke: "white",
+    "stroke-width": "2.5",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  })])], -1 /* CACHED */)), $data.appliedDiscount > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("h2", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.confirm_discount_title')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("h2", _hoisted_55, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.confirm_saved_title')), 1 /* TEXT */)), $data.appliedDiscount > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_56, " -" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($data.appliedDiscount)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_57, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.appliedDiscount > 0 ? _ctx.$t('kiosk.loyalty_screen.confirm_discount_sub') : _ctx.$t('kiosk.loyalty_screen.confirm_saved_sub')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-btn-primary full",
+    onClick: _cache[23] || (_cache[23] = function () {
+      return $options.proceedToPayment && $options.proceedToPayment.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.loyalty_screen.continue_payment')), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=template&id=7f6954b0&scoped=true"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=template&id=7f6954b0&scoped=true ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
+var _hoisted_1 = {
+  "class": "kiosk-payment",
+  "data-testid": "kiosk-payment-root"
+};
+var _hoisted_2 = {
+  "class": "kiosk-pay-header"
+};
+var _hoisted_3 = ["disabled", "aria-label"];
+var _hoisted_4 = {
+  "class": "kiosk-pay-header-info"
+};
+var _hoisted_5 = {
+  "class": "kiosk-pay-title",
+  "data-testid": "kiosk-payment-title"
+};
+var _hoisted_6 = {
+  "class": "kiosk-pay-total-label",
+  "data-testid": "kiosk-payment-total"
+};
+var _hoisted_7 = {
+  key: 0,
+  "class": "kiosk-pay-offline-alert",
+  role: "status",
+  "aria-live": "polite",
+  "data-testid": "kiosk-payment-offline-alert"
+};
+var _hoisted_8 = {
+  key: 1,
+  "class": "kiosk-pay-amount-card",
+  role: "status",
+  "aria-live": "polite",
+  "data-testid": "kiosk-payment-amount-card"
+};
+var _hoisted_9 = ["aria-label"];
+var _hoisted_10 = {
+  "class": "kiosk-pay-methods"
+};
+var _hoisted_11 = ["tabindex", "aria-checked", "aria-disabled"];
+var _hoisted_12 = {
+  "class": "kiosk-pay-method-info"
+};
+var _hoisted_13 = {
+  key: 0,
+  "class": "kiosk-pay-method-check"
+};
+var _hoisted_14 = ["aria-checked"];
+var _hoisted_15 = {
+  "class": "kiosk-pay-method-info"
+};
+var _hoisted_16 = {
+  key: 0,
+  "class": "kiosk-pay-method-check"
+};
+var _hoisted_17 = ["tabindex", "aria-checked", "aria-disabled"];
+var _hoisted_18 = {
+  "class": "kiosk-pay-method-info"
+};
+var _hoisted_19 = {
+  key: 0,
+  "class": "kiosk-pay-method-check"
+};
+var _hoisted_20 = {
+  key: 3,
+  "class": "kiosk-pay-processing",
+  role: "status",
+  "aria-live": "polite",
+  "data-testid": "kiosk-payment-processing"
+};
+var _hoisted_21 = {
+  key: 0,
+  "class": "kiosk-tpe-overlay",
+  role: "dialog",
+  "aria-modal": "true",
+  "aria-labelledby": "kiosk-tpe-title",
+  "data-testid": "kiosk-payment-tpe-overlay"
+};
+var _hoisted_22 = {
+  "class": "kiosk-tpe-card-anim",
+  "aria-hidden": "true"
+};
+var _hoisted_23 = {
+  "class": "kiosk-tpe-card-icon"
+};
+var _hoisted_24 = {
+  key: 0,
+  width: "72",
+  height: "72",
+  viewBox: "0 0 72 72",
+  fill: "none"
+};
+var _hoisted_25 = {
+  key: 1,
+  style: {
+    "font-size": "4rem"
+  }
+};
+var _hoisted_26 = {
+  id: "kiosk-tpe-title",
+  "class": "kiosk-tpe-title",
+  "aria-live": "polite"
+};
+var _hoisted_27 = {
+  "class": "kiosk-tpe-sub"
+};
+var _hoisted_28 = {
+  "class": "kiosk-tpe-help",
+  id: "kiosk-tpe-stuck-help"
+};
+var _hoisted_29 = {
+  key: 4,
+  "class": "kiosk-pay-confirm"
+};
+var _hoisted_30 = {
+  key: 0,
+  "class": "kiosk-pay-error",
+  role: "alert",
+  "data-testid": "kiosk-payment-error"
+};
+var _hoisted_31 = {
+  "class": "kiosk-pay-confirm-inner"
+};
+var _hoisted_32 = ["disabled", "aria-label"];
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Header "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-pay-back",
+    onClick: _cache[0] || (_cache[0] = function ($event) {
+      return _ctx.$router.replace({
+        name: 'kiosk.cart'
+      });
+    }),
+    disabled: $data.submitting,
+    "aria-label": _ctx.$t('kiosk.back'),
+    "data-testid": "kiosk-payment-back"
+  }, _toConsumableArray(_cache[12] || (_cache[12] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "24",
+    height: "24",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M19 12H5M5 12L12 19M5 12L12 5",
+    stroke: "currentColor",
+    "stroke-width": "2.5",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_3), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.total_prefix')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.cartTotal)), 1 /* TEXT */)])])]), $data.networkOffline ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.offline_alert')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), !$data.submitting && !$data.submitted && !$data.tpeWaiting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.total_prefix')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.cartTotal)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Modes de paiement — grille borne (cartes, pas bandeaux pleine largeur) "), !$data.submitting && !$data.submitted ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 2,
+    "class": "kiosk-pay-methods-outer",
+    role: "radiogroup",
+    "aria-label": _ctx.$t('kiosk.pay_screen.title')
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" CB "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-pay-method", {
+      selected: $data.method === 'card',
+      disabled: $options.isElectronicMethodBlocked('card')
+    }]),
+    role: "radio",
+    tabindex: $options.isElectronicMethodBlocked('card') ? -1 : 0,
+    "aria-checked": $data.method === 'card',
+    "aria-disabled": $options.isElectronicMethodBlocked('card') ? 'true' : 'false',
+    "data-testid": "kiosk-payment-method-card",
+    onClick: _cache[1] || (_cache[1] = function ($event) {
+      return $options.selectMethod('card');
+    }),
+    onKeydown: [_cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+      return $options.selectMethod('card');
+    }, ["prevent"]), ["enter"])), _cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+      return $options.selectMethod('card');
+    }, ["prevent"]), ["space"]))]
+  }, [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"kiosk-pay-method-icon card\" data-v-7f6954b0><svg width=\"52\" height=\"52\" viewBox=\"0 0 52 52\" fill=\"none\" data-v-7f6954b0><rect x=\"4\" y=\"12\" width=\"44\" height=\"30\" rx=\"6\" fill=\"white\" fill-opacity=\"0.12\" stroke=\"white\" stroke-opacity=\"0.3\" stroke-width=\"1.5\" data-v-7f6954b0></rect><rect x=\"4\" y=\"20\" width=\"44\" height=\"8\" fill=\"white\" fill-opacity=\"0.2\" data-v-7f6954b0></rect><rect x=\"10\" y=\"32\" width=\"12\" height=\"4\" rx=\"2\" fill=\"white\" fill-opacity=\"0.5\" data-v-7f6954b0></rect><rect x=\"26\" y=\"32\" width=\"8\" height=\"4\" rx=\"2\" fill=\"white\" fill-opacity=\"0.5\" data-v-7f6954b0></rect></svg></div>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.card_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.card_sub')), 1 /* TEXT */)]), $data.method === 'card' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_13, _toConsumableArray(_cache[13] || (_cache[13] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "24",
+    height: "24",
+    viewBox: "0 0 24 24",
+    fill: "none"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M5 12l5 5 9-10",
+    stroke: "white",
+    "stroke-width": "2.5",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  })], -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_11), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Espèces "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-pay-method", {
+      selected: $data.method === 'cash'
+    }]),
+    role: "radio",
+    tabindex: "0",
+    "aria-checked": $data.method === 'cash',
+    "data-testid": "kiosk-payment-method-cash",
+    onClick: _cache[4] || (_cache[4] = function ($event) {
+      return $options.selectMethod('cash');
+    }),
+    onKeydown: [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+      return $options.selectMethod('cash');
+    }, ["prevent"]), ["enter"])), _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+      return $options.selectMethod('cash');
+    }, ["prevent"]), ["space"]))]
+  }, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"kiosk-pay-method-icon cash\" data-v-7f6954b0><svg width=\"52\" height=\"52\" viewBox=\"0 0 52 52\" fill=\"none\" data-v-7f6954b0><rect x=\"4\" y=\"14\" width=\"44\" height=\"26\" rx=\"6\" fill=\"white\" fill-opacity=\"0.12\" stroke=\"white\" stroke-opacity=\"0.3\" stroke-width=\"1.5\" data-v-7f6954b0></rect><circle cx=\"26\" cy=\"27\" r=\"8\" stroke=\"white\" stroke-opacity=\"0.5\" stroke-width=\"1.5\" data-v-7f6954b0></circle><text x=\"26\" y=\"32\" text-anchor=\"middle\" font-size=\"12\" fill=\"white\" fill-opacity=\"0.8\" font-weight=\"bold\" data-v-7f6954b0>€</text></svg></div>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.cash_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.cash_sub')), 1 /* TEXT */)]), $data.method === 'cash' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_16, _toConsumableArray(_cache[15] || (_cache[15] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "24",
+    height: "24",
+    viewBox: "0 0 24 24",
+    fill: "none"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M5 12l5 5 9-10",
+    stroke: "white",
+    "stroke-width": "2.5",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  })], -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_14), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Ticket Restaurant "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-pay-method", {
+      selected: $data.method === 'tr',
+      disabled: $options.isElectronicMethodBlocked('tr')
+    }]),
+    role: "radio",
+    tabindex: $options.isElectronicMethodBlocked('tr') ? -1 : 0,
+    "aria-checked": $data.method === 'tr',
+    "aria-disabled": $options.isElectronicMethodBlocked('tr') ? 'true' : 'false',
+    "data-testid": "kiosk-payment-method-tr",
+    onClick: _cache[7] || (_cache[7] = function ($event) {
+      return $options.selectMethod('tr');
+    }),
+    onKeydown: [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+      return $options.selectMethod('tr');
+    }, ["prevent"]), ["enter"])), _cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+      return $options.selectMethod('tr');
+    }, ["prevent"]), ["space"]))]
+  }, [_cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"kiosk-pay-method-icon tr\" data-v-7f6954b0><svg width=\"52\" height=\"52\" viewBox=\"0 0 52 52\" fill=\"none\" data-v-7f6954b0><rect x=\"4\" y=\"12\" width=\"44\" height=\"28\" rx=\"6\" fill=\"white\" fill-opacity=\"0.12\" stroke=\"white\" stroke-opacity=\"0.3\" stroke-width=\"1.5\" data-v-7f6954b0></rect><path d=\"M14 22h24M14 28h16\" stroke=\"white\" stroke-opacity=\"0.6\" stroke-width=\"2\" stroke-linecap=\"round\" data-v-7f6954b0></path><path d=\"M36 28l4 4\" stroke=\"white\" stroke-opacity=\"0.6\" stroke-width=\"2\" stroke-linecap=\"round\" data-v-7f6954b0></path></svg></div>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.tr_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.tr_sub')), 1 /* TEXT */)]), $data.method === 'tr' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_19, _toConsumableArray(_cache[17] || (_cache[17] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "24",
+    height: "24",
+    viewBox: "0 0 24 24",
+    fill: "none"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M5 12l5 5 9-10",
+    stroke: "white",
+    "stroke-width": "2.5",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  })], -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_17)])], 8 /* PROPS */, _hoisted_9)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Écran API en cours (commande en création) — masqué pendant TPE (Lot 2.H) "), $data.submitting && !$data.tpeWaiting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_20, [_cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-pay-processing-ring",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-pay-processing-ring-inner"
+  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.processing_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.processing_sub')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Écran TPE : attente terminal physique (carte ou TR) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+    name: "fade-scale"
+  }, {
+    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [$data.tpeWaiting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(3, function (n) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+          "class": "kiosk-tpe-ring",
+          key: n,
+          style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+            animationDelay: n * 0.5 + 's'
+          })
+        }, null, 4 /* STYLE */);
+      }), 64 /* STABLE_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_23, [$data.method === 'card' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("svg", _hoisted_24, _toConsumableArray(_cache[20] || (_cache[20] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("rect", {
+        x: "6",
+        y: "16",
+        width: "60",
+        height: "40",
+        rx: "8",
+        fill: "white",
+        "fill-opacity": "0.1",
+        stroke: "white",
+        "stroke-opacity": "0.5",
+        "stroke-width": "2"
+      }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("rect", {
+        x: "6",
+        y: "28",
+        width: "60",
+        height: "10",
+        fill: "white",
+        "fill-opacity": "0.15"
+      }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("rect", {
+        x: "14",
+        y: "44",
+        width: "16",
+        height: "5",
+        rx: "2.5",
+        fill: "white",
+        "fill-opacity": "0.5"
+      }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("rect", {
+        x: "34",
+        y: "44",
+        width: "10",
+        height: "5",
+        rx: "2.5",
+        fill: "white",
+        "fill-opacity": "0.5"
+      }, null, -1 /* CACHED */)])))) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_25, "🎫"))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.tpeMessage), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.tpe_follow')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.tpe_stuck_help')), 1 /* TEXT */), _cache[21] || (_cache[21] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+        "class": "kiosk-tpe-spinner",
+        "aria-hidden": "true"
+      }, null, -1 /* CACHED */)), $data.tpeCanCancel ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+        key: 0,
+        type: "button",
+        "class": "kiosk-tpe-cancel",
+        onClick: _cache[10] || (_cache[10] = function () {
+          return $options.cancelCardPayment && $options.cancelCardPayment.apply($options, arguments);
+        }),
+        "data-testid": "kiosk-payment-tpe-cancel"
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.cancel_payment')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
+    }),
+    _: 1 /* STABLE */
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Bouton confirmer "), !$data.submitting && !$data.submitted && !$data.tpeWaiting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_29, [$data.error ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_30, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.error), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_31, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-btn-confirm",
+    disabled: !$data.method || $options.isElectronicMethodBlocked($data.method),
+    onClick: _cache[11] || (_cache[11] = function () {
+      return $options.confirmPayment && $options.confirmPayment.apply($options, arguments);
+    }),
+    "aria-label": _ctx.$t('kiosk.pay_screen.confirm', {
+      amount: _ctx.formatPrice($options.cartTotal)
+    }),
+    "data-testid": "kiosk-payment-confirm"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.confirm', {
+    amount: _ctx.formatPrice($options.cartTotal)
+  })), 1 /* TEXT */), _cache[22] || (_cache[22] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "28",
+    height: "28",
+    viewBox: "0 0 28 28",
+    fill: "none",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M6 14h16M16 8l6 6-6 6",
+    stroke: "currentColor",
+    "stroke-width": "2.5",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  })], -1 /* CACHED */))], 8 /* PROPS */, _hoisted_32)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=template&id=b8cebce2&scoped=true"
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=template&id=b8cebce2&scoped=true ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
+var _hoisted_1 = {
+  "class": "kiosk-upsell",
+  "data-testid": "kiosk-upsell-root"
+};
+var _hoisted_2 = ["aria-label"];
+var _hoisted_3 = {
+  "class": "kiosk-upsell-header"
+};
+var _hoisted_4 = {
+  "class": "kiosk-upsell-title",
+  "data-testid": "kiosk-upsell-title"
+};
+var _hoisted_5 = {
+  "class": "kiosk-upsell-subtitle"
+};
+var _hoisted_6 = ["aria-label"];
+var _hoisted_7 = ["aria-pressed", "aria-label", "data-testid", "onClick", "onKeydown"];
+var _hoisted_8 = {
+  "class": "kiosk-upsell-img-wrap",
+  "aria-hidden": "true"
+};
+var _hoisted_9 = ["src", "alt"];
+var _hoisted_10 = {
+  key: 1,
+  "class": "kiosk-upsell-img-fallback"
+};
+var _hoisted_11 = {
+  "class": "kiosk-upsell-info"
+};
+var _hoisted_12 = ["data-testid"];
+var _hoisted_13 = ["data-testid"];
+var _hoisted_14 = {
+  key: 0,
+  "class": "kiosk-upsell-check",
+  "aria-hidden": "true"
+};
+var _hoisted_15 = {
+  "class": "kiosk-upsell-add",
+  "aria-hidden": "true"
+};
+var _hoisted_16 = {
+  key: 0,
+  "class": "kiosk-upsell-plus"
+};
+var _hoisted_17 = {
+  key: 1,
+  "class": "kiosk-upsell-minus"
+};
+var _hoisted_18 = {
+  "class": "kiosk-upsell-actions"
+};
+var _hoisted_19 = ["disabled"];
+var _hoisted_20 = {
+  "class": "kiosk-btn-price",
+  "aria-hidden": "true"
+};
+var _hoisted_21 = ["aria-label"];
+var _hoisted_22 = {
+  key: 0,
+  "class": "kiosk-upsell-skip-timer"
+};
+var _hoisted_23 = ["aria-valuenow", "aria-label"];
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Skip si chargement trop long "), $data.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    "class": "kiosk-upsell-loading",
+    role: "status",
+    "aria-live": "polite",
+    "aria-label": _ctx.$t('kiosk.upsell_screen.title'),
+    "data-testid": "kiosk-upsell-loading"
+  }, _toConsumableArray(_cache[2] || (_cache[2] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-spinner",
+    "aria-hidden": "true"
+  }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_2)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 1
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Header "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.upsell_screen.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.upsell_screen.subtitle')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Grille suggestions "), $data.suggestions.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    "class": "kiosk-upsell-grid",
+    role: "list",
+    "aria-label": _ctx.$t('kiosk.upsell_screen.title'),
+    "data-testid": "kiosk-upsell-grid"
+  }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.suggestions, function (item) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: item.id,
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-upsell-card", {
+        selected: $options.selectedIds.includes(item.id)
+      }]),
+      role: "listitem",
+      tabindex: "0",
+      "aria-pressed": $options.selectedIds.includes(item.id),
+      "aria-label": $options.sanitizeItemName(item.name) + ' — ' + _ctx.formatPrice(item.convert_price),
+      "data-testid": 'kiosk-upsell-card-' + item.id,
+      onClick: function onClick($event) {
+        return $options.toggleItem(item);
+      },
+      onKeydown: [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        return $options.toggleItem(item);
+      }, ["prevent"]), ["enter"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        return $options.toggleItem(item);
+      }, ["prevent"]), ["space"])]
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Image "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [item.thumb || item.image ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+      key: 0,
+      src: item.thumb || item.image,
+      alt: item.name,
+      "class": "kiosk-upsell-img"
+    }, null, 8 /* PROPS */, _hoisted_9)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getEmoji(item.name)), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Infos "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", {
+      "class": "kiosk-upsell-item-name",
+      "data-testid": 'kiosk-upsell-card-name-' + item.id
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sanitizeItemName(item.name)), 9 /* TEXT, PROPS */, _hoisted_12), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "class": "kiosk-upsell-item-price",
+      "data-testid": 'kiosk-upsell-card-price-' + item.id
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(item.convert_price)), 9 /* TEXT, PROPS */, _hoisted_13)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Checkmark "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+      name: "pop"
+    }, {
+      "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+        return [$options.selectedIds.includes(item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_14, _toConsumableArray(_cache[3] || (_cache[3] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+          width: "20",
+          height: "20",
+          viewBox: "0 0 20 20",
+          fill: "none"
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+          d: "M4 10l5 5 7-8",
+          stroke: "currentColor",
+          "stroke-width": "2.5",
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round"
+        })], -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
+      }),
+      _: 2 /* DYNAMIC */
+    }, 1024 /* DYNAMIC_SLOTS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Bouton +/- "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, [!$options.selectedIds.includes(item.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_16, "+")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_17, "−"))])], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_7);
+  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_6)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Actions "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [$options.selectedIds.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    key: 0,
+    type: "button",
+    "class": "kiosk-btn-primary",
+    disabled: $data._adding,
+    onClick: _cache[0] || (_cache[0] = function () {
+      return $options.addAndContinue && $options.addAndContinue.apply($options, arguments);
+    }),
+    "data-testid": "kiosk-upsell-add-continue"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.upsell_screen.add_continue', {
+    n: $options.selectedIds.length
+  })), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, "+" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.addedTotal)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_19)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-upsell-skip",
+    onClick: _cache[1] || (_cache[1] = function () {
+      return $options.skip && $options.skip.apply($options, arguments);
+    }),
+    "data-testid": "kiosk-upsell-skip",
+    "aria-label": _ctx.$t('kiosk.upsell_screen.skip')
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.upsell_screen.skip')) + " ", 1 /* TEXT */), $data.autoSkipRemaining < $options.AUTO_SKIP_SECONDS ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.upsell_screen.skip_timer', {
+    n: $data.autoSkipRemaining
+  })), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_21), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Auto-skip progress bar "), !$data.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 1,
+    "class": "kiosk-upsell-autoskip-bar",
+    role: "progressbar",
+    "aria-valuenow": Math.round($data.autoSkipPct),
+    "aria-valuemin": "0",
+    "aria-valuemax": "100",
+    "aria-label": _ctx.$t('kiosk.upsell_screen.skip_timer', {
+      n: $data.autoSkipRemaining
+    }),
+    "data-testid": "kiosk-upsell-autoskip-bar"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-upsell-autoskip-fill",
+    style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+      width: $data.autoSkipPct + '%'
+    })
+  }, null, 4 /* STYLE */)], 8 /* PROPS */, _hoisted_23)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 64 /* STABLE_FRAGMENT */))]);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=template&id=0f435cc1&scoped=true"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=template&id=0f435cc1&scoped=true ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = {
+  key: 0,
+  "class": "kiosk-waiting-content"
+};
+var _hoisted_2 = {
+  "class": "kiosk-waiting-offline"
+};
+var _hoisted_3 = {
+  "class": "kiosk-waiting-title"
+};
+var _hoisted_4 = {
+  "class": "kiosk-waiting-hint"
+};
+var _hoisted_5 = {
+  "class": "kiosk-waiting-hint",
+  style: {
+    "font-size": "14px",
+    "margin-top": "8px"
+  }
+};
+var _hoisted_6 = {
+  "class": "kiosk-waiting-content"
+};
+var _hoisted_7 = {
+  key: "preparing",
+  "class": "kiosk-waiting-preparing"
+};
+var _hoisted_8 = {
+  "class": "kiosk-waiting-anim"
+};
+var _hoisted_9 = {
+  "class": "kiosk-waiting-title"
+};
+var _hoisted_10 = {
+  "class": "kiosk-waiting-number-wrap"
+};
+var _hoisted_11 = {
+  "class": "kiosk-waiting-number-label"
+};
+var _hoisted_12 = {
+  "class": "kiosk-waiting-number"
+};
+var _hoisted_13 = {
+  "class": "kiosk-waiting-hint"
+};
+var _hoisted_14 = {
+  key: "ready",
+  "class": "kiosk-waiting-ready"
+};
+var _hoisted_15 = {
+  "class": "kiosk-ready-title"
+};
+var _hoisted_16 = {
+  "class": "kiosk-waiting-number-wrap"
+};
+var _hoisted_17 = {
+  "class": "kiosk-waiting-number-label"
+};
+var _hoisted_18 = {
+  "class": "kiosk-waiting-number"
+};
+var _hoisted_19 = {
+  "class": "kiosk-ready-hint"
+};
+var _hoisted_20 = {
+  key: 2,
+  "class": "kiosk-waiting-footer"
+};
+var _hoisted_21 = {
+  "class": "kiosk-waiting-footer"
+};
+var _hoisted_22 = {
+  "class": "kiosk-waiting-auto-reset"
+};
+var _hoisted_23 = {
+  "class": "kiosk-waiting-preparing-hint"
+};
+var _hoisted_24 = {
+  key: 0,
+  "class": "kiosk-network-banner"
+};
+var _hoisted_25 = {
+  "class": "kiosk-timeout-modal"
+};
+var _hoisted_26 = {
+  "class": "kiosk-cancel-modal"
+};
+var _hoisted_27 = {
+  key: 0
+};
+var _hoisted_28 = {
+  key: 1,
+  "class": "kiosk-cancel-error-msg"
+};
+var _hoisted_29 = {
+  "class": "kiosk-cancel-actions"
+};
+var _hoisted_30 = ["disabled"];
+var _hoisted_31 = {
+  key: 0
+};
+var _hoisted_32 = {
+  key: 1,
+  "class": "kiosk-spinner-sm"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-waiting", {
+      ready: $data.isReady,
+      'kiosk-ready-flash': $data._readyFlashActive
+    }]),
+    "data-testid": "kiosk-waiting-root"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Fond animé "), _cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-waiting-bg"
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Offline order: queued locally, will sync when network returns "), $data.isOfflineOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-offline-icon"
+  }, "📡", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.offline_queue.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.offline_queue.saved')), 1 /* TEXT */), _cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("br", null, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.offline_queue.will_send')), 1 /* TEXT */)]), _cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-offline-spinner"
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.offline_queue.activity')), 1 /* TEXT */)])])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 1
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Contenu principal "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" En préparation "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+    name: "fade-scale",
+    mode: "out-in"
+  }, {
+    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [!$data.isReady ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Animation cuisine "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+        "class": "kiosk-chef-hat"
+      }, "👨‍🍳", -1 /* CACHED */)), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(3, function (n) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+          "class": "kiosk-wave-ring",
+          key: n,
+          style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
+            animationDelay: n * 0.4 + 's'
+          })
+        }, null, 4 /* STYLE */);
+      }), 64 /* STABLE_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Numéro commande — gros, visible de loin "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.number_label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.queueNumber), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.preparing_hint')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Barre de progression indéterminée "), _cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+        "class": "kiosk-waiting-progress"
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+        "class": "kiosk-waiting-progress-bar"
+      })], -1 /* CACHED */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_14, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+        "class": "kiosk-ready-icon"
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+        "class": "kiosk-ready-ring"
+      }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+        "class": "kiosk-ready-check"
+      }, "✓")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.order_ready_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.number_label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.queueNumber), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.ready_hint')), 1 /* TEXT */)]))];
+    }),
+    _: 1 /* STABLE */
+  })])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Footer (offline) "), $data.isOfflineOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-waiting-new-order",
+    onClick: _cache[0] || (_cache[0] = function () {
+      return $options.newOrder && $options.newOrder.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.new_order')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 3
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Footer "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [$data.isReady ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 0
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "kiosk-waiting-new-order",
+    onClick: _cache[1] || (_cache[1] = function () {
+      return $options.newOrder && $options.newOrder.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.new_order')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.auto_redirect', {
+    n: $data.autoResetSeconds
+  })), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 1
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_subtitle')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Allow cancellation during preparation (before kitchen starts) "), $data.showCancelButton ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    key: 0,
+    type: "button",
+    "class": "kiosk-waiting-cancel-btn",
+    onClick: _cache[2] || (_cache[2] = function () {
+      return $options.confirmCancel && $options.confirmCancel.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_order_btn')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 64 /* STABLE_FRAGMENT */))])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Banner connexion perdue "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+    name: "slide-down-banner"
+  }, {
+    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [$data.networkLost ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_24, [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+        "class": "kiosk-network-banner-icon"
+      }, "📡", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.network_lost')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
+    }),
+    _: 1 /* STABLE */
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [AUDIT-P1-C] Timeout banner: order stuck for 15 minutes "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [AUDIT-P47-BUG9] Click outside modal resumes polling so customer isn't stuck if they dismiss "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+    name: "fade-scale"
+  }, {
+    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [$data.timedOut ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        key: 0,
+        "class": "kiosk-timeout-overlay",
+        onClick: _cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+          return $options.dismissTimeoutAndResume && $options.dismissTimeoutAndResume.apply($options, arguments);
+        }, ["self"]))
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+        "class": "kiosk-timeout-icon"
+      }, "⏱️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.timeout_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.timeout_body_1')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.timeout_body_2')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "kiosk-timeout-btn",
+        onClick: _cache[3] || (_cache[3] = function () {
+          return $options.newOrder && $options.newOrder.apply($options, arguments);
+        })
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.timeout_home')), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
+    }),
+    _: 1 /* STABLE */
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Confirm cancel overlay "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+    name: "fade-scale"
+  }, {
+    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [$data.showCancelConfirm ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        key: 0,
+        "class": "kiosk-cancel-overlay",
+        onClick: _cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+          return $data.showCancelConfirm = false;
+        }, ["self"]))
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+        "class": "kiosk-cancel-icon"
+      }, "⚠️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_modal_title')), 1 /* TEXT */), !$data.cancelError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_modal_body')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.cancelError), 1 /* TEXT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [!$data.cancelError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+        key: 0,
+        type: "button",
+        "class": "kiosk-cancel-yes",
+        disabled: $data.cancelLoading,
+        onClick: _cache[5] || (_cache[5] = function () {
+          return $options.cancelOrder && $options.cancelOrder.apply($options, arguments);
+        })
+      }, [!$data.cancelLoading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_yes')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_32))], 8 /* PROPS */, _hoisted_30)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "kiosk-cancel-no",
+        onClick: _cache[6] || (_cache[6] = function () {
+          return $options.closeCancelModal && $options.closeCancelModal.apply($options, arguments);
+        })
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.cancelError ? _ctx.$t('kiosk.waiting_screen.close') : _ctx.$t('kiosk.waiting_screen.cancel_no')), 1 /* TEXT */)])])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
+    }),
+    _: 1 /* STABLE */
+  })], 2 /* CLASS */);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true"
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = ["aria-labelledby", "aria-describedby"];
+var _hoisted_2 = {
+  "class": "ks-consent-card",
+  tabindex: "-1",
+  ref: "cardRef"
+};
+var _hoisted_3 = {
+  "class": "ks-consent-header"
+};
+var _hoisted_4 = ["id"];
+var _hoisted_5 = ["id"];
+var _hoisted_6 = {
+  "class": "ks-consent-description"
+};
+var _hoisted_7 = {
+  "class": "ks-consent-check",
+  "data-testid": "kiosk-consent-loyalty-label"
+};
+var _hoisted_8 = ["checked", "aria-describedby"];
+var _hoisted_9 = ["id"];
+var _hoisted_10 = {
+  "class": "ks-consent-check",
+  "data-testid": "kiosk-consent-analytics-label"
+};
+var _hoisted_11 = ["checked"];
+var _hoisted_12 = {
+  "class": "ks-consent-check",
+  "data-testid": "kiosk-consent-mobile-transfer-label"
+};
+var _hoisted_13 = ["checked"];
+var _hoisted_14 = {
+  "class": "ks-consent-actions"
+};
+var _hoisted_15 = ["disabled"];
+var _hoisted_16 = ["aria-busy", "disabled"];
+var _hoisted_17 = ["aria-label"];
+var _hoisted_18 = {
+  "class": "ks-consent-privacy-card"
+};
+var _hoisted_19 = {
+  "class": "ks-consent-privacy-title"
+};
+var _hoisted_20 = {
+  "class": "ks-consent-privacy-body"
+};
+var _hoisted_21 = ["aria-label"];
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return $props.modelValue ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    "class": "ks-consent-backdrop",
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-labelledby": $data.titleId,
+    "aria-describedby": $data.descId,
+    "data-testid": "kiosk-consent-modal",
+    onClick: _cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.handleBackdrop && $options.handleBackdrop.apply($options, arguments);
+    }, ["self"])),
+    onKeydown: _cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)(function () {
+      return $options.handleDecline && $options.handleDecline.apply($options, arguments);
+    }, ["esc"]))
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", {
+    id: $data.titleId,
+    "class": "ks-consent-title",
+    "data-testid": "kiosk-consent-title"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.title')), 9 /* TEXT, PROPS */, _hoisted_4), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", {
+    "class": "ks-consent-subtitle",
+    id: $data.descId
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.subtitle')), 9 /* TEXT, PROPS */, _hoisted_5)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.description')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Loyalty checkbox (opt-in strict, non pré-cochée, §1.6 RGPD) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    type: "checkbox",
+    checked: $data.loyaltyChecked,
+    onChange: _cache[0] || (_cache[0] = function () {
+      return $options.toggleLoyalty && $options.toggleLoyalty.apply($options, arguments);
+    }),
+    "aria-describedby": $data.loyaltyErrorId,
+    "data-testid": "kiosk-consent-loyalty"
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_8), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.checkbox_loyalty')), 1 /* TEXT */)]), $data.showLoyaltyError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", {
+    key: 0,
+    id: $data.loyaltyErrorId,
+    "class": "ks-consent-error",
+    role: "alert",
+    "data-testid": "kiosk-consent-loyalty-error"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.required_loyalty')), 9 /* TEXT, PROPS */, _hoisted_9)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Analytics checkbox (séparée — distinct consent legal) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    type: "checkbox",
+    checked: $data.analyticsChecked,
+    onChange: _cache[1] || (_cache[1] = function () {
+      return $options.toggleAnalytics && $options.toggleAnalytics.apply($options, arguments);
+    }),
+    "data-testid": "kiosk-consent-analytics"
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_11), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.checkbox_analytics')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Mobile transfer checkbox (Phase 8.11 — 3ème type consent) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    type: "checkbox",
+    checked: $data.mobileTransferChecked,
+    onChange: _cache[2] || (_cache[2] = function () {
+      return $options.toggleMobileTransfer && $options.toggleMobileTransfer.apply($options, arguments);
+    }),
+    "data-testid": "kiosk-consent-mobile-transfer"
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_13), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.checkbox_mobile_transfer')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Privacy link "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-consent-privacy",
+    "data-testid": "kiosk-consent-privacy-link",
+    onClick: _cache[3] || (_cache[3] = function () {
+      return $options.openPrivacy && $options.openPrivacy.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.privacy_link')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Actions "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-consent-btn ks-consent-btn--ghost",
+    "data-testid": "kiosk-consent-decline",
+    onClick: _cache[4] || (_cache[4] = function () {
+      return $options.handleDecline && $options.handleDecline.apply($options, arguments);
+    }),
+    disabled: $data.submitting
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.cta_decline')), 9 /* TEXT, PROPS */, _hoisted_15), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-consent-btn ks-consent-btn--primary",
+    "data-testid": "kiosk-consent-accept",
+    "aria-busy": $data.submitting,
+    disabled: $data.submitting,
+    onClick: _cache[5] || (_cache[5] = function () {
+      return $options.handleAccept && $options.handleAccept.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.submitting ? '…' : _ctx.$t('kiosk.consent.cta_accept')), 9 /* TEXT, PROPS */, _hoisted_16)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Nested privacy subdialog "), $data.privacyOpen ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 1,
+    "class": "ks-consent-privacy-overlay",
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": _ctx.$t('kiosk.consent.privacy_link'),
+    "data-testid": "kiosk-consent-privacy-modal",
+    onClick: _cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.closePrivacy && $options.closePrivacy.apply($options, arguments);
+    }, ["self"]))
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.privacy_link')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.privacyBody), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-consent-btn ks-consent-btn--primary",
+    "aria-label": _ctx.$t('kiosk.consent.privacy_close'),
+    "data-testid": "kiosk-consent-privacy-close",
+    onClick: _cache[6] || (_cache[6] = function () {
+      return $options.closePrivacy && $options.closePrivacy.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.consent.privacy_close')), 9 /* TEXT, PROPS */, _hoisted_21)])], 8 /* PROPS */, _hoisted_17)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 512 /* NEED_PATCH */)], 40 /* PROPS, NEED_HYDRATION */, _hoisted_1)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true"
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = ["aria-label"];
+var _hoisted_2 = {
+  key: 0,
+  "class": "ks-vkeyb__preview",
+  "aria-hidden": "true",
+  "data-testid": "kiosk-vkeyb-preview"
+};
+var _hoisted_3 = {
+  "class": "ks-vkeyb__preview-value"
+};
+var _hoisted_4 = ["aria-label", "data-testid", "onClick"];
+var _hoisted_5 = {
+  "class": "ks-vkeyb__row ks-vkeyb__row--actions"
+};
+var _hoisted_6 = ["aria-label"];
+var _hoisted_7 = ["aria-label"];
+var _hoisted_8 = ["aria-label"];
+var _hoisted_9 = ["aria-label"];
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return $props.visible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["ks-vkeyb", ['ks-vkeyb--' + $props.layout, $data.shift ? 'ks-vkeyb--shift' : '', $options.isRtl ? 'ks-vkeyb--rtl' : '']]),
+    role: "group",
+    "aria-label": _ctx.$t('kiosk.a11y.virtual_keyboard_label'),
+    "data-testid": "kiosk-vkeyb"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Preview de la valeur (affiché pour feedback visuel, masqué SR) "), $props.showPreview ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayValue), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Rangées de touches "), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.rows, function (row, rIdx) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: 'row-' + rIdx,
+      "class": "ks-vkeyb__row"
+    }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(row, function (key, kIdx) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+        type: "button",
+        key: 'k-' + rIdx + '-' + kIdx,
+        "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["ks-vkeyb__key", [key.wide ? 'ks-vkeyb__key--wide' : '', key.action ? 'ks-vkeyb__key--action' : '', key.toggle && key.toggle === 'shift' && $data.shift ? 'ks-vkeyb__key--active' : '']]),
+        "aria-label": key.ariaLabel || key.label,
+        "data-testid": 'kiosk-vkeyb-key-' + (key.testid || key.label.toLowerCase()),
+        onClick: function onClick($event) {
+          return $options.pressKey(key);
+        }
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayLabel(key)), 11 /* TEXT, CLASS, PROPS */, _hoisted_4);
+    }), 128 /* KEYED_FRAGMENT */))]);
+  }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Actions globales "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-vkeyb__key ks-vkeyb__key--action",
+    "aria-label": _ctx.$t('kiosk.a11y.vkeyb_clear'),
+    "data-testid": "kiosk-vkeyb-clear",
+    onClick: _cache[0] || (_cache[0] = function () {
+      return $options.clearAll && $options.clearAll.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.a11y.vkeyb_clear_short')), 9 /* TEXT, PROPS */, _hoisted_6), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-vkeyb__key ks-vkeyb__key--action ks-vkeyb__key--wide",
+    "aria-label": _ctx.$t('kiosk.a11y.vkeyb_space'),
+    "data-testid": "kiosk-vkeyb-space",
+    onClick: _cache[1] || (_cache[1] = function ($event) {
+      return $options.pressChar(' ');
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.a11y.vkeyb_space_short')), 9 /* TEXT, PROPS */, _hoisted_7), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-vkeyb__key ks-vkeyb__key--action",
+    "aria-label": _ctx.$t('kiosk.a11y.vkeyb_backspace'),
+    "data-testid": "kiosk-vkeyb-backspace",
+    onClick: _cache[2] || (_cache[2] = function () {
+      return $options.backspace && $options.backspace.apply($options, arguments);
+    })
+  }, "⌫", 8 /* PROPS */, _hoisted_8), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "ks-vkeyb__key ks-vkeyb__key--action ks-vkeyb__key--submit",
+    "aria-label": _ctx.$t('kiosk.a11y.vkeyb_submit'),
+    "data-testid": "kiosk-vkeyb-submit",
+    onClick: _cache[3] || (_cache[3] = function () {
+      return $options.submit && $options.submit.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.a11y.vkeyb_submit_short')), 9 /* TEXT, PROPS */, _hoisted_9)])], 10 /* CLASS, PROPS */, _hoisted_1)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
+}
+
+/***/ },
+
+/***/ "./resources/js/composables/useKioskSpeech.js"
+/*!****************************************************!*\
+  !*** ./resources/js/composables/useKioskSpeech.js ***!
+  \****************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__),
+/* harmony export */   useKioskSpeech: () => (/* binding */ useKioskSpeech)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+/**
+ * useKioskSpeech.js — Composable Web Speech API pour le kiosk.
+ * -----------------------------------------------------------------------------
+ * FoodKing Kiosk — Phase 4.5 (audio / European Accessibility Act).
+ *
+ * Fonctionnalités :
+ *  - speak(text, opts)  : lit un texte via SpeechSynthesis (FR/EN)
+ *                          ou un fichier audio pré-enregistré (AR).
+ *  - stop()             : interrompt immédiatement la lecture en cours.
+ *  - isSupported        : boolean computed (Web Speech API disponible).
+ *  - isSpeaking         : boolean reactive (en cours de lecture).
+ *
+ * Politique :
+ *  - Respecte le flag `kioskSettings.audio` : si désactivé, les appels à
+ *    speak() sont no-ops (et renvoient Promise.resolve(false)).
+ *  - Auto-stop après STILL_HERE_MS d'inactivité (cohérent avec KioskApp).
+ *  - Voice selection : priorité langue exacte > prefix (ex. fr-FR > fr).
+ *  - Arabe : Chrome/Edge sur Windows kiosk n'ont pas toujours de voix ar-SA
+ *    installée → fallback sur fichiers statiques `public/kiosk/audio/ar/<key>.mp3`
+ *    (clé i18n au format dot-notation remplacée en nom de fichier).
+ *  - Pas de PII : on log uniquement la longueur du texte parlé dans les events.
+ *  - Jamais de speak() automatique sans interaction utilisateur préalable
+ *    (règle Chrome autoplay) — c'est au composant caller de s'assurer que
+ *    speak() est déclenché en réponse à un click/touch.
+ *
+ * Invariants :
+ *  - Idempotent à l'init : un second useKioskSpeech() dans un autre composant
+ *    réutilise `window.speechSynthesis` directement sans créer de doublon.
+ *  - Safe en tests (jsdom) : vérifie la présence de window.speechSynthesis.
+ */
+
+
+var LOCALE_VOICE_PREFERENCES = {
+  fr: ['fr-FR', 'fr-CA', 'fr'],
+  en: ['en-GB', 'en-US', 'en'],
+  ar: ['ar-SA', 'ar-EG', 'ar-MA', 'ar']
+};
+var AR_FALLBACK_BASE_URL = '/kiosk/audio/ar/';
+function slugifyKey(key) {
+  if (typeof key !== 'string') return '';
+  return key.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\./g, '_').slice(0, 80);
+}
+function pickVoice(voices, locale) {
+  if (!(voices !== null && voices !== void 0 && voices.length)) return null;
+  var prefs = LOCALE_VOICE_PREFERENCES[locale] || [locale];
+  var _iterator = _createForOfIteratorHelper(prefs),
+    _step;
+  try {
+    var _loop = function _loop() {
+        var pref = _step.value;
+        var exact = voices.find(function (v) {
+          return v.lang === pref;
+        });
+        if (exact) return {
+          v: exact
+        };
+      },
+      _ret;
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      _ret = _loop();
+      if (_ret) return _ret.v;
+    }
+    // Préfixe
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  var _iterator2 = _createForOfIteratorHelper(prefs),
+    _step2;
+  try {
+    var _loop2 = function _loop2() {
+        var pref = _step2.value;
+        var partial = voices.find(function (v) {
+          var _v$lang;
+          return (_v$lang = v.lang) === null || _v$lang === void 0 ? void 0 : _v$lang.toLowerCase().startsWith(pref.toLowerCase());
+        });
+        if (partial) return {
+          v: partial
+        };
+      },
+      _ret2;
+    for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+      _ret2 = _loop2();
+      if (_ret2) return _ret2.v;
+    }
+  } catch (err) {
+    _iterator2.e(err);
+  } finally {
+    _iterator2.f();
+  }
+  return null;
+}
+function loadVoicesOnce() {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return Promise.resolve([]);
+  var synth = window.speechSynthesis;
+  var existing = synth.getVoices();
+  if (existing.length) return Promise.resolve(existing);
+  return new Promise(function (resolve) {
+    var _handler = function handler() {
+      synth.removeEventListener('voiceschanged', _handler);
+      resolve(synth.getVoices());
+    };
+    synth.addEventListener('voiceschanged', _handler);
+    // Safety timeout — si voiceschanged ne firera jamais (certains navigateurs
+    // exotiques), on renvoie un tableau vide après 500ms.
+    setTimeout(function () {
+      synth.removeEventListener('voiceschanged', _handler);
+      resolve(synth.getVoices());
+    }, 500);
+  });
+}
+function useKioskSpeech() {
+  var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+    store = _ref.store;
+  var hasSpeechApi = typeof window !== 'undefined' && typeof window.speechSynthesis !== 'undefined';
+  var isSpeaking = (0,vue__WEBPACK_IMPORTED_MODULE_0__.ref)(false);
+  var currentUtterance = null;
+  var currentAudio = null;
+  var audioEnabled = (0,vue__WEBPACK_IMPORTED_MODULE_0__.computed)(function () {
+    var _store$state;
+    return !!(store !== null && store !== void 0 && (_store$state = store.state) !== null && _store$state !== void 0 && (_store$state = _store$state.kioskSettings) !== null && _store$state !== void 0 && _store$state.audio);
+  });
+  var currentLocale = (0,vue__WEBPACK_IMPORTED_MODULE_0__.computed)(function () {
+    var _store$state2;
+    return (store === null || store === void 0 || (_store$state2 = store.state) === null || _store$state2 === void 0 || (_store$state2 = _store$state2.kioskSettings) === null || _store$state2 === void 0 ? void 0 : _store$state2.locale) || 'fr';
+  });
+  var isSupported = (0,vue__WEBPACK_IMPORTED_MODULE_0__.computed)(function () {
+    return hasSpeechApi || currentLocale.value === 'ar';
+  });
+  function stop() {
+    if (currentAudio) {
+      try {
+        currentAudio.pause();
+        currentAudio.src = '';
+      } catch (_) {
+        // noop
+      }
+      currentAudio = null;
+    }
+    if (hasSpeechApi) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (_) {
+        // noop
+      }
+    }
+    currentUtterance = null;
+    isSpeaking.value = false;
+  }
+
+  /**
+   * Speak a text. Returns Promise<boolean> — true si effectivement parlé.
+   *
+   * @param {string} text             Le texte à énoncer.
+   * @param {object} [opts]
+   * @param {string} [opts.locale]    Override langue (sinon kioskSettings.locale).
+   * @param {string} [opts.key]       Clé i18n (pour fallback AR mp3). Si absente,
+   *                                  AR ne pourra pas utiliser le fallback.
+   * @param {number} [opts.rate]      Taux (0.1 à 10, défaut 1)
+   * @param {number} [opts.pitch]     Pitch (0 à 2, défaut 1)
+   * @param {number} [opts.volume]    Volume (0 à 1, défaut 1)
+   */
+  function speak(_x) {
+    return _speak.apply(this, arguments);
+  } // Cleanup à démontage : stop toute lecture en cours pour ne pas « fuiter »
+  // des utterances sur la prochaine route.
+  function _speak() {
+    _speak = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(text) {
+      var opts,
+        locale,
+        url,
+        audio,
+        donePromise,
+        voices,
+        utter,
+        voice,
+        _donePromise,
+        _args = arguments,
+        _t,
+        _t2;
+      return _regenerator().w(function (_context) {
+        while (1) switch (_context.p = _context.n) {
+          case 0:
+            opts = _args.length > 1 && _args[1] !== undefined ? _args[1] : {};
+            if (audioEnabled.value) {
+              _context.n = 1;
+              break;
+            }
+            return _context.a(2, false);
+          case 1:
+            if (!(!text || typeof text !== 'string')) {
+              _context.n = 2;
+              break;
+            }
+            return _context.a(2, false);
+          case 2:
+            locale = opts.locale || currentLocale.value;
+            stop(); // Cancel any ongoing speech
+
+            // --- AR : fallback fichier mp3 statique --------------------------------
+            if (!(locale === 'ar' && opts.key)) {
+              _context.n = 6;
+              break;
+            }
+            _context.p = 3;
+            url = AR_FALLBACK_BASE_URL + slugifyKey(opts.key) + '.mp3';
+            audio = new Audio(url);
+            audio.volume = typeof opts.volume === 'number' ? opts.volume : 1;
+            currentAudio = audio;
+            isSpeaking.value = true;
+            donePromise = new Promise(function (resolve) {
+              var finish = function finish() {
+                isSpeaking.value = false;
+                currentAudio = null;
+                resolve(true);
+              };
+              audio.addEventListener('ended', finish, {
+                once: true
+              });
+              audio.addEventListener('error', function () {
+                isSpeaking.value = false;
+                currentAudio = null;
+                resolve(false);
+              }, {
+                once: true
+              });
+            });
+            _context.n = 4;
+            return audio.play();
+          case 4:
+            return _context.a(2, donePromise);
+          case 5:
+            _context.p = 5;
+            _t = _context.v;
+            isSpeaking.value = false;
+            currentAudio = null;
+            return _context.a(2, false);
+          case 6:
+            if (hasSpeechApi) {
+              _context.n = 7;
+              break;
+            }
+            return _context.a(2, false);
+          case 7:
+            _context.p = 7;
+            _context.n = 8;
+            return loadVoicesOnce();
+          case 8:
+            voices = _context.v;
+            utter = new SpeechSynthesisUtterance(text);
+            voice = pickVoice(voices, locale);
+            if (voice) utter.voice = voice;
+            utter.lang = (voice === null || voice === void 0 ? void 0 : voice.lang) || locale;
+            utter.rate = typeof opts.rate === 'number' ? opts.rate : 1;
+            utter.pitch = typeof opts.pitch === 'number' ? opts.pitch : 1;
+            utter.volume = typeof opts.volume === 'number' ? opts.volume : 1;
+            currentUtterance = utter;
+            isSpeaking.value = true;
+            _donePromise = new Promise(function (resolve) {
+              utter.onend = function () {
+                isSpeaking.value = false;
+                currentUtterance = null;
+                resolve(true);
+              };
+              utter.onerror = function () {
+                isSpeaking.value = false;
+                currentUtterance = null;
+                resolve(false);
+              };
+            });
+            window.speechSynthesis.speak(utter);
+            return _context.a(2, _donePromise);
+          case 9:
+            _context.p = 9;
+            _t2 = _context.v;
+            isSpeaking.value = false;
+            currentUtterance = null;
+            return _context.a(2, false);
+        }
+      }, _callee, null, [[7, 9], [3, 5]]);
+    }));
+    return _speak.apply(this, arguments);
+  }
+  try {
+    (0,vue__WEBPACK_IMPORTED_MODULE_0__.onBeforeUnmount)(function () {
+      stop();
+    });
+  } catch (_) {
+    // Appelé hors setup — le caller doit gérer.
+  }
+  return {
+    speak: speak,
+    stop: stop,
+    isSupported: isSupported,
+    isSpeaking: isSpeaking
+  };
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (useKioskSpeech);
+
+/***/ },
+
+/***/ "./resources/js/helpers/kioskPrinter.js"
+/*!**********************************************!*\
+  !*** ./resources/js/helpers/kioskPrinter.js ***!
+  \**********************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   buildEscPosReceipt: () => (/* binding */ buildEscPosReceipt),
+/* harmony export */   buildReceiptData: () => (/* binding */ buildReceiptData),
+/* harmony export */   printReceipt: () => (/* binding */ printReceipt),
+/* harmony export */   reportPrinterFailure: () => (/* binding */ reportPrinterFailure)
+/* harmony export */ });
+/* harmony import */ var _config_kioskHardware__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../config/kioskHardware */ "./resources/js/config/kioskHardware.js");
+/* harmony import */ var _services_kioskHardware__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../services/kioskHardware */ "./resources/js/services/kioskHardware.js");
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+/**
+ * kioskPrinter.js — FoodKing Kiosk Thermal Printer Helper
+ *
+ * Architecture:
+ *   1. Electron (Windows kiosk): passes par kioskHardware.printReceipt/printEscPos
+ *      (service unifié ajouté en Phase 5.1 — contrat `{ok, error?}`, stub auto en dev).
+ *   2. Web fallback: uses window.print() with a pre-rendered receipt DOM element
+ *
+ * ESC/POS command set (subset used):
+ *   ESC @ = initialize printer
+ *   ESC a N = alignment (0=left, 1=center, 2=right)
+ *   ESC E 1 = bold on, ESC E 0 = bold off
+ *   ESC ! N = font size (bit 4 = double height, bit 5 = double width)
+ *   GS V 0 = cut paper (full cut)
+ *   LF = line feed
+ *
+ * [PHASE-6.2] Plus d'import direct de `window.borne.*` — tout passe par `kioskHardware`.
+ */
+
+
+function sleep(ms) {
+  return new Promise(function (resolve) {
+    return setTimeout(resolve, ms);
+  });
+}
+var ESC = '\x1B';
+var GS = '\x1D';
+var LF = '\x0A';
+var CMD = {
+  INIT: ESC + '@',
+  ALIGN_LEFT: ESC + 'a\x00',
+  ALIGN_CENTER: ESC + 'a\x01',
+  ALIGN_RIGHT: ESC + 'a\x02',
+  BOLD_ON: ESC + 'E\x01',
+  BOLD_OFF: ESC + 'E\x00',
+  DOUBLE_SIZE: ESC + '!\x30',
+  // double width + double height
+  NORMAL_SIZE: ESC + '!\x00',
+  CUT: GS + 'V\x00'
+};
+var RECEIPT_WIDTH = 32; // chars for 58mm printer (48 for 80mm)
+
+/**
+ * Pad a string to fill a line of RECEIPT_WIDTH chars.
+ * left: left-aligned text, right: right-aligned text
+ */
+function padLine(left, right) {
+  var width = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : RECEIPT_WIDTH;
+  var available = width - right.length;
+  return left.substring(0, available).padEnd(available) + right;
+}
+function centerText(text) {
+  var width = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : RECEIPT_WIDTH;
+  var pad = Math.max(0, Math.floor((width - text.length) / 2));
+  return ' '.repeat(pad) + text;
+}
+function separator() {
+  var _char = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '-';
+  var width = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : RECEIPT_WIDTH;
+  return _char.repeat(width);
+}
+
+/**
+ * Build an array of ESC/POS command strings for a kiosk receipt.
+ *
+ * @param {Object} receipt
+ * @param {string}   receipt.restaurantName
+ * @param {string}   receipt.queueNumber     e.g. "A042"
+ * @param {string}   receipt.orderDate       e.g. "24/03/2026 14:32"
+ * @param {Array}    receipt.items           [{name, quantity, unitPrice, extras, instruction}]
+ * @param {number}   receipt.subtotal
+ * @param {number}   receipt.discount
+ * @param {number}   receipt.total
+ * @param {string}   receipt.paymentMethod   e.g. "Carte bancaire"
+ * @param {string}   [receipt.thankYou]      custom thank-you message
+ * @param {number}   [receipt.loyaltyPointsEarned]
+ * @param {string}   [receipt.loyaltyCustomerName]
+ * @returns {string[]} array of ESC/POS command strings (one per "line block")
+ */
+function buildEscPosReceipt(receipt) {
+  var lines = [];
+  var labels = receipt.labels || {};
+  lines.push(CMD.INIT);
+
+  // ── Header ──────────────────────────────────────────────────────────────
+  lines.push(CMD.ALIGN_CENTER);
+  lines.push(CMD.DOUBLE_SIZE);
+  lines.push(CMD.BOLD_ON);
+  lines.push(receipt.restaurantName || 'Restaurant');
+  lines.push(LF);
+  lines.push(CMD.NORMAL_SIZE);
+  lines.push(CMD.BOLD_OFF);
+  lines.push(receipt.orderDate || '');
+  lines.push(LF);
+  lines.push(separator());
+  lines.push(LF);
+
+  // ── Queue number ─────────────────────────────────────────────────────────
+  lines.push(CMD.ALIGN_CENTER);
+  lines.push(CMD.BOLD_ON);
+  lines.push(labels.queueNumberTitle || 'YOUR NUMBER');
+  lines.push(LF);
+  lines.push(CMD.DOUBLE_SIZE);
+  lines.push(receipt.queueNumber || '---');
+  lines.push(LF);
+  lines.push(CMD.NORMAL_SIZE);
+  lines.push(CMD.BOLD_OFF);
+  lines.push(separator());
+  lines.push(LF);
+
+  // ── Items ────────────────────────────────────────────────────────────────
+  lines.push(CMD.ALIGN_LEFT);
+  (receipt.items || []).forEach(function (item) {
+    var price = formatEur((parseFloat(item.unitPrice) || 0) * (item.quantity || 1));
+    var label = "".concat(item.quantity, "x ").concat(item.name);
+    lines.push(CMD.BOLD_ON);
+    lines.push(padLine(label, price));
+    lines.push(CMD.BOLD_OFF);
+    lines.push(LF);
+
+    // Extras / customizations
+    if (item.instruction) {
+      var instrLines = item.instruction.split('. ');
+      instrLines.forEach(function (l) {
+        if (l.trim()) {
+          lines.push('  > ' + l.trim().substring(0, RECEIPT_WIDTH - 4));
+          lines.push(LF);
+        }
+      });
+    }
+  });
+  lines.push(separator());
+  lines.push(LF);
+
+  // ── Totals ───────────────────────────────────────────────────────────────
+  lines.push(CMD.ALIGN_LEFT);
+  if (receipt.discount && receipt.discount > 0) {
+    lines.push(padLine(labels.subtotal || 'Subtotal', formatEur(receipt.subtotal)));
+    lines.push(LF);
+    lines.push(padLine(labels.discount || 'Loyalty discount', '-' + formatEur(receipt.discount)));
+    lines.push(LF);
+  }
+  lines.push(CMD.BOLD_ON);
+  lines.push(padLine(labels.total || 'TOTAL', formatEur(receipt.total)));
+  lines.push(LF);
+  lines.push(CMD.BOLD_OFF);
+  if (receipt.paymentMethod) {
+    lines.push(padLine(labels.payment || 'Payment', receipt.paymentMethod));
+    lines.push(LF);
+  }
+  if (receipt.loyaltyPointsEarned > 0 && receipt.loyaltyCustomerName) {
+    lines.push(separator());
+    lines.push(LF);
+    lines.push(CMD.ALIGN_CENTER);
+    lines.push(CMD.BOLD_ON);
+    lines.push(labels.loyalty || 'LOYALTY');
+    lines.push(LF);
+    lines.push(CMD.BOLD_OFF);
+    lines.push(CMD.NORMAL_SIZE);
+    var shortName = String(receipt.loyaltyCustomerName).slice(0, 18);
+    lines.push("+".concat(receipt.loyaltyPointsEarned, " pts \u2014 ").concat(shortName));
+    lines.push(LF);
+  }
+  lines.push(separator());
+  lines.push(LF);
+
+  // ── Footer ───────────────────────────────────────────────────────────────
+  lines.push(CMD.ALIGN_CENTER);
+  lines.push(receipt.thankYou || 'Thank you for your order!');
+  lines.push(LF);
+  lines.push(labels.seeYouSoon || 'See you soon!');
+  lines.push(LF + LF + LF);
+
+  // ── Cut ──────────────────────────────────────────────────────────────────
+  lines.push(CMD.CUT);
+  return lines;
+}
+
+/**
+ * Print a kiosk receipt.
+ *
+ * Priority order:
+ *   1. Electron bridge via window.borne.printReceipt(orderData)  ← real Electron IPC
+ *   2. Legacy bridge via window.borne.printEscPos(lines[])        ← fallback
+ *   3. Browser window.print() with CSS @media print               ← web fallback
+ *
+ * @param {Object} receipt  — same shape as buildReceiptData()
+ * @param {string} [printElementId='kiosk-print-receipt']  — DOM id for web fallback
+ * @returns {Promise<{method: 'electron'|'electron-escpos'|'browser'|'none', error?: string}>}
+ */
+function printReceipt(_x) {
+  return _printReceipt.apply(this, arguments);
+}
+
+/**
+ * Report a printer failure to the backend hardware log.
+ * Non-blocking — never throws.
+ */
+function _printReceipt() {
+  _printReceipt = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(receipt) {
+    var printElementId,
+      isBridge,
+      orderData,
+      maxAttempts,
+      retryDelayMs,
+      attempt,
+      r,
+      raw,
+      lines,
+      rEsc,
+      el,
+      _args = arguments,
+      _t;
+    return _regenerator().w(function (_context) {
+      while (1) switch (_context.p = _context.n) {
+        case 0:
+          printElementId = _args.length > 1 && _args[1] !== undefined ? _args[1] : 'kiosk-print-receipt';
+          // [PHASE-6.2] Électron bridge — via kioskHardware (pas d'accès direct window.borne).
+          //
+          // `kioskHardware.printReceipt` et `printEscPos` retournent le contrat {ok, error?}
+          // (runSafe dans le service enrobe les throws en fail). Ils renvoient également
+          // `{ok: false, error: 'printer_unavailable'}` si la méthode bridge n'existe pas
+          // — on traite ce cas comme "fall-through" vers la méthode suivante.
+          isBridge = _services_kioskHardware__WEBPACK_IMPORTED_MODULE_1__["default"].isKioskBridge();
+          if (!isBridge) {
+            _context.n = 9;
+            break;
+          }
+          orderData = {
+            queue_number: receipt.queueNumber,
+            order_serial_no: receipt.queueNumber,
+            total: receipt.total,
+            restaurant_name: receipt.restaurantName,
+            items: (receipt.items || []).map(function (i) {
+              return {
+                name: i.name,
+                quantity: i.quantity,
+                total_price: (i.unitPrice || 0) * (i.quantity || 1),
+                instruction: i.instruction || null
+              };
+            }),
+            payment_method: receipt.paymentMethod || '',
+            loyalty_points_earned: receipt.loyaltyPointsEarned || 0,
+            loyalty_customer_name: receipt.loyaltyCustomerName || ''
+          };
+          maxAttempts = Math.max(1, _config_kioskHardware__WEBPACK_IMPORTED_MODULE_0__.KIOSK_HARDWARE.PRINTER_RETRY_MAX || 1);
+          retryDelayMs = _config_kioskHardware__WEBPACK_IMPORTED_MODULE_0__.KIOSK_HARDWARE.PRINTER_RETRY_MS || 0;
+          attempt = 1;
+        case 1:
+          if (!(attempt <= maxAttempts)) {
+            _context.n = 9;
+            break;
+          }
+          _context.n = 2;
+          return _services_kioskHardware__WEBPACK_IMPORTED_MODULE_1__["default"].printReceipt(orderData);
+        case 2:
+          r = _context.v;
+          if (!(r !== null && r !== void 0 && r.ok)) {
+            _context.n = 4;
+            break;
+          }
+          raw = r.data || r;
+          if (!(raw !== null && raw !== void 0 && raw.success || raw !== null && raw !== void 0 && raw.skipped || r.ok)) {
+            _context.n = 3;
+            break;
+          }
+          return _context.a(2, {
+            method: 'electron'
+          });
+        case 3:
+          console.warn('[kioskPrinter] printReceipt returned non-success:', raw);
+          _context.n = 5;
+          break;
+        case 4:
+          if (r !== null && r !== void 0 && r.error && r.error !== 'printer_unavailable') {
+            console.warn('[kioskPrinter] printReceipt failed:', r.error);
+          }
+        case 5:
+          lines = buildEscPosReceipt(receipt);
+          _context.n = 6;
+          return _services_kioskHardware__WEBPACK_IMPORTED_MODULE_1__["default"].printEscPos(lines);
+        case 6:
+          rEsc = _context.v;
+          if (!(rEsc !== null && rEsc !== void 0 && rEsc.ok)) {
+            _context.n = 7;
+            break;
+          }
+          return _context.a(2, {
+            method: 'electron-escpos'
+          });
+        case 7:
+          if (rEsc !== null && rEsc !== void 0 && rEsc.error && rEsc.error !== 'printer_unavailable') {
+            console.warn('[kioskPrinter] printEscPos failed:', rEsc.error);
+          }
+          if (!(attempt < maxAttempts && retryDelayMs > 0)) {
+            _context.n = 8;
+            break;
+          }
+          _context.n = 8;
+          return sleep(retryDelayMs);
+        case 8:
+          attempt++;
+          _context.n = 1;
+          break;
+        case 9:
+          // ── Browser window.print() fallback (dev / navigateur) ───────────────────
+          el = document.getElementById(printElementId);
+          if (!(el && typeof window.print === 'function')) {
+            _context.n = 12;
+            break;
+          }
+          _context.p = 10;
+          window.print();
+          return _context.a(2, {
+            method: 'browser'
+          });
+        case 11:
+          _context.p = 11;
+          _t = _context.v;
+          return _context.a(2, {
+            method: 'none',
+            error: _t.message
+          });
+        case 12:
+          return _context.a(2, {
+            method: 'none',
+            error: 'No print method available'
+          });
+      }
+    }, _callee, null, [[10, 11]]);
+  }));
+  return _printReceipt.apply(this, arguments);
+}
+function reportPrinterFailure(orderId, errorMessage) {
+  try {
+    var axios = window.axios;
+    if (!axios) return;
+    axios.post('frontend/kiosk-event', {
+      type: 'printer_failure',
+      details: "order_id=".concat(orderId, " | error=").concat(errorMessage || 'unknown')
+    })["catch"](function () {});
+  } catch (_) {}
+}
+
+/**
+ * Format a number as EUR currency string for receipt (e.g. "12.50 EUR")
+ */
+function formatEur(amount) {
+  return (parseFloat(amount) || 0).toFixed(2) + ' EUR';
+}
+
+/**
+ * Build a receipt data object from kiosk cart state + order response.
+ *
+ * @param {Object} opts
+ * @param {string}  opts.restaurantName
+ * @param {string}  opts.queueNumber
+ * @param {Array}   opts.cartItems      — Vuex kioskCart items
+ * @param {number}  opts.subtotal
+ * @param {number}  opts.discount
+ * @param {number}  opts.total
+ * @param {string}  opts.paymentMethod
+ * @param {number}  [opts.loyaltyPointsEarned]
+ * @param {string}  [opts.loyaltyCustomerName]
+ * @returns {Object}
+ */
+function buildReceiptData(_ref) {
+  var restaurantName = _ref.restaurantName,
+    queueNumber = _ref.queueNumber,
+    cartItems = _ref.cartItems,
+    subtotal = _ref.subtotal,
+    discount = _ref.discount,
+    total = _ref.total,
+    paymentMethod = _ref.paymentMethod,
+    _ref$loyaltyPointsEar = _ref.loyaltyPointsEarned,
+    loyaltyPointsEarned = _ref$loyaltyPointsEar === void 0 ? 0 : _ref$loyaltyPointsEar,
+    _ref$loyaltyCustomerN = _ref.loyaltyCustomerName,
+    loyaltyCustomerName = _ref$loyaltyCustomerN === void 0 ? '' : _ref$loyaltyCustomerN,
+    _ref$labels = _ref.labels,
+    labels = _ref$labels === void 0 ? {} : _ref$labels;
+  var now = new Date();
+  var pad = function pad(n) {
+    return String(n).padStart(2, '0');
+  };
+  var orderDate = "".concat(pad(now.getDate()), "/").concat(pad(now.getMonth() + 1), "/").concat(now.getFullYear(), " ").concat(pad(now.getHours()), ":").concat(pad(now.getMinutes()));
+  var items = (cartItems || []).map(function (item) {
+    return {
+      name: item.name || 'Article',
+      quantity: item.quantity || 1,
+      unitPrice: (parseFloat(item.convert_price) || 0) + (parseFloat(item.item_variation_total) || 0) + (parseFloat(item.item_extra_total) || 0),
+      instruction: item.instruction || null
+    };
+  });
+  return {
+    restaurantName: restaurantName || 'Restaurant',
+    queueNumber: queueNumber || '---',
+    orderDate: orderDate,
+    items: items,
+    subtotal: parseFloat(subtotal) || 0,
+    discount: parseFloat(discount) || 0,
+    total: parseFloat(total) || 0,
+    paymentMethod: paymentMethod || '',
+    loyaltyPointsEarned: parseInt(loyaltyPointsEarned, 10) || 0,
+    loyaltyCustomerName: loyaltyCustomerName || '',
+    labels: labels
+  };
+}
+
+/***/ },
+
+/***/ "./resources/js/helpers/kioskReceiptPersistence.js"
+/*!*********************************************************!*\
+  !*** ./resources/js/helpers/kioskReceiptPersistence.js ***!
+  \*********************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   KIOSK_RECEIPT_DEFAULT_TTL_MS: () => (/* binding */ KIOSK_RECEIPT_DEFAULT_TTL_MS),
+/* harmony export */   KIOSK_RECEIPT_STORAGE_KEY: () => (/* binding */ KIOSK_RECEIPT_STORAGE_KEY),
+/* harmony export */   clearKioskReceiptSnapshot: () => (/* binding */ clearKioskReceiptSnapshot),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__),
+/* harmony export */   readKioskReceiptSnapshot: () => (/* binding */ readKioskReceiptSnapshot),
+/* harmony export */   saveKioskReceiptSnapshot: () => (/* binding */ saveKioskReceiptSnapshot)
+/* harmony export */ });
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+/**
+ * kioskReceiptPersistence.js — Snapshot du dernier reçu (F5-proof).
+ * -----------------------------------------------------------------------------
+ * FoodKing Kiosk — Phase 9.1.12.
+ *
+ * Problème couvert :
+ *  Le `KioskConfirmationComponent` construit son ticket à partir d'un snapshot
+ *  in-memory du panier pris dans `mounted()`. Si le client recharge la page
+ *  (F5, redémarrage borne auto, navigation back inattendue), ce snapshot
+ *  disparaît et il n'a plus son ticket → frustration + perte commerciale
+ *  (client ne sait plus son n° de commande, staff doit retrouver la commande
+ *  en base pour reimprimer).
+ *
+ * Solution :
+ *  - On persiste, juste après reset du panier sur /confirmation, un snapshot
+ *    minimal dans `localStorage` sous la clé `kiosk.lastReceipt`.
+ *  - La navigation vers /idle (ou un mount direct sur /confirmation sans
+ *    données) lit ce snapshot et l'expose au composant pour reconstruire le
+ *    ticket à l'identique.
+ *  - TTL court (1h par défaut) : au-delà, le snapshot est considéré obsolète
+ *    — la commande est probablement déjà servie, et le client n'a plus besoin
+ *    du ticket à la borne.
+ *  - Aucune PII n'est persistée (pas d'email, pas de téléphone) — seulement
+ *    le nom public du client fidélité (déjà affiché sur le ticket papier).
+ *
+ * Invariants :
+ *  - Aucun prix n'est recalculé à partir de ce snapshot côté SSOT — c'est un
+ *    pur cache d'affichage. Toute action métier (reprint, refund, annulation)
+ *    doit interroger `GET /api/frontend/order/{id}` pour obtenir la source
+ *    de vérité.
+ *  - Le snapshot est vidé quand l'utilisateur revient à l'écran idle (fin de
+ *    session visible) OU quand l'expiration est dépassée.
+ *  - Tolérant aux contextes sans `localStorage` (SSR, incognito Safari, tests
+ *    jsdom sans stub) → renvoie toujours `null` plutôt que throw.
+ */
+
+var STORAGE_KEY = 'kiosk.lastReceipt';
+var DEFAULT_TTL_MS = 60 * 60 * 1000; // 1h
+
+function safeLocalStorage() {
+  try {
+    if (typeof window === 'undefined') return null;
+    if (!window.localStorage) return null;
+    return window.localStorage;
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Persiste un snapshot minimal de reçu dans localStorage.
+ *
+ * @param {object} receipt
+ * @param {string|number} receipt.orderId
+ * @param {string|number} receipt.queueNumber  - Numéro affiché au client.
+ * @param {number} receipt.total               - Montant TTC payé.
+ * @param {number} [receipt.discount]          - Réduction fidélité éventuelle.
+ * @param {number} [receipt.subtotal]          - Sous-total HT/TTC (selon SSOT).
+ * @param {Array}  [receipt.items]             - Lignes du ticket (nom + qty + total).
+ * @param {string} [receipt.paymentMethod]
+ * @param {string} [receipt.loyaltyCustomerName]
+ * @param {number} [receipt.pointsEarned]
+ * @param {string} [receipt.restaurantName]
+ * @param {string} [receipt.paidAt]            - ISO 8601, fallback now().
+ * @returns {boolean} true si persisté, false sinon.
+ */
+function saveKioskReceiptSnapshot(receipt) {
+  var _receipt$orderId, _receipt$queueNumber;
+  var storage = safeLocalStorage();
+  if (!storage || !receipt || _typeof(receipt) !== 'object') return false;
+
+  // On fige un payload minimal : pas de PII (email, phone), pas de fonctions.
+  var payload = {
+    v: 1,
+    savedAt: Date.now(),
+    paidAt: receipt.paidAt || new Date().toISOString(),
+    orderId: (_receipt$orderId = receipt.orderId) !== null && _receipt$orderId !== void 0 ? _receipt$orderId : null,
+    queueNumber: (_receipt$queueNumber = receipt.queueNumber) !== null && _receipt$queueNumber !== void 0 ? _receipt$queueNumber : null,
+    total: Number.isFinite(receipt.total) ? receipt.total : 0,
+    discount: Number.isFinite(receipt.discount) ? receipt.discount : 0,
+    subtotal: Number.isFinite(receipt.subtotal) ? receipt.subtotal : null,
+    items: Array.isArray(receipt.items) ? receipt.items.map(function (it) {
+      var _ref, _it$item_id;
+      return {
+        item_id: (_ref = (_it$item_id = it.item_id) !== null && _it$item_id !== void 0 ? _it$item_id : it.id) !== null && _ref !== void 0 ? _ref : null,
+        name: typeof it.name === 'string' ? it.name : '',
+        quantity: Number.isFinite(it.quantity) ? it.quantity : 1,
+        total: Number.isFinite(it.total) ? it.total : 0
+      };
+    }) : [],
+    paymentMethod: receipt.paymentMethod || '',
+    loyaltyCustomerName: receipt.loyaltyCustomerName || null,
+    pointsEarned: Number.isFinite(receipt.pointsEarned) ? receipt.pointsEarned : 0,
+    restaurantName: receipt.restaurantName || null
+  };
+  try {
+    storage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    return true;
+  } catch (_) {
+    // QuotaExceeded, private mode, etc. → non fatal.
+    return false;
+  }
+}
+
+/**
+ * Lit le dernier snapshot de reçu s'il est encore valide (TTL).
+ *
+ * @param {object} [options]
+ * @param {number} [options.ttlMs] - Durée max depuis `savedAt` (défaut 1h).
+ * @returns {object|null} snapshot ou null si absent/expiré/corrompu.
+ */
+function readKioskReceiptSnapshot() {
+  var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  var storage = safeLocalStorage();
+  if (!storage) return null;
+  var ttlMs = Number.isFinite(options.ttlMs) && options.ttlMs > 0 ? options.ttlMs : DEFAULT_TTL_MS;
+  var raw;
+  try {
+    raw = storage.getItem(STORAGE_KEY);
+  } catch (_) {
+    return null;
+  }
+  if (!raw) return null;
+  var parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (_) {
+    // Corrompu → on vide pour éviter de re-corrompre à chaque read.
+    clearKioskReceiptSnapshot();
+    return null;
+  }
+  if (!parsed || _typeof(parsed) !== 'object') return null;
+  if (parsed.v !== 1) return null;
+  var savedAt = Number(parsed.savedAt) || 0;
+  if (!savedAt || Date.now() - savedAt > ttlMs) {
+    // Expiré → on vide pour ne pas gaspiller du quota.
+    clearKioskReceiptSnapshot();
+    return null;
+  }
+  return parsed;
+}
+
+/**
+ * Supprime le snapshot (à appeler quand on revient à idle, ou après TTL).
+ */
+function clearKioskReceiptSnapshot() {
+  var storage = safeLocalStorage();
+  if (!storage) return;
+  try {
+    storage.removeItem(STORAGE_KEY);
+  } catch (_) {/* noop */}
+}
+var KIOSK_RECEIPT_STORAGE_KEY = STORAGE_KEY;
+var KIOSK_RECEIPT_DEFAULT_TTL_MS = DEFAULT_TTL_MS;
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  save: saveKioskReceiptSnapshot,
+  read: readKioskReceiptSnapshot,
+  clear: clearKioskReceiptSnapshot,
+  STORAGE_KEY: STORAGE_KEY,
+  DEFAULT_TTL_MS: DEFAULT_TTL_MS
+});
+
+/***/ },
+
+/***/ "./resources/js/helpers/kioskUpsellFlow.js"
+/*!*************************************************!*\
+  !*** ./resources/js/helpers/kioskUpsellFlow.js ***!
+  \*************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   shouldSkipKioskUpsellScreen: () => (/* binding */ shouldSkipKioskUpsellScreen)
+/* harmony export */ });
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+/**
+ * Kiosk upsell routing — Phase A (category flags from menu API).
+ * When every cart line belongs to a category with kiosk_upsell_skip_after_cart,
+ * skip the upsell screen and go straight to payment (after marking upsell "shown").
+ *
+ * @param {{ item_category_id?: number|string|null }[]} cartItems
+ * @param {{ id: number|string, kiosk_upsell_skip_after_cart?: boolean }[]} categories
+ * @returns {boolean}
+ */
+function shouldSkipKioskUpsellScreen(cartItems, categories) {
+  if (!(cartItems !== null && cartItems !== void 0 && cartItems.length)) return false;
+  var map = new Map();
+  (categories || []).forEach(function (c) {
+    var id = parseInt(c.id, 10);
+    if (!Number.isNaN(id)) map.set(id, c);
+  });
+  var _iterator = _createForOfIteratorHelper(cartItems),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var line = _step.value;
+      var cid = parseInt(line.item_category_id, 10);
+      if (Number.isNaN(cid)) return false;
+      var cat = map.get(cid);
+      if (!cat || !cat.kiosk_upsell_skip_after_cart) return false;
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  return true;
+}
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=style&index=0&id=f1497108&scoped=true&lang=css"
+/*!********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=style&index=0&id=f1497108&scoped=true&lang=css ***!
+  \********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCartComponent_vue_vue_type_style_index_0_id_f1497108_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskCartComponent.vue?vue&type=style&index=0&id=f1497108&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=style&index=0&id=f1497108&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCartComponent_vue_vue_type_style_index_0_id_f1497108_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCartComponent_vue_vue_type_style_index_0_id_f1497108_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=style&index=0&id=1852351a&scoped=true&lang=css"
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=style&index=0&id=1852351a&scoped=true&lang=css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCashInstructionComponent_vue_vue_type_style_index_0_id_1852351a_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskCashInstructionComponent.vue?vue&type=style&index=0&id=1852351a&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=style&index=0&id=1852351a&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCashInstructionComponent_vue_vue_type_style_index_0_id_1852351a_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCashInstructionComponent_vue_vue_type_style_index_0_id_1852351a_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=style&index=0&id=255fc987&scoped=true&lang=css"
+/*!****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=style&index=0&id=255fc987&scoped=true&lang=css ***!
+  \****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskConfirmationComponent_vue_vue_type_style_index_0_id_255fc987_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskConfirmationComponent.vue?vue&type=style&index=0&id=255fc987&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=style&index=0&id=255fc987&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskConfirmationComponent_vue_vue_type_style_index_0_id_255fc987_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskConfirmationComponent_vue_vue_type_style_index_0_id_255fc987_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=style&index=0&id=8fd6c936&scoped=true&lang=css"
+/*!*********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=style&index=0&id=8fd6c936&scoped=true&lang=css ***!
+  \*********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoginComponent_vue_vue_type_style_index_0_id_8fd6c936_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskLoginComponent.vue?vue&type=style&index=0&id=8fd6c936&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=style&index=0&id=8fd6c936&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoginComponent_vue_vue_type_style_index_0_id_8fd6c936_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoginComponent_vue_vue_type_style_index_0_id_8fd6c936_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=style&index=0&id=48956b68&scoped=true&lang=css"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=style&index=0&id=48956b68&scoped=true&lang=css ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoyaltyComponent_vue_vue_type_style_index_0_id_48956b68_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskLoyaltyComponent.vue?vue&type=style&index=0&id=48956b68&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=style&index=0&id=48956b68&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoyaltyComponent_vue_vue_type_style_index_0_id_48956b68_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoyaltyComponent_vue_vue_type_style_index_0_id_48956b68_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=style&index=0&id=7f6954b0&scoped=true&lang=css"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=style&index=0&id=7f6954b0&scoped=true&lang=css ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskPaymentComponent_vue_vue_type_style_index_0_id_7f6954b0_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskPaymentComponent.vue?vue&type=style&index=0&id=7f6954b0&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=style&index=0&id=7f6954b0&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskPaymentComponent_vue_vue_type_style_index_0_id_7f6954b0_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskPaymentComponent_vue_vue_type_style_index_0_id_7f6954b0_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=style&index=0&id=b8cebce2&scoped=true&lang=css"
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=style&index=0&id=b8cebce2&scoped=true&lang=css ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskUpsellComponent_vue_vue_type_style_index_0_id_b8cebce2_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskUpsellComponent.vue?vue&type=style&index=0&id=b8cebce2&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=style&index=0&id=b8cebce2&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskUpsellComponent_vue_vue_type_style_index_0_id_b8cebce2_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskUpsellComponent_vue_vue_type_style_index_0_id_b8cebce2_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=style&index=0&id=0f435cc1&scoped=true&lang=css"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=style&index=0&id=0f435cc1&scoped=true&lang=css ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskWaitingComponent_vue_vue_type_style_index_0_id_0f435cc1_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskWaitingComponent.vue?vue&type=style&index=0&id=0f435cc1&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=style&index=0&id=0f435cc1&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskWaitingComponent_vue_vue_type_style_index_0_id_0f435cc1_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskWaitingComponent_vue_vue_type_style_index_0_id_0f435cc1_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css"
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_style_index_0_id_04b6acfa_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_style_index_0_id_04b6acfa_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_style_index_0_id_04b6acfa_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css"
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_style_index_0_id_9b4f461c_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_style_index_0_id_9b4f461c_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_style_index_0_id_9b4f461c_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskCartComponent.vue"
+/*!***********************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskCartComponent.vue ***!
+  \***********************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KioskCartComponent_vue_vue_type_template_id_f1497108_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KioskCartComponent.vue?vue&type=template&id=f1497108&scoped=true */ "./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=template&id=f1497108&scoped=true");
+/* harmony import */ var _KioskCartComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KioskCartComponent.vue?vue&type=script&lang=js */ "./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=script&lang=js");
+/* harmony import */ var _KioskCartComponent_vue_vue_type_style_index_0_id_f1497108_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KioskCartComponent.vue?vue&type=style&index=0&id=f1497108&scoped=true&lang=css */ "./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=style&index=0&id=f1497108&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KioskCartComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KioskCartComponent_vue_vue_type_template_id_f1497108_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-f1497108"],['__file',"resources/js/components/frontend/kiosk/KioskCartComponent.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue"
+/*!**********************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue ***!
+  \**********************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KioskCashInstructionComponent_vue_vue_type_template_id_1852351a_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KioskCashInstructionComponent.vue?vue&type=template&id=1852351a&scoped=true */ "./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=template&id=1852351a&scoped=true");
+/* harmony import */ var _KioskCashInstructionComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KioskCashInstructionComponent.vue?vue&type=script&lang=js */ "./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=script&lang=js");
+/* harmony import */ var _KioskCashInstructionComponent_vue_vue_type_style_index_0_id_1852351a_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KioskCashInstructionComponent.vue?vue&type=style&index=0&id=1852351a&scoped=true&lang=css */ "./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=style&index=0&id=1852351a&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KioskCashInstructionComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KioskCashInstructionComponent_vue_vue_type_template_id_1852351a_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-1852351a"],['__file',"resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue"
+/*!*******************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue ***!
+  \*******************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KioskConfirmationComponent_vue_vue_type_template_id_255fc987_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KioskConfirmationComponent.vue?vue&type=template&id=255fc987&scoped=true */ "./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=template&id=255fc987&scoped=true");
+/* harmony import */ var _KioskConfirmationComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KioskConfirmationComponent.vue?vue&type=script&lang=js */ "./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=script&lang=js");
+/* harmony import */ var _KioskConfirmationComponent_vue_vue_type_style_index_0_id_255fc987_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KioskConfirmationComponent.vue?vue&type=style&index=0&id=255fc987&scoped=true&lang=css */ "./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=style&index=0&id=255fc987&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KioskConfirmationComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KioskConfirmationComponent_vue_vue_type_template_id_255fc987_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-255fc987"],['__file',"resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskLoginComponent.vue"
+/*!************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskLoginComponent.vue ***!
+  \************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KioskLoginComponent_vue_vue_type_template_id_8fd6c936_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KioskLoginComponent.vue?vue&type=template&id=8fd6c936&scoped=true */ "./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=template&id=8fd6c936&scoped=true");
+/* harmony import */ var _KioskLoginComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KioskLoginComponent.vue?vue&type=script&lang=js */ "./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=script&lang=js");
+/* harmony import */ var _KioskLoginComponent_vue_vue_type_style_index_0_id_8fd6c936_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KioskLoginComponent.vue?vue&type=style&index=0&id=8fd6c936&scoped=true&lang=css */ "./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=style&index=0&id=8fd6c936&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KioskLoginComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KioskLoginComponent_vue_vue_type_template_id_8fd6c936_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-8fd6c936"],['__file',"resources/js/components/frontend/kiosk/KioskLoginComponent.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue"
+/*!**************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue ***!
+  \**************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KioskLoyaltyComponent_vue_vue_type_template_id_48956b68_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KioskLoyaltyComponent.vue?vue&type=template&id=48956b68&scoped=true */ "./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=template&id=48956b68&scoped=true");
+/* harmony import */ var _KioskLoyaltyComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KioskLoyaltyComponent.vue?vue&type=script&lang=js */ "./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=script&lang=js");
+/* harmony import */ var _KioskLoyaltyComponent_vue_vue_type_style_index_0_id_48956b68_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KioskLoyaltyComponent.vue?vue&type=style&index=0&id=48956b68&scoped=true&lang=css */ "./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=style&index=0&id=48956b68&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KioskLoyaltyComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KioskLoyaltyComponent_vue_vue_type_template_id_48956b68_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-48956b68"],['__file',"resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue"
+/*!**************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue ***!
+  \**************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KioskPaymentComponent_vue_vue_type_template_id_7f6954b0_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KioskPaymentComponent.vue?vue&type=template&id=7f6954b0&scoped=true */ "./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=template&id=7f6954b0&scoped=true");
+/* harmony import */ var _KioskPaymentComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KioskPaymentComponent.vue?vue&type=script&lang=js */ "./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=script&lang=js");
+/* harmony import */ var _KioskPaymentComponent_vue_vue_type_style_index_0_id_7f6954b0_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KioskPaymentComponent.vue?vue&type=style&index=0&id=7f6954b0&scoped=true&lang=css */ "./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=style&index=0&id=7f6954b0&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KioskPaymentComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KioskPaymentComponent_vue_vue_type_template_id_7f6954b0_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-7f6954b0"],['__file',"resources/js/components/frontend/kiosk/KioskPaymentComponent.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue"
+/*!*************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue ***!
+  \*************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KioskUpsellComponent_vue_vue_type_template_id_b8cebce2_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KioskUpsellComponent.vue?vue&type=template&id=b8cebce2&scoped=true */ "./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=template&id=b8cebce2&scoped=true");
+/* harmony import */ var _KioskUpsellComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KioskUpsellComponent.vue?vue&type=script&lang=js */ "./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=script&lang=js");
+/* harmony import */ var _KioskUpsellComponent_vue_vue_type_style_index_0_id_b8cebce2_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KioskUpsellComponent.vue?vue&type=style&index=0&id=b8cebce2&scoped=true&lang=css */ "./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=style&index=0&id=b8cebce2&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KioskUpsellComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KioskUpsellComponent_vue_vue_type_template_id_b8cebce2_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-b8cebce2"],['__file',"resources/js/components/frontend/kiosk/KioskUpsellComponent.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue"
+/*!**************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue ***!
+  \**************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KioskWaitingComponent_vue_vue_type_template_id_0f435cc1_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KioskWaitingComponent.vue?vue&type=template&id=0f435cc1&scoped=true */ "./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=template&id=0f435cc1&scoped=true");
+/* harmony import */ var _KioskWaitingComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KioskWaitingComponent.vue?vue&type=script&lang=js */ "./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=script&lang=js");
+/* harmony import */ var _KioskWaitingComponent_vue_vue_type_style_index_0_id_0f435cc1_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KioskWaitingComponent.vue?vue&type=style&index=0&id=0f435cc1&scoped=true&lang=css */ "./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=style&index=0&id=0f435cc1&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KioskWaitingComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KioskWaitingComponent_vue_vue_type_template_id_0f435cc1_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-0f435cc1"],['__file',"resources/js/components/frontend/kiosk/KioskWaitingComponent.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue"
+/*!**********************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue ***!
+  \**********************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KsConsentModal_vue_vue_type_template_id_04b6acfa_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true */ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true");
+/* harmony import */ var _KsConsentModal_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KsConsentModal.vue?vue&type=script&lang=js */ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=script&lang=js");
+/* harmony import */ var _KsConsentModal_vue_vue_type_style_index_0_id_04b6acfa_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css */ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KsConsentModal_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KsConsentModal_vue_vue_type_template_id_04b6acfa_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-04b6acfa"],['__file',"resources/js/components/frontend/kiosk/ds/KsConsentModal.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue"
+/*!*************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue ***!
+  \*************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _KsVirtualKeyboard_vue_vue_type_template_id_9b4f461c_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true */ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true");
+/* harmony import */ var _KsVirtualKeyboard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KsVirtualKeyboard.vue?vue&type=script&lang=js */ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=script&lang=js");
+/* harmony import */ var _KsVirtualKeyboard_vue_vue_type_style_index_0_id_9b4f461c_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css */ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_KsVirtualKeyboard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_KsVirtualKeyboard_vue_vue_type_template_id_9b4f461c_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-9b4f461c"],['__file',"resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=script&lang=js"
+/*!***********************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=script&lang=js ***!
+  \***********************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCartComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCartComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskCartComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=script&lang=js"
+/*!**********************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=script&lang=js ***!
+  \**********************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCashInstructionComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCashInstructionComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskCashInstructionComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=script&lang=js"
+/*!*******************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=script&lang=js ***!
+  \*******************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskConfirmationComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskConfirmationComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskConfirmationComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=script&lang=js"
+/*!************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=script&lang=js ***!
+  \************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoginComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoginComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskLoginComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=script&lang=js"
+/*!**************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=script&lang=js ***!
+  \**************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoyaltyComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoyaltyComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskLoyaltyComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=script&lang=js"
+/*!**************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=script&lang=js ***!
+  \**************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskPaymentComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskPaymentComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskPaymentComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=script&lang=js"
+/*!*************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=script&lang=js ***!
+  \*************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskUpsellComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskUpsellComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskUpsellComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=script&lang=js"
+/*!**************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=script&lang=js ***!
+  \**************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskWaitingComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskWaitingComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskWaitingComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=script&lang=js"
+/*!**********************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=script&lang=js ***!
+  \**********************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsConsentModal.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=script&lang=js"
+/*!*************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=script&lang=js ***!
+  \*************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsVirtualKeyboard.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=template&id=f1497108&scoped=true"
+/*!*****************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=template&id=f1497108&scoped=true ***!
+  \*****************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCartComponent_vue_vue_type_template_id_f1497108_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCartComponent_vue_vue_type_template_id_f1497108_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskCartComponent.vue?vue&type=template&id=f1497108&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=template&id=f1497108&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=template&id=1852351a&scoped=true"
+/*!****************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=template&id=1852351a&scoped=true ***!
+  \****************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCashInstructionComponent_vue_vue_type_template_id_1852351a_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCashInstructionComponent_vue_vue_type_template_id_1852351a_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskCashInstructionComponent.vue?vue&type=template&id=1852351a&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=template&id=1852351a&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=template&id=255fc987&scoped=true"
+/*!*************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=template&id=255fc987&scoped=true ***!
+  \*************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskConfirmationComponent_vue_vue_type_template_id_255fc987_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskConfirmationComponent_vue_vue_type_template_id_255fc987_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskConfirmationComponent.vue?vue&type=template&id=255fc987&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=template&id=255fc987&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=template&id=8fd6c936&scoped=true"
+/*!******************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=template&id=8fd6c936&scoped=true ***!
+  \******************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoginComponent_vue_vue_type_template_id_8fd6c936_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoginComponent_vue_vue_type_template_id_8fd6c936_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskLoginComponent.vue?vue&type=template&id=8fd6c936&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=template&id=8fd6c936&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=template&id=48956b68&scoped=true"
+/*!********************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=template&id=48956b68&scoped=true ***!
+  \********************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoyaltyComponent_vue_vue_type_template_id_48956b68_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoyaltyComponent_vue_vue_type_template_id_48956b68_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskLoyaltyComponent.vue?vue&type=template&id=48956b68&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=template&id=48956b68&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=template&id=7f6954b0&scoped=true"
+/*!********************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=template&id=7f6954b0&scoped=true ***!
+  \********************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskPaymentComponent_vue_vue_type_template_id_7f6954b0_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskPaymentComponent_vue_vue_type_template_id_7f6954b0_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskPaymentComponent.vue?vue&type=template&id=7f6954b0&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=template&id=7f6954b0&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=template&id=b8cebce2&scoped=true"
+/*!*******************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=template&id=b8cebce2&scoped=true ***!
+  \*******************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskUpsellComponent_vue_vue_type_template_id_b8cebce2_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskUpsellComponent_vue_vue_type_template_id_b8cebce2_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskUpsellComponent.vue?vue&type=template&id=b8cebce2&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=template&id=b8cebce2&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=template&id=0f435cc1&scoped=true"
+/*!********************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=template&id=0f435cc1&scoped=true ***!
+  \********************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskWaitingComponent_vue_vue_type_template_id_0f435cc1_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskWaitingComponent_vue_vue_type_template_id_0f435cc1_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskWaitingComponent.vue?vue&type=template&id=0f435cc1&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=template&id=0f435cc1&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true"
+/*!****************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true ***!
+  \****************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_template_id_04b6acfa_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_template_id_04b6acfa_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=template&id=04b6acfa&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true"
+/*!*******************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true ***!
+  \*******************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_template_id_9b4f461c_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_template_id_9b4f461c_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=template&id=9b4f461c&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=style&index=0&id=f1497108&scoped=true&lang=css"
+/*!*******************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=style&index=0&id=f1497108&scoped=true&lang=css ***!
+  \*******************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCartComponent_vue_vue_type_style_index_0_id_f1497108_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskCartComponent.vue?vue&type=style&index=0&id=f1497108&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCartComponent.vue?vue&type=style&index=0&id=f1497108&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=style&index=0&id=1852351a&scoped=true&lang=css"
+/*!******************************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=style&index=0&id=1852351a&scoped=true&lang=css ***!
+  \******************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskCashInstructionComponent_vue_vue_type_style_index_0_id_1852351a_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskCashInstructionComponent.vue?vue&type=style&index=0&id=1852351a&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue?vue&type=style&index=0&id=1852351a&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=style&index=0&id=255fc987&scoped=true&lang=css"
+/*!***************************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=style&index=0&id=255fc987&scoped=true&lang=css ***!
+  \***************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskConfirmationComponent_vue_vue_type_style_index_0_id_255fc987_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskConfirmationComponent.vue?vue&type=style&index=0&id=255fc987&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue?vue&type=style&index=0&id=255fc987&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=style&index=0&id=8fd6c936&scoped=true&lang=css"
+/*!********************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=style&index=0&id=8fd6c936&scoped=true&lang=css ***!
+  \********************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoginComponent_vue_vue_type_style_index_0_id_8fd6c936_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskLoginComponent.vue?vue&type=style&index=0&id=8fd6c936&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoginComponent.vue?vue&type=style&index=0&id=8fd6c936&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=style&index=0&id=48956b68&scoped=true&lang=css"
+/*!**********************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=style&index=0&id=48956b68&scoped=true&lang=css ***!
+  \**********************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskLoyaltyComponent_vue_vue_type_style_index_0_id_48956b68_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskLoyaltyComponent.vue?vue&type=style&index=0&id=48956b68&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue?vue&type=style&index=0&id=48956b68&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=style&index=0&id=7f6954b0&scoped=true&lang=css"
+/*!**********************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=style&index=0&id=7f6954b0&scoped=true&lang=css ***!
+  \**********************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskPaymentComponent_vue_vue_type_style_index_0_id_7f6954b0_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskPaymentComponent.vue?vue&type=style&index=0&id=7f6954b0&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskPaymentComponent.vue?vue&type=style&index=0&id=7f6954b0&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=style&index=0&id=b8cebce2&scoped=true&lang=css"
+/*!*********************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=style&index=0&id=b8cebce2&scoped=true&lang=css ***!
+  \*********************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskUpsellComponent_vue_vue_type_style_index_0_id_b8cebce2_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskUpsellComponent.vue?vue&type=style&index=0&id=b8cebce2&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskUpsellComponent.vue?vue&type=style&index=0&id=b8cebce2&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=style&index=0&id=0f435cc1&scoped=true&lang=css"
+/*!**********************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=style&index=0&id=0f435cc1&scoped=true&lang=css ***!
+  \**********************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KioskWaitingComponent_vue_vue_type_style_index_0_id_0f435cc1_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KioskWaitingComponent.vue?vue&type=style&index=0&id=0f435cc1&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/KioskWaitingComponent.vue?vue&type=style&index=0&id=0f435cc1&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css"
+/*!******************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css ***!
+  \******************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsConsentModal_vue_vue_type_style_index_0_id_04b6acfa_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/style-loader/dist/cjs.js!../../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsConsentModal.vue?vue&type=style&index=0&id=04b6acfa&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css"
+/*!*********************************************************************************************************************************!*\
+  !*** ./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css ***!
+  \*********************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_KsVirtualKeyboard_vue_vue_type_style_index_0_id_9b4f461c_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/style-loader/dist/cjs.js!../../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/frontend/kiosk/ds/KsVirtualKeyboard.vue?vue&type=style&index=0&id=9b4f461c&scoped=true&lang=css");
+
+
+/***/ }
+
+}]);

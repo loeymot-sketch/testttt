@@ -1,0 +1,269 @@
+{
+  "start_ts": "2026-05-20T03:39:13.235Z",
+  "captures": [
+    {
+      "slug": "K01-empty-state",
+      "file": "K01-empty-state.png",
+      "abs": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/wave-p-2026-05-20/kds/screenshots/K01-empty-state.png",
+      "ts": "2026-05-20T03:39:26.219Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "K02-after-seed",
+      "file": "K02-after-seed.png",
+      "abs": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/wave-p-2026-05-20/kds/screenshots/K02-after-seed.png",
+      "ts": "2026-05-20T03:39:38.935Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "K03-multi-status",
+      "file": "K03-multi-status.png",
+      "abs": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/wave-p-2026-05-20/kds/screenshots/K03-multi-status.png",
+      "ts": "2026-05-20T03:39:53.702Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "K04a-status-accept",
+      "file": "K04a-status-accept.png",
+      "abs": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/wave-p-2026-05-20/kds/screenshots/K04a-status-accept.png",
+      "ts": "2026-05-20T03:40:06.808Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "K04b-status-preparing",
+      "file": "K04b-status-preparing.png",
+      "abs": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/wave-p-2026-05-20/kds/screenshots/K04b-status-preparing.png",
+      "ts": "2026-05-20T03:40:13.532Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "K04c-status-prepared",
+      "file": "K04c-status-prepared.png",
+      "abs": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/wave-p-2026-05-20/kds/screenshots/K04c-status-prepared.png",
+      "ts": "2026-05-20T03:40:20.067Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "K05a-before-bump",
+      "file": "K05a-before-bump.png",
+      "abs": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/wave-p-2026-05-20/kds/screenshots/K05a-before-bump.png",
+      "ts": "2026-05-20T03:40:34.011Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "K05b-after-bump",
+      "file": "K05b-after-bump.png",
+      "abs": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/wave-p-2026-05-20/kds/screenshots/K05b-after-bump.png",
+      "ts": "2026-05-20T03:40:38.622Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "K06a-before",
+      "file": "K06a-before.png",
+      "abs": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/wave-p-2026-05-20/kds/screenshots/K06a-before.png",
+      "ts": "2026-05-20T03:40:52.487Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "K06b-inline-block",
+      "file": "K06b-inline-block.png",
+      "abs": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/wave-p-2026-05-20/kds/screenshots/K06b-inline-block.png",
+      "ts": "2026-05-20T03:40:52.539Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "K07-polling-fallback",
+      "file": "K07-polling-fallback.png",
+      "abs": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/wave-p-2026-05-20/kds/screenshots/K07-polling-fallback.png",
+      "ts": "2026-05-20T03:41:16.061Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "K08-i18n-scan",
+      "file": "K08-i18n-scan.png",
+      "abs": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/wave-p-2026-05-20/kds/screenshots/K08-i18n-scan.png",
+      "ts": "2026-05-20T03:41:29.599Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    }
+  ],
+  "consoleErrors": [
+    {
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "ts": "2026-05-20T03:41:27.282Z"
+    }
+  ],
+  "pageErrors": [],
+  "networkFailures": [],
+  "rawLabels": {
+    "kds_dot": [],
+    "label_dot": [],
+    "message_dot": [],
+    "button_dot": [],
+    "zero_undefined": 0,
+    "object_object": 0
+  },
+  "seededOrders": [
+    {
+      "ok": true,
+      "order_id": 73,
+      "queue_number": 0,
+      "status": 4,
+      "branch_id": 1,
+      "token": "WAVEP3-KDS-K02-ZJCBEX",
+      "item_id": 24,
+      "item_name": "Sandwich Cayenne"
+    },
+    {
+      "ok": true,
+      "order_id": 74,
+      "queue_number": 0,
+      "status": 4,
+      "branch_id": 1,
+      "token": "WAVEP3-KDS-K03a-SGDJWK",
+      "item_id": 24,
+      "item_name": "Sandwich Cayenne"
+    },
+    {
+      "ok": true,
+      "order_id": 75,
+      "queue_number": 0,
+      "status": 7,
+      "branch_id": 1,
+      "token": "WAVEP3-KDS-K03b-BVDVVX",
+      "item_id": 24,
+      "item_name": "Sandwich Cayenne"
+    },
+    {
+      "ok": true,
+      "order_id": 76,
+      "queue_number": 0,
+      "status": 8,
+      "branch_id": 1,
+      "token": "WAVEP3-KDS-K03c-MBECUG",
+      "item_id": 24,
+      "item_name": "Sandwich Cayenne"
+    },
+    {
+      "ok": true,
+      "order_id": 77,
+      "queue_number": 0,
+      "status": 4,
+      "branch_id": 1,
+      "token": "WAVEP3-KDS-K04-J722Q0",
+      "item_id": 24,
+      "item_name": "Sandwich Cayenne"
+    },
+    {
+      "ok": true,
+      "order_id": 78,
+      "queue_number": 0,
+      "status": 4,
+      "branch_id": 1,
+      "token": "WAVEP3-KDS-K05-KP8UQF",
+      "item_id": 24,
+      "item_name": "Sandwich Cayenne"
+    },
+    {
+      "ok": true,
+      "order_id": 79,
+      "queue_number": 0,
+      "status": 4,
+      "branch_id": 1,
+      "token": "WAVEP3-KDS-K06-MB8OES",
+      "item_id": 24,
+      "item_name": "Sandwich Cayenne"
+    },
+    {
+      "ok": true,
+      "order_id": 80,
+      "queue_number": 0,
+      "status": 4,
+      "branch_id": 1,
+      "token": "WAVEP3-KDS-K07-XCBDKX",
+      "item_id": 24,
+      "item_name": "Sandwich Cayenne"
+    },
+    {
+      "ok": true,
+      "order_id": 81,
+      "queue_number": 0,
+      "status": 4,
+      "branch_id": 1,
+      "token": "WAVEP3-KDS-K08-CAMLZS",
+      "item_id": 24,
+      "item_name": "Sandwich Cayenne"
+    }
+  ],
+  "transitions": [
+    {
+      "step": "accept→preparing",
+      "ok": true,
+      "order_id": 77,
+      "status": 7
+    },
+    {
+      "step": "preparing→prepared",
+      "ok": true,
+      "order_id": 77,
+      "status": 8
+    }
+  ],
+  "findings": [
+    {
+      "test": "K01",
+      "cardCount": 4,
+      "bodyLen": 577
+    },
+    {
+      "test": "K02",
+      "before": 4,
+      "after": 5,
+      "elapsedMs": 2278,
+      "orderId": 73,
+      "queue": 0
+    },
+    {
+      "test": "K03",
+      "cards": 7,
+      "seededIds": [
+        74,
+        75,
+        76
+      ]
+    },
+    {
+      "test": "K05",
+      "ctaVisible": true,
+      "bumpHitArea": {
+        "x": 47,
+        "y": 531,
+        "width": 428,
+        "height": 52
+      },
+      "apiHit": true
+    },
+    {
+      "test": "K06",
+      "badgeVisible": true,
+      "inlineBlockVisible": true
+    },
+    {
+      "test": "K07",
+      "observedFallbackHit": true,
+      "cardCount": 6,
+      "hasFatal": false
+    },
+    {
+      "test": "K08",
+      "totalLeaks": 0,
+      "matches": {
+        "kds_dot": [],
+        "label_dot": [],
+        "message_dot": [],
+        "button_dot": [],
+        "zero_undefined": 0,
+        "object_object": 0
+      }
+    }
+  ]
+}
