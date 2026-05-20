@@ -20,14 +20,14 @@
     <KdsStatusBanner
       :offline-since="offlineSince"
       :list-at-cap="listAtCap"
-      :near-cap="visibleOrders.length"
+      :near-cap="activeOrders.length"
       :fallback-mode="fallbackMode"
       :admin-polling-hint="adminPollingHint"
       :bump-local-only-notice="bumpLocalOnlyNotice"
     />
 
-    <!-- Empty state -->
-    <div v-if="visibleOrders.length === 0" class="kds-v2__empty">
+    <!-- Empty state (only when NO active orders — served strip below renders independently) -->
+    <div v-if="activeOrders.length === 0" class="kds-v2__empty">
       <div class="kds-v2__empty-illustration" aria-hidden="true">
         <div class="kds-v2__empty-glow"></div>
         <svg width="120" height="120" viewBox="0 0 64 64" fill="none" stroke="#9CA3AF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -43,10 +43,14 @@
       <div class="kds-v2__empty-sub">{{ $t('label.kds_empty_state_sub') }}</div>
     </div>
 
-    <!-- FIFO Grid 4×2 -->
+    <!-- FIFO Grid 4×2 — ACTIVE only (ACCEPT + PREPARING). PREPARED → served strip below.
+         [Wave U 2026-05-21] Owner-reported bug: PREPARED orders stayed greyed in grid
+         (kds-card--ready opacity:0.7) with the elapsed timer still ticking, occupying
+         a slot. Now they leave the active FIFO entirely and surface in a compact
+         strip at the bottom for ~last 4 served, with elapsed-since-served. -->
     <div v-else class="kds-v2__grid">
       <KdsOrderCard
-        v-for="(o, idx) in visibleOrders.slice(0, 8)"
+        v-for="(o, idx) in activeOrders.slice(0, 8)"
         :key="o.id"
         :order="o"
         :now="now"
@@ -55,10 +59,28 @@
       />
       <!-- placeholders to keep grid stable when <8 -->
       <div
-        v-for="i in Math.max(0, 8 - visibleOrders.length)"
+        v-for="i in Math.max(0, 8 - activeOrders.length)"
         :key="`ph-${i}`"
         class="kds-v2__placeholder"
       ></div>
+    </div>
+
+    <!-- [Wave U 2026-05-21] Récemment servies — compact archive strip.
+         Renders the 4 most recently PREPARED orders with elapsed-since-served.
+         Small footprint (60px row) so it never steals space from the active grid. -->
+    <div v-if="recentlyServed.length > 0" class="kds-v2__served" role="region" :aria-label="$t('label.kds_recently_served')">
+      <div class="kds-v2__served-label">{{ $t('label.kds_recently_served') }}</div>
+      <div class="kds-v2__served-list">
+        <div
+          v-for="o in recentlyServed"
+          :key="`served-${o.id}`"
+          class="kds-v2__served-pill keep-latin"
+          :title="$t('label.kds_served_pill_title', { queue: o.queue_number || o.id })"
+        >
+          <span class="kds-v2__served-pill-num">N°{{ o.queue_number || o.id }}</span>
+          <span class="kds-v2__served-pill-ago">{{ servedAgoLabel(o) }}</span>
+        </div>
+      </div>
     </div>
 
     <!-- Undo Toast (single at a time) -->
@@ -119,7 +141,13 @@ export default {
         SHORTCUTS() {
             return SHORTCUTS;
         },
-        // FIFO: oldest first, then by id for stable ties.
+        // FIFO: oldest first, then by id for stable ties. Includes ALL statuses
+        // the backend feed exposes (ACCEPT + PREPARING + PREPARED) so derived
+        // computeds (activeOrders, recentlyServed) can partition without
+        // re-fetching. Kept as the single sort surface for parity with
+        // pre-Wave-U behavior. Auto-transition watcher and keyboard shortcut
+        // now read activeOrders only — PREPARED orders no longer occupy a
+        // grid slot.
         visibleOrders() {
             const arr = Array.isArray(this.orders) ? [...this.orders] : [];
             arr.sort((a, b) => {
@@ -132,11 +160,40 @@ export default {
             });
             return arr;
         },
+        // [Wave U 2026-05-21] Active grid orders = ACCEPT (4) + PREPARING (7) only.
+        // PREPARED (8) leaves the FIFO grid (was lingering greyed via
+        // kds-card--ready opacity:0.7 with timer still ticking — owner-reported bug).
+        activeOrders() {
+            return this.visibleOrders.filter((o) => {
+                const s = parseInt(o?.status ?? o?.rawStatus, 10);
+                return s === ORDER_STATUS.ACCEPT || s === ORDER_STATUS.PREPARING;
+            });
+        },
+        // [Wave U 2026-05-21] Récemment servies — last 4 PREPARED orders by
+        // updated_at desc (updated_at = moment of the PREPARING→PREPARED PATCH
+        // applied server-side, matches "il y a X min depuis Prêt" semantics).
+        // Backend feed still returns PREPARED orders until OSS/POS flips them
+        // to DELIVERED, so this list naturally compacts as orders are picked up.
+        recentlyServed() {
+            const prepared = this.visibleOrders.filter((o) => {
+                const s = parseInt(o?.status ?? o?.rawStatus, 10);
+                return s === ORDER_STATUS.PREPARED;
+            });
+            prepared.sort((a, b) => {
+                const ta = Date.parse(a?.updated_at || '') || 0;
+                const tb = Date.parse(b?.updated_at || '') || 0;
+                return tb - ta;
+            });
+            return prepared.slice(0, 4);
+        },
     },
     watch: {
         // Auto-transition watcher: when the queue updates AND no order is in
         // PREPARING AND there's a NEW order at the head, promote it.
-        visibleOrders: {
+        // [Wave U 2026-05-21] Switched from visibleOrders → activeOrders so the
+        // candidate picker never sees PREPARED tickets (which are excluded from
+        // the rendered grid).
+        activeOrders: {
             handler(newQ) {
                 if (!this.autoTransitionEnabled) {
                     return;
@@ -174,9 +231,12 @@ export default {
     methods: {
         onKey(e) {
             // [A]–[H] bumps the nth slot. Enter/Esc handled by KdsOrderCard.
+            // [Wave U 2026-05-21] Index against activeOrders (the rendered list)
+            // so the shortcut letter matches the on-card [A]–[H] badge after
+            // PREPARED orders are partitioned out of the grid.
             const idx = SHORTCUTS.indexOf(String(e.key || '').toUpperCase());
-            if (idx >= 0 && idx < this.visibleOrders.length) {
-                const o = this.visibleOrders[idx];
+            if (idx >= 0 && idx < this.activeOrders.length) {
+                const o = this.activeOrders[idx];
                 if (o) {
                     // [Wave S-2 P-OWNER 2026-05-20] Cash-pending orders MUST NOT
                     // be bumped by keyboard shortcut. Mirror the UI gate that
@@ -204,7 +264,7 @@ export default {
             if (this.pendingTimeoutId) {
                 window.clearTimeout(this.pendingTimeoutId);
             }
-            const order = this.visibleOrders.find((o) => o.id === orderId);
+            const order = this.activeOrders.find((o) => o.id === orderId);
             const currentStatus = parseInt(order?.status ?? order?.rawStatus, 10);
             const nextStatus = currentStatus === ORDER_STATUS.ACCEPT
                 ? ORDER_STATUS.PREPARING
@@ -234,6 +294,21 @@ export default {
                 this.activeToast = null;
                 this.liveMessage = this.$t('label.kds_undo_done');
             }
+        },
+        // [Wave U 2026-05-21] Compact "il y a Xm" relative label for the
+        // recently-served strip. Reads `now` reactively so each pill updates
+        // every second alongside the active card timers (no per-pill setInterval).
+        servedAgoLabel(o) {
+            const stamp = Date.parse(o?.updated_at || '') || 0;
+            if (!stamp) {
+                return '';
+            }
+            const diffSec = Math.max(0, Math.floor((this.now - stamp) / 1000));
+            if (diffSec < 60) {
+                return this.$t('label.kds_served_just_now');
+            }
+            const mins = Math.floor(diffSec / 60);
+            return this.$t('label.kds_served_ago', { mins });
         },
     },
 };
@@ -275,6 +350,63 @@ export default {
     border: 2px dashed #E5E7EB;
     border-radius: 12px;
     min-height: 200px;
+}
+
+/* [Wave U 2026-05-21] Récemment servies — compact archive strip.
+   Lives below the 4x2 active grid. Single row, small footprint
+   (~60px total) so it never steals vertical budget from the active
+   cards. Pills are read-only (no CTA, no keyboard, no timer-pulse). */
+.kds-v2__served {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px 12px;
+    border-top: 1px solid #E5E7EB;
+    background: #F9FAFB;
+}
+.kds-v2__served-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6B7280;
+    flex-shrink: 0;
+}
+.kds-v2__served-list {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    overscroll-behavior: contain;
+    min-width: 0;
+}
+.kds-v2__served-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    background: #ECFDF5;
+    color: #065F46;
+    border: 1px solid #A7F3D0;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.kds-v2__served-pill-num {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+.kds-v2__served-pill-ago {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: #047857;
+    opacity: 0.85;
+    letter-spacing: 0.02em;
 }
 
 .kds-v2__empty {

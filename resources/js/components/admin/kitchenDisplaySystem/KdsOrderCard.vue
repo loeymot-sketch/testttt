@@ -569,20 +569,33 @@ export default {
 }
 
 .kds-card__body {
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0; /* defensive: keep flex child scrollable if future cardStyle drops fixed height */
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 4px 16px;
     position: relative;
+    /* [Wave U 2026-05-21] Owner-reported bug: chef could not discover scroll
+       on long-item orders (Sandwich Cayenne with 4 variations + extras +
+       crudités + sauces + supplements). Firefox thin scrollbar hint +
+       webkit 8px (was 4px) + darker thumb so the cue is visible at 2m
+       chef distance. */
+    scrollbar-width: thin;
+    scrollbar-color: #6B7280 transparent;
 }
 .kds-card__body::-webkit-scrollbar {
-    width: 4px;
+    width: 8px;
 }
 .kds-card__body::-webkit-scrollbar-thumb {
-    background: #D1D5DB;
-    border-radius: 2px;
+    background: #6B7280;
+    border-radius: 4px;
+}
+.kds-card__body::-webkit-scrollbar-thumb:hover {
+    background: #4B5563;
 }
 .kds-card__body::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 4px;
 }
 .kds-card__item-block {
     border-top: 1px solid #F3F4F6;
@@ -649,7 +662,7 @@ export default {
     position: sticky;
     bottom: 0;
     height: 0;
-    pointer-events: none;
+    pointer-events: none; /* never intercept scroll wheel / touch */
 }
 .kds-card__body-fade::before {
     content: '';
@@ -657,8 +670,11 @@ export default {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 16px;
-    background: linear-gradient(to top, #FFFFFF, rgba(255, 255, 255, 0));
+    /* [Wave U 2026-05-21] Reduced 16px → 8px so the fade hints "more content
+       below" without masking a full line of text. With the 8px-wide
+       scrollbar now visible, the fade is decorative only. */
+    height: 8px;
+    background: linear-gradient(to top, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));
 }
 
 .kds-card__cta {
