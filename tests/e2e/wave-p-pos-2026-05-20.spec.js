@@ -263,8 +263,11 @@ test.describe('Wave P-1 POS E2E Audit', () => {
     } catch (_e) {}
     await shot(6, 'payment-tpe-selected');
 
-    // Switch back to cash, type via input (NOT keypad which has €-chip collisions),
-    // wait for rate-limit window, attempt confirm.
+    // Switch back to cash mode, enter 50 via PosV5Numpad keys (5 then 0)
+    // since the cash mode has no exposed <input> field — the keypad is the
+    // sole input surface (verified: PaymentComponent.vue uses PosV5Numpad
+    // with @input emit -> numpadInput method). Clicking the numpad button
+    // with aria-label="5" then "0" types "50" into the internal state.
     try {
       await page.waitForTimeout(2500);
       const cashBtnB = page.locator('[data-testid="pos-payment-mode-cash"], button:has-text("Espèces"), button:has-text("Cash")').first();
@@ -272,13 +275,32 @@ test.describe('Wave P-1 POS E2E Audit', () => {
         await cashBtnB.click({ timeout: 2000 }).catch(() => {});
         await page.waitForTimeout(700);
       }
-      // Type 50 via input element only (avoid keypad/chip collisions)
+      // Try native input first (covers possible future cash input field),
+      // fall back to keypad clicks (5 then 0).
       const tenderedInput = page.locator(
-        'input[type="number"], input[name*="tendered" i], input[name*="received" i], input[name*="montant" i]'
+        'input[type="number"]:not(#cardInput), input[name*="tendered" i], input[name*="received" i], input[name*="montant" i]'
       ).first();
       if (await tenderedInput.isVisible({ timeout: 1500 }).catch(() => false)) {
         await tenderedInput.fill('50');
         await page.waitForTimeout(400);
+      } else {
+        // Keypad path — click button with text "5" then "0" (numpad keys
+        // have class .pos-v5-numpad__key--num and label = the digit)
+        const numpadKey5 = page.locator(
+          '.pos-v5-numpad__key--num:has-text("5"), button[aria-label="5"]'
+        ).first();
+        if (await numpadKey5.isVisible({ timeout: 1500 }).catch(() => false)) {
+          await numpadKey5.click({ timeout: 2000 }).catch(() => {});
+          await page.waitForTimeout(250);
+          // Click "0" — note: "00" also matches has-text("0"), so prefer aria-label
+          const numpadKey0 = page.locator(
+            'button[aria-label="0"], .pos-v5-numpad__key--num:has-text(/^0$/)'
+          ).first();
+          if (await numpadKey0.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await numpadKey0.click({ timeout: 2000 }).catch(() => {});
+            await page.waitForTimeout(400);
+          }
+        }
       }
       // Wait before confirm to fully avoid rate-limit
       await page.waitForTimeout(3500);
@@ -287,7 +309,7 @@ test.describe('Wave P-1 POS E2E Audit', () => {
       ).first();
       if (await confirmPay.isVisible({ timeout: 2500 }).catch(() => false)) {
         await confirmPay.click({ timeout: 4000 }).catch(() => {});
-        await page.waitForTimeout(5000); // give server time + receipt to render
+        await page.waitForTimeout(6000); // give server time + receipt to render
       }
     } catch (_e) {}
 

@@ -83,7 +83,19 @@ class RouteServiceProvider extends ServiceProvider
             // Admin-mutation 30/min CRUD bucket caused 429 "Too Many Attempts" on entire POS payment
             // flow when applied via nested route group. Whole pos/* namespace lifted to 120/min.
             // iter15-BUG-RATE-LIMIT 2026-05-10
-            if ($request->is('api/admin/pos/*')) {
+            //
+            // [Wave P R2 POS 2026-05-20] Pattern `api/admin/pos/*` only matches
+            // paths WITH a trailing segment (e.g. `/pos/quote`). The bare
+            // POST `/api/admin/pos` (PosController@store — the order create
+            // endpoint) was falling through to the 30/min CRUD ceiling,
+            // triggering "Trop de requêtes" on legitimate single-click confirms
+            // during back-to-back cashier flows. Add `api/admin/pos` to the
+            // lift so the endpoint itself benefits from the 120/min ceiling
+            // (its own throttle:pos-order-create is the SSOT — env-knob 120/min
+            // default, raised to 1000/min in local dev via O5). The stacked
+            // admin-mutation ceiling here is the safety net against accidental
+            // burst, not the primary cap.
+            if ($request->is('api/admin/pos/*') || $request->is('api/admin/pos')) {
                 return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
             }
 
