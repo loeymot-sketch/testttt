@@ -56,6 +56,44 @@ class SimpleOrderResource extends JsonResource
             // shipping PII unconditionally over the wire is a data-protection
             // defect even though the Vue UI already gated rendering.
             'customer_phone'               => ((int) $this->order_type === OrderType::DELIVERY) ? $this->user?->phone : null,
+            // [Wave Q-1 P-OWNER 2026-05-19] Items summary for the POS tracker
+            // cards (suivi commandes). Without this, `PosOrdersTrackerComponent`
+            // renders only N°/source/time — caissier ne voyait pas le contenu.
+            // N+1 guard: `OrderService::list()` eager-loads
+            // `orderItems.orderItem.media/category`; for callers that didn't
+            // eager-load we return [] rather than triggering a lazy SELECT.
+            // Branch isolation: `OrderItem` enforces BranchScope global.
+            // Mirrors SimpleDeliveryBoyOrderResource::resolveItemsForDriver().
+            'order_items'                  => $this->resolveItemsForTracker(),
         ];
+    }
+
+    /**
+     * Lean item list — built from the eager-loaded `orderItems` relation so
+     * the resource never executes its own SELECTs (N+1 protection). When the
+     * caller has not eager-loaded the relation, we fall back to an empty
+     * array rather than triggering a lazy load.
+     *
+     * Shape consumed by PosOrdersTrackerComponent::itemsPreview() — keys
+     * `item_name` and `quantity` are mandatory; `item_id` is included for
+     * future linkability without forcing a payload diff later.
+     */
+    private function resolveItemsForTracker(): array
+    {
+        $relation = $this->resource->relationLoaded('orderItems')
+            ? $this->resource->getRelation('orderItems')
+            : null;
+
+        if ($relation === null) {
+            return [];
+        }
+
+        return $relation->map(function ($line) {
+            return [
+                'item_id'   => (int) $line->item_id,
+                'item_name' => $line->orderItem?->name,
+                'quantity'  => (int) $line->quantity,
+            ];
+        })->values()->all();
     }
 }
