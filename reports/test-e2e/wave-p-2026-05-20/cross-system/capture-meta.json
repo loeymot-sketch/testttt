@@ -1,0 +1,205 @@
+{
+  "start_ts": "2026-05-20T04:48:14.270Z",
+  "captures": [
+    {
+      "slug": "A01-kiosk-idle",
+      "file": "A01-kiosk-idle.png",
+      "ts": "2026-05-20T04:48:19.005Z",
+      "url": "http://localhost:8000/kiosk/idle"
+    },
+    {
+      "slug": "A02-kiosk-confirmation",
+      "file": "A02-kiosk-confirmation.png",
+      "ts": "2026-05-20T04:48:22.961Z",
+      "url": "http://localhost:8000/kiosk/idle"
+    },
+    {
+      "slug": "A03-kds-initial",
+      "file": "A03-kds-initial.png",
+      "ts": "2026-05-20T04:48:31.459Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "A04-kds-order-visible",
+      "file": "A04-kds-order-visible.png",
+      "ts": "2026-05-20T04:48:31.525Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "A05-kds-after-preparing",
+      "file": "A05-kds-after-preparing.png",
+      "ts": "2026-05-20T04:48:38.043Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "A06-kds-after-prepared",
+      "file": "A06-kds-after-prepared.png",
+      "ts": "2026-05-20T04:48:40.601Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "A07-oss-pret-column",
+      "file": "A07-oss-pret-column.png",
+      "ts": "2026-05-20T04:48:47.416Z",
+      "url": "http://localhost:8000/admin/order-status-screen"
+    },
+    {
+      "slug": "A08-oss-after-pickup",
+      "file": "A08-oss-after-pickup.png",
+      "ts": "2026-05-20T04:48:53.746Z",
+      "url": "http://localhost:8000/admin/order-status-screen"
+    },
+    {
+      "slug": "B01-kds-pos-order-visible",
+      "file": "B01-kds-pos-order-visible.png",
+      "ts": "2026-05-20T04:49:09.194Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "B02-kds-after-preparing",
+      "file": "B02-kds-after-preparing.png",
+      "ts": "2026-05-20T04:49:14.679Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "B03-kds-after-prepared",
+      "file": "B03-kds-after-prepared.png",
+      "ts": "2026-05-20T04:49:17.205Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "B04-oss-pret-column",
+      "file": "B04-oss-pret-column.png",
+      "ts": "2026-05-20T04:49:23.921Z",
+      "url": "http://localhost:8000/admin/order-status-screen"
+    },
+    {
+      "slug": "B05-oss-after-pickup",
+      "file": "B05-oss-after-pickup.png",
+      "ts": "2026-05-20T04:49:30.017Z",
+      "url": "http://localhost:8000/admin/order-status-screen"
+    }
+  ],
+  "latencies": {
+    "flowA_place_ms": 1255,
+    "flowA_kiosk_to_kds_ms": 5699,
+    "flowA_bump_accept_to_preparing_ms": 465,
+    "flowA_bump_preparing_to_prepared_ms": 504,
+    "flowA_pickup_to_remove_ms": 6265,
+    "flowB_seed_ms": 571,
+    "flowB_pos_to_kds_ms": 5590,
+    "flowB_bump_accept_to_preparing_ms": 426,
+    "flowB_bump_preparing_to_prepared_ms": 467,
+    "flowB_pickup_to_remove_ms": 6026
+  },
+  "flowA": {
+    "steps": [
+      {
+        "slug": "A01-kiosk-idle",
+        "file": "A01-kiosk-idle.png",
+        "ts": "2026-05-20T04:48:19.005Z",
+        "url": "http://localhost:8000/kiosk/idle"
+      },
+      {
+        "slug": "A02-kiosk-confirmation",
+        "file": "A02-kiosk-confirmation.png",
+        "ts": "2026-05-20T04:48:22.961Z",
+        "url": "http://localhost:8000/kiosk/idle"
+      },
+      {
+        "slug": "A03-kds-initial",
+        "file": "A03-kds-initial.png",
+        "ts": "2026-05-20T04:48:31.459Z",
+        "url": "http://localhost:8000/admin/kitchen-display-system"
+      },
+      {
+        "slug": "A04-kds-order-visible",
+        "file": "A04-kds-order-visible.png",
+        "ts": "2026-05-20T04:48:31.525Z",
+        "url": "http://localhost:8000/admin/kitchen-display-system"
+      },
+      {
+        "slug": "A05-kds-after-preparing",
+        "file": "A05-kds-after-preparing.png",
+        "ts": "2026-05-20T04:48:38.043Z",
+        "url": "http://localhost:8000/admin/kitchen-display-system"
+      },
+      {
+        "slug": "A06-kds-after-prepared",
+        "file": "A06-kds-after-prepared.png",
+        "ts": "2026-05-20T04:48:40.601Z",
+        "url": "http://localhost:8000/admin/kitchen-display-system"
+      },
+      {
+        "slug": "A07-oss-pret-column",
+        "file": "A07-oss-pret-column.png",
+        "ts": "2026-05-20T04:48:47.416Z",
+        "url": "http://localhost:8000/admin/order-status-screen"
+      },
+      {
+        "slug": "A08-oss-after-pickup",
+        "file": "A08-oss-after-pickup.png",
+        "ts": "2026-05-20T04:48:53.746Z",
+        "url": "http://localhost:8000/admin/order-status-screen"
+      }
+    ],
+    "consoleErrors": [
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-20T04:48:17.023Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-20T04:48:19.756Z"
+      }
+    ],
+    "networkFails": [],
+    "orderId": 103,
+    "queueNumber": null,
+    "orderSerial": "200526103",
+    "ossReadyAppeared": true,
+    "complete": true
+  },
+  "flowB": {
+    "steps": [
+      {
+        "slug": "B01-kds-pos-order-visible",
+        "file": "B01-kds-pos-order-visible.png",
+        "ts": "2026-05-20T04:49:09.194Z",
+        "url": "http://localhost:8000/admin/kitchen-display-system"
+      },
+      {
+        "slug": "B02-kds-after-preparing",
+        "file": "B02-kds-after-preparing.png",
+        "ts": "2026-05-20T04:49:14.679Z",
+        "url": "http://localhost:8000/admin/kitchen-display-system"
+      },
+      {
+        "slug": "B03-kds-after-prepared",
+        "file": "B03-kds-after-prepared.png",
+        "ts": "2026-05-20T04:49:17.205Z",
+        "url": "http://localhost:8000/admin/kitchen-display-system"
+      },
+      {
+        "slug": "B04-oss-pret-column",
+        "file": "B04-oss-pret-column.png",
+        "ts": "2026-05-20T04:49:23.921Z",
+        "url": "http://localhost:8000/admin/order-status-screen"
+      },
+      {
+        "slug": "B05-oss-after-pickup",
+        "file": "B05-oss-after-pickup.png",
+        "ts": "2026-05-20T04:49:30.017Z",
+        "url": "http://localhost:8000/admin/order-status-screen"
+      }
+    ],
+    "consoleErrors": [],
+    "networkFails": [],
+    "orderId": 104,
+    "queueNumber": "PE88D",
+    "orderSerial": "WPCROSS-POS-B-FLOW-39CF",
+    "ossReadyAppeared": true,
+    "complete": true
+  },
+  "attestations": {}
+}

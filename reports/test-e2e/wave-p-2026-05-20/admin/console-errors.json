@@ -2,35 +2,7 @@
   "consoleErrors": [],
   "networkFails": [
     {
-      "url": "http://localhost:8000/api/admin/dashboard/order-summary",
-      "status": 0
-    },
-    {
-      "url": "http://localhost:8000/api/admin/setting/branch/show/1",
-      "status": 0
-    },
-    {
-      "url": "http://localhost:8000/api/admin/dashboard/channel-statistics",
-      "status": 0
-    },
-    {
-      "url": "http://localhost:8000/api/admin/fiscal/z-report",
-      "status": 0
-    },
-    {
-      "url": "http://localhost:8000/api/admin/dashboard/order-statistics",
-      "status": 0
-    },
-    {
-      "url": "http://localhost:8000/api/admin/dashboard/sales-summary",
-      "status": 0
-    },
-    {
-      "url": "http://localhost:8000/api/admin/stock/low-alerts",
-      "status": 0
-    },
-    {
-      "url": "http://localhost:8000/api/admin/dashboard/featured-items",
+      "url": "http://localhost:8000/api/admin/dashboard/sla-alerts",
       "status": 0
     },
     {
@@ -38,11 +10,43 @@
       "status": 0
     },
     {
-      "url": "http://localhost:8000/api/admin/dashboard/sla-alerts",
+      "url": "http://localhost:8000/api/admin/dashboard/sales-summary",
+      "status": 0
+    },
+    {
+      "url": "http://localhost:8000/api/admin/dashboard/order-statistics",
+      "status": 0
+    },
+    {
+      "url": "http://localhost:8000/api/admin/dashboard/channel-statistics",
+      "status": 0
+    },
+    {
+      "url": "http://localhost:8000/api/admin/setting/branch/show/1",
+      "status": 0
+    },
+    {
+      "url": "http://localhost:8000/api/admin/dashboard/featured-items",
+      "status": 0
+    },
+    {
+      "url": "http://localhost:8000/api/admin/dashboard/order-summary",
+      "status": 0
+    },
+    {
+      "url": "http://localhost:8000/api/admin/stock/low-alerts",
+      "status": 0
+    },
+    {
+      "url": "http://localhost:8000/api/admin/fiscal/z-report",
       "status": 0
     },
     {
       "url": "http://localhost:8000/api/admin/dashboard/popular-items",
+      "status": 0
+    },
+    {
+      "url": "http://localhost:8000/themes/default/fonts/typography/public/PublicSans-Bold.ttf",
       "status": 0
     }
   ]

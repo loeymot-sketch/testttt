@@ -1,0 +1,143 @@
+{
+  "wave": "P-2 Kiosk",
+  "date": "2026-05-20",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_at_start": "ad80b3d511b4f1adc1ff408dd6c96ffd1d97f57a",
+  "spec_path": "tests/e2e/wave-p-kiosk-2026-05-20.spec.js",
+  "iterations_consumed": 3,
+  "iterations_cap": 5,
+  "wall_clock_minutes": 20,
+  "verdict": "AUDIT-COMPLETE-HEAL-QUEUED + 1 NEW P0 ESCALATED",
+  "verdict_short": "SPA-LAYER-GREEN-V1-SHIP-BLOCKED-BY-P0",
+  "verdict_blockers": [
+    "P0 W-K-P2-005 allergen_flags NULL across 100% of menu (60/60 items) - EU 1169/2011 non-compliance",
+    "P1 W-K-P2-001 dine-in v-if heal in Vue source but NOT in shipped bundle (webpackbar 5 + webpack 5 ProgressPlugin schema mismatch blocks recompile)"
+  ],
+  "specs_passed": 11,
+  "specs_total": 11,
+  "consecutive_green_iterations": 2,
+  "frozen_zone_diff_lines": 0,
+  "nf525_chain_status": "intact",
+  "console_errors": 0,
+  "network_5xx": 0,
+  "i18n_leaks": 0,
+  "files_touched": {
+    "vue_heal": [
+      "resources/js/components/frontend/kiosk/KioskCartComponent.vue"
+    ],
+    "e2e_spec_new": [
+      "tests/e2e/wave-p-kiosk-2026-05-20.spec.js"
+    ],
+    "reports": [
+      "reports/test-e2e/wave-p-2026-05-20/kiosk/FINAL.md",
+      "reports/test-e2e/wave-p-2026-05-20/kiosk/report.json"
+    ],
+    "screenshots": [
+      "reports/test-e2e/wave-p-2026-05-20/kiosk/screenshots/url-01-idle.png",
+      "reports/test-e2e/wave-p-2026-05-20/kiosk/screenshots/url-02-categories.png",
+      "reports/test-e2e/wave-p-2026-05-20/kiosk/screenshots/url-03-wizard-sandwich-step1.png",
+      "reports/test-e2e/wave-p-2026-05-20/kiosk/screenshots/url-03-wizard-sandwich-step2.png",
+      "reports/test-e2e/wave-p-2026-05-20/kiosk/screenshots/url-04-wizard-taco.png",
+      "reports/test-e2e/wave-p-2026-05-20/kiosk/screenshots/url-05-wizard-bowl-step1.png",
+      "reports/test-e2e/wave-p-2026-05-20/kiosk/screenshots/url-06-drink-list.png",
+      "reports/test-e2e/wave-p-2026-05-20/kiosk/screenshots/url-07-cart-with-items.png",
+      "reports/test-e2e/wave-p-2026-05-20/kiosk/screenshots/url-08-payment-selector.png",
+      "reports/test-e2e/wave-p-2026-05-20/kiosk/screenshots/url-09-confirmation.png",
+      "reports/test-e2e/wave-p-2026-05-20/kiosk/screenshots/url-10-upsell-modal.png",
+      "reports/test-e2e/wave-p-2026-05-20/kiosk/screenshots/url-11-idle-final-state.png"
+    ]
+  },
+  "findings": [
+    {
+      "id": "W-K-P2-005",
+      "severity": "P0",
+      "status": "ESCALATED-OWNER-GATE",
+      "title": "100% of menu items have allergen_flags=NULL — EU 1169/2011 non-compliance",
+      "page": "all wizard surfaces (kiosk + POS + mobile + web)",
+      "regulatory_framework": [
+        "EU 1169/2011 (FIC) Article 21 + Annex II — 14 allergens MUST be declared pre-purchase",
+        "EAA 2025 (European Accessibility Act) — accessible disclosure on self-service kiosks",
+        "DGCCRF (FR) — max fine €3000/item / €1.5M corporate"
+      ],
+      "db_query": "SELECT COUNT(*) FROM items WHERE allergen_flags IS NOT NULL",
+      "db_result": 0,
+      "total_items": 60,
+      "code_correctness": "OK — KsAllergenBadge.vue:3 v-if visibleAllergens.length > 0 + KioskWizardComponent.vue:29-37 wired correctly; blocked by null data",
+      "root_cause_hypothesis": "Menu seeder / O7-O8 image restore did not include allergen backfill",
+      "fix_path": "Owner/chef-provided allergen mapping → LeCayenneAllergenSeeder migration → AllergenCoverageSentinelTest.php",
+      "ship_blocker_for": "V1 LE CAYENNE production"
+    },
+    {
+      "id": "W-K-P2-001",
+      "severity": "P1",
+      "status": "VUE-SOURCE-HEALED-BUNDLE-PENDING-MIX-FIX",
+      "title": "V1 dine-in gate missing on KioskCartComponent",
+      "page": "/kiosk/cart",
+      "evidence_screenshot": "screenshots/url-07-cart-with-items.png",
+      "carry_over_from": "BORNE-001 (2026-05-18 round-1)",
+      "heal_anchors_added": [
+        "template v-if=\"dineInEnabled\" on dine-in tile (sibling-pattern verbatim)",
+        "computed dineInEnabled() with typeof guard (rejects array/object before string coerce)",
+        "mapGetters('frontendSetting', { frontendSettingsList: 'lists' })",
+        "mounted() defensive dispatch('frontendSetting/lists')"
+      ],
+      "source_heal_verified": true,
+      "bundle_activation_status": "NOT-LIVE-IN-public/js/kiosk-shell.js",
+      "bundle_activation_blocker": "webpackbar@5.0.2 vs webpack@5.106.2 ProgressPlugin schema mismatch",
+      "sre_fix_one_liner": "npm i --save-exact webpackbar@4 && npm run prod",
+      "post_fix_verify": "spec stdout 'url-07 BORNE-001 audit dineInVisible=false'"
+    },
+    {
+      "id": "W-K-P2-002",
+      "severity": "P1",
+      "status": "DEFERRED-BACKEND-OWNER-GATE",
+      "title": "E2E_PLAYWRIGHT_STUDIO_CATEGORY is default landing + leaks to upsell",
+      "page": "/kiosk/categories + /kiosk/upsell",
+      "evidence_screenshots": [
+        "screenshots/url-02-categories.png",
+        "screenshots/url-10-upsell-modal.png"
+      ],
+      "wider_impact_than": "BORNE-002 round-1 (which only flagged sidebar position, not default landing)",
+      "fix_path": "Gate database/seeders/E2EPlaywrightStudioSeeder to APP_ENV=testing only"
+    },
+    {
+      "id": "W-K-P2-004",
+      "severity": "P3",
+      "status": "ACCEPTED-NO-DEFECT",
+      "title": "Confirmation page SPA Vuex-gate redirect to /kiosk/idle",
+      "page": "/kiosk/confirmation?order_id=27",
+      "nf525_attestation_via_api": "order id=27 placed + payment-confirm 200 'Paiement confirmé'",
+      "identical_to": "BORNE-004 round-1 (expected SPA token-lifecycle)"
+    }
+  ],
+  "menu_data_canonical_2026-05-20": {
+    "categories": {
+      "1": "Sandwich Cayenne",
+      "4": "Burgers",
+      "5": "Tacos",
+      "6": "Bols Gourmands",
+      "7": "Frites",
+      "10": "Boissons"
+    },
+    "items_per_category_tested": {
+      "cat_1": [24, 38],
+      "cat_4": [40, 41],
+      "cat_5": [28, 29],
+      "cat_6": [30, 31, 32, 33, 34, 43, 44, 45, 46, 47, 48, 49, 50],
+      "cat_7": [35, 36],
+      "cat_10": [54, 55, 56, 57, 58, 59, 60, 61]
+    },
+    "allergen_population_stats": {
+      "null_count": 60,
+      "populated_count": 0,
+      "total": 60,
+      "percent_populated": 0
+    }
+  },
+  "next_up_owner_gates": [
+    "P0 V1 SHIP BLOCKER: chef-provided 60-item allergen mapping → seeder + sentinel test",
+    "P0 cross-repo: SRE pins webpackbar@4 (1-line fix) to unblock ALL Vue source heals",
+    "P1: backend gate E2E_PLAYWRIGHT_STUDIO_CATEGORY seeder to testing env only",
+    "P2: backend i18n translate OrderRequest:216 hardcoded EN literal (defense-in-depth post v-if gate)"
+  ]
+}

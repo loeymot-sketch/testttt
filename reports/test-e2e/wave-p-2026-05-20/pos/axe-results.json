@@ -1,29 +1,41 @@
 {
-  "url": "http://127.0.0.1:8000/login",
+  "url": "http://localhost:8000/admin/pos",
   "violations": [
+    {
+      "id": "aria-required-children",
+      "impact": "critical",
+      "help": "Certain ARIA roles must contain particular children",
+      "nodes": 1
+    },
     {
       "id": "color-contrast",
       "impact": "serious",
       "help": "Elements must meet minimum color contrast ratio thresholds",
-      "nodes": 3
+      "nodes": 7
     },
     {
-      "id": "landmark-one-main",
+      "id": "heading-order",
       "impact": "moderate",
-      "help": "Document should have one main landmark",
+      "help": "Heading levels should only increase by one",
       "nodes": 1
     },
     {
-      "id": "page-has-heading-one",
+      "id": "image-redundant-alt",
+      "impact": "minor",
+      "help": "Alternative text of images should not be repeated as text",
+      "nodes": 8
+    },
+    {
+      "id": "landmark-banner-is-top-level",
       "impact": "moderate",
-      "help": "Page should contain a level-one heading",
+      "help": "Banner landmark should not be contained in another landmark",
       "nodes": 1
     },
     {
-      "id": "region",
+      "id": "landmark-unique",
       "impact": "moderate",
-      "help": "All page content should be contained by landmarks",
-      "nodes": 4
+      "help": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+      "nodes": 2
     }
   ]
 }
