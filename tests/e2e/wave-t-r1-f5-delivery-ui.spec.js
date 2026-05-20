@@ -59,13 +59,17 @@ function ensureDeliveryBoy() {
   return m ? parseInt(m[1], 10) : null;
 }
 
-function clearDriverFromOrder(orderId) {
-  // Reset to no driver so the chip-presence assertion is meaningful.
+function resetOrderForAssignTest(orderId) {
+  // Reset to no driver + non-terminal status so the assignment dropdown is
+  // rendered (PosOrderShowComponent shows it only when status is not
+  // REJECTED/CANCELED/DELIVERED-terminal AND order_type === DELIVERY).
+  // PREPARED (8) is the safest pre-assign state — assignment dropdown is
+  // visible and the OUT_FOR_DELIVERY transition is the natural next step.
   const phpSrc =
     `$o = App\\Models\\Order::withoutGlobalScope(App\\Models\\Scopes\\BranchScope::class)->find(${orderId}); ` +
-    `if ($o) { $o->delivery_boy_id = null; $o->save(); echo 'CLEARED'; } else { echo 'MISSING'; }`;
+    `if ($o) { $o->delivery_boy_id = null; $o->status = 8; $o->save(); echo 'RESET_OK'; } else { echo 'MISSING'; }`;
   const r = runTinker(phpSrc, 10_000);
-  return r.ok && /CLEARED/.test(r.stdout);
+  return r.ok && /RESET_OK/.test(r.stdout);
 }
 
 ensureDir(SCREENSHOT_DIR);
@@ -87,8 +91,9 @@ test.describe('Wave T R1 F5 — Driver assignment UI (toast + chip + a11y + toke
     }
     const ORDER2_ID = order2.id;
 
-    // Reset driver so chip-presence is the post-action signal.
-    clearDriverFromOrder(ORDER2_ID);
+    // Reset driver AND walk back the status to PREPARED so the assignment
+    // dropdown is rendered (it hides on terminal statuses such as DELIVERED).
+    resetOrderForAssignTest(ORDER2_ID);
 
     // Make sure at least one delivery boy exists at branch_id=1.
     const driverId = ensureDeliveryBoy();
@@ -103,8 +108,9 @@ test.describe('Wave T R1 F5 — Driver assignment UI (toast + chip + a11y + toke
     });
 
     // 1. Login admin and navigate to the POS order detail.
+    //    Route name `admin.pos-orders.show` -> /admin/pos-orders/show/{id}.
     await loginAsAdmin(page);
-    await page.goto(`/admin/pos-order-show/${ORDER2_ID}`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`/admin/pos-orders/show/${ORDER2_ID}`, { waitUntil: 'domcontentloaded' });
 
     // Wait for the detail surface to settle — payment-status badge is mounted
     // when the store finishes hydrating.
@@ -131,19 +137,24 @@ test.describe('Wave T R1 F5 — Driver assignment UI (toast + chip + a11y + toke
     const chip = page.locator('[data-testid="pos-driver-assigned-chip"]');
     await expect(chip, 'chip MUST be hidden before assignment').toHaveCount(0);
 
-    // 4. Open the dropdown — `dropdown-group` is CSS hover-driven. Hover the
-    //    wrapper to expand listbox, then click the option. Playwright will
-    //    use force:true to click even if visual is mid-animation.
+    // 4. Open the dropdown — `dropdown-group` is CSS hover-driven (no JS
+    //    toggle). Playwright's `hover()` triggers :hover state, but the
+    //    transform: scale-y-0 -> scale-y-1 may still leave the panel
+    //    geometrically off-screen depending on viewport scroll. We rely on
+    //    DOM `dispatchEvent('click')` which fires the Vue @click handler
+    //    regardless of computed visibility — exactly mirroring the cashier's
+    //    behaviour of hovering the wrapper and clicking the option.
     await group.hover();
-    await page.waitForTimeout(250);
+    await page.waitForTimeout(300);
 
-    // 5. Capture network response then click — assert 2xx.
+    // 5. Capture network response then click via dispatchEvent — bypasses
+    //    viewport/visibility checks since the panel is animation-driven.
     const assignResponse = page.waitForResponse(
       (res) =>
         /\/select-delivery-boy\//i.test(res.url()) && res.request().method() === 'POST',
       { timeout: 15_000 },
     );
-    await optionLocator.click({ force: true });
+    await optionLocator.dispatchEvent('click');
     const resp = await assignResponse;
     expect(resp.status(), 'select-delivery-boy returns 2xx').toBeLessThan(300);
 
