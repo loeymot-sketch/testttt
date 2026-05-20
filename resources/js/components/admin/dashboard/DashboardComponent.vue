@@ -118,7 +118,17 @@ export default {
                 links.push({ to, label, icon, external });
             };
             push('/admin/pos', this.$t('menu.pos'), 'lab lab-pos-bold', 'pos', false);
-            push('/admin/pos-v4', this.$t('label.pos_dedicated_shell'), 'lab lab-pos-bold', 'pos', true);
+            // [Wave V — POS-V4 menu cleanup 2026-05-21] Owner question :
+            // « pourquoi 2 POS, j'ai pas trouvé de différence ». Réponse vérifiée :
+            // `/admin/pos-v4` (slim Blade + pos-app.js) monte exactement le même
+            // PosComponent.vue que `/admin/pos` (SPA Vue) — seule la taille du
+            // bundle change (slim cold-boot vs SPA complète). Aucune différence
+            // fonctionnelle. Le lien Quick Access vers /admin/pos-v4 est retiré
+            // pour éviter la confusion dans le Dashboard ; l'URL directe reste
+            // accessible en fallback (route `/admin/pos-v4/{any?}` toujours
+            // routée par AdminPosV4Controller — frozen-zone admin-pos-v4.blade
+            // intact). Pour réactiver : décommenter la ligne push() ci-dessous.
+            // push('/admin/pos-v4', this.$t('label.pos_dedicated_shell'), 'lab lab-pos-bold', 'pos', true);
             push('/admin/pos-orders', this.$t('menu.pos_orders'), 'lab lab-pos-orders', 'pos-orders', false);
             push('/admin/pos-orders-tracker', this.$t('menu.pos_orders_tracker'), 'lab lab-pos-orders', 'pos-orders', false);
             push('/admin/kitchen-display-system', this.$t('menu.k_d_s'), 'lab lab-kds', 'kitchen-display-system', false);

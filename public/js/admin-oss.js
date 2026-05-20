@@ -17,7 +17,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n/* [iter15-mega-fix B-003/D-002 2026-05-10] .ws-reconnect-banner CSS removed:\n   the only consumer of this class was the duplicate banner deleted from the\n   template above. Connection status is owned by ConnectionStatusBanner.vue. */\n/* Slide-in for preparing column */\n.oss-slide-enter-active[data-v-3aa5d0ca] { transition: all 0.4s ease;\n}\n.oss-slide-leave-active[data-v-3aa5d0ca] { transition: all 0.3s ease;\n}\n.oss-slide-enter-from[data-v-3aa5d0ca]   { opacity: 0; transform: translateX(-20px);\n}\n.oss-slide-leave-to[data-v-3aa5d0ca]     { opacity: 0; transform: translateX(20px);\n}\n\n/* Pop-in for ready column */\n.oss-pop-enter-active[data-v-3aa5d0ca] { transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);\n}\n.oss-pop-leave-active[data-v-3aa5d0ca] { transition: all 0.3s ease;\n}\n.oss-pop-enter-from[data-v-3aa5d0ca]   { opacity: 0; transform: scale(0.6);\n}\n.oss-pop-leave-to[data-v-3aa5d0ca]     { opacity: 0; transform: scale(0.8);\n}\n\n/* Highlight for newly-ready orders */\n.oss-new-ready[data-v-3aa5d0ca] {\n  animation: oss-bounce-3aa5d0ca 0.6s ease 2;\n}\n@keyframes oss-bounce-3aa5d0ca {\n0%, 100% { transform: scale(1);\n}\n50%       { transform: scale(1.12);\n}\n}\n\n/* Flash the entire ready column green when a new order is ready */\n.oss-ready-flash[data-v-3aa5d0ca] {\n  animation: oss-flash-3aa5d0ca 0.8s ease 2;\n}\n@keyframes oss-flash-3aa5d0ca {\n0%, 100% { background-color: transparent;\n}\n50%       { background-color: rgba(26, 183, 89, 0.15);\n}\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n/* [iter15-mega-fix B-003/D-002 2026-05-10] .ws-reconnect-banner CSS removed:\n   the only consumer of this class was the duplicate banner deleted from the\n   template above. Connection status is owned by ConnectionStatusBanner.vue. */\n/* Slide-in for preparing column */\n.oss-slide-enter-active[data-v-3aa5d0ca] { transition: all 0.4s ease;\n}\n.oss-slide-leave-active[data-v-3aa5d0ca] { transition: all 0.3s ease;\n}\n.oss-slide-enter-from[data-v-3aa5d0ca]   { opacity: 0; transform: translateX(-20px);\n}\n.oss-slide-leave-to[data-v-3aa5d0ca]     { opacity: 0; transform: translateX(20px);\n}\n\n/* Pop-in for ready column */\n.oss-pop-enter-active[data-v-3aa5d0ca] { transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);\n}\n.oss-pop-leave-active[data-v-3aa5d0ca] { transition: all 0.3s ease;\n}\n.oss-pop-enter-from[data-v-3aa5d0ca]   { opacity: 0; transform: scale(0.6);\n}\n.oss-pop-leave-to[data-v-3aa5d0ca]     { opacity: 0; transform: scale(0.8);\n}\n\n/* Highlight for newly-ready orders — initial bounce burst */\n.oss-new-ready[data-v-3aa5d0ca] {\n  animation: oss-bounce-3aa5d0ca 0.6s ease 2;\n}\n@keyframes oss-bounce-3aa5d0ca {\n0%, 100% { transform: scale(1);\n}\n50%       { transform: scale(1.12);\n}\n}\n\n/* [Wave S-3 TV-optim P-OWNER 2026-05-20] Long-tail pulse to attract customer\n   attention at ≥3m for the full 10s window while the order ID is in\n   newReadyIds. Subtle scale + green halo via text-shadow — does NOT shift\n   layout (transform-only) so neighbouring items don't reflow. Pulse runs\n   alongside the initial .oss-new-ready bounce (different keyframe names,\n   no conflict) and continues as `infinite` until the class is removed by\n   the JS timeout in _markNewReady. */\n.oss-pulse-ready[data-v-3aa5d0ca] {\n  animation: oss-pulse-3aa5d0ca 1.6s ease-in-out infinite;\n}\n@keyframes oss-pulse-3aa5d0ca {\n0%, 100% {\n    transform: scale(1);\n    text-shadow: 0 0 0 rgba(14, 124, 58, 0);\n}\n50% {\n    transform: scale(1.04);\n    text-shadow: 0 0 24px rgba(14, 124, 58, 0.55);\n}\n}\n\n/* Flash the entire ready column green when a new order is ready */\n.oss-ready-flash[data-v-3aa5d0ca] {\n  animation: oss-flash-3aa5d0ca 0.8s ease 2;\n}\n@keyframes oss-flash-3aa5d0ca {\n0%, 100% { background-color: transparent;\n}\n50%       { background-color: rgba(26, 183, 89, 0.15);\n}\n}\n\n/* [Wave S-3 TV-optim P-OWNER 2026-05-20] Vertical auto-scroll loop for busy\n   columns (>8 orders). Pure-CSS keyframe — no JS RAF — so it never fights\n   <transition-group> on enter/leave. Loops every 30s with a 2s pause at the\n   start so freshly-arrived orders sit visible before scroll begins. We\n   translateY a copy-free list and rely on overflow-hidden on the parent;\n   when the column drops below the threshold the class is removed and the\n   list snaps back to translateY(0) cleanly. Limit applies to either column\n   independently. */\n.oss-order-list[data-v-3aa5d0ca] {\n  will-change: transform;\n}\n.oss-autoscroll[data-v-3aa5d0ca] {\n  animation: oss-scroll-loop-3aa5d0ca 30s linear infinite;\n}\n@keyframes oss-scroll-loop-3aa5d0ca {\n0%   { transform: translateY(0);\n}\n10%  { transform: translateY(0);\n}\n90%  { transform: translateY(-50%);\n}\n100% { transform: translateY(0);\n}\n}\n\n/* Respect operator preferences — disable motion for sensitive contexts. */\n@media (prefers-reduced-motion: reduce) {\n.oss-pulse-ready[data-v-3aa5d0ca],\n  .oss-autoscroll[data-v-3aa5d0ca],\n  .oss-new-ready[data-v-3aa5d0ca],\n  .oss-ready-flash[data-v-3aa5d0ca] {\n    animation: none !important;\n}\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -34,18 +34,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _PopularItemComponent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./PopularItemComponent */ "./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue");
-/* harmony import */ var _PreparingAndReadyComponent__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./PreparingAndReadyComponent */ "./resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue");
-/* harmony import */ var _common_ConnectionStatusBanner_vue__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../common/ConnectionStatusBanner.vue */ "./resources/js/components/common/ConnectionStatusBanner.vue");
-
+/* harmony import */ var _PreparingAndReadyComponent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./PreparingAndReadyComponent */ "./resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue");
+/* harmony import */ var _common_ConnectionStatusBanner_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../common/ConnectionStatusBanner.vue */ "./resources/js/components/common/ConnectionStatusBanner.vue");
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   name: "OrderStatusScreenComponent",
   components: {
-    ConnectionStatusBanner: _common_ConnectionStatusBanner_vue__WEBPACK_IMPORTED_MODULE_2__["default"],
-    PopularItemComponent: _PopularItemComponent__WEBPACK_IMPORTED_MODULE_0__["default"],
-    PreparingAndReadyComponent: _PreparingAndReadyComponent__WEBPACK_IMPORTED_MODULE_1__["default"]
+    ConnectionStatusBanner: _common_ConnectionStatusBanner_vue__WEBPACK_IMPORTED_MODULE_1__["default"],
+    PreparingAndReadyComponent: _PreparingAndReadyComponent__WEBPACK_IMPORTED_MODULE_0__["default"]
   },
   data: function data() {
     return {};
@@ -72,53 +69,6 @@ __webpack_require__.r(__webpack_exports__);
   },
   beforeUnmount: function beforeUnmount() {
     this.openSidebar();
-  }
-});
-
-/***/ },
-
-/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue?vue&type=script&lang=js"
-/*!***************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue?vue&type=script&lang=js ***!
-  \***************************************************************************************************************************************************************************************************************************************************************/
-(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _components_LoadingComponent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../components/LoadingComponent */ "./resources/js/components/admin/components/LoadingComponent.vue");
-
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
-  name: "PopularItemComponent",
-  components: {
-    LoadingComponent: _components_LoadingComponent__WEBPACK_IMPORTED_MODULE_0__["default"]
-  },
-  data: function data() {
-    return {
-      loading: {
-        isActive: false
-      }
-    };
-  },
-  computed: {
-    items: function items() {
-      return this.$store.getters["orderStatusScreenOrder/mostPopularItems"];
-    }
-  },
-  mounted: function mounted() {
-    this.popularItems();
-  },
-  methods: {
-    popularItems: function popularItems() {
-      var _this = this;
-      this.loading.isActive = true;
-      this.$store.dispatch("orderStatusScreenOrder/mostPopularItems").then(function (res) {
-        _this.loading.isActive = false;
-      })["catch"](function (err) {
-        _this.loading.isActive = false;
-      });
-    }
   }
 });
 
@@ -446,7 +396,14 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       }
       this._eventSub = null;
     },
-    // Mark an order as newly ready: plays sound + triggers flash animation for 4s
+    // Mark an order as newly ready: plays sound + triggers flash animation.
+    // [Wave S-3 TV-optim P-OWNER 2026-05-20] Window extended 6s → 10s total
+    // (4s column-flash + 6s per-card pulse) per owner directive — TV walls
+    // are scanned at ≥3m so attention-grabbing needs to persist long enough
+    // for a customer who looks up from a 2-3s task to catch the transition.
+    // CSS `.oss-pulse-ready` runs `oss-pulse 1.6s ease infinite` while the
+    // class is applied (not a fixed-duration keyframe), so the visual cue
+    // tracks `newReadyIds` exactly.
     _markNewReady: function _markNewReady(orderId) {
       var _this6 = this;
       if (!orderId) return;
@@ -456,12 +413,14 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       if (this._flashTimer) clearTimeout(this._flashTimer);
       this._flashTimer = setTimeout(function () {
         _this6.newReadyFlash = false;
-        // Clear the highlight after 6s so it doesn't persist forever
+        // Clear the highlight after a further 6s so the per-card pulse
+        // persists ~10s total — readable at distance, dismissable before
+        // the next batch arrives.
         setTimeout(function () {
           var ids = new Set(_this6.newReadyIds);
           ids["delete"](parseInt(orderId));
           _this6.newReadyIds = ids;
-        }, 2000);
+        }, 6000);
       }, 4000);
     },
     // Splash-inspired: 3-tone ascending chime when order is ready
@@ -560,77 +519,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
 
 var _hoisted_1 = ["aria-label"];
-var _hoisted_2 = {
-  "class": "col-span-2 grid grid-cols-2 gap-4 md:mt-0 mt-[-20px]"
-};
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_ConnectionStatusBanner = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("ConnectionStatusBanner");
-  var _component_PopularItemComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PopularItemComponent");
   var _component_PreparingAndReadyComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PreparingAndReadyComponent");
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [iter15-mega-fix B-003/D-002 2026-05-10] suppress-transient: the global\n    \"Reconnexion en cours…\" banner is suppressed on the OSS surface because\n    the customer-facing screen already conveys the connection state via the\n    fallback polling — no need to show a permanent yellow bar in addition.\n    session_invalid (terminal) still surfaces via this component.\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ConnectionStatusBanner, {
     "suppress-transient": ""
-  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-    "class": "grid grid-cols-2 md:grid-cols-4 md:grid-flow-row gap-4",
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [Wave Q-3 P-OWNER 2026-05-20] PopularItemComponent (\"Articles à préparer\"\n    sidebar) removed from OSS layout per owner directive — the customer\n    status screen must show ONLY two columns: EN PRÉPARATION (orange/red)\n    and PRÊT (green). The PopularItemComponent.vue file is kept (still\n    referenced by OssSyncService + admin PosComponent dashboard widget),\n    but it is no longer mounted on the OSS surface.\n    Grid collapsed from md:grid-cols-4 (popular=2 + columns=2) to\n    md:grid-cols-2 (preparing=1 + ready=1) — PreparingAndReadyComponent\n    is a multi-root component whose two siblings carry col-span-1 each,\n    so they map cleanly to the 2-col grid without an inner wrapper.\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "grid grid-cols-2 md:grid-cols-2 md:grid-flow-row gap-4",
     role: "main",
     "aria-label": _ctx.$t('label.oss_main_aria')
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PopularItemComponent), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PreparingAndReadyComponent)])], 8 /* PROPS */, _hoisted_1)], 64 /* STABLE_FRAGMENT */);
-}
-
-/***/ },
-
-/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue?vue&type=template&id=557dcb82"
-/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue?vue&type=template&id=557dcb82 ***!
-  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************/
-(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   render: () => (/* binding */ render)
-/* harmony export */ });
-/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
-
-var _hoisted_1 = ["aria-label"];
-var _hoisted_2 = {
-  "class": "customer-screen db-card rounded-[10px] h-screen md:h-[calc(100vh-117px)] overflow-hidden pb-20"
-};
-var _hoisted_3 = {
-  "class": "p-3 pb-2 mb-6"
-};
-var _hoisted_4 = {
-  "class": "text-[22px] font-semibold text-[#0057B7]"
-};
-var _hoisted_5 = {
-  "class": "p-3 grid grid-cols-2 lg:grid-cols-3 gap-11 overflow-auto thin-scrolling h-full"
-};
-var _hoisted_6 = {
-  "class": "max-w-[148px] w-full h-[102px] rounded-full mb-4"
-};
-var _hoisted_7 = ["src"];
-var _hoisted_8 = {
-  "class": "text-base font-medium text-[#6E7191]"
-};
-var _hoisted_9 = {
-  "class": "text-lg font-semibold text-[#1F1F39]"
-};
-function render(_ctx, _cache, $props, $setup, $data, $options) {
-  var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
-  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingComponent, {
-    props: $data.loading
-  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-    "class": "col-span-2 md:block hidden",
-    role: "region",
-    "aria-label": _ctx.$t('label.oss_popular_region_aria')
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.popular_menu_items")), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.items, function (item, index) {
-    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
-      "class": "flex flex-col items-center",
-      key: item.id || index
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
-      "class": "w-full h-full rounded-full",
-      src: item.thumb,
-      alt: ""
-    }, null, 8 /* PROPS */, _hoisted_7)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h6", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.currency_price), 1 /* TEXT */)]);
-  }), 128 /* KEYED_FRAGMENT */))])])], 8 /* PROPS */, _hoisted_1)], 64 /* STABLE_FRAGMENT */);
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PreparingAndReadyComponent)], 8 /* PROPS */, _hoisted_1)], 64 /* STABLE_FRAGMENT */);
 }
 
 /***/ },
@@ -649,67 +547,67 @@ __webpack_require__.r(__webpack_exports__);
 
 var _hoisted_1 = ["aria-label"];
 var _hoisted_2 = {
-  "class": "text-lg font-semibold text-white p-3 pb-2 bg-[#B0004D] mb-2 rounded-t-[10px] text-center"
+  "class": "oss-column-header text-[40px] font-bold text-white p-4 pb-3 bg-[#B0004D] mb-2 rounded-t-[10px] text-center tracking-wide"
 };
 var _hoisted_3 = {
-  "class": "content-wrapper p-3 overflow-auto thin-scrolling h-full"
+  "class": "content-wrapper p-3 overflow-hidden thin-scrolling h-full"
 };
 var _hoisted_4 = {
   key: 0,
-  "class": "text-center text-[#A0A3BD] text-base mt-8"
+  "class": "text-center text-[#A0A3BD] text-[28px] mt-12"
 };
 var _hoisted_5 = ["aria-label"];
 var _hoisted_6 = {
-  "class": "text-lg font-semibold text-[#1F1F39] p-3 pb-2 bg-[#1AB759] mb-2 rounded-t-[10px] text-center"
+  "class": "oss-column-header text-[40px] font-bold text-[#1F1F39] p-4 pb-3 bg-[#1AB759] mb-2 rounded-t-[10px] text-center tracking-wide"
 };
 var _hoisted_7 = {
-  "class": "content-wrapper p-3 overflow-auto thin-scrolling h-full"
+  "class": "content-wrapper p-3 overflow-hidden thin-scrolling h-full"
 };
 var _hoisted_8 = {
   key: 0,
-  "class": "text-center text-[#A0A3BD] text-base mt-8"
+  "class": "text-center text-[#A0A3BD] text-[28px] mt-12"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingContentComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingContentComponent");
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingContentComponent, {
     props: $data.loading
-  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [iter15-mega-fix B-003/D-002 2026-05-10] Local ws-reconnect-banner removed —\n    duplicate of the global ConnectionStatusBanner mounted by the parent\n    OrderStatusScreenComponent. Showing two banners simultaneously\n    (\"Reconnexion en cours…\" + \"Mode secours actif\") was UX clutter flagged\n    in iter15 mega-audit Wave B/D. The global banner debounces 5s and is\n    hidden in dev via foodkingConfig.appEnv.\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Colonne EN PRÉPARATION "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [iter15-mega-fix B-003/D-002 2026-05-10] Local ws-reconnect-banner removed —\n    duplicate of the global ConnectionStatusBanner mounted by the parent\n    OrderStatusScreenComponent. Showing two banners simultaneously\n    (\"Reconnexion en cours…\" + \"Mode secours actif\") was UX clutter flagged\n    in iter15 mega-audit Wave B/D. The global banner debounces 5s and is\n    hidden in dev via foodkingConfig.appEnv.\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Colonne EN PRÉPARATION "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [Wave S-3 TV-optim P-OWNER 2026-05-20] Customer wall must be readable from ≥3m.\n    - Header bumped text-lg (~18px) → text-[40px] (40px) to surface column intent at distance.\n    - Order tokens bumped text-[40px] → text-[56px] for triple-distance comfort margin (>= 40px mandate).\n    - Brand colors #B0004D (preparing) / #1AB759 (ready) preserved per CLAUDE.md flat/organized doctrine\n      + previous Wave Q-3 attestation (red-600/green-600 hint in spec = intent = already met).\n    - Auto-scroll: items.length > 8 toggles `.oss-autoscroll` (pure-CSS keyframe loop, no JS RAF\n      to avoid fighting transition-group on enter/leave).\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden",
     role: "region",
     "aria-label": _ctx.$t('label.preparing')
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_2, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.preparing")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.TransitionGroup, {
     name: "oss-slide",
     tag: "ul",
-    "class": "[&_li]:mb-6 [&_li]:text-[40px] [&_li]:font-semibold [&_li]:leading-10 w-full text-center text-[#1F1F39] mb-20"
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['oss-order-list', $data.preparingItems.length > 8 ? 'oss-autoscroll' : '', '[&_li]:mb-8 [&_li]:text-[56px] [&_li]:font-extrabold [&_li]:leading-[1.1] w-full text-center text-[#1F1F39] mb-20'])
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       return [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.preparingItems, function (item) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
           key: item.id,
-          "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(item.queue_number ? 'text-[#991B1B]' : 'text-[#1F1F39]')
+          "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["oss-order-number", item.queue_number ? 'text-[#991B1B]' : 'text-[#1F1F39]'])
         }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.queue_number ? 'N°' + item.queue_number : item.token), 3 /* TEXT, CLASS */);
       }), 128 /* KEYED_FRAGMENT */))];
     }),
     _: 1 /* STABLE */
-  }), $data.preparingItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_4, "—")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 8 /* PROPS */, _hoisted_1), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Colonne PRÊT "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, 8 /* PROPS */, ["class"]), $data.preparingItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_4, "—")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 8 /* PROPS */, _hoisted_1), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Colonne PRÊT "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden", $data.newReadyFlash ? 'oss-ready-flash' : '']),
     role: "region",
     "aria-label": _ctx.$t('label.ready')
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.ready")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.TransitionGroup, {
     name: "oss-pop",
     tag: "ul",
-    "class": "[&_li]:mb-6 [&_li]:text-[40px] [&_li]:font-semibold [&_li]:leading-10 w-full text-center text-[#1F1F39] mb-20"
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['oss-order-list', $data.preparedItems.length > 8 ? 'oss-autoscroll' : '', '[&_li]:mb-8 [&_li]:text-[56px] [&_li]:font-extrabold [&_li]:leading-[1.1] w-full text-center text-[#1F1F39] mb-20'])
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       return [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.preparedItems, function (item) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
           key: item.id,
-          "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["text-[#0E7C3A] font-extrabold", $data.newReadyIds.has(item.id) ? 'oss-new-ready' : ''])
+          "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["oss-order-number text-[#0E7C3A] font-extrabold", $data.newReadyIds.has(item.id) ? 'oss-new-ready oss-pulse-ready' : ''])
         }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.queue_number ? 'N°' + item.queue_number : item.token), 3 /* TEXT, CLASS */);
       }), 128 /* KEYED_FRAGMENT */))];
     }),
     _: 1 /* STABLE */
-  }), $data.preparedItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_8, "—")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 10 /* CLASS, PROPS */, _hoisted_5)], 64 /* STABLE_FRAGMENT */);
+  }, 8 /* PROPS */, ["class"]), $data.preparedItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_8, "—")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 10 /* CLASS, PROPS */, _hoisted_5)], 64 /* STABLE_FRAGMENT */);
 }
 
 /***/ },
@@ -1321,34 +1219,6 @@ if (false) // removed by dead control flow
 
 /***/ },
 
-/***/ "./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue"
-/*!**********************************************************************************!*\
-  !*** ./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue ***!
-  \**********************************************************************************/
-(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _PopularItemComponent_vue_vue_type_template_id_557dcb82__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./PopularItemComponent.vue?vue&type=template&id=557dcb82 */ "./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue?vue&type=template&id=557dcb82");
-/* harmony import */ var _PopularItemComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./PopularItemComponent.vue?vue&type=script&lang=js */ "./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue?vue&type=script&lang=js");
-/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
-
-
-
-
-;
-const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_2__["default"])(_PopularItemComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_PopularItemComponent_vue_vue_type_template_id_557dcb82__WEBPACK_IMPORTED_MODULE_0__.render],['__file',"resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue"]])
-/* hot reload */
-if (false) // removed by dead control flow
-{}
-
-
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
-
-/***/ },
-
 /***/ "./resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue"
 /*!****************************************************************************************!*\
   !*** ./resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue ***!
@@ -1395,21 +1265,6 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ },
 
-/***/ "./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue?vue&type=script&lang=js"
-/*!**********************************************************************************************************!*\
-  !*** ./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue?vue&type=script&lang=js ***!
-  \**********************************************************************************************************/
-(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PopularItemComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
-/* harmony export */ });
-/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PopularItemComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PopularItemComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue?vue&type=script&lang=js");
- 
-
-/***/ },
-
 /***/ "./resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue?vue&type=script&lang=js"
 /*!****************************************************************************************************************!*\
   !*** ./resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue?vue&type=script&lang=js ***!
@@ -1436,21 +1291,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_OrderStatusScreenComponent_vue_vue_type_template_id_3b75c5df__WEBPACK_IMPORTED_MODULE_0__.render)
 /* harmony export */ });
 /* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_OrderStatusScreenComponent_vue_vue_type_template_id_3b75c5df__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./OrderStatusScreenComponent.vue?vue&type=template&id=3b75c5df */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue?vue&type=template&id=3b75c5df");
-
-
-/***/ },
-
-/***/ "./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue?vue&type=template&id=557dcb82"
-/*!****************************************************************************************************************!*\
-  !*** ./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue?vue&type=template&id=557dcb82 ***!
-  \****************************************************************************************************************/
-(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PopularItemComponent_vue_vue_type_template_id_557dcb82__WEBPACK_IMPORTED_MODULE_0__.render)
-/* harmony export */ });
-/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PopularItemComponent_vue_vue_type_template_id_557dcb82__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PopularItemComponent.vue?vue&type=template&id=557dcb82 */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue?vue&type=template&id=557dcb82");
 
 
 /***/ },

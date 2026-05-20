@@ -432,6 +432,30 @@ ___CSS_LOADER_EXPORT___.push([module.id, "\n@media print {\n.hidden-print[data-v
 
 /***/ },
 
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=style&index=0&id=bb3bf9fe&scoped=true&lang=css"
+/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=style&index=0&id=bb3bf9fe&scoped=true&lang=css ***!
+  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n/* [WT-D-R1-02 2026-05-20] Driver-assignment visual feedback — mirrors\n   PosOrderShowComponent so cashier perception is consistent across POS and\n   admin online-order screens. Reduced-motion users see no animation. */\n.driver-assigned-flash[data-v-bb3bf9fe] {\n    animation: online-driver-flash-bb3bf9fe 2s ease-out 1;\n    border-radius: 8px;\n}\n@keyframes online-driver-flash-bb3bf9fe {\n0%   { box-shadow: 0 0 0 0 rgba(26, 183, 89, 0.55);\n}\n35%  { box-shadow: 0 0 0 6px rgba(26, 183, 89, 0.20);\n}\n100% { box-shadow: 0 0 0 0 rgba(26, 183, 89, 0);\n}\n}\n.driver-assigned-chip[data-v-bb3bf9fe] {\n    line-height: 1;\n    max-width: 100%;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n@media (prefers-reduced-motion: reduce) {\n.driver-assigned-flash[data-v-bb3bf9fe] { animation: none;\n}\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
 /***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=style&index=0&id=2279c7e9&scoped=true&lang=css"
 /*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=style&index=0&id=2279c7e9&scoped=true&lang=css ***!
@@ -521,7 +545,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n/* =============================================================================\n   PosOrderShowComponent — POS V5 Design Convergence (touches 2026-05-02 R2)\n   -----------------------------------------------------------------------------\n   Cycle    : CV1-POS-DESIGN-CONVERGENCE-001 R2\n   Doc plan : §3.9\n   Approche : pass design léger — db-card admin standard conservé pour cohérence\n   backoffice ; on adopte tokens V5 sur surfaces visibles (radius/shadow, badges,\n   dropdowns brand). Aucun template touché.\n   ============================================================================= */\n[data-v-ad6d7c16] .db-card {\n    border-radius: var(--pos-v5-radius-lg);\n    box-shadow: var(--pos-v5-shadow-md);\n    border: 1px solid var(--pos-v5-border);\n    background: var(--pos-v5-bg-panel);\n    overflow: hidden;\n}\n[data-v-ad6d7c16] .db-card-header {\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);\n    border-bottom: 1px solid var(--pos-v5-border);\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-5);\n}\n[data-v-ad6d7c16] .db-card-title {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h6);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n}\n\n/* Dropdowns brand (delivery boy / payment status / order status) */\n[data-v-ad6d7c16] .dropdown-btn {\n    border-radius: var(--pos-v5-radius-md) !important;\n    border-color: var(--pos-v5-brand-red) !important;\n    color: var(--pos-v5-brand-red) !important;\n    font-family: var(--pos-v5-font-sans);\n    font-weight: var(--pos-v5-weight-bold);\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n[data-v-ad6d7c16] .dropdown-btn:hover {\n    background: var(--pos-v5-brand-red-soft);\n}\n\n/* Print invoice button */\n[data-v-ad6d7c16] button[v-print],[data-v-ad6d7c16] .shadow-db-card.bg-primary {\n    background: var(--pos-v5-brand-red) !important;\n    border-radius: var(--pos-v5-radius-md);\n    box-shadow: var(--pos-v5-shadow-cta-soft);\n    font-family: var(--pos-v5-font-sans);\n    font-weight: var(--pos-v5-weight-bold);\n}\n\n/* Status badges adopt V5 palette */\n[data-v-ad6d7c16] .bg-\\[\\#FFDADA\\] {\n    background: var(--pos-v5-danger-soft) !important;\n    color: var(--pos-v5-danger-dark) !important;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n/* =============================================================================\n   PosOrderShowComponent — POS V5 Design Convergence (touches 2026-05-02 R2)\n   -----------------------------------------------------------------------------\n   Cycle    : CV1-POS-DESIGN-CONVERGENCE-001 R2\n   Doc plan : §3.9\n   Approche : pass design léger — db-card admin standard conservé pour cohérence\n   backoffice ; on adopte tokens V5 sur surfaces visibles (radius/shadow, badges,\n   dropdowns brand). Aucun template touché.\n   ============================================================================= */\n[data-v-ad6d7c16] .db-card {\n    border-radius: var(--pos-v5-radius-lg);\n    box-shadow: var(--pos-v5-shadow-md);\n    border: 1px solid var(--pos-v5-border);\n    background: var(--pos-v5-bg-panel);\n    overflow: hidden;\n}\n[data-v-ad6d7c16] .db-card-header {\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);\n    border-bottom: 1px solid var(--pos-v5-border);\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-5);\n}\n[data-v-ad6d7c16] .db-card-title {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h6);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n}\n\n/* Dropdowns brand (delivery boy / payment status / order status) */\n[data-v-ad6d7c16] .dropdown-btn {\n    border-radius: var(--pos-v5-radius-md) !important;\n    border-color: var(--pos-v5-brand-red) !important;\n    color: var(--pos-v5-brand-red) !important;\n    font-family: var(--pos-v5-font-sans);\n    font-weight: var(--pos-v5-weight-bold);\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n[data-v-ad6d7c16] .dropdown-btn:hover {\n    background: var(--pos-v5-brand-red-soft);\n}\n\n/* Print invoice button */\n[data-v-ad6d7c16] button[v-print],[data-v-ad6d7c16] .shadow-db-card.bg-primary {\n    background: var(--pos-v5-brand-red) !important;\n    border-radius: var(--pos-v5-radius-md);\n    box-shadow: var(--pos-v5-shadow-cta-soft);\n    font-family: var(--pos-v5-font-sans);\n    font-weight: var(--pos-v5-weight-bold);\n}\n\n/* Status badges adopt V5 palette */\n[data-v-ad6d7c16] .bg-\\[\\#FFDADA\\] {\n    background: var(--pos-v5-danger-soft) !important;\n    color: var(--pos-v5-danger-dark) !important;\n}\n\n/* [WT-D-R1-02 2026-05-20] Driver-assignment visual feedback. */\n.driver-assigned-flash[data-v-ad6d7c16] {\n    animation: pos-driver-flash-ad6d7c16 2s ease-out 1;\n    border-radius: var(--pos-v5-radius-md, 8px);\n}\n@keyframes pos-driver-flash-ad6d7c16 {\n0%   { box-shadow: 0 0 0 0 rgba(26, 183, 89, 0.55);\n}\n35%  { box-shadow: 0 0 0 6px rgba(26, 183, 89, 0.20);\n}\n100% { box-shadow: 0 0 0 0 rgba(26, 183, 89, 0);\n}\n}\n.driver-assigned-chip[data-v-ad6d7c16] {\n    line-height: 1;\n    max-width: 100%;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n@media (prefers-reduced-motion: reduce) {\n.driver-assigned-flash[data-v-ad6d7c16] { animation: none;\n}\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -13623,7 +13647,10 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         orderStatusEnum: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_4__["default"],
         paymentTypeEnum: _enums_modules_paymentTypeEnum__WEBPACK_IMPORTED_MODULE_6__["default"],
         orderTypeEnum: _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_7__["default"]
-      }
+      },
+      // [WT-D-R1-02 2026-05-20] Brief CSS flash highlight after driver
+      // assignment for visual confirmation.
+      driverFlashHighlight: false
     };
   },
   computed: {
@@ -13768,23 +13795,43 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         _this3.loading.isActive = false;
       });
     },
-    selectDeliveryBoy: function selectDeliveryBoy(id) {
+    // [WT-D-R1-02 2026-05-20] Toast naming the driver + order, refresh
+    // order so the chip renders, 2s flash for visual feedback.
+    selectDeliveryBoy: function selectDeliveryBoy(id, name) {
       var _this4 = this;
       try {
+        var _this$order;
         this.loading.isActive = true;
+        var orderSerial = ((_this$order = this.order) === null || _this$order === void 0 ? void 0 : _this$order.order_serial_no) || '';
         this.$store.dispatch("onlineOrder/selectDeliveryBoy", {
           id: this.$route.params.id,
           delivery_boy_id: id
+        }).then(function () {
+          return _this4.$store.dispatch('onlineOrder/show', _this4.$route.params.id);
         }).then(function (res) {
+          _this4.payment_status = res.data.data.payment_status;
+          _this4.delivery_boy = res.data.data.delivery_boy ? res.data.data.delivery_boy.id : 0;
+          _this4.order_status = res.data.data.status;
           _this4.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_9__["default"].successInfo(1, _this4.$t("message.delivery_boy_add"));
+          _this4.driverFlashHighlight = true;
+          setTimeout(function () {
+            _this4.driverFlashHighlight = false;
+          }, 2000);
+          var driverName = name || (res.data.data.delivery_boy ? res.data.data.delivery_boy.name : '');
+          var msg = _this4.$t('message.delivery_boy_assigned_to_order', {
+            name: driverName,
+            order: orderSerial
+          });
+          _services_alertService__WEBPACK_IMPORTED_MODULE_9__["default"].success(msg);
         })["catch"](function (err) {
+          var _err$response;
           _this4.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_9__["default"].error(err.response.data.message);
+          _services_alertService__WEBPACK_IMPORTED_MODULE_9__["default"].error((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this4.$t('label.error'));
         });
       } catch (err) {
+        var _err$response2;
         this.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_9__["default"].error(err.response.data.message);
+        _services_alertService__WEBPACK_IMPORTED_MODULE_9__["default"].error((err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || this.$t('label.error'));
       }
     },
     changePaymentStatus: function changePaymentStatus(status) {
@@ -14126,6 +14173,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! ../../../enums/modules/displayModeEnum */ "./resources/js/enums/modules/displayModeEnum.js");
 /* harmony import */ var _enums_modules_sourceEnum__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! ../../../enums/modules/sourceEnum */ "./resources/js/enums/modules/sourceEnum.js");
 /* harmony import */ var _config_env__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! ../../../config/env */ "./resources/js/config/env.js");
+/* harmony import */ var _helpers_formatPrice__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! ../../../helpers/formatPrice */ "./resources/js/helpers/formatPrice.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
@@ -14153,8 +14201,10 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 
 
 
+
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   name: "PosOrderListComponent",
+  mixins: [_helpers_formatPrice__WEBPACK_IMPORTED_MODULE_27__.adminPriceMixin],
   components: {
     TableLimitComponent: _components_TableLimitComponent__WEBPACK_IMPORTED_MODULE_8__["default"],
     PaginationSMBox: _components_pagination_PaginationSMBox__WEBPACK_IMPORTED_MODULE_4__["default"],
@@ -14488,6 +14538,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ../../../enums/modules/statusEnum */ "./resources/js/enums/modules/statusEnum.js");
 /* harmony import */ var _PosOrderMapComponent__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ./PosOrderMapComponent */ "./resources/js/components/admin/posOrders/PosOrderMapComponent.vue");
 /* harmony import */ var _pos_PosLoyaltyRedeemModal_vue__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../pos/PosLoyaltyRedeemModal.vue */ "./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue");
+/* harmony import */ var _helpers_formatPrice__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! ../../../helpers/formatPrice */ "./resources/js/helpers/formatPrice.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
@@ -14519,8 +14570,12 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
 // modal itself is server-permission-gated so it's safe to render the CTA
 // unconditionally — backend will 403 unauthorized cashiers.
 
+// [WT-D-R1-F4 2026-05-20] Shared admin FR EUR price formatter — canonicalises
+// "19,00 €" across PosOrderShow / PosOrderList / tracker.
+
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   name: "PosOrderShowComponent",
+  mixins: [_helpers_formatPrice__WEBPACK_IMPORTED_MODULE_16__.adminPriceMixin],
   components: {
     TableLimitComponent: _components_TableLimitComponent__WEBPACK_IMPORTED_MODULE_7__["default"],
     PaginationSMBox: _components_pagination_PaginationSMBox__WEBPACK_IMPORTED_MODULE_4__["default"],
@@ -14554,7 +14609,11 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       order_status: null,
       delivery_boy: null,
       // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Loyalty redeem modal flag.
-      loyaltyRedeemOpen: false
+      loyaltyRedeemOpen: false,
+      // [WT-D-R1-02 2026-05-20] Brief CSS flash highlight (2s) after
+      // successful driver assignment so the cashier visually perceives
+      // the state change beyond the toast.
+      driverFlashHighlight: false
     };
   },
   mounted: function mounted() {
@@ -14645,6 +14704,23 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     },
     orderTypeEnumArray: function orderTypeEnumArray() {
       return _defineProperty(_defineProperty(_defineProperty({}, _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_12__["default"].DELIVERY, this.$t("label.delivery")), _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_12__["default"].TAKEAWAY, this.$t("label.takeaway")), _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_12__["default"].DINING_TABLE, this.$t("label.dining_table"));
+    },
+    // [WT-D-R1-07 2026-05-20] Token is an internal kiosk/online reference,
+    // NOT the order number. Suppress it from the visible detail summary
+    // when it visibly duplicates the customer name first word (fixture-
+    // injected noise) so the cashier sees only "N° {order_serial_no}" up
+    // top — no more "N° commande: #Wave" confusion.
+    displayedToken: function displayedToken() {
+      var raw = this.order && this.order.token ? String(this.order.token).trim() : '';
+      if (!raw) return '';
+      var customer = this.orderUser && this.orderUser.name ? String(this.orderUser.name).trim() : '';
+      if (customer) {
+        var firstWord = customer.split(/\s+/)[0];
+        if (firstWord && raw.toLowerCase().startsWith(firstWord.toLowerCase())) {
+          return '';
+        }
+      }
+      return raw;
     }
   },
   methods: {
@@ -14711,23 +14787,48 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
       }
     },
-    selectDeliveryBoy: function selectDeliveryBoy(id) {
+    // [WT-D-R1-02 2026-05-20] Driver assignment now : (1) shows a
+    // human-readable toast naming the driver + order, (2) refreshes the
+    // order so the chip+button render the new state, (3) triggers a 2s
+    // CSS flash highlight on the dropdown wrapper for visual feedback.
+    selectDeliveryBoy: function selectDeliveryBoy(id, name) {
       var _this5 = this;
       try {
+        var _this$order;
         this.loading.isActive = true;
+        var orderSerial = ((_this$order = this.order) === null || _this$order === void 0 ? void 0 : _this$order.order_serial_no) || '';
         this.$store.dispatch("posOrder/selectDeliveryBoy", {
           id: this.$route.params.id,
           delivery_boy_id: id
+        }).then(function () {
+          // Refresh so order.delivery_boy populates -> chip renders.
+          return _this5.$store.dispatch('posOrder/show', _this5.$route.params.id);
         }).then(function (res) {
+          _this5.payment_status = res.data.data.payment_status;
+          _this5.order_status = res.data.data.status;
+          _this5.delivery_boy = res.data.data.delivery_boy ? res.data.data.delivery_boy.id : 0;
           _this5.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].successInfo(1, _this5.$t("message.delivery_boy_add"));
+
+          // 2s flash highlight on the assignment group.
+          _this5.driverFlashHighlight = true;
+          setTimeout(function () {
+            _this5.driverFlashHighlight = false;
+          }, 2000);
+          var driverName = name || (res.data.data.delivery_boy ? res.data.data.delivery_boy.name : '');
+          var msg = _this5.$t('message.delivery_boy_assigned_to_order', {
+            name: driverName,
+            order: orderSerial
+          });
+          _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].success(msg);
         })["catch"](function (err) {
+          var _err$response;
           _this5.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
+          _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this5.$t('label.error'));
         });
       } catch (err) {
+        var _err$response2;
         this.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
+        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || this.$t('label.error'));
       }
     }
   }
@@ -43008,10 +43109,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
 
 /***/ },
 
-/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe"
-/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe ***!
-  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe&scoped=true"
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe&scoped=true ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
 (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -43092,235 +43193,235 @@ var _hoisted_20 = {
   key: 1,
   "class": "flex flex-wrap gap-3"
 };
-var _hoisted_21 = {
-  key: 0,
-  "class": "dropdown-group"
-};
-var _hoisted_22 = {
-  "class": "min-w-[162px] flex items-center justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn"
-};
+var _hoisted_21 = ["aria-label"];
+var _hoisted_22 = ["aria-label"];
 var _hoisted_23 = {
   "class": "flex-1 text-start"
 };
-var _hoisted_24 = {
-  "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
-};
-var _hoisted_25 = ["onClick"];
+var _hoisted_24 = ["aria-label"];
+var _hoisted_25 = ["aria-selected", "onClick", "onKeydown", "data-testid"];
 var _hoisted_26 = {
+  key: 0,
+  "class": "driver-assigned-chip mt-1.5 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-[#E6F8EE] text-[#1AB759] font-semibold",
+  role: "status",
+  "aria-live": "polite",
+  "data-testid": "online-driver-assigned-chip"
+};
+var _hoisted_27 = {
   key: 1,
   "class": "dropdown-group"
 };
-var _hoisted_27 = {
+var _hoisted_28 = {
   "class": "min-w-[97px] flex items-center gap-4 justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn"
 };
-var _hoisted_28 = {
+var _hoisted_29 = {
   "class": "flex-1 text-start"
 };
-var _hoisted_29 = {
+var _hoisted_30 = {
   "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
 };
-var _hoisted_30 = ["onClick"];
-var _hoisted_31 = {
+var _hoisted_31 = ["onClick"];
+var _hoisted_32 = {
   "class": "dropdown-group"
 };
-var _hoisted_32 = {
+var _hoisted_33 = {
   "class": "min-w-[150px] flex items-center justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn"
 };
-var _hoisted_33 = {
+var _hoisted_34 = {
   "class": "flex-1 text-start"
 };
-var _hoisted_34 = {
+var _hoisted_35 = {
   "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
 };
-var _hoisted_35 = ["onClick"];
-var _hoisted_36 = {
+var _hoisted_36 = ["onClick"];
+var _hoisted_37 = {
   "class": "col-12 sm:col-6"
 };
-var _hoisted_37 = {
+var _hoisted_38 = {
   "class": "row"
 };
-var _hoisted_38 = {
+var _hoisted_39 = {
   "class": "col-12"
 };
-var _hoisted_39 = {
+var _hoisted_40 = {
   "class": "db-card"
 };
-var _hoisted_40 = {
+var _hoisted_41 = {
   "class": "db-card-header"
 };
-var _hoisted_41 = {
+var _hoisted_42 = {
   "class": "db-card-title"
 };
-var _hoisted_42 = {
+var _hoisted_43 = {
   "class": "db-card-body"
 };
-var _hoisted_43 = {
+var _hoisted_44 = {
   "class": "pl-3"
 };
-var _hoisted_44 = {
+var _hoisted_45 = {
   "class": "flex items-center gap-3 relative"
 };
-var _hoisted_45 = {
+var _hoisted_46 = {
   "class": "absolute top-5 -left-3 text-sm w-[26px] h-[26px] leading-[26px] text-center rounded-full text-white bg-heading"
 };
-var _hoisted_46 = ["src"];
-var _hoisted_47 = {
+var _hoisted_47 = ["src"];
+var _hoisted_48 = {
   "class": "w-full"
 };
-var _hoisted_48 = {
+var _hoisted_49 = {
   href: "#",
   "class": "text-sm font-medium capitalize transition text-heading hover:underline"
 };
-var _hoisted_49 = {
+var _hoisted_50 = {
   key: 0,
   "class": "capitalize text-xs mb-1.5"
 };
-var _hoisted_50 = {
+var _hoisted_51 = {
   key: 0
 };
-var _hoisted_51 = {
-  "class": "text-xs font-semibold"
-};
 var _hoisted_52 = {
-  key: 0,
-  "class": "flex flex-col gap-1.5 mt-2"
+  "class": "text-xs font-semibold"
 };
 var _hoisted_53 = {
   key: 0,
-  "class": "flex gap-1"
+  "class": "flex flex-col gap-1.5 mt-2"
 };
 var _hoisted_54 = {
-  "class": "capitalize text-xs w-fit whitespace-nowrap"
+  key: 0,
+  "class": "flex gap-1"
 };
 var _hoisted_55 = {
-  "class": "text-xs"
+  "class": "capitalize text-xs w-fit whitespace-nowrap"
 };
 var _hoisted_56 = {
-  key: 0
+  "class": "text-xs"
 };
 var _hoisted_57 = {
+  key: 0
+};
+var _hoisted_58 = {
   key: 1,
   "class": "flex gap-1"
 };
-var _hoisted_58 = {
+var _hoisted_59 = {
   "class": "capitalize text-xs w-fit whitespace-nowrap"
 };
-var _hoisted_59 = {
+var _hoisted_60 = {
   "class": "text-xs"
 };
-var _hoisted_60 = {
+var _hoisted_61 = {
   key: 0,
   "class": "col-12"
 };
-var _hoisted_61 = {
+var _hoisted_62 = {
   "class": "db-card"
 };
-var _hoisted_62 = {
+var _hoisted_63 = {
   "class": "db-card-header"
 };
-var _hoisted_63 = {
+var _hoisted_64 = {
   "class": "db-card-title"
 };
-var _hoisted_64 = {
+var _hoisted_65 = {
   "class": "db-card-body"
 };
-var _hoisted_65 = {
+var _hoisted_66 = {
   "class": "col-12 sm:col-6"
 };
-var _hoisted_66 = {
+var _hoisted_67 = {
   "class": "row"
 };
-var _hoisted_67 = {
+var _hoisted_68 = {
   "class": "col-12"
 };
-var _hoisted_68 = {
+var _hoisted_69 = {
   "class": "db-card p-1"
 };
-var _hoisted_69 = {
+var _hoisted_70 = {
   "class": "flex flex-col gap-2 p-3 border-b border-dashed border-[#EFF0F6]"
 };
-var _hoisted_70 = {
-  "class": "flex items-center justify-between text-heading"
-};
 var _hoisted_71 = {
-  "class": "text-sm leading-6 capitalize"
+  "class": "flex items-center justify-between text-heading"
 };
 var _hoisted_72 = {
   "class": "text-sm leading-6 capitalize"
 };
 var _hoisted_73 = {
-  "class": "flex items-center justify-between text-heading"
+  "class": "text-sm leading-6 capitalize"
 };
 var _hoisted_74 = {
-  "class": "text-sm leading-6 capitalize"
+  "class": "flex items-center justify-between text-heading"
 };
 var _hoisted_75 = {
   "class": "text-sm leading-6 capitalize"
 };
 var _hoisted_76 = {
+  "class": "text-sm leading-6 capitalize"
+};
+var _hoisted_77 = {
   key: 0,
   "class": "flex items-center justify-between text-heading"
 };
-var _hoisted_77 = {
+var _hoisted_78 = {
   "class": "text-sm leading-6 capitalize"
 };
-var _hoisted_78 = {
+var _hoisted_79 = {
   "class": "text-sm leading-6 capitalize font-semibold text-[#1AB759]"
 };
-var _hoisted_79 = {
-  "class": "flex items-center justify-between p-3"
-};
 var _hoisted_80 = {
-  "class": "text-sm leading-6 font-bold capitalize"
+  "class": "flex items-center justify-between p-3"
 };
 var _hoisted_81 = {
   "class": "text-sm leading-6 font-bold capitalize"
 };
 var _hoisted_82 = {
-  "class": "col-12"
+  "class": "text-sm leading-6 font-bold capitalize"
 };
 var _hoisted_83 = {
-  "class": "db-card"
+  "class": "col-12"
 };
 var _hoisted_84 = {
-  "class": "db-card-header"
+  "class": "db-card"
 };
 var _hoisted_85 = {
-  "class": "db-card-title"
+  "class": "db-card-header"
 };
 var _hoisted_86 = {
-  "class": "db-card-body"
+  "class": "db-card-title"
 };
 var _hoisted_87 = {
+  "class": "db-card-body"
+};
+var _hoisted_88 = {
   "class": "flex items-center gap-3 mb-4"
 };
-var _hoisted_88 = ["src"];
-var _hoisted_89 = {
+var _hoisted_89 = ["src"];
+var _hoisted_90 = {
   "class": "font-semibold text-sm capitalize text-[#374151]"
 };
-var _hoisted_90 = {
+var _hoisted_91 = {
   "class": "flex items-center gap-2.5"
 };
-var _hoisted_91 = {
+var _hoisted_92 = {
   "class": "text-xs"
 };
-var _hoisted_92 = {
+var _hoisted_93 = {
   key: 0,
   "class": "flex items-center gap-2.5"
 };
-var _hoisted_93 = {
+var _hoisted_94 = {
   dir: "ltr",
   "class": "text-xs"
 };
-var _hoisted_94 = {
+var _hoisted_95 = {
   key: 0,
   "class": "flex items-start gap-3"
 };
-var _hoisted_95 = {
+var _hoisted_96 = {
   "class": "text-sm w-full max-w-[200px] leading-6 text-[#374151]"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
-  var _$options$order, _$options$order2;
+  var _$options$order, _$options$order2, _$options$order3, _$options$order6;
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_OnlineOrderReasonComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("OnlineOrderReasonComponent");
   var _component_OnlineOrderReceiptComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("OnlineOrderReceiptComponent");
@@ -43354,22 +43455,54 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "flex items-center justify-center text-white gap-2 px-4 h-[38px] rounded shadow-db-card bg-[#2AC769]"
   }, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-save"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.accept')), 1 /* TEXT */)])])) : $options.order.status !== $data.enums.orderStatusEnum.REJECTED && $options.order.status !== $data.enums.orderStatusEnum.CANCELED ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_20, [$options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)((_$options$order = $options.order) !== null && _$options$order !== void 0 && (_$options$order = _$options$order.delivery_boy) !== null && _$options$order !== void 0 && _$options$order.id ? (_$options$order2 = $options.order) === null || _$options$order2 === void 0 || (_$options$order2 = _$options$order2.delivery_boy) === null || _$options$order2 === void 0 ? void 0 : _$options$order2.name : _ctx.$t('label.select_delivery_boy')), 1 /* TEXT */), _cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-    "class": "lab lab-arrow-down-2 lab-font-size-17 mx-1"
-  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_24, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.deliveryBoys, function (deliveryBoy) {
-    var _$options$order3;
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.accept')), 1 /* TEXT */)])])) : $options.order.status !== $data.enums.orderStatusEnum.REJECTED && $options.order.status !== $data.enums.orderStatusEnum.CANCELED ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-09 / WT-D-R1-02 2026-05-20] Same combobox+\n                         listbox WCAG pattern + live-region chip + flash as\n                         PosOrderShowComponent. Kept template structure so the\n                         existing dropdown-group hover behaviour still works. "), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["dropdown-group", {
+      'driver-assigned-flash': $data.driverFlashHighlight
+    }]),
+    role: "combobox",
+    "aria-haspopup": "listbox",
+    "aria-expanded": "false",
+    "aria-label": _ctx.$t('label.select_delivery_boy'),
+    "data-testid": "online-driver-assign-group"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "min-w-[162px] flex items-center justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn",
+    "aria-label": (_$options$order = $options.order) !== null && _$options$order !== void 0 && (_$options$order = _$options$order.delivery_boy) !== null && _$options$order !== void 0 && _$options$order.id ? _ctx.$t('label.driver_assigned') + ': ' + $options.order.delivery_boy.name : _ctx.$t('label.select_delivery_boy'),
+    "data-testid": "online-driver-assign-btn"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)((_$options$order2 = $options.order) !== null && _$options$order2 !== void 0 && (_$options$order2 = _$options$order2.delivery_boy) !== null && _$options$order2 !== void 0 && _$options$order2.id ? (_$options$order3 = $options.order) === null || _$options$order3 === void 0 || (_$options$order3 = _$options$order3.delivery_boy) === null || _$options$order3 === void 0 ? void 0 : _$options$order3.name : _ctx.$t('label.select_delivery_boy')), 1 /* TEXT */), _cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-arrow-down-2 lab-font-size-17 mx-1",
+    "aria-hidden": "true"
+  }, null, -1 /* CACHED */))], 8 /* PROPS */, _hoisted_22), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", {
+    role: "listbox",
+    "aria-label": _ctx.$t('label.select_delivery_boy'),
+    "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
+  }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.deliveryBoys, function (deliveryBoy) {
+    var _$options$order4, _$options$order5;
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
-      "class": "active flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100",
+      role: "option",
+      "aria-selected": ((_$options$order4 = $options.order) === null || _$options$order4 === void 0 || (_$options$order4 = _$options$order4.delivery_boy) === null || _$options$order4 === void 0 ? void 0 : _$options$order4.id) === deliveryBoy.id ? 'true' : 'false',
+      tabindex: "0",
+      "class": "active flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100 focus:outline focus:outline-2 focus:outline-primary",
       key: deliveryBoy.id,
       onClick: function onClick($event) {
-        return $options.selectDeliveryBoy(deliveryBoy.id);
-      }
+        return $options.selectDeliveryBoy(deliveryBoy.id, deliveryBoy.name);
+      },
+      onKeydown: [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        return $options.selectDeliveryBoy(deliveryBoy.id, deliveryBoy.name);
+      }, ["prevent"]), ["enter"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        return $options.selectDeliveryBoy(deliveryBoy.id, deliveryBoy.name);
+      }, ["prevent"]), ["space"])],
+      "data-testid": 'online-driver-option-' + deliveryBoy.id
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
-      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["text-heading capitalize text-sm", ((_$options$order3 = $options.order) === null || _$options$order3 === void 0 || (_$options$order3 = _$options$order3.delivery_boy) === null || _$options$order3 === void 0 ? void 0 : _$options$order3.id) === deliveryBoy.id ? 'text-primary' : ''])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(deliveryBoy.name), 3 /* TEXT, CLASS */)], 8 /* PROPS */, _hoisted_25);
-  }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.order.transaction === null ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_27, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.paymentStatusEnumArray[$options.order.payment_status]), 1 /* TEXT */), _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["text-heading capitalize text-sm", ((_$options$order5 = $options.order) === null || _$options$order5 === void 0 || (_$options$order5 = _$options$order5.delivery_boy) === null || _$options$order5 === void 0 ? void 0 : _$options$order5.id) === deliveryBoy.id ? 'text-primary' : ''])
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(deliveryBoy.name), 3 /* TEXT, CLASS */)], 40 /* PROPS, NEED_HYDRATION */, _hoisted_25);
+  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_24), (_$options$order6 = $options.order) !== null && _$options$order6 !== void 0 && (_$options$order6 = _$options$order6.delivery_boy) !== null && _$options$order6 !== void 0 && _$options$order6.id ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_26, [_cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-tick-square lab-font-size-12",
+    "aria-hidden": "true"
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.driver_assigned')) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_boy.name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 10 /* CLASS, PROPS */, _hoisted_21)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.order.transaction === null ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_27, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.paymentStatusEnumArray[$options.order.payment_status]), 1 /* TEXT */), _cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-arrow-down-2 lab-font-size-17 mx-1"
-  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_29, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.paymentStatusObject, function (paymentStatus) {
+  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_30, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.paymentStatusObject, function (paymentStatus) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
       "class": "active flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100",
       key: paymentStatus.value,
@@ -43378,10 +43511,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["text-heading capitalize text-sm", $options.order.payment_status === paymentStatus.value ? 'text-primary' : ''])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(paymentStatus.name), 3 /* TEXT, CLASS */)], 8 /* PROPS */, _hoisted_30);
-  }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_31, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderStatusEnumArray[$options.order.status]), 1 /* TEXT */), _cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(paymentStatus.name), 3 /* TEXT, CLASS */)], 8 /* PROPS */, _hoisted_31);
+  }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_33, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderStatusEnumArray[$options.order.status]), 1 /* TEXT */), _cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-arrow-down-2 lab-font-size-17 mx-1"
-  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_34, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.orderStatusObject, function (status) {
+  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_35, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.orderStatusObject, function (status) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
       "class": "active flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100",
       key: status.value,
@@ -43390,40 +43523,40 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["text-heading capitalize text-sm", $options.order.status === status.value ? 'text-primary' : ''])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(status.name), 3 /* TEXT, CLASS */)], 8 /* PROPS */, _hoisted_35);
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(status.name), 3 /* TEXT, CLASS */)], 8 /* PROPS */, _hoisted_36);
   }), 128 /* KEYED_FRAGMENT */))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_OnlineOrderReceiptComponent, {
     order: $options.order,
     orderItems: $options.orderItems,
     orderUser: $options.orderUser,
     orderAddress: $options.orderAddress
-  }, null, 8 /* PROPS */, ["order", "orderItems", "orderUser", "orderAddress"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_37, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_40, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_details')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_43, [$options.orderItems.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, null, 8 /* PROPS */, ["order", "orderItems", "orderUser", "orderAddress"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_37, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_40, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_41, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_details')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_43, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_44, [$options.orderItems.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 0
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.orderItems, function (item) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       "class": "mb-3 pb-3 border-b last:mb-0 last:pb-0 last:border-b-0 border-gray-2",
       key: item
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_45, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
       "class": "w-16 h-16 rounded-lg flex-shrink-0",
       src: item.item_image,
       alt: "thumbnail"
-    }, null, 8 /* PROPS */, _hoisted_46), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_47, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("a", _hoisted_48, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), item.item_variations.length !== 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_49, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
-      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.variation_name) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_50, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-    }), 256 /* UNKEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_51, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.total_currency_price), 1 /* TEXT */)])]), item.item_extras.length > 0 || item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_52, [item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_53, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_55, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
-      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_56, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-    }), 256 /* UNKEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_57, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_58, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.instruction')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_59, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])]), $options.order.status === $data.enums.orderStatusEnum.REJECTED ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_60, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_61, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_62, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_63, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.reason')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_64, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.reason), 1 /* TEXT */)])])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_65, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_66, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_67, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_68, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_69, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_70, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_71, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.subtotal')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_72, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.subtotal_currency_price), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_73, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_74, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.discount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_75, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.discount_currency_price), 1 /* TEXT */)]), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_76, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_77, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_charge')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_78, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_charge_currency_price), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_79, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_80, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_81, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.total_currency_price), 1 /* TEXT */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_82, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_83, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_84, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_85, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_information')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_86, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_87, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+    }, null, 8 /* PROPS */, _hoisted_47), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("a", _hoisted_49, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), item.item_variations.length !== 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_50, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.variation_name) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_51, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+    }), 256 /* UNKEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_52, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.total_currency_price), 1 /* TEXT */)])]), item.item_extras.length > 0 || item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_53, [item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_54, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_55, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_56, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_57, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+    }), 256 /* UNKEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_58, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_59, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.instruction')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_60, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])]), $options.order.status === $data.enums.orderStatusEnum.REJECTED ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_61, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_62, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_63, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_64, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.reason')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_65, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.reason), 1 /* TEXT */)])])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_66, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_67, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_68, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_69, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_70, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_71, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_72, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.subtotal')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_73, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.subtotal_currency_price), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_74, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_75, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.discount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_76, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.discount_currency_price), 1 /* TEXT */)]), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_77, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_78, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_charge')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_79, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_charge_currency_price), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_80, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_81, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_82, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.total_currency_price), 1 /* TEXT */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_83, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_84, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_85, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_86, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_information')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_87, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_88, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "w-8 rounded-full",
     src: $options.orderUser.image,
     alt: "avatar"
-  }, null, 8 /* PROPS */, _hoisted_88), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_89, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener($options.orderUser.name, 20)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", {
+  }, null, 8 /* PROPS */, _hoisted_89), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_90, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener($options.orderUser.name, 20)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["flex flex-col gap-3 py-4 border-[#EFF0F6]", $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? 'mb-4 border-y' : 'border-t'])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_90, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_91, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-mail lab-font-size-14"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_91, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.email), 1 /* TEXT */)]), $options.orderUser.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_92, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_92, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.email), 1 /* TEXT */)]), $options.orderUser.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_93, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-call-calling-linear lab-font-size-14"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_93, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.country_code + '' + $options.orderUser.phone), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_94, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_94, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.country_code + '' + $options.orderUser.phone), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_95, [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-location lab-font-size-20 leading-6 font-fill-black"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_95, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderAddress.apartment ? $options.orderAddress.apartment + ', ' : '') + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderAddress.address), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_OnlineOrderMapComponent, {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_96, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderAddress.apartment ? $options.orderAddress.apartment + ', ' : '') + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderAddress.address), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_OnlineOrderMapComponent, {
     orderAddress: $options.orderAddress
   }, null, 8 /* PROPS */, ["orderAddress"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])])])], 64 /* STABLE_FRAGMENT */);
 }
@@ -43921,7 +44054,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       key: order
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_serial_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_36, [order.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_37, " N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_38, "—"))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($options.statusClass(order.order_type))
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.orderTypeEnumArray[order.order_type]), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.customer_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.total_amount_price), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_datetime), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_43, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.orderTypeEnumArray[order.order_type]), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.customer_name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-F4 2026-05-20] Canonical FR EUR\n                                 rendering via shared `formatPrice()` helper.\n                                 Previously used `order.total_amount_price`\n                                 which renders as \"19.00\" (no €, US decimal)\n                                 while the tracker shows \"19,00 €\" and the\n                                 detail page shows \"19.00€\" — three layouts\n                                 for the same value across surfaces.\n                                 `order.total` is now exposed as a raw numeric\n                                 by SimpleOrderResource (Wave T R1 F4 heal). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(order.total)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_datetime), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_43, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($options.orderStatusClass(order.status))
     }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.orderStatusEnumArray[order.status]), 3 /* TEXT, CLASS */)]), $options.permissionChecker('pos-orders') ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("td", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_45, [$options.permissionChecker('pos-orders') ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_SmIconViewComponent, {
       key: 0,
@@ -44300,7 +44433,7 @@ var _hoisted_18 = {
   "class": "text-xs"
 };
 var _hoisted_19 = {
-  "class": "text-heading"
+  "class": "text-heading text-[10px] opacity-75 font-mono"
 };
 var _hoisted_20 = {
   key: 1,
@@ -44313,223 +44446,223 @@ var _hoisted_22 = {
   key: 0,
   "class": "flex flex-wrap gap-3"
 };
-var _hoisted_23 = {
-  key: 0,
-  "class": "dropdown-group"
-};
-var _hoisted_24 = {
-  "class": "min-w-[162px] flex items-center justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn"
-};
+var _hoisted_23 = ["aria-label"];
+var _hoisted_24 = ["aria-label"];
 var _hoisted_25 = {
   "class": "flex-1 text-start"
 };
-var _hoisted_26 = {
-  "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
-};
-var _hoisted_27 = ["onClick"];
+var _hoisted_26 = ["aria-label"];
+var _hoisted_27 = ["aria-selected", "onClick", "onKeydown", "data-testid"];
 var _hoisted_28 = {
-  "class": "dropdown-group"
+  key: 0,
+  "class": "driver-assigned-chip mt-1.5 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-[#E6F8EE] text-[#1AB759] font-semibold",
+  role: "status",
+  "aria-live": "polite",
+  "data-testid": "pos-driver-assigned-chip"
 };
 var _hoisted_29 = {
-  "class": "min-w-[97px] flex items-center gap-4 justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn"
-};
-var _hoisted_30 = {
-  "class": "flex-1 text-start"
-};
-var _hoisted_31 = {
-  "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
-};
-var _hoisted_32 = ["onClick"];
-var _hoisted_33 = {
   "class": "dropdown-group"
 };
-var _hoisted_34 = {
-  "class": "min-w-[150px] flex items-center justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn"
+var _hoisted_30 = {
+  "class": "min-w-[97px] flex items-center gap-4 justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn"
 };
-var _hoisted_35 = {
+var _hoisted_31 = {
   "class": "flex-1 text-start"
 };
-var _hoisted_36 = {
+var _hoisted_32 = {
   "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
 };
-var _hoisted_37 = ["onClick"];
-var _hoisted_38 = {
+var _hoisted_33 = ["onClick"];
+var _hoisted_34 = {
+  "class": "dropdown-group"
+};
+var _hoisted_35 = {
+  "class": "min-w-[150px] flex items-center justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn"
+};
+var _hoisted_36 = {
+  "class": "flex-1 text-start"
+};
+var _hoisted_37 = {
+  "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
+};
+var _hoisted_38 = ["onClick"];
+var _hoisted_39 = {
   type: "button",
   "class": "flex items-center justify-center gap-2 px-4 h-[38px] rounded shadow-db-card bg-primary"
 };
-var _hoisted_39 = {
+var _hoisted_40 = {
   "class": "text-sm capitalize text-white"
 };
-var _hoisted_40 = {
+var _hoisted_41 = {
   "class": "col-12 sm:col-6"
 };
-var _hoisted_41 = {
+var _hoisted_42 = {
   "class": "db-card"
 };
-var _hoisted_42 = {
+var _hoisted_43 = {
   "class": "db-card-header"
 };
-var _hoisted_43 = {
+var _hoisted_44 = {
   "class": "db-card-title"
 };
-var _hoisted_44 = {
+var _hoisted_45 = {
   "class": "db-card-body"
 };
-var _hoisted_45 = {
+var _hoisted_46 = {
   "class": "pl-3"
 };
-var _hoisted_46 = {
+var _hoisted_47 = {
   "class": "flex items-center gap-3 relative"
 };
-var _hoisted_47 = {
+var _hoisted_48 = {
   "class": "absolute top-5 -left-3 text-sm w-[26px] h-[26px] leading-[26px] text-center rounded-full text-white bg-heading"
 };
-var _hoisted_48 = ["src"];
-var _hoisted_49 = {
+var _hoisted_49 = ["src"];
+var _hoisted_50 = {
   "class": "w-full"
 };
-var _hoisted_50 = {
+var _hoisted_51 = {
   href: "#",
   "class": "text-sm font-medium capitalize transition text-heading hover:underline"
 };
-var _hoisted_51 = {
+var _hoisted_52 = {
   key: 0,
   "class": "capitalize text-xs mb-1.5"
 };
-var _hoisted_52 = {
+var _hoisted_53 = {
   key: 0
 };
-var _hoisted_53 = {
-  "class": "text-xs font-semibold"
-};
 var _hoisted_54 = {
-  key: 0,
-  "class": "flex flex-col gap-1.5 mt-2"
+  "class": "text-xs font-semibold"
 };
 var _hoisted_55 = {
   key: 0,
-  "class": "flex gap-1"
+  "class": "flex flex-col gap-1.5 mt-2"
 };
 var _hoisted_56 = {
-  "class": "capitalize text-xs w-fit whitespace-nowrap"
+  key: 0,
+  "class": "flex gap-1"
 };
 var _hoisted_57 = {
-  "class": "text-xs"
+  "class": "capitalize text-xs w-fit whitespace-nowrap"
 };
 var _hoisted_58 = {
-  key: 0
+  "class": "text-xs"
 };
 var _hoisted_59 = {
+  key: 0
+};
+var _hoisted_60 = {
   key: 1,
   "class": "flex gap-1"
 };
-var _hoisted_60 = {
+var _hoisted_61 = {
   "class": "capitalize text-xs w-fit whitespace-nowrap"
 };
-var _hoisted_61 = {
+var _hoisted_62 = {
   "class": "text-xs"
 };
-var _hoisted_62 = {
+var _hoisted_63 = {
   "class": "col-12 sm:col-6"
 };
-var _hoisted_63 = {
+var _hoisted_64 = {
   "class": "row"
 };
-var _hoisted_64 = {
+var _hoisted_65 = {
   "class": "col-12"
 };
-var _hoisted_65 = {
+var _hoisted_66 = {
   "class": "db-card p-1"
 };
-var _hoisted_66 = {
+var _hoisted_67 = {
   "class": "flex flex-col gap-2 p-3 border-b border-dashed border-[#EFF0F6]"
 };
-var _hoisted_67 = {
-  "class": "flex items-center justify-between text-heading"
-};
 var _hoisted_68 = {
-  "class": "text-sm leading-6 capitalize"
+  "class": "flex items-center justify-between text-heading"
 };
 var _hoisted_69 = {
   "class": "text-sm leading-6 capitalize"
 };
 var _hoisted_70 = {
-  "class": "flex items-center justify-between text-heading"
+  "class": "text-sm leading-6 capitalize"
 };
 var _hoisted_71 = {
-  "class": "text-sm leading-6 capitalize"
+  "class": "flex items-center justify-between text-heading"
 };
 var _hoisted_72 = {
   "class": "text-sm leading-6 capitalize"
 };
 var _hoisted_73 = {
+  "class": "text-sm leading-6 capitalize"
+};
+var _hoisted_74 = {
   key: 0,
   "class": "flex items-center justify-between text-heading"
 };
-var _hoisted_74 = {
+var _hoisted_75 = {
   "class": "text-sm leading-6 capitalize"
 };
-var _hoisted_75 = {
+var _hoisted_76 = {
   "class": "text-sm leading-6 capitalize font-semibold text-[#1AB759]"
 };
-var _hoisted_76 = {
-  "class": "flex items-center justify-between p-3"
-};
 var _hoisted_77 = {
-  "class": "text-sm leading-6 font-bold capitalize"
+  "class": "flex items-center justify-between p-3"
 };
 var _hoisted_78 = {
   "class": "text-sm leading-6 font-bold capitalize"
 };
 var _hoisted_79 = {
+  "class": "text-sm leading-6 font-bold capitalize"
+};
+var _hoisted_80 = {
   key: 0,
   "class": "flex items-center justify-end p-3 pt-0"
 };
-var _hoisted_80 = {
+var _hoisted_81 = {
   "class": "col-12"
 };
-var _hoisted_81 = {
+var _hoisted_82 = {
   "class": "db-card"
 };
-var _hoisted_82 = {
+var _hoisted_83 = {
   "class": "db-card-header"
 };
-var _hoisted_83 = {
+var _hoisted_84 = {
   "class": "db-card-title"
 };
-var _hoisted_84 = {
+var _hoisted_85 = {
   "class": "db-card-body"
 };
-var _hoisted_85 = {
+var _hoisted_86 = {
   "class": "flex items-center gap-3 mb-4"
 };
-var _hoisted_86 = ["src"];
-var _hoisted_87 = {
+var _hoisted_87 = ["src"];
+var _hoisted_88 = {
   "class": "font-semibold text-sm capitalize text-[#374151]"
 };
-var _hoisted_88 = {
+var _hoisted_89 = {
   "class": "flex items-center gap-2.5"
 };
-var _hoisted_89 = {
+var _hoisted_90 = {
   "class": "text-xs"
 };
-var _hoisted_90 = {
+var _hoisted_91 = {
   key: 0,
   "class": "flex items-center gap-2.5"
 };
-var _hoisted_91 = {
+var _hoisted_92 = {
   dir: "ltr",
   "class": "text-xs"
 };
-var _hoisted_92 = {
+var _hoisted_93 = {
   key: 0,
   "class": "flex items-start gap-3"
 };
-var _hoisted_93 = {
+var _hoisted_94 = {
   "class": "text-sm w-full max-w-[200px] leading-6 text-[#374151]"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
-  var _$options$order, _$options$order2;
+  var _$options$order, _$options$order2, _$options$order3, _$options$order6;
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_PosOrderMapComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PosOrderMapComponent");
   var _component_PosOrderReceiptComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PosOrderReceiptComponent");
@@ -44543,22 +44676,54 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)('text-xs capitalize px-2 rounded-3xl ' + $options.orderStatusClass($options.order.status))
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderStatusEnumArray[$options.order.status]), 3 /* TEXT, CLASS */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_9, [_cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-calendar-line lab-font-size-16"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.order_datetime), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_type')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.posPaymentMethodEnumArray[$options.order.pos_payment_method]) + " ", 1 /* TEXT */), $options.order.pos_payment_method !== $data.enums.posPaymentMethodEnum.CASH && $options.order.pos_payment_note ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_13, " (" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.pos_payment_note) + ")", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_type')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderTypeEnumArray[$options.order.order_type]), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_time')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_date) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_time), 1 /* TEXT */)]), $options.order.token ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.token_no')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, " #" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.token), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.order.table_name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.table_name")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.table_name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), $options.order.status !== $data.enums.orderStatusEnum.REJECTED && $options.order.status !== $data.enums.orderStatusEnum.CANCELED ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [$options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_23, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_24, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)((_$options$order = $options.order) !== null && _$options$order !== void 0 && (_$options$order = _$options$order.delivery_boy) !== null && _$options$order !== void 0 && _$options$order.id ? (_$options$order2 = $options.order) === null || _$options$order2 === void 0 || (_$options$order2 = _$options$order2.delivery_boy) === null || _$options$order2 === void 0 ? void 0 : _$options$order2.name : _ctx.$t('label.select_delivery_boy')), 1 /* TEXT */), _cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-    "class": "lab lab-arrow-down-2 lab-font-size-17 mx-1"
-  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_26, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.deliveryBoys, function (deliveryBoy) {
-    var _$options$order3;
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.order_datetime), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_type')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.posPaymentMethodEnumArray[$options.order.pos_payment_method]) + " ", 1 /* TEXT */), $options.order.pos_payment_method !== $data.enums.posPaymentMethodEnum.CASH && $options.order.pos_payment_note ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_13, " (" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.pos_payment_note) + ")", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_type')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderTypeEnumArray[$options.order.order_type]), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_time')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_date) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_time), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-07 2026-05-20] Internal token reference\n                             (kiosk/online flows). Relabelled FR \"Référence\n                             interne\" to avoid collision with `order_serial_no`\n                             (the real \"N° commande\" displayed at top). Hidden\n                             entirely if the token visually duplicates the\n                             customer first word (defensive guard against\n                             noisy fixture-injected tokens that bleed into\n                             the customer name field). "), $options.displayedToken ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_token')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayedToken), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.order.table_name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.table_name")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.table_name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), $options.order.status !== $data.enums.orderStatusEnum.REJECTED && $options.order.status !== $data.enums.orderStatusEnum.CANCELED ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-09 / WT-D-R1-02 2026-05-20] Delivery-boy\n                         assignment dropdown — WCAG AA combobox+listbox\n                         pattern overlaid on existing dropdown-group hover\n                         behaviour. data-testid hooks added for E2E.\n                         A live-region chip is rendered below the button when\n                         a driver is assigned so the cashier sees confirmation\n                         without consulting the toast. "), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["dropdown-group", {
+      'driver-assigned-flash': $data.driverFlashHighlight
+    }]),
+    role: "combobox",
+    "aria-haspopup": "listbox",
+    "aria-expanded": "false",
+    "aria-label": _ctx.$t('label.select_delivery_boy'),
+    "data-testid": "pos-driver-assign-group"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "min-w-[162px] flex items-center justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn",
+    "aria-label": (_$options$order = $options.order) !== null && _$options$order !== void 0 && (_$options$order = _$options$order.delivery_boy) !== null && _$options$order !== void 0 && _$options$order.id ? _ctx.$t('label.driver_assigned') + ': ' + $options.order.delivery_boy.name : _ctx.$t('label.select_delivery_boy'),
+    "data-testid": "pos-driver-assign-btn"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)((_$options$order2 = $options.order) !== null && _$options$order2 !== void 0 && (_$options$order2 = _$options$order2.delivery_boy) !== null && _$options$order2 !== void 0 && _$options$order2.id ? (_$options$order3 = $options.order) === null || _$options$order3 === void 0 || (_$options$order3 = _$options$order3.delivery_boy) === null || _$options$order3 === void 0 ? void 0 : _$options$order3.name : _ctx.$t('label.select_delivery_boy')), 1 /* TEXT */), _cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-arrow-down-2 lab-font-size-17 mx-1",
+    "aria-hidden": "true"
+  }, null, -1 /* CACHED */))], 8 /* PROPS */, _hoisted_24), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", {
+    role: "listbox",
+    "aria-label": _ctx.$t('label.select_delivery_boy'),
+    "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
+  }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.deliveryBoys, function (deliveryBoy) {
+    var _$options$order4, _$options$order5;
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
-      "class": "active flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100",
+      role: "option",
+      "aria-selected": ((_$options$order4 = $options.order) === null || _$options$order4 === void 0 || (_$options$order4 = _$options$order4.delivery_boy) === null || _$options$order4 === void 0 ? void 0 : _$options$order4.id) === deliveryBoy.id ? 'true' : 'false',
+      tabindex: "0",
+      "class": "active flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100 focus:outline focus:outline-2 focus:outline-primary",
       key: deliveryBoy.id,
       onClick: function onClick($event) {
-        return $options.selectDeliveryBoy(deliveryBoy.id);
-      }
+        return $options.selectDeliveryBoy(deliveryBoy.id, deliveryBoy.name);
+      },
+      onKeydown: [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        return $options.selectDeliveryBoy(deliveryBoy.id, deliveryBoy.name);
+      }, ["prevent"]), ["enter"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        return $options.selectDeliveryBoy(deliveryBoy.id, deliveryBoy.name);
+      }, ["prevent"]), ["space"])],
+      "data-testid": 'pos-driver-option-' + deliveryBoy.id
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
-      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["text-heading capitalize text-sm", ((_$options$order3 = $options.order) === null || _$options$order3 === void 0 || (_$options$order3 = _$options$order3.delivery_boy) === null || _$options$order3 === void 0 ? void 0 : _$options$order3.id) === deliveryBoy.id ? 'text-primary' : ''])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(deliveryBoy.name), 3 /* TEXT, CLASS */)], 8 /* PROPS */, _hoisted_27);
-  }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_30, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.paymentStatusEnumArray[$options.order.payment_status]), 1 /* TEXT */), _cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["text-heading capitalize text-sm", ((_$options$order5 = $options.order) === null || _$options$order5 === void 0 || (_$options$order5 = _$options$order5.delivery_boy) === null || _$options$order5 === void 0 ? void 0 : _$options$order5.id) === deliveryBoy.id ? 'text-primary' : ''])
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(deliveryBoy.name), 3 /* TEXT, CLASS */)], 40 /* PROPS, NEED_HYDRATION */, _hoisted_27);
+  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_26), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Live-region success chip — visible UI confirmation\n                             that assignment landed (WT-D-R1-02 fix). "), (_$options$order6 = $options.order) !== null && _$options$order6 !== void 0 && (_$options$order6 = _$options$order6.delivery_boy) !== null && _$options$order6 !== void 0 && _$options$order6.id ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_28, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-tick-square lab-font-size-12",
+    "aria-hidden": "true"
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.driver_assigned')) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_boy.name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 10 /* CLASS, PROPS */, _hoisted_23)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_30, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.paymentStatusEnumArray[$options.order.payment_status]), 1 /* TEXT */), _cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-arrow-down-2 lab-font-size-17 mx-1"
-  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_31, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.paymentStatusObject, function (paymentStatus) {
+  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_32, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.paymentStatusObject, function (paymentStatus) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
       "class": "active flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100",
       key: paymentStatus.value,
@@ -44567,10 +44732,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["text-heading capitalize text-sm", $options.order.payment_status === paymentStatus.value ? 'text-primary' : ''])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(paymentStatus.name), 3 /* TEXT, CLASS */)], 8 /* PROPS */, _hoisted_32);
-  }), 128 /* KEYED_FRAGMENT */))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_33, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_34, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderStatusEnumArray[$options.order.status]), 1 /* TEXT */), _cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(paymentStatus.name), 3 /* TEXT, CLASS */)], 8 /* PROPS */, _hoisted_33);
+  }), 128 /* KEYED_FRAGMENT */))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_34, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_35, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderStatusEnumArray[$options.order.status]), 1 /* TEXT */), _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-arrow-down-2 lab-font-size-17 mx-1"
-  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_36, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.orderStatusObject, function (status) {
+  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_37, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.orderStatusObject, function (status) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
       "class": "active flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100",
       key: status.value,
@@ -44579,44 +44744,44 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["text-heading capitalize text-sm", $options.order.status === status.value ? 'text-primary' : ''])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(status.name), 3 /* TEXT, CLASS */)], 8 /* PROPS */, _hoisted_37);
-  }), 128 /* KEYED_FRAGMENT */))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)(((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", _hoisted_38, [_cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(status.name), 3 /* TEXT, CLASS */)], 8 /* PROPS */, _hoisted_38);
+  }), 128 /* KEYED_FRAGMENT */))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)(((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", _hoisted_39, [_cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-printer-line lab-font-size-16 text-white"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.print_invoice')), 1 /* TEXT */)])), [[_directive_print, $data.printObj]])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_40, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_41, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_43, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_details')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_45, [$options.orderItems.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.print_invoice')), 1 /* TEXT */)])), [[_directive_print, $data.printObj]])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_41, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_43, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_44, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_details')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_45, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_46, [$options.orderItems.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 0
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.orderItems, function (item) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       "class": "mb-3 pb-3 border-b last:mb-0 last:pb-0 last:border-b-0 border-gray-2",
       key: item
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_46, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_47, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_47, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_48, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
       "class": "w-16 h-16 rounded-lg flex-shrink-0",
       src: item.item_image,
       alt: "thumbnail"
-    }, null, 8 /* PROPS */, _hoisted_48), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_49, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("a", _hoisted_50, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), item.item_variations.length !== 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_51, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
-      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.variation_name) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_52, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-    }), 256 /* UNKEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_53, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.total_currency_price), 1 /* TEXT */)])]), item.item_extras.length > 0 || item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_54, [item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_55, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_56, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_57, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
-      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_58, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-    }), 256 /* UNKEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_59, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_60, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.instruction')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_61, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_62, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_63, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_64, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_65, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_66, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_67, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_68, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.subtotal')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_69, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.subtotal_currency_price), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_70, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_71, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.discount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_72, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.discount_currency_price), 1 /* TEXT */)]), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_73, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_74, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_charge')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_75, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_charge_currency_price), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_76, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_77, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_78, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.total_currency_price), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier\n                         loyalty redeem CTA. Visible only when the order is\n                         not yet paid AND not in a terminal state. Pressing\n                         it opens a Vue overlay (no frozen-zone touch).\n                         Permission gate `pos.redeem-loyalty` is enforced\n                         server-side by the FormRequest. "), $options.order.id && $options.canShowLoyaltyRedeem ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_79, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, null, 8 /* PROPS */, _hoisted_49), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_50, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("a", _hoisted_51, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), item.item_variations.length !== 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_52, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.variation_name) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_53, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+    }), 256 /* UNKEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-F4 2026-05-20] Canonical FR EUR via shared `formatPrice()` — `item.total_price` shipped raw by OrderItemResource. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(item.total_price)), 1 /* TEXT */)])]), item.item_extras.length > 0 || item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_55, [item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_56, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_57, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_58, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_59, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+    }), 256 /* UNKEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_60, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_61, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.instruction')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_62, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_63, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_64, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_65, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_66, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_67, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-F4 2026-05-20] Canonical FR EUR\n                             rendering via shared `formatPrice()` helper.\n                             `OrderDetailsResource` already ships raw numeric\n                             `subtotal` / `discount` / `delivery_charge` /\n                             `total` — we feed them through `formatPrice()` so\n                             every admin surface renders \"19,00 €\" instead of\n                             \"19.00€\" (glued, no space). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_68, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_69, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.subtotal')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_70, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.order.subtotal)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_71, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_72, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.discount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_73, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.order.discount)), 1 /* TEXT */)]), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_74, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_75, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_charge')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_76, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.order.delivery_charge)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_77, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_78, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_79, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.order.total)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier\n                         loyalty redeem CTA. Visible only when the order is\n                         not yet paid AND not in a terminal state. Pressing\n                         it opens a Vue overlay (no frozen-zone touch).\n                         Permission gate `pos.redeem-loyalty` is enforced\n                         server-side by the FormRequest. "), $options.order.id && $options.canShowLoyaltyRedeem ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_80, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "text-xs px-3 py-1.5 rounded border border-primary text-primary hover:bg-primary hover:text-white transition",
     "data-testid": "pos-loyalty-redeem-open",
     onClick: _cache[0] || (_cache[0] = function ($event) {
       return $data.loyaltyRedeemOpen = true;
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.loyalty.redeem.title')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_80, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_81, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_82, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_83, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_information')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_84, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_85, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.loyalty.redeem.title')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_81, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_82, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_83, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_84, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_information')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_85, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_86, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "w-8 rounded-full",
     src: $options.orderUser.image,
     alt: "avatar"
-  }, null, 8 /* PROPS */, _hoisted_86), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_87, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener($options.orderUser.name, 20)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", {
+  }, null, 8 /* PROPS */, _hoisted_87), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_88, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener($options.orderUser.name, 20)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["flex flex-col gap-3 py-4 border-[#EFF0F6]", $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? 'mb-4 border-y' : 'border-t'])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_88, [_cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_89, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-mail lab-font-size-14"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_89, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.email), 1 /* TEXT */)]), $options.orderUser.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_90, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_90, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.email), 1 /* TEXT */)]), $options.orderUser.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_91, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-call-calling-linear lab-font-size-14"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_91, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.country_code + '' + $options.orderUser.phone), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_92, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_92, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.country_code + '' + $options.orderUser.phone), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_93, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-location lab-font-size-20 leading-6 font-fill-black"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_93, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderAddress.apartment ? $options.orderAddress.apartment + ', ' : '') + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderAddress.address), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosOrderMapComponent, {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_94, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderAddress.apartment ? $options.orderAddress.apartment + ', ' : '') + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderAddress.address), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosOrderMapComponent, {
     orderAddress: $options.orderAddress
   }, null, 8 /* PROPS */, ["orderAddress"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosOrderReceiptComponent, {
     order: $options.order
@@ -60489,6 +60654,91 @@ var timeFormatEnum = Object.freeze([{
 
 /***/ },
 
+/***/ "./resources/js/helpers/formatPrice.js"
+/*!*********************************************!*\
+  !*** ./resources/js/helpers/formatPrice.js ***!
+  \*********************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   adminPriceMixin: () => (/* binding */ adminPriceMixin),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__),
+/* harmony export */   formatPrice: () => (/* binding */ formatPrice)
+/* harmony export */ });
+/**
+ * [WT-D-R1-F4 2026-05-20] Shared price formatter — single canonical EUR
+ * renderer for the admin POS + tracker + detail + receipts surfaces.
+ *
+ * Root-cause of WT-D-R1-03 (currency rendering inconsistency):
+ *   - Tracker        (Intl.NumberFormat fr-FR EUR)         → "19,00 €"  (FR + space, ok)
+ *   - Orders list    ({{ order.total_amount_price }} raw)  → "19.00"    (no €, US decimal)
+ *   - Detail page    ({{ order.total_currency_price }})    → "19.00€"   (glued, no space)
+ *
+ * Each surface picked a different backend projection of the same `orders.total`
+ * column. The strings were correct for their respective `AppLibrary` helpers
+ * (`flatAmountFormat` strips the symbol, `currencyAmountFormat` glues it), but
+ * the user-visible result was three different layouts for the same value.
+ *
+ * Heal: every admin currency render goes through `formatPrice(value)` returning
+ * "19,00 €" (Intl.NumberFormat fr-FR EUR with NBSP between number and symbol,
+ * as French typography expects). The kiosk surfaces keep their own
+ * `kioskFormatPrice` mixin (it reads currency from the Vuex globalState lists
+ * so customer-facing surfaces follow branch settings rather than hardcoded
+ * EUR). Admin is FR EUR only by product decision (Le Cayenne is a French
+ * single-restaurant deployment in V1).
+ *
+ * Numeric integrity contract:
+ *   formatPrice(undefined)  → "0,00 €"
+ *   formatPrice(null)       → "0,00 €"
+ *   formatPrice('')         → "0,00 €"
+ *   formatPrice(0)          → "0,00 €"
+ *   formatPrice(19)         → "19,00 €"
+ *   formatPrice('19.00')    → "19,00 €"   (flatAmountFormat string parses cleanly)
+ *   formatPrice('19,00 €')  → "0,00 €"    (Intl never round-trips a formatted string;
+ *                                          callers must pass numeric input)
+ */
+
+/**
+ * Format a numeric value as FR EUR currency ("19,00 €").
+ *
+ * @param {number|string} value - Numeric value or numeric-looking string.
+ * @returns {string} Formatted price.
+ */
+function formatPrice(value) {
+  var num = Number.parseFloat(value);
+  var safe = Number.isFinite(num) ? num : 0;
+  try {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(safe);
+  } catch (_e) {
+    // Locale unavailable (very old runtime) — fall back to manual FR layout.
+    return safe.toFixed(2).replace('.', ',') + ' €';
+  }
+}
+
+/**
+ * Vue mixin: adds `this.formatPrice(value)` to any admin component.
+ *
+ * Usage:
+ *   import { adminPriceMixin } from '@/helpers/formatPrice';
+ *   mixins: [adminPriceMixin],
+ *   // template: {{ formatPrice(order.total) }}
+ */
+var adminPriceMixin = {
+  methods: {
+    formatPrice: formatPrice
+  }
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (formatPrice);
+
+/***/ },
+
 /***/ "./resources/js/helpers/posReceiptBuilder.js"
 /*!***************************************************!*\
   !*** ./resources/js/helpers/posReceiptBuilder.js ***!
@@ -72926,6 +73176,36 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 
 /***/ },
 
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=style&index=0&id=bb3bf9fe&scoped=true&lang=css"
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=style&index=0&id=bb3bf9fe&scoped=true&lang=css ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_OnlineOrderShowComponent_vue_vue_type_style_index_0_id_bb3bf9fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./OnlineOrderShowComponent.vue?vue&type=style&index=0&id=bb3bf9fe&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=style&index=0&id=bb3bf9fe&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_OnlineOrderShowComponent_vue_vue_type_style_index_0_id_bb3bf9fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_OnlineOrderShowComponent_vue_vue_type_style_index_0_id_bb3bf9fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
 /***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=style&index=0&id=2279c7e9&scoped=true&lang=css"
 /*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=style&index=0&id=2279c7e9&scoped=true&lang=css ***!
@@ -80202,15 +80482,18 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _OnlineOrderShowComponent_vue_vue_type_template_id_bb3bf9fe__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe */ "./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe");
+/* harmony import */ var _OnlineOrderShowComponent_vue_vue_type_template_id_bb3bf9fe_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe&scoped=true */ "./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe&scoped=true");
 /* harmony import */ var _OnlineOrderShowComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./OnlineOrderShowComponent.vue?vue&type=script&lang=js */ "./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=script&lang=js");
-/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+/* harmony import */ var _OnlineOrderShowComponent_vue_vue_type_style_index_0_id_bb3bf9fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./OnlineOrderShowComponent.vue?vue&type=style&index=0&id=bb3bf9fe&scoped=true&lang=css */ "./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=style&index=0&id=bb3bf9fe&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
 
 
 
 
 ;
-const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_2__["default"])(_OnlineOrderShowComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_OnlineOrderShowComponent_vue_vue_type_template_id_bb3bf9fe__WEBPACK_IMPORTED_MODULE_0__.render],['__file',"resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue"]])
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_OnlineOrderShowComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_OnlineOrderShowComponent_vue_vue_type_template_id_bb3bf9fe_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-bb3bf9fe"],['__file',"resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue"]])
 /* hot reload */
 if (false) // removed by dead control flow
 {}
@@ -88347,18 +88630,18 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ },
 
-/***/ "./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe"
-/*!***************************************************************************************************************!*\
-  !*** ./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe ***!
-  \***************************************************************************************************************/
+/***/ "./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe&scoped=true"
+/*!***************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe&scoped=true ***!
+  \***************************************************************************************************************************/
 (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_OnlineOrderShowComponent_vue_vue_type_template_id_bb3bf9fe__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_OnlineOrderShowComponent_vue_vue_type_template_id_bb3bf9fe_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
 /* harmony export */ });
-/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_OnlineOrderShowComponent_vue_vue_type_template_id_bb3bf9fe__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe");
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_OnlineOrderShowComponent_vue_vue_type_template_id_bb3bf9fe_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=template&id=bb3bf9fe&scoped=true");
 
 
 /***/ },
@@ -90186,6 +90469,19 @@ __webpack_require__.r(__webpack_exports__);
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_OnlineOrderListComponent_vue_vue_type_style_index_0_id_11231b00_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./OnlineOrderListComponent.vue?vue&type=style&index=0&id=11231b00&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/onlineOrders/OnlineOrderListComponent.vue?vue&type=style&index=0&id=11231b00&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=style&index=0&id=bb3bf9fe&scoped=true&lang=css"
+/*!*****************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=style&index=0&id=bb3bf9fe&scoped=true&lang=css ***!
+  \*****************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_OnlineOrderShowComponent_vue_vue_type_style_index_0_id_bb3bf9fe_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./OnlineOrderShowComponent.vue?vue&type=style&index=0&id=bb3bf9fe&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue?vue&type=style&index=0&id=bb3bf9fe&scoped=true&lang=css");
 
 
 /***/ },
