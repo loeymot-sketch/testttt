@@ -135,7 +135,7 @@ Frozen-zone diff = 0. NF525 Fiscal services untouched.
 
 `fix(kds-R2): i18n Ready→Prêt + allergen badge expose (Wave P R2 P-3 followups)`
 
-SHA : (pending — see git log post-commit)
+SHA : `39f2e695e`
 
 ---
 
