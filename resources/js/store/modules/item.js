@@ -49,6 +49,38 @@ export const item = {
                     requestPayload.branch_id = branchId;
                 }
 
+                // [Wave T R3 F1 — silent 422 prevention] When the caller declares
+                // `surface=pos`, the backend at app/Http/Controllers/Admin/ItemController:60
+                // refuses the request with 422 if no valid branch_id is in scope
+                // (per CV1-POS-AVAILABILITY-LIVE-001: serving a POS catalog without
+                // a branch would project a global `is_available` and yield clickable
+                // tiles for OOS items + 422 at checkout = revenue loss).
+                // The PosComponent bootstrap fires `itemList()` on mount BEFORE
+                // `defaultAccess/show` resolves the branch for admin users
+                // (branch_id=0 in DB), so the first call would 422 silently and
+                // load tiles via the later branch-aware refetch. Short-circuit
+                // here resolves with an empty payload so no doomed network call
+                // fires, no 422 in the console, and the later branch-aware
+                // refetch (line 1915 of PosComponent.vue) populates the list.
+                const declaredSurface = String(requestPayload.surface || '').toLowerCase();
+                const resolvedBranchId = requestPayload.branch_id;
+                const hasUsableBranchId = resolvedBranchId !== null
+                    && resolvedBranchId !== undefined
+                    && resolvedBranchId !== ''
+                    && Number(resolvedBranchId) > 0;
+                if (declaredSurface === 'pos' && !hasUsableBranchId) {
+                    // Resolve quietly — do NOT commit empty payload over an
+                    // already-populated list (the post-defaultAccess refetch
+                    // will overwrite shortly).
+                    resolve({
+                        data: { data: [], meta: {} },
+                        status: 200,
+                        skipped: true,
+                        reason: 'pos_surface_requires_branch_id',
+                    });
+                    return;
+                }
+
                 let url = 'admin/item';
                 if (Object.keys(requestPayload).length > 0) {
                     url = url + appService.requestHandler(requestPayload);

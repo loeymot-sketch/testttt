@@ -1314,6 +1314,8 @@
         "rate_limited": "Too many requests — wait 30s before retrying.",
         "service_unavailable": "Service unavailable — please retry shortly.",
         "network_issue": "Network issue — please retry.",
+        "catalog_unavailable": "Product catalog unavailable — refresh the page.",
+        "fiscal_unavailable": "Fiscal service unavailable — alert the manager.",
         "kds_connection_lost": "⚠️ Kitchen connection unavailable — display frozen. Retrying.",
         "order_cancel_rejected": "This order can no longer be cancelled (status advanced).",
         "order_cancel_unauthorized": "Cancel refused — insufficient permissions. Ask a manager.",

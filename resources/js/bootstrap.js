@@ -63,7 +63,7 @@ try {
 // time an HTTP error fires, the app is already mounted.
 try {
     let _toastInstance = null;
-    const _lastToastAt = { rl: 0, srv: 0, oth: 0 };
+    const _lastToastAt = { rl: 0, srv: 0, oth: 0, crit: 0 };
     const _BUCKET_MIN_GAP_MS = 3000;
 
     function _resolveToast() {
@@ -108,6 +108,24 @@ try {
         return _ALLOWLIST_PATTERNS.some((p) => url.includes(p));
     }
 
+    // [Wave T R3 F1 — silent 422 visibility for critical paths] Paths where a
+    // 4xx SHOULD be visible to the operator because the failure is not handled
+    // by a local form error state. POS catalog (/api/admin/item) is the SSOT
+    // for tile clickability — a silent 422 ships kiosk-only or stale tiles.
+    // Fiscal endpoints (/api/admin/fiscal/*) are NF525 chain-critical — any
+    // 4xx must surface so the cashier escalates instead of silently drifting.
+    // We intentionally toast 422 here ONLY for these patterns (matching the
+    // mission STEP 3 ask). All other 422 stay silent (form-level validation
+    // is handled inline by the FormRequest field-error rendering).
+    const _CRITICAL_4XX_PATTERNS = [
+        '/api/admin/item',
+        '/api/admin/fiscal/',
+    ];
+    function _isCriticalPath(error) {
+        const url = String(error?.config?.url || '');
+        return _CRITICAL_4XX_PATTERNS.some((p) => url.includes(p));
+    }
+
     window.axios.interceptors.response.use(
         (response) => response,
         (error) => {
@@ -123,7 +141,14 @@ try {
                 // — router push to /login). 422 is form-level validation. 304 / 204
                 // are not errors.
                 const TOAST_STATUSES = new Set([408, 425, 429, 502, 503, 504]);
-                if (!TOAST_STATUSES.has(status)) {
+                // [Wave T R3 F1] Critical-path 4xx (400/403/404/422) must also toast
+                // so silent failures on POS catalog / fiscal endpoints surface to
+                // the operator. Auth (401) is handled by router push — skip it.
+                const isCriticalPathError = status !== 401
+                    && status >= 400
+                    && status < 500
+                    && _isCriticalPath(error);
+                if (!TOAST_STATUSES.has(status) && !isCriticalPathError) {
                     return Promise.reject(error);
                 }
 
@@ -134,7 +159,21 @@ try {
                 const now = Date.now();
                 let bucket = 'oth';
                 let message;
-                if (status === 429) {
+                if (isCriticalPathError) {
+                    bucket = 'crit';
+                    const url = String(error?.config?.url || '');
+                    if (url.includes('/api/admin/fiscal/')) {
+                        message = _i18nMessage(
+                            'error.fiscal_unavailable',
+                            'Service fiscal indisponible — alertez le manager.'
+                        );
+                    } else {
+                        message = _i18nMessage(
+                            'error.catalog_unavailable',
+                            'Catalogue produits indisponible — actualisez la page.'
+                        );
+                    }
+                } else if (status === 429) {
                     bucket = 'rl';
                     message = _i18nMessage(
                         'error.rate_limited',
