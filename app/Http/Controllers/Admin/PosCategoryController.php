@@ -111,12 +111,37 @@ class PosCategoryController extends AdminController
 
             $itemCategoryArray = [];
 
-            // [2026-05-18 F-4] Featured allowlist for the POS first-page filter.
-            // Empty config = "no filter" → every category renders as featured
-            // (safe default before owner provisions the env knob).
-            $featuredIds = (array) config('pos.featured_category_ids', []);
-            $featuredSet = ! empty($featuredIds)
-                ? array_flip(array_map('intval', $featuredIds))
+            // [2026-05-18 F-4 / 2026-05-20 P-OWNER-3 slug-resolve heal]
+            // Featured allowlist for the POS first-page filter.
+            //
+            // Source of truth = SLUGS (stable across envs/reseeds). Raw
+            // integer IDs drift after menu resets and silently kill the
+            // filter (every category collapses to featured=false →
+            // cashier lands on supplements/menu-builders).
+            //
+            // Resolution:
+            //   1) Read `pos.featured_category_slugs` from config.
+            //   2) Resolve them → integer IDs via DB (single SELECT,
+            //      O(N) on slug list, no N+1).
+            //   3) If slug resolution yields nothing, fall back to the
+            //      legacy `pos.featured_category_ids` knob for dev/test
+            //      fixtures that may not populate slugs deterministically.
+            //   4) Empty result → "no filter" (every category featured —
+            //      safe default).
+            $featuredSlugs = (array) config('pos.featured_category_slugs', []);
+            $resolvedIds = [];
+            if (! empty($featuredSlugs)) {
+                $resolvedIds = ItemCategory::query()
+                    ->whereIn('slug', array_map('strval', $featuredSlugs))
+                    ->pluck('id')
+                    ->map(static fn ($id): int => (int) $id)
+                    ->all();
+            }
+            if (empty($resolvedIds)) {
+                $resolvedIds = array_map('intval', (array) config('pos.featured_category_ids', []));
+            }
+            $featuredSet = ! empty($resolvedIds)
+                ? array_flip($resolvedIds)
                 : null;
 
             $addArray[] = [

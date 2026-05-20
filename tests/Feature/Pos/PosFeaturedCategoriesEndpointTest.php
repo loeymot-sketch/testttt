@@ -135,6 +135,7 @@ class PosFeaturedCategoriesEndpointTest extends TestCase
         // Empty allowlist preserves legacy behavior; assert all required
         // legacy fields are still present.
         Config::set('pos.featured_category_ids', []);
+        Config::set('pos.featured_category_slugs', []);
         $this->makeCategories();
 
         $this->actingAs($this->operator, 'sanctum');
@@ -147,5 +148,91 @@ class PosFeaturedCategoriesEndpointTest extends TestCase
         foreach (['id', 'name', 'slug', 'thumb', 'cover', 'featured'] as $field) {
             $this->assertArrayHasKey($field, $row, "Legacy field `{$field}` must remain present.");
         }
+    }
+
+    /**
+     * [2026-05-20 P-OWNER-3 root-cause heal — slug resolution sentinel]
+     *
+     * The whole point of moving from raw IDs → slugs is environment-portability:
+     * IDs drift after seed/reset cycles, slugs don't. This test verifies the
+     * resolution path end-to-end: config carries slugs, controller resolves
+     * them to DB IDs at request time, response marks ONLY those rows featured.
+     *
+     * Sentinel guards against silent regression to the broken state where
+     * config-IDs no longer match DB-IDs and every category falls out of the
+     * allowlist (the exact bug owner reported 2026-05-19 — supplements
+     * landing on the first POS screen).
+     */
+    public function test_slug_allowlist_resolves_to_correct_category_ids(): void
+    {
+        $cats = $this->makeCategories();
+        // Force deterministic slugs so the resolution path has something to chew on.
+        // Models created by ItemCategory::factory() may carry random slugs; rewrite
+        // them to the canonical Le Cayenne best-seller set.
+        $cats[0]->update(['slug' => 'sandwich-cayenne']);
+        $cats[1]->update(['slug' => 'galette']);
+        $cats[2]->update(['slug' => 'desserts']);
+        $cats[3]->update(['slug' => 'boissons']);
+
+        // Slug allowlist = the two main-course categories ONLY.
+        Config::set('pos.featured_category_ids', []);
+        Config::set('pos.featured_category_slugs', ['sandwich-cayenne', 'galette']);
+
+        $this->actingAs($this->operator, 'sanctum');
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->getJson('/api/admin/pos-category');
+        $response->assertStatus(200);
+
+        $rows = collect($response->json('data'));
+        $featuredSlugs = $rows->where('featured', true)
+            ->pluck('slug')
+            ->reject(fn (string $slug): bool => $slug === 'all-items')
+            ->values()
+            ->all();
+
+        $this->assertEqualsCanonicalizing(
+            ['sandwich-cayenne', 'galette'],
+            $featuredSlugs,
+            'Slug-based allowlist must resolve to exactly the requested slugs (the env-portable contract).',
+        );
+
+        // The other two MUST be unfeatured — guards against the legacy bug
+        // where every category collapsed to featured=true on misconfig.
+        $unfeaturedSlugs = $rows->where('featured', false)->pluck('slug')->all();
+        $this->assertContains('desserts', $unfeaturedSlugs);
+        $this->assertContains('boissons', $unfeaturedSlugs);
+    }
+
+    /**
+     * [2026-05-20 P-OWNER-3 root-cause heal — ID fallback sentinel]
+     *
+     * Backward compatibility: when slug allowlist is empty (or resolves to
+     * nothing because dev fixtures don't seed slugs), the legacy
+     * `pos.featured_category_ids` knob continues to work. This preserves
+     * the old contract for ops that still ship IDs via env.
+     */
+    public function test_id_fallback_when_slug_allowlist_empty(): void
+    {
+        $cats = $this->makeCategories();
+        Config::set('pos.featured_category_slugs', []);
+        Config::set('pos.featured_category_ids', [$cats[0]->id, $cats[2]->id]);
+
+        $this->actingAs($this->operator, 'sanctum');
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->getJson('/api/admin/pos-category');
+        $response->assertStatus(200);
+
+        $rows = collect($response->json('data'));
+        $featuredIds = $rows->where('featured', true)
+            ->pluck('id')
+            ->reject(fn (int $id): bool => $id === 0)
+            ->values()
+            ->all();
+
+        $this->assertEqualsCanonicalizing(
+            [$cats[0]->id, $cats[2]->id],
+            $featuredIds,
+            'Empty slug list must fall back to the legacy ID knob (back-compat contract).',
+        );
     }
 }
