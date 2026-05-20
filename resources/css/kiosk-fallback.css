@@ -1,4 +1,73 @@
 /**
+ * Kiosk owner request 2026-05-21 — disable dark mode entirely.
+ *
+ * Owner instruction: "je veux plus l'icône de changer de thème ça veut dire
+ * Dark ou bien Light parce que c'est inutile laisse en mode Light c'est tout".
+ *
+ * Implementation (non-frozen — KioskAppComponent.vue is in CLAUDE.md §7) :
+ *   1. Hide the theme-toggle button completely (visual + a11y).
+ *   2. Override `[data-kiosk-theme="dark"]` (which Vue still sets when
+ *      localStorage `foodking:kiosk-theme=dark` is present) with the FULL
+ *      light-mode variable set, mirror KioskAppComponent.vue:1143-1190
+ *      `.kiosk-app.kiosk-theme--light` declarations. This guarantees the
+ *      kiosk renders light even if localStorage was previously set to dark.
+ *
+ * No frozen-zone touch. No JS change. CSS-only override.
+ */
+.kiosk-theme-toggle {
+  display: none !important;
+}
+
+.kiosk-app[data-kiosk-theme="dark"] {
+  --kiosk-primary:       #F4501E;
+  --kiosk-primary-dark:  #A90014;
+  --kiosk-primary-soft:  #FFF0F2;
+  --kiosk-primary-light: rgba(244, 80, 30, 0.08);
+  --kiosk-success:       #1B8A3A;
+  --kiosk-error:         #C21E2F;
+  --kiosk-warning:       #B8730B;
+  --kiosk-info:          #2563EB;
+
+  --kiosk-bg:            #FFFBF5;
+  --kiosk-bg-2:          #FFFFFF;
+  --kiosk-bg-3:          #F7F3EC;
+  --kiosk-surface:       #FFFFFF;
+  --kiosk-surface-alt:   #F7F3EC;
+  --kiosk-surface-strong:#FFFFFF;
+  --kiosk-border:        #EEE6D9;
+  --kiosk-border-strong: #D9C9B8;
+
+  --kiosk-dark:          var(--kiosk-bg);
+  --kiosk-dark-2:        var(--kiosk-bg-2);
+  --kiosk-dark-3:        var(--kiosk-bg-3);
+
+  --kiosk-text:          #1A1A1A;
+  --kiosk-text-2:        #3F3435;
+  --kiosk-text-muted:    #5A5A5A;
+  --kiosk-text-mute:     #7D7374;
+  --kiosk-text-on-red:   #FFFFFF;
+  --kiosk-border-light:  rgba(0, 0, 0, 0.06);
+
+  --kiosk-page-bg:
+    linear-gradient(180deg, #FFF9F0 0%, #FFFFFF 48%, #FFF0F2 100%);
+  --kiosk-idle-bg:
+    linear-gradient(180deg, #FFFFFF 0%, #FFF1F3 44%, #F4501E 100%);
+  --kiosk-idle-text: #210006;
+  --kiosk-idle-muted: #4A2A2F;
+  --kiosk-idle-card-bg: #111111;
+  --kiosk-idle-card-text: #FFFFFF;
+  --kiosk-product-media-bg: radial-gradient(circle at 32% 24%, #FFFFFF, #F7F3EC 68%);
+  --kiosk-theme-control-bg: rgba(255, 255, 255, 0.90);
+
+  --kiosk-shadow:        0 2px 8px rgba(20, 20, 20, 0.06);
+  --kiosk-shadow-card:   0 8px 24px rgba(20, 20, 20, 0.09);
+  --kiosk-shadow-lift:   0 18px 42px rgba(20, 20, 20, 0.14);
+  --kiosk-shadow-cta:    0 14px 30px rgba(244, 80, 30, 0.28);
+  --kiosk-shadow-modal:  0 24px 48px rgba(26, 26, 26, 0.24);
+  --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.08);
+}
+
+/**
  * Kiosk hardware fallback (P-MEGA W7.B) — global safety net for
  * print-failed receipt visibility (ID selector; works alongside scoped SFC styles).
  */
