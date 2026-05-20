@@ -348,6 +348,14 @@ export default {
             default: 'auto',
             validator: (v) => ['auto', 'open', 'active', 'close', 'movements'].includes(v),
         },
+        // [Wave O / O-1 2026-05-20] Branch context for the open/current call.
+        // Required when the caller is a global Admin (auth branch_id=0) so the
+        // backend knows which filiale's drawer to operate. Branch-bound staff
+        // can omit this — backend will use auth.branch_id.
+        branchId: {
+            type: [Number, String, null],
+            default: null,
+        },
     },
     emits: ['close', 'session-opened', 'session-closed'],
     data() {
@@ -471,7 +479,13 @@ export default {
             if (!this.canOpen) return;
             this.errorMessage = '';
             try {
-                const session = await this.$store.dispatch('cashDrawer/openSession', this.openingAmount);
+                // [Wave O / O-1 2026-05-20] Forward branchId so global Admin
+                // can operate the dropdown-selected filiale's drawer. Backend
+                // resolves staff branch_id from auth context when this is null.
+                const session = await this.$store.dispatch('cashDrawer/openSession', {
+                    openingAmount: this.openingAmount,
+                    branchId: this.branchId,
+                });
                 this.$emit('session-opened', session);
                 this.mode = 'active';
             } catch (err) {

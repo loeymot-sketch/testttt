@@ -243,4 +243,159 @@ class CashDrawerEndpointsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data', null);
     }
+
+    // =====================================================================
+    // [Wave O / O-1 2026-05-20] Admin branch context heal — root-cause fix
+    // =====================================================================
+    //
+    // Owner reported: admin (branch_id=0) clicks "Filiale Le Cayenne" in the
+    // header dropdown, then "Caisse → Ouvrir la caisse" → backend rejects
+    // with "Cannot open a cash drawer session without a branch context".
+    //
+    // Root cause: open() + current() read Auth::user()->branch_id directly,
+    // never honoring the dropdown-selected branch sent via body/query.
+    //
+    // Heal: accept branch_id from request payload for global admin while
+    // preserving cross-branch isolation for branch-bound staff.
+    // =====================================================================
+
+    public function test_admin_can_open_session_with_body_branch_id(): void
+    {
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $admin->givePermissionTo('pos');
+
+        $response = $this->actingAs($admin, 'sanctum')
+            ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
+                'opening_amount' => 75.5,
+                'branch_id'      => $this->branchA->id,
+            ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('status', true);
+        $response->assertJsonPath('data.branch_id', $this->branchA->id);
+        $response->assertJsonPath('data.opening_amount', 75.5);
+        $response->assertJsonPath('data.opened_by_user_id', $admin->id);
+
+        // NF525: the session row carries the operated branch_id, not zero.
+        $this->assertDatabaseHas('cash_drawer_sessions', [
+            'branch_id'         => $this->branchA->id,
+            'opened_by_user_id' => $admin->id,
+            'opening_amount'    => 75.5,
+            'status'            => 'open',
+        ]);
+    }
+
+    public function test_admin_open_session_without_branch_id_returns_422(): void
+    {
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $admin->givePermissionTo('pos');
+
+        // Regression guard for the original bug: admin with no body branch_id
+        // still cannot open (must explicitly choose a branch).
+        $response = $this->actingAs($admin, 'sanctum')
+            ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
+                'opening_amount' => 50.00,
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('status', false);
+    }
+
+    public function test_admin_open_session_with_nonexistent_branch_returns_422(): void
+    {
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $admin->givePermissionTo('pos');
+
+        $response = $this->actingAs($admin, 'sanctum')
+            ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
+                'opening_amount' => 50.00,
+                'branch_id'      => 99999, // does not exist
+            ]);
+
+        $response->assertStatus(422);
+        // Assert the `exists:branches,id` rule fired (advisor catch — guards
+        // against a future change that silently bypasses the exists check).
+        $response->assertJsonValidationErrors(['branch_id']);
+    }
+
+    public function test_cashier_cannot_open_session_against_other_branch(): void
+    {
+        // Cross-branch leak gate: cashier A (branch_id=A) sending body.branch_id=B
+        // must be rejected. Existing behavior for body-less calls is preserved
+        // separately by test_open_session_endpoint_creates_session above.
+        $response = $this->actingAs($this->cashierA, 'sanctum')
+            ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
+                'opening_amount' => 50.00,
+                'branch_id'      => $this->branchB->id,
+            ]);
+
+        $response->assertStatus(403);
+        $response->assertJsonPath('status', false);
+    }
+
+    public function test_cashier_open_session_with_matching_body_branch_id_succeeds(): void
+    {
+        // Defensive equality path: staff sending their own branch_id explicitly
+        // should still succeed (back-compat for any future UI that forwards it).
+        $response = $this->actingAs($this->cashierA, 'sanctum')
+            ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
+                'opening_amount' => 50.00,
+                'branch_id'      => $this->branchA->id,
+            ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.branch_id', $this->branchA->id);
+    }
+
+    public function test_admin_current_endpoint_with_branch_id_returns_session(): void
+    {
+        // The advisor's blind-spot guard: after admin opens with branch_id=A,
+        // the very next thing the UI does is GET /current — must echo back the
+        // just-opened session, not null. Without the heal on current(), the
+        // dialog loops (sees null, re-prompts, hits 409 on next open).
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $admin->givePermissionTo('pos');
+
+        // Open against branch A.
+        $opened = $this->actingAs($admin, 'sanctum')
+            ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
+                'opening_amount' => 50.00,
+                'branch_id'      => $this->branchA->id,
+            ])
+            ->json('data');
+
+        // Without the query, admin still gets null (no implicit branch).
+        $this->actingAs($admin, 'sanctum')
+            ->getJson('/api/admin/pos/cash-drawer/sessions/current')
+            ->assertOk()
+            ->assertJsonPath('data', null);
+
+        // With ?branch_id=A, admin sees the open session.
+        $this->actingAs($admin, 'sanctum')
+            ->getJson('/api/admin/pos/cash-drawer/sessions/current?branch_id='.$this->branchA->id)
+            ->assertOk()
+            ->assertJsonPath('data.id', $opened['id'])
+            ->assertJsonPath('data.branch_id', $this->branchA->id);
+    }
+
+    public function test_cashier_current_endpoint_ignores_cross_branch_query(): void
+    {
+        // Branch-bound staff cannot leverage ?branch_id to peek at another
+        // branch's drawer — the scope is hard-pinned to their auth branch.
+        $this->actingAs($this->cashierB, 'sanctum')
+            ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
+                'opening_amount' => 100.00,
+            ])
+            ->assertCreated();
+
+        // Cashier A tries to query branch B — must not see it.
+        $this->actingAs($this->cashierA, 'sanctum')
+            ->getJson('/api/admin/pos/cash-drawer/sessions/current?branch_id='.$this->branchB->id)
+            ->assertOk()
+            ->assertJsonPath('data', null);
+    }
 }

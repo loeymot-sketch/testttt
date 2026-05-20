@@ -49,24 +49,46 @@ function unwrap(response) {
 /**
  * GET current session for the calling user.
  *
+ * [Wave O / O-1 2026-05-20] Admin branch context heal — accepts optional
+ * branchId so the global Admin / Tenant Admin (auth branch_id=0) can poll
+ * the drawer of the dropdown-selected filiale. Branch-bound staff can omit
+ * the arg; backend silently ignores any mismatched value for staff.
+ *
+ * @param {number|null} branchId  Optional target branch (admin must supply).
  * @returns {Promise<Object|null>} session payload or null when no OPEN session.
  */
-export async function currentSession() {
-    const res = await client().get('admin/pos/cash-drawer/sessions/current');
+export async function currentSession(branchId = null) {
+    const config = {};
+    const branchInt = Number.parseInt(branchId, 10);
+    if (Number.isFinite(branchInt) && branchInt > 0) {
+        config.params = { branch_id: branchInt };
+    }
+    const res = await client().get('admin/pos/cash-drawer/sessions/current', config);
     return unwrap(res) || null;
 }
 
 /**
  * POST open a new cash drawer session.
  *
+ * [Wave O / O-1 2026-05-20] Admin branch context heal — body now carries
+ * `branch_id` for global Admin / Tenant Admin (auth branch_id=0). Backend
+ * resolution rules (see CashDrawerSessionController::resolveBranchId) :
+ *   - Admin must supply branch_id (otherwise 422 with the historical message).
+ *   - Staff: optional ; if present must equal their auth.branch_id (else 403).
+ *
  * @param {number} openingAmount  Float >= 0 — fond de caisse initial.
+ * @param {number|null} branchId  Optional target branch (admin must supply).
  * @returns {Promise<Object>} the created session.
  */
-export async function openSession(openingAmount) {
+export async function openSession(openingAmount, branchId = null) {
     const config = {
         headers: { 'X-Idempotency-Key': freshIdempotencyKey('cash-open') },
     };
     const body = { opening_amount: Number(openingAmount) };
+    const branchInt = Number.parseInt(branchId, 10);
+    if (Number.isFinite(branchInt) && branchInt > 0) {
+        body.branch_id = branchInt;
+    }
     const res = await client().post(
         'admin/pos/cash-drawer/sessions/open',
         body,

@@ -113,10 +113,12 @@ function makeStore({ session = null, movements = [], loading = false } = {}) {
     return { store, openSession, closeSession, loadCurrentSession, loadMovements };
 }
 
-function mountDialog({ session = null, movements = [], initialMode = 'auto' } = {}) {
+function mountDialog({ session = null, movements = [], initialMode = 'auto', branchId = null } = {}) {
     const { store, openSession, closeSession, loadCurrentSession, loadMovements } = makeStore({ session, movements });
+    const props = { open: true, initialMode };
+    if (branchId !== null) props.branchId = branchId;
     const wrapper = mount(PosCashDrawerSessionDialog, {
-        props: { open: true, initialMode },
+        props,
         global: {
             plugins: [store],
             mocks: {
@@ -166,11 +168,29 @@ describe('PosCashDrawerSessionDialog', () => {
         await flushPromises();
 
         expect(openSession).toHaveBeenCalledTimes(1);
-        // The 2nd arg of the dispatch is the payload (openingAmount).
+        // The 2nd arg of the dispatch is the payload.
         // In our store mock, openSession action receives (context, payload).
+        // [Wave O / O-1 2026-05-20] Payload is now `{ openingAmount, branchId }`
+        // (was a plain number) so global Admin can target a specific filiale.
         const lastCall = openSession.mock.calls[0];
-        // payload is the 2nd arg
-        expect(lastCall[1]).toBe(150);
+        const payload = lastCall[1];
+        expect(payload).toEqual(expect.objectContaining({ openingAmount: 150 }));
+        // branchId is null when the dialog has no prop (test default) — backend
+        // resolves staff branch from auth context, admin gets 422.
+        expect(payload).toHaveProperty('branchId');
+    });
+
+    // [Wave O / O-1 2026-05-20] Branch context forwarded for global Admin.
+    it('forwards branchId prop into the openSession payload', async () => {
+        const { wrapper, openSession } = mountDialog({ session: null, branchId: 7 });
+        await flushPromises();
+
+        await wrapper.find('[data-testid="cash-session-open-submit"]').trigger('click');
+        await flushPromises();
+
+        expect(openSession).toHaveBeenCalledTimes(1);
+        const payload = openSession.mock.calls[0][1];
+        expect(payload).toEqual(expect.objectContaining({ openingAmount: 50, branchId: 7 }));
     });
 
     it('calculates variance correctly in close mode', async () => {

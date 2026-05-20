@@ -7930,6 +7930,9 @@ input:checked + div svg {
 .pb-4 {
   padding-bottom: 1rem;
 }
+.pb-5 {
+  padding-bottom: 1.25rem;
+}
 .pl-1 {
   padding-left: 0.25rem;
 }
@@ -7971,6 +7974,9 @@ input:checked + div svg {
 }
 .pr-6 {
   padding-right: 1.5rem;
+}
+.pt-0 {
+  padding-top: 0px;
 }
 .pt-0\.5 {
   padding-top: 0.125rem;
@@ -8491,6 +8497,10 @@ input:checked + div svg {
 .text-green-700 {
   --tw-text-opacity: 1;
   color: rgb(21 128 61 / var(--tw-text-opacity, 1));
+}
+.text-green-800 {
+  --tw-text-opacity: 1;
+  color: rgb(22 101 52 / var(--tw-text-opacity, 1));
 }
 .text-green-900 {
   --tw-text-opacity: 1;
@@ -9804,6 +9814,10 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
 
   .sm\:top-12 {
     top: 3rem;
+  }
+
+  .sm\:col-span-2 {
+    grid-column: span 2 / span 2;
   }
 
   .sm\:mx-auto {

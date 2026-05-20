@@ -927,6 +927,7 @@
     <PosCashDrawerSessionDialog
         :open="showCashSessionDialog"
         :initial-mode="cashSessionInitialMode"
+        :branch-id="cashSessionBranchId"
         @close="closeCashSessionDialog"
         @session-opened="onCashSessionOpened"
         @session-closed="onCashSessionClosed"
@@ -1453,6 +1454,31 @@ export default {
                 return false;
             }
         },
+        // [Wave O / O-1 2026-05-20] Branch context propagated to the cash
+        // drawer dialog + load-current call. Mirrors the value that
+        // `applyPosBranchScope` writes when DefaultAccessService resolves
+        // the dropdown-selected filiale (admin) or the staff's own branch
+        // (branch-bound users). Falls back to authBranchId so any code path
+        // that bypasses applyPosBranchScope still works for staff. Admin
+        // without a resolved branch yields null — backend will respond 422
+        // which is the correct "select a filiale first" UX signal.
+        cashSessionBranchId: function () {
+            const candidates = [
+                this.checkoutProps?.form?.branch_id,
+                this.props?.search?.branch_id,
+                this.authBranchId(),
+            ];
+            for (const candidate of candidates) {
+                if (candidate === '' || candidate === null || typeof candidate === 'undefined') {
+                    continue;
+                }
+                const value = parseInt(candidate, 10);
+                if (Number.isFinite(value) && value > 0) {
+                    return value;
+                }
+            }
+            return null;
+        },
         // [iter15-mega-fix D-003 2026-05-10] Reactive list of currently
         // unavailable catalog items used by the persistent rupture banner.
         // Reads from itemsRaw (the canonical POS catalog cache); survives
@@ -1970,7 +1996,12 @@ export default {
             if (this._cashSessionAutoChecked) return;
             this._cashSessionAutoChecked = true;
             try {
-                this.$store.dispatch('cashDrawer/loadCurrentSession').then((session) => {
+                // [Wave O / O-1 2026-05-20] Forward branch context — admin
+                // needs an explicit branch_id query for /current to find the
+                // open session of the selected filiale.
+                this.$store.dispatch('cashDrawer/loadCurrentSession', {
+                    branchId: this.cashSessionBranchId,
+                }).then((session) => {
                     if (!session) {
                         // No session open → prompt cashier immediately.
                         this.cashSessionInitialMode = 'open';
@@ -2001,8 +2032,11 @@ export default {
             this._cashSessionAutoChecked = false;
             // Optionally re-load (not auto-open) so badge updates without
             // forcing the cashier into a new "open" flow immediately.
+            // [Wave O / O-1 2026-05-20] Forward branch context for admin.
             try {
-                this.$store.dispatch('cashDrawer/loadCurrentSession').catch(() => {});
+                this.$store.dispatch('cashDrawer/loadCurrentSession', {
+                    branchId: this.cashSessionBranchId,
+                }).catch(() => {});
             } catch (_e) { /* defensive */ }
         },
         // ────────────────────────────────────────────────────────────────────
