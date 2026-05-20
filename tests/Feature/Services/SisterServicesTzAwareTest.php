@@ -1,37 +1,40 @@
 <?php
 
 /**
- * Wave 3b KDS Adversarial — P0 production-breaking sentinel.
- * Authority: reports/audit/critical-focus-2026-05-18/wave-3b/adv-1-kds-heals-r2.md
- *   (KDS-ADV3B-01).
+ * Wave T R5 KDS+OSS — P0 production-breaking sentinel (CORRECTED).
+ * Authority: Wave T R5 mission 2026-05-20 (KDS-T-R5-03 / KDS-T-R5-04
+ *   / KDS-T-R5-05). Empirical capture at 23:51 Paris showed
+ *   `KitchenDisplaySystemOrderService::list` returned 1 row out of 11 DB
+ *   rows for branch=1 status=7 PREPARING.
  *
- * Sister-service mirror of `tests/Feature/KDS/KdsSyncTzAwareTest.php`.
+ * ROOT CAUSE: the Wave 2b/3b heal (commit `148dbebce` and mirrors)
+ * ASSUMED MySQL session_tz=UTC. EMPIRICALLY FALSE on this deployment:
+ *   SELECT @@session.time_zone → 'SYSTEM' (= OS local = Europe/Paris)
+ * because config/database.php connections.mysql.timezone is NULL and PDO
+ * inherits the OS TZ.
  *
- * Wave 2b heal `148dbebce` patched KdsSyncService ONLY. The two sister
- * services bind `Carbon::today()` / `Carbon::tomorrow()` to MySQL
- * TIMESTAMP queries identically:
+ * Under session_tz=Paris, UTC-shifted bind literals get re-interpreted as
+ * Paris-local datetimes, shifting the active window backward by 2h and
+ * silently dropping the last ~2h of every Paris day (22h-minuit) from:
+ *   - KitchenDisplaySystemOrderService::list()       (admin KDS UI)
+ *   - KitchenDisplaySystemOrderService::orderItems() (chef items board)
+ *   - OrderStatusScreenOrderService::list()          (admin OSS dashboard)
+ *   - OrderStatusScreenOrderService::listForBranch() (customer wall)
  *
- *   - KitchenDisplaySystemOrderService::list()       (~line 94, 100)
- *   - KitchenDisplaySystemOrderService::orderItems() (~line 260, 263)
- *   - OrderStatusScreenOrderService::list()          (~line 68, 73)
- *   - OrderStatusScreenOrderService::listForBranch() (~line 179, 182)
+ * CORRECT HEAL: use Paris-local Carbon bounds directly. MySQL
+ * session_tz=Paris interprets them at face value, matching the semantic
+ * intent "all of TODAY in Paris" and aligning with how stored TIMESTAMP
+ * values are displayed/compared.
  *
- * Carbon::today/tomorrow resolve in `app.timezone='Europe/Paris'` but the
- * mysql connection in config/database.php has NO `timezone` key — PDO's
- * MySQL session TZ defaults to UTC. `orders.order_datetime` is a TIMESTAMP
- * column (MySQL coerces between session TZ and UTC storage). Net effect:
- * 1-2h of nightly orders [00:00-02:00 Paris, depending on DST] silently
- * dropped from the KDS UI hydration (admin) and the OSS customer wall.
+ * INVARIANT WARNING: these sentinels pin behavior under session_tz=
+ * OS-local (Paris). Any future PR that sets
+ *   config/database.php connections.mysql.timezone => '+00:00'
+ * must re-evaluate BOTH the services AND these sentinels.
  *
- * Heal: convert Paris-local day boundaries to UTC before binding so the
- * bound literals match the UTC-stored TIMESTAMP column. Surgical at the
- * query level (does NOT touch config/database.php mysql.timezone, which
- * would affect every query in the app).
- *
- * SQLite (test driver) has no session-TZ concept, so a behavioral test
- * would pass both pre- and post-heal. These sentinels pin the compiled
- * SQL bindings: they assert the bound literals are the UTC representation
- * of Paris-local today, NOT the Paris-local midnight string.
+ * SQLite (test driver) has no session-TZ concept, so a behavioral row-
+ * count test would pass either way. These sentinels pin the compiled
+ * SQL bindings: they assert the bound literals are Paris-local Carbon
+ * objects, NOT the UTC-converted instants of the pre-Wave-T-R5 era.
  */
 
 namespace Tests\Feature\Services;
@@ -75,8 +78,8 @@ class SisterServicesTzAwareTest extends TestCase
 
     /**
      * Pin "now" to a Paris-winter timestamp (no DST ambiguity, Paris = UTC+1).
-     * Returns the expected UTC bound literals so each test asserts the same
-     * shape: [startUtc, endUtc, tomorrowUtc].
+     * Returns the expected Paris-local bound literals (the Wave T R5 heal
+     * binds these directly to MySQL session_tz=Paris).
      *
      * @return array{0:string,1:string,2:string,3:CarbonImmutable}
      */
@@ -87,23 +90,16 @@ class SisterServicesTzAwareTest extends TestCase
         CarbonImmutable::setTestNow($now);
 
         $appTz = config('app.timezone'); // 'Europe/Paris'
-        $expectedStartUtc = Carbon::today($appTz)
-            ->setTimezone('UTC')
-            ->format('Y-m-d H:i:s');
-        $expectedEndUtc = Carbon::today($appTz)
-            ->endOfDay()
-            ->setTimezone('UTC')
-            ->format('Y-m-d H:i:s');
-        $expectedTomorrowUtc = Carbon::tomorrow($appTz)
-            ->setTimezone('UTC')
-            ->format('Y-m-d H:i:s');
+        $expectedStart = Carbon::today($appTz)->format('Y-m-d H:i:s');
+        $expectedEnd = Carbon::today($appTz)->endOfDay()->format('Y-m-d H:i:s');
+        $expectedTomorrow = Carbon::tomorrow($appTz)->format('Y-m-d H:i:s');
 
-        // Sanity: Paris winter = UTC+1.
-        $this->assertSame('2026-01-14 23:00:00', $expectedStartUtc);
-        $this->assertSame('2026-01-15 22:59:59', $expectedEndUtc);
-        $this->assertSame('2026-01-15 23:00:00', $expectedTomorrowUtc);
+        // Sanity: Paris-local midnight literals (NOT UTC-shifted).
+        $this->assertSame('2026-01-15 00:00:00', $expectedStart);
+        $this->assertSame('2026-01-15 23:59:59', $expectedEnd);
+        $this->assertSame('2026-01-16 00:00:00', $expectedTomorrow);
 
-        return [$expectedStartUtc, $expectedEndUtc, $expectedTomorrowUtc, $now];
+        return [$expectedStart, $expectedEnd, $expectedTomorrow, $now];
     }
 
     /**
@@ -140,12 +136,12 @@ class SisterServicesTzAwareTest extends TestCase
     }
 
     /**
-     * Assert UTC literals present + Paris-local midnight absent.
+     * Assert Paris-local literals present + UTC-converted bound absent.
      */
     private function assertUtcDayBoundariesBound(
         array $orderQueries,
-        string $expectedStartUtc,
-        string $expectedTomorrowUtc,
+        string $expectedStart,
+        string $expectedTomorrow,
         string $services
     ): void {
         if (empty($orderQueries)) {
@@ -163,34 +159,37 @@ class SisterServicesTzAwareTest extends TestCase
         }
         $joinedBindings = implode(' | ', $allBindings);
 
-        // ASSERT-A (negative): Paris-local midnight MUST NOT appear in any
-        // binding. This is the bug — pre-heal, `Carbon::today()` resolves
-        // to '2026-01-15 00:00:00' (Paris-local) and is bound as-is.
+        // ASSERT-A (negative): the UTC-converted Paris-day-start MUST NOT
+        // appear. This is the Wave 2b/3b bug — empirical session_tz=Paris
+        // (NOT UTC as the Wave 3b commit asserted) means UTC bind literals
+        // get re-interpreted as Paris-local, shifting the window backward
+        // by 1-2h. Wave T R5 KDS-T-R5-03/04/05.
         $this->assertStringNotContainsString(
-            '2026-01-15 00:00:00',
+            '2026-01-14 23:00:00',
             $joinedBindings,
-            "$services MUST NOT bind Paris-local midnight literal to MySQL. "
-            . 'MySQL session TZ is UTC (no timezone key in config/database.php) '
-            . 'so the bound literal would shift orders by 1-2h vs the UTC-stored '
-            . "TIMESTAMP column. KDS-ADV3B-01.\nCaptured bindings: $joinedBindings"
+            "$services MUST NOT bind UTC-converted Paris-day-start to MySQL. "
+            . 'Empirical session_tz=SYSTEM (Paris-local) on this deployment, '
+            . 'so UTC literals get re-interpreted as Paris-local, shifting '
+            . "the active window backward by 1-2h. Wave T R5.\n"
+            . "Captured bindings: $joinedBindings"
         );
 
-        // ASSERT-B (positive): the UTC instant corresponding to Paris-today
-        // start MUST be bound (whereBetween lower bound).
+        // ASSERT-B (positive): the Paris-local today-start MUST be bound
+        // (whereBetween lower bound).
         $this->assertStringContainsString(
-            $expectedStartUtc,
+            $expectedStart,
             $joinedBindings,
-            "$services MUST bind UTC instant of Paris-today start "
-            . "(expected '$expectedStartUtc'). KDS-ADV3B-01."
+            "$services MUST bind Paris-local today-start "
+            . "(expected '$expectedStart'). Wave T R5."
         );
 
-        // ASSERT-C (positive): tomorrow's UTC instant (the "<" boundary for
-        // advance-order branch) MUST also be bound.
+        // ASSERT-C (positive): Paris-local tomorrow-start MUST also be bound
+        // (the "<" boundary for the advance-order branch).
         $this->assertStringContainsString(
-            $expectedTomorrowUtc,
+            $expectedTomorrow,
             $joinedBindings,
-            "$services MUST bind UTC instant of Paris-tomorrow start "
-            . "for advance-order branch (expected '$expectedTomorrowUtc'). KDS-ADV3B-01."
+            "$services MUST bind Paris-local tomorrow-start "
+            . "for advance-order branch (expected '$expectedTomorrow'). Wave T R5."
         );
     }
 
@@ -201,7 +200,7 @@ class SisterServicesTzAwareTest extends TestCase
      */
     public function test_kds_list_binds_utc_converted_paris_day_boundaries(): void
     {
-        [$startUtc, , $tomorrowUtc, $now] = $this->pinParisWinterNow();
+        [$startLocal, , $tomorrowLocal, $now] = $this->pinParisWinterNow();
 
         $branch = Branch::factory()->create();
         $admin = User::factory()->create(['branch_id' => 0]);
@@ -228,8 +227,8 @@ class SisterServicesTzAwareTest extends TestCase
 
         $this->assertUtcDayBoundariesBound(
             $orderQueries,
-            $startUtc,
-            $tomorrowUtc,
+            $startLocal,
+            $tomorrowLocal,
             'KitchenDisplaySystemOrderService::list'
         );
     }
@@ -241,7 +240,7 @@ class SisterServicesTzAwareTest extends TestCase
      */
     public function test_kds_orderItems_binds_utc_converted_paris_day_boundaries(): void
     {
-        [$startUtc, , $tomorrowUtc, $now] = $this->pinParisWinterNow();
+        [$startLocal, , $tomorrowLocal, $now] = $this->pinParisWinterNow();
 
         $branch = Branch::factory()->create();
         $admin = User::factory()->create(['branch_id' => 0]);
@@ -267,8 +266,8 @@ class SisterServicesTzAwareTest extends TestCase
 
         $this->assertUtcDayBoundariesBound(
             $orderQueries,
-            $startUtc,
-            $tomorrowUtc,
+            $startLocal,
+            $tomorrowLocal,
             'KitchenDisplaySystemOrderService::orderItems'
         );
     }
@@ -286,7 +285,7 @@ class SisterServicesTzAwareTest extends TestCase
      */
     public function test_oss_listForBranch_binds_utc_converted_paris_day_boundaries(): void
     {
-        [$startUtc, , $tomorrowUtc, $now] = $this->pinParisWinterNow();
+        [$startLocal, , $tomorrowLocal, $now] = $this->pinParisWinterNow();
 
         $branch = Branch::factory()->create();
 
@@ -310,8 +309,8 @@ class SisterServicesTzAwareTest extends TestCase
 
         $this->assertUtcDayBoundariesBound(
             $orderQueries,
-            $startUtc,
-            $tomorrowUtc,
+            $startLocal,
+            $tomorrowLocal,
             'OrderStatusScreenOrderService::listForBranch'
         );
     }
@@ -323,7 +322,7 @@ class SisterServicesTzAwareTest extends TestCase
      */
     public function test_oss_list_binds_utc_converted_paris_day_boundaries(): void
     {
-        [$startUtc, , $tomorrowUtc, $now] = $this->pinParisWinterNow();
+        [$startLocal, , $tomorrowLocal, $now] = $this->pinParisWinterNow();
 
         $branch = Branch::factory()->create();
         $admin = User::factory()->create(['branch_id' => 0]);
@@ -354,8 +353,8 @@ class SisterServicesTzAwareTest extends TestCase
 
         $this->assertUtcDayBoundariesBound(
             $orderQueries,
-            $startUtc,
-            $tomorrowUtc,
+            $startLocal,
+            $tomorrowLocal,
             'OrderStatusScreenOrderService::list'
         );
     }

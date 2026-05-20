@@ -64,30 +64,39 @@ class OrderStatusScreenOrderService
 
             // [RED-team P1 perf 2026-05-17] whereDate non-sargable → range query (uses idx_orders_datetime)
             //
-            // [Wave 3b KDS Adversarial P0 2026-05-18 KDS-ADV3B-01] Mirror of
-            // Wave 2b heal `148dbebce` (KdsSyncService). Carbon::today() /
-            // Carbon::tomorrow() resolve in app.timezone='Europe/Paris' but
-            // config/database.php mysql connection has NO `timezone` key →
-            // MySQL session TZ defaults to UTC. orders.order_datetime is a
-            // TIMESTAMP column (UTC-stored). Binding Paris-local midnight
-            // shifted the window by 1-2h, silently dropping nightly orders
-            // [00:00-02:00 Paris] from the OSS customer wall. Heal: convert
-            // Paris-local day bounds → UTC before binding. Sentinel:
-            // tests/Feature/Services/SisterServicesTzAwareTest.php.
+            // [Wave T R5 OSS Adversarial P0 2026-05-20 KDS-T-R5-03] CORRECTION
+            // of Wave 3b heal. The previous code converted Paris-local day
+            // bounds to UTC strings, ASSUMING MySQL session_tz=UTC. Empirical
+            // inspection (`SELECT @@session.time_zone`) returns 'SYSTEM' →
+            // OS-local (Europe/Paris) because config/database.php
+            // connections.mysql.timezone is NULL. UTC strings bound under
+            // session_tz=Paris are re-interpreted as Paris-local datetimes,
+            // shifting the wall backward by 2h and silently dropping the
+            // last ~2h of every Paris day (22h-minuit) from the customer
+            // OSS wall (validated empirically against the sister KDS
+            // service: 1 row served out of 11 DB rows at 23:51 Paris).
+            //
+            // CORRECT: use Paris-local Carbon bounds directly so MySQL
+            // session_tz=Paris interprets them at face value, matching the
+            // semantic intent "all of TODAY in Paris" and aligning with
+            // how orders.order_datetime stored TIMESTAMPs are displayed/
+            // compared. INVARIANT DEPENDENCY: this heal assumes session_tz
+            // is OS-local; any future `connections.mysql.timezone => '+00:00'`
+            // must re-evaluate. Sentinel: SisterServicesTzAwareTest.
             $appTz = config('app.timezone');
-            $parisTodayStartUtc = Carbon::today($appTz)->setTimezone('UTC');
-            $parisTodayEndUtc = Carbon::today($appTz)->endOfDay()->setTimezone('UTC');
-            $parisTomorrowStartUtc = Carbon::tomorrow($appTz)->setTimezone('UTC');
+            $todayStart = Carbon::today($appTz);
+            $todayEnd = Carbon::today($appTz)->endOfDay();
+            $tomorrowStart = Carbon::tomorrow($appTz);
 
-            $query->where(function ($q) use ($parisTodayStartUtc, $parisTodayEndUtc, $parisTomorrowStartUtc) {
-                    $q->where(function ($sub) use ($parisTodayStartUtc, $parisTodayEndUtc) {
+            $query->where(function ($q) use ($todayStart, $todayEnd, $tomorrowStart) {
+                    $q->where(function ($sub) use ($todayStart, $todayEnd) {
                         // [P3-4 FIX] Align with KDS: today's non-advance orders
-                        $sub->whereBetween('order_datetime', [$parisTodayStartUtc, $parisTodayEndUtc])->where('is_advance_order', Ask::NO);
-                    })->orWhere(function ($sub) use ($parisTomorrowStartUtc) {
+                        $sub->whereBetween('order_datetime', [$todayStart, $todayEnd])->where('is_advance_order', Ask::NO);
+                    })->orWhere(function ($sub) use ($tomorrowStart) {
                         // [AUDIT-52-BUG1] Mirror KDS fix: show ALL overdue advance orders (not just yesterday)
                         // that are still active (not DELIVERED or CANCELED). Prevents zombie disappearance.
                         $sub->where('is_advance_order', Ask::YES)
-                            ->where('order_datetime', '<', $parisTomorrowStartUtc)
+                            ->where('order_datetime', '<', $tomorrowStart)
                             ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                     });
                 })
@@ -201,21 +210,23 @@ class OrderStatusScreenOrderService
 
             // [RED-team P1 perf 2026-05-17] whereDate non-sargable → range query (uses idx_orders_datetime)
             //
-            // [Wave 3b KDS Adversarial P0 2026-05-18 KDS-ADV3B-01] Sister-of
+            // [Wave T R5 OSS Adversarial P0 2026-05-20 KDS-T-R5-04] Sister-of
             // list() — keep query body byte-identical per service docstring
-            // (line 144). Same Paris-vs-UTC heal applied. Sentinel:
+            // (line 144). CORRECTION of Wave 3b heal: see list() above for
+            // full rationale (empirical session_tz=Paris-local invalidates
+            // the prior UTC-conversion approach). Sentinel:
             // tests/Feature/Services/SisterServicesTzAwareTest.php.
             $appTz = config('app.timezone');
-            $parisTodayStartUtc = Carbon::today($appTz)->setTimezone('UTC');
-            $parisTodayEndUtc = Carbon::today($appTz)->endOfDay()->setTimezone('UTC');
-            $parisTomorrowStartUtc = Carbon::tomorrow($appTz)->setTimezone('UTC');
+            $todayStart = Carbon::today($appTz);
+            $todayEnd = Carbon::today($appTz)->endOfDay();
+            $tomorrowStart = Carbon::tomorrow($appTz);
 
-            $query->where(function ($q) use ($parisTodayStartUtc, $parisTodayEndUtc, $parisTomorrowStartUtc) {
-                    $q->where(function ($sub) use ($parisTodayStartUtc, $parisTodayEndUtc) {
-                        $sub->whereBetween('order_datetime', [$parisTodayStartUtc, $parisTodayEndUtc])->where('is_advance_order', Ask::NO);
-                    })->orWhere(function ($sub) use ($parisTomorrowStartUtc) {
+            $query->where(function ($q) use ($todayStart, $todayEnd, $tomorrowStart) {
+                    $q->where(function ($sub) use ($todayStart, $todayEnd) {
+                        $sub->whereBetween('order_datetime', [$todayStart, $todayEnd])->where('is_advance_order', Ask::NO);
+                    })->orWhere(function ($sub) use ($tomorrowStart) {
                         $sub->where('is_advance_order', Ask::YES)
-                            ->where('order_datetime', '<', $parisTomorrowStartUtc)
+                            ->where('order_datetime', '<', $tomorrowStart)
                             ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                     });
                 })

@@ -89,33 +89,51 @@ class KitchenDisplaySystemOrderService
             // Previously only showed yesterday's advance orders, causing "zombie" orders to persist unseen.
             // [RED-team P1 perf 2026-05-17] whereDate non-sargable → range query (uses idx_orders_datetime)
             //
-            // [Wave 3b KDS Adversarial P0 2026-05-18 KDS-ADV3B-01] Mirror of
-            // Wave 2b heal `148dbebce` (KdsSyncService). Carbon::today() /
-            // Carbon::tomorrow() resolve in app.timezone='Europe/Paris' but
-            // config/database.php mysql connection has NO `timezone` key →
-            // MySQL session TZ defaults to UTC. orders.order_datetime is a
-            // TIMESTAMP column (UTC-stored). Binding Paris-local midnight
-            // as-is shifted the active window by 1-2h, silently dropping
-            // nightly orders [00:00-02:00 Paris] from the KDS UI hydration.
-            // Heal: convert Paris-local day bounds → UTC before binding.
-            // Surgical at the query level (does NOT mutate
-            // config/database.php mysql.timezone). Sentinel:
-            // tests/Feature/Services/SisterServicesTzAwareTest.php.
+            // [Wave T R5 KDS Adversarial P0 2026-05-20 KDS-T-R5-01] CORRECTION
+            // of Wave 3b heal (commit 148dbebce, sister of `KdsSyncService`).
+            //
+            // ROOT CAUSE: the Wave 3b heal asserted "MySQL session TZ defaults
+            // to UTC" — empirically FALSE on this deployment. Running
+            //   SELECT @@session.time_zone, NOW(), UTC_TIMESTAMP();
+            // returns: time_zone='SYSTEM' (Paris local), NOW()=Paris-local,
+            // UTC_TIMESTAMP()=NOW()-2h. The `mysql.timezone` config key is
+            // NULL so PDO inherits the OS session TZ, which is Europe/Paris.
+            //
+            // CONSEQUENCE of the bug heal: bounds were converted to UTC PHP
+            // strings (e.g. "2026-05-19 22:00:00") and bound as literals.
+            // MySQL session_tz=SYSTEM/Paris interpreted those literals as
+            // Paris-local datetimes, shifting the effective window backward
+            // by 2h. Symptom: last ~2h of every Paris day (22h–minuit)
+            // silently dropped from KDS list — empirically validated
+            // pre-heal (1 row visible out of 11 DB rows for branch=1
+            // status=7 at 23:51 Paris).
+            //
+            // CORRECT BEHAVIOR: use Paris-local Carbon bounds directly. The
+            // bind strings ("2026-05-20 00:00:00" / "2026-05-20 23:59:59")
+            // are interpreted by MySQL under session_tz=Paris, matching the
+            // semantic intent "all of TODAY in Paris". Stored TIMESTAMP
+            // values are likewise displayed/compared as Paris-local under
+            // this session_tz. INVARIANT: this heal assumes session_tz is
+            // OS local (Paris). If config/database.php gains
+            // `connections.mysql.timezone => '+00:00'`, this query must be
+            // re-evaluated (consider whereRaw CONVERT_TZ). Sentinel:
+            // tests/Feature/Sentinels/KdsTodayWindowTzSentinelTest.php
+            // pins the invariant via the full service roundtrip.
             $appTz = config('app.timezone');
-            $parisTodayStartUtc = Carbon::today($appTz)->setTimezone('UTC');
-            $parisTodayEndUtc = Carbon::today($appTz)->endOfDay()->setTimezone('UTC');
-            $parisTomorrowStartUtc = Carbon::tomorrow($appTz)->setTimezone('UTC');
+            $todayStart = Carbon::today($appTz);
+            $todayEnd = Carbon::today($appTz)->endOfDay();
+            $tomorrowStart = Carbon::tomorrow($appTz);
 
-            $orders = $query->where(function ($query) use ($parisTodayStartUtc, $parisTodayEndUtc, $parisTomorrowStartUtc) {
+            $orders = $query->where(function ($query) use ($todayStart, $todayEnd, $tomorrowStart) {
                 // Standard orders: placed today (non-advance)
-                $query->where(function ($subQuery) use ($parisTodayStartUtc, $parisTodayEndUtc) {
-                    $subQuery->whereBetween('order_datetime', [$parisTodayStartUtc, $parisTodayEndUtc])
+                $query->where(function ($subQuery) use ($todayStart, $todayEnd) {
+                    $subQuery->whereBetween('order_datetime', [$todayStart, $todayEnd])
                              ->where('is_advance_order', Ask::NO);
                 })
                 // Advance orders: scheduled for today OR overdue from yesterday/past
-                ->orWhere(function ($subQuery) use ($parisTomorrowStartUtc) {
+                ->orWhere(function ($subQuery) use ($tomorrowStart) {
                     $subQuery->where('is_advance_order', Ask::YES)
-                             ->where('order_datetime', '<', $parisTomorrowStartUtc) // Today or overdue past dates
+                             ->where('order_datetime', '<', $tomorrowStart) // Today or overdue past dates
                              ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]); // Not already completed
                 });
             })->where(function ($query) use ($requests) {
@@ -274,22 +292,23 @@ class KitchenDisplaySystemOrderService
             // causing overdue orders to vanish from the items board after 24h.
             // [RED-team P1 perf 2026-05-17] whereDate non-sargable → range query (uses idx_orders_datetime)
             //
-            // [Wave 3b KDS Adversarial P0 2026-05-18 KDS-ADV3B-01] Mirror of
-            // Wave 2b heal `148dbebce`. See list() above for full context —
-            // same Paris-vs-UTC bug affected the items-board query, dropping
-            // nightly orders [00:00-02:00 Paris] from the chef's items view.
-            // Sentinel: tests/Feature/Services/SisterServicesTzAwareTest.php.
+            // [Wave T R5 KDS Adversarial P0 2026-05-20 KDS-T-R5-05] CORRECTION
+            // of Wave 3b heal applied to the items-board query. See list()
+            // above for full rationale: empirical session_tz=Paris-local
+            // invalidates the prior UTC-conversion approach which silently
+            // dropped the last ~2h of every Paris day from the chef's items
+            // view. Sentinel: tests/Feature/Services/SisterServicesTzAwareTest.php.
             $appTz = config('app.timezone');
-            $parisTodayStartUtc = Carbon::today($appTz)->setTimezone('UTC');
-            $parisTodayEndUtc = Carbon::today($appTz)->endOfDay()->setTimezone('UTC');
-            $parisTomorrowStartUtc = Carbon::tomorrow($appTz)->setTimezone('UTC');
+            $todayStart = Carbon::today($appTz);
+            $todayEnd = Carbon::today($appTz)->endOfDay();
+            $tomorrowStart = Carbon::tomorrow($appTz);
 
-            $orders = $query->where(function ($query) use ($parisTodayStartUtc, $parisTodayEndUtc, $parisTomorrowStartUtc) {
-                $query->where(function ($subQuery) use ($parisTodayStartUtc, $parisTodayEndUtc) {
-                    $subQuery->whereBetween('order_datetime', [$parisTodayStartUtc, $parisTodayEndUtc])->where('is_advance_order', Ask::NO);
-                })->orWhere(function ($subQuery) use ($parisTomorrowStartUtc) {
+            $orders = $query->where(function ($query) use ($todayStart, $todayEnd, $tomorrowStart) {
+                $query->where(function ($subQuery) use ($todayStart, $todayEnd) {
+                    $subQuery->whereBetween('order_datetime', [$todayStart, $todayEnd])->where('is_advance_order', Ask::NO);
+                })->orWhere(function ($subQuery) use ($tomorrowStart) {
                     $subQuery->where('is_advance_order', Ask::YES)
-                             ->where('order_datetime', '<', $parisTomorrowStartUtc)
+                             ->where('order_datetime', '<', $tomorrowStart)
                              ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                 });
             })->get();
