@@ -126,7 +126,12 @@
         "kiosk_machines": "Kiosk Machines",
         "ingredients": "Zutaten",
         "advanced_tools": "Erweiterte Werkzeuge",
-        "demo_wizard_advanced": "Demo erweiterter Wizard"
+        "demo_wizard_advanced": "Demo erweiterter Wizard",
+        "communications": "Kommunikation",
+        "users": "Benutzer",
+        "accounts": "Konten",
+        "reports": "Berichte",
+        "setup": "Einrichtung"
     },
     "label": {
         "previous": "Vorherige",

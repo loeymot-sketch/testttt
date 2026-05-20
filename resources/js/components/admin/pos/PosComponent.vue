@@ -1723,7 +1723,14 @@ export default {
             return out;
         },
         customers: function () {
-            return this.$store.getters['user/lists'];
+            // [WT-R1-F2 2026-05-20] Defensive guard: vue-select internally calls
+            // .reduce/.some over options accessing `option.id`. If the Vuex store
+            // briefly contains a falsy entry (loading race, deleted customer
+            // payload), vendor.js throws `Cannot read properties of undefined
+            // (reading 'id')`. Filter to non-null entries with a valid `id`.
+            const list = this.$store.getters['user/lists'];
+            if (!Array.isArray(list)) return [];
+            return list.filter((u) => u && u.id != null);
         },
         carts: function () {
             return this.$store.getters['posCart/lists'];
@@ -1800,6 +1807,15 @@ export default {
         },
     },
     beforeUnmount() {
+        // [WT-R1-F2 2026-05-20] Mark instance as destroyed BEFORE any cleanup so
+        // late-firing async callbacks (echo/wsService reconnect handlers,
+        // in-flight axios resolves, debounced flushers) can early-out instead of
+        // mutating reactive state on a half-torn-down component. Without this
+        // guard, the Vue 3 patcher hits `shouldUpdateComponent` on a null
+        // child vnode and throws `Cannot read properties of null (reading
+        // 'emitsOptions')` repeatedly while the route transitions away from
+        // /admin/pos.
+        this._destroyed = true;
         if (this._debouncedListRefresh && this._debouncedListRefresh.cancel) {
             this._debouncedListRefresh.cancel();
         }
@@ -2314,12 +2330,16 @@ export default {
             const ws = window._wsService;
             if (!ws) return;
             this._onWsConnected = () => {
+                // [WT-R1-F2 2026-05-20] Guard against late ws-reconnect firing
+                // after PosComponent unmounted (navigation to tracker/KDS).
+                if (this._destroyed) return;
                 this.loadKioskCashOrders();
                 this._restartKioskPolling();
                 // [V1.5C R2] Refresh catalogue after reconnect — Echo may have skipped pushes during outage.
                 try { this.itemList(1, { overlay: false }); } catch (e) { /* defensive */ }
             };
             this._onWsDisconnected = () => {
+                if (this._destroyed) return;
                 this._restartKioskPolling();
             };
             ws.on('connected', this._onWsConnected);
@@ -2336,6 +2356,10 @@ export default {
         },
         _startKioskPolling() {
             this._kioskPollTimer = setInterval(() => {
+                // [WT-R1-F2 2026-05-20] No-op when teardown already started —
+                // prevents the trailing tick (queued before clearInterval) from
+                // mutating reactive state on an unmounting component.
+                if (this._destroyed) return;
                 this.loadKioskCashOrders();
                 // [POS-V4-ORDERS-TRACKER 2026-05-02] Polling unifié pour le badge tracker.
                 this.loadActiveOrdersStats();
@@ -2355,6 +2379,9 @@ export default {
                     {
                         broadcastAs: 'OrderCreated',
                         handler: (event) => {
+                            // [WT-R1-F2 2026-05-20] Guard: echo events can land
+                            // after unmount (unsubscribe is async on socket teardown).
+                            if (this._destroyed) return;
                             // [POS-9.1.11] Audible + visual notification for new POS orders.
                             // Audit POS-GA-F-55 — cashier had zero feedback on new
                             // kiosk-cash / online orders, only a silent list refresh.
@@ -2367,6 +2394,7 @@ export default {
                     {
                         broadcastAs: 'OrderStatusChanged',
                         handler: () => {
+                            if (this._destroyed) return;
                             this.loadKioskCashOrders();
                             this.loadActiveOrdersStats();
                         },
@@ -2374,6 +2402,7 @@ export default {
                     {
                         broadcastAs: 'OrderPaidAtCounter',
                         handler: () => {
+                            if (this._destroyed) return;
                             this.loadKioskCashOrders();
                             this.loadActiveOrdersStats();
                         },
@@ -2389,6 +2418,8 @@ export default {
             }
         },
         _onCatalogChanged(event) {
+            // [WT-R1-F2 2026-05-20] Echo handler — bail if PosComponent torn down.
+            if (this._destroyed) return;
             const payload = (event && event.payload) ? event.payload : event || {};
             const eventBranchId = parseInt(
                 event?.branchId ?? payload.branch_id ?? payload.branchId ?? 0,
@@ -2414,6 +2445,8 @@ export default {
          * Stock86 listener: { item_id, is_available, type, reason, price }.
          */
         _onItemAvailabilityChanged(event) {
+            // [WT-R1-F2 2026-05-20] Echo handler — bail if PosComponent torn down.
+            if (this._destroyed) return;
             const payload = (event && event.payload) ? event.payload : event || {};
             const itemId = parseInt(payload.item_id || payload.itemId || 0, 10);
             if (!itemId) return;
