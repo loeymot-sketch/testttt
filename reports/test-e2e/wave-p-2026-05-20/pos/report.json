@@ -1,0 +1,1111 @@
+{
+  "console": [
+    {
+      "url": "http://127.0.0.1:8000/admin/pos",
+      "text": "Access to XMLHttpRequest at 'http://localhost:8000/api/broadcasting/auth' from origin 'http://127.0.0.1:8000' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: The 'Access-Control-Allow-Origin' header has a value 'http://localhost:8000' that is not equal to the supplied origin."
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/pos",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/pos",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/pos",
+      "text": "[POS] item/details failed AxiosError: Request failed with status code 401\n    at settle (http://127.0.0.1:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:10901:12)\n    at XMLHttpRequest.onloadend (http://127.0.0.1:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:9130:68)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    }
+  ],
+  "network": [
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/item/details/24?surface=pos&branch_id=1"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/total-sales"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/total-orders"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/total-menu-items"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/realtime-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/channel-statistics"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/audit-trail"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/order-statistics"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sales-summary"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/order-summary"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/stock/low-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/fiscal/z-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/featured-items"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/popular-items"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/realtime-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/audit-trail"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/realtime-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/audit-trail"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/realtime-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/audit-trail"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/realtime-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/audit-trail"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/realtime-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/audit-trail"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/realtime-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/audit-trail"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/realtime-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/audit-trail"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/realtime-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/audit-trail"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/realtime-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/audit-trail"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/realtime-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/audit-trail"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/realtime-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/audit-trail"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/realtime-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/audit-trail"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/realtime-report"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/audit-trail"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/admin/dashboard/sla-alerts"
+    },
+    {
+      "status": 401,
+      "url": "http://127.0.0.1:8000/api/auth/logout"
+    }
+  ],
+  "pageErrors": [
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    },
+    {
+      "url": "http://127.0.0.1:8000/admin/dashboard",
+      "text": "Request failed with status code 401"
+    }
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "name": "login",
+      "file": "reports/test-e2e/wave-p-2026-05-20/pos/pos-1-login.png",
+      "ok": true
+    },
+    {
+      "step": 2,
+      "name": "landing",
+      "file": "reports/test-e2e/wave-p-2026-05-20/pos/pos-2-landing.png",
+      "ok": true
+    },
+    {
+      "step": 3,
+      "name": "cash-drawer-dialog",
+      "file": "reports/test-e2e/wave-p-2026-05-20/pos/pos-3-cash-drawer-dialog.png",
+      "ok": true
+    },
+    {
+      "step": 3,
+      "name": "cash-drawer-after-submit",
+      "file": "reports/test-e2e/wave-p-2026-05-20/pos/pos-3-cash-drawer-after-submit.png",
+      "ok": true
+    },
+    {
+      "step": 4,
+      "name": "cart-filled",
+      "ok": false,
+      "error": "Error: page.screenshot: Target page, context or browser has been closed"
+    },
+    {
+      "step": 5,
+      "name": "checkout-order-type",
+      "ok": false,
+      "error": "Error: page.screenshot: Target page, context or browser has been closed"
+    },
+    {
+      "step": 5,
+      "name": "checkout-takeaway-selected",
+      "ok": false,
+      "error": "Error: page.screenshot: Target page, context or browser has been closed"
+    },
+    {
+      "step": 6,
+      "name": "payment-cash-selected",
+      "ok": false,
+      "error": "Error: page.screenshot: Target page, context or browser has been closed"
+    },
+    {
+      "step": 6,
+      "name": "payment-tpe-selected",
+      "ok": false,
+      "error": "Error: page.screenshot: Target page, context or browser has been closed"
+    },
+    {
+      "step": 7,
+      "name": "payment-success-or-receipt",
+      "ok": false,
+      "error": "Error: page.screenshot: Target page, context or browser has been closed"
+    },
+    {
+      "step": 8,
+      "name": "after-order-landing",
+      "ok": false,
+      "error": "Error: page.screenshot: Target page, context or browser has been closed"
+    }
+  ],
+  "cartItems": [
+    {
+      "ok": true,
+      "txt": "Sandwich Cayenne 7.00€",
+      "wizard": false
+    },
+    {
+      "ok": false,
+      "txt": "",
+      "reason": "tile-click-failed"
+    },
+    {
+      "ok": false,
+      "txt": "",
+      "reason": "tile-click-failed"
+    },
+    {
+      "ok": false,
+      "txt": "",
+      "reason": "tile-click-failed"
+    },
+    {
+      "ok": false,
+      "txt": "",
+      "reason": "tile-click-failed"
+    }
+  ]
+}
