@@ -2947,9 +2947,18 @@ export default {
             if (order._canceling) return;
             order._canceling = true;
             try {
-                await axios.post(`admin/pos/counter-collect/${order.id}/cancel`, {
-                    reason: 'Commande borne annulee au comptoir',
-                });
+                // [Wave W P-OWNER 2026-05-21] X-Idempotency-Key on cancel
+                // endpoint too — same Wave K Z7 IdempotencyKeyMiddleware
+                // requirement as /confirm (sibling 422 root-cause caught
+                // by advisor review). modeInt 0 is a sentinel here (no
+                // payment mode for cancel) so the key stays distinct from
+                // any /confirm key on the same order.
+                const idempotencyKey = this.buildKioskCashIdempotencyKey(order.id, 0);
+                await axios.post(
+                    `admin/pos/counter-collect/${order.id}/cancel`,
+                    { reason: 'Commande borne annulee au comptoir' },
+                    { headers: { 'X-Idempotency-Key': idempotencyKey } }
+                );
                 await this.loadKioskCashOrders();
             } catch (err) {
                 const msg = err?.response?.data?.message || 'Erreur lors de l\'annulation';
