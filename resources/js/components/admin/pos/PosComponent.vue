@@ -1101,10 +1101,17 @@
                   <i class="fa-solid fa-eye" aria-hidden="true"></i>
                   {{ $t('pos.orders.detail_short') }}
                 </router-link>
+                <!--
+                  [Wave W P-OWNER 2026-05-21] Encaisser now opens a mode picker
+                  (modal) so the cashier can confirm/override the borne-declared
+                  payment mode (ESPÈCE / CARTE / MOBILE / TICKET). See
+                  openEncaisserModal() + confirmEncaisser() in <script>.
+                -->
                 <button
                   class="kiosk-cash-collect-btn"
                   :disabled="order._collecting || order._canceling"
-                  @click="collectKioskCashOrder(order)"
+                  :data-testid="`kiosk-cash-collect-${order.id}`"
+                  @click="openEncaisserModal(order)"
                 >
                   {{ order._collecting ? '…' : '✓ Encaisser' }}
                 </button>
@@ -1120,6 +1127,99 @@
           </div>
           <div class="kiosk-cash-panel-footer">
             <button class="kiosk-cash-refresh-btn" @click="loadKioskCashOrders">↻ Actualiser</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!--
+      [Wave W P-OWNER 2026-05-21] Encaisser borne — payment-mode picker modal.
+      Opens when the cashier clicks "✓ Encaisser" on a kiosk-cash row in the
+      slide-in panel above. The borne flagged the order as cash, but the
+      customer may switch to CARTE/TICKET at the counter — owner verbatim
+      ("Wave W — Encaisser borne button"). Submitting POSTs to
+      /admin/pos/counter-collect/{id}/confirm with the picked mode int + a
+      fresh X-Idempotency-Key header (root-cause of 422). PaymentService::
+      confirmCounterPayment handles the 4 modes server-side; CASH path also
+      triggers the cash-drawer simulation toast per POS_SIMULATION_HARDWARE.
+    -->
+    <transition name="fade">
+      <div
+        v-if="encaisserModal.show"
+        class="encaisser-modal-overlay"
+        data-testid="encaisser-modal"
+        @click.self="closeEncaisserModal"
+      >
+        <div class="encaisser-modal" role="dialog" :aria-label="$t('label.encaisser_mode_title')">
+          <div class="encaisser-modal-header">
+            <h3>
+              {{ $t('label.encaisser_mode_title') }}
+              <span class="encaisser-modal-order-no">
+                N° {{ encaisserModal.order?.queue_number || encaisserModal.order?.order_serial_no }}
+              </span>
+              <span class="encaisser-modal-order-total">
+                {{ formatKioskPrice(encaisserModal.order?.total ?? encaisserModal.order?.order_amount ?? 0) }}
+              </span>
+            </h3>
+            <p class="encaisser-modal-hint">{{ $t('label.encaisser_mode_hint') }}</p>
+          </div>
+          <div class="encaisser-mode-grid">
+            <button
+              type="button"
+              class="encaisser-mode-btn encaisser-mode-cash"
+              :disabled="encaisserModal.submitting"
+              data-testid="encaisser-mode-cash"
+              @click="confirmEncaisser('CASH')"
+            >
+              <span class="encaisser-mode-icon" aria-hidden="true">💶</span>
+              <span class="encaisser-mode-label">{{ $t('label.encaisser_mode_cash') }}</span>
+              <span class="encaisser-mode-sub">{{ $t('label.encaisser_mode_cash_sub') }}</span>
+            </button>
+            <button
+              type="button"
+              class="encaisser-mode-btn encaisser-mode-card"
+              :disabled="encaisserModal.submitting"
+              data-testid="encaisser-mode-card"
+              @click="confirmEncaisser('CARD')"
+            >
+              <span class="encaisser-mode-icon" aria-hidden="true">💳</span>
+              <span class="encaisser-mode-label">{{ $t('label.encaisser_mode_card') }}</span>
+              <span class="encaisser-mode-sub">{{ $t('label.encaisser_mode_card_sub') }}</span>
+            </button>
+            <button
+              type="button"
+              class="encaisser-mode-btn encaisser-mode-ticket"
+              :disabled="encaisserModal.submitting"
+              data-testid="encaisser-mode-ticket"
+              @click="confirmEncaisser('TICKET')"
+            >
+              <span class="encaisser-mode-icon" aria-hidden="true">🎟️</span>
+              <span class="encaisser-mode-label">{{ $t('label.encaisser_mode_ticket') }}</span>
+            </button>
+            <button
+              type="button"
+              class="encaisser-mode-btn encaisser-mode-mobile"
+              :disabled="encaisserModal.submitting"
+              data-testid="encaisser-mode-mobile"
+              @click="confirmEncaisser('MOBILE')"
+            >
+              <span class="encaisser-mode-icon" aria-hidden="true">📱</span>
+              <span class="encaisser-mode-label">{{ $t('label.encaisser_mode_mobile') }}</span>
+            </button>
+          </div>
+          <div class="encaisser-modal-footer">
+            <button
+              type="button"
+              class="encaisser-modal-cancel"
+              :disabled="encaisserModal.submitting"
+              data-testid="encaisser-modal-cancel"
+              @click="closeEncaisserModal"
+            >
+              {{ $t('label.cancel') }}
+            </button>
+          </div>
+          <div v-if="encaisserModal.submitting" class="encaisser-modal-submitting">
+            <div class="kiosk-cash-spinner"></div>
           </div>
         </div>
       </div>
@@ -1276,6 +1376,24 @@ export default {
             kioskCashOrders: [],
             kioskCashLoading: false,
             showKioskCashPanel: false,
+            // [Wave W P-OWNER 2026-05-21] Mode picker for kiosk-cash counter-collect.
+            //
+            // Owner-reported UX: "le client borne déclare cash, mais au comptoir
+            // il peut changer pour CARTE/TICKET — il faut un picker". Click on
+            // "Encaisser" opens encaisserModal, cashier picks ESPÈCE/CARTE/
+            // MOBILE/TICKET, then POST hits /counter-collect/{id}/confirm with
+            // the chosen `mode` int + a fresh `X-Idempotency-Key` header (Wave K
+            // Z7 idempotency middleware requires it — bug 422 root-cause).
+            //
+            // `submitting` blocks the modal's mode-row buttons against
+            // double-tap while the POST is in flight (the `order._collecting`
+            // flag in the list view is reset after submit so the picker can
+            // re-open if the cashier cancels).
+            encaisserModal: {
+                show: false,
+                order: null,
+                submitting: false,
+            },
             showParkedOrders: false,
             // [Sprint 1A 2026-05-16] Cash drawer session dialog state.
             // Auto-opened in mounted() after branch_id is resolved if no OPEN
@@ -2722,19 +2840,106 @@ export default {
             return !!this.expandedKioskCashOrders[orderId];
         },
 
-        async collectKioskCashOrder(order) {
-            if (order._collecting) return;
+        // [Wave W P-OWNER 2026-05-21] Open mode picker instead of CASH-only
+        // POST. See encaisserModal data block above for rationale.
+        openEncaisserModal(order) {
+            if (order._collecting || order._canceling) return;
+            this.encaisserModal = {
+                show: true,
+                order,
+                submitting: false,
+            };
+        },
+        closeEncaisserModal() {
+            // Reset the per-row guard so the picker can re-open if the cashier
+            // cancels mid-flow (changed their mind on mode, network hiccup, …).
+            if (this.encaisserModal.order) {
+                this.encaisserModal.order._collecting = false;
+            }
+            this.encaisserModal = {
+                show: false,
+                order: null,
+                submitting: false,
+            };
+        },
+        // [Wave W P-OWNER 2026-05-21] Idempotency key for counter-collect.
+        //
+        // Mirrors PosLoyaltyRedeemModal.buildIdempotencyKey() pattern (line
+        // 266): minute-bucket so a double-tap or network retry within the
+        // same minute replays the cached 2xx response from
+        // IdempotencyKeyMiddleware (config/idempotency.php Wave K Z7),
+        // avoiding two distinct POSTs racing into PaymentService::
+        // confirmCounterPayment's DB::transaction + lockForUpdate.
+        // Different orders and different modes produce distinct keys.
+        buildKioskCashIdempotencyKey(orderId, modeInt) {
+            const minuteBucket = Math.floor(Date.now() / 60000);
+            return `pos-counter-collect-${orderId}-${modeInt}-${minuteBucket}`;
+        },
+        async confirmEncaisser(modeName) {
+            // Map UI mode-name → posPaymentMethodEnum int. Values come from
+            // resources/js/enums/modules/posPaymentMethodEnum.js — they MUST
+            // match the backend allow-list in PaymentService::
+            // confirmCounterPayment ($allowedModes line 203-209).
+            //   CASH = 1, CARD = 2, MOBILE_BANKING = 3, TICKET_RESTAURANT = 5
+            const modeMap = {
+                CASH: posPaymentMethodEnum.CASH,
+                CARD: posPaymentMethodEnum.CARD,
+                MOBILE: posPaymentMethodEnum.MOBILE_BANKING,
+                TICKET: posPaymentMethodEnum.TICKET_RESTAURANT,
+            };
+            const modeInt = modeMap[modeName];
+            const order = this.encaisserModal.order;
+            if (!order || !modeInt) return;
+            if (this.encaisserModal.submitting) return;
+
+            this.encaisserModal.submitting = true;
             order._collecting = true;
             try {
-                await axios.post(`admin/pos/counter-collect/${order.id}/confirm`, {
-                    mode: posPaymentMethodEnum.CASH,
-                    received: order.total ?? order.order_amount ?? 0,
-                    note: 'Encaissement borne au comptoir',
-                });
+                const total = Number(order.total ?? order.order_amount ?? 0);
+                const idempotencyKey = this.buildKioskCashIdempotencyKey(order.id, modeInt);
+                await axios.post(
+                    `admin/pos/counter-collect/${order.id}/confirm`,
+                    {
+                        mode: modeInt,
+                        // Backend only enforces received >= total for CASH; for
+                        // CARD/MOBILE/TICKET it's nullable. Send the order total
+                        // for CASH; null otherwise (matches PaymentService::
+                        // confirmCounterPayment line 235-238 + 247-249).
+                        received: modeName === 'CASH' ? total : null,
+                        note: 'Encaissement borne au comptoir',
+                    },
+                    {
+                        headers: {
+                            'X-Idempotency-Key': idempotencyKey,
+                        },
+                    }
+                );
+                // Simulation feedback per mode. Owner asked for "tiroir s'ouvre
+                // (simulation)" on CASH and "TPE pretend valide" on CARD. The
+                // backend hardware bridge already honors POS_SIMULATION_HARDWARE
+                // (config('pos.simulation_hardware'), AppServiceProvider boot
+                // guard, see CLAUDE.md §8). UI toast confirms to the cashier.
+                const orderLabel = order.queue_number || order.order_serial_no || order.id;
+                if (modeName === 'CASH') {
+                    alertService.success(
+                        this.$t('label.cash_drawer_opened_simulation', { order: orderLabel })
+                    );
+                } else if (modeName === 'CARD') {
+                    alertService.success(
+                        this.$t('label.tpe_validated_simulation', { order: orderLabel })
+                    );
+                } else {
+                    alertService.success(
+                        this.$t('label.encaisser_success', { order: orderLabel })
+                    );
+                }
+                this.closeEncaisserModal();
                 await this.loadKioskCashOrders();
             } catch (err) {
-                const msg = err?.response?.data?.message || 'Erreur lors de l\'encaissement';
+                const msg = err?.response?.data?.message
+                    || this.$t('label.encaisser_failed');
                 alertService.error(msg);
+                this.encaisserModal.submitting = false;
                 order._collecting = false;
             }
         },
@@ -4206,6 +4411,138 @@ export default {
 .slide-panel-leave-active .kiosk-cash-panel { transition: transform var(--pos-v5-duration-slow) var(--pos-v5-ease-standard); }
 .slide-panel-enter-from .kiosk-cash-panel,
 .slide-panel-leave-to .kiosk-cash-panel { transform: translateX(100%); }
+
+/* =============================================================================
+   ENCAISSER MODAL — kiosk-cash counter-collect mode picker
+   [Wave W P-OWNER 2026-05-21]
+   -----------------------------------------------------------------------------
+   Modal opens when cashier clicks "✓ Encaisser" on a kiosk-cash row. Lets
+   cashier override the borne-declared cash with CARTE/TICKET/MOBILE before
+   submitting to /counter-collect/{id}/confirm. 4 large touch-friendly mode
+   buttons (grid 2x2 on desktop, single column ≤ 480px) + cancel + spinner
+   overlay while POST in flight.
+   ============================================================================= */
+.encaisser-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001; /* above kiosk-cash-panel (z-index slide-in) */
+  padding: 16px;
+}
+.encaisser-modal {
+  position: relative;
+  background: var(--pos-v5-surface, #fff);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  padding: 24px;
+  font-family: var(--pos-v5-font-family, 'Rubik', system-ui, sans-serif);
+}
+.encaisser-modal-header { margin-bottom: 16px; }
+.encaisser-modal-header h3 {
+  margin: 0 0 6px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--pos-v5-text, #1a1a1a);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+}
+.encaisser-modal-order-no {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pos-v5-muted, #555);
+}
+.encaisser-modal-order-total {
+  margin-left: auto;
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--pos-v5-brand-red, #cf3a3a);
+}
+.encaisser-modal-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--pos-v5-muted, #555);
+  line-height: 1.4;
+}
+.encaisser-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+@media (max-width: 480px) {
+  .encaisser-mode-grid { grid-template-columns: 1fr; }
+}
+.encaisser-mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 18px 12px;
+  border: 2px solid var(--pos-v5-border, #e0e0e0);
+  border-radius: 10px;
+  background: var(--pos-v5-surface-2, #fafafa);
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 80ms ease, border-color 120ms ease, background 120ms ease;
+  min-height: 96px;
+}
+.encaisser-mode-btn:hover:not(:disabled) {
+  border-color: var(--pos-v5-brand-red, #cf3a3a);
+  background: var(--pos-v5-brand-red-soft, #ffeaea);
+  transform: translateY(-1px);
+}
+.encaisser-mode-btn:active:not(:disabled) { transform: translateY(0); }
+.encaisser-mode-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.encaisser-mode-icon { font-size: 28px; line-height: 1; }
+.encaisser-mode-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pos-v5-text, #1a1a1a);
+}
+.encaisser-mode-sub {
+  font-size: 11px;
+  color: var(--pos-v5-muted, #777);
+  text-align: center;
+}
+.encaisser-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+.encaisser-modal-cancel {
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid var(--pos-v5-border, #ccc);
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--pos-v5-text, #1a1a1a);
+}
+.encaisser-modal-cancel:hover:not(:disabled) {
+  background: var(--pos-v5-surface-2, #f3f3f3);
+}
+.encaisser-modal-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
+.encaisser-modal-submitting {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+.fade-enter-active,
+.fade-leave-active { transition: opacity 160ms ease; }
+.fade-enter-from,
+.fade-leave-to { opacity: 0; }
 
 /* =============================================================================
    POS OFFLINE — banner + queue-depth badge ([POS-OFFLINE-WIRE 2026-05-17])
