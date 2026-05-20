@@ -23,10 +23,16 @@ class ZReportController extends Controller
     {
         $this->authorizeFiscal();
 
-        $branchId = $this->resolveBranchId($request);
+        // [Wave T R1 F1 P0 2026-05-20] Read-only index must not 422 when admin
+        // (branch_id=0) lands on /admin/dashboard — LastZReportWidget mounts
+        // there and was returning a silent 422 on every POS operator login.
+        // Mutating endpoints (open/close) still require a pinned branch; here
+        // we relax the constraint only for read: admin sees the latest 100 Z
+        // across all branches; staff (branch_id>0) keep branch-scoped view.
+        $branchId = $this->resolveBranchIdForRead($request);
 
         $rows = ZReport::query()
-            ->where('branch_id', $branchId)
+            ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
             ->orderByDesc('sequence_no')
             ->limit(100)
             ->get();
@@ -106,5 +112,20 @@ class ZReportController extends Controller
         // trust a payload-side branch_id for a fiscal-sensitive operation.
         abort(Response::HTTP_UNPROCESSABLE_ENTITY,
             'Fiscal operation requires the authenticated user to be pinned to a branch.');
+    }
+
+    /**
+     * [Wave T R1 F1 P0 2026-05-20] Read-only variant: admin (branch_id=0)
+     * returns null so the index query is unfiltered (cross-branch view);
+     * staff (branch_id>0) returns their pinned branch. Mutating endpoints
+     * (open/close/show/pdf) keep using `resolveBranchId()` which still 422s
+     * for unpinned admin — fiscal write/single-doc access stays branch-scoped.
+     * Read-only Z history exposure is acceptable for admins by §9 RBAC.
+     */
+    private function resolveBranchIdForRead(Request $request): ?int
+    {
+        $user = $request->user();
+        $fromUser = (int) ($user->branch_id ?? 0);
+        return $fromUser > 0 ? $fromUser : null;
     }
 }
