@@ -186,6 +186,13 @@
                      the visual entry point when redeem would always 422/409).
                      The canonical CTA on PosOrderShowComponent stays in
                      place — defense in depth, both paths reachable. -->
+                <!--
+                  [Wave Q-5 2026-05-20] Disabled-state tooltip improvement.
+                  Owner reported "Appliquer une réduction fidélité greyed
+                  out / inaccessible" — the LOCK_POS_LOYALTY_REDEEM_UI gate
+                  is intentional (CTA only after an order is in flight), so
+                  the heal is a clearer hint, not a logic change.
+                -->
                 <PosV5Button
                     v-else
                     variant="ghost"
@@ -194,7 +201,8 @@
                     data-testid="pos-loyalty-redeem-main-cta-open"
                     :disabled="!canShowLoyaltyMainCta"
                     :tone="canShowLoyaltyMainCta ? 'ready' : 'neutral'"
-                    :title="$t('pos.loyalty.redeem.title')"
+                    :title="canShowLoyaltyMainCta ? $t('pos.loyalty.redeem.title') : $t('pos.loyalty.redeem.disabled_hint')"
+                    :aria-label="canShowLoyaltyMainCta ? $t('pos.loyalty.redeem.title') : $t('pos.loyalty.redeem.disabled_hint')"
                     @click="openLoyaltyMainModal"
                 >
                     <template #icon>🎁</template>
@@ -399,14 +407,24 @@
                         <template #icon>⏸</template>
                         {{ $t('pos.park') }}
                     </PosV5Button>
+                    <!--
+                      [Wave Q-5 2026-05-20] Short label "En attente" inside
+                      the 2-col grid pill (icon 📦 + badge + label all in a
+                      40px-high button). Full string "Commandes en attente"
+                      moves to the title/aria-label so the canonical label
+                      stays discoverable (assistive tech + tooltip).
+                    -->
                     <PosV5Button
                         variant="ghost-counter"
                         size="md"
+                        class="pos-v5-btn--park-toggle"
                         :badge="parkedOrdersCount"
+                        :title="$t('pos.parked_orders')"
+                        :aria-label="$t('pos.parked_orders')"
                         @click="openParkedOrders"
                     >
                         <template #icon>📦</template>
-                        {{ $t('pos.parked_orders') }}
+                        {{ $t('pos.parked_orders_short') }}
                     </PosV5Button>
                 </div>
             </div>

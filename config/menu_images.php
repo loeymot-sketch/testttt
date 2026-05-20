@@ -30,6 +30,26 @@ return [
     | Clé = slug de la catégorie
     */
     'categories' => [
+        // -- Le Cayenne V1 production catalog (live DB slugs 2026-05-20) --
+        // [Wave Q-5 heal] Owner reported POS category strip tabs had no
+        // images. Root cause: every slug in the live DB (sandwich-cayenne,
+        // galette, burgers, tacos, bols-gourmands, frites, supplements,
+        // desserts, boissons, menu-enfant) was missing from this map, so
+        // ItemCategory::getThumbAttribute() fell through to
+        // images/menu/item-default.svg for all 11 tabs.
+        'sandwich-cayenne'          => 'sandwich_cayenne.png',
+        'galette'                   => 'supplement_galette.png',
+        'sandwich-classique'        => 'sandwich_terminator.png',
+        'burgers'                   => 'cheeseburger.png',
+        'tacos'                     => 'tacos.png',
+        'bols-gourmands'            => 'salade_cesar.png',
+        'frites'                    => 'frites.png',
+        'supplements'               => 'supplement_fromage.png',
+        'desserts'                  => 'tiramisu.png',
+        'boissons'                  => 'coca_cola.png',
+        'menu-enfant'               => 'menu_complet.png',
+
+        // -- Legacy slugs (kept for back-compat with V0 seeders / fixtures) --
         'nos-tacos'                 => 'tacos.png',
         'nos-sandwichs'             => 'sandwich_terminator.png',
         'nos-burgers'               => 'cheeseburger.png', // visuel Cheese Burger (onglet POS / kiosk)

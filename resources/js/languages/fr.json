@@ -150,6 +150,7 @@
         "item_no_longer_available": "« {name} » n'est plus disponible.",
         "park": "Mettre en attente",
         "parked_orders": "Commandes en attente",
+        "parked_orders_short": "En attente",
         "restore": "Restaurer",
         "discard": "Supprimer",
         "empty_parked_orders": "Aucune commande parkée.",
@@ -253,6 +254,7 @@
         "loyalty": {
             "redeem": {
                 "title": "Appliquer une réduction fidélité",
+                "disabled_hint": "Créez d'abord une commande pour appliquer une réduction fidélité",
                 "balance": "Solde actuel",
                 "input_code": "Code fidélité ou téléphone",
                 "input_points": "Points à utiliser",

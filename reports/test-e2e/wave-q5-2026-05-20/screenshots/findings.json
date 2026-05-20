@@ -1,0 +1,99 @@
+{
+  "errors": [
+    {
+      "kind": "console",
+      "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "Q5.1-button-visible",
+      "ok": true
+    },
+    {
+      "id": "Q5.1-disabled-on-landing",
+      "ok": true
+    },
+    {
+      "id": "Q5.1-disabled-hint-present",
+      "ok": true,
+      "title": "Créez d'abord une commande pour appliquer une réduction fidélité",
+      "aria": "Créez d'abord une commande pour appliquer une réduction fidélité"
+    },
+    {
+      "id": "Q5.2-parked-button-visible",
+      "ok": true
+    },
+    {
+      "id": "Q5.2-short-label",
+      "ok": true,
+      "text": "En attente"
+    },
+    {
+      "id": "Q5.2-full-title-preserved",
+      "ok": true
+    },
+    {
+      "id": "Q5.2-no-overflow",
+      "metrics": {
+        "button": {
+          "sw": 177,
+          "cw": 177
+        },
+        "label": {
+          "sw": 88,
+          "cw": 88,
+          "text": " En attente"
+        }
+      }
+    },
+    {
+      "id": "Q5.3-cat-img-count",
+      "count": 9
+    },
+    {
+      "id": "Q5.3-cat-img-srcs",
+      "sample": [
+        "http://localhost:8000/images/default/all-category.png",
+        "http://localhost:8000/images/menu/sandwich_cayenne.png",
+        "http://localhost:8000/images/menu/supplement_galette.png",
+        "http://localhost:8000/images/menu/sandwich_terminator.png",
+        "http://localhost:8000/images/menu/cheeseburger.png",
+        "http://localhost:8000/images/menu/tacos.png"
+      ]
+    },
+    {
+      "id": "Q5.3-cat-img-non-default-count",
+      "count": 6
+    },
+    {
+      "id": "Q5.3-cat-img-http",
+      "results": [
+        {
+          "src": "http://localhost:8000/images/default/all-category.png",
+          "status": 200
+        },
+        {
+          "src": "http://localhost:8000/images/menu/sandwich_cayenne.png",
+          "status": 200
+        },
+        {
+          "src": "http://localhost:8000/images/menu/supplement_galette.png",
+          "status": 200
+        },
+        {
+          "src": "http://localhost:8000/images/menu/sandwich_terminator.png",
+          "status": 200
+        },
+        {
+          "src": "http://localhost:8000/images/menu/cheeseburger.png",
+          "status": 200
+        },
+        {
+          "src": "http://localhost:8000/images/menu/tacos.png",
+          "status": 200
+        }
+      ]
+    }
+  ]
+}

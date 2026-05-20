@@ -150,6 +150,7 @@
         "item_no_longer_available": "“{name}” is no longer available.",
         "park": "Mettre en attente",
         "parked_orders": "Commandes en attente",
+        "parked_orders_short": "En attente",
         "restore": "Restaurer",
         "discard": "Supprimer",
         "empty_parked_orders": "Aucune commande en attente.",
@@ -253,6 +254,7 @@
         "loyalty": {
             "redeem": {
                 "title": "Apply loyalty discount",
+                "disabled_hint": "Create an order first to apply a loyalty discount",
                 "balance": "Current balance",
                 "input_code": "Loyalty code or phone",
                 "input_points": "Points to redeem",

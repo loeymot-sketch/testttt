@@ -307,6 +307,27 @@ export default {
     color: var(--pos-v5-ink-on-red);
 }
 
+/*
+  [Wave Q-5 2026-05-20] Park-toggle pill compact mode — inside the 2-col
+  shortcuts grid the standard ghost-counter pill (icon + label + badge)
+  overflowed: owner's screenshot showed "Commandes en attente" truncated
+  with the count badge crashing into it. We constrain the label to one
+  line + shrink font slightly so icon + short label + badge always fit
+  even at the 160px-wide grid cell.
+*/
+.pos-v5-btn--park-toggle .pos-v5-btn__label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: var(--pos-v5-text-caption);
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.pos-v5-btn--park-toggle .pos-v5-btn__badge {
+    margin-left: var(--pos-v5-space-2);
+    flex-shrink: 0;
+}
+
 /* =============================================================================
    VARIANT: danger
    ============================================================================= */
