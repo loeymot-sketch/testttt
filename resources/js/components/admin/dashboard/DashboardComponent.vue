@@ -41,7 +41,6 @@
     <div class="row">
         <ErrorBoundary><SalesSummaryComponent/></ErrorBoundary>
         <ErrorBoundary><OrderSummaryComponent/></ErrorBoundary>
-        <ErrorBoundary><StockLowAlertsWidget/></ErrorBoundary>
         <ErrorBoundary><LastZReportWidget/></ErrorBoundary>
         <ErrorBoundary><FeaturedItemsComponent/></ErrorBoundary>
         <ErrorBoundary><MostPopularItemsComponent/></ErrorBoundary>
@@ -52,7 +51,6 @@
 import LoadingComponent from "../components/LoadingComponent";
 import OverviewComponent from "./OverviewComponent";
 import OrderStatisticsComponent from "./OrderStatisticsComponent";
-import StockLowAlertsWidget from "./StockLowAlertsWidget";
 import LastZReportWidget from "./LastZReportWidget";
 import FeaturedItemsComponent from "./FeaturedItemsComponent";
 import MostPopularItemsComponent from "./MostPopularItemsComponent";
@@ -71,7 +69,6 @@ export default {
         LoadingComponent,
         OverviewComponent,
         OrderStatisticsComponent,
-        StockLowAlertsWidget,
         LastZReportWidget,
         FeaturedItemsComponent,
         MostPopularItemsComponent,

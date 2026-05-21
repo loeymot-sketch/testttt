@@ -192,9 +192,6 @@
                             <th class="db-table-head-th">
                                 {{ $t('label.status') }}
                             </th>
-                            <th class="db-table-head-th" v-if="permissionChecker('items_edit')">
-                                {{ $t('label.availability') }}
-                            </th>
                             <th class="db-table-head-th hidden-print"
                                 v-if="permissionChecker('items_show') || permissionChecker('items_edit') || permissionChecker('items_create') || permissionChecker('items_delete')">
                                 {{ $t('label.action') }}
@@ -221,12 +218,6 @@
                                 <span :class="statusClass(item.status)">
                                     {{ enums.statusEnumArray[item.status] }}
                                 </span>
-                            </td>
-                            <td class="db-table-body-td" v-if="permissionChecker('items_edit')">
-                                <div :data-testid="`admin-availability-toggle-${item.id}`">
-                                    <AvailabilityToggleComponent :item-id="item.id" :branch-id="null" :is-available="item.is_available ?? true" :unavailable-reason="item.availability_reason || item.unavailable_reason || null" @availability-changed="list" />
-                                </div>
-                                <span class="sr-only" :data-testid="`admin-availability-status-${item.id}`">{{ item.is_available ?? true }}</span>
                             </td>
                             <td class="db-table-body-td hidden-print"
                                 v-if="permissionChecker('items_show') || permissionChecker('items_edit') || permissionChecker('items_create') || permissionChecker('items_delete')">
@@ -326,7 +317,6 @@ import SampleFileComponent from "../components/buttons/import/SampleFileComponen
 import UploadFileComponent from "../components/buttons/import/UploadFileComponent.vue";
 import ImportComponent from "../components/buttons/import/ImportComponent.vue";
 import ItemUploadComponent from './ItemUploadComponent.vue';
-import AvailabilityToggleComponent from './AvailabilityToggleComponent.vue';
 import ENV from '../../../config/env';
 
 export default {
@@ -349,7 +339,6 @@ export default {
         UploadFileComponent,
         ImportComponent,
         ItemUploadComponent,
-        AvailabilityToggleComponent
     },
     data() {
         return {

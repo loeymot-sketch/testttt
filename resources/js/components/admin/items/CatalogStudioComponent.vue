@@ -134,20 +134,6 @@
                                 <span>{{ item.flat_price }}</span>
                                 <span :class="statusClass(item.status)">{{ enums.statusEnumArray[item.status] }}</span>
                             </div>
-                            <div class="catalog-studio__stock-inline" data-testid="catalog-studio-stock-inline">
-                                <p class="catalog-studio__stock-title">{{ $t("studio.stock_parallel_title") }}</p>
-                                <AvailabilityToggleComponent :item-id="Number(item.id)" :branch-id="null"
-                                    :is-available="itemIsAvailable(item)"
-                                    :unavailable-reason="item.availability_reason || item.unavailable_reason || null"
-                                    @availability-changed="onProductAvailabilityChanged" />
-                                <small v-if="extractDailyQuota(item)" class="catalog-studio__stock-hint"
-                                    :data-testid="`catalog-studio-stock-quota-${item.id}`">
-                                    {{ $t("studio.daily_quota_hint", extractDailyQuota(item)) }}
-                                </small>
-                                <small v-else class="catalog-studio__stock-hint">
-                                    {{ $t("studio.stock_parallel_hint") }}
-                                </small>
-                            </div>
                         </div>
                         <div class="catalog-studio__product-actions">
                             <button
@@ -217,7 +203,6 @@
 
 <script>
 import LoadingComponent from "../components/LoadingComponent.vue";
-import AvailabilityToggleComponent from "./AvailabilityToggleComponent.vue";
 import appService from "../../../services/appService";
 import statusEnum from "../../../enums/modules/statusEnum";
 import askEnum from "../../../enums/modules/askEnum";
@@ -228,7 +213,6 @@ export default {
     name: "CatalogStudioComponent",
     components: {
         LoadingComponent,
-        AvailabilityToggleComponent,
     },
     data() {
         return {
@@ -487,40 +471,6 @@ export default {
                 entityName: "",
                 entityType: "item",
             };
-        },
-        onProductAvailabilityChanged() {
-            // Keep source-of-truth in backend/store and rehydrate after toggle.
-            this.refreshData();
-        },
-        itemIsAvailable(item) {
-            const value = item?.is_available;
-            return !(value === false || value === 0 || value === "0");
-        },
-        extractDailyQuota(item) {
-            const total = this.readNumber(item, ["max_daily_qty", "daily_quota", "quota_daily_max"]);
-            let remaining = this.readNumber(item, ["daily_qty_remaining", "remaining_daily_qty", "quota_daily_remaining"]);
-            if (remaining === null) {
-                const sold = this.readNumber(item, ["daily_qty_sold", "sold_daily_qty"]);
-                if (total !== null && sold !== null) {
-                    remaining = Math.max(total - sold, 0);
-                }
-            }
-            if (total === null || remaining === null) {
-                return null;
-            }
-            return { remaining, total };
-        },
-        readNumber(source, keys) {
-            if (!source || !Array.isArray(keys)) {
-                return null;
-            }
-            for (const key of keys) {
-                const candidate = Number(source[key]);
-                if (Number.isFinite(candidate)) {
-                    return candidate;
-                }
-            }
-            return null;
         },
         changeQuickProductImage(event) {
             const file = event?.target?.files?.[0] || null;

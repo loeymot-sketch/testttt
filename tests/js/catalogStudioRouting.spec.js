@@ -106,11 +106,10 @@ describe("catalog studio routing", () => {
         expect(source).toMatch(/catalog-studio-product-wizard-/);
     });
 
-    it("[P1] exposes inline stock controls on each product card", () => {
+    it("[P1] exposes stock-mgmt navigation link (no inline toggle — consolidated to /admin/stock/rupture V2 per M1 P3 2026-05-21)", () => {
         const source = readFileSync(studioPath, "utf8");
-        expect(source).toContain("AvailabilityToggleComponent");
-        expect(source).toContain("data-testid=\"catalog-studio-stock-inline\"");
-        expect(source).toContain("$t(\"studio.stock_parallel_title\")");
+        expect(source).toContain("catalog-studio-stock-link");
+        expect(source).toContain("admin.stock.rupture");
     });
 
     it("[P2] quick create supports optional image upload", () => {

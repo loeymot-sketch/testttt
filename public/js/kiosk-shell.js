@@ -887,7 +887,7 @@ function confirmationAutoReturnSeconds() {
       var _this$$store$state$gl2;
       // globalState stores data in state.lists (not state.settings)
       var lists = (_this$$store$state$gl2 = this.$store.state.globalState) === null || _this$$store$state$gl2 === void 0 ? void 0 : _this$$store$state$gl2.lists;
-      return (lists === null || lists === void 0 ? void 0 : lists.company_name) || (lists === null || lists === void 0 ? void 0 : lists.site_name) || 'FoodKing';
+      return (lists === null || lists === void 0 ? void 0 : lists.company_name) || (lists === null || lists === void 0 ? void 0 : lists.site_name) || 'Le Cayenne';
     },
     receiptDate: function receiptDate() {
       var _this$$i18n;

@@ -12104,66 +12104,67 @@ var _hoisted_158 = {
 var _hoisted_159 = {
   "class": "kiosk-cash-panel-header-actions"
 };
-var _hoisted_160 = {
+var _hoisted_160 = ["aria-label"];
+var _hoisted_161 = {
   "class": "kiosk-cash-panel-body"
 };
-var _hoisted_161 = {
+var _hoisted_162 = {
   key: 0,
   "class": "kiosk-cash-loading"
 };
-var _hoisted_162 = {
+var _hoisted_163 = {
   key: 1,
   "class": "kiosk-cash-empty"
 };
-var _hoisted_163 = {
+var _hoisted_164 = {
   "class": "kiosk-cash-order-head"
 };
-var _hoisted_164 = {
+var _hoisted_165 = {
   "class": "kiosk-cash-order-num"
 };
-var _hoisted_165 = {
+var _hoisted_166 = {
   "class": "kiosk-cash-order-head-actions"
 };
-var _hoisted_166 = ["aria-expanded", "data-testid", "onClick"];
-var _hoisted_167 = {
+var _hoisted_167 = ["aria-expanded", "data-testid", "onClick"];
+var _hoisted_168 = {
   "class": "kiosk-cash-order-total"
 };
-var _hoisted_168 = {
+var _hoisted_169 = {
   "class": "kiosk-cash-order-items"
 };
-var _hoisted_169 = {
+var _hoisted_170 = {
   key: 0,
   "class": "kiosk-cash-item-pill more"
 };
-var _hoisted_170 = ["data-testid"];
-var _hoisted_171 = {
+var _hoisted_171 = ["data-testid"];
+var _hoisted_172 = {
   "class": "kiosk-cash-order-detail-title"
 };
-var _hoisted_172 = {
+var _hoisted_173 = {
   key: 0,
   "class": "kiosk-cash-order-detail-line"
 };
-var _hoisted_173 = {
+var _hoisted_174 = {
   key: 1,
   "class": "kiosk-cash-order-detail-line"
 };
-var _hoisted_174 = {
+var _hoisted_175 = {
   key: 2,
   "class": "kiosk-cash-order-detail-line"
 };
-var _hoisted_175 = {
+var _hoisted_176 = {
   key: 3,
   "class": "kiosk-cash-order-detail-line"
 };
-var _hoisted_176 = {
+var _hoisted_177 = {
   "class": "kiosk-cash-order-foot"
 };
-var _hoisted_177 = {
+var _hoisted_178 = {
   "class": "kiosk-cash-order-time"
 };
-var _hoisted_178 = ["disabled", "data-testid", "onClick"];
-var _hoisted_179 = ["disabled", "onClick"];
-var _hoisted_180 = {
+var _hoisted_179 = ["disabled", "data-testid", "onClick"];
+var _hoisted_180 = ["disabled", "onClick"];
+var _hoisted_181 = {
   "class": "kiosk-cash-panel-footer"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
@@ -13040,17 +13041,19 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         _: 1 /* STABLE */
       }, 8 /* PROPS */, ["title"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         "class": "kiosk-cash-panel-close",
+        type: "button",
+        "aria-label": _ctx.$t('button.close'),
         onClick: _cache[38] || (_cache[38] = function ($event) {
           return $data.showKioskCashPanel = false;
         })
-      }, "✕")])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_160, [$data.kioskCashLoading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_161, _toConsumableArray(_cache[80] || (_cache[80] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      }, "✕", 8 /* PROPS */, _hoisted_160)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_161, [$data.kioskCashLoading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_162, _toConsumableArray(_cache[80] || (_cache[80] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-cash-spinner"
-      }, null, -1 /* CACHED */)])))) : $data.kioskCashOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_162, " Aucune commande borne en attente. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.kioskCashOrders, function (order) {
+      }, null, -1 /* CACHED */)])))) : $data.kioskCashOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_163, " Aucune commande borne en attente. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.kioskCashOrders, function (order) {
         var _order$total;
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
           key: order.id,
           "class": "kiosk-cash-order-card"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_163, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_164, "N° " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number || order.order_serial_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_165, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_164, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_165, "N° " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number || order.order_serial_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_166, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
           type: "button",
           "class": "kiosk-cash-expand-btn",
           "aria-expanded": $options.isKioskCashOrderExpanded(order.id) ? 'true' : 'false',
@@ -13062,12 +13065,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["fa-solid fa-chevron-down", {
             'kiosk-cash-expand-btn-rotated': $options.isKioskCashOrderExpanded(order.id)
           }])
-        }, null, 2 /* CLASS */)], 8 /* PROPS */, _hoisted_166), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_167, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskPrice((_order$total = order.total) !== null && _order$total !== void 0 ? _order$total : order.order_amount)), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_168, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)((order.order_items || []).slice(0, 3), function (item, i) {
+        }, null, 2 /* CLASS */)], 8 /* PROPS */, _hoisted_167), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_168, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskPrice((_order$total = order.total) !== null && _order$total !== void 0 ? _order$total : order.order_amount)), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_169, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)((order.order_items || []).slice(0, 3), function (item, i) {
           return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
             key: i,
             "class": "kiosk-cash-item-pill"
           }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "× " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name || item.name), 1 /* TEXT */);
-        }), 128 /* KEYED_FRAGMENT */)), (order.order_items || []).length > 3 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_169, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_items.length - 3) + " autres ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $options.isKioskCashOrderExpanded(order.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        }), 128 /* KEYED_FRAGMENT */)), (order.order_items || []).length > 3 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_170, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_items.length - 3) + " autres ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $options.isKioskCashOrderExpanded(order.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
           key: 0,
           "class": "kiosk-cash-order-details",
           "data-testid": "kiosk-cash-details-".concat(order.id)
@@ -13075,12 +13078,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
             key: item.id || "".concat(order.id, "-").concat(itemIdx),
             "class": "kiosk-cash-order-detail-item"
-          }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_171, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "× " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name || item.name), 1 /* TEXT */), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_172, [_cache[81] || (_cache[81] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Variations:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_variations.map(function (variation) {
+          }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_172, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "× " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name || item.name), 1 /* TEXT */), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_173, [_cache[81] || (_cache[81] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Variations:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_variations.map(function (variation) {
             return "".concat(variation.variation_name || 'Option', ": ").concat(variation.name);
-          }).join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_173, [_cache[82] || (_cache[82] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Extras:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_extras.map(function (extra) {
+          }).join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_174, [_cache[82] || (_cache[82] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Extras:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_extras.map(function (extra) {
             return extra.name;
-          }).join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), item.instruction ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_174, [_cache[83] || (_cache[83] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Instructions:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_175, [_cache[84] || (_cache[84] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Allergenes:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.allergens_snapshot.join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-        }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_170)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_176, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_177, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskTime(order.created_at)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V4-ORDERS-ACCESS 2026-05-02] Lien direct vers le détail de la\n                  commande (lignes, statut, ticket fiscal) — accessible sans quitter\n                  l'écran caisse pour vérification ou réimpression.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_router_link, {
+          }).join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), item.instruction ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_175, [_cache[83] || (_cache[83] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Instructions:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_176, [_cache[84] || (_cache[84] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Allergenes:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.allergens_snapshot.join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+        }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_171)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_177, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_178, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskTime(order.created_at)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V4-ORDERS-ACCESS 2026-05-02] Lien direct vers le détail de la\n                  commande (lignes, statut, ticket fiscal) — accessible sans quitter\n                  l'écran caisse pour vérification ou réimpression.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_router_link, {
           to: {
             name: 'admin.pos-orders.show',
             params: {
@@ -13105,14 +13108,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           onClick: function onClick($event) {
             return $options.openCounterCollect(order);
           }
-        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order._collecting ? '…' : '✓ Encaisser'), 9 /* TEXT, PROPS */, _hoisted_178), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order._collecting ? '…' : '✓ Encaisser'), 9 /* TEXT, PROPS */, _hoisted_179), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
           "class": "kiosk-cash-cancel-btn",
           disabled: order._collecting || order._canceling,
           onClick: function onClick($event) {
             return $options.cancelKioskCashOrder(order);
           }
-        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order._canceling ? '…' : 'Annuler'), 9 /* TEXT, PROPS */, _hoisted_179)])]);
-      }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_180, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order._canceling ? '…' : 'Annuler'), 9 /* TEXT, PROPS */, _hoisted_180)])]);
+      }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_181, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         "class": "kiosk-cash-refresh-btn",
         onClick: _cache[39] || (_cache[39] = function () {
           return $options.loadKioskCashOrders && $options.loadKioskCashOrders.apply($options, arguments);

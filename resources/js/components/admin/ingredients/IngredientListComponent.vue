@@ -82,9 +82,6 @@
                                 {{ $t('label.ingredient.column_type') }}
                             </th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                {{ $t('label.ingredient.column_status') }}
-                            </th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 {{ $t('label.ingredient.column_usage') }}
                             </th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -106,15 +103,6 @@
                                 <span class="rounded bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
                                     {{ typeLabel(ingredient.type) }}
                                 </span>
-                            </td>
-                            <td class="px-4 py-3">
-                                <IngredientAvailabilityToggleComponent
-                                    :global-id="ingredient.global_id"
-                                    :is-available="ingredient.is_available"
-                                    :reason="ingredient.unavailable_reason"
-                                    @toggled="handleToggled"
-                                    @error="handleToggleError"
-                                />
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-600">
                                 {{ $t('label.ingredient.usage_count', { count: ingredient.used_by_count || 0 }) }}
@@ -146,7 +134,6 @@
 
 <script>
 import { mapState } from 'vuex';
-import IngredientAvailabilityToggleComponent from './IngredientAvailabilityToggleComponent.vue';
 import IngredientUsageDrawer from './IngredientUsageDrawer.vue';
 
 const TYPE_LABELS = {
@@ -158,7 +145,6 @@ const TYPE_LABELS = {
 export default {
     name: 'IngredientListComponent',
     components: {
-        IngredientAvailabilityToggleComponent,
         IngredientUsageDrawer,
     },
     props: {

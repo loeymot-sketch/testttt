@@ -91,8 +91,8 @@ describe('product composer editor contract', () => {
             'admin-item-edit-${item.id}',
             'admin-item-delete-${item.id}',
             'admin-item-view-${item.id}',
-            'admin-availability-toggle-${item.id}',
-            'admin-availability-status-${item.id}',
+            // M1 P3 2026-05-21: inline availability toggle removed from item list
+            // (consolidated into /admin/stock/rupture V2 page per owner spec).
         ].forEach((testId) => expect(itemList).toContain(testId));
 
         [

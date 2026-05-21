@@ -189,16 +189,36 @@ var STATUS_DELIVERED = 13;
       }
     }
   },
+  // [W2 audit 2026-05-21] a11y: WAI-ARIA dialog pattern (WCAG 2.1.2) requires
+  // Escape to close. Backdrop click works but keyboard-only operators (chef
+  // with gloves / stylus) were stuck. Handler is gated by `this.open` so it
+  // is a no-op when the drawer is closed; teardown in beforeUnmount avoids
+  // listener leaks if a parent re-mounts during a Vue-router transition.
+  mounted: function mounted() {
+    var _this = this;
+    this._onEsc = function (e) {
+      if (_this.open && (e.key === 'Escape' || e.key === 'Esc')) {
+        _this.$emit('close');
+      }
+    };
+    document.addEventListener('keydown', this._onEsc);
+  },
+  beforeUnmount: function beforeUnmount() {
+    if (this._onEsc) {
+      document.removeEventListener('keydown', this._onEsc);
+      this._onEsc = null;
+    }
+  },
   methods: {
     fetch: function fetch() {
-      var _this = this;
+      var _this2 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
         var response, payload, _t;
         return _regenerator().w(function (_context) {
           while (1) switch (_context.p = _context.n) {
             case 0:
-              _this.loading = true;
-              _this.error = false;
+              _this2.loading = true;
+              _this2.error = false;
               _context.p = 1;
               _context.n = 2;
               return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get('admin/kds-order/history-today');
@@ -206,17 +226,17 @@ var STATUS_DELIVERED = 13;
               response = _context.v;
               payload = response.data; // Laravel ResourceCollection always nests rows under `.data`, but be
               // defensive in case any middleware unwraps it.
-              _this.orders = Array.isArray(payload) ? payload : Array.isArray(payload && payload.data) ? payload.data : [];
+              _this2.orders = Array.isArray(payload) ? payload : Array.isArray(payload && payload.data) ? payload.data : [];
               _context.n = 4;
               break;
             case 3:
               _context.p = 3;
               _t = _context.v;
-              _this.error = true;
-              _this.orders = [];
+              _this2.error = true;
+              _this2.orders = [];
             case 4:
               _context.p = 4;
-              _this.loading = false;
+              _this2.loading = false;
               return _context.f(4);
             case 5:
               return _context.a(2);
