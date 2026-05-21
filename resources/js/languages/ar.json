@@ -253,6 +253,8 @@
         "order_receipt": "إيصال الطلب",
         "view": "عرض",
         "pos_orders": "طلبات نقطة البيع",
+        "cash_overview": "عرض الكاش الموحد",
+        "delivery_cash_sessions": "كاش السائق",
         "transactions": "المعاملات",
         "notification_alert": "تنبيه الإشعار",
         "order_details": "تفاصيل الطلب",
@@ -296,6 +298,8 @@
         "default": "الافتراضي",
         "dismiss": "إغلاق",
         "configure_wizard": "تكوين المعالج",
+        "usage": "الاستخدام",
+        "type_a_message": "اكتب رسالة",
         "composer": {
             "product_context": "المنتج",
             "choose_template": "اختيار قالب",

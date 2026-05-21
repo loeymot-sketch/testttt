@@ -366,6 +366,7 @@
         "sales_report": "Rapport des ventes",
         "cash_sessions_report": "Rapport caisses quotidien",
         "cash_overview": "Vue caisse unifiée",
+        "delivery_cash_sessions": "Caisse livreur",
         "settings_menu": "Paramètres Menu",
         "sliders": "Bannières",
         "sms_gateway": "Passerelle SMS",
@@ -403,6 +404,8 @@
         "gateway": "Passerelle",
         "archived": "Archivé",
         "no_data": "Aucune donnée",
+        "usage": "Utilisation",
+        "type_a_message": "Tapez un message",
         "composer": {
             "product_context": "Produit",
             "choose_template": "Choisir un template",
@@ -1139,7 +1142,7 @@
         "your_order": "Votre commande est {order}",
         "your_order_has_been_delivered": "Votre commande a été livrée",
         "youtube": "Youtube",
-        "zip_code": "Code postal Code",
+        "zip_code": "Code postal",
         "ingredient": {
             "title": "Ingrédients",
             "subtitle": "Gestion des viandes, sauces, suppléments et add-ons",

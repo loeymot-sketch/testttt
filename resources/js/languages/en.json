@@ -366,6 +366,8 @@
         "view": "View",
         "pos_orders": "Commandes caisse",
         "pos_orders_tracker": "Suivi commandes",
+        "cash_overview": "Unified cash view",
+        "delivery_cash_sessions": "Delivery driver cash",
         "transactions": "Transactions",
         "notification_alert": "Notification Alert",
         "order_details": "Détails commande",
@@ -411,6 +413,8 @@
         "quick_access": "Quick access",
         "pos_dedicated_shell": "POS (dedicated shell)",
         "configure_wizard": "Configure wizard",
+        "usage": "Usage",
+        "type_a_message": "Type a message",
         "composer": {
             "product_context": "Product",
             "choose_template": "Choose a template",

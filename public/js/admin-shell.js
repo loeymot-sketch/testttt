@@ -4951,6 +4951,478 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ },
 
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue?vue&type=script&lang=js"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue?vue&type=script&lang=js ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+/**
+ * [V1.0.2 Sub-6.3 BUILD-1 — 2026-05-18] Delivery boy cash session — open / close / reconcile form.
+ *
+ * Single component, 3 modes (open, close, reconcile). Parent passes `mode` +
+ * for non-open modes the `sessionId`. On success emits `submitted` with the
+ * updated session. On error emits `error` with the message (also shown
+ * inline via errorMessage).
+ *
+ * No store / Vuex coupling — direct axios so this stays a self-contained
+ * micro-feature usable from the DeliveryBoyShow tabs.
+ */
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'DeliveryBoyCashSessionFormComponent',
+  props: {
+    mode: {
+      type: String,
+      required: true,
+      validator: function validator(v) {
+        return ['open', 'close', 'reconcile'].includes(v);
+      }
+    },
+    sessionId: {
+      type: [Number, String],
+      "default": null
+    },
+    defaultDeliveryBoyId: {
+      type: [Number, String],
+      "default": null
+    }
+  },
+  emits: ['submitted', 'cancel', 'error'],
+  data: function data() {
+    return {
+      submitting: false,
+      errorMessage: '',
+      form: {
+        delivery_boy_id: this.defaultDeliveryBoyId ? Number(this.defaultDeliveryBoyId) : null,
+        opening_amount: 0,
+        closing_amount: 0,
+        variance_reason: ''
+      }
+    };
+  },
+  computed: {
+    formTitle: function formTitle() {
+      switch (this.mode) {
+        case 'open':
+          return this.$t('label.delivery_cash_open_form_title');
+        case 'close':
+          return this.$t('label.delivery_cash_close_form_title');
+        case 'reconcile':
+          return this.$t('label.delivery_cash_reconcile_form_title');
+        default:
+          return '';
+      }
+    }
+  },
+  methods: {
+    submitOpen: function submitOpen() {
+      var _this = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var res, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              _this.submitting = true;
+              _this.errorMessage = '';
+              _context.p = 1;
+              _context.n = 2;
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post('/api/admin/delivery-boy/cash-sessions/open', {
+                delivery_boy_id: Number(_this.form.delivery_boy_id),
+                opening_amount: Number(_this.form.opening_amount)
+              });
+            case 2:
+              res = _context.v;
+              _this.$emit('submitted', res.data.data);
+              _context.n = 4;
+              break;
+            case 3:
+              _context.p = 3;
+              _t = _context.v;
+              _this.errorMessage = _this._extractError(_t);
+              _this.$emit('error', _this.errorMessage);
+            case 4:
+              _context.p = 4;
+              _this.submitting = false;
+              return _context.f(4);
+            case 5:
+              return _context.a(2);
+          }
+        }, _callee, null, [[1, 3, 4, 5]]);
+      }))();
+    },
+    submitClose: function submitClose() {
+      var _this2 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+        var res, _t2;
+        return _regenerator().w(function (_context2) {
+          while (1) switch (_context2.p = _context2.n) {
+            case 0:
+              if (_this2.sessionId) {
+                _context2.n = 1;
+                break;
+              }
+              _this2.errorMessage = _this2.$t('label.delivery_cash_missing_session');
+              return _context2.a(2);
+            case 1:
+              _this2.submitting = true;
+              _this2.errorMessage = '';
+              _context2.p = 2;
+              _context2.n = 3;
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("/api/admin/delivery-boy/cash-sessions/".concat(_this2.sessionId, "/close"), {
+                closing_amount: Number(_this2.form.closing_amount)
+              });
+            case 3:
+              res = _context2.v;
+              _this2.$emit('submitted', res.data.data);
+              _context2.n = 5;
+              break;
+            case 4:
+              _context2.p = 4;
+              _t2 = _context2.v;
+              _this2.errorMessage = _this2._extractError(_t2);
+              _this2.$emit('error', _this2.errorMessage);
+            case 5:
+              _context2.p = 5;
+              _this2.submitting = false;
+              return _context2.f(5);
+            case 6:
+              return _context2.a(2);
+          }
+        }, _callee2, null, [[2, 4, 5, 6]]);
+      }))();
+    },
+    submitReconcile: function submitReconcile() {
+      var _this3 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+        var res, _t3;
+        return _regenerator().w(function (_context3) {
+          while (1) switch (_context3.p = _context3.n) {
+            case 0:
+              if (_this3.sessionId) {
+                _context3.n = 1;
+                break;
+              }
+              _this3.errorMessage = _this3.$t('label.delivery_cash_missing_session');
+              return _context3.a(2);
+            case 1:
+              _this3.submitting = true;
+              _this3.errorMessage = '';
+              _context3.p = 2;
+              _context3.n = 3;
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("/api/admin/delivery-boy/cash-sessions/".concat(_this3.sessionId, "/reconcile"), {
+                variance_reason: _this3.form.variance_reason ? _this3.form.variance_reason.trim() : null
+              });
+            case 3:
+              res = _context3.v;
+              _this3.$emit('submitted', res.data.data);
+              _context3.n = 5;
+              break;
+            case 4:
+              _context3.p = 4;
+              _t3 = _context3.v;
+              _this3.errorMessage = _this3._extractError(_t3);
+              _this3.$emit('error', _this3.errorMessage);
+            case 5:
+              _context3.p = 5;
+              _this3.submitting = false;
+              return _context3.f(5);
+            case 6:
+              return _context3.a(2);
+          }
+        }, _callee3, null, [[2, 4, 5, 6]]);
+      }))();
+    },
+    _extractError: function _extractError(err) {
+      var fromResponse = err && err.response && err.response.data && err.response.data.message;
+      if (fromResponse) return fromResponse;
+      if (err && err.message) return err.message;
+      return this.$t('label.delivery_cash_form_generic_error');
+    }
+  }
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue?vue&type=script&lang=js"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue?vue&type=script&lang=js ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
+/* harmony import */ var _components_LoadingComponent__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../components/LoadingComponent */ "./resources/js/components/admin/components/LoadingComponent.vue");
+/**
+ * [V1.0.2 Sub-6.3 BUILD-1 — 2026-05-18] Delivery boy cash session — admin list view.
+ *
+ * Scope-minimal : reads /api/admin/delivery-boy/cash-sessions and renders
+ * a table with status badges + variance highlight. Filter by status only
+ * (delivery_boy_id filter added by Wave 6b-1.7 enrichment).
+ *
+ * Emits `view` with session ID when a row's view button is clicked — the
+ * parent route should swap to the detail component.
+ */
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'DeliveryBoyCashSessionListComponent',
+  components: {
+    LoadingComponent: _components_LoadingComponent__WEBPACK_IMPORTED_MODULE_1__["default"]
+  },
+  emits: ['view'],
+  data: function data() {
+    return {
+      loading: {
+        isActive: false
+      },
+      sessions: [],
+      pagination: {
+        total: 0,
+        per_page: 20,
+        current_page: 1,
+        last_page: 1
+      },
+      filters: {
+        status: '',
+        delivery_boy_id: null,
+        per_page: 20
+      }
+    };
+  },
+  mounted: function mounted() {
+    this.list();
+  },
+  methods: {
+    list: function list() {
+      var _this = this;
+      var page = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1;
+      this.loading.isActive = true;
+      var params = {
+        per_page: this.filters.per_page,
+        page: page
+      };
+      if (this.filters.status) {
+        params.status = this.filters.status;
+      }
+      if (this.filters.delivery_boy_id) {
+        params.delivery_boy_id = this.filters.delivery_boy_id;
+      }
+      return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get('/api/admin/delivery-boy/cash-sessions', {
+        params: params
+      }).then(function (res) {
+        _this.sessions = res.data.data || [];
+        _this.pagination = res.data.pagination || _this.pagination;
+        _this.loading.isActive = false;
+      })["catch"](function () {
+        _this.loading.isActive = false;
+      });
+    },
+    formatMoney: function formatMoney(value) {
+      var n = Number(value) || 0;
+      try {
+        return n.toLocaleString('fr-FR', {
+          style: 'currency',
+          currency: 'EUR',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      } catch (_e) {
+        return "".concat(n.toFixed(2), " \u20AC");
+      }
+    },
+    formatVariance: function formatVariance(value) {
+      var n = Number(value) || 0;
+      var formatted = this.formatMoney(Math.abs(n));
+      if (n > 0) return "+".concat(formatted);
+      if (n < 0) return "-".concat(formatted);
+      return formatted;
+    },
+    varianceClass: function varianceClass(value) {
+      var n = Number(value) || 0;
+      if (n > 0.01) return 'text-green-600 font-semibold';
+      if (n < -0.01) return 'text-red-600 font-semibold';
+      return 'text-gray-700';
+    },
+    statusBadgeClass: function statusBadgeClass(status) {
+      switch (status) {
+        case 'open':
+          return 'badge badge-warning';
+        case 'closed':
+          return 'badge badge-info';
+        case 'reconciled':
+          return 'badge badge-success';
+        default:
+          return 'badge badge-secondary';
+      }
+    },
+    formatTimestamp: function formatTimestamp(iso) {
+      if (!iso) return '—';
+      try {
+        var d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return iso;
+        return d.toLocaleString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (_e) {
+        return iso;
+      }
+    }
+  }
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue?vue&type=script&lang=js"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue?vue&type=script&lang=js ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
+/* harmony import */ var _components_LoadingComponent__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../components/LoadingComponent */ "./resources/js/components/admin/components/LoadingComponent.vue");
+/**
+ * [V1.0.2 Sub-6.3 BUILD-1 — 2026-05-18] Delivery boy cash session — admin detail view.
+ *
+ * Loads /api/admin/delivery-boy/cash-sessions/{id} with movements eager-loaded.
+ * Emits `close-session` / `reconcile-session` to parent which mounts the form.
+ *
+ * canMutate prop drives visibility of action buttons — parent passes false
+ * if the calling user lacks `delivery-boys` permission (status pinned).
+ */
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'DeliveryBoyCashSessionShowComponent',
+  components: {
+    LoadingComponent: _components_LoadingComponent__WEBPACK_IMPORTED_MODULE_1__["default"]
+  },
+  props: {
+    sessionId: {
+      type: [Number, String],
+      required: true
+    },
+    canMutate: {
+      type: Boolean,
+      "default": true
+    }
+  },
+  emits: ['close-session', 'reconcile-session'],
+  data: function data() {
+    return {
+      loading: {
+        isActive: false
+      },
+      session: null
+    };
+  },
+  computed: {
+    movements: function movements() {
+      var _this$session;
+      return ((_this$session = this.session) === null || _this$session === void 0 ? void 0 : _this$session.movements) || [];
+    }
+  },
+  watch: {
+    sessionId: {
+      immediate: true,
+      handler: function handler() {
+        this.fetch();
+      }
+    }
+  },
+  methods: {
+    fetch: function fetch() {
+      var _this = this;
+      if (!this.sessionId) return;
+      this.loading.isActive = true;
+      return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get("/api/admin/delivery-boy/cash-sessions/".concat(this.sessionId)).then(function (res) {
+        _this.session = res.data.data || null;
+        _this.loading.isActive = false;
+      })["catch"](function () {
+        _this.loading.isActive = false;
+      });
+    },
+    formatMoney: function formatMoney(value) {
+      var n = Number(value) || 0;
+      try {
+        return n.toLocaleString('fr-FR', {
+          style: 'currency',
+          currency: 'EUR',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      } catch (_e) {
+        return "".concat(n.toFixed(2), " \u20AC");
+      }
+    },
+    formatVariance: function formatVariance(value) {
+      var n = Number(value) || 0;
+      var formatted = this.formatMoney(Math.abs(n));
+      if (n > 0) return "+".concat(formatted);
+      if (n < 0) return "-".concat(formatted);
+      return formatted;
+    },
+    varianceClass: function varianceClass(value) {
+      var n = Number(value) || 0;
+      if (n > 0.01) return 'text-green-600 font-semibold';
+      if (n < -0.01) return 'text-red-600 font-semibold';
+      return 'text-gray-700';
+    },
+    statusBadgeClass: function statusBadgeClass(status) {
+      switch (status) {
+        case 'open':
+          return 'badge badge-warning';
+        case 'closed':
+          return 'badge badge-info';
+        case 'reconciled':
+          return 'badge badge-success';
+        default:
+          return 'badge badge-secondary';
+      }
+    },
+    formatTimestamp: function formatTimestamp(iso) {
+      if (!iso) return '—';
+      try {
+        var d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return iso;
+        return d.toLocaleString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      } catch (_e) {
+        return iso;
+      }
+    }
+  }
+});
+
+/***/ },
+
 /***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoys/DeliveryBoyComponent.vue?vue&type=script&lang=js"
 /*!**********************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoys/DeliveryBoyComponent.vue?vue&type=script&lang=js ***!
@@ -32089,6 +32561,584 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     pagination: $options.pagination,
     method: $options.list
   }, null, 8 /* PROPS */, ["pagination", "method"])])])])], 64 /* STABLE_FRAGMENT */);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue?vue&type=template&id=1d4d0c35"
+/*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue?vue&type=template&id=1d4d0c35 ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = {
+  "class": "db-card",
+  "data-testid": "delivery-cash-form"
+};
+var _hoisted_2 = {
+  "class": "db-card-header"
+};
+var _hoisted_3 = {
+  "class": "db-card-title"
+};
+var _hoisted_4 = {
+  "class": "db-card-body"
+};
+var _hoisted_5 = {
+  key: 0,
+  "class": "alert alert-danger",
+  "data-testid": "delivery-cash-form-error"
+};
+var _hoisted_6 = {
+  "class": "mb-3"
+};
+var _hoisted_7 = {
+  "for": "deliveryBoyId",
+  "class": "db-field-title"
+};
+var _hoisted_8 = {
+  "class": "mb-3"
+};
+var _hoisted_9 = {
+  "for": "openingAmount",
+  "class": "db-field-title"
+};
+var _hoisted_10 = {
+  "class": "flex gap-3 justify-end"
+};
+var _hoisted_11 = ["disabled"];
+var _hoisted_12 = {
+  "class": "text-sm text-gray-600 mb-3"
+};
+var _hoisted_13 = {
+  "class": "mb-3"
+};
+var _hoisted_14 = {
+  "for": "closingAmount",
+  "class": "db-field-title"
+};
+var _hoisted_15 = {
+  "class": "flex gap-3 justify-end"
+};
+var _hoisted_16 = ["disabled"];
+var _hoisted_17 = {
+  "class": "text-sm text-gray-600 mb-3"
+};
+var _hoisted_18 = {
+  "class": "mb-3"
+};
+var _hoisted_19 = {
+  "for": "varianceReason",
+  "class": "db-field-title"
+};
+var _hoisted_20 = {
+  "class": "flex gap-3 justify-end"
+};
+var _hoisted_21 = ["disabled"];
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formTitle), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [$data.errorMessage ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errorMessage), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" MODE 1 — OPEN form "), $props.mode === 'open' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("form", {
+    key: 1,
+    onSubmit: _cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.submitOpen && $options.submitOpen.apply($options, arguments);
+    }, ["prevent"])),
+    "data-testid": "delivery-cash-form-open"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_boy')) + " ", 1 /* TEXT */), _cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "aria-hidden": "true"
+  }, "*", -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    id: "deliveryBoyId",
+    "onUpdate:modelValue": _cache[0] || (_cache[0] = function ($event) {
+      return $data.form.delivery_boy_id = $event;
+    }),
+    type: "number",
+    min: "1",
+    "class": "db-field-control",
+    "data-testid": "delivery-cash-form-livreur-input",
+    required: ""
+  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.form.delivery_boy_id, void 0, {
+    number: true
+  }]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_9, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_opening_amount')) + " ", 1 /* TEXT */), _cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "aria-hidden": "true"
+  }, "*", -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    id: "openingAmount",
+    "onUpdate:modelValue": _cache[1] || (_cache[1] = function ($event) {
+      return $data.form.opening_amount = $event;
+    }),
+    type: "number",
+    step: "0.01",
+    min: "0",
+    "class": "db-field-control",
+    "data-testid": "delivery-cash-form-opening-input",
+    required: ""
+  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.form.opening_amount, void 0, {
+    number: true
+  }]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "db-btn-outline",
+    onClick: _cache[2] || (_cache[2] = function ($event) {
+      return _ctx.$emit('cancel');
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.cancel')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "submit",
+    "class": "db-btn bg-primary text-white",
+    disabled: $data.submitting,
+    "data-testid": "delivery-cash-form-open-submit"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.submitting ? '...' : _ctx.$t('label.cash_session_open')), 9 /* TEXT, PROPS */, _hoisted_11)])], 32 /* NEED_HYDRATION */)) : $props.mode === 'close' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 2
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" MODE 2 — CLOSE form "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("form", {
+    onSubmit: _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.submitClose && $options.submitClose.apply($options, arguments);
+    }, ["prevent"])),
+    "data-testid": "delivery-cash-form-close"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_cash_close_intro')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_closing_amount')) + " ", 1 /* TEXT */), _cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "aria-hidden": "true"
+  }, "*", -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    id: "closingAmount",
+    "onUpdate:modelValue": _cache[4] || (_cache[4] = function ($event) {
+      return $data.form.closing_amount = $event;
+    }),
+    type: "number",
+    step: "0.01",
+    min: "0",
+    "class": "db-field-control",
+    "data-testid": "delivery-cash-form-closing-input",
+    required: ""
+  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.form.closing_amount, void 0, {
+    number: true
+  }]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "db-btn-outline",
+    onClick: _cache[5] || (_cache[5] = function ($event) {
+      return _ctx.$emit('cancel');
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.cancel')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "submit",
+    "class": "db-btn bg-warning text-white",
+    disabled: $data.submitting,
+    "data-testid": "delivery-cash-form-close-submit"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.submitting ? '...' : _ctx.$t('label.cash_session_close')), 9 /* TEXT, PROPS */, _hoisted_16)])], 32 /* NEED_HYDRATION */)], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)) : $props.mode === 'reconcile' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 3
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" MODE 3 — RECONCILE form "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("form", {
+    onSubmit: _cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.submitReconcile && $options.submitReconcile.apply($options, arguments);
+    }, ["prevent"])),
+    "data-testid": "delivery-cash-form-reconcile"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_cash_reconcile_intro')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_variance_reason')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("textarea", {
+    id: "varianceReason",
+    "onUpdate:modelValue": _cache[7] || (_cache[7] = function ($event) {
+      return $data.form.variance_reason = $event;
+    }),
+    rows: "3",
+    "class": "db-field-control",
+    "data-testid": "delivery-cash-form-reason-input"
+  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.form.variance_reason]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "db-btn-outline",
+    onClick: _cache[8] || (_cache[8] = function ($event) {
+      return _ctx.$emit('cancel');
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.cancel')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "submit",
+    "class": "db-btn bg-success text-white",
+    disabled: $data.submitting,
+    "data-testid": "delivery-cash-form-reconcile-submit"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.submitting ? '...' : _ctx.$t('label.cash_session_reconcile')), 9 /* TEXT, PROPS */, _hoisted_21)])], 32 /* NEED_HYDRATION */)], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue?vue&type=template&id=3ec8fa9b"
+/*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue?vue&type=template&id=3ec8fa9b ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = {
+  "class": "col-12"
+};
+var _hoisted_2 = {
+  "class": "db-card"
+};
+var _hoisted_3 = {
+  "class": "db-card-header border-none"
+};
+var _hoisted_4 = {
+  "class": "db-card-title"
+};
+var _hoisted_5 = {
+  "class": "db-card-filter"
+};
+var _hoisted_6 = {
+  "class": "db-card-filter-item"
+};
+var _hoisted_7 = {
+  "for": "filterStatus",
+  "class": "db-field-title after:hidden"
+};
+var _hoisted_8 = {
+  value: ""
+};
+var _hoisted_9 = {
+  value: "open"
+};
+var _hoisted_10 = {
+  value: "closed"
+};
+var _hoisted_11 = {
+  value: "reconciled"
+};
+var _hoisted_12 = {
+  "class": "db-table-responsive"
+};
+var _hoisted_13 = {
+  "class": "db-table stripe"
+};
+var _hoisted_14 = {
+  "class": "db-table-head"
+};
+var _hoisted_15 = {
+  "class": "db-table-head-tr"
+};
+var _hoisted_16 = {
+  "class": "db-table-head-th"
+};
+var _hoisted_17 = {
+  "class": "db-table-head-th"
+};
+var _hoisted_18 = {
+  "class": "db-table-head-th"
+};
+var _hoisted_19 = {
+  "class": "db-table-head-th"
+};
+var _hoisted_20 = {
+  "class": "db-table-head-th"
+};
+var _hoisted_21 = {
+  "class": "db-table-head-th"
+};
+var _hoisted_22 = {
+  "class": "db-table-head-th"
+};
+var _hoisted_23 = {
+  "class": "db-table-head-th"
+};
+var _hoisted_24 = {
+  "class": "db-table-head-th hidden-print"
+};
+var _hoisted_25 = {
+  key: 0,
+  "class": "db-table-body"
+};
+var _hoisted_26 = ["data-testid"];
+var _hoisted_27 = {
+  "class": "db-table-body-td"
+};
+var _hoisted_28 = {
+  "class": "db-table-body-td"
+};
+var _hoisted_29 = {
+  "class": "db-table-body-td"
+};
+var _hoisted_30 = {
+  "class": "db-table-body-td"
+};
+var _hoisted_31 = {
+  "class": "db-table-body-td"
+};
+var _hoisted_32 = {
+  "class": "db-table-body-td"
+};
+var _hoisted_33 = {
+  key: 1
+};
+var _hoisted_34 = {
+  "class": "db-table-body-td"
+};
+var _hoisted_35 = {
+  "class": "db-table-body-td"
+};
+var _hoisted_36 = {
+  "class": "db-table-body-td hidden-print"
+};
+var _hoisted_37 = ["data-testid", "onClick"];
+var _hoisted_38 = {
+  key: 1,
+  "class": "db-table-body"
+};
+var _hoisted_39 = {
+  "class": "db-table-body-tr"
+};
+var _hoisted_40 = {
+  "class": "db-table-body-td text-center",
+  colspan: "9"
+};
+var _hoisted_41 = {
+  "class": "p-4",
+  "data-testid": "delivery-cash-empty-state"
+};
+var _hoisted_42 = {
+  "class": "d-block mt-3 text-lg"
+};
+var _hoisted_43 = {
+  key: 0,
+  "class": "flex items-center justify-between border-t border-gray-200 bg-white px-4 py-6"
+};
+var _hoisted_44 = ["disabled"];
+var _hoisted_45 = ["disabled"];
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingComponent, {
+    props: $data.loading
+  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_cash_sessions')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.status')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("select", {
+    id: "filterStatus",
+    "class": "db-field-control",
+    "onUpdate:modelValue": _cache[0] || (_cache[0] = function ($event) {
+      return $data.filters.status = $event;
+    }),
+    onChange: _cache[1] || (_cache[1] = function ($event) {
+      return $options.list(1);
+    }),
+    "data-testid": "delivery-cash-filter-status"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.all')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_cash_status_open')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_cash_status_closed')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_cash_status_reconciled')), 1 /* TEXT */)], 544 /* NEED_HYDRATION, NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelSelect, $data.filters.status]])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("table", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("thead", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.id')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_boy')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.branch')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_opening_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_closing_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_variance')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.status')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_opened_at')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.action')), 1 /* TEXT */)])]), $data.sessions.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tbody", _hoisted_25, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.sessions, function (session) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tr", {
+      "class": "db-table-body-tr",
+      key: session.id,
+      "data-testid": "delivery-cash-session-row-".concat(session.id)
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_27, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(session.id), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(session.delivery_boy_id), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(session.branch_id), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_30, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney(session.opening_amount)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(session.closing_amount === null ? '—' : $options.formatMoney(session.closing_amount)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_32, [session.variance !== null ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+      key: 0,
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($options.varianceClass(session.variance))
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatVariance(session.variance)), 3 /* TEXT, CLASS */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_33, "—"))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_34, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($options.statusBadgeClass(session.status))
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.delivery_cash_status_".concat(session.status))), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatTimestamp(session.opened_at)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      type: "button",
+      "class": "db-btn-outline-sm",
+      "data-testid": "delivery-cash-session-view-".concat(session.id),
+      onClick: function onClick($event) {
+        return _ctx.$emit('view', session.id);
+      }
+    }, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      "class": "lab lab-eye-line"
+    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.view')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_37)])], 8 /* PROPS */, _hoisted_26);
+  }), 128 /* KEYED_FRAGMENT */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tbody", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_40, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_41, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_data_available')), 1 /* TEXT */)])])])]))])]), $data.pagination.total > $data.pagination.per_page ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_43, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "db-btn-outline-sm",
+    disabled: $data.pagination.current_page <= 1,
+    onClick: _cache[2] || (_cache[2] = function ($event) {
+      return $options.list($data.pagination.current_page - 1);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.previous')), 9 /* TEXT, PROPS */, _hoisted_44), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.pagination.current_page) + " / " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.pagination.last_page) + " (" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.pagination.total) + ") ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "db-btn-outline-sm",
+    disabled: $data.pagination.current_page >= $data.pagination.last_page,
+    onClick: _cache[3] || (_cache[3] = function ($event) {
+      return $options.list($data.pagination.current_page + 1);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.next')), 9 /* TEXT, PROPS */, _hoisted_45)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 64 /* STABLE_FRAGMENT */);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue?vue&type=template&id=5ff03ac8"
+/*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue?vue&type=template&id=5ff03ac8 ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = {
+  key: 0,
+  "class": "col-12"
+};
+var _hoisted_2 = {
+  "class": "db-card mb-6"
+};
+var _hoisted_3 = {
+  "class": "db-card-header"
+};
+var _hoisted_4 = {
+  "class": "db-card-title",
+  "data-testid": "delivery-cash-session-title"
+};
+var _hoisted_5 = {
+  "class": "db-card-body"
+};
+var _hoisted_6 = {
+  "class": "grid grid-cols-1 sm:grid-cols-2 gap-4"
+};
+var _hoisted_7 = {
+  "class": "text-sm text-gray-500"
+};
+var _hoisted_8 = {
+  "class": "text-base font-semibold",
+  "data-testid": "delivery-cash-livreur-id"
+};
+var _hoisted_9 = {
+  "class": "text-sm text-gray-500"
+};
+var _hoisted_10 = {
+  "class": "text-base font-semibold"
+};
+var _hoisted_11 = {
+  "class": "text-sm text-gray-500"
+};
+var _hoisted_12 = {
+  "class": "text-base font-semibold",
+  "data-testid": "delivery-cash-opening-amount"
+};
+var _hoisted_13 = {
+  "class": "text-sm text-gray-500"
+};
+var _hoisted_14 = {
+  "class": "text-base font-semibold"
+};
+var _hoisted_15 = {
+  "class": "text-sm text-gray-500"
+};
+var _hoisted_16 = {
+  "class": "text-base font-semibold"
+};
+var _hoisted_17 = {
+  "class": "text-sm text-gray-500"
+};
+var _hoisted_18 = {
+  key: 1
+};
+var _hoisted_19 = {
+  key: 0,
+  "class": "sm:col-span-2"
+};
+var _hoisted_20 = {
+  "class": "text-sm text-gray-500"
+};
+var _hoisted_21 = {
+  "class": "text-base",
+  "data-testid": "delivery-cash-variance-reason"
+};
+var _hoisted_22 = {
+  "class": "text-sm text-gray-500"
+};
+var _hoisted_23 = {
+  "class": "text-sm text-gray-500"
+};
+var _hoisted_24 = {
+  key: 0,
+  "class": "mt-6 flex gap-3"
+};
+var _hoisted_25 = {
+  "class": "db-card"
+};
+var _hoisted_26 = {
+  "class": "db-card-header"
+};
+var _hoisted_27 = {
+  "class": "db-card-title"
+};
+var _hoisted_28 = {
+  "class": "db-card-body"
+};
+var _hoisted_29 = {
+  key: 0,
+  "class": "db-table stripe"
+};
+var _hoisted_30 = {
+  "class": "db-table-head"
+};
+var _hoisted_31 = {
+  "class": "db-table-head-tr"
+};
+var _hoisted_32 = {
+  "class": "db-table-head-th"
+};
+var _hoisted_33 = {
+  "class": "db-table-head-th"
+};
+var _hoisted_34 = {
+  "class": "db-table-head-th text-right"
+};
+var _hoisted_35 = {
+  "class": "db-table-head-th text-right"
+};
+var _hoisted_36 = {
+  "class": "db-table-head-th"
+};
+var _hoisted_37 = {
+  "class": "db-table-body"
+};
+var _hoisted_38 = ["data-testid"];
+var _hoisted_39 = {
+  "class": "db-table-body-td"
+};
+var _hoisted_40 = {
+  "class": "db-table-body-td"
+};
+var _hoisted_41 = {
+  "class": "db-table-body-td text-right"
+};
+var _hoisted_42 = {
+  "class": "db-table-body-td text-right"
+};
+var _hoisted_43 = {
+  "class": "db-table-body-td"
+};
+var _hoisted_44 = {
+  key: 1,
+  "data-testid": "delivery-cash-no-movements",
+  "class": "text-center text-gray-500 py-4"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingComponent, {
+    props: $data.loading
+  }, null, 8 /* PROPS */, ["props"]), $data.session ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_cash_session')) + " #" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.session.id), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($options.statusBadgeClass($data.session.status)),
+    "data-testid": "delivery-cash-session-status"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.delivery_cash_status_".concat($data.session.status))), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dl", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_boy')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dd", _hoisted_8, " #" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.session.delivery_boy_id), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.branch')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dd", _hoisted_10, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.session.branch_id), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_opening_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dd", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney($data.session.opening_amount)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_closing_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dd", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.session.closing_amount === null ? '—' : $options.formatMoney($data.session.closing_amount)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_expected_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dd", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.session.expected_closing_amount === null ? '—' : $options.formatMoney($data.session.expected_closing_amount)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_variance')), 1 /* TEXT */), $data.session.variance !== null ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("dd", {
+    key: 0,
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($options.varianceClass($data.session.variance)),
+    "data-testid": "delivery-cash-variance"
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatVariance($data.session.variance)), 3 /* TEXT, CLASS */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("dd", _hoisted_18, "—"))]), $data.session.variance_reason ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_variance_reason')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dd", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.session.variance_reason), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_opened_at')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dd", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatTimestamp($data.session.opened_at)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dt", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_closed_at')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("dd", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatTimestamp($data.session.closed_at)), 1 /* TEXT */)])]), $props.canMutate ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_24, [$data.session.status === 'open' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    key: 0,
+    type: "button",
+    "class": "db-btn bg-warning text-white",
+    "data-testid": "delivery-cash-action-close",
+    onClick: _cache[0] || (_cache[0] = function ($event) {
+      return _ctx.$emit('close-session', $data.session);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_close')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.session.status === 'closed' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    key: 1,
+    type: "button",
+    "class": "db-btn bg-success text-white",
+    "data-testid": "delivery-cash-action-reconcile",
+    onClick: _cache[1] || (_cache[1] = function ($event) {
+      return _ctx.$emit('reconcile-session', $data.session);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_reconcile')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_movements')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_28, [$options.movements.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("table", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("thead", _hoisted_30, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", _hoisted_31, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.date')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.type')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.direction')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.notes')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tbody", _hoisted_37, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.movements, function (mvt) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tr", {
+      key: mvt.id,
+      "class": "db-table-body-tr",
+      "data-testid": "delivery-cash-mvt-row-".concat(mvt.id)
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatTimestamp(mvt.created_at)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.delivery_cash_mvt_".concat(mvt.type))), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney(mvt.amount)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(mvt.direction === 'in' ? '↑ IN' : '↓ OUT'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_43, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(mvt.notes || '—'), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_38);
+  }), 128 /* KEYED_FRAGMENT */))])])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_44, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_no_movements')), 1 /* TEXT */))])])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 64 /* STABLE_FRAGMENT */);
 }
 
 /***/ },
@@ -78429,6 +79479,93 @@ if (false) // removed by dead control flow
 
 /***/ },
 
+/***/ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue"
+/*!******************************************************************************************************!*\
+  !*** ./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue ***!
+  \******************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _DeliveryBoyCashSessionFormComponent_vue_vue_type_template_id_1d4d0c35__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./DeliveryBoyCashSessionFormComponent.vue?vue&type=template&id=1d4d0c35 */ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue?vue&type=template&id=1d4d0c35");
+/* harmony import */ var _DeliveryBoyCashSessionFormComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./DeliveryBoyCashSessionFormComponent.vue?vue&type=script&lang=js */ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue?vue&type=script&lang=js");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_2__["default"])(_DeliveryBoyCashSessionFormComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_DeliveryBoyCashSessionFormComponent_vue_vue_type_template_id_1d4d0c35__WEBPACK_IMPORTED_MODULE_0__.render],['__file',"resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue"
+/*!******************************************************************************************************!*\
+  !*** ./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue ***!
+  \******************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _DeliveryBoyCashSessionListComponent_vue_vue_type_template_id_3ec8fa9b__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./DeliveryBoyCashSessionListComponent.vue?vue&type=template&id=3ec8fa9b */ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue?vue&type=template&id=3ec8fa9b");
+/* harmony import */ var _DeliveryBoyCashSessionListComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./DeliveryBoyCashSessionListComponent.vue?vue&type=script&lang=js */ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue?vue&type=script&lang=js");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_2__["default"])(_DeliveryBoyCashSessionListComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_DeliveryBoyCashSessionListComponent_vue_vue_type_template_id_3ec8fa9b__WEBPACK_IMPORTED_MODULE_0__.render],['__file',"resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue"
+/*!******************************************************************************************************!*\
+  !*** ./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue ***!
+  \******************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _DeliveryBoyCashSessionShowComponent_vue_vue_type_template_id_5ff03ac8__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./DeliveryBoyCashSessionShowComponent.vue?vue&type=template&id=5ff03ac8 */ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue?vue&type=template&id=5ff03ac8");
+/* harmony import */ var _DeliveryBoyCashSessionShowComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./DeliveryBoyCashSessionShowComponent.vue?vue&type=script&lang=js */ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue?vue&type=script&lang=js");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_2__["default"])(_DeliveryBoyCashSessionShowComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_DeliveryBoyCashSessionShowComponent_vue_vue_type_template_id_5ff03ac8__WEBPACK_IMPORTED_MODULE_0__.render],['__file',"resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
 /***/ "./resources/js/components/admin/deliveryBoys/DeliveryBoyComponent.vue"
 /*!*****************************************************************************!*\
   !*** ./resources/js/components/admin/deliveryBoys/DeliveryBoyComponent.vue ***!
@@ -83957,6 +85094,54 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ },
 
+/***/ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue?vue&type=script&lang=js"
+/*!******************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue?vue&type=script&lang=js ***!
+  \******************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_DeliveryBoyCashSessionFormComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_DeliveryBoyCashSessionFormComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./DeliveryBoyCashSessionFormComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue?vue&type=script&lang=js"
+/*!******************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue?vue&type=script&lang=js ***!
+  \******************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_DeliveryBoyCashSessionListComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_DeliveryBoyCashSessionListComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./DeliveryBoyCashSessionListComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue?vue&type=script&lang=js"
+/*!******************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue?vue&type=script&lang=js ***!
+  \******************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_DeliveryBoyCashSessionShowComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_DeliveryBoyCashSessionShowComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./DeliveryBoyCashSessionShowComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
 /***/ "./resources/js/components/admin/deliveryBoys/DeliveryBoyComponent.vue?vue&type=script&lang=js"
 /*!*****************************************************************************************************!*\
   !*** ./resources/js/components/admin/deliveryBoys/DeliveryBoyComponent.vue?vue&type=script&lang=js ***!
@@ -87329,6 +88514,54 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_CustomerAddressList_vue_vue_type_template_id_5ca4f344__WEBPACK_IMPORTED_MODULE_0__.render)
 /* harmony export */ });
 /* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_CustomerAddressList_vue_vue_type_template_id_5ca4f344__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./CustomerAddressList.vue?vue&type=template&id=5ca4f344 */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/customers/address/CustomerAddressList.vue?vue&type=template&id=5ca4f344");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue?vue&type=template&id=1d4d0c35"
+/*!************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue?vue&type=template&id=1d4d0c35 ***!
+  \************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_DeliveryBoyCashSessionFormComponent_vue_vue_type_template_id_1d4d0c35__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_DeliveryBoyCashSessionFormComponent_vue_vue_type_template_id_1d4d0c35__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./DeliveryBoyCashSessionFormComponent.vue?vue&type=template&id=1d4d0c35 */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue?vue&type=template&id=1d4d0c35");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue?vue&type=template&id=3ec8fa9b"
+/*!************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue?vue&type=template&id=3ec8fa9b ***!
+  \************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_DeliveryBoyCashSessionListComponent_vue_vue_type_template_id_3ec8fa9b__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_DeliveryBoyCashSessionListComponent_vue_vue_type_template_id_3ec8fa9b__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./DeliveryBoyCashSessionListComponent.vue?vue&type=template&id=3ec8fa9b */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue?vue&type=template&id=3ec8fa9b");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue?vue&type=template&id=5ff03ac8"
+/*!************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue?vue&type=template&id=5ff03ac8 ***!
+  \************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_DeliveryBoyCashSessionShowComponent_vue_vue_type_template_id_5ff03ac8__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_DeliveryBoyCashSessionShowComponent_vue_vue_type_template_id_5ff03ac8__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./DeliveryBoyCashSessionShowComponent.vue?vue&type=template&id=5ff03ac8 */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue?vue&type=template&id=5ff03ac8");
 
 
 /***/ },

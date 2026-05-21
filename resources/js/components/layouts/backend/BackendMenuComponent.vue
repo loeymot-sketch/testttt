@@ -101,6 +101,8 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
     }),
     Object.freeze({ url: 'ingredients', language: 'ingredients', icon: 'lab lab-item-attributes' }),
     Object.freeze({ url: 'pos-orders', language: 'pos_orders', icon: 'lab lab-pos-orders' }),
+    Object.freeze({ url: 'cash-overview', language: 'cash_overview', icon: 'lab lab-pos-orders' }),
+    Object.freeze({ url: 'delivery-boy-cash-sessions', language: 'delivery_cash_sessions', icon: 'lab lab-pos-orders' }),
 ]);
 
 /** menu.url → clé `permission.url` Spatie (souvent identique ; exceptions ici). */

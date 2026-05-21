@@ -21,6 +21,7 @@ import pushNotificationRoutes from "./modules/pushNotificationRoutes";
 import customerRoutes from "./modules/customerRoutes";
 import administratorRoutes from "./modules/administratorRoutes";
 import deliveryBoyRoutes from "./modules/deliveryBoyRoutes";
+import deliveryBoyCashSessionRoutes from "./modules/deliveryBoyCashSessionRoutes";
 import employeeRoutes from "./modules/employeeRoutes";
 import frontendRoutes from "./modules/frontendRoutes";
 import salesReportRoutes from "./modules/salesReportRoutes";
@@ -118,6 +119,12 @@ const baseRoutes = [
         redirect: { name: "admin.kitchen-display-system" },
     },
     {
+        // Wave Y C-002 — /admin root URL was rendering Vue SPA 404 even when
+        // authenticated. Redirect to admin.dashboard mirrors the /kds pattern.
+        path: "/admin",
+        redirect: { name: "admin.dashboard" },
+    },
+    {
         path: "/delivery",
         redirect: { name: "admin.delivery-boys" },
     },
@@ -168,6 +175,7 @@ export const routes = baseRoutes.concat(
     waiterRoutes,
     chefRoutes,
     deliveryBoyRoutes,
+    deliveryBoyCashSessionRoutes,
     administratorRoutes,
     employeeRoutes,
     salesReportRoutes,
