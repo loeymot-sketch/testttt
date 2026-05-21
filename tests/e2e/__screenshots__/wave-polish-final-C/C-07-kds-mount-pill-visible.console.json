@@ -1,0 +1,22 @@
+[
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_NETWORK_CHANGED",
+    "location": {
+      "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779353036747
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "location": {
+      "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779353039175
+  }
+]

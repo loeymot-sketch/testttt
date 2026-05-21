@@ -1,0 +1,32 @@
+[
+  {
+    "level": "info",
+    "text": "Connecting to 'http://localhost:8000/api/broadcasting/auth' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1779352224",
+      "lineNumber": 194,
+      "columnNumber": 0
+    },
+    "ts": 1779352225223
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://localhost:8000/api/login' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779352225358
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/login",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779352225403
+  }
+]
