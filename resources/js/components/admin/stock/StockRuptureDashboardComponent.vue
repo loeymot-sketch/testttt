@@ -1,309 +1,216 @@
 <template>
     <!--
-        StockRuptureDashboardComponent — V1.0.2 BUILD-4 wireup (Round 4).
-        Plan: reports/test-e2e/goal-2026-05-18/round-1/agent-6-stock-ui-plan.md
+        StockRuptureDashboardComponent — V2 Unified Catalogue Browser
+        Mission 1 — Stock-Rupture UI Simplification (Owner spec 2026-05-21).
 
-        Surface that exposes:
-          - Cron status + manual scan trigger.
-          - List of items currently auto-86 / manually-86 with per-row Restaurer.
-          - Low-stock alerts list with per-row Mettre en rupture (item only).
-          - Bulk multi-select (Restaurer) on rupture list.
-          - Search filter (client-side, item name).
-          - Branch filter dropdown (admin branch_id=0 sees Toutes les branches).
-          - Real-time refresh via Echo (private-branch.{branchId}) on
-            ItemAvailabilityChanged / ItemVariationAvailabilityChanged /
-            ItemExtraAvailabilityChanged. Falls back to 60s polling for admin
-            (branch_id=0) where Echo subscribes to N branches is not supported.
+        Plan: plans/PLAN_MISSION_1_STOCK_RUPTURE_SIMPLIFICATION_2026-05-21.md
 
-        Consumes (no new routes — REUSE existing endpoints):
-          - GET  /api/admin/stock/scan-rupture/last-summary
-          - GET  /api/admin/stock/low-alerts
-          - POST /api/admin/stock/scan-rupture/run
-          - POST /api/admin/availability/toggle              (item)
-          - POST /api/admin/availability/toggle-extra
-          - POST /api/admin/availability/toggle-variation
+        ONE page. Left rail = all browsable buckets (item categories + extra
+        groups + variation attributes). Right pane = product cards with a
+        binary in-stock / out-of-stock toggle per product.
+
+        Backend SSOT:
+          - GET  /api/admin/stock/catalog-overview                  (read)
+          - POST /api/admin/menu/availability/toggle                (items)
+          - POST /api/admin/menu/availability/extra/toggle          (extras)
+          - POST /api/admin/menu/availability/variation/toggle      (variations)
+
+        Deduped axes:
+          - Extras grouped by `group_label`, deduped by name. Toggling
+            "Algérienne" cascades to all underlying extra_ids in one batch.
+          - Variations grouped by item_attribute_id, deduped by name. Toggling
+            "Tomate" cascades to all underlying variation_ids in one batch.
+
+        Real-time sync via Echo on `private-branch.{branchId}` for the 3
+        availability events; 60s polling fallback for admin (branch_id=0).
     -->
     <section
-        class="space-y-4"
-        data-testid="stock-rupture-dashboard"
+        class="stock-mgmt-v2 space-y-4"
+        data-testid="stock-management-v2"
         :aria-busy="loading"
     >
-        <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <header class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <h2 class="text-lg font-semibold text-slate-800">
-                    {{ $t('admin.stock_rupture.title') }}
+                    {{ $t('admin.stock_mgmt.title') }}
                 </h2>
                 <p class="mt-1 text-sm text-slate-600">
-                    {{ $t('admin.stock_rupture.subtitle') }}
+                    {{ $t('admin.stock_mgmt.subtitle') }}
                 </p>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <label
-                    v-if="canFilterByBranch"
-                    class="flex items-center gap-2 text-xs text-slate-700"
-                    data-testid="stock-rupture-branch-filter"
+            <label
+                v-if="canFilterByBranch"
+                class="flex items-center gap-2 text-xs text-slate-700"
+                data-testid="stock-mgmt-branch-filter"
+            >
+                <span>{{ $t('admin.stock_mgmt.branch_label') }}</span>
+                <select
+                    v-model.number="branchId"
+                    class="rounded border border-slate-300 px-2 py-1 text-sm text-slate-800"
+                    data-testid="stock-mgmt-branch-select"
+                    @change="loadAll"
                 >
-                    <span>{{ $t('admin.stock_rupture.branch_filter_label') }}</span>
-                    <select
-                        v-model.number="branchFilter"
-                        class="rounded border border-slate-300 px-2 py-1 text-sm text-slate-800"
-                        data-testid="stock-rupture-branch-select"
+                    <option
+                        v-for="branch in branchOptions"
+                        :key="branch.id"
+                        :value="branch.id"
                     >
-                        <option :value="0">{{ $t('admin.stock_rupture.branch_filter_all') }}</option>
-                        <option
-                            v-for="branch in summaries"
-                            :key="branch.branch_id"
-                            :value="branch.branch_id"
-                        >
-                            {{ branch.branch_name }}
-                        </option>
-                    </select>
-                </label>
-                <span
-                    class="rounded px-2 py-1 text-xs font-semibold"
-                    :class="cronStatusBadgeClass"
-                    :data-testid="`stock-rupture-cron-${cronEnabled ? 'on' : 'off'}`"
-                >
-                    {{ cronEnabled ? $t('admin.stock_rupture.cron_enabled') : $t('admin.stock_rupture.cron_disabled') }}
-                </span>
-                <button
-                    type="button"
-                    class="db-btn db-btn-secondary text-sm !text-slate-800"
-                    :disabled="loading || runningManually"
-                    data-testid="stock-rupture-run-now"
-                    @click="runScanNow"
-                >
-                    <i class="lab lab-refresh" aria-hidden="true"></i>
-                    {{ $t('admin.stock_rupture.run_now') }}
-                </button>
-            </div>
+                        {{ branch.name }}
+                    </option>
+                </select>
+            </label>
         </header>
 
         <div
             v-if="errorMessage"
             class="rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
             role="alert"
-            data-testid="stock-rupture-error"
+            aria-live="polite"
+            data-testid="stock-mgmt-error"
         >
             {{ errorMessage }}
         </div>
 
-        <article
-            v-if="lastRunSummary"
-            class="rounded border border-slate-200 bg-white p-4"
-            data-testid="stock-rupture-last-run"
-        >
-            <h3 class="text-sm font-semibold text-slate-800">
-                {{ $t('admin.stock_rupture.last_run') }}
-            </h3>
-            <dl class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
-                <div>
-                    <dt class="text-xs text-slate-600">{{ $t('admin.stock_rupture.last_run_at') }}</dt>
-                    <dd class="mt-1 text-sm font-semibold text-slate-800">{{ lastRunSummary.ran_at_human }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-slate-600">{{ $t('admin.stock_rupture.items_flipped') }}</dt>
-                    <dd class="mt-1 text-sm font-semibold text-slate-800">{{ lastRunSummary.items_flipped }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-slate-600">{{ $t('admin.stock_rupture.items_skipped') }}</dt>
-                    <dd class="mt-1 text-sm font-semibold text-slate-800">{{ lastRunSummary.items_skipped }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-slate-600">{{ $t('admin.stock_rupture.duration_ms') }}</dt>
-                    <dd class="mt-1 text-sm font-semibold text-slate-800">{{ lastRunSummary.duration_ms }} ms</dd>
-                </div>
-            </dl>
-        </article>
-
-        <article
-            class="rounded border border-slate-200 bg-white p-4"
-            data-testid="stock-rupture-currently-86"
-        >
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <h3 class="text-sm font-semibold text-slate-800">
-                    {{ $t('admin.stock_rupture.currently_86') }} ({{ filteredCurrentlyUnavailable.length }})
-                </h3>
-                <input
-                    v-model="searchQuery"
-                    type="search"
-                    :placeholder="$t('admin.stock_rupture.search_placeholder')"
-                    class="rounded border border-slate-300 px-3 py-1 text-sm text-slate-800"
-                    data-testid="stock-rupture-search"
-                />
-            </div>
-
-            <p v-if="filteredCurrentlyUnavailable.length === 0" class="mt-3 text-sm text-slate-600">
-                {{ $t('admin.stock_rupture.none_unavailable') }}
-            </p>
-            <ul v-else class="mt-3 space-y-2">
-                <li
-                    v-for="row in filteredCurrentlyUnavailable"
-                    :key="`${row.branch_id}-${row.item_id}`"
-                    class="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-100 p-3"
-                    :data-testid="`stock-rupture-row-${row.item_id}`"
+        <div class="layout grid grid-cols-1 gap-4 md:grid-cols-[260px,1fr]">
+            <!-- Left rail: bucket list -->
+            <nav
+                class="rail rounded border border-slate-200 bg-white p-2"
+                data-testid="stock-mgmt-rail"
+                :aria-label="$t('admin.stock_mgmt.title')"
+            >
+                <ul class="space-y-1">
+                    <li
+                        v-for="bucket in buckets"
+                        :key="bucket.key"
+                    >
+                        <button
+                            type="button"
+                            class="w-full flex items-center justify-between gap-2 rounded px-3 py-2 text-left text-sm transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            :class="bucket.key === activeBucketKey ? 'bg-slate-900 text-white hover:bg-slate-900' : 'text-slate-700'"
+                            :data-testid="`stock-mgmt-bucket-${bucket.key}`"
+                            :aria-current="bucket.key === activeBucketKey ? 'true' : 'false'"
+                            @click="activeBucketKey = bucket.key"
+                        >
+                            <span class="flex items-center gap-2">
+                                <span aria-hidden="true">{{ bucket.icon }}</span>
+                                <span>{{ bucket.label }}</span>
+                            </span>
+                            <span
+                                class="rounded-full px-2 py-0.5 text-xs font-semibold"
+                                :class="bucket.key === activeBucketKey ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'"
+                            >
+                                {{ bucket.count }}
+                            </span>
+                        </button>
+                    </li>
+                </ul>
+                <p
+                    v-if="buckets.length === 0 && !loading"
+                    class="px-3 py-4 text-xs text-slate-500"
                 >
-                    <div class="flex items-center gap-3">
-                        <input
-                            v-if="canEditAvailability"
-                            type="checkbox"
-                            :value="rowSelectionKey(row)"
-                            v-model="selectedRupture"
-                            class="h-4 w-4 rounded border-slate-300"
-                            :aria-label="$t('admin.stock_rupture.select_all')"
-                            :data-testid="`stock-rupture-select-${row.item_id}`"
-                        />
-                        <div>
-                            <p class="text-sm font-semibold text-slate-800">{{ row.item_name }}</p>
-                            <p class="text-xs text-slate-600">
-                                {{ row.branch_name }} · {{ $t('admin.stock_rupture.flipped_at') }} {{ row.flipped_at_human }}
-                            </p>
+                    {{ $t('admin.stock_mgmt.empty') }}
+                </p>
+            </nav>
+
+            <!-- Right pane: product grid -->
+            <main class="pane rounded border border-slate-200 bg-white p-3">
+                <div class="mb-3 flex items-center gap-2">
+                    <input
+                        v-model="searchQuery"
+                        type="search"
+                        class="w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        :placeholder="$t('admin.stock_mgmt.search')"
+                        data-testid="stock-mgmt-search"
+                        :aria-label="$t('admin.stock_mgmt.search')"
+                    />
+                    <span
+                        v-if="!canEditAvailability"
+                        class="rounded bg-amber-50 px-2 py-1 text-xs text-amber-700"
+                        data-testid="stock-mgmt-read-only"
+                    >
+                        {{ $t('admin.stock_mgmt.read_only') }}
+                    </span>
+                </div>
+
+                <p
+                    v-if="loading && filteredProducts.length === 0"
+                    class="px-2 py-6 text-center text-sm text-slate-500"
+                    aria-live="polite"
+                >
+                    {{ $t('admin.stock_mgmt.loading') }}
+                </p>
+
+                <p
+                    v-else-if="filteredProducts.length === 0"
+                    class="px-2 py-6 text-center text-sm text-slate-500"
+                    data-testid="stock-mgmt-empty"
+                >
+                    {{ $t('admin.stock_mgmt.empty') }}
+                </p>
+
+                <div
+                    v-else
+                    class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                >
+                    <article
+                        v-for="product in filteredProducts"
+                        :key="product.key"
+                        class="product-card flex items-center justify-between gap-3 rounded border border-slate-200 bg-white p-3"
+                        :data-testid="`stock-mgmt-product-${product.key}`"
+                    >
+                        <div class="flex items-center gap-3 min-w-0">
+                            <img
+                                v-if="product.thumb"
+                                :src="product.thumb"
+                                alt=""
+                                class="h-12 w-12 rounded object-cover bg-slate-100"
+                                @error="onThumbError"
+                            />
+                            <span
+                                v-else
+                                class="h-12 w-12 rounded bg-slate-100 flex items-center justify-center text-xl"
+                                aria-hidden="true"
+                            >📦</span>
+                            <span class="name truncate text-sm font-medium text-slate-800" :title="product.name">
+                                {{ product.name }}
+                            </span>
                         </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="rounded bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700">
-                            {{ translateReason(row.reason) }}
-                        </span>
+
                         <button
                             v-if="canEditAvailability"
                             type="button"
-                            class="db-btn db-btn-secondary text-xs !text-slate-800"
-                            :disabled="isRowBusy(rowSelectionKey(row))"
-                            :data-testid="`stock-rupture-restore-${row.item_id}`"
-                            @click="restoreItem(row)"
+                            role="switch"
+                            :aria-checked="product.is_available ? 'true' : 'false'"
+                            :class="[
+                                'toggle inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500',
+                                product.is_available
+                                    ? 'in-stock bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                    : 'out-of-stock bg-rose-100 text-rose-800 hover:bg-rose-200',
+                                busyKeys[product.key] ? 'opacity-60 cursor-wait' : '',
+                            ]"
+                            :disabled="busyKeys[product.key]"
+                            :data-testid="`stock-mgmt-toggle-${product.key}`"
+                            @click="toggleProduct(product)"
                         >
-                            {{ $t('admin.stock_rupture.restore') }}
+                            {{ product.is_available ? $t('admin.stock_mgmt.in_stock') : $t('admin.stock_mgmt.out_of_stock') }}
                         </button>
-                    </div>
-                </li>
-            </ul>
-        </article>
-
-        <article
-            class="rounded border border-slate-200 bg-white p-4"
-            data-testid="stock-rupture-low-alerts"
-        >
-            <h3 class="text-sm font-semibold text-slate-800">
-                {{ $t('admin.stock_rupture.low_alerts') }} ({{ filteredLowAlerts.length }})
-            </h3>
-            <p v-if="filteredLowAlerts.length === 0" class="mt-3 text-sm text-slate-600">
-                {{ $t('admin.stock_rupture.no_low_alerts') }}
-            </p>
-            <ul v-else class="mt-3 space-y-2">
-                <li
-                    v-for="alert in filteredLowAlerts"
-                    :key="`${alert.branch_id}-${alert.stockable_id}-${alert.stockable_type}`"
-                    class="flex flex-wrap items-center justify-between gap-2 rounded border border-amber-200 bg-amber-50 p-3"
-                    :data-testid="`stock-low-alert-${alert.stockable_id}`"
-                >
-                    <div>
-                        <p class="text-sm font-semibold text-amber-900">{{ alert.stockable_name }}</p>
-                        <p class="text-xs text-amber-800">
-                            {{ alert.branch_name }} · {{ alert.on_hand }} / {{ alert.threshold_low }}
-                        </p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">
-                            {{ $t('admin.stock_rupture.below_threshold') }}
+                        <span
+                            v-else
+                            :class="[
+                                'inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-semibold whitespace-nowrap',
+                                product.is_available
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : 'bg-rose-100 text-rose-800',
+                            ]"
+                            :data-testid="`stock-mgmt-toggle-${product.key}`"
+                            role="img"
+                            :aria-label="product.is_available ? $t('admin.stock_mgmt.in_stock') : $t('admin.stock_mgmt.out_of_stock')"
+                        >
+                            {{ product.is_available ? $t('admin.stock_mgmt.in_stock') : $t('admin.stock_mgmt.out_of_stock') }}
                         </span>
-                        <button
-                            v-if="canEditAvailability && isItemAlert(alert)"
-                            type="button"
-                            class="db-btn db-btn-secondary text-xs !text-slate-800"
-                            :disabled="isAlertBusy(alert)"
-                            :data-testid="`stock-low-alert-mark-${alert.stockable_id}`"
-                            @click="markAlertRupture(alert)"
-                        >
-                            {{ $t('admin.stock_rupture.mark_rupture') }}
-                        </button>
-                    </div>
-                </li>
-            </ul>
-        </article>
-
-        <!--
-            Sticky bulk action bar — only visible when N>=1 selected on the
-            rupture list.
-        -->
-        <div
-            v-if="canEditAvailability && selectedRupture.length > 0"
-            class="sticky bottom-0 z-10 flex flex-wrap items-center gap-2 rounded border border-slate-200 bg-white px-4 py-3 shadow-sm"
-            data-testid="stock-rupture-bulk-bar"
-        >
-            <span class="text-sm font-semibold text-slate-700">
-                {{ $t('admin.stock_rupture.selected_count', { count: selectedRupture.length }) }}
-            </span>
-            <button
-                type="button"
-                class="db-btn db-btn-primary text-sm"
-                :disabled="bulkBusy"
-                data-testid="stock-rupture-bulk-restore"
-                @click="bulkRestore"
-            >
-                {{ $t('admin.stock_rupture.restore_selected') }}
-            </button>
-            <button
-                type="button"
-                class="db-btn db-btn-secondary text-sm !text-slate-800"
-                :disabled="bulkBusy"
-                data-testid="stock-rupture-bulk-clear"
-                @click="clearSelection"
-            >
-                {{ $t('admin.stock_rupture.cancel') }}
-            </button>
-        </div>
-
-        <!--
-            Reason modal — opens when marking an item rupture from the low-alerts
-            list. Single-step pick from MANUAL_UNAVAILABLE_REASONS whitelist.
-        -->
-        <div
-            v-if="reasonModal.open"
-            class="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40"
-            role="dialog"
-            aria-modal="true"
-            data-testid="stock-rupture-reason-modal"
-        >
-            <div class="w-full max-w-md rounded border border-slate-200 bg-white p-4 shadow-md">
-                <h4 class="text-base font-semibold text-slate-800">
-                    {{ reasonModal.title }}
-                </h4>
-                <fieldset class="mt-3 space-y-2">
-                    <legend class="sr-only">{{ $t('admin.stock_rupture.reason_label') }}</legend>
-                    <label
-                        v-for="reason in availableReasons"
-                        :key="reason.value"
-                        class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 p-2 text-sm text-slate-800 hover:bg-slate-50"
-                    >
-                        <input
-                            type="radio"
-                            :value="reason.value"
-                            v-model="reasonModal.selectedReason"
-                            :data-testid="`stock-rupture-reason-${reason.value}`"
-                        />
-                        <span>{{ reason.label }}</span>
-                    </label>
-                </fieldset>
-                <div class="mt-4 flex justify-end gap-2">
-                    <button
-                        type="button"
-                        class="db-btn db-btn-secondary text-sm !text-slate-800"
-                        data-testid="stock-rupture-reason-cancel"
-                        @click="closeReasonModal"
-                    >
-                        {{ $t('admin.stock_rupture.cancel') }}
-                    </button>
-                    <button
-                        type="button"
-                        class="db-btn db-btn-primary text-sm"
-                        :disabled="!reasonModal.selectedReason"
-                        data-testid="stock-rupture-reason-confirm"
-                        @click="confirmReasonModal"
-                    >
-                        {{ $t('admin.stock_rupture.confirm') }}
-                    </button>
+                    </article>
                 </div>
-            </div>
+            </main>
         </div>
     </section>
 </template>
@@ -313,27 +220,65 @@ import appService from "../../../services/appService";
 import { onEvents } from "../../../services/eventContract";
 
 /**
- * StockRuptureDashboardComponent — V1.0.2 admin observability + manual override.
+ * StockRuptureDashboardComponent V2 — owner spec 2026-05-21.
  *
- * Permissions (Spatie):
- *   - items_show  : view dashboard data (read endpoints)
- *   - items_edit  : toggle availability (write endpoints — gated UI elements)
- *   - items_create: trigger manual scan
+ * Mission 1 rewrite: drops the multi-axis V1 dashboard (cron status, low
+ * alerts, bulk multi-select, reason modal) and replaces it with a single
+ * unified browser. Binary toggle per product. Sync flows through the
+ * existing AvailabilityService SSOT — zero new mutating endpoint.
  *
- * Echo channel: `branch.{branchId}` (helper prepends `private-` internally).
- *   - branch_id=0 admins: polling fallback (cannot subscribe to N branches).
+ * Permissions:
+ *   - items_show : read (gated server-side on /stock/catalog-overview)
+ *   - items_edit : toggle (gated client-side: read-only badge fallback)
+ *
+ * Echo channel: `branch.{branchId}` (`onEvents` prepends `private-`).
+ *   - branch_id=0 admins: polling fallback only.
  *   - branch_id>0 staff:  Echo subscribe → debounced loadAll on event.
  */
 
-const MANUAL_UNAVAILABLE_REASONS = [
-    'out_of_stock_manual',
-    'seasonal',
-    'recipe_change',
-    'supplier_issue',
-    'quality_issue',
-];
-
 const DEBOUNCE_MS = 500;
+
+const DEFAULT_REASON = 'out_of_stock_manual';
+
+const CATEGORY_ICONS = {
+    burgers: '🍔',
+    burger: '🍔',
+    tacos: '🌮',
+    bols: '🥗',
+    bol: '🥗',
+    frites: '🍟',
+    boissons: '🥤',
+    boisson: '🥤',
+    drink: '🥤',
+    drinks: '🥤',
+    dessert: '🍰',
+    desserts: '🍰',
+    menu: '🍱',
+    menus: '🍱',
+    formule: '🍱',
+    formules: '🍱',
+    sauce: '🧂',
+    sauces: '🧂',
+    crudite: '🥬',
+    crudites: '🥬',
+    'crudités': '🥬',
+    viande: '🥩',
+    viandes: '🥩',
+    taille: '📏',
+    tailles: '📏',
+    supplement: '➕',
+    suppléments: '➕',
+    supplements: '➕',
+};
+
+function pickIcon(label) {
+    const slug = String(label || '').toLowerCase().trim();
+    if (CATEGORY_ICONS[slug]) return CATEGORY_ICONS[slug];
+    for (const key of Object.keys(CATEGORY_ICONS)) {
+        if (slug.includes(key)) return CATEGORY_ICONS[key];
+    }
+    return '📦';
+}
 
 function debounce(fn, ms) {
     let t = null;
@@ -351,27 +296,15 @@ export default {
     data() {
         return {
             loading: false,
-            cronEnabled: false,
-            summaries: [],
-            lastRunSummary: null,
-            currentlyUnavailable: [],
-            lowAlerts: [],
-            runningManually: false,
-            errorMessage: '',
-            // Filters
+            branchId: 0,
+            branchOptions: [],
+            categories: [],
+            extraGroups: [],
+            variationGroups: [],
+            activeBucketKey: '',
             searchQuery: '',
-            branchFilter: 0,
-            // Selection state for bulk
-            selectedRupture: [],
-            busyRows: {},
-            bulkBusy: false,
-            // Reason modal
-            reasonModal: {
-                open: false,
-                target: null,
-                title: '',
-                selectedReason: '',
-            },
+            busyKeys: {},
+            errorMessage: '',
             // Echo lifecycle
             _timer: null,
             _visibilityHandler: null,
@@ -380,40 +313,98 @@ export default {
         };
     },
     computed: {
-        cronStatusBadgeClass() {
-            return this.cronEnabled
-                ? 'bg-emerald-50 text-emerald-700'
-                : 'bg-slate-100 text-slate-600';
-        },
         canEditAvailability() {
             return appService.permissionChecker('items_edit');
         },
         canFilterByBranch() {
-            return this.authBranchId() === 0 && this.summaries.length > 1;
+            return this.authBranchId() === 0 && this.branchOptions.length > 1;
         },
-        availableReasons() {
-            return MANUAL_UNAVAILABLE_REASONS.map((value) => ({
-                value,
-                label: this.$t(`admin.stock_rupture.reason.${value}`),
-            }));
-        },
-        filteredCurrentlyUnavailable() {
-            const q = (this.searchQuery || '').trim().toLowerCase();
-            const branchId = Number(this.branchFilter) || 0;
-            return (this.currentlyUnavailable || []).filter((row) => {
-                if (branchId > 0 && Number(row.branch_id) !== branchId) return false;
-                if (!q) return true;
-                return String(row.item_name || '').toLowerCase().includes(q);
+        buckets() {
+            const buckets = [];
+
+            // Item categories.
+            (this.categories || []).forEach((cat) => {
+                const items = (cat.items || []).map((it) => ({
+                    key: `item-${it.id}`,
+                    kind: 'item',
+                    name: it.name,
+                    thumb: it.thumb || null,
+                    is_available: Boolean(it.is_available),
+                    item_id: Number(it.id),
+                }));
+                buckets.push({
+                    key: `cat-${cat.id}`,
+                    kind: 'item',
+                    label: cat.name,
+                    icon: pickIcon(cat.name),
+                    count: items.length,
+                    items,
+                });
             });
-        },
-        filteredLowAlerts() {
-            const q = (this.searchQuery || '').trim().toLowerCase();
-            const branchId = Number(this.branchFilter) || 0;
-            return (this.lowAlerts || []).filter((alert) => {
-                if (branchId > 0 && Number(alert.branch_id) !== branchId) return false;
-                if (!q) return true;
-                return String(alert.stockable_name || '').toLowerCase().includes(q);
+
+            // Extra groups (deduped by name within group_label).
+            (this.extraGroups || []).forEach((group) => {
+                const items = (group.items || []).map((it) => ({
+                    key: `extra-${group.group_label}-${it.name}`,
+                    kind: 'extra',
+                    name: it.name,
+                    thumb: it.thumb || null,
+                    is_available: Boolean(it.is_available),
+                    extra_ids: Array.isArray(it.extra_ids) ? it.extra_ids.slice() : [],
+                }));
+                buckets.push({
+                    key: `extra-${group.group_label}`,
+                    kind: 'extra',
+                    label: group.display_name || group.group_label,
+                    icon: pickIcon(group.display_name || group.group_label),
+                    count: items.length,
+                    items,
+                });
             });
+
+            // Variation attributes (deduped by name within attribute).
+            (this.variationGroups || []).forEach((group) => {
+                const items = (group.items || []).map((it) => ({
+                    key: `var-${group.attribute_id}-${it.name}`,
+                    kind: 'variation',
+                    name: it.name,
+                    thumb: it.thumb || null,
+                    is_available: Boolean(it.is_available),
+                    variation_ids: Array.isArray(it.variation_ids) ? it.variation_ids.slice() : [],
+                }));
+                buckets.push({
+                    key: `var-${group.attribute_id}`,
+                    kind: 'variation',
+                    label: group.attribute_name,
+                    icon: pickIcon(group.attribute_name),
+                    count: items.length,
+                    items,
+                });
+            });
+
+            return buckets;
+        },
+        activeBucket() {
+            return this.buckets.find((b) => b.key === this.activeBucketKey) || null;
+        },
+        filteredProducts() {
+            const bucket = this.activeBucket;
+            if (!bucket) return [];
+            const q = (this.searchQuery || '').trim().toLowerCase();
+            if (!q) return bucket.items;
+            return bucket.items.filter((p) => String(p.name || '').toLowerCase().includes(q));
+        },
+    },
+    watch: {
+        buckets(newBuckets) {
+            // Preserve active selection across reloads; fall back to first bucket.
+            if (newBuckets.length === 0) {
+                this.activeBucketKey = '';
+                return;
+            }
+            if (!newBuckets.find((b) => b.key === this.activeBucketKey)) {
+                this.activeBucketKey = newBuckets[0].key;
+            }
         },
     },
     mounted() {
@@ -434,7 +425,6 @@ export default {
         this.unsubscribeEcho();
     },
     methods: {
-        // ---------- Auth helpers ----------
         authBranchId() {
             try {
                 const fromGetter = this.$store?.getters?.['auth/authBranchId'];
@@ -449,11 +439,16 @@ export default {
             return 0;
         },
 
+        onThumbError(event) {
+            if (event && event.target) {
+                event.target.style.display = 'none';
+            }
+        },
+
         // ---------- Echo lifecycle ----------
         subscribeEcho() {
-            if (!window.Echo) return;
+            if (typeof window === 'undefined' || !window.Echo) return;
             const branchId = this.authBranchId();
-            // Admin (branch_id=0) cannot subscribe to N branches — polling 60s is the fallback.
             if (branchId <= 0) return;
             this.unsubscribeEcho();
             try {
@@ -463,7 +458,10 @@ export default {
                     { broadcastAs: 'ItemExtraAvailabilityChanged', handler: () => { this._debouncedReload(); } },
                 ]);
             } catch (e) {
-                console.warn('[StockRuptureDashboard] Echo subscription failed:', e?.message);
+                // Best-effort: Echo is optional in some environments (tests, offline mode).
+                if (typeof console !== 'undefined') {
+                    console.warn('[StockMgmtV2] Echo subscription failed:', e?.message);
+                }
             }
         },
         unsubscribeEcho() {
@@ -475,235 +473,127 @@ export default {
 
         // ---------- Data load ----------
         async loadAll() {
-            if (document.hidden) return;
-
+            if (typeof document !== 'undefined' && document.hidden) return;
             this.loading = true;
             this.errorMessage = '';
             try {
-                const [summaryResponse, alertsResponse] = await Promise.all([
-                    axios.get('admin/stock/scan-rupture/last-summary'),
-                    axios.get('admin/stock/low-alerts'),
-                ]);
-
-                const summaryData = summaryResponse.data || {};
-                this.cronEnabled = Boolean(summaryData.cron_enabled);
-                this.summaries = Array.isArray(summaryData.branches) ? summaryData.branches : [];
-                this.currentlyUnavailable = Array.isArray(summaryData.currently_unavailable)
-                    ? summaryData.currently_unavailable
-                    : [];
-                this.lowAlerts = Array.isArray(alertsResponse.data?.alerts) ? alertsResponse.data.alerts : [];
-                this.lastRunSummary = this.normalizeLastRunSummary(this.summaries);
-                this.pruneStaleSelection();
+                const params = {};
+                if (Number(this.branchId) > 0) {
+                    params.branch_id = Number(this.branchId);
+                }
+                const response = await axios.get('admin/stock/catalog-overview', { params });
+                const data = response.data || {};
+                this.categories = Array.isArray(data.categories) ? data.categories : [];
+                this.extraGroups = Array.isArray(data.extra_groups) ? data.extra_groups : [];
+                this.variationGroups = Array.isArray(data.variation_groups) ? data.variation_groups : [];
+                // Resolve branch options + canonical branchId on first load.
+                const resolvedBranchId = Number(data.branch_id) || 0;
+                if (resolvedBranchId > 0 && !Number(this.branchId)) {
+                    this.branchId = resolvedBranchId;
+                }
+                // Default active bucket = first available.
+                if (!this.activeBucketKey && this.buckets.length > 0) {
+                    this.activeBucketKey = this.buckets[0].key;
+                }
             } catch (err) {
-                this.errorMessage = this.$t('admin.stock_rupture.loading_error');
+                this.errorMessage = this.$t('admin.stock_mgmt.loading_error');
             } finally {
                 this.loading = false;
             }
         },
 
-        async runScanNow() {
-            this.runningManually = true;
+        // ---------- Toggle ----------
+        async toggleProduct(product) {
+            if (!product || !this.canEditAvailability) return;
+            const key = product.key;
+            if (this.busyKeys[key]) return;
+
+            this.busyKeys = { ...this.busyKeys, [key]: true };
             this.errorMessage = '';
+            const previous = product.is_available;
+            const next = !previous;
+            // Optimistic flip on the local state.
+            product.is_available = next;
+
             try {
-                const branchId = (Number(this.branchFilter) || 0) > 0
-                    ? Number(this.branchFilter)
-                    : (this.summaries[0]?.branch_id
-                        || this.currentlyUnavailable[0]?.branch_id
-                        || this.lowAlerts[0]?.branch_id
-                        || null);
-                await axios.post('admin/stock/scan-rupture/run', branchId ? { branch_id: branchId } : {});
-                await this.loadAll();
-            } catch (err) {
-                this.errorMessage = this.$t('admin.stock_rupture.toggle_error');
-            } finally {
-                this.runningManually = false;
-            }
-        },
-
-        normalizeLastRunSummary(branches) {
-            const summaries = (branches || [])
-                .map((branch) => branch.summary)
-                .filter(Boolean);
-
-            if (summaries.length === 0) {
-                return null;
-            }
-
-            const latest = summaries.reduce((selected, summary) => {
-                if (!selected) return summary;
-                return new Date(summary.ran_at || 0) > new Date(selected.ran_at || 0) ? summary : selected;
-            }, null);
-
-            return {
-                ...latest,
-                ran_at_human: latest.ran_at ? new Date(latest.ran_at).toLocaleString() : '-',
-                items_flipped: Number(latest.items_flipped || 0),
-                items_skipped: Number(latest.items_skipped_partial_stock || 0)
-                    + Number(latest.items_already_unavailable || 0),
-                duration_ms: Number(latest.duration_ms || 0),
-            };
-        },
-
-        // ---------- Translation helper ----------
-        translateReason(reason) {
-            if (!reason) return '';
-            const key = `admin.stock_rupture.reason.${reason}`;
-            const translated = this.$t(key);
-            return translated === key ? reason : translated;
-        },
-
-        // ---------- Selection helpers ----------
-        rowSelectionKey(row) {
-            return `${row.branch_id}:${row.item_id}`;
-        },
-        isRowBusy(key) {
-            return Boolean(this.busyRows[key]);
-        },
-        isAlertBusy(alert) {
-            const k = `${alert.branch_id}:${alert.stockable_type}:${alert.stockable_id}`;
-            return Boolean(this.busyRows[k]);
-        },
-        isItemAlert(alert) {
-            // Mark-rupture button currently exposed for Item type only.
-            const t = String(alert.stockable_type || '').toLowerCase();
-            if (t === 'item') return true;
-            if (t.endsWith('\\item')) return true;
-            // Heuristic for FQCNs ending in '\\Item' but not extra/variation.
-            if (t.includes('item') && !t.includes('extra') && !t.includes('variation')) return true;
-            return false;
-        },
-        pruneStaleSelection() {
-            const validKeys = new Set(
-                (this.currentlyUnavailable || []).map((r) => this.rowSelectionKey(r))
-            );
-            this.selectedRupture = (this.selectedRupture || []).filter((k) => validKeys.has(k));
-        },
-        clearSelection() {
-            this.selectedRupture = [];
-        },
-
-        // ---------- Optimistic toggle (item — restore from rupture list) ----------
-        async restoreItem(row) {
-            const key = this.rowSelectionKey(row);
-            if (this.busyRows[key]) return;
-            this.busyRows = { ...this.busyRows, [key]: true };
-            const snapshot = [...this.currentlyUnavailable];
-            this.currentlyUnavailable = snapshot.filter((r) => this.rowSelectionKey(r) !== key);
-            try {
-                await axios.post('admin/availability/toggle', {
-                    item_id: Number(row.item_id),
-                    branch_id: Number(row.branch_id),
-                    is_available: true,
-                });
-            } catch (err) {
-                this.currentlyUnavailable = snapshot;
-                this.errorMessage = this.$t('admin.stock_rupture.toggle_error');
-            } finally {
-                const next = { ...this.busyRows };
-                delete next[key];
-                this.busyRows = next;
-            }
-        },
-
-        // ---------- Reason modal flow (mark item rupture from low-alerts) ----------
-        markAlertRupture(alert) {
-            if (!this.isItemAlert(alert)) return;
-            this.reasonModal = {
-                open: true,
-                target: {
-                    kind: 'item',
-                    id: Number(alert.stockable_id),
-                    branchId: Number(alert.branch_id),
-                    name: alert.stockable_name,
-                },
-                title: alert.stockable_name || this.$t('admin.stock_rupture.mark_rupture'),
-                selectedReason: '',
-            };
-        },
-        closeReasonModal() {
-            this.reasonModal = {
-                open: false,
-                target: null,
-                title: '',
-                selectedReason: '',
-            };
-        },
-        async confirmReasonModal() {
-            const { target, selectedReason } = this.reasonModal;
-            if (!target || !selectedReason) return;
-            const key = `${target.branchId}:item:${target.id}`;
-            if (this.busyRows[key]) return;
-            this.busyRows = { ...this.busyRows, [key]: true };
-            this.closeReasonModal();
-            try {
-                await axios.post('admin/availability/toggle', {
-                    item_id: Number(target.id),
-                    branch_id: Number(target.branchId),
-                    is_available: false,
-                    unavailable_reason: selectedReason,
-                });
-                await this.loadAll();
-            } catch (err) {
-                this.errorMessage = this.$t('admin.stock_rupture.toggle_error');
-            } finally {
-                const next = { ...this.busyRows };
-                delete next[key];
-                this.busyRows = next;
-            }
-        },
-
-        // ---------- Bulk actions (sequential to avoid new backend route) ----------
-        async bulkRestore() {
-            if (this.selectedRupture.length === 0) return;
-            this.bulkBusy = true;
-            this.errorMessage = '';
-            const keys = [...this.selectedRupture];
-            const rowsByKey = new Map(
-                (this.currentlyUnavailable || []).map((r) => [this.rowSelectionKey(r), r])
-            );
-            let ok = 0;
-            let fail = 0;
-            const total = keys.length;
-            const concurrency = 5;
-            let cursor = 0;
-            const runOne = async () => {
-                while (cursor < keys.length) {
-                    const i = cursor++;
-                    const k = keys[i];
-                    const row = rowsByKey.get(k);
-                    if (!row) {
-                        fail += 1;
-                        continue;
-                    }
-                    try {
-                        await axios.post('admin/availability/toggle', {
-                            item_id: Number(row.item_id),
-                            branch_id: Number(row.branch_id),
-                            is_available: true,
-                        });
-                        ok += 1;
-                    } catch (_) {
-                        fail += 1;
-                    }
-                }
-            };
-            try {
-                const workers = Array.from({ length: Math.min(concurrency, keys.length) }, () => runOne());
-                await Promise.all(workers);
-                if (fail > 0) {
-                    this.errorMessage = this.$t(
-                        'admin.stock_rupture.bulk_partial_error',
-                        { ok, fail, total }
+                if (product.kind === 'item') {
+                    await this.sendItemToggle(product.item_id, next);
+                } else if (product.kind === 'extra') {
+                    await this.sendBulkToggle(
+                        product.extra_ids,
+                        next,
+                        (id) => axios.post('admin/menu/availability/extra/toggle', {
+                            extra_id: Number(id),
+                            branch_id: Number(this.branchId),
+                            is_available: next,
+                            ...(next ? {} : { reason: DEFAULT_REASON }),
+                        }),
+                    );
+                } else if (product.kind === 'variation') {
+                    await this.sendBulkToggle(
+                        product.variation_ids,
+                        next,
+                        (id) => axios.post('admin/menu/availability/variation/toggle', {
+                            variation_id: Number(id),
+                            branch_id: Number(this.branchId),
+                            is_available: next,
+                            ...(next ? {} : { reason: DEFAULT_REASON }),
+                        }),
                     );
                 }
-                await this.loadAll();
-                if (fail === 0) {
-                    this.clearSelection();
-                }
+            } catch (err) {
+                // Rollback optimistic flip.
+                product.is_available = previous;
+                this.errorMessage = this.$t('admin.stock_mgmt.toggle_error');
             } finally {
-                this.bulkBusy = false;
+                const nextBusy = { ...this.busyKeys };
+                delete nextBusy[key];
+                this.busyKeys = nextBusy;
             }
+        },
+
+        async sendItemToggle(itemId, isAvailable) {
+            await axios.post('admin/menu/availability/toggle', {
+                item_id: Number(itemId),
+                branch_id: Number(this.branchId),
+                is_available: !!isAvailable,
+            });
+        },
+
+        /**
+         * Fan-out N toggle POSTs with a concurrency limit of 5 (mirrors the
+         * V1 bulkRestore pattern). All-or-nothing semantics from the user's
+         * point of view: any single failure rolls back the optimistic flip.
+         */
+        async sendBulkToggle(ids, _next, makeRequest) {
+            const arr = (ids || []).map(Number).filter((n) => n > 0);
+            if (arr.length === 0) return;
+            const concurrency = 5;
+            let cursor = 0;
+            let firstError = null;
+            const runOne = async () => {
+                while (cursor < arr.length) {
+                    const i = cursor++;
+                    try {
+                        await makeRequest(arr[i]);
+                    } catch (err) {
+                        if (!firstError) firstError = err;
+                    }
+                }
+            };
+            const workers = Array.from({ length: Math.min(concurrency, arr.length) }, () => runOne());
+            await Promise.all(workers);
+            if (firstError) throw firstError;
         },
     },
 };
 </script>
+
+<style scoped>
+.stock-mgmt-v2 .product-card {
+    transition: box-shadow 0.15s ease;
+}
+.stock-mgmt-v2 .product-card:hover {
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+</style>

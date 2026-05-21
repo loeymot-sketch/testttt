@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\Status;
 use App\Models\Branch;
 use App\Models\Item;
+use App\Models\ItemAttribute;
 use App\Models\ItemBranchAvailability;
+use App\Models\ItemCategory;
 use App\Models\ItemExtra;
 use App\Models\ItemVariation;
 use App\Models\StockLevel;
@@ -13,14 +15,35 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 class StockRuptureDashboardController extends AdminController
 {
+    /**
+     * Display-friendly labels for known ItemExtra group_label slugs. The list
+     * is intentionally small + falls back to a Str::title humanisation so new
+     * group labels render acceptably without a controller edit.
+     */
+    private const EXTRA_GROUP_LABELS = [
+        'sauce_supp'      => 'Sauces supplémentaires',
+        'frites_style'    => 'Frites - format',
+        'gratine'         => 'Gratiné',
+        'supplement_bol'  => 'Suppléments bol',
+        'supplement'      => 'Suppléments',
+        'topping'         => 'Toppings',
+        'extra'           => 'Extras',
+    ];
+
+    /**
+     * Fallback display label when an ItemExtra has no group_label set.
+     */
+    private const EXTRA_GROUP_OTHER = 'other';
+
     public function __construct()
     {
         parent::__construct();
 
-        $this->middleware(['permission:items_show'])->only('lastSummary', 'lowAlerts');
+        $this->middleware(['permission:items_show'])->only('lastSummary', 'lowAlerts', 'catalogOverview');
         $this->middleware(['permission:items_create'])->only('run');
     }
 
@@ -253,5 +276,270 @@ class StockRuptureDashboardController extends AdminController
         };
 
         return (string) ($model?->name ?? class_basename($type) . ' #' . $id);
+    }
+
+    /**
+     * [Mission 1 — Stock-Rupture UI Simplification 2026-05-21]
+     * Single read endpoint that powers the unified "Produits & Stock" admin
+     * page. Returns the full active catalogue (items grouped by category,
+     * extras deduped by name within their group_label, variations deduped by
+     * name within their attribute) with a binary per-branch is_available flag
+     * resolved against `item_branch_availability` (items) and `stock_levels`
+     * (extras + variations — polymorphic, `manual_unavailable_reason`).
+     *
+     * Bulk-query discipline (mirrors {@see buildStockableLabelMap()}): 1 SELECT
+     * per entity bucket + 1 SELECT per per-branch override table. Target ≤ 5
+     * queries total, no N+1 even on full catalogues.
+     */
+    public function catalogOverview(Request $request): JsonResponse
+    {
+        $branches = $this->scopedBranches($request);
+        $branchId = $request->filled('branch_id')
+            ? (int) $request->integer('branch_id')
+            : (int) ($branches->first()?->id ?? 0);
+
+        if ($branchId <= 0) {
+            // No branch resolvable (staff with no branch, or empty branch set).
+            return response()->json([
+                'branch_id'        => 0,
+                'categories'       => [],
+                'extra_groups'     => [],
+                'variation_groups' => [],
+                'fetched_at'       => now()->toIso8601String(),
+            ]);
+        }
+
+        // Authorize: ensure the resolved branch is inside the caller's scope.
+        $this->authorizeBranchScope($request, $branchId);
+
+        // 1) Categories + items (eager-load items, active only).
+        $categories = ItemCategory::query()
+            ->where('status', Status::ACTIVE)
+            ->orderBy('sort')
+            ->orderBy('id')
+            ->with(['items' => function ($q): void {
+                $q->where('status', Status::ACTIVE)
+                    ->orderBy('order')
+                    ->orderBy('id');
+            }])
+            ->get();
+
+        $allItemIds = $categories->flatMap(fn (ItemCategory $cat) => $cat->items->pluck('id'))
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        // 2) Per-branch item overrides (one SELECT) — BranchScope auto-filters
+        //    to the caller's branch_id (or none for admin). We additionally
+        //    constrain by the resolved branchId to be explicit.
+        $itemOverrides = ItemBranchAvailability::query()
+            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('branch_id', $branchId)
+            ->whereIn('item_id', $allItemIds ?: [0])
+            ->get(['item_id', 'is_available', 'unavailable_reason'])
+            ->keyBy('item_id');
+
+        $categoriesPayload = $categories->map(function (ItemCategory $cat) use ($itemOverrides): array {
+            return [
+                'id'    => (int) $cat->id,
+                'name'  => (string) $cat->name,
+                'slug'  => (string) ($cat->slug ?? ''),
+                'items' => $cat->items->map(function (Item $item) use ($itemOverrides): array {
+                    $override = $itemOverrides->get((int) $item->id);
+                    $isAvailable = (bool) $item->is_available;
+                    $reason = null;
+                    if ($override !== null) {
+                        $overrideAvailable = (bool) $override->is_available;
+                        if (! $overrideAvailable) {
+                            $isAvailable = false;
+                            $reason = $override->unavailable_reason !== null
+                                ? (string) $override->unavailable_reason
+                                : null;
+                        }
+                    }
+                    return [
+                        'id'           => (int) $item->id,
+                        'name'         => (string) $item->name,
+                        'slug'         => (string) ($item->slug ?? ''),
+                        'thumb'        => (string) $item->thumb,
+                        'is_available' => $isAvailable,
+                        'reason'       => $reason,
+                    ];
+                })->values()->all(),
+            ];
+        })->values()->all();
+
+        // 3) Extras (active, grouped by group_label, deduped by name).
+        $extras = ItemExtra::query()
+            ->where('status', Status::ACTIVE)
+            ->orderBy('group_label')
+            ->orderBy('name')
+            ->orderBy('id')
+            ->get(['id', 'name', 'group_label']);
+
+        $allExtraIds = $extras->pluck('id')->map(fn ($id): int => (int) $id)->all();
+
+        // 4) Per-branch extra rupture (one SELECT, polymorphic).
+        $extraStockLevels = $allExtraIds === []
+            ? collect()
+            : StockLevel::query()
+                ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->where('branch_id', $branchId)
+                ->where('stockable_type', ItemExtra::class)
+                ->whereIn('stockable_id', $allExtraIds)
+                ->whereNotNull('manual_unavailable_reason')
+                ->get(['stockable_id'])
+                ->keyBy(fn ($row): int => (int) $row->stockable_id);
+
+        $extraGroupsPayload = $this->buildGroupedPayload(
+            $extras,
+            fn (ItemExtra $e): string => (string) ($e->group_label ?? self::EXTRA_GROUP_OTHER),
+            fn (ItemExtra $e): string => (string) $e->name,
+            fn (ItemExtra $e): ?string => $e->thumb,
+            $extraStockLevels,
+            'extra_ids',
+            fn (string $groupKey): string => $this->humaniseExtraGroupLabel($groupKey),
+        );
+
+        // 5) Variations (active, grouped by item_attribute_id, deduped by name).
+        $variations = ItemVariation::query()
+            ->where('status', Status::ACTIVE)
+            ->whereNotNull('item_attribute_id')
+            ->with(['itemAttribute:id,name'])
+            ->orderBy('item_attribute_id')
+            ->orderBy('name')
+            ->orderBy('id')
+            ->get();
+
+        $allVariationIds = $variations->pluck('id')->map(fn ($id): int => (int) $id)->all();
+
+        $variationStockLevels = $allVariationIds === []
+            ? collect()
+            : StockLevel::query()
+                ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->where('branch_id', $branchId)
+                ->where('stockable_type', ItemVariation::class)
+                ->whereIn('stockable_id', $allVariationIds)
+                ->whereNotNull('manual_unavailable_reason')
+                ->get(['stockable_id'])
+                ->keyBy(fn ($row): int => (int) $row->stockable_id);
+
+        // Group variations by attribute, dedupe by variation name.
+        $byAttribute = $variations->groupBy(fn (ItemVariation $v): int => (int) $v->item_attribute_id);
+        $variationGroupsPayload = [];
+        foreach ($byAttribute as $attributeId => $bucket) {
+            $attributeId = (int) $attributeId;
+            $attribute = $bucket->first()->itemAttribute;
+            $attributeName = (string) ($attribute->name ?? ('#' . $attributeId));
+
+            $byName = $bucket->groupBy(fn (ItemVariation $v): string => (string) $v->name);
+            $items = [];
+            foreach ($byName as $name => $rows) {
+                $ids = $rows->pluck('id')->map(fn ($id): int => (int) $id)->values()->all();
+                $unavailableCount = 0;
+                foreach ($ids as $rowId) {
+                    if ($variationStockLevels->has($rowId)) {
+                        $unavailableCount++;
+                    }
+                }
+                /** @var ItemVariation $first */
+                $first = $rows->first();
+                $items[] = [
+                    'name'                 => (string) $name,
+                    'variation_ids'        => $ids,
+                    'thumb'                => $first->thumb,
+                    'is_available'         => $unavailableCount === 0,
+                    'any_unavailable_count'=> $unavailableCount,
+                    'total_count'          => count($ids),
+                ];
+            }
+            usort($items, fn ($a, $b): int => strcmp($a['name'], $b['name']));
+
+            $variationGroupsPayload[] = [
+                'attribute_id'   => $attributeId,
+                'attribute_name' => $attributeName,
+                'items'          => $items,
+            ];
+        }
+        // Stable ordering by attribute name.
+        usort($variationGroupsPayload, fn ($a, $b): int => strcmp($a['attribute_name'], $b['attribute_name']));
+
+        return response()->json([
+            'branch_id'        => $branchId,
+            'categories'       => $categoriesPayload,
+            'extra_groups'     => $extraGroupsPayload,
+            'variation_groups' => $variationGroupsPayload,
+            'fetched_at'       => now()->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Shared dedupe-by-name + ruptured-count aggregator for the extras axis.
+     * Variations need a different shape (attribute_id) and are inlined above.
+     *
+     * @param  \Illuminate\Support\Collection $rows         Collection of models.
+     * @param  callable $groupKeyOf                         model -> group key string.
+     * @param  callable $nameOf                             model -> display name.
+     * @param  callable $thumbOf                            model -> thumb URL or null.
+     * @param  \Illuminate\Support\Collection $rupturedById row keyed by id when ruptured.
+     * @param  string $idsField                             output field name (e.g. 'extra_ids').
+     * @param  callable $displayNameOf                      group key -> display name.
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildGroupedPayload(
+        $rows,
+        callable $groupKeyOf,
+        callable $nameOf,
+        callable $thumbOf,
+        $rupturedById,
+        string $idsField,
+        callable $displayNameOf
+    ): array {
+        $byGroup = $rows->groupBy($groupKeyOf);
+        $payload = [];
+        foreach ($byGroup as $groupKey => $bucket) {
+            $byName = $bucket->groupBy($nameOf);
+            $items = [];
+            foreach ($byName as $name => $groupRows) {
+                $ids = $groupRows->pluck('id')->map(fn ($id): int => (int) $id)->values()->all();
+                $unavailableCount = 0;
+                foreach ($ids as $rowId) {
+                    if ($rupturedById->has($rowId)) {
+                        $unavailableCount++;
+                    }
+                }
+                $first = $groupRows->first();
+                $items[] = [
+                    'name'                 => (string) $name,
+                    $idsField              => $ids,
+                    'thumb'                => $thumbOf($first),
+                    'is_available'         => $unavailableCount === 0,
+                    'any_unavailable_count'=> $unavailableCount,
+                    'total_count'          => count($ids),
+                ];
+            }
+            usort($items, fn ($a, $b): int => strcmp($a['name'], $b['name']));
+
+            $payload[] = [
+                'group_label'  => (string) $groupKey,
+                'display_name' => $displayNameOf((string) $groupKey),
+                'items'        => $items,
+            ];
+        }
+        usort($payload, fn ($a, $b): int => strcmp($a['display_name'], $b['display_name']));
+
+        return $payload;
+    }
+
+    private function humaniseExtraGroupLabel(string $key): string
+    {
+        if (isset(self::EXTRA_GROUP_LABELS[$key])) {
+            return self::EXTRA_GROUP_LABELS[$key];
+        }
+        if ($key === self::EXTRA_GROUP_OTHER || $key === '') {
+            return 'Autres';
+        }
+        return Str::title(str_replace('_', ' ', $key));
     }
 }

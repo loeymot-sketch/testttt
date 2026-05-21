@@ -289,6 +289,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->name('stock.scan-rupture.last-summary');
     Route::get('/stock/low-alerts', [StockRuptureDashboardController::class, 'lowAlerts'])
         ->name('stock.low-alerts');
+    // [Mission 1 — Stock-Rupture UI Simplification 2026-05-21]
+    // Unified read endpoint powering the "Produits & Stock" admin page
+    // (single SSOT view of categories + extras + variations with binary
+    // per-branch availability). Bulk-query, no N+1.
+    Route::get('/stock/catalog-overview', [StockRuptureDashboardController::class, 'catalogOverview'])
+        ->name('stock.catalog-overview');
     Route::post('/stock/scan-rupture/run', [StockRuptureDashboardController::class, 'run'])
         ->name('stock.scan-rupture.run');
 

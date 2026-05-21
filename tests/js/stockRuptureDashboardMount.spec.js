@@ -1,8 +1,13 @@
 /**
- * BUILD-4 Round 4 — Vue mount sentinel for StockRuptureDashboardComponent.
+ * [Mission 1 — Stock-Rupture UI Simplification 2026-05-21]
  *
- * Catches Vue compile errors + verifies the template renders the new wireup
- * surface (search input, branch filter, bulk bar gate, modal mount point).
+ * Vue mount spec for StockRuptureDashboardComponent.vue V2 (unified catalogue
+ * browser). Catches Vue compile errors + verifies the new template:
+ *   - root section data-testid="stock-management-v2"
+ *   - left rail with a bucket button per axis (category / extra group / variation attribute)
+ *   - right pane product cards with toggle buttons that POST to the correct
+ *     AvailabilityController endpoints
+ *   - axios calls for the unified read endpoint + per-axis toggle endpoints
  *
  * Uses happy-dom (configured globally in vitest.config.mjs).
  */
@@ -36,53 +41,73 @@ vi.mock('../../resources/js/services/eventContract', () => ({
 const messages = {
     en: {
         admin: {
-            stock_rupture: {
-                title: 'Stock and outages',
-                subtitle: 'Track unavailable items',
-                cron_enabled: 'Auto monitoring',
-                cron_disabled: 'Auto monitoring off',
-                run_now: 'Run scan',
-                last_run: 'Last scan',
-                last_run_at: 'Scan date',
-                items_flipped: 'Items flipped',
-                items_skipped: 'Items skipped',
-                duration_ms: 'Duration',
-                currently_86: 'Currently unavailable',
-                none_unavailable: 'No items unavailable.',
-                flipped_at: 'since',
-                low_alerts: 'Low alerts',
-                no_low_alerts: 'No low alerts.',
-                below_threshold: 'Below threshold',
-                mark_rupture: 'Mark out',
-                restore: 'Restore',
-                restore_selected: 'Restore selected',
-                mark_rupture_selected: 'Mark selected out',
-                reason_label: 'Reason',
-                search_placeholder: 'Search…',
-                branch_filter_all: 'All branches',
-                branch_filter_label: 'Branch',
-                confirm_bulk: 'Confirm bulk',
-                cancel: 'Cancel',
-                confirm: 'Confirm',
-                selected_count: '{count} selected',
-                toggle_success: 'Updated.',
-                toggle_error: 'Update failed.',
-                bulk_partial_error: '{ok} ok, {fail} fail',
-                no_selection: 'No selection.',
-                select_all: 'Select all',
-                loading_error: 'Could not load.',
-                reason: {
-                    stock_rupture: 'Out',
-                    out_of_stock: 'Out',
-                    out_of_stock_manual: 'Manual',
-                    seasonal: 'Seasonal',
-                    recipe_change: 'Recipe',
-                    supplier_issue: 'Supplier',
-                    quality_issue: 'Quality',
-                },
+            stock_mgmt: {
+                title: 'Products & Stock',
+                subtitle: 'Enable or disable each product for this branch.',
+                search: 'Search a product…',
+                empty: 'No products in this category.',
+                in_stock: 'IN STOCK',
+                out_of_stock: 'OUT OF STOCK',
+                loading_error: 'Could not load products.',
+                toggle_error: 'Could not change status.',
+                branch_all: 'All branches',
+                branch_label: 'Branch',
+                rail_items: 'Product categories',
+                rail_extras: 'Supplements',
+                rail_variations: 'Variations',
+                loading: 'Loading…',
+                read_only: 'Read-only',
             },
         },
     },
+};
+
+const CATALOG_PAYLOAD = {
+    branch_id: 1,
+    categories: [
+        {
+            id: 10,
+            name: 'Burgers',
+            slug: 'burgers',
+            items: [
+                { id: 42, name: 'Big Cayenne', slug: 'big-cayenne', thumb: '/img/big.png', is_available: true, reason: null },
+                { id: 43, name: 'Cheese Burger', slug: 'cheese', thumb: null, is_available: false, reason: 'out_of_stock_manual' },
+            ],
+        },
+    ],
+    extra_groups: [
+        {
+            group_label: 'sauce_supp',
+            display_name: 'Sauces supplémentaires',
+            items: [
+                {
+                    name: 'Algérienne',
+                    extra_ids: [101, 102, 103],
+                    thumb: null,
+                    is_available: true,
+                    any_unavailable_count: 0,
+                    total_count: 3,
+                },
+            ],
+        },
+    ],
+    variation_groups: [
+        {
+            attribute_id: 7,
+            attribute_name: 'Crudité',
+            items: [
+                {
+                    name: 'Tomate',
+                    variation_ids: [201, 202],
+                    thumb: null,
+                    is_available: true,
+                    any_unavailable_count: 0,
+                    total_count: 2,
+                },
+            ],
+        },
+    ],
+    fetched_at: '2026-05-21T10:00:00Z',
 };
 
 function mountDashboard(options = {}) {
@@ -111,52 +136,13 @@ function mountDashboard(options = {}) {
 
 // ---- Tests -----------------------------------------------------------------
 
-describe('StockRuptureDashboardComponent — V1.0.2 BUILD-4 wireup (mount)', () => {
+describe('StockRuptureDashboardComponent — Mission 1 V2 unified browser (mount)', () => {
     beforeEach(() => {
         axiosMock.get.mockReset();
         axiosMock.post.mockReset();
         axiosMock.get.mockImplementation((url) => {
-            if (url.includes('last-summary')) {
-                return Promise.resolve({
-                    data: {
-                        cron_enabled: true,
-                        branches: [
-                            { branch_id: 1, branch_name: 'Branche A', summary: null, fetched_at: 'x' },
-                            { branch_id: 2, branch_name: 'Branche B', summary: null, fetched_at: 'x' },
-                        ],
-                        currently_unavailable: [
-                            {
-                                branch_id: 1,
-                                branch_name: 'Branche A',
-                                item_id: 42,
-                                item_name: 'Big Burger',
-                                reason: 'out_of_stock_manual',
-                                flipped_at: '2026-05-18T10:00:00Z',
-                                flipped_at_human: '2 min ago',
-                            },
-                        ],
-                        fetched_at: 'x',
-                    },
-                });
-            }
-            if (url.includes('low-alerts')) {
-                return Promise.resolve({
-                    data: {
-                        alerts: [
-                            {
-                                branch_id: 1,
-                                branch_name: 'Branche A',
-                                stockable_type: 'item',
-                                stockable_id: 99,
-                                stockable_name: 'Chicken Burger',
-                                label: 'Chicken Burger',
-                                on_hand: 1,
-                                threshold_low: 5,
-                            },
-                        ],
-                        fetched_at: 'x',
-                    },
-                });
+            if (url.includes('admin/stock/catalog-overview')) {
+                return Promise.resolve({ data: CATALOG_PAYLOAD });
             }
             return Promise.resolve({ data: {} });
         });
@@ -167,101 +153,98 @@ describe('StockRuptureDashboardComponent — V1.0.2 BUILD-4 wireup (mount)', () 
         vi.clearAllMocks();
     });
 
-    it('mounts without compile errors and renders the header', async () => {
+    it('mounts without compile errors and renders the V2 root + title', async () => {
         const wrapper = mountDashboard();
-        expect(wrapper.find('[data-testid="stock-rupture-dashboard"]').exists()).toBe(true);
-        expect(wrapper.text()).toContain('Stock and outages');
+        expect(wrapper.find('[data-testid="stock-management-v2"]').exists()).toBe(true);
+        expect(wrapper.text()).toContain('Products & Stock');
     });
 
-    it('renders the search input + cron status badge', async () => {
+    it('renders the rail with one bucket per axis after loadAll', async () => {
         const wrapper = mountDashboard();
         await flushPromises();
-        expect(wrapper.find('[data-testid="stock-rupture-search"]').exists()).toBe(true);
-        expect(wrapper.find('[data-testid="stock-rupture-cron-on"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="stock-mgmt-rail"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="stock-mgmt-bucket-cat-10"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="stock-mgmt-bucket-extra-sauce_supp"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="stock-mgmt-bucket-var-7"]').exists()).toBe(true);
     });
 
-    it('exposes the branch filter dropdown for admin (branch_id=0) when N>1 branches', async () => {
-        const wrapper = mountDashboard({ branchId: 0 });
-        await flushPromises();
-        expect(wrapper.find('[data-testid="stock-rupture-branch-select"]').exists()).toBe(true);
-    });
-
-    it('renders the rupture list with restore button and translates reasons', async () => {
+    it('renders the active bucket items (first category by default)', async () => {
         const wrapper = mountDashboard();
         await flushPromises();
-        expect(wrapper.find('[data-testid="stock-rupture-row-42"]').exists()).toBe(true);
-        expect(wrapper.find('[data-testid="stock-rupture-restore-42"]').exists()).toBe(true);
-        expect(wrapper.text()).toContain('Manual');
-        expect(wrapper.text()).toContain('Big Burger');
+        expect(wrapper.find('[data-testid="stock-mgmt-product-item-42"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="stock-mgmt-product-item-43"]').exists()).toBe(true);
+        expect(wrapper.text()).toContain('Big Cayenne');
     });
 
-    it('shows the low-alerts list with a Mark-rupture button on item alerts', async () => {
+    it('switching bucket updates the visible products', async () => {
         const wrapper = mountDashboard();
         await flushPromises();
-        expect(wrapper.find('[data-testid="stock-low-alert-99"]').exists()).toBe(true);
-        expect(wrapper.find('[data-testid="stock-low-alert-mark-99"]').exists()).toBe(true);
+        await wrapper.find('[data-testid="stock-mgmt-bucket-extra-sauce_supp"]').trigger('click');
+        await flushPromises();
+        expect(wrapper.find('[data-testid="stock-mgmt-product-extra-sauce_supp-Algérienne"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="stock-mgmt-product-item-42"]').exists()).toBe(false);
     });
 
-    it('POSTs the toggle endpoint when clicking restore (optimistic UI)', async () => {
+    it('clicking an item toggle POSTs to admin/menu/availability/toggle', async () => {
         const wrapper = mountDashboard();
         await flushPromises();
-        await wrapper.find('[data-testid="stock-rupture-restore-42"]').trigger('click');
+        await wrapper.find('[data-testid="stock-mgmt-toggle-item-42"]').trigger('click');
         await flushPromises();
-        expect(axiosMock.post).toHaveBeenCalledWith('admin/availability/toggle', {
+        expect(axiosMock.post).toHaveBeenCalledWith('admin/menu/availability/toggle', expect.objectContaining({
             item_id: 42,
-            branch_id: 1,
-            is_available: true,
+            is_available: false,
+        }));
+    });
+
+    it('clicking an extra toggle fans out to N admin/menu/availability/extra/toggle POSTs', async () => {
+        const wrapper = mountDashboard();
+        await flushPromises();
+        await wrapper.find('[data-testid="stock-mgmt-bucket-extra-sauce_supp"]').trigger('click');
+        await flushPromises();
+        await wrapper.find('[data-testid="stock-mgmt-product-extra-sauce_supp-Algérienne"] [role="switch"]').trigger('click');
+        await flushPromises();
+        const extraCalls = axiosMock.post.mock.calls.filter(
+            ([url]) => url === 'admin/menu/availability/extra/toggle',
+        );
+        expect(extraCalls).toHaveLength(3);
+        const ids = extraCalls.map(([, body]) => body.extra_id).sort();
+        expect(ids).toEqual([101, 102, 103]);
+        // Toggling OFF must send the default reason from the whitelist.
+        extraCalls.forEach(([, body]) => {
+            expect(body.is_available).toBe(false);
+            expect(body.reason).toBe('out_of_stock_manual');
         });
     });
 
-    it('opens the reason modal when clicking Mark-rupture on a low-alert row', async () => {
+    it('clicking a variation toggle fans out to N admin/menu/availability/variation/toggle POSTs', async () => {
         const wrapper = mountDashboard();
         await flushPromises();
-        await wrapper.find('[data-testid="stock-low-alert-mark-99"]').trigger('click');
+        await wrapper.find('[data-testid="stock-mgmt-bucket-var-7"]').trigger('click');
         await flushPromises();
-        expect(wrapper.find('[data-testid="stock-rupture-reason-modal"]').exists()).toBe(true);
-        expect(wrapper.find('[data-testid="stock-rupture-reason-supplier_issue"]').exists()).toBe(true);
+        await wrapper.find('[data-testid="stock-mgmt-product-var-7-Tomate"] [role="switch"]').trigger('click');
+        await flushPromises();
+        const varCalls = axiosMock.post.mock.calls.filter(
+            ([url]) => url === 'admin/menu/availability/variation/toggle',
+        );
+        expect(varCalls).toHaveLength(2);
+        const ids = varCalls.map(([, body]) => body.variation_id).sort();
+        expect(ids).toEqual([201, 202]);
     });
 
-    it('confirm-modal sends toggle with reason payload', async () => {
-        const wrapper = mountDashboard();
-        await flushPromises();
-        await wrapper.find('[data-testid="stock-low-alert-mark-99"]').trigger('click');
-        await flushPromises();
-        await wrapper.find('[data-testid="stock-rupture-reason-supplier_issue"]').setValue(true);
-        await wrapper.find('[data-testid="stock-rupture-reason-confirm"]').trigger('click');
-        await flushPromises();
-        expect(axiosMock.post).toHaveBeenCalledWith('admin/availability/toggle', expect.objectContaining({
-            item_id: 99,
-            branch_id: 1,
-            is_available: false,
-            unavailable_reason: 'supplier_issue',
-        }));
-    });
-
-    it('reveals the bulk action bar only when selection is non-empty', async () => {
-        const wrapper = mountDashboard();
-        await flushPromises();
-        // No selection yet → bulk bar hidden
-        expect(wrapper.find('[data-testid="stock-rupture-bulk-bar"]').exists()).toBe(false);
-        // Tick the checkbox
-        await wrapper.find('[data-testid="stock-rupture-select-42"]').setValue(true);
-        await flushPromises();
-        expect(wrapper.find('[data-testid="stock-rupture-bulk-bar"]').exists()).toBe(true);
-        expect(wrapper.find('[data-testid="stock-rupture-bulk-restore"]').exists()).toBe(true);
-    });
-
-    it('bulk restore issues sequential toggle POSTs', async () => {
-        const wrapper = mountDashboard();
-        await flushPromises();
-        await wrapper.find('[data-testid="stock-rupture-select-42"]').setValue(true);
-        await flushPromises();
-        axiosMock.post.mockClear();
-        await wrapper.find('[data-testid="stock-rupture-bulk-restore"]').trigger('click');
-        await flushPromises();
-        expect(axiosMock.post).toHaveBeenCalledWith('admin/availability/toggle', expect.objectContaining({
-            item_id: 42,
-            is_available: true,
-        }));
+    it('subscribes to Echo when staff branch_id > 0 and window.Echo is present', async () => {
+        const { onEvents } = await import('../../resources/js/services/eventContract');
+        onEvents.mockClear();
+        // The component bails out when window.Echo is missing — stub a no-op
+        // instance so the subscribeEcho path executes end-to-end.
+        const previousEcho = window.Echo;
+        window.Echo = { stub: true };
+        try {
+            const wrapper = mountDashboard({ branchId: 1 });
+            await flushPromises();
+            expect(onEvents).toHaveBeenCalledTimes(1);
+            wrapper.unmount();
+        } finally {
+            window.Echo = previousEcho;
+        }
     });
 });
