@@ -56,24 +56,29 @@ function seedHistoricalOrder({ token, status, branchId = 1 }) {
   // `order_datetime=now` so the row falls into today's Paris window for
   // both ordering queries. `updated_at=now()` is what the history endpoint
   // bounds against.
+  // [Wave X round-1 heal] PHP variables use single `$` in tinker --execute
+  // (no `\\` escape needed in JS template; the JS string passes verbatim).
+  // user_id = 1 (admin) required: NOT NULL column. Matches the Wave S-4 /
+  // Wave T R1 F1 seed pattern (system user).
   const phpCode = `
-    \\$order = new \\App\\Models\\Order();
-    \\$order->order_serial_no = '${token}';
-    \\$order->order_type = 5; // Takeaway
-    \\$order->source_surface = 'pos';
-    \\$order->branch_id = ${branchId};
-    \\$order->status = ${status};
-    \\$order->payment_status = 10; // PAID
-    \\$order->payment_method = 1; // Cash
-    \\$order->subtotal = 12.50;
-    \\$order->total = 12.50;
-    \\$order->discount = 0;
-    \\$order->delivery_charge = 0;
-    \\$order->order_datetime = now();
-    \\$order->updated_at = now();
-    \\$order->is_advance_order = 0;
-    \\$order->saveQuietly();
-    echo \\$order->id . '|' . \\$order->order_serial_no;
+    $o = new \\App\\Models\\Order();
+    $o->order_serial_no = '${token}';
+    $o->order_type = 5;
+    $o->source_surface = 'pos';
+    $o->branch_id = ${branchId};
+    $o->user_id = 1;
+    $o->status = ${status};
+    $o->payment_status = 10;
+    $o->payment_method = 1;
+    $o->subtotal = 12.50;
+    $o->total = 12.50;
+    $o->discount = 0;
+    $o->delivery_charge = 0;
+    $o->order_datetime = now();
+    $o->updated_at = now();
+    $o->is_advance_order = 0;
+    $o->saveQuietly();
+    echo $o->id . '|' . $o->order_serial_no;
   `.replace(/\s+/g, ' ');
   const out = artisan(phpCode).trim();
   const [id, serial] = out.split('|');
@@ -83,7 +88,7 @@ function seedHistoricalOrder({ token, status, branchId = 1 }) {
 function cleanupSeededOrders() {
   try {
     artisan(
-      `\\App\\Models\\Order::where('order_serial_no', 'like', '${TOKEN_PREFIX}%')->forceDelete();`,
+      `\\App\\Models\\Order::where('order_serial_no', 'like', '${TOKEN_PREFIX}%')->withoutGlobalScopes()->forceDelete();`,
     );
   } catch (_err) {
     // Best-effort.
@@ -139,9 +144,29 @@ test.describe('Wave X3 — KDS Historique du jour drawer (read-only V1)', () => 
     const count = await items.count();
     expect(count).toBeGreaterThanOrEqual(2);
 
-    // Drawer surfaces French labels (or fallback in test env).
+    // [Wave X B-003 round-1 heal] Anchored exact-text assertions, NOT a
+    // substring regex. The previous regex `/(prêt|ready|prepared|jaha|قيد)/i`
+    // was vacuously satisfied by the raw key `LABEL.KDS_STATE_PREPARED` —
+    // matching the English substring "prepared" inside the leaked key.
+    // FR is the locked locale for /admin/* (cf. i18n.js isAdminPath →
+    // detectLocale returns 'fr'), so we expect "Historique du jour" header
+    // and at least one anchored badge token: "Prêt" / "En livraison" / "Livré".
     const drawerText = await drawer.innerText();
-    expect(drawerText.toLowerCase()).toMatch(/(prêt|ready|prepared|jaha|قيد)/i);
+
+    // 1. Header must be resolved (not the raw key).
+    expect(drawerText).toContain('Historique du jour');
+    expect(drawerText).not.toMatch(/label\.kds_history_title/i);
+
+    // 2. At least one status badge must be a resolved FR token, exact match.
+    //    Match-word boundary prevents accidental substring satisfaction.
+    //    Case-insensitive: row badges apply CSS `text-transform: uppercase`,
+    //    so `innerText` returns "LIVRÉ" / "PRÊT" / "EN LIVRAISON".
+    expect(drawerText).toMatch(/\b(Prêt|En livraison|Livré)\b/i);
+
+    // 3. Negative sentinel: any raw i18n key (label.* / LABEL.* / kiosk.* /
+    //    kds.*) leaking into the rendered drawer is a P0 failure.
+    expect(drawerText).not.toMatch(/\b(label|kiosk|kds)\.[a-z_]+\b/i);
+    expect(drawerText).not.toMatch(/\bLABEL\.[A-Z_]+\b/);
 
     await page.screenshot({
       path: path.join(SHOT_DIR, 'X3-02-drawer-open-with-history.png'),
