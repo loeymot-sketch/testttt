@@ -1,0 +1,30 @@
+[
+  {
+    "url": "http://localhost:8000/api/auth/kiosk-login",
+    "method": "POST",
+    "status": 201,
+    "duration_ms": null,
+    "ts": 1779390237688
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/kiosk-event",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779390237845
+  },
+  {
+    "url": "http://localhost:8000/api/broadcasting/auth",
+    "method": "POST",
+    "status": 302,
+    "duration_ms": null,
+    "ts": 1779390237855
+  },
+  {
+    "url": "http://localhost:8000/api/login",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779390238112
+  }
+]

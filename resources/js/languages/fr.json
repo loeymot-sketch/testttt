@@ -1437,6 +1437,7 @@
         "categories": "Catégories",
         "products": "Articles",
         "your_cart": "Votre panier",
+        "unavailable_items_pruned": "Certains articles ne sont plus disponibles et ont été retirés du panier.",
         "total": "Total",
         "cancel": "Annuler",
         "back": "Retour",

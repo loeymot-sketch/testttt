@@ -356,7 +356,16 @@ var ORDER_TYPE_TAKEAWAY = 10;
   // Kiosk Phase 9.1.6 — actions promo (validate lecture-seule + clear local).
   'validatePromo', 'clearPromo',
   // [P-MEGA-05] Édition d'une ligne sans suppression intermédiaire.
-  'startEditingCartItem'])), {}, {
+  'startEditingCartItem',
+  // [bug-kiosk-valider-2026-05-21] Drop cart lines that became unavailable
+  // (manual 86, branch-specific flag) BEFORE the Valider click so the
+  // backend's PricingService availability guard cannot surface a 422.
+  // Persisted Vuex carts can outlive an admin availability flip when the
+  // kiosk missed the Echo broadcast (offline blip, app reload), so the
+  // pre-flight prune is the correct defense-in-depth — owner reported
+  // "ça marche parfois" after retries because subsequent clicks finally
+  // refreshed the menu cache and pruning silently dropped the stale line.
+  'pruneUnavailableLines'])), {}, {
     // Kiosk Phase 9.1.6 — Applique un code promo via /api/frontend/promo/validate.
     // UX: on ne bloque pas l'utilisateur, on affiche un message d'erreur inline
     // et on conserve ce qu'il a tapé si la saisie est invalide (pas de reset input).
@@ -566,7 +575,7 @@ var ORDER_TYPE_TAKEAWAY = 10;
     proceedToUpsell: function proceedToUpsell() {
       var _this3 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
-        var _err$response, message, _t;
+        var beforeCount, afterCount, msg, _msg, _err$response, message, _t;
         return _regenerator().w(function (_context3) {
           while (1) switch (_context3.p = _context3.n) {
             case 0:
@@ -578,23 +587,49 @@ var ORDER_TYPE_TAKEAWAY = 10;
             case 1:
               _this3.quoteLoading = true;
               _this3.quoteError = null;
-              _context3.p = 2;
-              _context3.n = 3;
+
+              // [bug-kiosk-valider-2026-05-21] Pre-flight prune of cart lines whose
+              // catalog row is currently unavailable (manual 86 / branch flip the
+              // kiosk missed). Without this, the backend AvailabilityService rejects
+              // the whole quote with "Article N indisponible pour cette branche
+              // (manual)." → 422 surfaced as an error toast on the cart screen, owner
+              // reported a confusing UX ("erreur au panier, parfois ça disparait").
+              // The toast vanishes after 6s by design which matches the "parfois ça
+              // disparait" wording. Pruning here turns the 422 into a clean cart
+              // state plus an inline notice if anything was dropped.
+              beforeCount = _this3.cartCount;
+              try {
+                _this3.pruneUnavailableLines();
+              } catch (_) {/* defensive */}
+              afterCount = _this3.cartCount;
+              if (!(afterCount === 0)) {
+                _context3.n = 2;
+                break;
+              }
+              msg = _this3.$t('kiosk.unavailable_items_pruned') || 'Certains articles ne sont plus disponibles et ont été retirés du panier.';
+              _this3.quoteError = msg;
+              _this3.showToast(msg, 'warning', 6000);
+              _this3.quoteLoading = false;
+              return _context3.a(2);
+            case 2:
+              if (!(afterCount < beforeCount)) {
+                _context3.n = 3;
+                break;
+              }
+              // Surface a brief notice and let the user re-tap Valider — gives
+              // them the chance to review the updated total before paying.
+              _msg = _this3.$t('kiosk.unavailable_items_pruned') || 'Certains articles ne sont plus disponibles et ont été retirés du panier.';
+              _this3.showToast(_msg, 'warning', 4500);
+              _this3.quoteLoading = false;
+              return _context3.a(2);
+            case 3:
+              _context3.p = 3;
+              _context3.n = 4;
               return _this3.quoteOrder({
                 orderType: _this3.orderType
               });
-            case 3:
-              if (!_this3.upsellShown) {
-                _context3.n = 4;
-                break;
-              }
-              _this3.$router.push({
-                name: 'kiosk.payment'
-              });
-              return _context3.a(2);
             case 4:
-              _this3.markUpsellShown();
-              if (!_this3.shouldSkipKioskUpsell) {
+              if (!_this3.upsellShown) {
                 _context3.n = 5;
                 break;
               }
@@ -603,25 +638,35 @@ var ORDER_TYPE_TAKEAWAY = 10;
               });
               return _context3.a(2);
             case 5:
+              _this3.markUpsellShown();
+              if (!_this3.shouldSkipKioskUpsell) {
+                _context3.n = 6;
+                break;
+              }
+              _this3.$router.push({
+                name: 'kiosk.payment'
+              });
+              return _context3.a(2);
+            case 6:
               _this3.$router.push({
                 name: 'kiosk.upsell'
               });
-              _context3.n = 7;
+              _context3.n = 8;
               break;
-            case 6:
-              _context3.p = 6;
+            case 7:
+              _context3.p = 7;
               _t = _context3.v;
               message = (_t === null || _t === void 0 || (_err$response = _t.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || (_t === null || _t === void 0 ? void 0 : _t.message) || _this3.$t('kiosk.pay_screen.invalid_order_response');
               _this3.quoteError = message;
               _this3.showToast(message, 'error', 6000);
-            case 7:
-              _context3.p = 7;
-              _this3.quoteLoading = false;
-              return _context3.f(7);
             case 8:
+              _context3.p = 8;
+              _this3.quoteLoading = false;
+              return _context3.f(8);
+            case 9:
               return _context3.a(2);
           }
-        }, _callee3, null, [[2, 6, 7, 8]]);
+        }, _callee3, null, [[3, 7, 8, 9]]);
       }))();
     } // formatPrice() is provided by kioskPriceMixin — reads currency from globalState.lists
   })

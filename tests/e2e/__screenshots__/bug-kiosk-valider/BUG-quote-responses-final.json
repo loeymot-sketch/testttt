@@ -1,0 +1,13 @@
+[
+  {
+    "url": "http://localhost:8000/api/frontend/order/quote",
+    "status": 200,
+    "method": "POST",
+    "contentType": "application/json",
+    "authHeader": "PRESENT (Bearer 896|3ScMUhuVe…)",
+    "idempotencyHeader": null,
+    "requestBody": "{\"order_type\":10,\"loyalty_code\":null,\"kiosk_promo_code\":null,\"is_advance_order\":10,\"source\":5,\"payment_method\":0,\"items\":\"[{\\\"item_id\\\":18,\\\"instruction\\\":\\\"\\\",\\\"quantity\\\":1,\\\"item_variations\\\":[],\\\"item_extras\\\":[]}]\"}",
+    "responseBody": "{\"status\":true,\"data\":{\"quote_token\":\"7b11307c-2a5e-43d7-a296-44575d1eb023\",\"signature\":\"cb93d1757bb5b7096233f2b1e6f19d2d32f8996470a8b29acd51c91e0b73af1e\",\"expires_at\":\"2026-05-21T21:09:05+02:00\",\"ttl_seconds\":299,\"subtotal\":0.9,\"discount\":0,\"total_tax\":0,\"delivery_charge\":0,\"total_ttc\":0.9,\"currency\":\"EUR\",\"consumed_at\":null}}",
+    "ts": 1779390245980
+  }
+]

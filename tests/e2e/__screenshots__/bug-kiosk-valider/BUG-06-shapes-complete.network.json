@@ -1,0 +1,51 @@
+[
+  {
+    "url": "http://localhost:8000/api/auth/kiosk-login",
+    "method": "POST",
+    "status": 201,
+    "duration_ms": null,
+    "ts": 1779390926638
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/kiosk-event",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779390926762
+  },
+  {
+    "url": "http://localhost:8000/api/broadcasting/auth",
+    "method": "POST",
+    "status": 302,
+    "duration_ms": null,
+    "ts": 1779390926772
+  },
+  {
+    "url": "http://localhost:8000/api/login",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779390926995
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/order/quote",
+    "method": "POST",
+    "status": 422,
+    "duration_ms": null,
+    "ts": 1779390943173
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/order/quote",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779390947238
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/order/quote",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779390957152
+  }
+]

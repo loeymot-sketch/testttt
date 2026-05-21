@@ -467,6 +467,15 @@ export default {
       'validatePromo', 'clearPromo',
       // [P-MEGA-05] Édition d'une ligne sans suppression intermédiaire.
       'startEditingCartItem',
+      // [bug-kiosk-valider-2026-05-21] Drop cart lines that became unavailable
+      // (manual 86, branch-specific flag) BEFORE the Valider click so the
+      // backend's PricingService availability guard cannot surface a 422.
+      // Persisted Vuex carts can outlive an admin availability flip when the
+      // kiosk missed the Echo broadcast (offline blip, app reload), so the
+      // pre-flight prune is the correct defense-in-depth — owner reported
+      // "ça marche parfois" after retries because subsequent clicks finally
+      // refreshed the menu cache and pruning silently dropped the stale line.
+      'pruneUnavailableLines',
     ]),
 
     // Kiosk Phase 9.1.6 — Applique un code promo via /api/frontend/promo/validate.
@@ -629,6 +638,36 @@ export default {
 
       this.quoteLoading = true;
       this.quoteError = null;
+
+      // [bug-kiosk-valider-2026-05-21] Pre-flight prune of cart lines whose
+      // catalog row is currently unavailable (manual 86 / branch flip the
+      // kiosk missed). Without this, the backend AvailabilityService rejects
+      // the whole quote with "Article N indisponible pour cette branche
+      // (manual)." → 422 surfaced as an error toast on the cart screen, owner
+      // reported a confusing UX ("erreur au panier, parfois ça disparait").
+      // The toast vanishes after 6s by design which matches the "parfois ça
+      // disparait" wording. Pruning here turns the 422 into a clean cart
+      // state plus an inline notice if anything was dropped.
+      const beforeCount = this.cartCount;
+      try { this.pruneUnavailableLines(); } catch (_) { /* defensive */ }
+      const afterCount = this.cartCount;
+      if (afterCount === 0) {
+        const msg = this.$t('kiosk.unavailable_items_pruned')
+          || 'Certains articles ne sont plus disponibles et ont été retirés du panier.';
+        this.quoteError = msg;
+        this.showToast(msg, 'warning', 6000);
+        this.quoteLoading = false;
+        return;
+      }
+      if (afterCount < beforeCount) {
+        // Surface a brief notice and let the user re-tap Valider — gives
+        // them the chance to review the updated total before paying.
+        const msg = this.$t('kiosk.unavailable_items_pruned')
+          || 'Certains articles ne sont plus disponibles et ont été retirés du panier.';
+        this.showToast(msg, 'warning', 4500);
+        this.quoteLoading = false;
+        return;
+      }
 
       try {
         await this.quoteOrder({ orderType: this.orderType });
