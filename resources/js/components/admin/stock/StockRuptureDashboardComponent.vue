@@ -158,20 +158,20 @@
                         class="product-card flex items-center justify-between gap-3 rounded border border-slate-200 bg-white p-3"
                         :data-testid="`stock-mgmt-product-${product.key}`"
                     >
-                        <div class="flex items-center gap-3 min-w-0">
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
                             <img
                                 v-if="product.thumb"
                                 :src="product.thumb"
                                 alt=""
-                                class="h-12 w-12 rounded object-cover bg-slate-100"
+                                class="h-12 w-12 rounded object-cover bg-slate-100 flex-shrink-0"
                                 @error="onThumbError"
                             />
                             <span
                                 v-else
-                                class="h-12 w-12 rounded bg-slate-100 flex items-center justify-center text-xl"
+                                class="h-12 w-12 rounded bg-slate-100 flex items-center justify-center text-xl flex-shrink-0"
                                 aria-hidden="true"
                             >📦</span>
-                            <span class="name truncate text-sm font-medium text-slate-800" :title="product.name">
+                            <span class="name text-sm font-medium text-slate-800 min-w-0 flex-1" :title="product.name">
                                 {{ product.name }}
                             </span>
                         </div>
@@ -397,13 +397,15 @@ export default {
     },
     watch: {
         buckets(newBuckets) {
-            // Preserve active selection across reloads; fall back to first bucket.
+            // Preserve active selection across reloads; fall back to first
+            // non-"Autres" bucket so the admin lands on a meaningful default
+            // even when the misc bucket sorts first alphabetically.
             if (newBuckets.length === 0) {
                 this.activeBucketKey = '';
                 return;
             }
             if (!newBuckets.find((b) => b.key === this.activeBucketKey)) {
-                this.activeBucketKey = newBuckets[0].key;
+                this.activeBucketKey = this.pickDefaultBucketKey(newBuckets);
             }
         },
     },
@@ -425,6 +427,20 @@ export default {
         this.unsubscribeEcho();
     },
     methods: {
+        // [Wave M1 round-3 A-009] Skip "Autres" / "Autres ingrédients" buckets
+        // for the default-active selection — those are misc/unsorted buckets
+        // and shouldn't be the first thing the admin sees. Falls back to the
+        // first bucket if every bucket is "Autres" (defensive).
+        pickDefaultBucketKey(list) {
+            if (!Array.isArray(list) || list.length === 0) return '';
+            const isAutres = (b) => {
+                const lbl = String(b?.label || '').trim().toLowerCase();
+                return lbl === 'autres' || lbl.startsWith('autres ');
+            };
+            const firstMeaningful = list.find((b) => !isAutres(b));
+            return (firstMeaningful || list[0]).key;
+        },
+
         authBranchId() {
             try {
                 const fromGetter = this.$store?.getters?.['auth/authBranchId'];
@@ -491,9 +507,9 @@ export default {
                 if (resolvedBranchId > 0 && !Number(this.branchId)) {
                     this.branchId = resolvedBranchId;
                 }
-                // Default active bucket = first available.
+                // Default active bucket = first non-"Autres" bucket.
                 if (!this.activeBucketKey && this.buckets.length > 0) {
-                    this.activeBucketKey = this.buckets[0].key;
+                    this.activeBucketKey = this.pickDefaultBucketKey(this.buckets);
                 }
             } catch (err) {
                 this.errorMessage = this.$t('admin.stock_mgmt.loading_error');
@@ -608,5 +624,19 @@ export default {
 }
 .stock-mgmt-v2 .product-card:hover {
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+/* [Wave M1 round-3 A-012 truncation regression]
+ * `truncate` (single-line ellipsis) clipped names to "Sa..." / "Big..." even
+ * with enough horizontal room because the flex parent didn't have min-w-0.
+ * Replace with a 2-line clamp + word-break so longer names wrap gracefully
+ * inside the card width. The :title attribute remains for hover affordance. */
+.stock-mgmt-v2 .product-card .name {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.25;
 }
 </style>

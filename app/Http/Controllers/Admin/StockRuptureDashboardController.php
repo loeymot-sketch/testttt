@@ -408,6 +408,25 @@ class StockRuptureDashboardController extends AdminController
         // display_name so the admin rail never shows two identical buckets.
         $extraGroupsPayload = $this->mergeGroupsByDisplayName($extraGroupsPayload, 'extra_ids');
 
+        // [Wave M1 round-3 A-015 cross-axis dedupe] An ItemCategory may share a
+        // name with an extra group's display_name (real case: ItemCategory id=8
+        // "Suppléments" + extra group_label='supplement' → both label "Suppléments").
+        // The rail concatenates categories + extras + variations, so a colliding
+        // pair surfaces as TWO identical rows. Disambiguate the extra side with
+        // a positional suffix that reflects its semantic ("à composer" =
+        // composer/wizard dimension).
+        $categoryNameSet = array_flip(array_map(
+            fn (array $cat): string => (string) $cat['name'],
+            $categoriesPayload
+        ));
+        foreach ($extraGroupsPayload as &$group) {
+            $displayName = (string) ($group['display_name'] ?? '');
+            if ($displayName !== '' && isset($categoryNameSet[$displayName])) {
+                $group['display_name'] = $displayName . ' (à composer)';
+            }
+        }
+        unset($group);
+
         // 5) Variations (active, grouped by item_attribute_id, deduped by name).
         $variations = ItemVariation::query()
             ->where('status', Status::ACTIVE)
@@ -470,6 +489,17 @@ class StockRuptureDashboardController extends AdminController
         }
         // Stable ordering by attribute name.
         usort($variationGroupsPayload, fn ($a, $b): int => strcmp($a['attribute_name'], $b['attribute_name']));
+
+        // [Wave M1 round-3 A-015 cross-axis dedupe] Same protection for the
+        // variations axis — an ItemCategory.name colliding with a variation
+        // attribute_name would surface as duplicate rail rows.
+        foreach ($variationGroupsPayload as &$vGroup) {
+            $attributeName = (string) ($vGroup['attribute_name'] ?? '');
+            if ($attributeName !== '' && isset($categoryNameSet[$attributeName])) {
+                $vGroup['attribute_name'] = $attributeName . ' (variation)';
+            }
+        }
+        unset($vGroup);
 
         return response()->json([
             'branch_id'        => $branchId,
@@ -600,7 +630,12 @@ class StockRuptureDashboardController extends AdminController
             return self::EXTRA_GROUP_LABELS[$key];
         }
         if ($key === self::EXTRA_GROUP_OTHER || $key === '') {
-            return 'Autres';
+            // [Wave M1 round-3 A-009] "Autres" was ambiguous in the rail when
+            // it landed first by alphabetical sort — admins could not tell
+            // what the bucket actually contains. Use a more explicit label
+            // that signals "ingredient extras without a group_label" rather
+            // than a generic catch-all.
+            return 'Autres ingrédients';
         }
         return Str::title(str_replace('_', ' ', $key));
     }

@@ -21,11 +21,29 @@ function attachMegaAuditRecorder(page, screenshotDir) {
   let consoleBuffer = [];
   let networkBuffer = [];
 
+  // [Wave M1 round-3 A-014 console noise] Filter out the browser-native
+  // "WebSocket connection to ws://...:6001 failed" warning emitted by Pusher's
+  // transport when no Reverb/Soketi broadcast server is running in the test
+  // env. The product DOES degrade gracefully (Echo retries, app polls as
+  // fallback) — the warning is informational and was polluting every console
+  // capture, drowning out real signals. Same filter for "Pusher : ..." retry
+  // chatter from pusher-js' own logger.
+  const NOISE_TEXT_PATTERNS = [
+    /WebSocket connection to 'ws[s]?:\/\/[^']*' failed/i,
+    /^Pusher\s*:\s*/i,
+  ];
+  function _isKnownNoise(text) {
+    const t = String(text || '');
+    return NOISE_TEXT_PATTERNS.some((rx) => rx.test(t));
+  }
+
   const onConsole = (msg) => {
     try {
+      const text = msg.text();
+      if (_isKnownNoise(text)) return; // drop known benign chatter
       consoleBuffer.push({
         level: msg.type(),
-        text: msg.text().substring(0, 2000),
+        text: text.substring(0, 2000),
         location: msg.location(),
         ts: Date.now(),
       });
@@ -39,16 +57,28 @@ function attachMegaAuditRecorder(page, screenshotDir) {
       ts: Date.now(),
     });
   };
+  // [Wave M1 round-3 A-018 network capture]
+  // Before: recorder kept responses ONLY when status>=400 OR duration>2000ms.
+  // Successful 2xx mutations (POST/PUT/PATCH/DELETE for our admin toggles)
+  // were dropped, leaving 16/17 network.json files empty in round-2 — the
+  // adversarial reviewer had no way to verify "absence of 429" because there
+  // was no positive evidence of the toggle POSTs landing at all.
+  // Widen to also keep all non-GET requests regardless of status, so the
+  // audit trail records mutations end-to-end. Stays sub-MB even on a heavy
+  // 17-state spec because we only capture metadata, not bodies.
+  const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
   const onResponse = async (resp) => {
     try {
       const req = resp.request();
       const timing = req.timing();
       const duration = timing && timing.responseEnd >= 0 ? Math.round(timing.responseEnd) : null;
       const status = resp.status();
-      if (status >= 400 || (duration !== null && duration > 2000)) {
+      const method = String(req.method() || 'GET').toUpperCase();
+      const isMutation = MUTATION_METHODS.has(method);
+      if (status >= 400 || (duration !== null && duration > 2000) || isMutation) {
         networkBuffer.push({
           url: resp.url().substring(0, 400),
-          method: req.method(),
+          method,
           status,
           duration_ms: duration,
           ts: Date.now(),
