@@ -21802,6 +21802,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _services_appService__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../services/appService */ "./resources/js/services/appService.js");
 /* harmony import */ var _services_eventContract__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../services/eventContract */ "./resources/js/services/eventContract.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
@@ -22263,78 +22266,89 @@ function debounce(fn, ms) {
       }))();
     },
     /**
-     * Fan-out N toggle POSTs with a concurrency limit of 5 (mirrors the
-     * V1 bulkRestore pattern). All-or-nothing semantics from the user's
-     * point of view: any single failure rolls back the optimistic flip.
+     * Fan-out N toggle POSTs in small batches with an inter-batch delay.
+     *
+     * [M1 round-2 A-005/A-006/A-013 fix 2026-05-21] Reduced from
+     * concurrency=5 (continuous) to concurrency=2 batched + 100ms gap
+     * between batches. Reason: bulk fan-out from the V2 unified browser
+     * was tripping the `throttle:60,1` bucket on
+     * /admin/menu/availability/{extra,variation}/toggle (routes/api.php
+     * group "[BLUE 2026-05-08 / B3-S5 P1]"). 9 POSTs in 1.4s under
+     * concurrency-5 triggered 429s; the rejected hits stayed counted in
+     * the rate-limiter window and cascaded into POS catalog reload
+     * returning 429 ("Aucune donnée disponible"). Batching at 2/100ms
+     * caps the effective rate at ~20 RPS while still keeping a
+     * 6-item fan-out under ~400ms end-to-end (acceptable UX).
+     *
+     * All-or-nothing semantics from the user's point of view: any
+     * single failure rolls back the optimistic flip.
      */
     sendBulkToggle: function sendBulkToggle(ids, _next, makeRequest) {
-      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
-        var arr, concurrency, cursor, firstError, runOne, workers;
-        return _regenerator().w(function (_context5) {
-          while (1) switch (_context5.n) {
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+        var arr, concurrency, interBatchDelayMs, firstError, i, batch, results, _iterator, _step, r;
+        return _regenerator().w(function (_context4) {
+          while (1) switch (_context4.n) {
             case 0:
               arr = (ids || []).map(Number).filter(function (n) {
                 return n > 0;
               });
               if (!(arr.length === 0)) {
-                _context5.n = 1;
+                _context4.n = 1;
                 break;
               }
-              return _context5.a(2);
+              return _context4.a(2);
             case 1:
-              concurrency = 5;
-              cursor = 0;
+              concurrency = 2;
+              interBatchDelayMs = 100;
               firstError = null;
-              runOne = /*#__PURE__*/function () {
-                var _ref = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
-                  var i, _t3;
-                  return _regenerator().w(function (_context4) {
-                    while (1) switch (_context4.p = _context4.n) {
-                      case 0:
-                        if (!(cursor < arr.length)) {
-                          _context4.n = 5;
-                          break;
-                        }
-                        i = cursor++;
-                        _context4.p = 1;
-                        _context4.n = 2;
-                        return makeRequest(arr[i]);
-                      case 2:
-                        _context4.n = 4;
-                        break;
-                      case 3:
-                        _context4.p = 3;
-                        _t3 = _context4.v;
-                        if (!firstError) firstError = _t3;
-                      case 4:
-                        _context4.n = 0;
-                        break;
-                      case 5:
-                        return _context4.a(2);
-                    }
-                  }, _callee4, null, [[1, 3]]);
-                }));
-                return function runOne() {
-                  return _ref.apply(this, arguments);
-                };
-              }();
-              workers = Array.from({
-                length: Math.min(concurrency, arr.length)
-              }, function () {
-                return runOne();
-              });
-              _context5.n = 2;
-              return Promise.all(workers);
+              i = 0;
             case 2:
+              if (!(i < arr.length)) {
+                _context4.n = 5;
+                break;
+              }
+              batch = arr.slice(i, i + concurrency);
+              _context4.n = 3;
+              return Promise.allSettled(batch.map(function (id) {
+                return makeRequest(id);
+              }));
+            case 3:
+              results = _context4.v;
+              _iterator = _createForOfIteratorHelper(results);
+              try {
+                for (_iterator.s(); !(_step = _iterator.n()).done;) {
+                  r = _step.value;
+                  if (r.status === 'rejected' && !firstError) {
+                    firstError = r.reason;
+                  }
+                }
+              } catch (err) {
+                _iterator.e(err);
+              } finally {
+                _iterator.f();
+              }
+              if (!(i + concurrency < arr.length)) {
+                _context4.n = 4;
+                break;
+              }
+              _context4.n = 4;
+              return new Promise(function (resolve) {
+                return setTimeout(resolve, interBatchDelayMs);
+              });
+            case 4:
+              i += concurrency;
+              _context4.n = 2;
+              break;
+            case 5:
               if (!firstError) {
-                _context5.n = 3;
+                _context4.n = 6;
                 break;
               }
               throw firstError;
-            case 3:
-              return _context5.a(2);
+            case 6:
+              return _context4.a(2);
           }
-        }, _callee5);
+        }, _callee4);
       }))();
     }
   }

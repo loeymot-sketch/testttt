@@ -202,6 +202,10 @@ describe('StockRuptureDashboardComponent — Mission 1 V2 unified browser (mount
         await wrapper.find('[data-testid="stock-mgmt-bucket-extra-sauce_supp"]').trigger('click');
         await flushPromises();
         await wrapper.find('[data-testid="stock-mgmt-product-extra-sauce_supp-Algérienne"] [role="switch"]').trigger('click');
+        // [M1 round-2 A-005/A-006/A-013] sendBulkToggle now batches at
+        // concurrency=2 with a 100ms inter-batch delay; wait for the second
+        // batch's setTimeout to fire so the third extra_id (103) is sent.
+        await new Promise((resolve) => setTimeout(resolve, 200));
         await flushPromises();
         const extraCalls = axiosMock.post.mock.calls.filter(
             ([url]) => url === 'admin/menu/availability/extra/toggle',
@@ -229,6 +233,45 @@ describe('StockRuptureDashboardComponent — Mission 1 V2 unified browser (mount
         expect(varCalls).toHaveLength(2);
         const ids = varCalls.map(([, body]) => body.variation_id).sort();
         expect(ids).toEqual([201, 202]);
+    });
+
+    it('caps bulk-toggle fan-out at concurrency-2 with inter-batch delay (M1 round-2 A-005/A-006/A-013)', async () => {
+        // Regression guard: bulk fan-out used to fire concurrency-5 which tripped
+        // throttle:60,1 on /admin/menu/availability/{extra,variation}/toggle and
+        // cascaded 429s into POS catalogue. New contract: at-most-2 in flight + a
+        // pause between batches so the burst respects the rate-limit window.
+        const wrapper = mountDashboard();
+        await flushPromises();
+
+        let inFlight = 0;
+        let peakInFlight = 0;
+        const startTimestamp = Date.now();
+        const callTimestamps = [];
+
+        const makeRequest = (id) => {
+            callTimestamps.push(Date.now() - startTimestamp);
+            inFlight += 1;
+            if (inFlight > peakInFlight) peakInFlight = inFlight;
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    inFlight -= 1;
+                    resolve({ data: { ok: true, id } });
+                }, 5);
+            });
+        };
+
+        await wrapper.vm.sendBulkToggle([101, 102, 103, 104, 105, 106], false, makeRequest);
+
+        // Peak concurrency must NOT exceed 2 (the new contract).
+        expect(peakInFlight).toBeLessThanOrEqual(2);
+        // Six requests must have happened.
+        expect(callTimestamps).toHaveLength(6);
+        // Three batches of 2 → at least two inter-batch gaps. Each batch issues
+        // 2 calls (cheap), the 3rd batch's first call must be >= 100ms after the
+        // 1st batch's first call. We use a generous lower bound to dodge timer
+        // flake on slow CI.
+        const lastCallOffset = callTimestamps[callTimestamps.length - 1];
+        expect(lastCallOffset).toBeGreaterThanOrEqual(150);
     });
 
     it('subscribes to Echo when staff branch_id > 0 and window.Echo is present', async () => {

@@ -561,28 +561,41 @@ export default {
         },
 
         /**
-         * Fan-out N toggle POSTs with a concurrency limit of 5 (mirrors the
-         * V1 bulkRestore pattern). All-or-nothing semantics from the user's
-         * point of view: any single failure rolls back the optimistic flip.
+         * Fan-out N toggle POSTs in small batches with an inter-batch delay.
+         *
+         * [M1 round-2 A-005/A-006/A-013 fix 2026-05-21] Reduced from
+         * concurrency=5 (continuous) to concurrency=2 batched + 100ms gap
+         * between batches. Reason: bulk fan-out from the V2 unified browser
+         * was tripping the `throttle:60,1` bucket on
+         * /admin/menu/availability/{extra,variation}/toggle (routes/api.php
+         * group "[BLUE 2026-05-08 / B3-S5 P1]"). 9 POSTs in 1.4s under
+         * concurrency-5 triggered 429s; the rejected hits stayed counted in
+         * the rate-limiter window and cascaded into POS catalog reload
+         * returning 429 ("Aucune donnée disponible"). Batching at 2/100ms
+         * caps the effective rate at ~20 RPS while still keeping a
+         * 6-item fan-out under ~400ms end-to-end (acceptable UX).
+         *
+         * All-or-nothing semantics from the user's point of view: any
+         * single failure rolls back the optimistic flip.
          */
         async sendBulkToggle(ids, _next, makeRequest) {
             const arr = (ids || []).map(Number).filter((n) => n > 0);
             if (arr.length === 0) return;
-            const concurrency = 5;
-            let cursor = 0;
+            const concurrency = 2;
+            const interBatchDelayMs = 100;
             let firstError = null;
-            const runOne = async () => {
-                while (cursor < arr.length) {
-                    const i = cursor++;
-                    try {
-                        await makeRequest(arr[i]);
-                    } catch (err) {
-                        if (!firstError) firstError = err;
+            for (let i = 0; i < arr.length; i += concurrency) {
+                const batch = arr.slice(i, i + concurrency);
+                const results = await Promise.allSettled(batch.map((id) => makeRequest(id)));
+                for (const r of results) {
+                    if (r.status === 'rejected' && !firstError) {
+                        firstError = r.reason;
                     }
                 }
-            };
-            const workers = Array.from({ length: Math.min(concurrency, arr.length) }, () => runOne());
-            await Promise.all(workers);
+                if (i + concurrency < arr.length) {
+                    await new Promise((resolve) => setTimeout(resolve, interBatchDelayMs));
+                }
+            }
             if (firstError) throw firstError;
         },
     },
