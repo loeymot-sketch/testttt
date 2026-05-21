@@ -77030,9 +77030,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 // [Mission 2 P1 2026-05-21] Admin UI routes for Livreur cash sessions.
-// Components shipped earlier (DeliveryBoyCashSessionListComponent,
-// DeliveryBoyCashSessionShowComponent, DeliveryBoyCashSessionFormComponent)
-// but never wired into the router — owner needs them visible in admin.
+//
+// ListComponent : top-level admin view (no props required).
+// ShowComponent : requires `sessionId` prop (passed from route :id param).
+// FormComponent : embedded only — used by DeliveryBoyShow tabs (existing
+//   pattern per component docblock). No top-level /open route — opening
+//   a session goes through the delivery boy detail page.
 //
 // Backend: routes/api.php:643-672 (DeliveryBoyCashSessionController + service)
 // Permissions: delivery-boys_show (read), delivery-boys (mutations).
@@ -77041,9 +77044,6 @@ var DeliveryBoyCashSessionListComponent = function DeliveryBoyCashSessionListCom
 };
 var DeliveryBoyCashSessionShowComponent = function DeliveryBoyCashSessionShowComponent() {
   return __webpack_require__.e(/*! import() | admin-shell */ "admin-shell").then(__webpack_require__.bind(__webpack_require__, /*! ../../components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent */ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue"));
-};
-var DeliveryBoyCashSessionFormComponent = function DeliveryBoyCashSessionFormComponent() {
-  return __webpack_require__.e(/*! import() | admin-shell */ "admin-shell").then(__webpack_require__.bind(__webpack_require__, /*! ../../components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent */ "./resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionFormComponent.vue"));
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ([{
   path: "/admin/delivery-boy-cash-sessions",
@@ -77056,19 +77056,14 @@ var DeliveryBoyCashSessionFormComponent = function DeliveryBoyCashSessionFormCom
     breadcrumb: "delivery_cash_sessions"
   }
 }, {
-  path: "/admin/delivery-boy-cash-sessions/open",
-  component: DeliveryBoyCashSessionFormComponent,
-  name: "admin.delivery-boy-cash-sessions.open",
-  meta: {
-    isFrontend: false,
-    auth: true,
-    permissionUrl: "delivery-boys",
-    breadcrumb: "delivery_cash_open"
-  }
-}, {
   path: "/admin/delivery-boy-cash-sessions/:id",
   component: DeliveryBoyCashSessionShowComponent,
   name: "admin.delivery-boy-cash-sessions.show",
+  props: function props(route) {
+    return {
+      sessionId: route.params.id
+    };
+  },
   meta: {
     isFrontend: false,
     auth: true,
