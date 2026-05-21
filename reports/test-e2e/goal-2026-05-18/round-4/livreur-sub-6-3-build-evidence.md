@@ -176,7 +176,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 
 Files staged : 12 new files (4 migrations + 2 models + 1 service + 4 sentinel tests + this evidence doc).
 
-SHA placeholder : will be filled post-commit by orchestrator.
+Commit SHA : `3d5ca01f694db53fc0043378d2a05debad3a83e4` (branch `v1-0-1-hardening-2026-05-17`).
 
 ---
 

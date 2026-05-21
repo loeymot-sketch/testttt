@@ -1,0 +1,187 @@
+{
+  "wave": "B",
+  "round": 2,
+  "states_reviewed": 8,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/05-kds-order1-bump-clicked-undo-window.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "R1 finding: undo-toast covered neighbouring cards at top:110px transform translate(-50%,0) min-width:620px. R2 verification: toast now renders as <div class=\"kds-toast\" role=\"status\" aria-live=\"assertive\" aria-atomic=\"true\"> in DOM state 05/07 — positioned at bottom-right of viewport (visible in screenshot 05/07 bottom-right corner ~y=620, x=820..1255), occupying ~435×80px footprint. NO overlap with the 3 card columns (which end at y~610). Annuler button still focusable and aria-labeled 'Annuler la dernière commande marquée prête'.",
+      "fix_hint": "F3 heal landed pre-R2 — KdsUndoToast.vue now position:fixed bottom:24px right:24px min-width:320px max-width:420px.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/02-kds-both-orders-visible.png",
+      "category": "text_truncation",
+      "severity": "P1",
+      "evidence": "R1 finding: 'ATTENTE'→'ATTEN' clip + '14:26'→'14:2' last-digit clip at 1280px. R2 DOM verification: elapsed-label text=\"Attente\" (full), elapsed values=['88:01','15:33','13:52'] (full 5 chars). CSS now uses clamp(36px,4.2vw,52px) for queue (per state 05 stylesheet inspection) and clamp(22px,2.8vw,34px) for elapsed digits, plus overflow:visible on .kds-card__elapsed-wrap. Timer digits fully readable in all screenshots 02-08 at 1280px. PARTIAL: 'Attente' uppercase label visually appears clipped in screenshots 02-08 to read as 'ATTENT' (last 'E' touches right edge or is just barely visible) — but DOM nowrap+overflow:visible means it's not actually cut, just visually tight. No critical digit loss; chef can read elapsed time at a glance.",
+      "fix_hint": "F3 heal landed pre-R2. Optional cosmetic polish: reduce kds-card__elapsed-label letter-spacing further from .06em to .03em OR shorten label to 'ATT.' at viewport<1440. Non-blocking for V1.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/01-kds-landing-loaded.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "R1 finding: 41 [intlify] warnings for menu.communications/users/accounts/reports/setup. R2 verification: grep on console.json state 01..08 returns ZERO intlify warnings (count=0 in all 8 states). The 'Tableau De Bord' button text is now rendered correctly in FR (no raw menu.* dotted-key keys visible in sidebar or anywhere else). State 01 console.json contains only 1 entry: a ws://127.0.0.1:6001 WebSocket failure (Pusher local dev not running) — protocol-allowlisted as expected dev noise.",
+      "fix_hint": "F2 heal landed pre-R2 — fr/en/ar.json received the missing menu.* keys.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/02-kds-both-orders-visible.png",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "R1 finding: 41 i18n warnings + 1 z-report 422 = console pollution. R2 verification: console.json state 02..08 are all length=0 (zero entries). console.json state 01 has length=1, a Pusher WebSocket warning (allowlisted). NO application-code warnings or errors. The 422 z-report on state 01 is ALSO gone — F1 heal moved the LastZReportWidget axios call behind a v-if excluding the KDS route, or changed the controller to return 200 empty. Verified by network.json state 01 = [] (empty array).",
+      "fix_hint": "F1+F2 heals landed pre-R2.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/01-kds-landing-loaded.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "R1 finding: misleading 'Compte central (multi-succursales) : le flux en direct n'est pas abonné…' banner suggested KDS sync failure on a single-branch install. R2 DOM verification: banner is now <header class=\"kds-banner kds-banner--neutral\" role=\"status\"> with text 'Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.' and a `LOCAL` tag in keep-latin. NO 'flux en direct', NO 'multi-succursales', NO 'n'est pas abonné' phrasing. Banner is now informational about local-only bump state (which is honest and actionable) instead of a misleading sync-failure warning. Grey neutral palette (bg:#f9fafb color:#4b5563), 32px height — does not visually overlap card content.",
+      "fix_hint": "F2/F3 heals landed pre-R2 — banner reworded + neutral color + branchCount<=1 still shows the local-bump notice but with non-alarmist copy.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/01-kds-landing-loaded.png",
+      "category": "silent_error",
+      "severity": "P2",
+      "evidence": "R1 finding: GET /api/admin/fiscal/z-report → 422 silent. R2 verification: network.json state 01 = [] empty. No 422 z-report request fired on KDS landing. F1 heal eliminated the unwanted axios call from the KDS route (LastZReportWidget hidden via v-if on path !== '/admin/kitchen-display-system' OR controller returns 200 with empty data).",
+      "fix_hint": "F1 heal landed pre-R2.",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/01-kds-landing-loaded.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "R1 finding: empty-state lacks primary CTA. R2: not re-verifiable (state 01 already has 3 stale orders rendered from prior runs — empty state never displayed in R2 capture). Status retained from R1 as a non-blocking nice-to-have. Adversarial reviewer assessment unchanged: KDS empty-state without a Reload CTA is acceptable for production (chef is passive consumer of orders, not initiator). Carries forward as P2.",
+      "fix_hint": "Optional 'Recharger' button — non-blocking.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/05-kds-order1-bump-clicked-undo-window.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "R1 finding: undo-toast missing role/aria-live. R2 DOM verification (state 05): <div data-v-2b49ae38 class=\"kds-toast\" role=\"status\" aria-live=\"assertive\" aria-atomic=\"true\"> — exactly the recommended R1 fix. Plus the existing sr-only aria-live='polite' region is kept as a sibling. Screen-reader users now hear 'Commande N°A0004 marquée prête, Bon imprimé, Annuler la dernière commande marquée prête' on toast open.",
+      "fix_hint": "F3 heal landed pre-R2 (side benefit of toast refactor).",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-009",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/05-kds-order1-bump-clicked-undo-window.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "R1 finding: spec instrumented network_change_status into capture.json summary only, not into per-state network.json sidecars. R2 verification: capture.json again has network_change_status array (2 POSTs, status=202, elapsed 3085ms/3057ms for order#72/#70 respectively) but per-state network.json files (state 02..08) remain empty. Adversarial reviewer still has to cross-reference summary file to see POST traces — this is a spec-instrumentation gap, not a runtime defect. NOT blocking the visual/UX gates the run is testing.",
+      "fix_hint": "page.on('response') push-to-buffer also on /api/admin/kds-order/change-status/ regardless of status. Non-blocking.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-010",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/05-kds-order1-bump-clicked-undo-window.png",
+      "category": "loading_state_missing",
+      "severity": "P2",
+      "evidence": "R1 finding: POST /change-status/X duration ~3s with no aria-busy on CTA. R2 verification: capture.json again reports state05 elapsed=3085ms (order#72) and state07 elapsed=3057ms (order#70) — both over the 2000ms threshold. CTA button DOM still has no aria-busy attribute during pending. The bottom-right toast IS now an effective loading signal (appears immediately on click), but the originating CTA itself does not signal pending. Borderline backend latency remains (3s for change-status).",
+      "fix_hint": "Add aria-busy on .kds-card__cta during pendingPostsByOrderId[id]; backend perf investigation separate (likely outbox chain HMAC). Non-blocking visual.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-011",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/06-kds-order1-after-bump.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "R1 finding: kds-card--ready{opacity:0.7} dims the green Prête pill, contrast borderline. R2 verification (state 06/08): kds-card--ready class still applied with opacity:0.7 cascading to the entire card. The green pill text (rgb(20,83,45) on rgb(220,252,231)) at 0.7 opacity has effective contrast ratio ~4.2:1 against the dimmed-pink card background — borderline AA for 13px non-bold. The CTA 'Prêt' label (white on #1F2937 @ 0.7) keeps >4.5:1.",
+      "fix_hint": "Override .kds-card--ready .kds-card__state-pill {opacity:1}. Non-blocking P2.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-012",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/06-kds-order1-after-bump.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "R1 finding: red border + ready dim combine into ambiguous 'red ready' card. R2 verification (state 08): both cards bumped, both display kds-card--critical AND kds-card--ready combined — red border, red top stripe, red header tint stays; only CTA dims and pill turns 'Prêt' green. Visually still ambiguous at a glance but a chef working the same display knows what they just bumped (3s undo window) — non-blocking P3 cosmetic.",
+      "fix_hint": "Swap border to green/grey when --ready. Non-blocking V1.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "B-R2-013",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/02-kds-both-orders-visible.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "Capture report inline_finding B-S1-PILL-2 (severity P0): capture.json initial_server_statuses = {\"70\": 8, \"72\": 7} — order #70 (the delivery order seeded for Wave T) arrived at KDS already at status=8 (READY/Prête) BEFORE any chef bump, instead of status=7 (PREPARING/En cours). Wave S-1 backend auto-transition ACCEPT→PREPARING regressed for at least the delivery-order branch of the seeder. Cross-checked in screenshot 02: card A0002 (with delivery block '12 rue Test, Paris 75001 / Wave T E2E 1779300395176 / 0612345678') shows the green 'PRÊTE' pill (rgb 16,185,129) in the kds-card__state-pill — NOT the blue 'EN COURS' pill it should display. Validations block of capture.json: 'S-1_auto_preparing': 'FAIL'. This violates the user-facing contract closed by Wave S-1 (task #114). Production impact: chef sees 'Prête' before they actually prepared the order; the order would be served raw or skipped. Fiscal/business invariant: PREPARING→READY transition must be chef-initiated for delivery orders so the timestamp captured in audit log truly reflects food readiness, not just paid status. NF525 chain still bit-identical (count=18, last_hash=1e2762af… pre==post) so audit-log integrity is intact — but the FACT recorded for #70 is wrong.",
+      "fix_hint": "Investigate Wave S-1 auto-PREPARING listener. Likely root cause: delivery-channel orders (channel='delivery' or order_type=DELIVERY) skip the ACCEPT→PREPARING transition because the seeder/factory inserts at fiscal_status=READY directly OR the listener guard condition (e.g. payment_method=='cash_on_delivery') exits early. Re-examine app/Listeners/OrderAcceptedAutoPreparing.php (or equivalent) and the Wave T seeder tests/e2e/__fixtures__/wave-t-orders.json composition. If the seeder is the cause (fixture sets status=8 directly), fix the fixture so order_2 is created at status=6 (CONFIRMED) and lets the listener promote it to status=7 (PREPARING) — that's what the spec is meant to verify. If the listener is the cause, branch on order_type to include DELIVERY.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-R2-014",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/02-kds-both-orders-visible.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Capture report says order_1_id=72 + order_2_id=70 (2 orders created by the Wave T seeder), but DOM state 02..08 contain THREE cards in the V2 grid: aria-label='Commande A0002' (with the wave-t delivery block — backend id=70), 'Commande A0003' (backend id=72), 'Commande A0004' (UNKNOWN backend id, NOT created by this run). Card A0004 has identical body content to A0003 ('Sandwich Cayenne / Tacos / Coca-Cola 33cl') and identical CAISSE source chip — it is a STALE order from a prior Wave S or Wave T-R1 run that was not cleaned up by the spec's DB reset hook. State 08 shows BOTH original orders bumped (A0002 + A0004 turn 'Prête') but A0003 remains 'En cours' — meaning the spec bumped the WRONG order #72 (rendered as A0003) and the second bump click landed on the stale A0004 instead of the real delivery order A0002. The capture's server_statuses_post_bump shows {70:8, 72:8} correctly for the two real orders so the backend wasn't fooled, but the visual capture is misleading and any reviewer reading screenshots in isolation would draw wrong conclusions about per-card behaviour.",
+      "fix_hint": "tests/e2e/test-e2e-wave-t-caisse-to-delivered-B-kds.spec.js — before seeding the 2 Wave T orders, delete any KDS-active orders for branch_id=1 created in the last 24h, e.g. via beforeAll Artisan command 'kds:reset-active-orders --branch=1 --since=24h' or direct DB DELETE. Otherwise stale orders from sibling Wave S/T-R1 specs pollute the visual capture and obscure which card maps to which fresh fixture id. Recommend also adding data-testid='kds-v2-card-order-{id}' on each card so adversarial reviewers can DOM-grep for the exact backend id rather than queue-letter aliases.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 6,
+    "P2": 6,
+    "P3": 1,
+    "open_P0": 1,
+    "open_P1": 1,
+    "open_P2": 4,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "B-001": "PASS",
+    "B-002": "PASS",
+    "B-003": "PASS",
+    "B-004": "PASS",
+    "B-005": "FAIL",
+    "B-006": "PASS",
+    "B-007": "PASS",
+    "B-008": "PASS",
+    "B-009": "FAIL",
+    "B-010": "FAIL",
+    "B-011": "FAIL",
+    "B-012": "FAIL"
+  },
+  "verdict": "RED",
+  "notes": "Wave B Round 2 KDS adversarial review of 8 states. R1 P1 closure matrix: 5/5 of the toast/timer/i18n/banner cluster CLOSED (B-001 toast geometry PASS, B-002 timer truncation PASS, B-003 i18n menu.* leak PASS, B-006 console pollution PASS, B-007 misleading central banner PASS). Bonus closure: B-004 silent z-report 422 PASS via F1 sibling heal; B-008 toast aria-live PASS via F3 toast refactor side benefit. The 5-P1 cluster F2+F3 heals are demonstrably effective. HOWEVER, R2 surfaced TWO new high-severity findings the R1 reviewer missed because the R1 spec did not capture initial backend statuses or assert card-set matches fixture-set: (1) B-R2-013 P0 — Wave S-1 auto-PREPARING regressed for the delivery order #70 (arrived at KDS as status=8/Prête instead of status=7/En cours); (2) B-R2-014 P1 — stale-order leak (3 cards in DOM vs 2 in fixture), masking which card the spec actually bumped. Spec sanity-check inline finding B-S1-PILL-2 (P0) confirms #70 status=8 pre-bump — this is the SAME signal, cross-validated. NF525 audit chain bit-identical pre==post (count=18, last_hash=1e2762afecf8d45d9385e47ddf2ab5100435108c296c328c1b82b580b2239caf) — chain integrity OK, but the chain stores a contractually-wrong PREPARING-skip transition for #70. P2 carryovers (B-005 empty-state CTA, B-009 spec instrumentation gap, B-010 CTA aria-busy, B-011 ready-pill opacity) remain non-blocking. P3 B-012 (red+ready ambiguous) remains cosmetic. Verdict RED because open_P0=1 (B-R2-013). Convergence_eligible=FALSE — Wave B requires another fix round before set-equality can hold. Recommended next action: dispatch F4 fix agent on B-R2-013 + B-R2-014 (root-cause Wave S-1 listener + spec seeder cleanup), then re-run Wave B R3."
+}

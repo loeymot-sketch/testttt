@@ -169,6 +169,11 @@ return [
         'cash_session_failure' => 'Operation failed. Retry or contact a manager.',
         // [Sprint 1B 2026-05-16] NF525 cash trail guard message.
         'cash_no_open_session_blocks_sale' => 'No open cash drawer — open a session before accepting a cash payment.',
+        // [W2-livreur 2026-05-21] Admin cash-session UI labels (V1.0.2 Sub-6.3 BUILD-1).
+        'delivery_cash_sessions' => 'Delivery boy cash sessions',
+        'delivery_cash_status_open' => 'Open',
+        'delivery_cash_status_closed' => 'Closed',
+        'delivery_cash_status_reconciled' => 'Reconciled',
     ],
     'studio' => [
         'eyebrow' => 'Centralized catalog',

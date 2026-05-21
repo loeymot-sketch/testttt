@@ -1,0 +1,73 @@
+{
+  "label": "A7-return-idle",
+  "consoleErrors": [
+    {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "text": "Access to XMLHttpRequest at 'http://localhost:8000/api/broadcasting/auth' from origin 'http://127.0.0.1:8000' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: The 'Access-Control-Allow-Origin' header has a value 'http://localhost:8000' that is not equal to the supplied origin."
+    },
+    {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "text": "Access to XMLHttpRequest at 'http://localhost:8000/api/broadcasting/auth' from origin 'http://127.0.0.1:8000' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: The 'Access-Control-Allow-Origin' header has a value 'http://localhost:8000' that is not equal to the supplied origin."
+    },
+    {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    }
+  ],
+  "consoleWarnings": [],
+  "networkErrors": [],
+  "requests": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/frontend/setting?vuex=false"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/frontend/branch?vuex=false"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/frontend/setting"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/frontend/kiosk-event"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/frontend/csp-report"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/frontend/menu"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/frontend/setting?vuex=false"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/frontend/branch?vuex=false"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/frontend/setting"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/frontend/kiosk-event"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/frontend/csp-report"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/frontend/menu"
+    }
+  ]
+}

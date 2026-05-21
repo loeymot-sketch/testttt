@@ -1,0 +1,112 @@
+[
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_sessions' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=1867d5d4f4fdf75ea8be109740e07250",
+      "lineNumber": 137447,
+      "columnNumber": 16
+    },
+    "ts": 1779339892766
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_status_open' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=1867d5d4f4fdf75ea8be109740e07250",
+      "lineNumber": 137447,
+      "columnNumber": 16
+    },
+    "ts": 1779339892766
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_status_closed' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=1867d5d4f4fdf75ea8be109740e07250",
+      "lineNumber": 137447,
+      "columnNumber": 16
+    },
+    "ts": 1779339892766
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_status_reconciled' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=1867d5d4f4fdf75ea8be109740e07250",
+      "lineNumber": 137447,
+      "columnNumber": 16
+    },
+    "ts": 1779339892766
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.id' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=1867d5d4f4fdf75ea8be109740e07250",
+      "lineNumber": 137447,
+      "columnNumber": 16
+    },
+    "ts": 1779339892766
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_sessions' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=1867d5d4f4fdf75ea8be109740e07250",
+      "lineNumber": 137447,
+      "columnNumber": 16
+    },
+    "ts": 1779339892793
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_status_open' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=1867d5d4f4fdf75ea8be109740e07250",
+      "lineNumber": 137447,
+      "columnNumber": 16
+    },
+    "ts": 1779339892793
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_status_closed' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=1867d5d4f4fdf75ea8be109740e07250",
+      "lineNumber": 137447,
+      "columnNumber": 16
+    },
+    "ts": 1779339892793
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_status_reconciled' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=1867d5d4f4fdf75ea8be109740e07250",
+      "lineNumber": 137447,
+      "columnNumber": 16
+    },
+    "ts": 1779339892793
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.id' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=1867d5d4f4fdf75ea8be109740e07250",
+      "lineNumber": 137447,
+      "columnNumber": 16
+    },
+    "ts": 1779339892793
+  },
+  {
+    "level": "warning",
+    "text": "[Vue warn]: Missing required prop: \"mode\" \n  at <DeliveryBoyCashSessionFormComponent onVnodeUnmounted=fn<onVnodeUnmounted> ref=Ref< undefined > > \n  at <RouterView> \n  at <DefaultComponent> \n  at <App>",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=1867d5d4f4fdf75ea8be109740e07250",
+      "lineNumber": 16238,
+      "columnNumber": 12
+    },
+    "ts": 1779339897690
+  }
+]

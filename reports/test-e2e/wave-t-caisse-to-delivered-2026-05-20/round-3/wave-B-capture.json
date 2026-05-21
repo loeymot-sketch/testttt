@@ -1,0 +1,82 @@
+{
+  "wave": "B",
+  "round": 1,
+  "run_name": "wave-t-caisse-to-delivered-2026-05-20",
+  "spec_path": "tests/e2e/test-e2e-wave-t-caisse-to-delivered-B-kds.spec.js",
+  "screenshot_dir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/wave-t-caisse-to-delivered-B-kds",
+  "fixture_file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__fixtures__/wave-t-orders.json",
+  "fixture_captured_at": "2026-05-20T20:10:51.985Z",
+  "order_1_id": 74,
+  "order_2_id": null,
+  "fixture_error": null,
+  "states_expected": 8,
+  "states_captured": 2,
+  "png_filenames": [
+    "01-kds-landing-loaded.png",
+    "02-kds-both-orders-visible.png"
+  ],
+  "observations": [
+    "stale-clean (WT-R3-F3): SKIPPED — fixture keep-ids invalid: [74]",
+    "state01 (kds-landing-loaded): url=http://localhost:8000/admin/kitchen-display-system?v2=1",
+    "state01: v2_layout_root_count=1",
+    "state02 grid-id audit: count=1 ids=[\"71\"] expected=[74,null] unexpected=[\"71\"]",
+    "state02 pills: order1=\"\" order2=\"\"",
+    "state02 server statuses (pre-bump): 74|status=7 |status=NULL",
+    "state02 allergen_pill_count=0",
+    "state02 cta order1: cta=0 cash=0 | order2: cta=0 cash=0"
+  ],
+  "findings_inline": [
+    {
+      "level": "P0",
+      "code": "B-S1-A",
+      "msg": "Order #74 (TAKEAWAY) not visible on KDS within 8s — sync regression or auto-PREPA never fired"
+    },
+    {
+      "level": "P0",
+      "code": "B-S1-B",
+      "msg": "Order #null (DELIVERY) not visible on KDS within 8s"
+    },
+    {
+      "level": "P2",
+      "code": "B-S0-STALE-LEAK",
+      "msg": "Stale orders still in V2 grid after WT-R3-F3 preflight: [\"71\"] (expected only [74,null]). Sweep prefix or status-window may need broadening."
+    },
+    {
+      "level": "P0",
+      "code": "B-S1-PILL-2",
+      "msg": "Order #null not in PREPARING — pill=\"\" server_status=undefined. Wave S-1 auto-PREPA regressed."
+    },
+    {
+      "level": "P1",
+      "code": "B-S2-CTA",
+      "msg": "Single-CTA contract broken: order1 cta=0 cash=0 ; order2 cta=0 cash=0"
+    }
+  ],
+  "nf525_pre": {
+    "chain": "CHAIN OK (audit_logs + z_reports) (branch=1)",
+    "count": 23,
+    "last_hash": "67351e7a7151676a88c8a6dbe29a067c2b82005052620431fffe0239d9728b3c"
+  },
+  "nf525_post": null,
+  "validations": {
+    "S-1_auto_preparing": "FAIL",
+    "S-2_single_cta": "FAIL",
+    "S-2_one_patch": null,
+    "R-1_no_429_toast": null,
+    "Q-4_no_allergen_pill": "PASS"
+  },
+  "click_counts": {
+    "order_1_clicks_to_bump": null,
+    "order_2_clicks_to_bump": null
+  },
+  "sync_latency_ms": {
+    "mount_to_visible_order_1": null,
+    "mount_to_visible_order_2": null,
+    "fixture_to_visible_order_1": null,
+    "fixture_to_visible_order_2": null
+  },
+  "network_change_status": [],
+  "initial_server_statuses": {
+    "74": 7
+  }
+}

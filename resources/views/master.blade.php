@@ -46,7 +46,7 @@
     <link rel="stylesheet" href="{{ mix('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/pos-wizard.css') }}?v=2-{{ time() }}">
     <!-- PAGE TITLE -->
-    <title>{{ trim((string) Settings::group('company')->get('company_name')) ?: (config('app.name') ?: 'FoodKing') }}</title>
+    <title>{{ trim((string) Settings::group('company')->get('company_name')) ?: (config('app.name') ?: 'Le Cayenne') }}</title>
 
     <!-- FAV ICON -->
     <link rel="icon" type="image" href="{{ $favicon }}">

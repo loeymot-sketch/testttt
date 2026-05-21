@@ -1,0 +1,422 @@
+[
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.communications' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236072669
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.communications' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236072669
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.users' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236072669
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.users' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236072669
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.accounts' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236072669
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.accounts' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236072670
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.reports' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236072670
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.reports' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236072670
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.setup' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236072670
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.setup' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236072670
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/fiscal/z-report",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779236073113
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.communications' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077009
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.communications' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077009
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.users' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077009
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.users' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077009
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.accounts' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077009
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.accounts' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077009
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.reports' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077009
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.reports' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077009
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.setup' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077009
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.setup' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077010
+  },
+  {
+    "level": "warning",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.",
+    "location": {
+      "url": "http://localhost:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 8980,
+      "columnNumber": 0
+    },
+    "ts": 1779236077220
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.communications' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077222
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.communications' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077222
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.users' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077223
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.users' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077223
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.accounts' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077223
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.accounts' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077223
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.reports' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077223
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.reports' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077223
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.setup' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077223
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.setup' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077223
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.communications' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077601
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.communications' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077601
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.users' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077601
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.users' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077601
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.accounts' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077601
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.accounts' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077601
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.reports' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077601
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.reports' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077601
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.setup' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077602
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'menu.setup' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=db4a2aab674807cac90d08a75539bce6",
+      "lineNumber": 11012,
+      "columnNumber": 16
+    },
+    "ts": 1779236077602
+  }
+]

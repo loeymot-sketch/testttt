@@ -282,10 +282,15 @@ final class KioskMenuService
         $composerProfiles = $this->publishedComposerProfiles($items, $branchId);
         $choiceAvailability = $this->choiceAvailabilityResolver()->snapshotForItems($items, $branchId, self::CHANNEL);
 
-        return $items->sortBy([
-            fn (Item $it) => (int) ($it->order ?? 0),
-            fn (Item $it) => (int) $it->id,
-        ])->map(function (Item $item) use ($availability, $composerProfiles, $choiceAvailability, $branchId): array {
+        // Wave Y A-001 root-cause fix — Laravel `sortBy([fn1, fn2])` interprets
+        // fn2 as a direction string for fn1, NOT as a tie-breaker. The old form
+        // produced non-deterministic ordering across all kiosk categories.
+        // Chained sortBy is stable in PHP (since 8.0 spl) so the second sort
+        // preserves the first sort's order on ties.
+        return $items->sortBy(fn (Item $it) => (int) $it->id)
+            ->sortBy(fn (Item $it) => (int) ($it->order ?? 0))
+            ->values()
+            ->map(function (Item $item) use ($availability, $composerProfiles, $choiceAvailability, $branchId): array {
             $avail = $availability->get($item->id);
             $isAvailable = $avail ? (bool) $avail->is_available : true;
             $itemChoiceAvailability = $choiceAvailability[(int) $item->id] ?? [
@@ -309,6 +314,10 @@ final class KioskMenuService
                 'item_type'          => (int) $item->item_type,
                 'is_featured'        => (int) $item->is_featured,
                 'is_upsell'          => (int) ($item->is_upsell ?? 0),
+                // Wave Y A-001 — surface the admin-controlled display order so
+                // the kiosk client can sort signatures first within a category.
+                // Cf. compareKioskItemsDisplay() in helpers/kioskItemDisplayOrder.js.
+                'order'              => (int) ($item->order ?? 0),
                 'is_chef_pick'       => (bool) ($item->is_chef_pick ?? false),
                 'chef_pick_order'    => $item->chef_pick_order !== null ? (int) $item->chef_pick_order : null,
                 // Phase 8.1 — Flags diététiques (DATA_CONTRACT §3.3).
@@ -335,7 +344,7 @@ final class KioskMenuService
                     'is_trace' => (bool) ($a->pivot->is_trace ?? false),
                 ])->values()->all(),
                 'variations'         => $item->variations
-                    ->filter(fn ($v) => $v->isVisibleOn(self::CHANNEL))
+                    ->filter(fn ($v) => (int) $v->status === \App\Enums\Status::ACTIVE && $v->isVisibleOn(self::CHANNEL))
                     ->map(function ($v) use ($itemChoiceAvailability) {
                         $availability = $itemChoiceAvailability['variations'][(int) $v->id] ?? ['is_available' => true, 'unavailable_reason' => null];
 

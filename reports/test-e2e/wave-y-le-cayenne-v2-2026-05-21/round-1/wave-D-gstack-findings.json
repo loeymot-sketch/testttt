@@ -1,0 +1,211 @@
+{
+  "wave": "Y-D",
+  "agent": "GStack capture agent (Wave D)",
+  "role": "AUDIT-ONLY — no fix authorization (owner constraint: wizards untouchable)",
+  "date": "2026-05-21",
+  "scope": "Kiosk wizard templates (Sandwich Cayenne, Tacos, Burger, Bols) + POS Vanilla JS wizard popup",
+  "captures_dir": "reports/test-e2e/wave-y-le-cayenne-v2-2026-05-21/captures/wave-D/",
+  "specs": [
+    "tests/e2e/_wave-y-d-wizard-audit-2026-05-21.spec.js",
+    "tests/e2e/_wave-y-d-pos-wizard-2026-05-21.spec.js"
+  ],
+  "summary": {
+    "captures_total": 79,
+    "kiosk_wizards_walked": 4,
+    "pos_wizard_captured": "partial — login redirect timeout (test-script issue, deferred)",
+    "real_findings_count": 4,
+    "coverage_gaps_count": 4,
+    "p0": 0,
+    "p1": 3,
+    "p2": 0,
+    "p3": 1
+  },
+  "verdict": "HEAL — no confirmed P0 in a clean single-host environment; 3 P1 require investigation/fix in dedicated cycle. POS wizard remains visually frozen per owner — NOT touched.",
+  "findings": [
+    {
+      "id": "WAVE-D-F1",
+      "severity": "P1",
+      "title": "Kiosk session-loss cascade — CORS 'localhost vs 127.0.0.1' triggers chain (broadcasting CORS → kiosk-token 401 → auto-relogin → wizard state reset → idle screen)",
+      "surface": "Kiosk wizard (all templates, observed clearest on K1 Sandwich Cayenne)",
+      "evidence": {
+        "captures": [
+          "captures/wave-D/106-K1-06-sauces-selected-viewport.png (sauce selected, SUIVANT visible orange)",
+          "captures/wave-D/107-K1-07-step-crudite-or-menu-viewport.png (immediately after SUIVANT — wizard collapsed to 'Bienvenue !' idle)",
+          "captures/wave-D/115-K1-15-recap-final-viewport.png ('Bienvenue !' idle — wizard never reached recap)",
+          "captures/wave-D/_console-K1-sandwich-cayenne.log (CORS errors + 401 + 422 + auto-relogin sequence)",
+          "captures/wave-D/_network-K1-sandwich-cayenne.log (lines 10-15: 422→422→401→kiosk-login→422→kiosk-login→menu reload)"
+        ],
+        "console_excerpt": "Access to XMLHttpRequest at 'http://localhost:8000/api/broadcasting/auth' from origin 'http://127.0.0.1:8000' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: The 'Access-Control-Allow-Origin' header has a value 'http://localhost:8000' that is not equal to the supplied origin.",
+        "user_visible_signal": "Toast 'Session rafraîchie automatiquement' (visible on captures/wave-D/202-K2-02-step-sauce-viewport.png)"
+      },
+      "root_cause_hypothesis": "APP_URL=http://localhost:8000 but test/browser opens http://127.0.0.1:8000 → broadcasting/auth CORS mismatch → kiosk session token treated as cross-origin → 401 cascade → frontend auto-relogins via POST /api/auth/kiosk-login → wizard composition state lost → reset to KioskAppComponent idle.",
+      "reproduction_constraint": "Observed only in dev (host mismatch). Likely DISAPPEARS in production single-host deployment where APP_URL == browser host. Production reproduction REQUIRED before P0 escalation.",
+      "fix_applied": false,
+      "fix_authorized": false,
+      "proposed_fix": {
+        "approach_1_env_alignment": "Set APP_URL=http://127.0.0.1:8000 in .env.testing or align Playwright BASE_URL to localhost. Estimated ~1 LOC config + verify cookie domain.",
+        "approach_2_state_preservation": "If reproduces in prod: in resources/js/store/kiosk/* (or KioskAppComponent.vue) — on 401 from session-aware API, retry the auth refresh WITHOUT resetting wizard state. Preserve composition_buffer in sessionStorage before relogin, restore after. Estimated ~30 LOC.",
+        "approach_3_root_fix_cors": "config/cors.php — ensure 'allowed_origins' covers BOTH localhost and 127.0.0.1 variants OR resources/js/echo.js — read host from window.location, not hardcoded. Estimated ~5 LOC.",
+        "estimated_loc_total": "5-30 LOC depending on chosen approach",
+        "files_to_inspect": [
+          "config/cors.php",
+          "resources/js/echo.js (or bootstrap.js)",
+          "resources/js/components/frontend/kiosk/KioskAppComponent.vue (FROZEN — read-only inspection only)",
+          "resources/js/components/frontend/kiosk/KioskWizardComponent.vue (FROZEN — read-only inspection only)",
+          "resources/js/store/kiosk/* (Vuex modules — may need 401-retry guard)",
+          "app/Http/Controllers/Api/Frontend/PricingController.php (or wherever /api/frontend/pricing/preview lives)"
+        ],
+        "frozen_zone_concern": "KioskWizardComponent.vue + KioskAppComponent.vue are FROZEN per CLAUDE.md §7. Fix MUST live outside wizard components (in store, in echo bootstrap, in CORS config) — never in the frozen Vue files."
+      }
+    },
+    {
+      "id": "WAVE-D-F2",
+      "severity": "P1",
+      "title": "Pricing preview API rejects payload with HTTP 422 — kiosk reports '[kiosk] pricing preview failed: Request failed with status code 422'",
+      "surface": "Kiosk wizard sauce step (observed on K1 Sandwich Cayenne 2-sauce selection; K2 Tacos 3-sauce selection; K4 Bols also touched)",
+      "evidence": {
+        "captures": [
+          "captures/wave-D/_console-K1-sandwich-cayenne.log (3× '[kiosk] pricing preview failed: Request failed with status code 422')",
+          "captures/wave-D/_console-K2-tacos.log (1× pricing preview failed)",
+          "captures/wave-D/_console-K4-bols.log (1× pricing preview failed)",
+          "captures/wave-D/_network-K1-sandwich-cayenne.log (3× '422 POST /api/frontend/pricing/preview')"
+        ],
+        "user_visible_signal": "Toast 'Tarif rafraîchi localement. Le total est vérifié au paiement.' (yellow info banner, seen on captures/wave-D/204-K2-04-step-menu-or-next-viewport.png)"
+      },
+      "root_cause_hypothesis": "POST payload to /api/frontend/pricing/preview fails server-side validation when sauce-only / supplement-only updates are sent mid-wizard. The frontend has a graceful fallback (local pricing computation) and informs the user, but the 422 is real and consistent. Possible missing required field (e.g. 'item_id' not yet posted, or 'option_ids' formatted incorrectly). Could also be branch_id missing on relogin (chained with F1).",
+      "fix_applied": false,
+      "fix_authorized": false,
+      "proposed_fix": {
+        "approach": "(1) Capture exact POST body via Network panel intercept during a real session — required before patch. (2) Compare against PricingService::calculateOrder expected shape (app/Services/Pricing/PricingService.php). (3) Either tighten FormRequest validation messages OR fix frontend payload composer to include all required fields before sending preview.",
+        "estimated_loc": "10-40 LOC in PricingPreviewRequest + frontend composer",
+        "files_to_inspect": [
+          "app/Http/Requests/Pricing/PricingPreviewRequest.php (or equivalent)",
+          "app/Http/Controllers/Api/Frontend/PricingController.php",
+          "resources/js/services/kiosk-pricing.js (or wherever the preview POST is composed)"
+        ],
+        "investigation_gap": "Need exact 422 response body. Run a follow-up probe that logs response.body for the 422s before proposing patch. Without payload, fix is speculative."
+      }
+    },
+    {
+      "id": "WAVE-D-F3",
+      "severity": "P1",
+      "title": "Out-of-stock sauce 'Algérienne' appears SELECTABLE (orange checkmark badge applied) despite 'Épuisé' label",
+      "surface": "Kiosk Sandwich wizard sauce step (K1) and Tacos wizard sauce step (K2)",
+      "evidence": {
+        "captures": [
+          "captures/wave-D/105-K1-05-step-sauce-viewport.png (Algérienne shows 'Épuisé' badge — not selected)",
+          "captures/wave-D/203-K2-03-sauces-selected-viewport.png (after script tapped first 3 sauces — Algérienne shows BOTH 'Épuisé' AND orange checkmark badge; composition strip shows 'Algérienne, Andalous...')"
+        ],
+        "inventory_excerpt": "K2 step3 inv menuAddon shows sauce composition added — including the épuisé item"
+      },
+      "root_cause_hypothesis": "The 'Épuisé' visual state is purely cosmetic; no click-guard (pointer-events: none, aria-disabled handler, or guarded :click handler) prevents adding an out-of-stock option to composition. Either (a) the card CSS does not set pointer-events: none, or (b) the @click handler does not check item.is_out_of_stock before pushing to composition.",
+      "reproduction_constraint": "Test script forced the click via direct DOM locator. UNCONFIRMED whether a real user finger-tap would be blocked by CSS layer. Need touch-event reproduction in browser DevTools.",
+      "fix_applied": false,
+      "fix_authorized": false,
+      "proposed_fix": {
+        "approach": "In KioskStepSauceComponent.vue: add early-return in @click handler if option.is_out_of_stock or option.stock_status === 'out_of_stock'. Belt-and-suspenders: add CSS class .kiosk-sauce-card--epuise { pointer-events: none; opacity: 0.5; cursor: not-allowed; } on the card when out-of-stock. Estimated 6-10 LOC.",
+        "files_to_inspect": [
+          "resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue (NOT in §7 frozen list — KIOSK STEP components are NOT explicitly frozen per CLAUDE.md; only KioskWizardComponent + KioskAppComponent + KioskUpsellComponent are. Verify with owner before edit.)",
+          "resources/css/kiosk/* (sauce card styles)"
+        ],
+        "frozen_zone_concern": "KioskStepSauceComponent.vue is in resources/js/components/frontend/kiosk/steps/ — NOT explicitly in §7 frozen list. But owner said 'wizards untouchable'. Confirm scope: are step sub-components included in the wizard freeze? If yes → owner gate required; if no → safe to patch."
+      }
+    },
+    {
+      "id": "WAVE-D-F4",
+      "severity": "P3",
+      "title": "Copy mismatch — sauce step heading says '14 sauces supplémentaires' but DOM has 13 sauce cards",
+      "surface": "Kiosk Sandwich + Tacos sauce step",
+      "evidence": {
+        "captures": [
+          "captures/wave-D/203-K2-03-sauces-selected-viewport.png ('14 sauces supplémentaires (€0,50)' visible above grid)"
+        ],
+        "dom_count": "K1 sauce count = 13 (logged 'SAUCE COUNT: 13'); K2 sauce count = 13"
+      },
+      "root_cause_hypothesis": "Either hardcoded copy 'Toutes nos 14 sauces' OR off-by-one (counting 'Sans Sauce' separately, but DOM still shows 13 cards total including it). Possibly stale i18n key referencing previous menu.",
+      "fix_applied": false,
+      "fix_authorized": false,
+      "proposed_fix": {
+        "approach": "grep i18n: 'sauces supplémentaires' in resources/lang/fr/*.json — replace hardcoded '14' with {count} interpolation bound to actual DOM length, OR if intentional plus-one (e.g. promo sauce hidden), align DB seeder + copy.",
+        "estimated_loc": "1-3 LOC + i18n key update",
+        "files_to_inspect": [
+          "resources/lang/fr/kiosk.json (or similar)",
+          "resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue (template binding)"
+        ]
+      }
+    }
+  ],
+  "coverage_gaps": [
+    {
+      "id": "WAVE-D-G1",
+      "description": "K3 Chicken Burger wizard NEVER OPENED — test landed back at idle 'Bienvenue !' screen. Root cause = test-script locator mismatch (getByText(/Chicken Burger|Burger/i) didn't resolve to a tappable card from the catalog top level; likely needs explicit BURGERS category click first).",
+      "impact": "Burger wizard NOT covered by Wave D. Sandwich behavior likely identical (same template, different SKU) but UNVERIFIED.",
+      "remediation": "Future spec — explicit click on BURGERS category sidebar entry before locator-by-text on item card. Captures: 300/K3-00-step1-viewport.png shows the idle screen (proof of failure)."
+    },
+    {
+      "id": "WAVE-D-G2",
+      "description": "POS Vanilla JS wizard popup (frozen-zone protected) NOT captured — test timed out at /admin/login → /admin/pos-v4 redirect chain (likely CSRF/session middleware slow on cold cache, or login form fields differ from expected name='email'/'password').",
+      "impact": "POS wizard untested in Wave D. NOTE: this is the FROZEN-ZONE wizard (public/js/pos-wizard.js, design parfait per owner). No fix would be authorized anyway — capture-only mission. Coverage gap, not a defect.",
+      "remediation": "Future spec — use authenticated browser context (storageState) prepared by tests/Playwright/global-setup.js auth fixture. Skip login redirect entirely."
+    },
+    {
+      "id": "WAVE-D-G3",
+      "description": "K1 catalog default-landing on BOISSONS category (screenshot 100). Could be (a) intentional UX (last-used category persisted), (b) data ordering issue (Boissons sort < Sandwich Cayenne), or (c) test state leak from earlier session. UNVERIFIED.",
+      "impact": "Potentially friction-inducing for kiosk users (have to scroll up to find featured sandwich). Or harmless. Cannot confirm without (a) DB sort_order check, (b) clean-session reload.",
+      "remediation": "Fresh-browser-context test (no cookies/localStorage) + DB query: SELECT id, name, sort_order FROM item_categories WHERE status=1 ORDER BY sort_order, id."
+    },
+    {
+      "id": "WAVE-D-G4",
+      "description": "K4 Bols mission spec mismatch reconciled — mission expected 'base, viande, sauce, suppléments, gratiné, récap' (6 steps); actual shows 'Quelle Sauce / Quel Supplément / Quel Menu / Récap' (4 steps). Recent commit ce2c95ffd ('Cayenne+Tacos sauce list + Bols 2-sauces + Gratiné price bug') indicates owner already iterated on Bols wizard. Title 'BOWL FRITES POULET CRISPY' is a configured SKU, not a base+viande build-up. Bols use 4-sauce subset (only the maison sauces — Fromagère/Spicy/Barbecue + Sans Sauce), not the full 13.",
+      "impact": "Not a defect. Mission spec stale vs current product reality.",
+      "remediation": "Update mission spec doc."
+    }
+  ],
+  "numeric_integrity_checks": {
+    "K1_sandwich_cayenne_total": {
+      "starting_price": "€7,40",
+      "expected_invariant": "Base + (paid sauces >1) + (supplements) + (menu addon).",
+      "observed": "Total stayed €7,40 across viande/sauce/sauce-selected — wizard collapsed before menu addon reached. No anomaly observed before collapse."
+    },
+    "K2_tacos_total": {
+      "starting_price": "€6,90",
+      "after_3_sauces_selected": "€7,90 (Δ +€1,00 = 2 extra sauces × €0,50 since 1st sauce free; consistent with 'Andalouse +€0,50, Blanche +€0,50' badges)",
+      "verdict": "CORRECT arithmetic. Display 'X14 sauces' header copy is wrong but math is right."
+    },
+    "K4_bols_total": {
+      "starting_price": "€6,90",
+      "after_fromagere_sauce": "€6,90 (Sauce Fromagère 'Gratuite1' badge = 1st sauce free)",
+      "after_oignon_supplement": "€7,40 (Δ +€0,50 — but Oignon card showed €0,90 price?? POSSIBLE INCONSISTENCY but cart panel total may include kiosk discount; verify)",
+      "verdict": "POSSIBLE ANOMALY (€0,90 supplement → €0,50 increment). NEEDS RE-RUN with explicit cart-panel-total snapshot per step."
+    },
+    "sauce_count_dom": {
+      "sandwich_cayenne": 13,
+      "tacos": 13,
+      "bols_frites_poulet_crispy": 4,
+      "expected_per_mission": "13 for sandwich + tacos; bols uses subset per owner commit ce2c95ffd"
+    },
+    "viande_count_dom": {
+      "sandwich_cayenne": 4,
+      "tacos": 4,
+      "expected_per_mission": "4 (Poulet mariné/curry/tandoori/crispy) ✓"
+    }
+  },
+  "visual_quality_notes": [
+    "No raw i18n labels (kiosk.X, Label.Y) observed in any wizard step — i18n resolution OK",
+    "No empty-state regressions on viande/sauce/supplement/menu steps",
+    "Stepper indicator (orange circles) correctly highlights current step",
+    "Composition strip ('VOTRE COMPOSITION') updates correctly with viande + sauce names",
+    "Out-of-stock badge styling correct visually (gray Épuisé badge on Algérienne)",
+    "SUIVANT button correctly enabled (orange) only after valid selection — UX gating intact",
+    "ABANDONNER L'ARTICLE button always present — escape hatch intact",
+    "Total price card always visible bottom-right",
+    "Toast notifications (yellow 'Tarif rafraîchi localement', 'Session rafraîchie automatiquement') USER-VISIBLE — designed graceful-degradation messages; consistent with F1+F2 root causes"
+  ],
+  "mission_constraints_observed": {
+    "audit_only": true,
+    "no_code_modified": true,
+    "frozen_zones_untouched": true,
+    "nf525_invariants_unaffected": true,
+    "screenshots_persisted_to_disk": 79
+  }
+}

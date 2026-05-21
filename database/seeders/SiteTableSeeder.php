@@ -41,7 +41,7 @@ class SiteTableSeeder extends Seeder
             'site_ios_app_link' => $envService->getValue('DEMO') ? 'http://ios.com' : '',
             'site_copyright' => $envService->getValue(
                 'DEMO'
-            ) ? '© FoodKing SaaS 2026, Tous Droits Réservés' : '',
+            ) ? '© Le Cayenne 2026, Tous Droits Réservés' : '',
             'site_language_switch' => Activity::ENABLE,
             'site_app_debug' => Activity::DISABLE,
             'site_auto_update' => Activity::DISABLE,

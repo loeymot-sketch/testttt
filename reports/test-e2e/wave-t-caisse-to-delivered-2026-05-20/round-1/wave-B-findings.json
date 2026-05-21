@@ -1,0 +1,155 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 8,
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/05-kds-order1-bump-clicked-undo-window.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "kds-toast at position:absolute; top:110px; left:50% translate(-50%,0); min-width:620px; z-index:30 — geometrically covers Card B (Order#70, A0002) header region (y=130..200, x=340..760 at viewport=1280). Screenshot 05 confirms 'A0002' queue number is COMPLETELY OBSCURED while toast is up. Same masking re-occurs on state 07 toast over Card A. During 3s undo window chef cannot read the neighbouring red-critical order's number/timer.",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue — pin toast to top:right (top:90px; right:24px; left:auto) so it never overlaps cards in a 4-col grid; or reduce min-width to ~360px and move to top-center above the grid (top:88px) so it sits above Row 1 cards, not on top of them. Alternative: top:8px (above the persistent ADMIN banner) which the layout reserves.",
+      "status": "closed",
+      "closed_by": "Wave T R1 F3 — heal landed in commit 9f8676f42 (swept into sibling F5 delivery commit by parallel agent's `git add .` — mislabeled message; the actual F3 KDS visual heal SHA is the same). Toast now position:fixed bottom:24px right:24px min-width:320px max-width:420px — never overlaps the 4×2 grid regardless of viewport. RTL flips to left:24px. role=status aria-live=assertive added. Locked by tests/js/kdsVisualHealsWaveT.spec.js (5 sentinels under WT-B-R1-001).",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/02-kds-both-orders-visible.png",
+      "category": "text_truncation",
+      "severity": "P1",
+      "evidence": "Both cards on every state (02..08) show the 'ATTENTE' / 'Attente' label clipped to 'ATTEN' and the elapsed timer '14:26' clipped to '14:2' (last digit missing) at viewport=1280. DOM: <span class=\"kds-card__elapsed-label\">Attente</span><div class=\"kds-card__elapsed\">14:26</div> inside kds-card__elapsed-wrap with flex-shrink:0 sits in kds-card__main flex row with kds-card__queue (font-size:52px). Cards are sized for ≥1600px grid; at 1280px the right edge of header clips the time. Critical operational data: chef needs to read elapsed time at a glance — clipping = misreading risk.",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Card.vue — reduce kds-card__queue font-size from 52px to 42px at viewport<1440, or add @container query to make elapsed-wrap take precedence; or wrap elapsed-wrap in overflow:visible. Cheapest: padding-right:16px → 6px on .kds-card__main only when card width<300.",
+      "status": "closed",
+      "closed_by": "Wave T R1 F3 — heal landed in commit 9f8676f42 (mislabeled — see B-001 closed_by). KdsOrderCard.vue queue font-size now clamp(36px,4.2vw,52px), elapsed clamp(22px,2.8vw,34px), prefix clamp(16px,2vw,26px), padding 16px→12px, gap 12px→8px, elapsed-label letter-spacing 0.15em→0.06em, white-space:nowrap on elapsed digits, overflow:visible on elapsed-wrap. Locked by tests/js/kdsVisualHealsWaveT.spec.js (5 sentinels under WT-B-R1-002).",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/01-kds-landing-loaded.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Admin sidebar nav (visible when expanded) contains 5 raw label keys: 'menu.communications', 'menu.users', 'menu.accounts', 'menu.reports', 'menu.setup'. Source: DOM line 8339 — <button aria-label=\"menu.communications\">menu.communications</button>, repeated for users/accounts/reports/setup. Console confirms: '[intlify] Not found 'menu.communications' key in 'fr' locale messages' (and identical entries for users/accounts/reports/setup) — present in console.json state 01, count=41 warnings total (each missed key fires twice). These are visible in the sidebar even when collapsed via aria-label attributes; screen readers read 'menu point oh users' instead of 'Utilisateurs'.",
+      "fix_hint": "resources/js/languages/fr.json — add keys: menu.communications, menu.users, menu.accounts, menu.reports, menu.setup. Currently only present as nested objects but the sidebar template uses dotted-key lookups. Either add flat aliases or change Vue template ($t calls) to use the nested-key syntax.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/01-kds-landing-loaded.png",
+      "category": "silent_error",
+      "severity": "P2",
+      "evidence": "Network state 01: GET http://127.0.0.1:8000/api/admin/fiscal/z-report → 422 Unprocessable Content. Console error: 'Failed to load resource: status 422 (Unprocessable Content)'. DOM scan: 0 elements with role=\"alert\", 0 .alert-* elements, 0 .toast visible. Fired by resources/js/components/admin/dashboard/LastZReportWidget.vue:96 — but the widget itself isn't mounted on /admin/kitchen-display-system. The catch (_e) sets zReportUnavailable=true silently with no user feedback. Downgraded from P0 silent_error to P2 because the widget is not visible on KDS view AND the 422 likely means 'no z-report row yet for branch_id=0 today' which is a benign state — but the call should not fire on KDS layout at all, AND the 422 status code is incorrect (should be 200 empty array or 204).",
+      "fix_hint": "Two options: (a) move the LastZReportWidget axios call behind a v-if that excludes /admin/kitchen-display-system route; or (b) change app/Http/Controllers/Admin/Fiscal/ZReportController.php to return 200 with data:[] when no z_report exists, instead of 422. NF525 chain stays bit-identical because z_reports table unchanged.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/01-kds-landing-loaded.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Empty-state on state 01 (KDS landing before fixture orders arrive) shows: 1 illustration (kds_empty_state burger SVG), heading 'Aucune commande en cours' (~24 chars OK), subtitle 'Les nouvelles commandes apparaîtront ici' (~38 chars OK), but ZERO primary CTA. Per protocol §5: empty-state quality requires illustration + copy ≥20chars + CTA. Missing CTA. Acceptable for KDS in-prod (chef doesn't need a CTA to start preparing nothing) — but conservative P2 per the rule.",
+      "fix_hint": "Optional — add a 'Recharger' button bound to kdsSyncService.syncNow() so user can force-refresh from empty state. Improves perceived control even if backend has nothing new.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/02-kds-both-orders-visible.png",
+      "category": "console_error",
+      "severity": "P1",
+      "evidence": "State 01 console.json contains 41 i18n warnings + 1 error '422 z-report'. Warnings include identical [intlify] messages for menu.communications, menu.users, menu.accounts, menu.reports, menu.setup — these are NOT vendor noise (they're application-code missing translations), so per protocol §9 they qualify as P1 console pollution (5 missing keys × ~8 repetitions each = noise wall). On KDS production screens running 24/7 this DevTools console floods quickly and obscures real signals.",
+      "fix_hint": "Same fix as B-003. Adding the 5 missing fr.json keys eliminates all 41 console warnings. Verified by recompiling fr.json via 'npm run prod' and re-running E2E.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/02-kds-both-orders-visible.png",
+      "category": "aria_keyboard",
+      "severity": "P1",
+      "evidence": "Persistent kds-banner ('Compte central (multi-succursales) : le flux en direct n'est pas abonné…') has UX wording that reads as an ERROR (flux NOT subscribed). It is purely informational for the central admin (branch_id=0) viewing cross-branch. Le Cayenne is single-branch — the banner should not state 'multi-succursales' which is misleading. Wording 'n'est pas abonné' (NOT subscribed) sounds like a real-time-sync failure; a chef seeing this will think KDS is broken. Banner is permanent (role=status), never dismissible, occupies ~32px above the orders grid, partially clipping the elapsed timers (B-002).",
+      "fix_hint": "Two options: (a) hide the banner when branch_count==1 (single-branch installations like Le Cayenne); (b) reword the FR copy in resources/js/languages/fr.json key kds_admin_polling_hint to remove 'n'est pas abonné' and 'multi-succursales' phrasing — propose: 'Mode admin centralisé : rafraîchissement automatique toutes les 60 s. Cliquez pour forcer.'. Add dismiss button. Make banner kds-banner--neutral grey, not info-blue (less visually loud).",
+      "status": "closed",
+      "closed_by": "Wave T R1 F3 — heal landed in commit 9f8676f42 (mislabeled — see B-001 closed_by). BOTH options applied: (a) kdsIsCentralAdmin computed in KitchenDisplaySystemComponent.vue now requires branchCount>1 AND admin role — banner is suppressed on single-branch installs (Le Cayenne foodkingConfig.branchCount=1). (b) FR/EN/AR locales reworded by sibling commit 205fc6668 (i18n F2) — new FR: 'Mode admin centralisé : rafraîchissement automatique toutes les 60 s.' no longer says 'n'est pas abonné' or 'multi-succursales'. branchCount exposed via master.blade.php with 5min Cache::remember on Branch::query()->count(). Locked by tests/js/kdsVisualHealsWaveT.spec.js (4 sentinels under WT-B-R1-007). Verified zero other consumers of kdsIsCentralAdmin (only the V2 prop binding + legacy template v-if).",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/05-kds-order1-bump-clicked-undo-window.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Undo toast .kds-toast renders with NO role=alert / role=status and NO aria-live on its container. Inner sr-only aria-live='polite' aria-atomic='true' region exists but is EMPTY (no text injected at toast-open). Screen-reader users will NOT be notified that 'Commande N°A0001 marquée prête' nor that an 'Annuler' button is available. The Annuler button itself has aria-label correctly in French ('Annuler la dernière commande marquée prête'). But discoverability via SR is broken because the toast never speaks.",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KdsUndoToast.vue — add role='status' aria-live='assertive' on the .kds-toast root (assertive because toast auto-dismisses in 3s and the user must catch the announce). Alternative: inject the toast title text into the existing sr-only region when toast mounts.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-009",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/05-kds-order1-bump-clicked-undo-window.png",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Wave-B capture summary network_change_status reports 2 POSTs /api/admin/kds-order/change-status/{69,70} with status=202 and duration=3094ms / 3116ms. Both crossed the 2000ms threshold and SHOULD have been logged to per-state network.json per protocol §artifact-quartet. Actual: every per-state network.json is empty (state 02..08) or contains only the 422 (state 01). The spec instrumented network events into the capture.json summary only, not into the artifact files an adversarial reviewer reads. Without summary cross-reference an adversarial reviewer would (a) miss the 3s duration, (b) miss the POST counts, (c) under-verify S-2 single-PATCH claim.",
+      "fix_hint": "tests/e2e/test-e2e-wave-t-caisse-to-delivered-B-kds.spec.js — page.on('response') listener should also push every response.url matching '/api/admin/kds-order/change-status/' to the per-state buffer regardless of status (i.e. always log success POSTs in addition to status≥400 / duration>2000ms). Or copy network_change_status into the network.json sidecar of state 05/07.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-010",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/05-kds-order1-bump-clicked-undo-window.png",
+      "category": "loading_state_missing",
+      "severity": "P2",
+      "evidence": "POST /api/admin/kds-order/change-status/69 took 3094ms (capture.json observations line: 'state05 order#69 POST result: status=202 elapsed=3094ms'). Per protocol §7 request duration > 2000ms requires .spinner / .skeleton / [aria-busy=true] during that window. The kds-card__cta button shows no spinner; it just becomes disabled or the toast appears immediately. Screenshot 05 shows the toast already visible during the 3s window, which serves as implicit loading feedback — but the CTA button itself stays in its normal state, so the chef cannot tell if their click is being processed (could double-tap). The 3s POST delay is itself suspect — backend response time is borderline.",
+      "fix_hint": "Two parts: (a) add aria-busy='true' on .kds-card__cta during pendingPostsByOrderId[orderId]==true (already tracked in store), and a 1px shrinking progress bar inside the button; (b) investigate why /api/admin/kds-order/change-status takes 3s — check StateMachine + outbox.write_then_dispatch + appendAuditChain time. If chain HMAC compute is the bottleneck, queue it via outbox dispatch-after-respond.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-011",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/06-kds-order1-after-bump.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "kds-card--ready class applied to Order#1 in state 06 — kds-card__cta opacity becomes 0.7 per .kds-card--ready[data-v-151558cb]{opacity:0.7}. The .kds-card__cta has background #1F2937 with white text, but the opacity cascades to the whole card → the green 'Prête' pill (bg:rgb(220,252,231) color:rgb(20,83,45)) becomes 0.7 opacity → effective contrast on white background drops from ~7:1 to ~4.2:1. Borderline for AA on 13px text. The CTA 'Prêt' label (white on #1F2937 @ 0.7) keeps OK contrast (>4.5:1).",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Card.vue — override .kds-card--ready .kds-card__state-pill { opacity: 1 } so the status pill stays at full opacity (its purpose is to communicate READY state — dimming it defeats the purpose). Only dim the body/items area: .kds-card--ready .kds-card__body { opacity: 0.6 }.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "B-012",
+      "state_artifact": "wave-t-caisse-to-delivered-B-kds/06-kds-order1-after-bump.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "kds-card kds-card--critical AND kds-card--ready combined on state 06 — border stays rgb(220, 38, 38) (RED, critical at 14:31 elapsed), top stripe stays red, header background stays red-tinted (rgb(254,226,226)). Only the CTA gets dimmed via opacity:0.7. Visually this is a 'red ready' card that looks indistinguishable from a 'red en cours' card except the small green Prête pill (also dimmed per B-011) and the dimmed CTA. A chef glancing across 8 cards will not immediately register which red cards are still EN COURS and which are PRÊTE. The state signal is buried in the pill, while the dominant color (red border + red stripe + red header) screams 'urgent action needed'.",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Card.vue — when kds-card--ready, swap border to green (rgb(34,197,94)) or grey (#9CA3AF) and swap header bg to white/neutral, overriding the critical-state styling. The 'ready' state should DOMINATE 'critical' state since the order is ready and waiting collection, not awaiting cook action.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 5,
+    "P2": 6,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 5,
+    "open_P2": 6,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {},
+  "verdict": "AMBER",
+  "notes": "Wave B Round 1 KDS adversarial review of 8 states. Cross-validation of explicit prompted checks: (1) S-1 auto-PREPARING — PASS, both orders arrive on KDS with status pill 'En cours' = backend status 7 (PREPARING), confirmed in capture.json (server_statuses pre-bump: 69|status=7, 70|status=7); (2) S-2 1-clic CTA + single POST — PASS, capture.json records exactly 1 POST per order with status 202; (3) R-1 no 429 throttle — PASS, zero 429 in any network.json or console.json; (4) Q-4 no allergen banner — PASS, zero rendered allergen badges (only kds-card__allergen-spacer placeholders); (5) order contents match fixture — PASS, Order#69='Sandwich Cayenne/Tacos/Coca-Cola 33cl' and Order#70='Sandwich Cayenne/Big Cayenne/Petite Frites' verified by DOM extraction; (6) French Annuler aria-label — PASS, button has aria-label='Annuler la dernière commande marquée prête'; (7) kds-card--ready class applied with opacity:0.7 — PASS structurally but P2/P3 contrast/signal issues raised. NF525 chain bit-identical (pre=post hash 2a9270aa...). 0 P0 = no production blocker. 5 P1 must close before convergence: B-001 toast overlap, B-002 elapsed truncation, B-003 i18n leak, B-006 console pollution, B-007 misleading central banner. Verdict AMBER — caisse-to-KDS flow is operationally green but the visual/UX hygiene around the toast and the persistent banner is the dominant friction a chef will hit in production. Suggest a single heal sprint clustering B-001/B-002/B-007 (header + toast geometry) as one fix and B-003/B-006 (i18n) as a second."
+}

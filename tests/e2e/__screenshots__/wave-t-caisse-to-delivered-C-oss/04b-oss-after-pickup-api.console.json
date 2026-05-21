@@ -1,0 +1,12 @@
+[
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/pos-order/change-status/84",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779312389990
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "level": "warning",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.",
+    "location": {
+      "url": "http://localhost:8000/js/vendor.js?id=81384d02e45361bd595b2088801fcd13",
+      "lineNumber": 8980,
+      "columnNumber": 0
+    },
+    "ts": 1779070263567
+  },
+  {
+    "level": "info",
+    "text": "[PosSyncService] fallback polling disabled.",
+    "location": {
+      "url": "http://localhost:8000/js/pos-shell.js",
+      "lineNumber": 17915,
+      "columnNumber": 16
+    },
+    "ts": 1779070264096
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+    "location": {
+      "url": "http://localhost:8000/api/broadcasting/auth",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779070264117
+  },
+  {
+    "level": "verbose",
+    "text": "[DOM] Input elements should have autocomplete attributes (suggested: \"username\"): (More info: https://goo.gl/9p2vKq) %o",
+    "location": {
+      "url": "http://localhost:8000/admin/pos",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779070264132
+  }
+]

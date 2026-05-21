@@ -1,0 +1,104 @@
+{
+  "wave": "B",
+  "round": 1,
+  "run_name": "wave-t-caisse-to-delivered-2026-05-20",
+  "spec_path": "tests/e2e/test-e2e-wave-t-caisse-to-delivered-B-kds.spec.js",
+  "screenshot_dir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/wave-t-caisse-to-delivered-B-kds",
+  "fixture_file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__fixtures__/wave-t-orders.json",
+  "fixture_captured_at": "2026-05-20T18:07:47.981Z",
+  "order_1_id": 69,
+  "order_2_id": 70,
+  "fixture_error": null,
+  "states_expected": 8,
+  "states_captured": 8,
+  "png_filenames": [
+    "01-kds-landing-loaded.png",
+    "02-kds-both-orders-visible.png",
+    "03-kds-order1-card-detail.png",
+    "04-kds-order2-card-detail.png",
+    "05-kds-order1-bump-clicked-undo-window.png",
+    "06-kds-order1-after-bump.png",
+    "07-kds-order2-bump-clicked-undo-window.png",
+    "08-kds-final-both-bumped.png"
+  ],
+  "observations": [
+    "state01 (kds-landing-loaded): url=http://127.0.0.1:8000/admin/kitchen-display-system?v2=1",
+    "state01: v2_layout_root_count=1",
+    "state02 wait order#69: visible after mount+3ms (fixture→visible=824422ms — informational only)",
+    "state02 wait order#70: visible after mount+7ms",
+    "state02 pills: order1=\"En cours\" order2=\"En cours\"",
+    "state02 server statuses (pre-bump): 69|status=7 70|status=7",
+    "state02 allergen_pill_count=0",
+    "state02 cta order1: cta=1 cash=0 | order2: cta=1 cash=0",
+    "state03 order1 body length=146 preview=\"1×Sandwich CayenneChoix : Poulet mariné·SANDWICH CAYENNE - Salade, Tomate, Oignon1×TacosChoix : Poulet mariné·TACOS1×Coca-Cola 33cl·COCA-COLA 33CL\"",
+    "state04 order2 body length=274 preview=\"📍12 rue Test, Paris 75001👤Wave T E2E 1779300395176📱06123456781×Sandwich CayenneChoix : Poulet mariné·SANDWICH CAYENNE - Salade, Tomate, Oignon1×Big CayenneChoix : Poulet mariné, Poulet mariné·BIG CAYENNE - Salade, Tomate, Oignon1×Petite\"",
+    "state04 order2 delivery_block_count=1",
+    "state05 pre-click order1 cta_visible=true",
+    "state05 (kds-order1-bump-clicked-undo-window): captured during 3s undo toast window",
+    "state05 order#69 POST result: status=202 elapsed=3094ms",
+    "state05 order1 awaited_response_status=202 listener_count=1 → effective=1",
+    "state06 order1 still_rendered=1 ready_class=true",
+    "state07 pre-click order2 cta_visible=true",
+    "state07 (kds-order2-bump-clicked-undo-window): captured during 3s undo toast window",
+    "state07 order#70 POST result: status=202 elapsed=3116ms",
+    "state07 order2 awaited_response_status=202 listener_count=1 → effective=1",
+    "state08 final: order1 rendered=1 ready=true | order2 rendered=1 ready=true",
+    "NF525 pre={\"chain\":\"CHAIN OK (audit_logs + z_reports) (branch=1)\",\"count\":10,\"last_hash\":\"2a9270aa42c4a6667dbb0f2f217f5c58a9817ac4a47b0af89de280b5926c8ab1\"} post={\"chain\":\"CHAIN OK (audit_logs + z_reports) (branch=1)\",\"count\":10,\"last_hash\":\"2a9270aa42c4a6667dbb0f2f217f5c58a9817ac4a47b0af89de280b5926c8ab1\"}",
+    "server statuses post-bump:\n69|status=8\n70|status=8",
+    "fixture updated: kds_ready_at_order_1+2 = 2026-05-20T18:21:44.302Z"
+  ],
+  "findings_inline": [],
+  "nf525_pre": {
+    "chain": "CHAIN OK (audit_logs + z_reports) (branch=1)",
+    "count": 10,
+    "last_hash": "2a9270aa42c4a6667dbb0f2f217f5c58a9817ac4a47b0af89de280b5926c8ab1"
+  },
+  "nf525_post": {
+    "chain": "CHAIN OK (audit_logs + z_reports) (branch=1)",
+    "count": 10,
+    "last_hash": "2a9270aa42c4a6667dbb0f2f217f5c58a9817ac4a47b0af89de280b5926c8ab1"
+  },
+  "validations": {
+    "S-1_auto_preparing": "PASS",
+    "S-2_single_cta": "PASS",
+    "S-2_one_patch": "PASS",
+    "R-1_no_429_toast": "PASS",
+    "Q-4_no_allergen_pill": "PASS"
+  },
+  "click_counts": {
+    "order_1_clicks_to_bump": 1,
+    "order_2_clicks_to_bump": 1
+  },
+  "sync_latency_ms": {
+    "mount_to_visible_order_1": 3,
+    "mount_to_visible_order_2": 7,
+    "fixture_to_visible_order_1": 824422,
+    "fixture_to_visible_order_2": 824426
+  },
+  "network_change_status": [
+    {
+      "url": "http://127.0.0.1:8000/api/admin/kds-order/change-status/69",
+      "method": "POST",
+      "status": 202,
+      "orderId": 69,
+      "ts": 1779301296165,
+      "body": null
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/admin/kds-order/change-status/70",
+      "method": "POST",
+      "status": 202,
+      "orderId": 70,
+      "ts": 1779301301150,
+      "body": null
+    }
+  ],
+  "initial_server_statuses": {
+    "69": 7,
+    "70": 7
+  },
+  "server_statuses": {
+    "69": 8,
+    "70": 8
+  }
+}

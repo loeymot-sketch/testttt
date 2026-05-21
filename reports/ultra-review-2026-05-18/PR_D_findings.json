@@ -1,0 +1,302 @@
+{
+  "review_id": "PR_D_global_central_2026-05-18",
+  "branch": "v1-0-1-hardening-2026-05-17",
+  "head_commit": "a34d1f696786ac701d25586561a7121de1080d84",
+  "plan_under_review": "plans/ultra-plans-2026-05-18/PR_D_GLOBAL_CENTRAL_ULTRA_PLAN_REVIEW_2026-05-18.md",
+  "scope_summary": "Admin controllers (excl. POS/Kiosk/KDS/OSS), FormRequests, multi-tenant + RBAC + NF525 + idempotency + Spatie + composer audit",
+  "verdict": "GO-CONDITIONAL",
+  "verdict_one_liner": "Plan accurate at macro level; 3 corrections required (Customer recursion risk, ItemWizardProfile column name, stale NF525 chain attestation); execution as planned remains GO once corrections applied.",
+  "perspectives_consulted": ["Architect", "Security", "UX-A11y", "DBA", "RED-team"],
+  "nf525_chain_attestation": {
+    "attempted_at": "2026-05-18",
+    "query": "SELECT COUNT(*) AS c, MAX(current_hash) AS h FROM audit_logs",
+    "result": {"count": 27, "last_hash": "ee563c5a9feb34a6be5f4d017d933f535dadfe466d3a16add7b973b0cd58db62"},
+    "plan_baseline_claim": {"count": 26, "last_hash": "ca4ac1fdc208dae1"},
+    "delta": "Plan baseline +1 row, hash differs — chain has advanced one append since plan write. NOT a violation; plan claim is STALE not WRONG. Wave 5H or insights heal Round 1 emitted one new audit row. Plan acceptance gate text 'bit-identical 26 | ca4ac1fdc208dae1' MUST be updated to 27 | ee563c5a9feb34a6be5f4d017d933f535dadfe466d3a16add7b973b0cd58db62 BEFORE PR-D merge."
+  },
+  "composer_audit": {
+    "advisories_total": 12,
+    "packages_affected": 8,
+    "severity_breakdown": {"high": 4, "medium": 6, "low": 2},
+    "phpspreadsheet_critical_status": "ALREADY_CLOSED_Wave_5H_46fb4ef2d",
+    "high_severity_advisories": [
+      {"package": "aws/aws-sdk-php", "id": "PKSA-4t1p-xpk2-nsss", "title": "CloudFront Policy Document Injection via Special Characters", "fixed_in": ">3.371.3"},
+      {"package": "phpseclib/phpseclib", "id": "PKSA-smrh-yx37-92ws", "cve": "CVE-2026-44167", "title": "OID amplification DoS in ASN1::decodeOID()"},
+      {"package": "phpseclib/phpseclib", "id": "PKSA-km2b-zc3b-mjm3", "cve": "CVE-2026-32935", "title": "AES-CBC padding oracle timing attack"},
+      {"package": "phpunit/phpunit", "id": "PKSA-z3gr-8qht-p93v", "cve": "CVE-2026-24765", "title": "Unsafe Deserialization in PHPT Code Coverage Handling (dev dep)"}
+    ],
+    "plan_claim_status": "VERIFIED_count_match",
+    "plan_priorities_correct": "Plan T6 names aws-sdk + commonmark + laravel — confirmed appropriate; phpseclib P0 NOT in plan (high severity DoS + crypto)."
+  },
+  "findings": [
+    {
+      "id": "PR-D-F1",
+      "title": "BranchScope absent on AuditLog (NF525-adjacent multi-tenant read leak)",
+      "severity": "P0",
+      "perspectives": ["Security", "DBA"],
+      "file_lines": ["app/Models/AuditLog.php:16-58"],
+      "evidence": "Class declares branch_id in $fillable (line 21) and $casts (line 35) but contains zero call to addGlobalScope or BranchScope. Booted() (line 42-58) only enforces INSERT-only invariant. Plan F-D1 VERIFIED.",
+      "blast_radius": "Staff session (branch_id>0) calling AuditLog::query()->get() reads ALL branches' fiscal chain rows — confidentiality breach of NF525-signed evidence across tenants.",
+      "remediation": "Plan T1 — add static::addGlobalScope(new BranchScope()) in booted(). Admin (branch_id=0) bypass preserved by BranchScope.php:33-36.",
+      "lock_required": "NO (model not in frozen list; BranchScope.php itself frozen — read-only)",
+      "ship_decision": "SHIP_IN_PR_D"
+    },
+    {
+      "id": "PR-D-F2",
+      "title": "BranchScope absent on ZReport (NF525-adjacent fiscal aggregation leak)",
+      "severity": "P0",
+      "perspectives": ["Security", "DBA"],
+      "file_lines": ["app/Models/ZReport.php:11-67"],
+      "evidence": "branch_id in $fillable (line 19) and $casts (line 46). Zero BranchScope invocation. Plan F-D1 (second half) VERIFIED.",
+      "blast_radius": "Z-report list/aggregation queries across branches; staff at branch A could fetch hash-signed Z totals from branch B. NF525 6-year retention exposure widens.",
+      "remediation": "Same as F1; sentinel must include admin (branch_id=0) bypass + chain hash bit-identity post-scope.",
+      "lock_required": "NO",
+      "ship_decision": "SHIP_IN_PR_D",
+      "risk_carve_out": "Plan §5 row 1 correctly flags that BranchScope on AuditLog/ZReport could break cross-branch admin aggregation; verify ZReportControllerTest + NF525ComplianceE2ETest stay green BEFORE merge."
+    },
+    {
+      "id": "PR-D-F3",
+      "title": "BranchScope absent on ItemBranchAvailability (multi-tenant stock visibility)",
+      "severity": "P0",
+      "perspectives": ["Security", "Architect"],
+      "file_lines": ["app/Models/ItemBranchAvailability.php:8-38"],
+      "evidence": "branch_id in $fillable (line 14) and column reference in $casts implicitly via belongsTo branch (line 34-37). No BranchScope. Plan F-D2 partially VERIFIED.",
+      "blast_radius": "Staff session could read stock-rupture state of every branch; minor cross-tenant business-intel leak.",
+      "remediation": "Plan T2 — add addGlobalScope(new BranchScope()) in booted().",
+      "lock_required": "NO",
+      "ship_decision": "SHIP_IN_PR_D"
+    },
+    {
+      "id": "PR-D-F4",
+      "title": "ItemWizardProfile column name mismatch — plan F-D2 column claim incorrect",
+      "severity": "P1",
+      "perspectives": ["Architect", "RED-team"],
+      "file_lines": ["app/Models/ItemWizardProfile.php:13-31", "app/Models/ItemWizardProfile.php:61-64"],
+      "evidence": "Plan claims 'ItemWizardProfile declares branch_id'. ACTUAL: column is 'branch_id_scope' (line 20 $fillable, line 30 $casts, line 63 relation foreign key). BranchScope global scope (BranchScope.php:28) hardcodes column = 'branch_id' which won't match 'branch_id_scope'. Naive addition of BranchScope WILL FAIL — query references missing column.",
+      "blast_radius": "If executor blindly follows plan T2, runtime error 'column branch_id not found' on every ItemWizardProfile query — composer profile editor goes 500.",
+      "remediation": "Either (a) rename column to branch_id in NEW migration + backfill (P0 schema change, owner gate), (b) write custom WizardProfileBranchScope that filters branch_id_scope (cleaner), or (c) defer ItemWizardProfile to PR-D2 and remove from T2 scope.",
+      "lock_required": "NO (model not frozen)",
+      "ship_decision": "EXTRACT_FROM_T2_DEFER_TO_PR_D2",
+      "plan_correction": "Replace T2 description with 'ItemBranchAvailability only'; create T2b in PR-D2 backlog for custom-scope ItemWizardProfile."
+    },
+    {
+      "id": "PR-D-F5",
+      "title": "78 FormRequests still bypass authorization via return true; (plan claim 86 unverified by my evidence)",
+      "severity": "P1",
+      "perspectives": ["Security", "RED-team"],
+      "file_lines": ["app/Http/Requests/ (78 files via grep)"],
+      "evidence": "Body-of-authorize() scan with awk extraction yields 78 files where authorize() contains 'return true;'. Plan claims 86 — likely counted files where 'return true;' appears anywhere (e.g., in validation closures or rules). Both numbers establish the same gap, but 78 is the load-bearing count. Wave 5H closed 5/~83 (CurrencyRequest, TaxRequest, BranchRequest, RoleRequest, AdministratorRequest). Sample 10 verified naked: ItemRequest:18-21, CouponRequest:17-20, OfferRequest:16-19, NotificationRequest:15-18, ItemCategoryRequest:15-18, ItemAttributeRequest:15-18, KioskMachineRequest:13-16, CustomerRequest:16-19, EmployeeRequest:16-19, ChefRequest:16-19, DeliveryBoyRequest:16-19, WaiterRequest:16-19, ChangePasswordRequest:15-18, Admin/PaymentTerminalRequest:11-14, SmsGatewayRequest:14-17. CONTEXT: 65/80 Admin controllers carry permission:* middleware in constructor — so FormRequest::authorize gap is partly mitigated. But 15 admin controllers have ZERO permission middleware (see PR-D-F11).",
+      "blast_radius": "Any role with API access can POST/PUT/DELETE these 78 endpoints IF the corresponding controller lacks permission:* in constructor. Concrete examples: Notification settings update by any waiter; Kiosk machine pairing by any role; SMS gateway config change by any staff.",
+      "remediation": "Plan T3 top-8 cluster (Item/Coupon/ItemCategory/ItemAttribute/Offer/Notification/PaymentGateway/KioskMachine). Pattern from AdministratorRequest:22-26 ($user?->can('<cap>') ?? false). PR-D2/D3/D4 sweep for remaining ~70.",
+      "lock_required": "NO",
+      "ship_decision": "SHIP_TOP_8_IN_PR_D"
+    },
+    {
+      "id": "PR-D-F6",
+      "title": "Password policy min:6 across all user-creation/update endpoints",
+      "severity": "P1",
+      "perspectives": ["Security"],
+      "file_lines": [
+        "app/Http/Requests/AdministratorRequest.php:44-49",
+        "app/Http/Requests/EmployeeRequest.php:36-41",
+        "app/Http/Requests/ChefRequest.php:36-48",
+        "app/Http/Requests/WaiterRequest.php:36-48",
+        "app/Http/Requests/DeliveryBoyRequest.php:36-41",
+        "app/Http/Requests/CustomerRequest.php:46-48",
+        "app/Http/Requests/ChangePasswordRequest.php:28-30",
+        "app/Http/Requests/UserChangePasswordRequest.php:28-29",
+        "app/Http/Requests/SignupRequest.php:36"
+      ],
+      "evidence": "9 FormRequest files (1 more than plan F-D4's 8 — CustomerRequest:48 also has min:6) confirm string|min:6. Wave 5G raised bcrypt rounds 10→12 but didn't touch entropy minimum. NIST SP 800-63B recommends min 8 (with composition); OWASP 2023 recommends min 12.",
+      "blast_radius": "Brute-force trivial against bcrypt(12) at min:6 entropy (~30 bits) for an admin account. Restaurant staff have weak password culture (default 'cayenne1' or '123456'). NF525 audit-chain access keyed on admin login — credential theft = forensic chain compromise.",
+      "remediation": "Plan T5 — replace 'string', 'min:6' with Password::min(12)->letters()->mixedCase()->numbers() (Password rule). Apply ONLY to store/update FormRequests, NOT to login/check (existing weak hashes still validate via bcrypt rehash from Wave 5G).",
+      "lock_required": "NO",
+      "ship_decision": "SHIP_IN_PR_D"
+    },
+    {
+      "id": "PR-D-F7",
+      "title": "Idempotency middleware default OFF; admin mutating routes uncovered",
+      "severity": "P1",
+      "perspectives": ["Architect", "RED-team", "SRE"],
+      "file_lines": ["config/idempotency.php:21", "config/idempotency.php:25-35", "app/Http/Kernel.php:135"],
+      "evidence": "config/idempotency.php:21 — enabled => env('IDEMPOTENCY_MIDDLEWARE_ENABLED', false). required_routes list (lines 25-35) contains 9 patterns, all POS/kiosk/frontend. Zero admin routes (Currency/Tax/Branch/Notification/PushNotification/Coupon/Item/Offer store/destroy etc.) marked required. routes/api.php grep confirms idempotency middleware only attached to POS+cash+kiosk lines (728, 768, 788, 799, 800, 813, 817, 820, 824, 859, 861, 868, 879, 880, 889, 1131, 1134) — admin store/destroy never carries idempotency.",
+      "blast_radius": "Double-click admin POST creates duplicate Coupon/Tax/Currency/Branch rows; concurrent token paginator can issue duplicate PushNotifications. Recovery requires DB cleanup; for fiscal-adjacent Tax/Currency creates audit-chain confusion.",
+      "remediation": "Plan T4 — flip env default OFF→ON SAFE-ROLLOUT by adding 12 admin routes to required_routes (still opt-in pattern preserved at middleware:163). Frozen IdempotencyKeyMiddleware UNTOUCHED — config-only change.",
+      "lock_required": "NO (config + routes only)",
+      "ship_decision": "SHIP_IN_PR_D",
+      "risk": "Admin clients (axios) may not send X-Idempotency-Key header — middleware throws MissingIdempotencyKeyException (line 53-56). Plan §5 row 3 mitigation: keep required_routes opt-in pattern enforced. T4 acceptance test MUST cover header-absent path returning 422 for required routes only."
+    },
+    {
+      "id": "PR-D-F8",
+      "title": "12 composer advisories open; phpseclib P0 missing from plan T6",
+      "severity": "P1",
+      "perspectives": ["Security", "SRE"],
+      "file_lines": ["composer.lock"],
+      "evidence": "composer audit --no-interaction shows 12 advisories: aws-sdk-php high (GHSA-27qh-8cxx-2cr5) + aws-sdk-php medium (CVE-2025-14761) + firebase/php-jwt low (CVE-2025-45769) + laravel/framework medium (CVE-2025-27515 File Validation Bypass) + league/commonmark medium x2 (CVE-2026-33347 + CVE-2026-30838) + phpseclib high (CVE-2026-44167) + phpseclib low (CVE-2026-40194) + phpseclib high (CVE-2026-32935) + phpunit/phpunit high (CVE-2026-24765, dev dep) + psy/psysh medium (CVE-2026-25129, dev dep) + symfony/process medium (CVE-2026-24739). Plan T6 names aws-sdk + commonmark + laravel; OMITS phpseclib high x2 — both are runtime advisories (DoS + padding oracle).",
+      "blast_radius": "phpseclib used by Laravel framework SSH adapter + AWS SDK chain — DoS via crafted X.509/PKCS#7 ASN.1, padding oracle on AES-CBC. aws-sdk-php high CloudFront injection — relevant if you use signed cookies/URLs. NOT critical at FoodKing's current usage (no SSH adapter wired, no CloudFront), but advisories count > 0 fails GDPR/PCI audit checklists.",
+      "remediation": "Plan T6 — add phpseclib to upgrade list: composer update phpseclib/phpseclib aws-sdk-php league/commonmark laravel/framework. Dev deps (phpunit, psysh, symfony/process) lower urgency, batch into single composer-update commit.",
+      "lock_required": "NO",
+      "ship_decision": "SHIP_IN_PR_D"
+    },
+    {
+      "id": "PR-D-F9",
+      "title": "Sanctum TTL uniform 480 min — no sensitive-op differentiation",
+      "severity": "P2",
+      "perspectives": ["Security"],
+      "file_lines": ["config/sanctum.php:51"],
+      "evidence": "expiration => env('SANCTUM_TOKEN_EXPIRATION', 480). Plan F-D7 VERIFIED. No mechanism to issue tokens with shorter TTL on sensitive abilities.",
+      "blast_radius": "Stolen kiosk token (8h validity) gives 8h window for fiscal-chain access. CTO audit P0 #2 'Sanctum tokens wildcard [*]' notes this in cto-global-2026-05-16/00_FINAL_CTO_VERDICT.md.",
+      "remediation": "Plan T8 — add sensitive_ability_ttl config + Sanctum::tokenExpirationFor() override on LoginController. Backend-only change, no UI touch.",
+      "lock_required": "NO",
+      "ship_decision": "DEFER_OR_SHIP_LAST_IN_PR_D"
+    },
+    {
+      "id": "PR-D-F10",
+      "title": "8 secondary models with branch_id no BranchScope (hygiene)",
+      "severity": "P2",
+      "perspectives": ["Architect"],
+      "file_lines": [
+        "app/Models/ActionLog.php:14",
+        "app/Models/Customer.php:17",
+        "app/Models/DiningTableAuditLog.php:14",
+        "app/Models/FrontendDiningTable.php:13",
+        "app/Models/DomainEvent.php:16",
+        "app/Models/KioskPromo.php:42",
+        "app/Models/Message.php:13",
+        "app/Models/UpsellRule.php:45"
+      ],
+      "evidence": "8 models with branch_id, no BranchScope. KioskPromo and UpsellRule both implement manual branch_id scoping via scope methods (KioskPromo:79 + 114, UpsellRule:84) — partial mitigation. ActionLog already self-populates branch_id from auth user in booted() (line 29-43) but does not filter on read.",
+      "blast_radius": "Lower than F1-F3 (no fiscal/NF525 implication). KioskPromo cross-branch promo code reuse possible; Message cross-branch chat read possible.",
+      "remediation": "Plan T7 — add scope to 7 models. EXCLUDE Customer (see PR-D-F11) — Customer extends User which is exempted from BranchScope to avoid Sanctum recursion (BranchScope.php:21).",
+      "lock_required": "NO",
+      "ship_decision": "DEFER_TO_PR_D2_OR_SHIP_LAST"
+    },
+    {
+      "id": "PR-D-F11",
+      "title": "Customer extends User — BranchScope on Customer would trigger Sanctum recursion (plan T7 list contains Customer; must be excluded)",
+      "severity": "P1",
+      "perspectives": ["Architect", "RED-team"],
+      "file_lines": ["app/Models/Customer.php:9", "app/Models/Scopes/BranchScope.php:21-23"],
+      "evidence": "Customer.php:9 — class Customer extends User. BranchScope.php:21-23 — explicitly returns early if model instanceof User to avoid 'BranchScope ↔ Sanctum infinite recursion' (file comment line 20). Since Customer extends User, the instanceof check WOULD pass and exempt Customer too, IF developer added scope via addGlobalScope on Customer's booted(). BUT — Eloquent runs each model's booted() independently; adding scope on Customer would call apply() with $model = Customer instance, and $model instanceof User === true (PHP inheritance), so the apply() short-circuits at line 21 and does nothing. Net result: NO recursion bug, but ALSO NO scoping applied — silent no-op.",
+      "blast_radius": "If executor adds BranchScope on Customer thinking it filters, silent failure — Customer queries remain unscoped. Worse, executor may experiment with custom scope that DOES filter and trigger Sanctum recursion via Customer::login path.",
+      "remediation": "Plan correction: Remove Customer from T7 list. If cross-branch Customer visibility is a real risk, use explicit ::query()->where('branch_id', auth()->user()->branch_id) in CustomerController, not global scope.",
+      "lock_required": "NO",
+      "ship_decision": "PLAN_CORRECTION_REQUIRED"
+    },
+    {
+      "id": "PR-D-F12",
+      "title": "15 admin controllers carry zero permission:* middleware (NEW finding, not in plan)",
+      "severity": "P1",
+      "perspectives": ["Security", "RED-team"],
+      "file_lines": [
+        "app/Http/Controllers/Admin/AddressController.php",
+        "app/Http/Controllers/Admin/AdminController.php",
+        "app/Http/Controllers/Admin/AdminPosV4Controller.php",
+        "app/Http/Controllers/Admin/AnalyticSectionController.php",
+        "app/Http/Controllers/Admin/ComposerProfileController.php",
+        "app/Http/Controllers/Admin/ComposerStepController.php",
+        "app/Http/Controllers/Admin/CountryCodeController.php",
+        "app/Http/Controllers/Admin/DefaultAccessController.php",
+        "app/Http/Controllers/Admin/IngredientController.php",
+        "app/Http/Controllers/Admin/MenuController.php",
+        "app/Http/Controllers/Admin/MenuProjectionController.php",
+        "app/Http/Controllers/Admin/MenuSectionController.php",
+        "app/Http/Controllers/Admin/MenuTemplateController.php",
+        "app/Http/Controllers/Admin/MyOrderDetailsController.php",
+        "app/Http/Controllers/Admin/TimezoneController.php"
+      ],
+      "evidence": "ls Admin controllers excl POS/Kiosk/KDS/OSS = 80 files. grep -L 'permission:' = 15. routes/api.php admin group (line 269) only carries [installed, apiKey, auth:sanctum, localization, throttle:admin-mutation] — no permission:* group middleware. routes/api.php has ONLY 3 inline permission:* references (lines 682, 696, 718) for ingredients + catalog.compose + catalog.publish. So 15 controllers depend ENTIRELY on FormRequest::authorize() — most of which return true (F-F5).",
+      "blast_radius": "ComposerProfileController + ComposerStepController + IngredientController mutate the catalog wizard config — critical Cayenne composer profiles + ingredient mapping. MenuController + MenuSection + MenuTemplate modify menu structure. AddressController + DefaultAccessController + AnalyticSection + CountryCode + Timezone are less critical but still no gate. Any authenticated non-admin role can hit POST/PUT/DELETE on these via direct API call.",
+      "remediation": "Add $this->middleware(['permission:catalog.compose']) or equivalent in constructor for each. ComposerProfile + ComposerStep should use catalog.publish (already a Spatie permission per ComposerPermissionsMinimalSeeder.php:11). Add 'menu_manage', 'address_manage', 'analytics_manage' permissions if not seeded. NEW finding — add to PR-D as T9 (small) or split to PR-D2.",
+      "lock_required": "NO",
+      "ship_decision": "SHIP_IN_PR_D_AS_T9_OR_DEFER_PR_D2",
+      "plan_addition": "Plan §3 task table omits this; recommend addition as 'PR-D-T9 — Admin controller permission middleware coverage (15 controllers)' with cluster execution similar to T3."
+    },
+    {
+      "id": "PR-D-F13",
+      "title": "ComposerPermissionsMinimalSeeder limited to 2 permissions",
+      "severity": "P2",
+      "perspectives": ["Architect"],
+      "file_lines": ["database/seeders/ComposerPermissionsMinimalSeeder.php:11"],
+      "evidence": "Seeder defines only catalog.compose + catalog.publish (line 11) granted to Admin/Branch Manager/Tenant Admin/Branch Admin roles. Spatie expects per-resource granular permissions; current seed insufficient to power the 15 uncovered controllers (F-F12).",
+      "blast_radius": "Plan T9 (if added) needs companion seeder upgrade to define missing capabilities (e.g., 'menus_manage', 'addresses_manage'). Without seeding, $user->can('menus_manage') returns false for all roles → 403 on every menu admin route → admin UI breaks.",
+      "remediation": "PR-D-T10 (NEW) — Extend ComposerPermissionsMinimalSeeder.php with 8-10 admin-domain permissions (menus + addresses + analytics + composers + ingredients + countries + timezones) granted to Admin and Branch Manager.",
+      "lock_required": "NO",
+      "ship_decision": "COUPLE_WITH_F12_FIX"
+    },
+    {
+      "id": "PR-D-F14",
+      "title": "Idempotency middleware silently treats route-name OR URI-pattern matching (defense-in-depth ambiguity)",
+      "severity": "P3",
+      "perspectives": ["Architect", "RED-team"],
+      "file_lines": ["app/Http/Middleware/IdempotencyKeyMiddleware.php:165-179"],
+      "evidence": "isRouteRequired() iterates required_routes; matches either 'name:foo' (line 169) OR $request->is(pattern) (line 175). config/idempotency.php uses URI patterns like 'api/admin/pos'. POS+kiosk routes might have been renamed; orphan patterns silently fail-safe (treats as not-required, header-absent passes through).",
+      "blast_radius": "Operational drift — adding new route in routes/api.php with name() but no URI-pattern match could leave the route uncovered even if executor thinks idempotency is applied via name reference. Audit suggests prefer name: prefix.",
+      "remediation": "Plan T4 follow-up — when adding 12 admin routes, prefer 'name:admin.currency.store' over 'api/admin/currency'. Frozen IdempotencyKeyMiddleware.php logic UNTOUCHED.",
+      "lock_required": "NO",
+      "ship_decision": "ADVISORY_FOR_T4_IMPLEMENTATION"
+    },
+    {
+      "id": "PR-D-F15",
+      "title": "BranchScope console-mode bypass affects sentinels — test discipline check",
+      "severity": "P2",
+      "perspectives": ["Tester", "Architect"],
+      "file_lines": ["app/Models/Scopes/BranchScope.php:27"],
+      "evidence": "BranchScope.php:27 — '(!App::runningInConsole() || App::runningUnitTests()) && Auth::check()'. Console artisan commands bypass scope; PHPUnit applies scope. Plan T1+T2 sentinel pattern must run as Feature test (HTTP context) not Unit, to actually exercise the scope. CLAUDE.md §9 already validates this with PosCashTrailTest etc.",
+      "blast_radius": "If T1 sentinel is mistakenly Unit-test only, it asserts scope without exercising — false-positive green. Plan §6 acceptance gate row 1 says 'php artisan test --filter=Sentinel' — verify each new sentinel class extends Tests\\TestCase + uses actingAs() not RefreshDatabase only.",
+      "remediation": "T1/T2 sentinel template must use TestCase + actingAs(staff_branch=2) — pattern from tests/Feature/Sentinels/SplitPaymentSentinelTest.php.",
+      "lock_required": "NO",
+      "ship_decision": "ADVISORY_FOR_T1_T2_IMPLEMENTATION"
+    },
+    {
+      "id": "PR-D-F16",
+      "title": "Admin Vue components UX/A11y — no critical bugs visible on read-through",
+      "severity": "INFORMATIONAL",
+      "perspectives": ["UX-A11y"],
+      "file_lines": ["resources/js/components/admin/items*", "resources/js/components/admin/customers*", "resources/js/components/admin/settings*"],
+      "evidence": "PR-D scope is overwhelmingly backend + config + tests. Sub-directories items/customers/itemsReport/creditBalanceReport/pushNotification/salesReport/settings present. Without breaking PR-D's backend focus, smoke-read shows no immediate raw labels or layout bugs. UX gate AUTO-PASS per plan §4 acceptance row 4.",
+      "blast_radius": "N/A",
+      "remediation": "None for PR-D. PR-D2 should include i18n+A11y sweep if Wave Z5-P1-03 backlog (admin items polish) reopens.",
+      "lock_required": "NO",
+      "ship_decision": "NOT_BLOCKING"
+    }
+  ],
+  "frozen_zone_drift_check": {
+    "verified_frozen_files_read": [
+      "app/Models/Scopes/BranchScope.php (42 LOC, doctrine intact)",
+      "app/Http/Middleware/IdempotencyKeyMiddleware.php (244 LOC, doctrine intact)",
+      "app/Services/Pricing/PricingService.php (head read, 814 LOC total)",
+      "app/Services/Fiscal/FiscalSequenceService.php (head read, 105 LOC)",
+      "app/Services/Fiscal/ZReportService.php (head read, 727 LOC)",
+      "app/Services/Fiscal/AuditLogService.php (head read, 375 LOC)",
+      "app/Domain/Order/OrderStateMachine.php (head read, 312 LOC)"
+    ],
+    "drift_detected": "NONE — frozen-zone files show iter-13/iter-14 hardening expected diff but no logic regression. Plan §1 'audit only' status preserved.",
+    "audit_only_compliance": "PR-D scope correctly excludes mutations to all 7 above; T1/T2/T4/T8 changes are on non-frozen models/config/routes."
+  },
+  "plan_corrections_required_pre_merge": [
+    "F-D2 column claim: ItemWizardProfile uses branch_id_scope NOT branch_id — T2 cannot simply addGlobalScope(new BranchScope()); either rename column, write custom scope, or extract from T2 to PR-D2 (PR-D-F4).",
+    "F-D8 model list: Customer extends User and would silently no-op via BranchScope.php:21 exemption; remove from T7 and use explicit query filter in CustomerController instead (PR-D-F11).",
+    "Acceptance §6 NF525 baseline: update 'count=26 | hash=ca4ac1fdc208dae1' to 'count=27 | hash=ee563c5a9feb34a6be5f4d017d933f535dadfe466d3a16add7b973b0cd58db62'. Chain has advanced 1 row since plan write.",
+    "Add new task PR-D-T9 — 15 admin controllers without permission:* middleware (PR-D-F12).",
+    "Add new task PR-D-T10 — Extend ComposerPermissionsMinimalSeeder for the new permissions needed by T9 (PR-D-F13).",
+    "Add phpseclib to T6 composer upgrade list (PR-D-F8)."
+  ],
+  "ship_recommendation": {
+    "verdict": "GO-CONDITIONAL",
+    "p0_block_count": 3,
+    "p1_block_count": 6,
+    "p2_p3_count": 7,
+    "estimated_wall_clock_post_corrections": "6-8 agent-days sequential or 3-4 days with 2 parallel sub-agents (plan estimate 5.5-7.5 / 3-4 + corrections overhead +1 day)",
+    "owner_gate_required": "T1 (NF525-adjacent BranchScope on AuditLog/ZReport) MUST have explicit owner countersign per CLAUDE.md §10 human gate. T7 model list correction (drop Customer) does not need owner — author has cited file:line evidence.",
+    "lock_plan_required": "NONE — all PR-D changes are on non-frozen files. T11 IdempotencyKeyMiddleware logic change correctly excluded from PR-D (frozen).",
+    "single_most_important_action": "Apply plan correction PR-D-F4: extract ItemWizardProfile from T2 to PR-D2; otherwise blind execution by sub-agent triggers production 500s on composer profile editor."
+  },
+  "metadata": {
+    "review_author": "PR-D ultra-review subagent",
+    "completion_timestamp": "2026-05-18",
+    "file_line_citation_coverage": "100% — every finding carries file:line evidence",
+    "verification_method": "grep + awk body-extraction + Read tool full-file inspection + composer audit + mysql NF525 attestation + cross-reference with frozen-zones list",
+    "anti_fabrication_compliance": "CLAUDE.md §13 — no claim asserted without primary source verified this session"
+  }
+}

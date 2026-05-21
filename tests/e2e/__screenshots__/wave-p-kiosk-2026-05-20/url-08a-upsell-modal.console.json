@@ -1,0 +1,372 @@
+[
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352725
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352725
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352725
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352725
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352731
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352731
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352731
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352731
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352768
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352768
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352768
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352768
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352964
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352964
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352964
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352964
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352966
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352966
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352967
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352967
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352997
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352997
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352997
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249352997
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249353769
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249353769
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249353769
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249353769
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249354569
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249354569
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249354569
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249354569
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249355369
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249355369
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249355369
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249355369
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.wizard.generic.min_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=d40db23de8756d7797d8b05979b53e49",
+      "lineNumber": 137486,
+      "columnNumber": 16
+    },
+    "ts": 1779249361478
+  }
+]

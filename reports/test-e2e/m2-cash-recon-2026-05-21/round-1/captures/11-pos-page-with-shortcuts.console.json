@@ -1,0 +1,12 @@
+[
+  {
+    "level": "info",
+    "text": "[PosSyncService] fallback polling disabled.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/pos-shell.js",
+      "lineNumber": 16970,
+      "columnNumber": 16
+    },
+    "ts": 1779339870860
+  }
+]

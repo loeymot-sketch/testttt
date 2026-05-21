@@ -1,0 +1,385 @@
+{
+  "wave": "A",
+  "round": 1,
+  "run_name": "wave-t-caisse-to-delivered-2026-05-20",
+  "spec_path": "tests/e2e/test-e2e-wave-t-caisse-to-delivered-A-pos.spec.js",
+  "screenshot_dir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos",
+  "fixture_file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__fixtures__/wave-t-orders.json",
+  "states_captured": 17,
+  "states_expected": 17,
+  "png_filenames": [
+    "01-pos-login-landed.png",
+    "02-pos-landing-after-login.png",
+    "03-pos-drawer-open-dialog.png",
+    "04-pos-drawer-50-submitted.png",
+    "05-pos-landing-drawer-opened.png",
+    "06-pos-cart-empty.png",
+    "07-pos-category-cayenne-grid.png",
+    "08-pos-cart-order1-3-items-added.png",
+    "09-pos-cart-populated-subtotal.png",
+    "10-pos-takeaway-mode-selected.png",
+    "11-pos-payment-modal-order1-cash.png",
+    "12-pos-order1-success-toast-receipt.png",
+    "13-tracker-order1-en-preparation.png",
+    "14-pos-reset-cart-cleared.png",
+    "15-pos-cart-order2-3-items-added.png",
+    "16-pos-delivery-form-filled.png",
+    "17-tracker-order2-en-preparation.png"
+  ],
+  "observations": [
+    "state1 (pos-login-landed): {\"url\":\"/login\",\"title\":\"Le Cayenne\",\"login_btn_visible\":true}",
+    "state2 (pos-landing-after-login): {\"url\":\"/admin/pos\",\"tile_count\":28,\"category_pill_count\":10,\"empty_cart_visible\":true,\"search_input_visible\":true}",
+    "state03: cash-session-open btn visible=true",
+    "state03: cash btn click threw locator.click: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"pos-cash-session-open\"]')\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"button\" data-v-996bcd68=\"\" data-v-3f17f066=\"\" title=\"Gestion de la caisse\" data-testid=\"pos-cash-session-open\" class=\"pos-v5-btn pos-v5-btn--ghost pos-v5-btn--md pos-v4-cash-session-btn\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" aria-modal=\"true\" data-v-230589a0=\"\" data-v-3f17f066=\"\" class=\"cash-session-overlay\" aria-label=\"Gestion de la caisse\" data-testid=\"cash-session-overlay\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" aria-modal=\"true\" data-v-230589a0=\"\" data-v-3f17f066=\"\" class=\"cash-session-overlay\" aria-label=\"Gestion de la caisse\" data-testid=\"cash-session-overlay\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    9 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div role=\"dialog\" aria-modal=\"true\" data-v-230589a0=\"\" data-v-3f17f066=\"\" class=\"cash-session-overlay\" aria-label=\"Gestion de la caisse\" data-testid=\"cash-session-overlay\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n",
+    "state3 (pos-drawer-open-dialog): {\"overlay_visible\":true,\"active_view_present\":false,\"open_form_present\":true,\"opening_amount_text\":null,\"expected_total_text\":null}",
+    "state04: cash-session-open-form visible=true",
+    "state4 (pos-drawer-50-submitted): {\"focused\":null,\"active_view_present\":true,\"open_form_still_present\":false,\"opening_amount_text\":\"100,00 €\"}",
+    "state5 (pos-landing-drawer-opened): {\"url\":\"/admin/pos\",\"cart_lines\":0,\"empty_cart_visible\":true,\"grand_total\":\"Total0.00€\"}",
+    "state6 (pos-cart-empty): {\"url\":\"/admin/pos\",\"cart_lines\":0,\"empty_cart_visible\":true,\"grand_total\":\"Total0.00€\"}",
+    "state07: Sandwich Cayenne pill visible=true",
+    "state7 (pos-category-cayenne-grid): {\"active_pill_aria\":\"Sandwich Cayenne\",\"tile_count\":2,\"first_tile_id\":\"22\"}",
+    "addItem item=22 tile_visible=true",
+    "addItem item=26 tile_visible=true",
+    "addItem item=52 tile_visible=true",
+    "state8 (pos-cart-order1-3-items-added): {\"line_count\":3,\"line_names\":[\"Sandwich Cayenne\",\"Tacos\",\"Coca-Cola 33cl\"],\"grand_total\":\"Total17.00€\"}",
+    "state9 (pos-cart-populated-subtotal): {\"line_count\":3,\"line_names\":[\"Sandwich Cayenne\",\"Tacos\",\"Coca-Cola 33cl\"],\"line_prices\":[\"7.00€\",\"8.50€\",\"1.50€\"],\"grand_total\":\"Total17.00€\"}",
+    "state10: takeaway_label_visible=true",
+    "state10 (pos-takeaway-mode-selected): {\"takeaway_active\":true,\"delivery_active\":false,\"delivery_inline_visible\":false}",
+    "state11: pay_btn_visible=true",
+    "state11 (pos-payment-modal-order1-cash): {\"modal_active\":true,\"total_value_text\":\"17.00€\",\"cash_tab_active\":true,\"confirm_disabled\":false}",
+    "state12: Order #1 id=74 api_total=NaN",
+    "state12 (pos-order1-success-toast-receipt): {\"toasts\":[\"Sous-total17.00€Total17.00€\",\"🔧 MODE TEST — IMPRESSION BYPASSÉE\"],\"receipt_modal_active\":true,\"payment_modal_active\":false,\"successFlash\":false,\"order1Id\":74,\"order1ApiTotal\":null}",
+    "state13 (tracker-order1-en-preparation): {\"tracker_card_count\":4,\"order1_card_present\":false,\"order1_col_classes\":null,\"order1_col_label\":null,\"order1_cash_badge_present\":false,\"order1_total_text\":null,\"lanes\":[{\"classes\":\"pos-tracker-col pos-tracker-col--amber\",\"label\":\"🔔 À encaisser\",\"count\":0},{\"classes\":\"pos-tracker-col pos-tracker-col--primary\",\"label\":\"🍳 En préparation\",\"count\":1},{\"classes\":\"pos-tracker-col pos-tracker-col--green\",\"label\":\"🛎️ Prêts à servir\",\"count\":0},{\"classes\":\"pos-tracker-col pos-tracker-col--blue\",\"label\":\"🛵 En livraison\",\"count\":0},{\"classes\":\"pos-tracker-col pos-tracker-col--muted\",\"label\":\"✅ Livrés\",\"count\":3}]}",
+    "state13: order1 lane=null classes=null preparing=null",
+    "state14 (pos-reset-cart-cleared): {\"url\":\"/admin/pos\",\"cart_lines\":0,\"empty_cart_visible\":true,\"grand_total\":\"Total0.00€\"}",
+    "addItem item=22 tile_visible=true",
+    "addItem item=36 tile_visible=true",
+    "addItem item=33 tile_visible=true",
+    "state15 (pos-cart-order2-3-items-added): {\"line_count\":3,\"line_names\":[\"Sandwich Cayenne\",\"Big Cayenne\",\"Petite Frites\"],\"grand_total\":\"Total19.00€\"}",
+    "state16: delivery_label_visible=true",
+    "state16 UI-PANEL: {\"ok\":true,\"classes\":\"h-auto transition block\",\"hasNameInput\":true,\"hasPhoneInput\":true,\"hasAddressInput\":true}",
+    "state16 UI-CONTRACT: {\"ok\":false,\"reason\":\"no_PosComp\"}",
+    "state16: delivery injection (DOM-anchored) ok=false reason=no_vueParentComponent_on_anchor addrId=12 custId=17 uid= order_type=n/a",
+    "state16 (pos-delivery-form-filled): {\"delivery_active\":true,\"delivery_inline_visible\":true,\"confirmed_icon_visible\":false,\"name_value\":\"Wave T E2E 1779307742986\",\"phone_value\":\"0612345678\",\"addr_value\":\"12 rue Test, Paris 75001\"}",
+    "state17: re-inject (DOM-anchored) ok=false reason=no_vueParentComponent_on_anchor uid= order_type=n/a",
+    "state17 PRE-CLICK probe: {\"error\":\"no_PosComponent_ancestor\",\"hops\":0}",
+    "state17 modal_active=false",
+    "state17 POST-CLICK probe (modal NOT active): {\"error\":\"no_PosComp\",\"hops\":0}",
+    "state17 paymentForce: {\"error\":\"no_PaymentComponent\",\"hops\":0}",
+    "state17 pre-confirm: {\"card_tab_active\":false,\"total_value_text\":\"19.00€\",\"confirm_disabled\":false}",
+    "state17: NO matching /api/admin/pos POST response for Order #2",
+    "state17 (tracker-order2-en-preparation): {\"lanes\":[{\"classes\":\"pos-tracker-col pos-tracker-col--amber\",\"label\":\"🔔 À encaisser\",\"count\":0},{\"classes\":\"pos-tracker-col pos-tracker-col--primary\",\"label\":\"🍳 En préparation\",\"count\":1},{\"classes\":\"pos-tracker-col pos-tracker-col--green\",\"label\":\"🛎️ Prêts à servir\",\"count\":0},{\"classes\":\"pos-tracker-col pos-tracker-col--blue\",\"label\":\"🛵 En livraison\",\"count\":0},{\"classes\":\"pos-tracker-col pos-tracker-col--muted\",\"label\":\"✅ Livrés\",\"count\":3}],\"order1_card_present\":false,\"order2_card_present\":false,\"order1_col_label\":null,\"order2_col_label\":null,\"order1_col_classes\":null,\"order2_col_classes\":null,\"order1_cash_badge\":false,\"order2_cash_badge\":null,\"order1_total_text\":null,\"order2_total_text\":null,\"order2_item_names\":[],\"order2Id\":null,\"order2ApiTotal\":null}",
+    "fixture written: /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__fixtures__/wave-t-orders.json",
+    "NF525 post: {\"count\":23,\"last_hash\":\"67351e7a7151676a88c8a6dbe29a067c2b82005052620431fffe0239d9728b3c\"}"
+  ],
+  "nf525_pre": {
+    "count": 6,
+    "last_hash": "a01740f6b903f5ff691c5163cc86326d2d16451d777e31dd1944581d336c1f9a"
+  },
+  "nf525_post": {
+    "count": 23,
+    "last_hash": "67351e7a7151676a88c8a6dbe29a067c2b82005052620431fffe0239d9728b3c"
+  },
+  "order_1_id": 74,
+  "order_2_id": null,
+  "findings_inline": [
+    {
+      "id": "A-S1-001",
+      "severity": "P0",
+      "area": "wave-s-1",
+      "summary": "Wave S-1 hook FAIL — Order #1 (cash takeaway) not in EN PRÉPARATION column after pay confirm",
+      "evidence": {
+        "state": "13-tracker-order1-en-preparation",
+        "lane": null,
+        "classes": null
+      }
+    },
+    {
+      "id": "A-004",
+      "severity": "P0",
+      "area": "pos-delivery-payment-modal",
+      "summary": "POS payment modal #orderpayment never activated after pay click for Order #2 (TPE livraison). orderSubmit appears to silently bail despite address_id+customer_id injected.",
+      "evidence": {
+        "state": "17-tracker-order2-en-preparation",
+        "probe": {
+          "error": "no_PosComp",
+          "hops": 0
+        }
+      }
+    },
+    {
+      "id": "A-004",
+      "severity": "P0",
+      "area": "pos-payment",
+      "summary": "POST /admin/pos returned no parseable order id for Order #2 (TPE livraison)",
+      "evidence": {
+        "state": "17-tracker-order2-en-preparation",
+        "orderResponses": [
+          {
+            "url": "http://localhost:8000/api/admin/pos",
+            "status": 201,
+            "body": {
+              "data": {
+                "id": 74,
+                "order_serial_no": "20052674",
+                "queue_number": "A0006",
+                "token": "1",
+                "subtotal": 17,
+                "discount": 0,
+                "total_tax": 0,
+                "total": 17,
+                "delivery_charge": 0,
+                "subtotal_currency_price": "17.00€",
+                "subtotal_without_tax_currency_price": "17.00€",
+                "discount_currency_price": "0.00€",
+                "delivery_charge_currency_price": "0.00€",
+                "total_currency_price": "17.00€",
+                "total_tax_currency_price": "0.00€",
+                "order_type": 10,
+                "created_at": "2026-05-20T22:09:41+02:00",
+                "order_datetime": "10:09 PM, 20-05-2026",
+                "order_date": "20-05-2026",
+                "order_time": "10:09 PM",
+                "delivery_date": "20-05-2026",
+                "delivery_time": "10:09 PM - 10:39 PM",
+                "payment_method": null,
+                "payment_status": 5,
+                "payment_pending_counter": false,
+                "is_advance_order": 10,
+                "preparation_time": 30,
+                "status": 7,
+                "status_name": "En préparation",
+                "reason": null,
+                "user": {
+                  "id": 2,
+                  "name": "Client passage",
+                  "first_name": "Client",
+                  "last_name": "passage",
+                  "phone": "0600000001",
+                  "email": "walkingcustomer@example.com",
+                  "username": "default-customer",
+                  "balance": "0.00",
+                  "currency_balance": "0.00€",
+                  "image": "http://localhost:8000/images/default/profile.png",
+                  "role_id": 2,
+                  "country_code": "+33",
+                  "create_date": "20-05-2026",
+                  "update_date": "20-05-2026"
+                },
+                "order_address": null,
+                "branch": {
+                  "id": 1,
+                  "name": "Le Cayenne (principal)",
+                  "email": "contact@lecayenne.fr",
+                  "phone": "+33600000000",
+                  "latitude": "48.8566",
+                  "longitude": "2.3522",
+                  "city": "Paris",
+                  "state": "Île-de-France",
+                  "zip_code": "75000",
+                  "address": "Paris, France",
+                  "status": 5,
+                  "zone": "\"[{\\\"lat\\\":48.86,\\\"lng\\\":2.33},{\\\"lat\\\":48.87,\\\"lng\\\":2.36},{\\\"lat\\\":48.85,\\\"lng\\\":2.37},{\\\"lat\\\":48.84,\\\"lng\\\":2.34}]\""
+                },
+                "delivery_boy": null,
+                "coupon": null,
+                "transaction": null,
+                "order_items": [
+                  {
+                    "id": 55,
+                    "order_id": 74,
+                    "branch_id": 1,
+                    "item_id": 22,
+                    "item_name": "Sandwich Cayenne",
+                    "item_image": "/storage/26/sandwich_cayenne.png",
+                    "quantity": 1,
+                    "discount": "0.00€",
+                    "price": "7.00€",
+                    "item_variations": [
+                      {
+                        "quantity": 1,
+                        "line_total": 0,
+                        "unit_price": 0,
+                        "attribute_id": 1,
+                        "variation_id": 1,
+                        "attribute_name": "Viande 1",
+                        "variation_name": "Poulet mariné"
+                      }
+                    ],
+                    "item_extras": [],
+                    "item_addons": [],
+                    "composition_snapshot": {
+                      "lines": [
+                        {
+                          "quantity": 1,
+                          "line_total": 0,
+                          "unit_price": 0,
+                          "attribute_id": 1,
+                          "variation_id": 1,
+                          "attribute_name": "Viande 1",
+                          "variation_name": "Poulet mariné"
+                        }
+                      ],
+                      "addons": [],
+                      "extras": [],
+                      "captured_at": "2026-05-20T22:09:41+02:00",
+                      "schema_version": 1
+                    },
+                    "allergens_snapshot": [],
+                    "item_variation_currency_total": "0.00€",
+                    "item_extra_currency_total": "0.00€",
+                    "total_price": 7,
+                    "total_convert_price": 7,
+                    "total_currency_price": "7.00€",
+                    "instruction": "SANDWICH CAYENNE\n- Salade, Tomate, Oignon",
+                    "kds_station": "none",
+                    "tax_type": "EUR",
+                    "tax_rate": "0.000000",
+                    "tax_currency_rate": "0.00",
+                    "tax_name": null,
+                    "tax_currency_amount": "0.00€",
+                    "total_without_tax_currency_price": "7.00€"
+                  },
+                  {
+                    "id": 56,
+                    "order_id": 74,
+                    "branch_id": 1,
+                    "item_id": 26,
+                    "item_name": "Tacos",
+                    "item_image": "/storage/30/tacos.png",
+                    "quantity": 1,
+                    "discount": "0.00€",
+                    "price": "8.50€",
+                    "item_variations": [
+                      {
+                        "quantity": 1,
+                        "line_total": 0,
+                        "unit_price": 0,
+                        "attribute_id": 1,
+                        "variation_id": 43,
+                        "attribute_name": "Viande 1",
+                        "variation_name": "Poulet mariné"
+                      }
+                    ],
+                    "item_extras": [],
+                    "item_addons": [],
+                    "composition_snapshot": {
+                      "lines": [
+                        {
+                          "quantity": 1,
+                          "line_total": 0,
+                          "unit_price": 0,
+                          "attribute_id": 1,
+                          "variation_id": 43,
+                          "attribute_name": "Viande 1",
+                          "variation_name": "Poulet mariné"
+                        }
+                      ],
+                      "addons": [],
+                      "extras": [],
+                      "captured_at": "2026-05-20T22:09:41+02:00",
+                      "schema_version": 1
+                    },
+                    "allergens_snapshot": [],
+                    "item_variation_currency_total": "0.00€",
+                    "item_extra_currency_total": "0.00€",
+                    "total_price": 8.5,
+                    "total_convert_price": 8.5,
+                    "total_currency_price": "8.50€",
+                    "instruction": "TACOS",
+                    "kds_station": "none",
+                    "tax_type": "EUR",
+                    "tax_rate": "0.000000",
+                    "tax_currency_rate": "0.00",
+                    "tax_name": null,
+                    "tax_currency_amount": "0.00€",
+                    "total_without_tax_currency_price": "8.50€"
+                  },
+                  {
+                    "id": 57,
+                    "order_id": 74,
+                    "branch_id": 1,
+                    "item_id": 52,
+                    "item_name": "Coca-Cola 33cl",
+                    "item_image": "/storage/51/coca_cola.png",
+                    "quantity": 1,
+                    "discount": "0.00€",
+                    "price": "1.50€",
+                    "item_variations": [],
+                    "item_extras": [],
+                    "item_addons": [],
+                    "composition_snapshot": {
+                      "lines": [],
+                      "addons": [],
+                      "extras": [],
+                      "captured_at": "2026-05-20T22:09:41+02:00",
+                      "schema_version": 1
+                    },
+                    "allergens_snapshot": [],
+                    "item_variation_currency_total": "0.00€",
+                    "item_extra_currency_total": "0.00€",
+                    "total_price": 1.5,
+                    "total_convert_price": 1.5,
+                    "total_currency_price": "1.50€",
+                    "instruction": "COCA-COLA 33CL",
+                    "kds_station": "none",
+                    "tax_type": "EUR",
+                    "tax_rate": "0.000000",
+                    "tax_currency_rate": "0.00",
+                    "tax_name": null,
+                    "tax_currency_amount": "0.00€",
+                    "total_without_tax_currency_price": "1.50€"
+                  }
+                ],
+                "table_name": null,
+                "pos_payment_method": 1,
+                "pos_payment_note": null,
+                "source": 15,
+                "pos_received_amount": "50.000000",
+                "pos_received_currency_amount": "50.00€",
+                "cash_back_amount": 33,
+                "cash_back_currency_amount": "33.00€",
+                "tax_lines": [
+                  {
+                    "tax_name": "",
+                    "tax_rate": "0",
+                    "tax_type": 5,
+                    "base_ht": 17,
+                    "base_ht_currency": "17.00€",
+                    "tax": 0,
+                    "tax_currency": "0.00€"
+                  }
+                ],
+                "fiscal_sequence_no": 6,
+                "audit_chain_fingerprint": null,
+                "pos_register_id": null,
+                "pos_siret": null,
+                "pos_vat_intra": null,
+                "pos_legal_footer": null,
+                "operator_name": "Client passage",
+                "payments_breakdown": [
+                  {
+                    "method": 1,
+                    "amount": 50,
+                    "currency_amount": "50.00€",
+                    "change_amount": 33,
+                    "reference": null
+                  }
+                ]
+              }
+            },
+            "ts": 1779307781213
+          }
+        ]
+      }
+    }
+  ],
+  "spec_started_at": "2026-05-20T20:09:06.735Z",
+  "spec_ended_at": "2026-05-20T20:10:52.407Z",
+  "frozen_zones_respected": [
+    "public/js/pos-wizard.js",
+    "resources/js/components/admin/pos/PaymentComponent.vue",
+    "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue",
+    "app/Services/Fiscal/*"
+  ]
+}

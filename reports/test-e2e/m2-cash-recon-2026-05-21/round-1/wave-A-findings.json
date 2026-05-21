@@ -1,0 +1,64 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 22,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-m2/17-livreur-cash-sessions-list.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "DOM: <h3 class=\"db-card-title\">label.delivery_cash_sessions</h3>, <option value=\"open\">label.delivery_cash_status_open</option>, <option value=\"closed\">label.delivery_cash_status_closed</option>, <option value=\"reconciled\">label.delivery_cash_status_reconciled</option>, <th>label.id</th>. Console emits 5 [intlify] 'Not found ... key in fr locale messages' warnings (per page load) for keys: label.delivery_cash_sessions, label.delivery_cash_status_open|closed|reconciled, label.id. grep on resources/js/languages/fr.json confirms label.delivery_cash_status_* + label.delivery_cash_sessions + label.id are ABSENT from label.* namespace (delivery_cash_sessions exists only under menu.* for sidebar). Same leak reproduces in states 17, 18, 19. Sidebar entry 'Caisse livreur' renders correctly (menu.delivery_cash_sessions hit).",
+      "fix_hint": "Add to resources/js/languages/{fr,en,ar,bn,de}.json under label.* namespace: 'delivery_cash_sessions': 'Caisse livreur' (FR) / 'Delivery cash sessions' (EN); 'delivery_cash_status_open': 'Ouverte' / 'Open'; 'delivery_cash_status_closed': 'Clôturée' / 'Closed'; 'delivery_cash_status_reconciled': 'Réconciliée' / 'Reconciled'. label.id already exists in many label files but missing here — add 'id': 'ID' / 'ID'. After adding, rebuild Mix (npx mix --production).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-m2/20-livreur-cash-session-open-form.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Capture shows overlay 'S4 Livreur OPEN form not rendered — `mode` required prop missing from route binding (P0 ship bug)' against a blank page below. The /open route mounted DeliveryBoyCashSessionFormComponent without binding `mode` prop; component requires mode to render. Round-1 capture agent self-flagged this as P0. FIX ALREADY COMMITTED in b4ce09458 (route removed; FormComponent is embed-only per docblock).",
+      "fix_hint": "Already fixed in commit b4ce09458: removed broken /open route. Verify in round-2 the spec acknowledges 'open from list V1.0.X scope' and falls back to overlay paint without throwing.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "test-e2e-m2/16-pos-direct-payment-modal-comparison.png",
+      "category": "loading_state_missing",
+      "severity": "P2",
+      "evidence": "Capture shows overlay 'S3 PaymentComponent V5 modal not reachable — wizard intercept or empty cart' against POS V5 ticket preview. Spec could not escape the POS Vanilla wizard to reach the V5 modal for side-by-side parity comparison with PosCounterCollectModal (states 12-15). Parity therefore unprovable from this round's captures alone.",
+      "fix_hint": "Adversarial verdict on parity from existing states 12-15: the 4-tile mode picker (Espèce/Carte/Mobile/Ticket restaurant) + mode-specific UI (cash keypad vs helper text) + 'Confirmer & Imprimer ticket' CTA + 'Annuler' button + Montant total header / order-N° header MATCHES the PosCounterCollectModal pattern visible in states 12-15. No re-capture strictly required for parity assertion. If owner demands literal side-by-side image, the spec must add a path that bypasses the Vanilla wizard (e.g. directly POST to /api/admin/pos/payment then snapshot the modal).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-m2/21-livreur-cash-session-show.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "Capture shows overlay 'S4 Livreur session show page — no session in DB; honest empty capture' over a blank page. Spec gracefully captured rather than crashing. No actual defect in product code — just a test-environment data shortfall (no DeliveryBoyCashSession row with id=1).",
+      "fix_hint": "Spec/seeder could insert a DeliveryBoyCashSession fixture in beforeAll() to provide real show-page render coverage. Not a product defect; informational only.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 1,
+    "P2": 1,
+    "P3": 1,
+    "open_P0": 1,
+    "open_P1": 1,
+    "open_P2": 1,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "notes": "STATES 01-15 ALL GREEN visually: login OK; cash-overview dashboard (02-06) renders Grand Total 112.50 with consistent by-source (12.50+81.70+18.30=112.50 ✓) and by-mode (88.20+9.80+14.50=112.50 ✓) breakdowns; reconciliation panel coherent (fond 100€ + cash 88.20€ = attendu 188.20€ ✓); transactions table 10 rows source-coded with Borne/Livreur/Caisse pill badges; source filter cycling (07-09) correctly narrows tx + numeric summary, reset (10) restores full; POS shortcuts (11) render 'À encaisser' + 'Caisse' panels; counter-collect modal (12-15) is mode-aware (espèce shows numeric keypad pre-filled with montant total 14.50€; carte/mobile/ticket show explanatory text + same CTA pattern). STATE 22 sidebar shows both 'Vue caisse unifiée' AND 'Caisse livreur' entries. CRITICAL DEFECT: state 17-19 admin Livreur Cash Sessions list page leaks 4 raw i18n keys to production UI (P1). State 20 form route is BROKEN (P0, but already addressed in b4ce09458). State 21 + 16 are gracefully captured with adversarial-overlay paint (test-env limitations, P2/P3). Owner-spec compliance: (a) dashboard breakdown per source × per mode for day = OK; date range filter visible. (b) Counter-collect modal SAME UI pattern as POS-direct = OK structurally (couldn't take literal V5 modal screenshot due to wizard intercept). (c) Livreur cash sessions visible = OK (list page reachable, sidebar entry OK) but reconcilability cannot be fully visually validated due to empty DB + i18n leak."
+}

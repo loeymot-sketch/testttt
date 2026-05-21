@@ -1,0 +1,77 @@
+{
+  "run_id": "zone-6-SYNC",
+  "commit_under_test": "fe595a4d6",
+  "steps": {
+    "S02": {
+      "soketi_listening": true,
+      "orderId": 1558,
+      "broadcast_as": "OrderCreated",
+      "channel": "[\"private-branch.1\"]",
+      "event_type": "order.created",
+      "branch_id": 1,
+      "duration_ms": 3658
+    },
+    "S01": {
+      "orderId": 1557,
+      "pre_domain_events": 786,
+      "post_domain_events": 788,
+      "event_for_order": 2,
+      "duration_ms": 5613
+    },
+    "S04": {
+      "first_orderId": 1560,
+      "second_status": 409,
+      "second_body_snippet": "{\"success\":false,\"message\":\"Idempotency key reused with different payload.\",\"code\":\"IDEMPOTENCY_KEY_CONFLICT\"}",
+      "duration_ms": 1380
+    },
+    "S05": {
+      "webhook_id": "evt_zone6_replay_1779098244875",
+      "first_call": "3:new",
+      "second_call": "3:existing",
+      "row_count": 1,
+      "duration_ms": 1357
+    },
+    "S06": {
+      "status": 419,
+      "body_snippet": "<!DOCTYPE html>\n<html lang=\"en\">\n    <head>\n        <meta charset=\"utf-8\">\n        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\n        <title>Page Expired</title>\n\n        <s",
+      "deferred_reason": "STRIPE_WEBHOOK_SECRET empty in local .env",
+      "duration_ms": 18
+    },
+    "S07_seed": "seeded_20",
+    "S07": {
+      "process1_exit": 0,
+      "process1_skipped": false,
+      "process2_exit": 0,
+      "process2_skipped": true,
+      "one_skipped": true,
+      "duration_ms": 1070
+    },
+    "S08": {
+      "outbox_retry_registered": true,
+      "webhook_retry_registered": true,
+      "prune_outbox_registered": true,
+      "prune_webhook_registered": true,
+      "duration_ms": 362
+    },
+    "S03": {
+      "first_orderId": 1559,
+      "idempotency_key": "a9e12f44-f822-4585-95a7-1511392379cb",
+      "replay_probe_status": 405,
+      "orders_with_same_key": 1,
+      "duration_ms": 1804
+    }
+  },
+  "target_item_id": 485,
+  "target_item_payload": {
+    "item_id": 485,
+    "quantity": 1,
+    "item_variations": [
+      {
+        "id": 1180,
+        "quantity": 1
+      }
+    ],
+    "item_extras": [],
+    "item_addons": []
+  }
+}

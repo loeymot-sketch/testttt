@@ -1,0 +1,331 @@
+{
+  "wave": "A",
+  "round": 2,
+  "audit_date": "2026-05-20",
+  "states_audited": 17,
+  "states_reviewed": 17,
+  "r1_closures": [
+    {
+      "id": "WT-A-R1-01",
+      "severity": "P0",
+      "category": "silent_error",
+      "closed_in_r2": true,
+      "status": "closed",
+      "evidence_path": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/02-pos-landing-after-login.console.json + 13-tracker-order1-en-preparation.console.json",
+      "evidence_detail": "Across all 17 R2 state console.json files, ZERO occurrences of /api/admin/fiscal/z-report 4xx. Code fix verified at app/Http/Controllers/Admin/Fiscal/ZReportController.php commit c83fc48f7 (resolveBranchIdForRead returns null for admin). The only 422 in R2 console is /api/admin/item (separate, see WT-A-R2-002). PNG state 13 + 17 tracker pages clean (no fiscal-related console errors). Caveat: R2 did not navigate to /admin/dashboard explicitly (LastZReportWidget mount surface), but POS-shell admin layout (which previously triggered the 422) is now clean."
+    },
+    {
+      "id": "WT-A-R1-02",
+      "severity": "P1",
+      "category": "i18n_leak",
+      "closed_in_r2": true,
+      "status": "closed",
+      "evidence_path": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/13-tracker-order1-en-preparation.png + 13-tracker-order1-en-preparation.dom.html",
+      "evidence_detail": "PNG state 13 sidebar visually shows proper FR labels: 'TABLEAU DE BORD', 'POS', 'CATALOGUE', 'CAISSE ET COMMANDES', 'COMMUNICATIONS', 'UTILISATEURS', 'COMPTES'. DOM grep for menu.communications|menu.users|menu.accounts|menu.reports|menu.setup returns 0 occurrences. Console.json grep for 'intlify' / 'Not found' returns 0 occurrences across all 17 states. F2 commit 205fc6668 confirmed adds 5 menu.* keys to fr.json + en.json + ar.json + bn.json + de.json. Sentinel menuParentGroupI18nKeysSentinel.spec.js locks them."
+    },
+    {
+      "id": "WT-A-R1-03",
+      "severity": "P1",
+      "category": "console_error",
+      "closed_in_r2": true,
+      "status": "closed",
+      "evidence_path": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/17-tracker-order2-en-preparation.console.json + 12-pos-order1-success-toast-receipt.console.json",
+      "evidence_detail": "ZERO 'TypeError: Cannot read properties of null (reading emitsOptions)' across all 17 R2 console.json. State 11 (payment modal), state 12 (success/receipt), state 13 (tracker), state 16 (delivery), state 17 (tracker order2) all empty or contain only the allowlisted vendor.js WebSocket warning. F2 commit 205fc6668 added _destroyed=true flag in PosComponent.beforeUnmount() + early-return guards in 5 async handlers. Effective."
+    },
+    {
+      "id": "WT-A-R1-04",
+      "severity": "P1",
+      "category": "console_error",
+      "closed_in_r2": true,
+      "status": "closed",
+      "evidence_path": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/16-pos-delivery-form-filled.console.json + 17-tracker-order2-en-preparation.console.json",
+      "evidence_detail": "ZERO 'TypeError: Cannot read properties of undefined (reading id)' from vue-select customer dropdown across all 17 R2 console.json. State 16 console.json is empty array. State 17 console.json has only websocket warning. F2 commit 205fc6668 added customers computed filter for null/undefined entries. CAVEAT: see WT-A-R2-001 — this F2 filter may have introduced a regression where freshly-seeded customer is filtered out before POST."
+    },
+    {
+      "id": "WT-A-R1-05",
+      "severity": "P1",
+      "category": "audit_integrity",
+      "closed_in_r2": false,
+      "status": "open",
+      "evidence_path": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/03-pos-drawer-open-dialog.png + 04-pos-drawer-50-submitted.png",
+      "evidence_detail": "R2 PNG states 03 + 04 BYTE-IDENTICAL again, both showing 'Session active' modal at 100,00€ (drawer pre-opened from earlier session). R2 capture report explicitly logs R2-A-003-INFO acknowledging the same scenario as R1. Spec preflight did not close prior session — drawer-open scenario still SKIPPED in audit. Fix not addressed in R1 fix wave (preflight step never added to spec).",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-12",
+      "severity": "P1",
+      "category": "audit_integrity",
+      "closed_in_r2": false,
+      "status": "open",
+      "evidence_path": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/16-pos-delivery-form-filled.png + 17-tracker-order2-en-preparation.png + R2 wave-A-capture.json line 152-162",
+      "evidence_detail": "Spec STILL programmatically injects delivery customer state ('DOM-anchored re-inject ok=true' per R2 capture). The injection HARDENED the bug — now POST didn't fire AT ALL on R2 (see WT-A-R2-001). State 16 PNG shows POS catalogue grid with cart 'Commander · 19,00 €' button but NO populated customer modal visible. Real-UI-click flow still not exercised. R1 fix wave did NOT address (deferred to follow-up). Carryover P1.",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-13",
+      "severity": "P1",
+      "category": "wave_s_semantics",
+      "closed_in_r2": "partial",
+      "status": "partial",
+      "evidence_path": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/17-tracker-order2-en-preparation.png + R2 wave-A-capture.json wave_s_4_cash_pending_only",
+      "evidence_detail": "PNG state 17: À ENCAISSER lane=0 + 'Aucune commande à encaisser' empty state. R1 Order #70 (TPE) sits in PRÊTS À SERVIR with no cash badge. R2 Order #72 (cash takeaway) skipped À ENCAISSER → went straight to EN PRÉPARATION (Wave S-1 auto-transition fired). The behavior is now CORRECT (TPE doesn't leak to À ENCAISSER, paid-cash doesn't leak). However, PLAN.md still ambiguous on cash-pending-badge semantics — semantic clarification deferred. Behavior PASS, documentation/spec PARTIAL.",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-06",
+      "severity": "P2",
+      "category": "aria_keyboard",
+      "closed_in_r2": false,
+      "status": "open",
+      "evidence_path": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/10-pos-takeaway-mode-selected.png",
+      "evidence_detail": "Carryover P2 — toast persistence not addressed in R1 fix wave. Non-blocking per protocol.",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-07",
+      "severity": "P2",
+      "category": "text_truncation",
+      "closed_in_r2": false,
+      "status": "open",
+      "evidence_path": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/09-pos-cart-populated-subtotal.png",
+      "evidence_detail": "Carryover P2 — cart auto-scroll not addressed. Non-blocking per protocol.",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-08",
+      "severity": "P3",
+      "category": "visual_hash_drift",
+      "closed_in_r2": false,
+      "status": "open",
+      "evidence_path": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/11-pos-payment-modal-order1-cash.png",
+      "evidence_detail": "State 11 PNG still shows 'Paiement De Commande' (forced title-case from text-transform: capitalize). Cosmetic P3 carryover not addressed.",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-09",
+      "severity": "P2",
+      "category": "audit_integrity",
+      "closed_in_r2": false,
+      "status": "open",
+      "evidence_path": "R2 wave-A-capture.json + fixture wave-t-orders.json",
+      "evidence_detail": "Carryover P2 — api_total NaN issue: spec still parses receipt API total incorrectly. R2 fixture continues recording cart_modal_total_match=false on both orders. Numeric integrity still HOLDS visually (17,00€ + 19,00€ canonical confirmed F4) but spec self-check is broken. Audit_integrity not addressed in R1 fix wave.",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-10",
+      "severity": "P2",
+      "category": "aria_keyboard",
+      "closed_in_r2": false,
+      "status": "open",
+      "evidence_path": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/12-pos-order1-success-toast-receipt.dom.html",
+      "evidence_detail": "DOM grep returns aria-label count=1 in receipt modal area — receipt close button still icon-only without aria-label. Carryover P2.",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-11",
+      "severity": "P2",
+      "category": "aria_keyboard",
+      "closed_in_r2": false,
+      "status": "open",
+      "evidence_path": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/13-tracker-order1-en-preparation.dom.html",
+      "evidence_detail": "DOM grep returns aria-label count=1 on tracker page — 3 icon-only action buttons per card (eye/printer/cancel) still missing aria-label. Carryover P2.",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    }
+  ],
+  "new_findings_r2": [
+    {
+      "id": "WT-A-R2-001",
+      "state_artifact": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/16-pos-delivery-form-filled.png + 17-tracker-order2-en-preparation.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "Spec failed at line 1406 with order2Id=null. R2 wave-A-capture.json line 151-162 confirms: /api/admin/pos POST never fired for Order #2 across 30s waitForResponse window. Both Playwright attempts (initial + retry) failed identically (no transient flake). State 16 PNG shows POS catalogue grid with cart [Sandwich Cayenne / Big Cayenne / Petite Frites / 19,00€] and 'Commander · 19,00 €' CTA visible — but NO delivery customer modal populated visually. State 17 PNG shows only R1 fallback Order #70 (N°A0002) in PRÊTS À SERVIR — no new R2 Order #2 row anywhere. NF525 delta=2 (cash_session.open + Order #72 fiscal alloc only). Capture team hypothesizes 3 race causes: (h1) F2 customers computed filter strips freshly-seeded customer before vue-select binds, (h2) F2 _destroyed flag fires on partial unmount during cart reset, (h3) Vuex user/lists not refreshed when spec injects customer state.",
+      "fix_hint": "tests/e2e/test-e2e-wave-t-caisse-to-delivered-A-pos.spec.js — add explicit `await $store.dispatch('user/list')` after pre-seeding customer in beforeAll (h3). Alternatively (h1): revisit resources/js/components/admin/pos/PosComponent.vue customers computed — ensure new customers from /api/admin/customer-search are not filtered when added mid-session. Most likely: F2 commit 205fc6668 introduced regression — diff the customer filter logic for over-strict null check.",
+      "blocks_delivery": false,
+      "blocks_wave_a_completion": false,
+      "downstream_mitigation": "Wave B/C/D consume R1 fallback Order #70 (TPE delivery, total=19, status=PRÊTS À SERVIR per state 17). Delivery path testing not blocked.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "WT-A-R2-002",
+      "state_artifact": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/02-pos-landing-after-login.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "network.json state 02: GET http://localhost:8000/api/admin/item?paginate=0&order_column=id&order_type=asc&status=5&surface=pos&page=1 → status 422 (Unprocessable Content). console.json state 02 captures matching error entry at level=error, url=/api/admin/item, ts=1779304885894. DOM state 02 grep for role=alert|class=toast|class=alert-* returns ZERO matches. PNG state 02 shows POS catalogue rendering correctly (28 product tiles loaded via fallback path — Sandwich Cayenne, Galette, Tacos, Burger, Bowl categories all visible) but the failed primary item-fetch is invisible to the caissier. PER REVIEWER_PROTOCOL #6 silent_error rule: 4xx network response + no role=alert/.toast/.alert-* in DOM = P0. The capture team labeled this P1 in capture.json — UPGRADED to P0 per protocol bind.",
+      "expected": "Either /api/admin/item validator accepts status=5 + surface=pos params (returns 200 with items), OR if validation is correct, surface the error via toast/alert so caissier knows tile-list may be stale/incomplete",
+      "actual": "422 fires on every POS landing; UI shows fallback tiles silently with no indication the primary fetch failed",
+      "fix_hint": "app/Http/Controllers/Admin/ItemController@index — inspect FormRequest / validator rules; relax status=5 (or surface=pos) param accept. Verify whether tile-grid currently rendered is from a different endpoint (Vuex pre-hydration?) or a fallback path. If silent fallback is intentional, downgrade severity only after confirming users will never see stale data.",
+      "fix_proposal": "Backend: accept status=5+surface=pos in /api/admin/item validator. Frontend: add error handler to surface fetch failures via existing alert system.",
+      "blocks_delivery": true,
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    }
+  ],
+  "findings": [
+    {
+      "id": "WT-A-R2-002",
+      "state_artifact": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/02-pos-landing-after-login.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "network.json status=422 on /api/admin/item?status=5&surface=pos; console.json error logged; DOM has 0 role=alert/.toast/.alert-* matches.",
+      "fix_hint": "app/Http/Controllers/Admin/ItemController@index validator; OR add UI toast on fetch fail.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "WT-A-R2-001",
+      "state_artifact": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/17-tracker-order2-en-preparation.png",
+      "category": "silent_error",
+      "severity": "P1",
+      "evidence": "Order #2 TPE delivery POST never fired (both Playwright attempts); spec failed at line 1406 with order2Id=null; NF525 chain delta=2 confirms no Order #2 allocation.",
+      "fix_hint": "spec or PosComponent customers computed regression; see hypotheses h1-h3 in evidence.",
+      "status": "open",
+      "first_seen_round": 2,
+      "rounds_open": 1
+    },
+    {
+      "id": "WT-A-R1-05",
+      "state_artifact": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/03-pos-drawer-open-dialog.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Drawer pre-opened, state 03/04 byte-identical; preflight step still missing.",
+      "fix_hint": "Add cash session close preflight to spec.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-12",
+      "state_artifact": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/16-pos-delivery-form-filled.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Spec still programmatically injects delivery customer/payment state instead of real UI clicks.",
+      "fix_hint": "Replace DOM-injection with click-driven flow in spec.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-13",
+      "state_artifact": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/17-tracker-order2-en-preparation.png",
+      "category": "wave_s_semantics",
+      "severity": "P1",
+      "evidence": "Cash-pending-badge semantics ambiguity in PLAN.md not yet documented; behavior PASS, doc PARTIAL.",
+      "fix_hint": "Add semantic clarification to PLAN.md + PosOrdersTrackerComponent.vue comment.",
+      "status": "partial",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-06",
+      "state_artifact": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/10-pos-takeaway-mode-selected.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Toast persistence carryover.",
+      "fix_hint": "Reduce toast timeout to 2.5s.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-07",
+      "state_artifact": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/09-pos-cart-populated-subtotal.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "Cart auto-scroll missing carryover.",
+      "fix_hint": "Add scrollIntoView on item add.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-09",
+      "state_artifact": "fixture wave-t-orders.json",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "api_total=NaN parse error in spec carryover.",
+      "fix_hint": "Fix spec API total extraction.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-10",
+      "state_artifact": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/12-pos-order1-success-toast-receipt.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Receipt modal close button missing aria-label carryover.",
+      "fix_hint": "Add aria-label=Fermer to close button.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-11",
+      "state_artifact": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/13-tracker-order1-en-preparation.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Tracker action buttons missing aria-label carryover.",
+      "fix_hint": "Add aria-label per icon button.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "WT-A-R1-08",
+      "state_artifact": "tests/e2e/__screenshots__/wave-t-caisse-to-delivered-A-pos/11-pos-payment-modal-order1-cash.png",
+      "category": "visual_hash_drift",
+      "severity": "P3",
+      "evidence": "Payment modal title still 'Paiement De Commande' carryover.",
+      "fix_hint": "Remove text-transform: capitalize on modal title.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 4,
+    "P2": 5,
+    "P3": 1,
+    "open_P0": 1,
+    "open_P1": 4,
+    "open_P2": 5,
+    "open_P3": 1
+  },
+  "p0_count": 1,
+  "p1_count": 4,
+  "p2_count": 5,
+  "p3_count": 1,
+  "round_to_round_closures": {
+    "WT-A-R1-01": "PASS",
+    "WT-A-R1-02": "PASS",
+    "WT-A-R1-03": "PASS",
+    "WT-A-R1-04": "PASS",
+    "WT-A-R1-05": "FAIL",
+    "WT-A-R1-12": "FAIL",
+    "WT-A-R1-13": "PARTIAL_PASS",
+    "WT-A-R1-06": "FAIL",
+    "WT-A-R1-07": "FAIL",
+    "WT-A-R1-08": "FAIL",
+    "WT-A-R1-09": "FAIL",
+    "WT-A-R1-10": "FAIL",
+    "WT-A-R1-11": "FAIL"
+  },
+  "verdict": "RED",
+  "convergence_eligible": false,
+  "convergence_reason": "R1 P0+P1=7 → R2 P0+P1=5 (4 closures: F1 z-report, F2 i18n, F2 emitsOptions, F2 vue-select id). However R2 introduces 2 new findings: R2-001 (P1 delivery POST didn't fire) and R2-002 (P0 silent /api/admin/item 422 — UPGRADED from capture team's P1 per REVIEWER_PROTOCOL #6 silent_error rule: 4xx + no DOM alert = P0). Verdict RED (open_P0=1). Set-equality FAILS: R1 finding set ≠ R2 finding set (4 closures + 2 new). Per CONVERGENCE_RULES set-equality identity by finding.id required across 2 consecutive GREEN rounds — neither condition met. Orchestrator must dispatch a Round-3 fix wave covering: (1) WT-A-R2-002 P0 /api/admin/item validator/route fix, (2) WT-A-R2-001 P1 spec or PosComponent regression diagnosis, (3) WT-A-R1-05 P1 drawer preflight, (4) WT-A-R1-12 P1 spec UI-click conversion.",
+  "notes": "ADVERSARIAL VERDICT (HOSTILE): R1 fix wave SHIPPED 4 of 7 P0+P1 closures (F1 z-report 422, F2 i18n menu.*, F2 Vue null emit, F2 vue-select id undef). Owner-mandated NF525 fiscal-surface P0 is CLOSED. R2 currency canonical F4 17,00 € + 19,00 € VERIFIED VISUALLY. 5-lane tracker (À ENCAISSER / EN PRÉPARATION / PRÊTS À SERVIR / EN LIVRAISON / LIVRÉS) VERIFIED VISUALLY state 13 + 17. Wave S-1 auto-transition (CONFIRMÉE → EN PRÉPARATION) PNG-CONFIRMED. Wave S-4 cash-pending-only (À ENCAISSER=0 with TPE order) PNG-CONFIRMED. HOWEVER — Wave A is NOT eligible for convergence: (a) R2-002 surfaces NEW silent 4xx on /api/admin/item which IS a P0 per protocol (silent + 4xx + no alert), (b) Order #2 delivery POST never fired across both Playwright attempts (R2-001 P1) suggesting F2 commit 205fc6668 may have introduced a regression — capture team identifies 3 plausible hypotheses but did not prove root cause, (c) 3 R1 P1 items (drawer preflight, delivery DOM-injection, badge semantics doc) were NOT in the R1 fix queue and remain open as carryovers. The fact that the R1 fix wave silently SKIPPED these 3 items (no fix attempted, no documented deferral) is itself an audit integrity weakness — orchestrator should explicitly list deferred items in fix-wave dispatch records. NF525 chain integrity HOLDS (count 16→18, monotonic, gap-free, no fiscal_alloc_error). Frozen-zone diff=0 across 13 files including PaymentComponent.vue, PosV5TrancheRow.vue, all kiosk frozen files, all NF525 services, BranchScope, IdempotencyKeyMiddleware, PricingService, OrderStateMachine. Cross-validation hooks all green per capture report. NEXT ROUND-3 FIX DISPATCH MUST: (1) heal R2-002 /api/admin/item 422 (P0 blocker), (2) diagnose + heal R2-001 delivery POST failure (P1 blocker), (3) finally address R1-05 + R1-12 + R1-13 carryovers OR explicitly defer them with owner gate. Then re-capture Round 3, expect R3 P0+P1=0, then Round 4 to confirm set-equality. Estimated 2 more rounds to convergence (R3 fix + R4 confirm). Do not declare done."
+}

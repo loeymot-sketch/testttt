@@ -1,0 +1,11 @@
+{
+    "audit_logs_count": 29,
+    "fiscal_max_branch_1": 352,
+    "orders_count": 250,
+    "captured_at": "2026-05-18T05:31:47+02:00",
+    "delta": {
+        "audit_logs_delta": 1,
+        "fiscal_max_delta": 1,
+        "orders_delta": 3
+    }
+}

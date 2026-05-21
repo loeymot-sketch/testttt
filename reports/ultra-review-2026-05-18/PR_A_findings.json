@@ -1,0 +1,137 @@
+[
+  {
+    "id": "PA-R-1",
+    "priority": "P0",
+    "title": "terminal_id UI absent across single AND split-tender CARD paths — V1 GO-LIVE blocker once sim flag off",
+    "file": "resources/js/components/admin/pos/PaymentComponent.vue:1-1364 + resources/js/components/admin/pos/v5/PosV5TrancheRow.vue:1-214",
+    "evidence": "grep -nE 'terminal_id|terminal-selector|paymentTerminal' on both files returns 0 matches. Backend enforces required_if at app/Http/Requests/PosOrderRequest.php:114-119 and SplitPaymentService.php:117-137. Once POS_SIMULATION_HARDWARE=false, every CARD sale (single OR each split tranche) 422s with 'A valid payment terminal is required'.",
+    "verdict": "CONFIRMED",
+    "recommendation": "Plan T-2 correct in priority. Expand acceptance to (a) per-tranche terminal selector on PosV5TrancheRow.vue, (b) PaymentComponent single-tender CARD selector, (c) seed 1 default PaymentTerminal per branch via Sans-TPE seeder, (d) config/pos.php flag card_terminal_required. Owner gate G1=B."
+  },
+  {
+    "id": "PA-R-2",
+    "priority": "P2",
+    "title": "Single-tender CASH change-due not on cash_movements ledger (audit-trail granularity, NOT reconcile drift)",
+    "file": "app/Services/OrderService.php:1032-1039 + app/Services/PaymentService.php:289-362",
+    "evidence": "OrderService writes IN movement amount=$order->total (line 1034-1038, no amountOverride). pos_received_amount stored on orders row (line 888-895) but NOT on cash_movements ledger. PLAN CLAIM 'reconcile inflates expected-cash by Σ(change-due)' is WRONG: CashDrawerService.php:257-262 sums cash_movements.signedAmount() only, never reads pos_received_amount. grep -rn 'pos_received_amount' on app/Services/Cash/ and app/Services/Fiscal/ returns 0 hits. Drawer net cash already correctly tracked.",
+    "verdict": "DOWNGRADED",
+    "recommendation": "Plan P0-2 was P0 on wrong mechanism. Real concern is NF525 audit-trail forensic preference (tendered+change should be on cash ledger, currently only on orders row). Reframe T-1 as P2 schema migration adding tendered_amount+change_amount columns to cash_movements OR kill T-1 entirely. New G3 owner gate."
+  },
+  {
+    "id": "PA-R-3",
+    "priority": "P0",
+    "title": "AR i18n parity 0/11 on split-payment UI",
+    "file": "resources/js/languages/ar.json (absent) vs PaymentComponent.vue:152,168,199,210,220,230,232,239,250,262,273",
+    "evidence": "grep -cE on ar.json for split_summary|split_among_n|split_tranches|total_covered|remaining_due|auto_balance|add_tranche|split_empty_hint|split_not_balanced|cash_received_auto_bumped returns 0. fr.json has 11/11 (lines 140/190/191/662-668/1024/1026), en.json 11/11 (lines 140/190/191/601-607/1151/1153). Under AR locale, all 11 keys fall back to inline FR fallback (e.g. `|| 'Résumé multi-paiement'`) → mixed-script UI + broken RTL flip.",
+    "verdict": "CONFIRMED",
+    "recommendation": "Plan T-5 correct. Add 11 keys to ar.json mirroring kiosk.confirmation 2026-05-08 precedent. Vitest parity test enforceable."
+  },
+  {
+    "id": "PA-R-4",
+    "priority": "P1",
+    "title": "Hardcoded FR strings on PosComponent Toutes/Réduire toggle",
+    "file": "resources/js/components/admin/pos/PosComponent.vue:268,275",
+    "evidence": "Line 268: `:title=\"showAllCategories ? 'Masquer les catégories non-essentielles' : 'Voir toutes les catégories'\"`. Line 275: `{{ showAllCategories ? 'Réduire' : 'Toutes' }}`. No $t() wrapping. R-2 in project_pos_first_page_oss_filter_2026-05-18.md memory.",
+    "verdict": "CONFIRMED",
+    "recommendation": "Plan T-6 correct. Add label.all_categories, label.collapse_categories, label.show_non_essential, label.hide_non_essential to fr/en/ar.json. WCAG 3.1.1."
+  },
+  {
+    "id": "PA-R-5",
+    "priority": "P2",
+    "title": "Idempotency lock key SHA-1 derivation vs UNIQUE-constraint SSOT — defense-in-depth only",
+    "file": "app/Services/OrderService.php:587-596",
+    "evidence": "Lock key = sha1($branchId.'|'.$idempotencyKey). Different X-Idempotency-Key values yield different SHA-1 → different cache locks. orders.idempotency_key UNIQUE constraint + QueryException catch at line 1075-1082 protects against same-key races. The 'one-bit-diff would pass lock + create two orders' framing is technically true but is by DESIGN (different keys = different intentional requests).",
+    "verdict": "DOWNGRADED",
+    "recommendation": "Plan P1-2 over-classifies. Demote T-3 to V1.0.2 backlog or kill. Low ROI for V1.0.1 cycle."
+  },
+  {
+    "id": "PA-R-6",
+    "priority": "P1",
+    "title": "N+1 + missing composite index on PosCategoryController::index",
+    "file": "app/Http/Controllers/Admin/PosCategoryController.php:81-105",
+    "evidence": "whereHas('items', …) with nested whereNotExists/orWhereExists subqueries against item_branch_availability, no eager-load on items relation, no select projection on ItemCategory. Per-cashier landing call. Composite index (item_id, branch_id, is_available) absent (grep on database/migrations/* returns 0 hits for that exact tuple).",
+    "verdict": "CONFIRMED",
+    "recommendation": "Plan T-7 correct. Add migration + eager-load + DB::enableQueryLog test assertion."
+  },
+  {
+    "id": "PA-R-7",
+    "priority": "P2",
+    "title": "PosOrderController::reorderItems lacks explicit branch guard — defense-in-depth only",
+    "file": "app/Http/Controllers/Admin/PosOrderController.php:197-226",
+    "evidence": "Implicit `Order $order` route-binding triggers Order::findOrFail() which applies global scopes. Order.php:92 registers BranchScope as global scope. Cross-branch ID returns 404 ModelNotFoundException via Laravel's missing handler, NOT data leak. No exploit confirmed.",
+    "verdict": "DOWNGRADED",
+    "recommendation": "Plan P1-4 mis-classified. Demote T-4 to P2 future-proofing. Optionally add explicit abort_unless to harden against future BranchScope refactor (matches show:117-121 pattern). 3 test cases acceptable as belt-and-suspenders."
+  },
+  {
+    "id": "PA-R-8",
+    "priority": "P2",
+    "title": "PosController::quote leaks raw PricingService AND OrderQuoteService exception messages",
+    "file": "app/Http/Controllers/Admin/PosController.php:209-214",
+    "evidence": "catch (Exception $exception) { return response()->json(['status'=>false,'message'=>$exception->getMessage()], 422); }. PricingService throws verbose errors like 'Composition #N n'appartient pas au profil publié'. OrderQuoteService also throws domain-internal messages on signature mismatch.",
+    "verdict": "CONFIRMED",
+    "recommendation": "Plan T-8 correct but scope-limited. Extend to wrap BOTH PricingService AND OrderQuoteService exceptions in ValidationException::withMessages(['composition'=>trans(...)])."
+  },
+  {
+    "id": "PA-R-9",
+    "priority": "P2",
+    "title": "posCart.normalizeCartForApi retains _optimistic / _tempId / _optimisticListsDelta keys",
+    "file": "resources/js/store/modules/posCart.js:196-215",
+    "evidence": "Line 200-201 spreads `...normalizedItem` which carries _optimistic=true, _tempId, _optimisticListsDelta=quantity (set at lines 372-374, cleaned via delete at 396-398 ONLY on confirm path). normalizeCartForApi runs BEFORE confirm. Network payload bloat + potential future tampering vector.",
+    "verdict": "CONFIRMED",
+    "recommendation": "Plan T-9 correct. Add explicit delete of _-prefixed keys before return. Cascade into pos_line_addons[] spread (line 206-212) too."
+  },
+  {
+    "id": "PA-R-10",
+    "priority": "P2",
+    "title": "Plan §0 working-tree claim STALE — PR-A backend files committed",
+    "file": "plans/ultra-plans-2026-05-18/PR_A_POS_CAISSE_ULTRA_PLAN_REVIEW_2026-05-18.md:17",
+    "evidence": "Plan claims PaymentService.php / SplitPaymentService.php / PosOrderRequest.php / 5 test files 'all modified locally, not yet committed.' git status --short on those exact files returns empty. Per BRAIN §3:100 commit 31a33cd24 landed the 5 PHPUnit fixtures. PaymentService + SplitPaymentService + PosOrderRequest tracked clean in working tree.",
+    "verdict": "STALE",
+    "recommendation": "Re-snapshot §0 pre-T-1 execution or strike the working-tree claim. Process credibility risk."
+  },
+  {
+    "id": "PA-R-11",
+    "priority": "P1",
+    "title": "Non-strict recordCashOrderMovement silently swallows errors (kiosk counter-collect path)",
+    "file": "app/Services/PaymentService.php:350-361",
+    "evidence": "catch (\\Throwable $e) { if ($strict) throw; Log::warning(...); } — when $strict=false (default path called from confirmCounterPayment line 260), any cash service failure (DB transient, lock contention) is logged-only and the order proceeds with NO cash_movements row. End-of-day reconcile under-counts kiosk-counter-collect cash by exactly the silently-failed orders.",
+    "verdict": "NEW",
+    "recommendation": "Add T-11: promote $strict=true under sim_hardware=false (default production), OR add per-failure sentinel counter + audit row tagged 'cash_movement_drop'. Without this, NF525 forensic chain misses a class of failures."
+  },
+  {
+    "id": "PA-R-12",
+    "priority": "P0",
+    "title": "Split-tender CARD UX impact of terminal_id absence (groups under PA-R-1) — explicit call-out missing in plan",
+    "file": "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue:1-214",
+    "evidence": "Atom emits { mode, amount, tendered } only (lines 122-156, 192-205). No terminal_id field in template, no terminal selector. SplitPaymentService.php:117-137 enforces terminal_id on every CARD tranche. Plan P0-1 mentions backend rule but UI gap on tranche row is not explicitly elevated.",
+    "verdict": "NEW",
+    "recommendation": "Expand T-2 acceptance criteria: per-tranche terminal_id selector on PosV5TrancheRow + bubble via @update patch. Wire into serializeTranches() helper. Without this, even after PaymentComponent gets a selector, split CARD remains broken."
+  },
+  {
+    "id": "PA-R-13",
+    "priority": "P2",
+    "title": "Frozen-zone cumulative drift vs main not surfaced — retro LOCK envelope",
+    "file": "public/js/pos-wizard.js + resources/views/admin-pos-v4.blade.php",
+    "evidence": "git diff --stat main..HEAD shows pos-wizard.js +237 lines and admin-pos-v4.blade.php +165 lines. BRAIN §3:141 acknowledges via retro LOCK POS-A4 (no NEW edit, retrospective acceptance). Plan §0 line 17 'Frozen-zone diff = 0 in PR-A controllable surface' is correct WORKING-TREE but ambiguous if read as cumulative-vs-main.",
+    "verdict": "NEW",
+    "recommendation": "Add explicit §0 clarification: 'PR-A working-tree frozen-zone diff = 0. Cumulative vs main is the retro LOCK POS-A4 envelope, out of PR-A scope.' Cross-link plans/LOCK_POS-A4 in §5 risk register."
+  },
+  {
+    "id": "PA-R-14",
+    "priority": "P2",
+    "title": "PosController::quote also leaks OrderQuoteService exceptions, not just PricingService",
+    "file": "app/Http/Controllers/Admin/PosController.php:209-214",
+    "evidence": "Final catch (Exception) wraps ALL non-Validation/non-Http exceptions. OrderQuoteService::quote throws on signature mismatch, quote_token expired, branch mismatch — those messages leak too. Plan T-8 scopes only PricingService.",
+    "verdict": "NEW",
+    "recommendation": "Extend T-8 acceptance: wrap BOTH PricingService AND OrderQuoteService exceptions in ValidationException::withMessages with i18n keys (label.composition_invalid, label.quote_expired, etc.). QuoteBindingTest needs 4 test cases not 1."
+  },
+  {
+    "id": "PA-R-15",
+    "priority": "P2",
+    "title": "WalkInCustomerResolver phone='PENDING_WALKIN' sentinel — not verified this pass",
+    "file": "app/Services/Pos/WalkInCustomerResolver.php:31 (per plan)",
+    "evidence": "Plan P2-2 claim; file not deep-read this audit window (out of 60-min budget). Plausible based on grep hits.",
+    "verdict": "CONFIRMED",
+    "recommendation": "Plan P2-2 reasonable. Backfill check before any users table migration touching phone uniqueness."
+  }
+]

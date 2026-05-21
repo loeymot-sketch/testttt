@@ -26,4 +26,12 @@ return [
         FILTER_VALIDATE_BOOLEAN,
         FILTER_NULL_ON_FAILURE
     ) ?? true,
+
+    /*
+     * [Wave R-1 P-OWNER 2026-05-20] KDS bump CTA rate-limit per-minute ceiling.
+     * Owner mandate: chef chains multiple orders rapidly in fast-food kitchen.
+     * Local dev raises to 1000/min in `.env` (owner manual-test bursts).
+     * Production default 120/min — generous for any realistic kitchen pace.
+     */
+    'rate_limit_bump' => max(1, (int) env('KDS_RATE_LIMIT_BUMP', 120)),
 ];

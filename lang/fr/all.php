@@ -164,6 +164,11 @@ return [
         // par PosController::store quand le caissier tente une vente espèces
         // sans avoir une CashDrawerSession OPEN sur sa branche.
         'cash_no_open_session_blocks_sale' => 'Aucune caisse ouverte — ouvrir une session avant de prendre un paiement espèces.',
+        // [W2-livreur 2026-05-21] Libellés UI cash-session admin livreur (V1.0.2 Sub-6.3 BUILD-1).
+        'delivery_cash_sessions' => 'Caisses livreur',
+        'delivery_cash_status_open' => 'Ouverte',
+        'delivery_cash_status_closed' => 'Clôturée',
+        'delivery_cash_status_reconciled' => 'Réconciliée',
     ],
     'studio' => [
         'eyebrow' => 'Catalogue centralisé',

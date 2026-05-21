@@ -248,7 +248,7 @@ export default {
     restaurantName() {
       // globalState stores data in state.lists (not state.settings)
       const lists = this.$store.state.globalState?.lists;
-      return lists?.company_name || lists?.site_name || 'FoodKing';
+      return lists?.company_name || lists?.site_name || 'Le Cayenne';
     },
     receiptDate() {
       const locale = this.$i18n?.locale || 'fr';

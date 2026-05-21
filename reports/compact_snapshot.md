@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 # Compact Snapshot — 2026-05-09 16:19:41
+=======
+# Compact Snapshot — 2026-04-18 16:33:17
+>>>>>>> Stashed changes
 
 ## Active Cycle
 TASK_ID: none

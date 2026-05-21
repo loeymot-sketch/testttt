@@ -98,7 +98,9 @@ class Item extends Model implements HasMedia
         $filename = $images[$this->slug] ?? $defaultFile;
         $fullPath = public_path("{$basePath}/{$filename}");
         if (file_exists($fullPath)) {
-            return asset("{$basePath}/{$filename}");
+            // Cache-bust: filemtime suffix forces browsers to refetch when the file changes.
+            $hash = @filemtime($fullPath) ?: 0;
+            return asset("{$basePath}/{$filename}") . "?v={$hash}";
         }
         return asset('images/item/thumb.png');
     }

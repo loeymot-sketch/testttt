@@ -1,0 +1,9 @@
+[
+  {
+    "url": "http://localhost:8000/api/admin/item/details/361?surface=pos&branch_id=1",
+    "method": "GET",
+    "status": 404,
+    "duration_ms": null,
+    "ts": 1779070270615
+  }
+]

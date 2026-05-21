@@ -1,0 +1,48 @@
+{
+  "findings": {
+    "p0": [],
+    "p1": [
+      "Raw label tokens found: label.ql, label.ql, label.ql, label.ql, label.ql",
+      "2 console errors: Access to XMLHttpRequest at 'http://localhost:8000/api/broadcasting/auth' from o | Failed to load resource: net::ERR_FAILED"
+    ],
+    "p2": [],
+    "pass": [
+      "API login OK token len=53",
+      "Z9-P0-03 phone gate: POS card customer.phone is null (GDPR compliant)",
+      "DELIVERY card customer.phone exposed = +33612345678",
+      "POS order_items[0].composition exposed",
+      "POS allergens_snapshot exposed = [\"gluten\",\"milk\"]",
+      "Login redirect occurred (no longer /login)",
+      "KDS V2 grid present (8 grid/card matches)",
+      "At least 2 KDS cards visible (cards=171)",
+      "No phone leaked in POS card DOM",
+      "Bump button height 52px ≥ 50px (Z3-NEW-007 52px target)",
+      "Bump button width 308px ≥ 44px",
+      "Bump button aria-label resolved: \"Prêt\"",
+      "First bump click executed",
+      "Second bump click executed",
+      "Undo toast clicked",
+      "Allergen lozenge present (count=8)",
+      "No HTTP 4xx/5xx errors during KDS session"
+    ]
+  },
+  "consoleEvents": [
+    {
+      "type": "warning",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established."
+    },
+    {
+      "type": "info",
+      "text": "Connecting to 'http://localhost:8000/api/broadcasting/auth' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https:\". The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "type": "error",
+      "text": "Access to XMLHttpRequest at 'http://localhost:8000/api/broadcasting/auth' from origin 'http://127.0.0.1:8000' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: The 'Access-Control-Allow-Origin' header has a value 'http://localhost:8000' that is not equal to the supplied origin."
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    }
+  ],
+  "networkErrors": []
+}

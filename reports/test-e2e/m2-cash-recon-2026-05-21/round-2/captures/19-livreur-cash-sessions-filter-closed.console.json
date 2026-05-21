@@ -1,0 +1,102 @@
+[
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_sessions' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=2189dd99a36b177110ea849c6808e955",
+      "lineNumber": 137442,
+      "columnNumber": 16
+    },
+    "ts": 1779340479833
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_status_open' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=2189dd99a36b177110ea849c6808e955",
+      "lineNumber": 137442,
+      "columnNumber": 16
+    },
+    "ts": 1779340479834
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_status_closed' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=2189dd99a36b177110ea849c6808e955",
+      "lineNumber": 137442,
+      "columnNumber": 16
+    },
+    "ts": 1779340479834
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_status_reconciled' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=2189dd99a36b177110ea849c6808e955",
+      "lineNumber": 137442,
+      "columnNumber": 16
+    },
+    "ts": 1779340479834
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.id' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=2189dd99a36b177110ea849c6808e955",
+      "lineNumber": 137442,
+      "columnNumber": 16
+    },
+    "ts": 1779340479834
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_sessions' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=2189dd99a36b177110ea849c6808e955",
+      "lineNumber": 137442,
+      "columnNumber": 16
+    },
+    "ts": 1779340479863
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_status_open' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=2189dd99a36b177110ea849c6808e955",
+      "lineNumber": 137442,
+      "columnNumber": 16
+    },
+    "ts": 1779340479863
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_status_closed' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=2189dd99a36b177110ea849c6808e955",
+      "lineNumber": 137442,
+      "columnNumber": 16
+    },
+    "ts": 1779340479863
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.delivery_cash_status_reconciled' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=2189dd99a36b177110ea849c6808e955",
+      "lineNumber": 137442,
+      "columnNumber": 16
+    },
+    "ts": 1779340479863
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'label.id' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=2189dd99a36b177110ea849c6808e955",
+      "lineNumber": 137442,
+      "columnNumber": 16
+    },
+    "ts": 1779340479863
+  }
+]

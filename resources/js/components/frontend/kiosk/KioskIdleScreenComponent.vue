@@ -474,6 +474,11 @@ export default {
   line-height: 1.35;
   font-weight: var(--kiosk-font-weight-medium, 500);
   color: rgba(255, 245, 232, 0.88);
+  /* Wave Y A-004 — text-shadow mirrors .kiosk-idle-brand (line 467) so the
+     subtitle stays readable on BOTH the dark fallback gradient and the light
+     cream/orange idle hero image. Drop-shadow trick avoids picking a color
+     that breaks one or the other surface. */
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65), 0 1px 4px rgba(0, 0, 0, 0.45);
   margin: 0;
 }
 

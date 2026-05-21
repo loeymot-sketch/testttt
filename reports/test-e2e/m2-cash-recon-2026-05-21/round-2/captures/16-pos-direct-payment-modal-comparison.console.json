@@ -1,0 +1,22 @@
+[
+  {
+    "level": "log",
+    "text": "[POS-WIZARD] wizard_template from API: sandwich",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1779340455",
+      "lineNumber": 321,
+      "columnNumber": 20
+    },
+    "ts": 1779340471092
+  },
+  {
+    "level": "log",
+    "text": "[POS-WIZARD] wizard_template from API: sandwich",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1779340455",
+      "lineNumber": 321,
+      "columnNumber": 20
+    },
+    "ts": 1779340471093
+  }
+]

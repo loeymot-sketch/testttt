@@ -1123,7 +1123,7 @@
                     <i class="fa-solid fa-list-ul" aria-hidden="true"></i>
                     <span>{{ $t('pos.orders.history') }}</span>
                 </router-link>
-                <button class="kiosk-cash-panel-close" @click="showKioskCashPanel = false">✕</button>
+                <button class="kiosk-cash-panel-close" type="button" :aria-label="$t('button.close')" @click="showKioskCashPanel = false">✕</button>
             </div>
           </div>
           <div class="kiosk-cash-panel-body">

@@ -1,0 +1,107 @@
+{
+  "wave": "B",
+  "round": 1,
+  "run_name": "wave-t-caisse-to-delivered-2026-05-20",
+  "spec_path": "tests/e2e/test-e2e-wave-t-caisse-to-delivered-B-kds.spec.js",
+  "screenshot_dir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/wave-t-caisse-to-delivered-B-kds",
+  "fixture_file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__fixtures__/wave-t-orders.json",
+  "fixture_captured_at": "2026-05-20T22:06:59.346Z",
+  "order_1_id": 86,
+  "order_2_id": 87,
+  "fixture_error": null,
+  "states_expected": 8,
+  "states_captured": 8,
+  "png_filenames": [
+    "01-kds-landing-loaded.png",
+    "02-kds-both-orders-visible.png",
+    "03-kds-order1-card-detail.png",
+    "04-kds-order2-card-detail.png",
+    "05-kds-order1-bump-clicked-undo-window.png",
+    "06-kds-order1-after-bump.png",
+    "07-kds-order2-bump-clicked-undo-window.png",
+    "08-kds-final-both-bumped.png"
+  ],
+  "observations": [
+    "stale-clean (WT-R3-F3): keep=[86,87] swept=0 detail=[]",
+    "state01 (kds-landing-loaded): url=http://localhost:8000/admin/kitchen-display-system?v2=1",
+    "state01: v2_layout_root_count=1",
+    "state02 wait order#86: visible after mount+4ms (fixture→visible=19327ms — informational only)",
+    "state02 wait order#87: visible after mount+6ms",
+    "state02 grid-id audit: count=2 ids=[\"86\",\"87\"] expected=[\"86\",\"87\"] unexpected=[] order2_missing=false",
+    "state02 pills: order1=\"En cours\" order2=\"En cours\"",
+    "state02 server statuses (pre-bump): 86|status=7 87|status=7",
+    "state02 allergen_pill_count=0",
+    "state02 cta order1: cta=1 cash=0 | order2: cta=1 cash=0",
+    "state03 order1 body length=146 preview=\"1×Sandwich CayenneChoix : Poulet mariné·SANDWICH CAYENNE - Salade, Tomate, Oignon1×TacosChoix : Poulet mariné·TACOS1×Coca-Cola 33cl·COCA-COLA 33CL\"",
+    "state04 order2 body length=264 preview=\"📍12 rue Test, Paris 75001👤Client passage📱06000000011×Sandwich CayenneChoix : Poulet mariné·SANDWICH CAYENNE - Salade, Tomate, Oignon1×Big CayenneChoix : Poulet mariné, Poulet mariné·BIG CAYENNE - Salade, Tomate, Oignon1×Petite FritesChoi\"",
+    "state04 order2 delivery_block_count=1",
+    "state05 pre-click order1 cta_visible=true",
+    "state05 (kds-order1-bump-clicked-undo-window): captured during 3s undo toast window",
+    "state05 order#86 POST result: status=202 elapsed=3092ms",
+    "state05 order1 awaited_response_status=202 listener_count=1 → effective=1",
+    "state06 order1 still_rendered=1 ready_class=true",
+    "state07 pre-click order2 cta_visible=true",
+    "state07 (kds-order2-bump-clicked-undo-window): captured during 3s undo toast window",
+    "state07 order#87 POST result: status=202 elapsed=3070ms",
+    "state07 order2 awaited_response_status=202 listener_count=1 → effective=1",
+    "state08 final: order1 rendered=1 ready=true | order2 rendered=1 ready=true",
+    "NF525 pre={\"chain\":\"CHAIN OK (audit_logs + z_reports) (branch=1)\",\"count\":45,\"last_hash\":\"e21fc85e0107fcecebf8cb604cfefba26a895ed28143c89e76ee41196ebf6cea\"} post={\"chain\":\"CHAIN OK (audit_logs + z_reports) (branch=1)\",\"count\":45,\"last_hash\":\"e21fc85e0107fcecebf8cb604cfefba26a895ed28143c89e76ee41196ebf6cea\"}",
+    "server statuses post-bump:\n86|status=8\n87|status=8",
+    "fixture updated: kds_ready_at_order_1+2 = 2026-05-20T22:07:30.438Z"
+  ],
+  "findings_inline": [],
+  "nf525_pre": {
+    "chain": "CHAIN OK (audit_logs + z_reports) (branch=1)",
+    "count": 45,
+    "last_hash": "e21fc85e0107fcecebf8cb604cfefba26a895ed28143c89e76ee41196ebf6cea"
+  },
+  "nf525_post": {
+    "chain": "CHAIN OK (audit_logs + z_reports) (branch=1)",
+    "count": 45,
+    "last_hash": "e21fc85e0107fcecebf8cb604cfefba26a895ed28143c89e76ee41196ebf6cea"
+  },
+  "validations": {
+    "S-1_auto_preparing": "PASS",
+    "S-2_single_cta": "PASS",
+    "S-2_one_patch": "PASS",
+    "R-1_no_429_toast": "PASS",
+    "Q-4_no_allergen_pill": "PASS"
+  },
+  "click_counts": {
+    "order_1_clicks_to_bump": 1,
+    "order_2_clicks_to_bump": 1
+  },
+  "sync_latency_ms": {
+    "mount_to_visible_order_1": 4,
+    "mount_to_visible_order_2": 6,
+    "fixture_to_visible_order_1": 19327,
+    "fixture_to_visible_order_2": 19329
+  },
+  "network_change_status": [
+    {
+      "url": "http://localhost:8000/api/admin/kds-order/change-status/86",
+      "method": "POST",
+      "status": 202,
+      "orderId": 86,
+      "ts": 1779314842428,
+      "body": null
+    },
+    {
+      "url": "http://localhost:8000/api/admin/kds-order/change-status/87",
+      "method": "POST",
+      "status": 202,
+      "orderId": 87,
+      "ts": 1779314847372,
+      "body": null
+    }
+  ],
+  "order_2_missing": false,
+  "initial_server_statuses": {
+    "86": 7,
+    "87": 7
+  },
+  "server_statuses": {
+    "86": 8,
+    "87": 8
+  }
+}

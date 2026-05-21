@@ -1,0 +1,1 @@
+{"id":27,"branch_id":1,"user_id":30,"action":"delivery.cash_collected_escrow","resource":"order","resource_id":1492,"payload":{"event":"doorstep_cash_collection","order_id":1492,"collected_at":"2026-05-18T04:12:07+02:00","payment_method":1,"delivery_boy_id":30,"order_serial_no":"E2E-LIV-1779070127","amount_collected":15.5},"created_at":"2026-05-18 04:12:08"}

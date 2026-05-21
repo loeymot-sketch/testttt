@@ -185,6 +185,27 @@ export default {
     },
   },
 
+  // [W2 audit 2026-05-21] a11y: WAI-ARIA dialog pattern (WCAG 2.1.2) requires
+  // Escape to close. Backdrop click works but keyboard-only operators (chef
+  // with gloves / stylus) were stuck. Handler is gated by `this.open` so it
+  // is a no-op when the drawer is closed; teardown in beforeUnmount avoids
+  // listener leaks if a parent re-mounts during a Vue-router transition.
+  mounted() {
+    this._onEsc = (e) => {
+      if (this.open && (e.key === 'Escape' || e.key === 'Esc')) {
+        this.$emit('close');
+      }
+    };
+    document.addEventListener('keydown', this._onEsc);
+  },
+
+  beforeUnmount() {
+    if (this._onEsc) {
+      document.removeEventListener('keydown', this._onEsc);
+      this._onEsc = null;
+    }
+  },
+
   methods: {
     async fetch() {
       this.loading = true;

@@ -1,0 +1,152 @@
+{
+  "wave": "D",
+  "round": 1,
+  "run_name": "wave-t-caisse-to-delivered-2026-05-20",
+  "spec_path": "tests/e2e/test-e2e-wave-t-caisse-to-delivered-D-livreur.spec.js",
+  "screenshot_dir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/wave-t-caisse-to-delivered-D-livreur",
+  "fixture_file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__fixtures__/wave-t-orders.json",
+  "order_under_test": 85,
+  "delivery_boy_id_used": 13,
+  "delivery_boy_seed_result": {
+    "id": 13,
+    "action": "existing"
+  },
+  "api_transport": "bearer-token-via-ctx.request",
+  "api_key_used": "b6d68vy2-m7g5-20r0-5275-h103w73453q120",
+  "states_captured": 7,
+  "states_expected": 7,
+  "png_filenames": [
+    "01-tracker-order2-pret-visible.png",
+    "02-tracker-order2-detail-view.png",
+    "03-tracker-order2-driver-assigned.png",
+    "04-tracker-order2-out-for-delivery.png",
+    "05-tracker-order2-delivered-final.png",
+    "06-admin-orders-list-delivered.png",
+    "07-order2-detail-delivered-final.png"
+  ],
+  "observations": [
+    "api token extracted from vuex localStorage : true",
+    "api[change-status PREPARING→PREPARED]: status=200 {\"target_status\":8}",
+    "state1 (tracker-order2-pret-visible): {\"url\":\"/admin/pos-orders-tracker\",\"card_present\":false,\"card_class\":null,\"card_total_text\":null,\"card_num_text\":null,\"card_item_count\":0,\"card_item_names\":[],\"lanes\":[{\"classes\":\"pos-tracker-col pos-tracker-col--amber\",\"label\":\"🔔\\nÀ ENCAISSER\\n\\nBorne — paiement comptoir\\n\\n0\",\"count\":0},{\"classes\":\"pos-tracker-col pos-tracker-col--primary\",\"label\":\"🍳\\nEN PRÉPARATION\\n1\",\"count\":1},{\"classes\":\"pos-tracker-col pos-tracker-col--green\",\"label\":\"🛎️\\nPRÊTS À SERVIR\\n0\",\"count\":0},{\"classes\":\"pos-tracker-col pos-tracker-col--blue\",\"label\":\"🛵\\nEN LIVRAISON\\n0\",\"count\":0},{\"classes\":\"pos-tracker-col pos-tracker-col--muted\",\"label\":\"✅\\nLIVRÉS\\n3\",\"count\":3}]}",
+    "state02: eye link visible=false",
+    "state2 (tracker-order2-detail-view): {\"url\":\"/admin/pos-orders/show/85\",\"body_excerpt\":\"Filiale\\nLe Cayenne (Principal)\\nLe Cayenne (Principal)\\nBonjour\\nAdmin Le Cayenne\\nAdmin Le Cayenne\\n\\nadmin@lecayenne.fr\\n\\n+330600000000\\n\\n0.00€\\nModifier Le Profil\\nChanger Le Mot De Passe\\nDéconnexion\\nTableau De Bord\\nPOS\\nTableau De Bord Stock\\nCatalogue\\nAttribut D’articles\\nIngrédients\\nCommandes Caisse\\nCAISSE ET COMMANDES\\nÉcran Cuisine\\nSuivi Client\\nCOMMUNICATIONS\\nNotification Pushs\\nMessages\\nAbonnés\\nUTILISATEURS\\nAdministrateurs\\nEmployés\\nChefs\\nCOMPTES\\nTransactions\\nRAPPORTS\\nRapport Des Ventes\\nRapport Articles\\nCONFIGURATION\\nParamètres\\nTableau De Bord\\nCommandes Caisse\\nVoir\\n\\nN° Commande: #20052685\\n\\nPayé\\nPréparée\\n11:11 PM, 20-05-2026\\nType de paiement: Carte (1234)\\nType de commande: Livraison\\nHeure de livraison: 20-05-2026 11:11 PM - 11:41 PM\\nRéférence interne: Wave\\nSélectionner Un Livreur\\nLivreur Test Wave T\\nPayé\\nPayé\\nNon Payé\\nPréparée\\nAccepter\\nEn Préparation\\nPréparée\\nEn Livraison\\nLivré\\nRetournée\\nImprimer La Facture\\nDétails Commande\\n1\\nSandwich Cayenne\\n\\nPoulet Mariné:\\n\\n7,00 €\\nInstruction:\\n\\nSANDWICH CAYENNE - Salade, Tomate, Oignon\\n\\n1\\nBig Cayenne\\n\\nPoulet Mariné: , Poulet Mariné:\\n\\n9,50 €\\nInstruction:\\n\\nBIG CAYENNE - Salade, Tomate, Oignon\\n\\n1\\nPetite Frites\\n\\nNature:\\n\\n2,50 €\\nInstruction:\\n\\nPETITE FRITES\\n\\nSous-Total\\n19,00 €\\nRemise\\n0,00 €\\nFrais De Livraison\\n5,00 €\\nTotal\\n24,00 €\\nInformations De Livraison\\nClient Passage\\nwalkingcustomer@example.com\\n+330600000001\\n12 rue Test, Paris 75001\",\"contains_phone\":false,\"contains_address\":true,\"contains_customer\":false}",
+    "api[select-delivery-boy]: status=200 {\"delivery_boy_id\":13}",
+    "state3 (tracker-order2-driver-assigned): {\"api_status\":200,\"delivery_boy_id_after_assign\":13,\"order_branch_id\":1,\"order_status\":8,\"order_total\":0}",
+    "api[change-status PREPARED→OUT_FOR_DELIVERY]: status=200 {\"target_status\":10}",
+    "state4 (tracker-order2-out-for-delivery): {\"url\":\"/admin/pos-orders-tracker\",\"card_present\":false,\"card_class\":null,\"card_in_delivered_lane\":false,\"api_status\":200,\"db_status\":10}",
+    "api[change-status OUT_FOR_DELIVERY→DELIVERED]: status=200 {\"target_status\":13}",
+    "state5 (tracker-order2-delivered-final): {\"url\":\"/admin/pos-orders-tracker\",\"card_present\":false,\"card_class\":null,\"card_total_text\":null,\"lanes\":[{\"classes\":\"pos-tracker-col pos-tracker-col--amber\",\"label\":\"🔔\\nÀ ENCAISSER\\n\\nBorne — paiement comptoir\\n\\n0\",\"count\":0},{\"classes\":\"pos-tracker-col pos-tracker-col--primary\",\"label\":\"🍳\\nEN PRÉPARATION\\n1\",\"count\":1},{\"classes\":\"pos-tracker-col pos-tracker-col--green\",\"label\":\"🛎️\\nPRÊTS À SERVIR\\n0\",\"count\":0},{\"classes\":\"pos-tracker-col pos-tracker-col--blue\",\"label\":\"🛵\\nEN LIVRAISON\\n0\",\"count\":0},{\"classes\":\"pos-tracker-col pos-tracker-col--muted\",\"label\":\"✅\\nLIVRÉS\\n3\",\"count\":3}],\"api_status\":200,\"db_status\":13}",
+    "state6 (admin-orders-list-delivered): {\"table_present\":true,\"row_count\":10,\"order_row_present\":true,\"order_row_text\":\"20052685\\tN°A0017\\tLivraison\\tClient passage\\t24,00 €\\t11:11 PM, 20-05-2026\\tLivré\\t\"}",
+    "state7 (order2-detail-delivered-final): {\"url\":\"/admin/pos-orders/show/85\",\"body_excerpt\":\"Filiale\\nLe Cayenne (Principal)\\nLe Cayenne (Principal)\\nBonjour\\nAdmin Le Cayenne\\nAdmin Le Cayenne\\n\\nadmin@lecayenne.fr\\n\\n+330600000000\\n\\n0.00€\\nModifier Le Profil\\nChanger Le Mot De Passe\\nDéconnexion\\nTableau De Bord\\nPOS\\nTableau De Bord Stock\\nCatalogue\\nAttribut D’articles\\nIngrédients\\nCommandes Caisse\\nCAISSE ET COMMANDES\\nÉcran Cuisine\\nSuivi Client\\nCOMMUNICATIONS\\nNotification Pushs\\nMessages\\nAbonnés\\nUTILISATEURS\\nAdministrateurs\\nEmployés\\nChefs\\nCOMPTES\\nTransactions\\nRAPPORTS\\nRapport Des Ventes\\nRapport Articles\\nCONFIGURATION\\nParamètres\\nTableau De Bord\\nCommandes Caisse\\nVoir\\n\\nN° Commande: #20052685\\n\\nPayé\\nLivré\\n11:11 PM, 20-05-2026\\nType de paiement: Carte (1234)\\nType de commande: Livraison\\nHeure de livraison: 20-05-2026 11:11 PM - 11:41 PM\\nRéférence interne: Wave\\nLivreur Test Wave T\\nLivreur Test Wave T\\n\\nLivreur assigné: Livreur Test Wave T\\n\\nPayé\\nPayé\\nNon Payé\\nLivré\\nAccepter\\nEn Préparation\\nPréparée\\nEn Livraison\\nLivré\\nRetournée\\nImprimer La Facture\\nDétails Commande\\n1\\nSandwich Cayenne\\n\\nPoulet Mariné:\\n\\n7,00 €\\nInstruction:\\n\\nSANDWICH CAYENNE - Salade, Tomate, Oignon\\n\\n1\\nBig Cayenne\\n\\nPoulet Mariné: , Poulet Mariné:\\n\\n9,50 €\\nInstruction:\\n\\nBIG CAYENNE - Salade, Tomate, Oignon\\n\\n1\\nPetite Frites\\n\\nNature:\\n\\n2,50 €\\nInstruction:\\n\\nPETITE FRITES\\n\\nSous-Total\\n19,00 €\\nRemise\\n0,00 €\\nFrais De Livraison\\n5,00 €\\nTotal\\n24,00 €\\nInformations De Livraison\\nClient Passage\\nwalkingcustomer@example.com\\n+330600000001\\n12 rue Test, Paris 75001\",\"contains_phone\":false,\"contains_address\":true,\"contains_customer\":false,\"db_final\":{\"id\":85,\"status\":13,\"payment_status\":5,\"delivery_boy_id\":13,\"branch_id\":1,\"total_amount\":0,\"order_type\":5}}",
+    "NF525 pre : {\"count\":42,\"last_hash\":\"c3725f84bf011c317cbdb8bf48ff4f7a89bce0dbeaeea9a1157a99cf2b47375f\"}",
+    "NF525 post: {\"count\":43,\"last_hash\":\"3b1388b5ecf002dba43f496eaf5476965d234d3125075c07ffc9f4bd813343f8\"}"
+  ],
+  "nf525_pre": {
+    "count": 42,
+    "last_hash": "c3725f84bf011c317cbdb8bf48ff4f7a89bce0dbeaeea9a1157a99cf2b47375f"
+  },
+  "nf525_post": {
+    "count": 43,
+    "last_hash": "3b1388b5ecf002dba43f496eaf5476965d234d3125075c07ffc9f4bd813343f8"
+  },
+  "api_calls": [
+    {
+      "label": "change-status PREPARING→PREPARED",
+      "status": 200,
+      "body_sample": "{\"data\":{\"id\":85,\"order_serial_no\":\"20052685\",\"queue_number\":\"A0017\",\"token\":\"Wave\",\"subtotal\":19,\"discount\":0,\"total_tax\":0,\"total\":24,\"delivery_charge\":5,\"subtotal_currency_price\":\"19.00€\",\"subtotal_without_tax_currency_price\":\"19.00€\",\"discount_currency_price\":\"0.00€\",\"delivery_charge_currency_price\":\"5.00€\",\"total_currency_price\":\"24.00€\",\"total_tax_currency_price\":\"0.00€\",\"order_type\":5,\"created_at\":\"2026-05-20T23:11:57+02:00\",\"order_datetime\":\"11:11 PM, 20-05-2026\",\"order_date\":\"20-05-2026\",\"order_time\":\"11:11 PM\",\"delivery_date\":\"20-05-2026\",\"delivery_time\":\"11:11 PM - 11:41 PM\",\"paymen",
+      "extra": {
+        "target_status": 8
+      },
+      "ts": "2026-05-20T21:26:49.174Z"
+    },
+    {
+      "label": "select-delivery-boy",
+      "status": 200,
+      "body_sample": "{\"data\":{\"id\":85,\"order_serial_no\":\"20052685\",\"queue_number\":\"A0017\",\"token\":\"Wave\",\"subtotal\":19,\"discount\":0,\"total_tax\":0,\"total\":24,\"delivery_charge\":5,\"subtotal_currency_price\":\"19.00€\",\"subtotal_without_tax_currency_price\":\"19.00€\",\"discount_currency_price\":\"0.00€\",\"delivery_charge_currency_price\":\"5.00€\",\"total_currency_price\":\"24.00€\",\"total_tax_currency_price\":\"0.00€\",\"order_type\":5,\"created_at\":\"2026-05-20T23:11:57+02:00\",\"order_datetime\":\"11:11 PM, 20-05-2026\",\"order_date\":\"20-05-2026\",\"order_time\":\"11:11 PM\",\"delivery_date\":\"20-05-2026\",\"delivery_time\":\"11:11 PM - 11:41 PM\",\"paymen",
+      "extra": {
+        "delivery_boy_id": 13
+      },
+      "ts": "2026-05-20T21:27:01.281Z"
+    },
+    {
+      "label": "change-status PREPARED→OUT_FOR_DELIVERY",
+      "status": 200,
+      "body_sample": "{\"data\":{\"id\":85,\"order_serial_no\":\"20052685\",\"queue_number\":\"A0017\",\"token\":\"Wave\",\"subtotal\":19,\"discount\":0,\"total_tax\":0,\"total\":24,\"delivery_charge\":5,\"subtotal_currency_price\":\"19.00€\",\"subtotal_without_tax_currency_price\":\"19.00€\",\"discount_currency_price\":\"0.00€\",\"delivery_charge_currency_price\":\"5.00€\",\"total_currency_price\":\"24.00€\",\"total_tax_currency_price\":\"0.00€\",\"order_type\":5,\"created_at\":\"2026-05-20T23:11:57+02:00\",\"order_datetime\":\"11:11 PM, 20-05-2026\",\"order_date\":\"20-05-2026\",\"order_time\":\"11:11 PM\",\"delivery_date\":\"20-05-2026\",\"delivery_time\":\"11:11 PM - 11:41 PM\",\"paymen",
+      "extra": {
+        "target_status": 10
+      },
+      "ts": "2026-05-20T21:27:07.916Z"
+    },
+    {
+      "label": "change-status OUT_FOR_DELIVERY→DELIVERED",
+      "status": 200,
+      "body_sample": "{\"data\":{\"id\":85,\"order_serial_no\":\"20052685\",\"queue_number\":\"A0017\",\"token\":\"Wave\",\"subtotal\":19,\"discount\":0,\"total_tax\":0,\"total\":24,\"delivery_charge\":5,\"subtotal_currency_price\":\"19.00€\",\"subtotal_without_tax_currency_price\":\"19.00€\",\"discount_currency_price\":\"0.00€\",\"delivery_charge_currency_price\":\"5.00€\",\"total_currency_price\":\"24.00€\",\"total_tax_currency_price\":\"0.00€\",\"order_type\":5,\"created_at\":\"2026-05-20T23:11:57+02:00\",\"order_datetime\":\"11:11 PM, 20-05-2026\",\"order_date\":\"20-05-2026\",\"order_time\":\"11:11 PM\",\"delivery_date\":\"20-05-2026\",\"delivery_time\":\"11:11 PM - 11:41 PM\",\"paymen",
+      "extra": {
+        "target_status": 13
+      },
+      "ts": "2026-05-20T21:27:14.614Z"
+    }
+  ],
+  "db_state_initial": {
+    "id": 85,
+    "status": 7,
+    "payment_status": 5,
+    "delivery_boy_id": null,
+    "branch_id": 1,
+    "total_amount": 0,
+    "order_type": 5
+  },
+  "db_state_after_pretransition": {
+    "id": 85,
+    "status": 13,
+    "payment_status": 5,
+    "delivery_boy_id": 13,
+    "branch_id": 1,
+    "total_amount": 0,
+    "order_type": 5
+  },
+  "db_state_after_assign": {
+    "id": 85,
+    "status": 8,
+    "payment_status": 5,
+    "delivery_boy_id": 13,
+    "branch_id": 1,
+    "total_amount": 0,
+    "order_type": 5
+  },
+  "db_state_after_out_for_delivery": {
+    "id": 85,
+    "status": 10,
+    "payment_status": 5,
+    "delivery_boy_id": 13,
+    "branch_id": 1,
+    "total_amount": 0,
+    "order_type": 5
+  },
+  "db_state_after_delivered": {
+    "id": 85,
+    "status": 13,
+    "payment_status": 5,
+    "delivery_boy_id": 13,
+    "branch_id": 1,
+    "total_amount": 0,
+    "order_type": 5
+  },
+  "findings_inline": [],
+  "spec_started_at": "2026-05-20T21:26:54.776Z",
+  "spec_ended_at": "2026-05-20T21:27:33.483Z",
+  "api_status_summary": {
+    "pretransition": 200,
+    "assign": 200,
+    "out_for_delivery": 200,
+    "delivered": 200
+  },
+  "frozen_zones_respected": [
+    "public/js/pos-wizard.js",
+    "resources/js/components/admin/pos/PaymentComponent.vue",
+    "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue",
+    "app/Services/Fiscal/*",
+    "app/Domain/Order/OrderStateMachine.php"
+  ],
+  "owner_mandate_branch": "livraison (Order #2 driver hand-off → DELIVERED)"
+}

@@ -10,7 +10,7 @@
                         <button type="submit">
                             <i class="lab lab-search-normal lab-font-size-16"></i>
                         </button>
-                        <input type="text" id="name" v-model="props.search.name" placeholder="Search Customer"
+                        <input type="text" id="name" v-model="props.search.name" :placeholder="$t('label.search_customer')"
                             class="w-full h-full rounded-r-lg ml-3">
                         <button @click.prevent="resetName" type="button" v-if="props.search.name"
                             class="text-sm text-red-500 fa-regular fa-circle-xmark !ml-2 mr-1"></button>
@@ -96,7 +96,7 @@
                         </label>
                         <div class="chat-footer-data">
                             <ul @click.prevent="deleteImage" class="chat-footer-data-list hidden"></ul>
-                            <input type="text" v-model="props.form.text" placeholder="Type a message"
+                            <input type="text" v-model="props.form.text" :placeholder="$t('label.type_a_message')"
                                 class="chat-footer-data-input">
                         </div>
                         <button type="submit" class="chat-footer-sent">

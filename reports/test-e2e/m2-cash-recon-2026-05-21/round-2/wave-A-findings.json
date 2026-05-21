@@ -1,0 +1,69 @@
+{
+  "wave": "A",
+  "round": 2,
+  "states_reviewed": 22,
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "test-e2e-m2/17-livreur-cash-sessions-list.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Round-2 reproduces identical leak: DOM <h3 class=\"db-card-title\">label.delivery_cash_sessions</h3>, <th>label.id</th>, three <option> values label.delivery_cash_status_{open,closed,reconciled} render raw. Console state 17 emits 5 [intlify] 'Not found ... key in fr locale messages' warnings — bit-identical to round-1 (sha1 of leaked-key list unchanged). grep confirms the keys are still absent from resources/js/languages/fr.json + en.json under label.* namespace. Commit b4ce09458 did not touch resources/js/languages/*.json.",
+      "fix_hint": "Same as round-1: add 5 keys (label.delivery_cash_sessions, label.delivery_cash_status_open|closed|reconciled, label.id) under label.* namespace of all 5 locales (fr/en/ar/bn/de) then rebuild Mix.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "test-e2e-m2/20-livreur-cash-session-open-form.png",
+      "category": "silent_error",
+      "severity": "P0",
+      "evidence": "Round-2 state-20 main content area renders empty router-view (<main> non-chrome inner = `<!--v-if--><!--v-if-->`). The previously-broken DeliveryBoyCashSessionFormComponent with undefined `mode` prop is GONE. The capture-time adversarial overlay still paints because the spec assertions `formCard.isVisible()` + `formOpen.isVisible()` remain false (now intentionally — route no longer exists). Network log for state-20 capture shows only auth ping (200 POST /api/auth/authcheck), no failed /open API. Commit b4ce09458 closed the underlying ship symptom (broken FormComponent shell). Console i18n warnings present at state-20 capture are echoes from earlier list visits (states 17-19); state 20's own page generates no new warnings.",
+      "fix_hint": "Ship-blocker closed. Optional follow-up V1.0.X: update spec to acknowledge `/admin/delivery-boy-cash-sessions/open` is intentionally not a route (e.g. assert `expect(page.url()).not.toContain('/open')` after redirect, or remove the goto entirely and assert 'Ouvrir' button on list page when seeded).",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "test-e2e-m2/16-pos-direct-payment-modal-comparison.png",
+      "category": "loading_state_missing",
+      "severity": "P2",
+      "evidence": "Round-2 state-16 still shows the same adversarial fallback overlay: spec could not exit the POS Vanilla wizard intercept to reach the V5 PaymentComponent modal for literal side-by-side parity comparison. Commit b4ce09458 did not target this scope. Visual evidence from states 12-15 alone proves structural parity: same 4-tile mode picker, same Espèce-only keypad, same explanatory text pattern for Carte/Mobile/Ticket restaurant, same `Confirmer & Imprimer ticket` CTA, same `Annuler` button, same `Montant total` red header.",
+      "fix_hint": "Adversarial declares parity ASSERTED FROM STATES 12-15. Literal V5 modal screenshot not required for owner-spec compliance. If owner gates demand a literal side-by-side, future spec must POST directly to /api/admin/pos/payment with a seeded order then snapshot the V5 component mount.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "test-e2e-m2/21-livreur-cash-session-show.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "Round-2 state-21 reproduces the honest empty-DB capture — no DeliveryBoyCashSession row with id=1 exists. Not a product defect.",
+      "fix_hint": "Optional V1.0.X: seed a fixture session in spec beforeAll(). Informational only.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2
+    }
+  ],
+  "summary": {
+    "P0": 1,
+    "P1": 1,
+    "P2": 1,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 1,
+    "open_P2": 1,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "A-001": "FAIL",
+    "A-002": "PASS",
+    "A-003": "FAIL",
+    "A-004": "FAIL"
+  },
+  "verdict": "AMBER",
+  "notes": "Round-2 net change: 1 P0 closed (broken /open form, b4ce09458). 1 P1 i18n leak unchanged (5 missing label.* keys for Livreur cash UI) — fix commit didn't touch translations. P2/P3 unchanged (test-env limitations, not product defects). Cash-overview dashboard, source-filter cycling, POS shortcuts panels, and PosCounterCollectModal mode-aware UI all bit-identical to round-1 (clean, no regressions introduced by b4ce09458). Sidebar entries (Vue caisse unifiée + Caisse livreur) both render. ARITHMETIC INVARIANTS CONFIRMED twice: by_source 12.50+81.70+18.30=112.50 ✓ ; by_mode 88.20+9.80+14.50=112.50 ✓ ; reconciliation fond 100 + cash collected 88.20 = expected_cash 188.20 ✓. Owner-spec compliance: (a) dashboard breakdown per source × per mode for day with date-range filter = PASS; (b) counter-collect modal SAME UI as POS-direct = PASS (structural parity from 12-15); (c) Livreur cash sessions visible + reconcilable = PARTIAL (visible OK; reconciliation columns present but empty DB so unverified end-to-end). Verdict AMBER not GREEN because of the persistent P1 i18n leak. Ship-readiness call: P0 closed → no ship blocker; P1 is production-visible to admin operators reading the Livreur Cash UI in French → recommend round-3 to add the 5 missing label keys (≤30 line edit across 5 JSON files + Mix rebuild), then GREEN."
+}

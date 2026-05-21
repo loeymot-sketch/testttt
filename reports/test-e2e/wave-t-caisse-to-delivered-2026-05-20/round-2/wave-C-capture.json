@@ -1,0 +1,603 @@
+{
+  "wave": "C",
+  "round": 1,
+  "run_name": "wave-t-caisse-to-delivered-2026-05-20",
+  "spec_path": "tests/e2e/test-e2e-wave-t-caisse-to-delivered-C-oss.spec.js",
+  "screenshot_dir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__screenshots__/wave-t-caisse-to-delivered-C-oss",
+  "fixture_file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/__fixtures__/wave-t-orders.json",
+  "states_expected": 5,
+  "states_captured": 6,
+  "png_filenames": [
+    "01-oss-landing.png",
+    "02-oss-font-and-bg-probe.png",
+    "03-oss-allowlist-order2-absent.png",
+    "04-oss-pre-pickup.png",
+    "04b-oss-after-pickup-api.png",
+    "05-oss-order1-disappeared.png"
+  ],
+  "s3_visual_metrics": {
+    "order_token_font_size_px": 56,
+    "preparing_header_font_size_px": 40,
+    "ready_header_font_size_px": 40,
+    "preparing_header_bg": "rgb(176, 0, 77)",
+    "ready_header_bg": "rgb(26, 183, 89)",
+    "ready_header_color": "rgb(31, 31, 57)",
+    "preparing_header_color": "rgb(255, 255, 255)",
+    "sample_order_text": "N°A0003"
+  },
+  "pulse_animation_evidence": {
+    "pulsing_count": 1,
+    "pulsing_samples": [
+      {
+        "text": "N°A0004",
+        "classes": "oss-order-number text-[#0E7C3A] font-extrabold oss-new-ready oss-pulse-ready",
+        "animation_name": "oss-pulse-c2768fd6",
+        "animation_iteration": "infinite",
+        "animations_count": 1,
+        "animation_samples": [
+          {
+            "name": "oss-pulse-c2768fd6",
+            "playState": "running"
+          }
+        ]
+      }
+    ],
+    "all_ready_samples": [
+      {
+        "text": "N°A0003",
+        "classes": "oss-order-number text-[#991B1B]",
+        "animation_name": "none",
+        "animation_iteration": "1",
+        "animations_count": 0,
+        "animation_samples": []
+      },
+      {
+        "text": "N°A0004",
+        "classes": "oss-order-number text-[#0E7C3A] font-extrabold oss-new-ready oss-pulse-ready",
+        "animation_name": "oss-pulse-c2768fd6",
+        "animation_iteration": "infinite",
+        "animations_count": 1,
+        "animation_samples": [
+          {
+            "name": "oss-pulse-c2768fd6",
+            "playState": "running"
+          }
+        ]
+      }
+    ]
+  },
+  "allowlist_enforcement": {
+    "order_2_id": 70,
+    "order_2_order_type": 5,
+    "identifiers_probed": [
+      "Wave T E2E 1779300395176",
+      "A0002",
+      "N°A0002",
+      "20052670"
+    ],
+    "dom_present_identifiers": [],
+    "api_source": "admin",
+    "api_admin_status": 200,
+    "api_frontend_status": 200,
+    "api_rows_count": 2,
+    "api_has_order_1": true,
+    "api_has_order_2": false,
+    "api_rows_summary": [
+      {
+        "id": 71,
+        "status": 7,
+        "order_type": 10,
+        "queue_number": "A0003"
+      },
+      {
+        "id": 72,
+        "status": 8,
+        "order_type": 10,
+        "queue_number": "A0004"
+      }
+    ]
+  },
+  "sync_latency": {
+    "wave_b_bump_wait_ms": 422,
+    "wave_b_bumped": true,
+    "order_1_status_post_bump_wait": 8,
+    "oss_mount_ms": 5241
+  },
+  "pickup_transition": {
+    "api_endpoint": "/api/admin/pos-order/change-status/72",
+    "request_payload": {
+      "status": 13,
+      "order_status": 13
+    },
+    "response_status": 200,
+    "response_variant": "bearer",
+    "response_body_excerpt": "{\"data\":{\"id\":72,\"order_serial_no\":\"20052672\",\"queue_number\":\"A0004\",\"token\":\"1\",\"subtotal\":17,\"discount\":0,\"total_tax\":0,\"total\":17,\"delivery_charge\":0,\"subtotal_currency_price\":\"17.00€\",\"subtotal_without_tax_currency_price\":\"17.00€\",\"discount_currency_price\":\"0.00€\",\"delivery_charge_currency_price\":\"0.00€\",\"total_currency_price\":\"17.00€\",\"total_tax_currency_price\":\"0.00€\",\"order_type\":10,\"create",
+    "latency_call_ms": 81,
+    "dom_disappear_ms": 2021,
+    "dom_gone_within_budget": true,
+    "order_1_db_status_post": {
+      "id": 72,
+      "status": 13,
+      "order_type": 10,
+      "token": "1",
+      "queue_number": "A0004",
+      "order_serial_no": "20052672"
+    }
+  },
+  "numeric_integrity": {
+    "sample_li_text": "N°A0003",
+    "expected_queue_repr": "N°A0004",
+    "expected_token": "1",
+    "match": false
+  },
+  "nf525_chain": {
+    "pre": {
+      "count": 18,
+      "last_id": 18,
+      "last_hash": "1e2762afecf8d45d9385e47ddf2ab5100435108c296c328c1b82b580b2239caf"
+    },
+    "post": {
+      "count": 18,
+      "last_id": 18,
+      "last_hash": "1e2762afecf8d45d9385e47ddf2ab5100435108c296c328c1b82b580b2239caf"
+    },
+    "verify_chain_ok_pre": true,
+    "verify_chain_ok_post": true,
+    "appended_count": 0
+  },
+  "observations": [
+    {
+      "phase": "fixture-loaded",
+      "order_1_id": 72,
+      "order_2_id": 70,
+      "order_1_token": "AUDIT-WAVE-T-001-1779304875973",
+      "order_2_token": "Wave T E2E 1779300395176"
+    },
+    {
+      "phase": "nf525-pre",
+      "chain": {
+        "count": 18,
+        "last_id": 18,
+        "last_hash": "1e2762afecf8d45d9385e47ddf2ab5100435108c296c328c1b82b580b2239caf"
+      },
+      "verify_ok": true
+    },
+    {
+      "phase": "orders-pre-status",
+      "order_1": {
+        "id": 72,
+        "status": 8,
+        "order_type": 10,
+        "token": "1",
+        "queue_number": "A0004",
+        "order_serial_no": "20052672"
+      },
+      "order_2": {
+        "id": 70,
+        "status": 8,
+        "order_type": 5,
+        "token": "Wave",
+        "queue_number": "A0002",
+        "order_serial_no": "20052670"
+      }
+    },
+    {
+      "phase": "wave-b-bump-wait",
+      "ms": 422,
+      "order_1_status_final": 8,
+      "wave_b_bumped": true
+    },
+    {
+      "phase": "oss-mounted",
+      "ms": 5241
+    },
+    {
+      "phase": "s3-metrics",
+      "metrics": {
+        "headers_count": 2,
+        "numbers_count": 2,
+        "preparing_header": {
+          "text": "En préparation",
+          "font_size_px": 40,
+          "font_weight": "700",
+          "background_color": "rgb(176, 0, 77)",
+          "color": "rgb(255, 255, 255)"
+        },
+        "ready_header": {
+          "text": "Prêt",
+          "font_size_px": 40,
+          "font_weight": "700",
+          "background_color": "rgb(26, 183, 89)",
+          "color": "rgb(31, 31, 57)"
+        },
+        "sample_order_number": {
+          "text": "N°A0003",
+          "font_size_px": 56,
+          "font_weight": "800"
+        }
+      }
+    },
+    {
+      "phase": "allowlist-check",
+      "order_2_identifiers_probed": [
+        "Wave T E2E 1779300395176",
+        "A0002",
+        "N°A0002",
+        "20052670"
+      ],
+      "dom_present_identifiers": [],
+      "api_source": "admin",
+      "api_admin_status": 200,
+      "api_frontend_status": 200,
+      "api_rows_count": 2,
+      "api_has_order_1": true,
+      "api_has_order_2": false,
+      "api_rows_summary": [
+        {
+          "id": 71,
+          "status": 7,
+          "order_type": 10,
+          "queue_number": "A0003"
+        },
+        {
+          "id": 72,
+          "status": 8,
+          "order_type": 10,
+          "queue_number": "A0004"
+        }
+      ]
+    },
+    {
+      "phase": "pulse-evidence",
+      "evidence": {
+        "pulsing_count": 1,
+        "pulsing_samples": [
+          {
+            "text": "N°A0004",
+            "classes": "oss-order-number text-[#0E7C3A] font-extrabold oss-new-ready oss-pulse-ready",
+            "animation_name": "oss-pulse-c2768fd6",
+            "animation_iteration": "infinite",
+            "animations_count": 1,
+            "animation_samples": [
+              {
+                "name": "oss-pulse-c2768fd6",
+                "playState": "running"
+              }
+            ]
+          }
+        ],
+        "all_ready_samples": [
+          {
+            "text": "N°A0003",
+            "classes": "oss-order-number text-[#991B1B]",
+            "animation_name": "none",
+            "animation_iteration": "1",
+            "animations_count": 0,
+            "animation_samples": []
+          },
+          {
+            "text": "N°A0004",
+            "classes": "oss-order-number text-[#0E7C3A] font-extrabold oss-new-ready oss-pulse-ready",
+            "animation_name": "oss-pulse-c2768fd6",
+            "animation_iteration": "infinite",
+            "animations_count": 1,
+            "animation_samples": [
+              {
+                "name": "oss-pulse-c2768fd6",
+                "playState": "running"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "phase": "admin-token-probe",
+      "token_found": true
+    },
+    {
+      "phase": "pickup-call",
+      "ms": 81,
+      "response": {
+        "variant": "bearer",
+        "status": 200,
+        "body": {
+          "data": {
+            "id": 72,
+            "order_serial_no": "20052672",
+            "queue_number": "A0004",
+            "token": "1",
+            "subtotal": 17,
+            "discount": 0,
+            "total_tax": 0,
+            "total": 17,
+            "delivery_charge": 0,
+            "subtotal_currency_price": "17.00€",
+            "subtotal_without_tax_currency_price": "17.00€",
+            "discount_currency_price": "0.00€",
+            "delivery_charge_currency_price": "0.00€",
+            "total_currency_price": "17.00€",
+            "total_tax_currency_price": "0.00€",
+            "order_type": 10,
+            "created_at": "2026-05-20T21:21:46+02:00",
+            "order_datetime": "09:21 PM, 20-05-2026",
+            "order_date": "20-05-2026",
+            "order_time": "09:21 PM",
+            "delivery_date": "20-05-2026",
+            "delivery_time": "09:21 PM - 09:51 PM",
+            "payment_method": 1,
+            "payment_status": 5,
+            "payment_pending_counter": false,
+            "is_advance_order": 10,
+            "preparation_time": 30,
+            "status": 13,
+            "status_name": "Delivered",
+            "reason": null,
+            "user": {
+              "id": 2,
+              "name": "Client passage",
+              "first_name": "Client",
+              "last_name": "passage",
+              "phone": "0600000001",
+              "email": "walkingcustomer@example.com",
+              "username": "default-customer",
+              "balance": "0.00",
+              "currency_balance": "0.00€",
+              "image": "http://localhost:8000/images/default/profile.png",
+              "role_id": 2,
+              "country_code": "+33",
+              "create_date": "20-05-2026",
+              "update_date": "20-05-2026"
+            },
+            "order_address": null,
+            "branch": {
+              "id": 1,
+              "name": "Le Cayenne (principal)",
+              "email": "contact@lecayenne.fr",
+              "phone": "+33600000000",
+              "latitude": "48.8566",
+              "longitude": "2.3522",
+              "city": "Paris",
+              "state": "Île-de-France",
+              "zip_code": "75000",
+              "address": "Paris, France",
+              "status": 5,
+              "zone": "\"[{\\\"lat\\\":48.86,\\\"lng\\\":2.33},{\\\"lat\\\":48.87,\\\"lng\\\":2.36},{\\\"lat\\\":48.85,\\\"lng\\\":2.37},{\\\"lat\\\":48.84,\\\"lng\\\":2.34}]\""
+            },
+            "delivery_boy": null,
+            "coupon": null,
+            "transaction": null,
+            "order_items": [
+              {
+                "id": 49,
+                "order_id": 72,
+                "branch_id": 1,
+                "item_id": 22,
+                "item_name": "Sandwich Cayenne",
+                "item_image": "/storage/26/sandwich_cayenne.png",
+                "quantity": 1,
+                "discount": "0.00€",
+                "price": "7.00€",
+                "item_variations": [
+                  {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 1,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Poulet mariné"
+                  }
+                ],
+                "item_extras": [],
+                "item_addons": [],
+                "composition_snapshot": {
+                  "lines": [
+                    {
+                      "quantity": 1,
+                      "line_total": 0,
+                      "unit_price": 0,
+                      "attribute_id": 1,
+                      "variation_id": 1,
+                      "attribute_name": "Viande 1",
+                      "variation_name": "Poulet mariné"
+                    }
+                  ],
+                  "addons": [],
+                  "extras": [],
+                  "captured_at": "2026-05-20T21:21:46+02:00",
+                  "schema_version": 1
+                },
+                "allergens_snapshot": [],
+                "item_variation_currency_total": "0.00€",
+                "item_extra_currency_total": "0.00€",
+                "total_price": 7,
+                "total_convert_price": 7,
+                "total_currency_price": "7.00€",
+                "instruction": "SANDWICH CAYENNE\n- Salade, Tomate, Oignon",
+                "kds_station": "none",
+                "tax_type": "EUR",
+                "tax_rate": "0.000000",
+                "tax_currency_rate": "0.00",
+                "tax_name": null,
+                "tax_currency_amount": "0.00€",
+                "total_without_tax_currency_price": "7.00€"
+              },
+              {
+                "id": 50,
+                "order_id": 72,
+                "branch_id": 1,
+                "item_id": 26,
+                "item_name": "Tacos",
+                "item_image": "/storage/30/tacos.png",
+                "quantity": 1,
+                "discount": "0.00€",
+                "price": "8.50€",
+                "item_variations": [
+                  {
+                    "quantity": 1,
+                    "line_total": 0,
+                    "unit_price": 0,
+                    "attribute_id": 1,
+                    "variation_id": 43,
+                    "attribute_name": "Viande 1",
+                    "variation_name": "Poulet mariné"
+                  }
+                ],
+                "item_extras": [],
+                "item_addons": [],
+                "composition_snapshot": {
+                  "lines": [
+                    {
+                      "quantity": 1,
+                      "line_total": 0,
+                      "unit_price": 0,
+                      "attribute_id": 1,
+                      "variation_id": 43,
+                      "attribute_name": "Viande 1",
+                      "variation_name": "Poulet mariné"
+                    }
+                  ],
+                  "addons": [],
+                  "extras": [],
+                  "captured_at": "2026-05-20T21:21:46+02:00",
+                  "schema_version": 1
+                },
+                "allergens_snapshot": [],
+                "item_variation_currency_total": "0.00€",
+                "item_extra_currency_total": "0.00€",
+                "total_price": 8.5,
+                "total_convert_price": 8.5,
+                "total_currency_price": "8.50€",
+                "instruction": "TACOS",
+                "kds_station": "none",
+                "tax_type": "EUR",
+                "tax_rate": "0.000000",
+                "tax_currency_rate": "0.00",
+                "tax_name": null,
+                "tax_currency_amount": "0.00€",
+                "total_without_tax_currency_price": "8.50€"
+              },
+              {
+                "id": 51,
+                "order_id": 72,
+                "branch_id": 1,
+                "item_id": 52,
+                "item_name": "Coca-Cola 33cl",
+                "item_image": "/storage/51/coca_cola.png",
+                "quantity": 1,
+                "discount": "0.00€",
+                "price": "1.50€",
+                "item_variations": [],
+                "item_extras": [],
+                "item_addons": [],
+                "composition_snapshot": {
+                  "lines": [],
+                  "addons": [],
+                  "extras": [],
+                  "captured_at": "2026-05-20T21:21:46+02:00",
+                  "schema_version": 1
+                },
+                "allergens_snapshot": [],
+                "item_variation_currency_total": "0.00€",
+                "item_extra_currency_total": "0.00€",
+                "total_price": 1.5,
+                "total_convert_price": 1.5,
+                "total_currency_price": "1.50€",
+                "instruction": "COCA-COLA 33CL",
+                "kds_station": "none",
+                "tax_type": "EUR",
+                "tax_rate": "0.000000",
+                "tax_currency_rate": "0.00",
+                "tax_name": null,
+                "tax_currency_amount": "0.00€",
+                "total_without_tax_currency_price": "1.50€"
+              }
+            ],
+            "table_name": null,
+            "pos_payment_method": 1,
+            "pos_payment_note": null,
+            "source": 15,
+            "pos_received_amount": "50.000000",
+            "pos_received_currency_amount": "50.00€",
+            "cash_back_amount": 33,
+            "cash_back_currency_amount": "33.00€",
+            "tax_lines": [
+              {
+                "tax_name": "",
+                "tax_rate": "0",
+                "tax_type": 5,
+                "base_ht": 17,
+                "base_ht_currency": "17.00€",
+                "tax": 0,
+                "tax_currency": "0.00€"
+              }
+            ],
+            "fiscal_sequence_no": 4,
+            "audit_chain_fingerprint": null,
+            "pos_register_id": null,
+            "pos_siret": null,
+            "pos_vat_intra": null,
+            "pos_legal_footer": null,
+            "operator_name": "Client passage",
+            "payments_breakdown": [
+              {
+                "method": 1,
+                "amount": 50,
+                "currency_amount": "50.00€",
+                "change_amount": 33,
+                "reference": null
+              }
+            ]
+          }
+        },
+        "cookie_attempt": {
+          "status": 401,
+          "body": {
+            "message": "Unauthenticated."
+          }
+        }
+      }
+    },
+    {
+      "phase": "pickup-disappear-wait",
+      "ms": 2021,
+      "dom_gone": true,
+      "order_1_db_status_after": {
+        "id": 72,
+        "status": 13,
+        "order_type": 10,
+        "token": "1",
+        "queue_number": "A0004",
+        "order_serial_no": "20052672"
+      }
+    },
+    {
+      "phase": "nf525-post",
+      "chain_pre": {
+        "count": 18,
+        "last_id": 18,
+        "last_hash": "1e2762afecf8d45d9385e47ddf2ab5100435108c296c328c1b82b580b2239caf"
+      },
+      "chain_post": {
+        "count": 18,
+        "last_id": 18,
+        "last_hash": "1e2762afecf8d45d9385e47ddf2ab5100435108c296c328c1b82b580b2239caf"
+      },
+      "verify_ok_post": true,
+      "chain_appended_count": 0
+    },
+    {
+      "phase": "c-num4-integrity",
+      "evidence": {
+        "sample_li_text": "N°A0003",
+        "expected_queue_repr": "N°A0004",
+        "expected_token": "1",
+        "match": false
+      }
+    }
+  ],
+  "findings_inline": [],
+  "elapsed_ms": 14641,
+  "finished_at": "2026-05-20T19:36:18.644Z"
+}

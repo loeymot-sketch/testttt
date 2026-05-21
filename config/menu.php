@@ -92,37 +92,39 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Sauce Options (from Image 2)
+    | Sauce Options — Le Cayenne canonical 13 (owner mandate 2026-05-21)
     |--------------------------------------------------------------------------
+    | Owner-validated list: 12 sauces + Sans Sauce. Order matches kiosk wizard
+    | grid (most popular first). Image mapping in config/menu_images.php
+    | 'sauces' bucket — each name keys a sauce-<slug>.png in public/images/menu.
     */
     'sauces' => [
-        'Ketchup',
         'Mayonnaise',
-        'Algérienne',
-        'Curry',
-        'Andalouse',
-        'Burger',
-        'Samouraï',
-        'Barbecue',
-        'Cocktail',
-        'Américaine',
-        'Hannibal',
-        'Harissa',
+        'Ketchup',
         'Blanche',
-        'Poivre',
+        'Hannibal',
+        'Samouraï',
+        'Algérienne',
+        'Andalouse',
+        'Curry',
+        'Barbecue',
+        'Harissa',
+        'Sauce Fromagère Maison',
+        'Sauce Spicy Maison',
         'Sans Sauce',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Crudité Options (Atomiques - Sprint 23 Fix)
-    | Chaque crudité est un élément individuel toggle-able (vert/rouge)
+    | Crudité Options (atomic toggle per item)
     |--------------------------------------------------------------------------
+    | Owner mandate 2026-05-21: added Cornichon as 4th canonical crudité.
     */
     'crudites' => [
         'Salade',
         'Tomate',
         'Oignon',
+        'Cornichon',
     ],
 
     /*

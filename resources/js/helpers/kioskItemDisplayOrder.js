@@ -48,6 +48,17 @@ function adminSortValue(item) {
 }
 
 export function compareKioskItemsDisplay(a, b) {
+  // Wave Y A-001 — honour the admin-controlled `order` column FIRST so
+  // signature items (e.g. Sandwich Cayenne order=1) always land before
+  // upsell-style items (Frites Seules, Boisson Seule order=99/100) within
+  // their category, regardless of price. Items without an explicit order
+  // (or order=0) fall through to the legacy price/size/name ordering.
+  const oa = Number.parseInt(a?.order, 10);
+  const ob = Number.parseInt(b?.order, 10);
+  const va = Number.isFinite(oa) && oa > 0 ? oa : Number.POSITIVE_INFINITY;
+  const vb = Number.isFinite(ob) && ob > 0 ? ob : Number.POSITIVE_INFINITY;
+  if (va !== vb) return va - vb;
+
   const pa = getKioskItemUnitPrice(a);
   const pb = getKioskItemUnitPrice(b);
   if (pa !== pb) return pa - pb;

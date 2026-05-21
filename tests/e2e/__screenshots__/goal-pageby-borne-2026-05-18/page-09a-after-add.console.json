@@ -1,0 +1,22 @@
+[
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)",
+    "location": {
+      "url": "http://localhost:8000/api/frontend/pricing/preview",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779070124788
+  },
+  {
+    "level": "warning",
+    "text": "[kiosk] pricing preview failed: Request failed with status code 422",
+    "location": {
+      "url": "http://localhost:8000/js/app.js?id=b10406ea5d9a747eeea45939c1360d79",
+      "lineNumber": 67118,
+      "columnNumber": 18
+    },
+    "ts": 1779070124789
+  }
+]

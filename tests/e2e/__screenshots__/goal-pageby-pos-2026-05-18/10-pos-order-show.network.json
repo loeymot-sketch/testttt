@@ -1,0 +1,9 @@
+[
+  {
+    "url": "http://localhost:8000/api/admin/delivery-boy?order_column=id&order_type=asc&status=5",
+    "method": "GET",
+    "status": 403,
+    "duration_ms": null,
+    "ts": 1779070288472
+  }
+]

@@ -1,0 +1,85 @@
+{
+  "start_ts": "2026-05-20T13:22:41.965Z",
+  "captures": [
+    {
+      "slug": "Q4-KDS-after-seed",
+      "file": "Q4-KDS-after-seed.png",
+      "ts": "2026-05-20T13:23:00.720Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "Q4-KIOSK-idle",
+      "file": "Q4-KIOSK-idle.png",
+      "ts": "2026-05-20T13:23:03.622Z",
+      "url": "http://localhost:8000/kiosk/idle"
+    }
+  ],
+  "consoleErrors": [
+    {
+      "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)",
+      "ts": "2026-05-20T13:22:48.764Z"
+    },
+    {
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "ts": "2026-05-20T13:23:01.599Z"
+    }
+  ],
+  "pageErrors": [],
+  "findings": [
+    {
+      "assertion": "seeder_noop",
+      "before": {
+        "items_total": 45,
+        "items_nonempty_allergen_flags": 0,
+        "item_allergen_pivot_rows": 0
+      },
+      "after": {
+        "items_total": 45,
+        "items_nonempty_allergen_flags": 0,
+        "item_allergen_pivot_rows": 0
+      },
+      "ts": "2026-05-20T13:22:45.340Z"
+    },
+    {
+      "test": "Q4-KDS-seed",
+      "ok": true,
+      "order_id": 26,
+      "queue_number": "Q4CE0A3",
+      "item_id": 1,
+      "item_name": "Menu (Frites + Boisson)",
+      "allergens_snapshot_raw": "[]"
+    },
+    {
+      "assertion": "kds_card_count",
+      "cardCount": 4
+    },
+    {
+      "assertion": "no_allergen_badge_on_kds",
+      "legacy_badge_count": 0,
+      "canonical_pill_count": 0,
+      "text_count": 0,
+      "ts": "2026-05-20T13:23:00.736Z"
+    },
+    {
+      "assertion": "kiosk_badge_count_idle",
+      "kioskBadgeCount": 0
+    }
+  ],
+  "dbState": {
+    "beforeAll": {
+      "items_total": 45,
+      "items_nonempty_allergen_flags": 0,
+      "item_allergen_pivot_rows": 0
+    },
+    "q4_db": {
+      "items_total": 45,
+      "items_nonempty_allergen_flags": 0,
+      "item_allergen_pivot_rows": 0
+    },
+    "afterAll": {
+      "items_total": 45,
+      "items_nonempty_allergen_flags": 0,
+      "item_allergen_pivot_rows": 0
+    }
+  }
+}

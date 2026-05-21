@@ -54,36 +54,29 @@
     "updateSourceMethod": "patch",
     "version": "1.58.2",
     "workers": 1,
-    "webServer": {
-      "command": "php artisan serve --host=127.0.0.1 --port=8000",
-      "url": "http://127.0.0.1:8000",
-      "reuseExistingServer": true,
-      "timeout": 180000,
-      "stdout": "pipe",
-      "stderr": "pipe"
-    }
+    "webServer": null
   },
   "suites": [
     {
-      "title": "e2e/02-pos-cash.spec.js",
-      "file": "e2e/02-pos-cash.spec.js",
+      "title": "e2e/wave-z-stress-sync-3-kiosk.spec.js",
+      "file": "e2e/wave-z-stress-sync-3-kiosk.spec.js",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "POS Cash — commande complète",
-          "file": "e2e/02-pos-cash.spec.js",
-          "line": 19,
-          "column": 6,
+          "title": "Wave Z (Q13) — Stress sync, 3 parallel kiosk contexts",
+          "file": "e2e/wave-z-stress-sync-3-kiosk.spec.js",
+          "line": 376,
+          "column": 15,
           "specs": [
             {
-              "title": "surface POS chargée sur /admin/pos",
+              "title": "3 contexts × ~17 orders each → 50 fiscal-allocated, gap-free, no dupes",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 120000,
+                  "timeout": 900000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "chromium",
@@ -92,18 +85,18 @@
                   "status": "skipped"
                 }
               ],
-              "id": "4da8fe6222230d46e566-bab40b9bfb5e5539d837",
-              "file": "e2e/02-pos-cash.spec.js",
-              "line": 26,
+              "id": "812ea97b211318daf7d1-e0b53d185a7b8515bbc0",
+              "file": "e2e/wave-z-stress-sync-3-kiosk.spec.js",
+              "line": 441,
               "column": 3
             },
             {
-              "title": "panier démarre vide — pas de commande fantôme",
+              "title": "network-drop resilience — 30s block on /frontend/order does not leave zombie row",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 120000,
+                  "timeout": 900000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "chromium",
@@ -112,370 +105,10 @@
                   "status": "skipped"
                 }
               ],
-              "id": "4da8fe6222230d46e566-eb57badafaa420b94094",
-              "file": "e2e/02-pos-cash.spec.js",
-              "line": 33,
+              "id": "812ea97b211318daf7d1-7997696b76a0c33f6801",
+              "file": "e2e/wave-z-stress-sync-3-kiosk.spec.js",
+              "line": 496,
               "column": 3
-            },
-            {
-              "title": "pas de crash JavaScript visible sur la surface POS",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "4da8fe6222230d46e566-f5a8eb420eab1715f348",
-              "file": "e2e/02-pos-cash.spec.js",
-              "line": 41,
-              "column": 3
-            },
-            {
-              "title": "full POS cash order cycle — adversarial",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "4da8fe6222230d46e566-b701cd653a06d6a6815c",
-              "file": "e2e/02-pos-cash.spec.js",
-              "line": 74,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "e2e/03-kiosk-wizard.spec.js",
-      "file": "e2e/03-kiosk-wizard.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Kiosk — écran login borne",
-          "file": "e2e/03-kiosk-wizard.spec.js",
-          "line": 13,
-          "column": 6,
-          "specs": [
-            {
-              "title": "page /kiosk/login accessible sans crash",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "20cf2081630a63b46a4f-d27aa51df7d31affdc14",
-              "file": "e2e/03-kiosk-wizard.spec.js",
-              "line": 16,
-              "column": 3
-            },
-            {
-              "title": "écran login borne visible — message de configuration affiché",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "20cf2081630a63b46a4f-292c3fea1cfab56eda49",
-              "file": "e2e/03-kiosk-wizard.spec.js",
-              "line": 25,
-              "column": 3
-            },
-            {
-              "title": "pas d'erreur JavaScript fatale sur la borne",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "20cf2081630a63b46a4f-e3b9768af5699caafcdb",
-              "file": "e2e/03-kiosk-wizard.spec.js",
-              "line": 42,
-              "column": 3
-            },
-            {
-              "title": "window.foodkingConfig présent et kioskMenuPricing configuré",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "20cf2081630a63b46a4f-6425a778796313735fc7",
-              "file": "e2e/03-kiosk-wizard.spec.js",
-              "line": 55,
-              "column": 3
-            },
-            {
-              "title": "kiosk navigation flow — categories and items browsable adversarial",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "20cf2081630a63b46a4f-8ce0c852793d04a4efa8",
-              "file": "e2e/03-kiosk-wizard.spec.js",
-              "line": 83,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "e2e/04-kds-status.spec.js",
-      "file": "e2e/04-kds-status.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "KDS — interface cuisine",
-          "file": "e2e/04-kds-status.spec.js",
-          "line": 19,
-          "column": 6,
-          "specs": [
-            {
-              "title": "page /kds accessible — redirige vers login si non authentifié",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "474c8fcdceec08a474a5-681fef4b4edb7930f33e",
-              "file": "e2e/04-kds-status.spec.js",
-              "line": 22,
-              "column": 3
-            },
-            {
-              "title": "login chef via /login → redirection vers surface chef",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "474c8fcdceec08a474a5-ecc7a950631c732a5edf",
-              "file": "e2e/04-kds-status.spec.js",
-              "line": 32,
-              "column": 3
-            },
-            {
-              "title": "KDS surface loads order list without crash",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "474c8fcdceec08a474a5-3e1348f676a1f77ff5dc",
-              "file": "e2e/04-kds-status.spec.js",
-              "line": 44,
-              "column": 3
-            },
-            {
-              "title": "KDS adversarial — filter clicks + status transition attempt",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "474c8fcdceec08a474a5-ebdb82b8fc5b427fc444",
-              "file": "e2e/04-kds-status.spec.js",
-              "line": 83,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "e2e/05-pos-card.spec.js",
-      "file": "e2e/05-pos-card.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "POS Card — payment flow",
-          "file": "e2e/05-pos-card.spec.js",
-          "line": 13,
-          "column": 6,
-          "specs": [
-            {
-              "title": "POS surface loads for card payment scenario",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "319405953fcb5025baf3-9b8cc994f6f15f11bb29",
-              "file": "e2e/05-pos-card.spec.js",
-              "line": 20,
-              "column": 3
-            },
-            {
-              "title": "no JavaScript errors on POS card surface",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "319405953fcb5025baf3-b8a05f078c204edae672",
-              "file": "e2e/05-pos-card.spec.js",
-              "line": 33,
-              "column": 3
-            },
-            {
-              "title": "full POS card payment cycle — adversarial",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "319405953fcb5025baf3-c93e6c6d2efb9b4e8263",
-              "file": "e2e/05-pos-card.spec.js",
-              "line": 63,
-              "column": 3
-            },
-            {
-              "title": "TPE hardware simulation — full card payment with terminal callback",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 120000,
-                  "annotations": [
-                    {
-                      "type": "fixme",
-                      "location": {
-                        "file": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/e2e/05-pos-card.spec.js",
-                        "line": 138,
-                        "column": 8
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
-                }
-              ],
-              "id": "319405953fcb5025baf3-baa1ba20d785db3125e3",
-              "file": "e2e/05-pos-card.spec.js",
-              "line": 138,
-              "column": 8
             }
           ]
         }
@@ -484,10 +117,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-05-09T22:39:29.780Z",
-    "duration": 128.76800000000003,
+    "startTime": "2026-05-21T04:50:16.547Z",
+    "duration": 200.80299999999988,
     "expected": 0,
-    "skipped": 17,
+    "skipped": 2,
     "unexpected": 0,
     "flaky": 0
   }

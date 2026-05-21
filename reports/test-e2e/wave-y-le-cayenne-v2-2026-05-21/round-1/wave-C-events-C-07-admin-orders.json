@@ -1,0 +1,20 @@
+{
+  "name": "C-07-admin-orders",
+  "console": [
+    {
+      "type": "warning",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established."
+    },
+    {
+      "type": "warning",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established."
+    },
+    {
+      "type": "warning",
+      "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established."
+    }
+  ],
+  "network": [],
+  "failed": [],
+  "pageErrors": []
+}
