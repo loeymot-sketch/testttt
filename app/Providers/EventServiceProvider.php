@@ -206,11 +206,22 @@ class EventServiceProvider extends ServiceProvider
             // [WAVE5-DATA-004] Bridge to generic catalog stream so kiosk menu cache
             // + POS catalog refresh without waiting for F-016b dedicated handlers.
             PersistCatalogChangedToOutbox::class,
+            // [Q9-S1 owner Q2=fix 2026-05-21] Without this listener, the kiosk
+            // backend menu cache (`kiosk.menu.branch.{id}`, TTL 60s, see
+            // MenuController.php:56-88) keeps serving stale extras availability
+            // for up to 60s after an admin sauce/topping toggle. The frontend
+            // `fetchMenu({force:true})` triggered by the CatalogChanged
+            // broadcast only bypasses the FE memory cache — the BE cache must
+            // be invalidated explicitly, matching the symmetric wiring on
+            // ItemAvailabilityChanged above.
+            InvalidateKioskMenuCacheOnCatalogChange::class,
         ],
         ItemVariationAvailabilityChanged::class => [
             PersistItemVariationAvailabilityChangedToOutbox::class,
             // [WAVE5-DATA-004] Bridge to generic catalog stream (same rationale).
             PersistCatalogChangedToOutbox::class,
+            // [Q9-S1 owner Q2=fix 2026-05-21] Same rationale as ItemExtra above.
+            InvalidateKioskMenuCacheOnCatalogChange::class,
         ],
         IngredientAvailabilityChanged::class => [
             InvalidateMenuProjectionOnIngredientChange::class,
