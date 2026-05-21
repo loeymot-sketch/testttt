@@ -208,7 +208,10 @@ function resolveStressItem() {
     $item = \\App\\Models\\Item::query()
       ->where('status', \\App\\Enums\\Status::ACTIVE)
       ->where('is_available', true)
-      ->whereDoesntHave('wizardProfile', function ($q) { $q->where('is_published', true); })
+      ->whereNotIn('id', function ($q) {
+          $q->select('item_id')->from('item_wizard_profiles')
+            ->where('is_published', true)->whereNotNull('item_id');
+      })
       ->orderBy('price')
       ->first();
     if (! $item) {
@@ -234,6 +237,65 @@ function resolveStressItem() {
 }
 
 // ----------------------------------------------------------------------------
+// Bootstrap a kiosk page so window.axios.Authorization gets populated from
+// Vuex.kioskCart.kioskToken — without this step, the shared axios interceptor
+// at public/js/app.js:85026 OVERWRITES any per-call Authorization header.
+// Pattern lifted from tests/e2e/rush-sync-flow.spec.js:494-527 (verified).
+//
+// EXTRA CARE: KioskMachineLoginController:96 REVOKES previous `kiosk-token`
+// records on each fresh login. So if we let the helper's `getKioskApiToken`
+// run again post-prime, it mints a NEW token and KILLS the one Vuex+interceptor
+// would use. We resolve this by reading the token Vuex stored during
+// auto-login and stuffing it back into Vuex even after subsequent re-logins.
+// ----------------------------------------------------------------------------
+async function primeKioskPageForApi(page) {
+  await page.goto('/kiosk/login', { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  let vuexReady = false;
+  for (let i = 0; i < 30; i += 1) {
+    const probe = await page.evaluate(() => {
+      let v = {};
+      try { v = JSON.parse(localStorage.getItem('vuex') || '{}'); } catch (_e) { /* ignore */ }
+      return !!(v.kioskCart && v.kioskCart.kioskToken);
+    });
+    if (probe) { vuexReady = true; break; }
+    await page.waitForTimeout(500);
+  }
+  if (!vuexReady) {
+    throw new Error('primeKioskPageForApi: Vuex.kioskCart.kioskToken not populated after 15s — auto-login broken');
+  }
+  if (!/\/kiosk\/idle/.test(page.url())) {
+    await page.goto('/kiosk/idle', { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  }
+  await page.waitForTimeout(800);
+}
+
+// ----------------------------------------------------------------------------
+// Sync the helper's module cache token back into Vuex.kioskCart.kioskToken.
+// Required after `getKioskApiToken(page)` re-issues a NEW token that revoked
+// the original auto-login token Vuex was holding. Without this, the axios
+// interceptor sends the dead Vuex token and the backend returns 401 even
+// though we have a live token in JS-land.
+// ----------------------------------------------------------------------------
+async function syncVuexKioskTokenFromHelper(page, token) {
+  if (!token) return;
+  await page.evaluate((tk) => {
+    let v = {};
+    try { v = JSON.parse(localStorage.getItem('vuex') || '{}'); } catch (_e) { /* ignore */ }
+    v.kioskCart = v.kioskCart || {};
+    v.kioskCart.kioskToken = tk;
+    try { localStorage.setItem('vuex', JSON.stringify(v)); } catch (_e) { /* ignore */ }
+    // Also poke the live Vuex store if exposed — best-effort.
+    try {
+      const app = document.querySelector('#app')?.__vue_app__;
+      const store = app?.config?.globalProperties?.$store || window.__VUEX_STORE__;
+      if (store && store.commit) {
+        try { store.commit('kioskCart/SET_KIOSK_TOKEN', tk); } catch (_e) { /* ignore */ }
+      }
+    } catch (_e) { /* ignore */ }
+  }, token);
+}
+
+// ----------------------------------------------------------------------------
 // Per-context order placement loop. Returns { contextId, results, errors }.
 // ----------------------------------------------------------------------------
 
@@ -242,14 +304,19 @@ async function runKioskContext(browser, contextId, ordersToPlace, item) {
   const errors = [];
   const context = await browser.newContext();
   const page = await context.newPage();
-  // Each context starts at /kiosk/idle so window.axios is bootstrapped with
-  // CSRF + X-API-KEY + base URL — identical to a real kiosk client.
-  await page.goto('/kiosk/idle', { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  // CRITICAL: the shared axios interceptor at public/js/app.js:85026 OVERWRITES
+  // the Authorization header from Vuex.kioskCart.kioskToken. We MUST land at
+  // /kiosk/login first so KioskLoginComponent.autoLogin() populates Vuex,
+  // before any frontend/order/* call.
+  await primeKioskPageForApi(page);
 
   // Pre-issue this context's bearer token via the shared module cache (already
   // warmed by test.beforeAll — single login, all contexts re-use it through
-  // getKioskApiToken's cached value).
-  await getKioskApiToken(page);
+  // getKioskApiToken's cached value). If the helper had to re-login (cache
+  // miss), the NEW token revoked Vuex's old one — push the new one back into
+  // Vuex so the axios interceptor stops sending the dead token.
+  const liveToken = await getKioskApiToken(page);
+  await syncVuexKioskTokenFromHelper(page, liveToken);
 
   for (let i = 0; i < ordersToPlace; i += 1) {
     const idemKey = `${STRESS_PREFIX}c${contextId}-${Date.now()}-${i}`;
@@ -258,6 +325,10 @@ async function runKioskContext(browser, contextId, ordersToPlace, item) {
         items: [{ item_id: item.id, quantity: 1 }],
         paymentMethod: PAYMENT_CASH,
         idempotencyKey: idemKey,
+        // V1 ships dine-in disabled — OrderRequest rejects ORDER_TYPE_KIOSK=25
+        // on kiosk tokens (`pos_dine_in_enabled` is off). Use TAKEAWAY=10.
+        // Mirrors rush-sync-flow.spec.js choice.
+        orderType: 10,
       });
       results.push({
         ctx: contextId,
@@ -293,7 +364,10 @@ async function runKioskContext(browser, contextId, ordersToPlace, item) {
 async function runNetworkResilienceSubtest(browser, item) {
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.goto('/kiosk/idle', { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  // Same prime as runKioskContext — Vuex.kioskCart.kioskToken needed.
+  await primeKioskPageForApi(page);
+  const liveToken = await getKioskApiToken(page);
+  await syncVuexKioskTokenFromHelper(page, liveToken);
 
   // 5 nominal orders first.
   const baseline = [];
@@ -302,6 +376,8 @@ async function runNetworkResilienceSubtest(browser, item) {
       items: [{ item_id: item.id, quantity: 1 }],
       paymentMethod: PAYMENT_CASH,
       idempotencyKey: `${STRESS_PREFIX}netres-base-${Date.now()}-${i}`,
+      // V1 dine-in disabled — use TAKEAWAY=10 (see runKioskContext comment).
+      orderType: 10,
     });
     baseline.push(r.orderId);
   }
@@ -326,6 +402,7 @@ async function runNetworkResilienceSubtest(browser, item) {
       items: [{ item_id: item.id, quantity: 1 }],
       paymentMethod: PAYMENT_CASH,
       idempotencyKey: `${STRESS_PREFIX}netres-blocked-${Date.now()}`,
+      orderType: 10,
     });
   } catch (err) {
     resilientErr = {
@@ -403,8 +480,9 @@ test.describe.serial('Wave Z (Q13) — Stress sync, 3 parallel kiosk contexts', 
     browser = await chromium.launch();
     const warm = await browser.newContext();
     const warmPage = await warm.newPage();
-    await warmPage.goto('/kiosk/idle', { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    await getKioskApiToken(warmPage);
+    await primeKioskPageForApi(warmPage);
+    const warmToken = await getKioskApiToken(warmPage);
+    await syncVuexKioskTokenFromHelper(warmPage, warmToken);
     await warmPage.close();
     await warm.close();
   });
