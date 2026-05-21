@@ -34,11 +34,29 @@
 // Credentials: admin@lecayenne.fr / 123456 (CLAUDE.md §reference_admin_e2e_creds).
 
 const { test, expect, request } = require('@playwright/test');
+const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { loginAsAdmin } = require('./helpers/login');
 const { attachMegaAuditRecorder } = require('./helpers/mega-audit-snap');
 const { clearFoodKingRateLimits } = require('./helpers/rate-limit');
+
+const REPO_ROOT = path.resolve(__dirname, '../..');
+
+/**
+ * Read a Laravel config value via artisan tinker. Used so the spec adapts to
+ * whatever LOGIN_LOCKOUT_MAX_ATTEMPTS is in the local .env (1000 in dev,
+ * 10 in prod) — what we PROVE is that the limiter ENFORCES the cap, not a
+ * specific number.
+ */
+function readLaravelConfig(key) {
+    const out = execFileSync('php', ['artisan', 'tinker', '--execute', `echo (int) config('${key}');`], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return parseInt(String(out).trim(), 10);
+}
 
 const SCREENSHOT_DIR = 'tests/e2e/__screenshots__/wave-y-rate-limit-validation';
 const REPORT_DIR = 'reports/test-e2e/wave-y-2026-05-21';
@@ -136,57 +154,86 @@ test.describe.serial('Wave Y — Rate-limit fix validation', () => {
         }
     });
 
-    test('T2 — login security NOT regressed (11th wrong-password returns 429)', async ({ page }) => {
-        // Clear ALL throttle buckets so the login-lockout counter starts fresh.
-        clearFoodKingRateLimits();
+    test('T2 — login-lockout enforces cap (security NOT regressed by Wave Y)', async ({ page }) => {
+        // Read the live config — LOGIN_LOCKOUT_MAX_ATTEMPTS may be raised in
+        // local dev to absorb CI rerun cadence (e.g. 500). What this test
+        // PROVES is the limiter ENFORCES whatever cap is configured — i.e.
+        // the login-lockout limiter still gates brute-force. We do NOT
+        // depend on a specific magic number ; we prove it triggers at cap+1.
+        const cap = readLaravelConfig('auth.login_lockout.max_attempts');
+        expect(cap, 'login-lockout cap must be a positive integer').toBeGreaterThan(0);
+
+        // Pre-seed the limiter at `cap - 1` so we only need 2 requests to
+        // hit the ceiling regardless of dev-vs-prod env value. The
+        // limiter is keyed by md5('login-lockout' . email|ip). For the
+        // controlled E2E we seed via `php artisan tinker` directly hitting
+        // the Illuminate rate limiter API.
+        const testEmail = `wave-y-lockout-${Date.now()}@example.test`;
+        const testIp = '127.0.0.1';
+        const seedHits = cap - 1;
+        // Seed the limiter directly via tinker. We use a single-quoted JS
+        // string (no template literal) to avoid ambiguous backslash-escape
+        // semantics — argv is passed byte-for-byte to PHP.
+        const phpSeed =
+            '$limiter = app(\\Illuminate\\Cache\\RateLimiter::class); '
+            + `$key = md5('login-lockout' . '${testEmail}|${testIp}'); `
+            + '$decay = (int) config(\'auth.login_lockout.decay_minutes\', 10) * 60; '
+            + `for ($i = 0; $i < ${seedHits}; $i++) { $limiter->hit($key, $decay); } `
+            + 'echo \'seeded\';';
+        execFileSync('php', ['artisan', 'tinker', '--execute', phpSeed], {
+            cwd: REPO_ROOT,
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'pipe'],
+        });
 
         const { snap, dispose } = attachMegaAuditRecorder(page, SCREENSHOT_DIR);
 
         try {
+            // Grab the live apiKey from the login page HTML — login endpoint
+            // is `apiKey` middleware-protected.
+            await page.goto('/login');
+            const apiKey = await page.evaluate(() => window.foodkingConfig?.apiKey || '');
+            expect(apiKey, 'apiKey must be exposed in window.foodkingConfig for login E2E').toBeTruthy();
+
             const apiCtx = await request.newContext({
                 baseURL: BASE_URL,
                 extraHTTPHeaders: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
+                    'x-api-key': apiKey,
                 },
             });
 
+            // Now fire 2 more attempts. The first should be the (cap)th hit
+            // (last allowed), the second is the (cap+1)th → MUST be 429.
             const attempts = [];
-            for (let i = 1; i <= 11; i++) {
+            for (let i = 1; i <= 2; i++) {
                 const resp = await apiCtx.post('/api/auth/login', {
                     data: {
-                        email: 'admin@lecayenne.fr',
-                        password: `wrong-password-${i}`,
+                        email: testEmail,
+                        password: `WrongPassword-${i}-abcdef`,
                     },
                 });
-                attempts.push({ attempt: i, status: resp.status() });
-                if (resp.status() === 429) {
-                    // First 429 may come at attempt 10 OR 11 depending on
-                    // sliding-window vs fixed window. Allow either as PASS
-                    // — what we ASSERT is that by attempt 11 we MUST be 429.
-                    break;
-                }
+                attempts.push({ attempt: i, total_hit_count: cap - 1 + i, status: resp.status() });
             }
             fs.writeFileSync(
                 path.join(REPORT_DIR, 'T2-login-lockout.json'),
-                JSON.stringify({ attempts }, null, 2)
+                JSON.stringify({ cap, seed_hits: seedHits, attempts }, null, 2)
             );
 
-            // Assert: at least one 429 in the 11 attempts. login-lockout cap
-            // = 10 per 10 min — by the 11th attempt the limiter MUST kick in.
-            const seen429 = attempts.some((a) => a.status === 429);
-            expect(seen429, `login-lockout must trigger by the 11th wrong-password attempt. Attempts: ${JSON.stringify(attempts)}`).toBe(true);
+            // Assert: by the (cap+1)th hit, login-lockout MUST trigger.
+            // (the cap-th hit is allowed; the (cap+1)th must be 429).
+            expect(attempts[1].status, `login-lockout must return 429 on attempt cap+1 (cap=${cap}). Attempts: ${JSON.stringify(attempts)}`).toBe(429);
 
-            await page.goto('/login');
-            await snap('T2-01-login-page-after-lockout-test');
+            await snap('T2-01-login-lockout-triggered');
             await apiCtx.dispose();
         } finally {
             dispose();
         }
     });
 
-    test('T3 — admin-mutation GET ceiling holds (130 rapid GETs all 2xx)', async ({ page }) => {
+    test('T3 — admin GET ceiling not regressed (100 rapid GETs all 2xx under api 120/min)', async ({ page }) => {
         // Clear ALL throttle buckets — T1 + T2 may have left counters primed.
         clearFoodKingRateLimits();
 
@@ -214,25 +261,32 @@ test.describe.serial('Wave Y — Rate-limit fix validation', () => {
                 },
             });
 
-            // Fire 130 GETs against an admin GET endpoint within a single
-            // burst (well under 60s). GET ceiling is 300/min — should pass
-            // with substantial headroom.
+            // Fire 100 rapid GETs. Three limiters stack here:
+            //   - global `api` (env API_THROTTLE_PER_MINUTE, default 120/min)
+            //   - admin-mutation GET branch (300/min)
+            //   - per-route throttle (varies)
+            // We keep the burst under the tightest cap (api 120) so this
+            // proves the admin GET path was NOT regressed by Wave Y (which
+            // ONLY changed the non-GET branch). A higher burst would test
+            // the global `api` limiter, which is out of scope here.
+            const targetBurst = 100;
             const statuses = [];
             const start = Date.now();
-            for (let i = 0; i < 130; i++) {
+            for (let i = 0; i < targetBurst; i++) {
                 const resp = await apiCtx.get('/api/admin/online-order?limit=1');
                 statuses.push(resp.status());
             }
             const elapsed = Date.now() - start;
+            const counts = statuses.reduce((acc, s) => { acc[s] = (acc[s] || 0) + 1; return acc; }, {});
             fs.writeFileSync(
                 path.join(REPORT_DIR, 'T3-get-ceiling.json'),
-                JSON.stringify({ elapsed_ms: elapsed, count: statuses.length, first_429_at: statuses.indexOf(429), counts: statuses.reduce((acc, s) => { acc[s] = (acc[s] || 0) + 1; return acc; }, {}) }, null, 2)
+                JSON.stringify({ elapsed_ms: elapsed, target_burst: targetBurst, first_429_at: statuses.indexOf(429), counts }, null, 2)
             );
 
             const four29s = statuses.filter((s) => s === 429).length;
-            expect(four29s, `Expected 0 of 130 rapid admin GETs to 429 (GET ceiling 300/min); got ${four29s}`).toBe(0);
+            expect(four29s, `Expected 0 of ${targetBurst} rapid admin GETs to 429 (admin-mutation GET 300/min, api 120/min); got ${four29s}. Counts: ${JSON.stringify(counts)}`).toBe(0);
 
-            await snap('T3-01-after-130-rapid-gets');
+            await snap('T3-01-after-rapid-gets');
             await apiCtx.dispose();
         } finally {
             dispose();
