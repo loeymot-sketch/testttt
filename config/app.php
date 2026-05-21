@@ -70,6 +70,15 @@ return [
     // Playwright SPA peut dépasser 120 req/min sur une fenêtre glissante; CI augmente via API_THROTTLE_PER_MINUTE.
     'api_throttle_per_minute' => max(1, (int) env('API_THROTTLE_PER_MINUTE', 120)),
 
+    // throttle:admin-mutation non-GET cap — env-configurable to absorb owner
+    // manual-test bursts (rapid Livré clicks on online-order list, Cancel
+    // chains, etc.). Default 60/min (doubled from prior hardcoded 30/min)
+    // for production; local dev raises to 1000/min for parity with
+    // POS_RATE_LIMIT_* knobs. NF525 fiscal chain UNAFFECTED — chain insert
+    // happens inside controller transactions, not in the throttle bucket.
+    // [Wave Y RATE-LIMIT 2026-05-21]
+    'admin_mutation_rate_limit' => max(1, (int) env('ADMIN_MUTATION_RATE_LIMIT', 60)),
+
     // Full /api/health IP gate — read via config() so tests can override and config:cache works in prod.
     'health_ips_allowed' => env('HEALTH_IPS_ALLOWED', ''),
 

@@ -74,7 +74,17 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
-        RateLimiter::for('admin-mutation', function (Request $request) {
+        // [Wave Y RATE-LIMIT 2026-05-21] env-configurable admin-mutation ceiling.
+        // Default 60/min (doubled from prior hardcoded 30/min) — still tight
+        // enough for brute-force protection against admin-CRUD abuse but
+        // generous enough that owner manual-test bursts (rapid Livré clicks
+        // on online-order list, Cancel chains, etc.) don't burn the bucket.
+        // Local dev raises via ADMIN_MUTATION_RATE_LIMIT=1000 in `.env` for
+        // parity with POS/KDS knobs. NF525 chain unaffected — controllers
+        // own the audit chain insert inside their own DB transaction.
+        $adminMutationCap = max(1, (int) config('app.admin_mutation_rate_limit', 60));
+
+        RateLimiter::for('admin-mutation', function (Request $request) use ($adminMutationCap) {
             if ($request->isMethod('GET') || $request->isMethod('HEAD')) {
                 return Limit::perMinute(300)->by($request->user()?->id ?: $request->ip());
             }
@@ -99,7 +109,34 @@ class RouteServiceProvider extends ServiceProvider
                 return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
             }
 
-            return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
+            // [Wave R-1 P-OWNER 2026-05-20] KDS chef bump CTA hits
+            // `/api/admin/kds-order/change-status/{order}` rapidly when multiple
+            // orders sit in the queue (chef chains 3-4 orders in parallel per
+            // owner's fast-food multi-chef workflow). Default 30/min CRUD
+            // ceiling triggered "Trop de demandes, réessayer dans 30s" after
+            // a handful of clicks. Lift KDS change-status namespace to
+            // env-configurable 120/min (matches POS lift ceiling). The
+            // dedicated `kds-bump` limiter below is the primary cap;
+            // admin-mutation here is the safety net against accidental burst.
+            if ($request->is('api/admin/kds-order/change-status/*')) {
+                return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+            }
+
+            // [Wave Y RATE-LIMIT 2026-05-21] Owner-facing rapid CTA family —
+            // `online-order/change-status` (Livré on online orders list) and
+            // `table-order/change-status` (table service status flips) are
+            // owner-tested at burst rates (2-3 clicks/sec). The dedicated
+            // `idempotency` middleware on these routes prevents duplicate
+            // state transitions; throttle here is the safety net against
+            // accidental burst, not the primary cap. Lifted to 120/min
+            // (matches POS/KDS lift ceiling). NF525 chain unaffected (audit
+            // chain insert is inside controller TX, not in the throttle).
+            if ($request->is('api/admin/online-order/change-status/*')
+                || $request->is('api/admin/table-order/change-status/*')) {
+                return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+            }
+
+            return Limit::perMinute($adminMutationCap)->by($request->user()?->id ?: $request->ip());
         });
 
         // [Wave O O-5 P-OWNER-5 2026-05-20] env-configurable ceilings
@@ -120,6 +157,18 @@ class RouteServiceProvider extends ServiceProvider
 
         RateLimiter::for('pos-order-update', function (Request $request) {
             $perMinute = max(1, (int) config('pos.rate_limit.order_update', 120));
+            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
+        });
+
+        // [Wave R-1 P-OWNER 2026-05-20] KDS chef bump CTA dedicated limiter.
+        // Owner mandate: in a fast-food kitchen multiple chefs bump 3-4 orders
+        // chained back-to-back. Default admin-mutation 30/min triggered 429
+        // toast persistently after rapid clicks. Env-configurable ceiling so
+        // local dev can absorb owner manual-test bursts (raise via
+        // KDS_RATE_LIMIT_BUMP=1000 in `.env`). Prod default 120/min — generous
+        // for any realistic fast-food kitchen pace while still capping abuse.
+        RateLimiter::for('kds-bump', function (Request $request) {
+            $perMinute = max(1, (int) config('kds.rate_limit_bump', 120));
             return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
         });
 

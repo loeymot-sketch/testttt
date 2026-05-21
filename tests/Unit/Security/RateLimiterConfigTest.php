@@ -29,7 +29,13 @@ class RateLimiterConfigTest extends TestCase
      * @var array<string, array{0:int,1:bool}>
      */
     private const EXPECTED_LIMITERS = [
-        'admin-mutation' => [30, true],
+        // [Wave Y RATE-LIMIT 2026-05-21] admin-mutation default doubled from 30
+        // to 60/min via env-knob ADMIN_MUTATION_RATE_LIMIT (RouteServiceProvider
+        // L77-117 + config/app.php). Still tight enough for brute-force defence
+        // against admin-CRUD abuse; generous enough to absorb owner manual-test
+        // bursts on online-order/table-order Livré/Cancel CTAs. Local dev
+        // overrides to 1000 in `.env`. NF525 chain UNAFFECTED.
+        'admin-mutation' => [60, true],
         'pos-quote' => [120, true],
         'pos-order-create' => [60, true],
         'pos-order-update' => [120, true],
@@ -88,7 +94,62 @@ class RateLimiterConfigTest extends TestCase
         $crudRequest = Request::create('/api/admin/items', 'POST');
         $crudLimit = $resolver($crudRequest);
         $this->assertInstanceOf(Limit::class, $crudLimit);
-        $this->assertSame(30, $crudLimit->maxAttempts);
+        // [Wave Y RATE-LIMIT 2026-05-21] CRUD path now resolves to env-knob
+        // value (default 60/min, doubled from prior 30/min hardcoded).
+        $this->assertSame(
+            max(1, (int) config('app.admin_mutation_rate_limit', 60)),
+            $crudLimit->maxAttempts,
+            'CRUD path must respect config(app.admin_mutation_rate_limit)'
+        );
+    }
+
+    /**
+     * [Wave Y RATE-LIMIT 2026-05-21] Env-knob ADMIN_MUTATION_RATE_LIMIT must
+     * be honored through `config('app.admin_mutation_rate_limit')`. This guards
+     * the env-pattern parity with POS_RATE_LIMIT_* / KDS_RATE_LIMIT_BUMP and
+     * prevents silent regression to a hardcoded ceiling.
+     */
+    public function test_admin_mutation_owner_rapid_ctas_are_lifted_to_120_per_minute(): void
+    {
+        $resolver = RateLimiter::limiter('admin-mutation');
+        $this->assertIsCallable($resolver);
+
+        // online-order/change-status — owner-tested "Livré" CTA
+        $onlineOrderReq = Request::create('/api/admin/online-order/change-status/42', 'POST');
+        $onlineOrderLimit = $resolver($onlineOrderReq);
+        $this->assertInstanceOf(Limit::class, $onlineOrderLimit);
+        $this->assertSame(
+            120,
+            $onlineOrderLimit->maxAttempts,
+            'online-order/change-status must be lifted to 120/min — owner rapid-CTA family'
+        );
+
+        // table-order/change-status — table service status flip
+        $tableOrderReq = Request::create('/api/admin/table-order/change-status/7', 'POST');
+        $tableOrderLimit = $resolver($tableOrderReq);
+        $this->assertInstanceOf(Limit::class, $tableOrderLimit);
+        $this->assertSame(
+            120,
+            $tableOrderLimit->maxAttempts,
+            'table-order/change-status must be lifted to 120/min — owner rapid-CTA family'
+        );
+    }
+
+    public function test_admin_mutation_cap_matches_config(): void
+    {
+        $resolver = RateLimiter::limiter('admin-mutation');
+        $this->assertIsCallable($resolver);
+
+        $crudRequest = Request::create('/api/admin/items', 'POST');
+        $crudLimit = $resolver($crudRequest);
+        $this->assertInstanceOf(Limit::class, $crudLimit);
+
+        $expected = max(1, (int) config('app.admin_mutation_rate_limit', 60));
+        $this->assertSame(
+            $expected,
+            $crudLimit->maxAttempts,
+            'admin-mutation cap must resolve from config(app.admin_mutation_rate_limit) — env-knob ADMIN_MUTATION_RATE_LIMIT'
+        );
     }
 
     public function test_api_limiter_cap_matches_config(): void

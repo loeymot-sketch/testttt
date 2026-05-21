@@ -1282,7 +1282,7 @@
         "menu": "Menu"
     },
     "error": {
-        "rate_limited": "Trop de requêtes — patientez 30s avant de réessayer.",
+        "rate_limited": "Trop de requêtes — patientez {seconds}s avant de réessayer.",
         "service_unavailable": "Service indisponible — réessayez dans quelques instants.",
         "network_issue": "Problème réseau — réessayez.",
         "catalog_unavailable": "Catalogue produits indisponible — actualisez la page.",

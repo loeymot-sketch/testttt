@@ -80,16 +80,22 @@ try {
         return null;
     }
 
-    function _i18nMessage(key, fallback) {
+    function _i18nMessage(key, fallback, params) {
         try {
             const i18n = window.__appI18n
                 || window.app?.__VUE_DEVTOOLS_APP_RECORD__?.app?.config?.globalProperties?.$i18n;
             const t = i18n?.global?.t || i18n?.t;
             if (typeof t === 'function') {
-                const out = t(key);
+                const out = params ? t(key, params) : t(key);
                 if (out && out !== key) return out;
             }
         } catch (_) { /* noop */ }
+        // [Wave Y RATE-LIMIT 2026-05-21] Interpolate `{placeholder}` in fallback so
+        // i18n-less paths still surface the dynamic value (e.g. real Retry-After
+        // seconds) instead of the literal placeholder.
+        if (params && typeof fallback === 'string') {
+            return fallback.replace(/\{(\w+)\}/g, (m, k) => (k in params ? String(params[k]) : m));
+        }
         return fallback;
     }
 
@@ -175,9 +181,22 @@ try {
                     }
                 } else if (status === 429) {
                     bucket = 'rl';
+                    // [Wave Y RATE-LIMIT 2026-05-21] Read real Retry-After header
+                    // instead of hardcoding "30s" — Laravel's perMinute limiter
+                    // returns up to 60s, so the prior hardcoded copy misled
+                    // owners into restarting too early and re-hitting the wall.
+                    const _retryAfterRaw = error?.response?.headers?.['retry-after']
+                        ?? error?.response?.headers?.['Retry-After'];
+                    const _retryAfter = parseInt(_retryAfterRaw, 10);
+                    const _seconds = Number.isFinite(_retryAfter) && _retryAfter > 0
+                        ? _retryAfter
+                        : null;
                     message = _i18nMessage(
                         'error.rate_limited',
-                        'Trop de requêtes — patientez 30s avant de réessayer.'
+                        _seconds !== null
+                            ? `Trop de requêtes — patientez ${_seconds}s avant de réessayer.`
+                            : 'Trop de requêtes. Veuillez patienter quelques instants.',
+                        _seconds !== null ? { seconds: _seconds } : undefined
                     );
                 } else if (status >= 500) {
                     bucket = 'srv';
