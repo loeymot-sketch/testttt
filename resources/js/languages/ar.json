@@ -1332,6 +1332,14 @@
     "kiosk": {
         "dine_in": "تناول في المطعم",
         "takeaway": "طلب خارجي",
+        "order_type": {
+            "choose_label": "اختر طريقة الطلب",
+            "dine_in": "تناول في المطعم",
+            "dine_in_hint": "أتناول هنا",
+            "takeaway": "طلب خارجي",
+            "takeaway_hint": "أستلم طلبي",
+            "required_hint": "اختر خيارًا للبدء"
+        },
         "categories": "الفئات",
         "products": "المنتجات",
         "your_cart": "سلة مشترياتك",

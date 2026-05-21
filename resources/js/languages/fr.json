@@ -1407,6 +1407,14 @@
     "kiosk": {
         "dine_in": "Sur place",
         "takeaway": "À emporter",
+        "order_type": {
+            "choose_label": "Choisir le mode de commande",
+            "dine_in": "Sur place",
+            "dine_in_hint": "Je mange ici",
+            "takeaway": "À emporter",
+            "takeaway_hint": "Je récupère ma commande",
+            "required_hint": "Choisissez une option pour commencer"
+        },
         "categories": "Catégories",
         "products": "Articles",
         "your_cart": "Votre panier",

@@ -1487,6 +1487,14 @@
     "kiosk": {
         "dine_in": "Dine in",
         "takeaway": "Takeaway",
+        "order_type": {
+            "choose_label": "Choose how to order",
+            "dine_in": "Dine in",
+            "dine_in_hint": "Eat here",
+            "takeaway": "Takeaway",
+            "takeaway_hint": "Pick up my order",
+            "required_hint": "Choose an option to start"
+        },
         "categories": "Categories",
         "products": "Items",
         "your_cart": "Your cart",

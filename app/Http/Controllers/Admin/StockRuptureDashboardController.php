@@ -402,6 +402,12 @@ class StockRuptureDashboardController extends AdminController
             fn (string $groupKey): string => $this->humaniseExtraGroupLabel($groupKey),
         );
 
+        // [Wave M1 round-2 A-015 dedupe] Two raw group_label values can humanise
+        // to the same display_name (e.g. legacy 'supplement' + 'supplements'),
+        // surfacing as duplicate rail rows. Merge any groups sharing the same
+        // display_name so the admin rail never shows two identical buckets.
+        $extraGroupsPayload = $this->mergeGroupsByDisplayName($extraGroupsPayload, 'extra_ids');
+
         // 5) Variations (active, grouped by item_attribute_id, deduped by name).
         $variations = ItemVariation::query()
             ->where('status', Status::ACTIVE)
@@ -530,6 +536,62 @@ class StockRuptureDashboardController extends AdminController
         usort($payload, fn ($a, $b): int => strcmp($a['display_name'], $b['display_name']));
 
         return $payload;
+    }
+
+    /**
+     * [Wave M1 round-2 A-015 dedupe]
+     * Merge entries in a buildGroupedPayload() result that share the same
+     * `display_name`. Items inside merged groups are themselves re-deduped by
+     * name (id arrays unioned, OOS counts summed). Preserves the input order
+     * (first-seen wins for `group_label`).
+     *
+     * @param  array<int, array<string, mixed>> $groups
+     * @param  string $idsField  e.g. 'extra_ids'
+     * @return array<int, array<string, mixed>>
+     */
+    private function mergeGroupsByDisplayName(array $groups, string $idsField): array
+    {
+        $byDisplay = [];
+        foreach ($groups as $group) {
+            $displayName = (string) ($group['display_name'] ?? '');
+            if (! isset($byDisplay[$displayName])) {
+                $byDisplay[$displayName] = $group;
+                continue;
+            }
+            // Merge items by name. Preserve insertion order via positional index.
+            $existing = &$byDisplay[$displayName];
+            $itemsByName = [];
+            foreach (($existing['items'] ?? []) as $item) {
+                $itemsByName[(string) $item['name']] = $item;
+            }
+            foreach (($group['items'] ?? []) as $item) {
+                $name = (string) $item['name'];
+                if (! isset($itemsByName[$name])) {
+                    $itemsByName[$name] = $item;
+                    continue;
+                }
+                $prev = $itemsByName[$name];
+                $mergedIds = array_values(array_unique(array_merge(
+                    (array) ($prev[$idsField] ?? []),
+                    (array) ($item[$idsField] ?? []),
+                )));
+                $mergedUnavailable = (int) ($prev['any_unavailable_count'] ?? 0)
+                    + (int) ($item['any_unavailable_count'] ?? 0);
+                $mergedTotal = count($mergedIds);
+                $itemsByName[$name] = [
+                    'name'                  => $name,
+                    $idsField               => $mergedIds,
+                    'thumb'                 => $prev['thumb'] ?? ($item['thumb'] ?? null),
+                    'is_available'          => $mergedUnavailable === 0,
+                    'any_unavailable_count' => $mergedUnavailable,
+                    'total_count'           => $mergedTotal,
+                ];
+            }
+            $items = array_values($itemsByName);
+            usort($items, fn ($a, $b): int => strcmp($a['name'], $b['name']));
+            $existing['items'] = $items;
+        }
+        return array_values($byDisplay);
     }
 
     private function humaniseExtraGroupLabel(string $key): string
