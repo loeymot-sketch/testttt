@@ -88,6 +88,18 @@ return [
             'no_low_alerts' => 'Aucune alerte de stock faible.',
             'below_threshold' => 'Sous le seuil',
         ],
+        // [Wave X3 2026-05-21] KDS Historique du jour — read-only V1 day-history.
+        'kds_history_button'      => 'Historique',
+        'kds_history_button_aria' => "Ouvrir l'historique des commandes du jour",
+        'kds_history_close_aria'  => 'Fermer',
+        'kds_history_title'       => 'Historique du jour',
+        'kds_history_empty'       => "Aucune commande historique aujourd'hui",
+        'kds_history_loading'     => 'Chargement…',
+        'kds_history_error'       => 'Erreur de chargement',
+        'kds_history_retry'       => 'Réessayer',
+        'kds_state_prepared'      => 'Prêt',
+        'kds_state_out'           => 'En livraison',
+        'kds_state_delivered'     => 'Livré',
         'configure_wizard' => 'Configurer le wizard',
         'composer' => [
             'product_context' => 'Produit',

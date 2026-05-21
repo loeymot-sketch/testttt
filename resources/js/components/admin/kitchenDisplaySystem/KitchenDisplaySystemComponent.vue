@@ -1,5 +1,29 @@
 <template>
   <!--
+    [Wave X3 2026-05-21] KDS Historique du jour — read-only V1 day-history.
+    Trigger button renders above both V2 and legacy layouts so chef can open
+    the history drawer regardless of which grid mode is active. Wave U
+    "Récemment servies" strip in KdsV2Grid remains independent (short-term
+    recents in active grid vs. full-day history viewer in drawer).
+  -->
+  <div class="kds-history-trigger-row">
+    <button
+      type="button"
+      class="kds-history-trigger"
+      :aria-label="$t('label.kds_history_button_aria')"
+      data-testid="kds-history-button"
+      @click="historyDrawerOpen = true"
+    >
+      <span aria-hidden="true">📚</span>
+      <span class="kds-history-trigger__label">{{ $t('label.kds_history_button') }}</span>
+    </button>
+  </div>
+  <KdsHistoryDrawer
+    :open="historyDrawerOpen"
+    :dir="direction"
+    @close="historyDrawerOpen = false"
+  />
+  <!--
     [kds/sprint-2 V-5] Feature-flagged V2 layout. When useV2Layout is true
     (URL ?v2=1, localStorage 'kds.v2_enabled', or future settings flag), the
     new single-FIFO 4×2 grid renders. Otherwise the legacy 4-column layout
@@ -1058,6 +1082,8 @@ import { orderHasAllergens as kdsOrderHasAllergens, sortedAllergens as kdsSorted
 import { ORDER_STATUS } from "../../../helpers/kdsState";
 // [kds/sprint-2 V-5] V2 layout components — feature-flagged single FIFO 4×2 grid.
 import KdsV2Grid from "./KdsV2Grid.vue";
+// [Wave X3 2026-05-21] KDS Historique du jour — read-only day-history drawer.
+import KdsHistoryDrawer from "./KdsHistoryDrawer.vue";
 
 // [Phase-7 / T13–T14] Fil cuisine : stations, filtre, bump / statut, timers
 // d’attente (kdsDisplay), son — ne pas mélanger avec de la logique de caisse
@@ -1071,6 +1097,7 @@ export default {
     Swiper,
     SwiperSlide,
     KdsV2Grid,
+    KdsHistoryDrawer,
   },
   data() {
     return {
@@ -1137,6 +1164,8 @@ export default {
       // [Lot 2.C / F-07] Throttle new-order chime when many orders land at once.
       _kdsLastNewOrderSoundAt: 0,
       kdsOverflowDetected: false,
+      // [Wave X3 2026-05-21] KDS Historique du jour drawer — open state.
+      historyDrawerOpen: false,
       // [CV1-KDS-A11Y-RICH-001] Polite aria-live message that announces
       // ACCEPT → PREPARING → PREPARED transitions to assistive technology.
       // Updated by `kdsAnnounceTransition`; rendered in the dedicated
@@ -2353,6 +2382,38 @@ export default {
 </script>
 
 <style scoped>
+/* [Wave X3 2026-05-21] KDS Historique du jour trigger. */
+.kds-history-trigger-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 12px 0 12px;
+  width: 100%;
+}
+.kds-history-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #111111;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, outline 120ms ease;
+}
+.kds-history-trigger:hover {
+  background: #d40000;
+}
+.kds-history-trigger:focus-visible {
+  outline: 2px solid #ffd400;
+  outline-offset: 2px;
+}
+.kds-history-trigger__label {
+  font-variant-numeric: tabular-nums;
+}
+
 .kds-instruction {
   line-height: 1.5;
   border-left: 3px solid #e0e0e0;

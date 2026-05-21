@@ -183,6 +183,69 @@ class KitchenDisplaySystemOrderService
     }
 
     /**
+     * [Wave X3 2026-05-21] KDS "Historique du jour" — read-only V1.
+     *
+     * Returns today's PREPARED / OUT_FOR_DELIVERY / DELIVERED orders for the
+     * caller's branch, sorted by status-change recency (`updated_at` desc),
+     * capped at 50.
+     *
+     * Why `updated_at` and not `order_datetime` like list()/orderItems():
+     * placement time is irrelevant for a "what was bumped today" view. The
+     * last write on the row IS the status transition (validated in
+     * `changeStatus()` above — `$locked->status = $newStatus; $locked->save()`
+     * touches `updated_at` via Eloquent timestamps), so `updated_at` is the
+     * closest proxy to "bump time" without adding a new `bumped_at` column.
+     *
+     * TZ discipline (Wave T R5 lesson, see list() L92-121): bounds are built
+     * with Paris-local Carbon literals. We DO NOT setTimezone('UTC') because
+     * MySQL session_tz=SYSTEM=Paris on this deployment, and the prior heal
+     * already proved UTC-converted bindings silently drop the last ~2h of
+     * every Paris day.
+     *
+     * Branch isolation: identical to list() — admin (branch_id=0) sees all
+     * branches; branch staff (branch_id>0) sees only their own branch.
+     *
+     * Status list is HARD-CODED (not `KitchenReleaseRule::visibleStatuses()`)
+     * because the history view shows POST-bump states (PREPARED+) while the
+     * active board shows PRE/IN-progress (ACCEPT+PREPARING) plus PREPARED.
+     * The two lists are intentionally distinct.
+     *
+     * NF525: read-only — chain untouched.
+     *
+     * @throws Exception
+     */
+    public function historyToday(): \Illuminate\Database\Eloquent\Collection
+    {
+        try {
+            $userBranchId = auth()->user()->branch_id ?? 0;
+
+            $appTz = config('app.timezone');
+            $todayStart = Carbon::today($appTz);
+            $tomorrowStart = Carbon::tomorrow($appTz);
+
+            $query = Order::with(['orderItems', 'address', 'user'])
+                ->whereIn('status', [
+                    OrderStatus::PREPARED,
+                    OrderStatus::OUT_FOR_DELIVERY,
+                    OrderStatus::DELIVERED,
+                ])
+                ->whereBetween('updated_at', [$todayStart, $tomorrowStart]);
+
+            // [Mirror list() L83-85] Admin branch_id=0 sees all; branch staff scoped.
+            if ($userBranchId > 0) {
+                $query->where('branch_id', $userBranchId);
+            }
+
+            return $query->orderByDesc('updated_at')
+                ->limit(50)
+                ->get();
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
      * @throws Exception
      */
     public function changeStatus(Order $order, Request $request)

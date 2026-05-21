@@ -95,6 +95,18 @@ return [
             'no_low_alerts' => 'No low stock alerts.',
             'below_threshold' => 'Below threshold',
         ],
+        // [Wave X3 2026-05-21] KDS day-history drawer — read-only V1.
+        'kds_history_button'      => 'History',
+        'kds_history_button_aria' => "Open today's order history",
+        'kds_history_close_aria'  => 'Close',
+        'kds_history_title'       => "Today's history",
+        'kds_history_empty'       => 'No historical orders today',
+        'kds_history_loading'     => 'Loading…',
+        'kds_history_error'       => 'Failed to load',
+        'kds_history_retry'       => 'Retry',
+        'kds_state_prepared'      => 'Ready',
+        'kds_state_out'           => 'Out for delivery',
+        'kds_state_delivered'     => 'Delivered',
         'configure_wizard' => 'Configure wizard',
         'composer' => [
             'product_context' => 'Product',

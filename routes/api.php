@@ -1091,6 +1091,13 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/items', [KitchenDisplaySystemController::class, 'orderItems']);
         // [F-03 / Lot 1.C] Adaptive polling fallback when WebSocket is degraded.
         Route::get('/sync', [KdsSyncController::class, 'sync']);
+        // [Wave X3 2026-05-21] KDS Historique du jour — read-only V1 day-history viewer.
+        // Returns today's PREPARED/OUT_FOR_DELIVERY/DELIVERED orders for the
+        // branch (admin sees all), sorted updated_at desc, capped 50. Revert
+        // (PREPARED → PREPARING) deferred V1.0.2 (OrderStateMachine §7 LOCK).
+        Route::get('/history-today', [KitchenDisplaySystemController::class, 'historyToday'])
+            ->middleware('throttle:60,1')
+            ->name('history-today');
     });
 
     // [NEW-04] Observability surface — non-blocking telemetry rollups + ingestion.

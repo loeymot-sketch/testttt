@@ -104,6 +104,18 @@ return [
         ],
         'view_product'      => 'عرض المنتج',
         'continue'          => 'متابعة',
+        // [Wave X3 2026-05-21] KDS Historique du jour — read-only V1.
+        'kds_history_button'      => 'السجل',
+        'kds_history_button_aria' => 'فتح سجل طلبات اليوم',
+        'kds_history_close_aria'  => 'إغلاق',
+        'kds_history_title'       => 'سجل اليوم',
+        'kds_history_empty'       => 'لا توجد طلبات سجلية اليوم',
+        'kds_history_loading'     => 'جارٍ التحميل…',
+        'kds_history_error'       => 'فشل التحميل',
+        'kds_history_retry'       => 'إعادة المحاولة',
+        'kds_state_prepared'      => 'جاهز',
+        'kds_state_out'           => 'قيد التوصيل',
+        'kds_state_delivered'     => 'تم التسليم',
     ],
     'studio' => [
         'eyebrow' => 'كتالوج مركزي',
