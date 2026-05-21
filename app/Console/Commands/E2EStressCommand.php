@@ -124,15 +124,25 @@ class E2EStressCommand extends Command
         $results = [];
         $batchStart = microtime(true);
 
+        $verbose = (bool) $this->option('verbose');
         $pool = new Pool($client, $requests, [
             'concurrency' => $concurrency,
-            'fulfilled'   => function ($response, $index) use (&$results, &$requests) {
+            'fulfilled'   => function ($response, $index) use (&$results, &$requests, $verbose) {
+                $status = $response->getStatusCode();
+                $body = (string) $response->getBody();
+                $ok = $status >= 200 && $status < 300;
+                // [stress-q13 2026-05-21] Surface non-2xx response bodies
+                // when -v supplied so the report can pinpoint validation /
+                // 409 / 429 root causes without re-running with curl.
+                if (! $ok && $verbose) {
+                    $this->line("[stress] #{$index} status={$status} body=" . substr($body, 0, 200));
+                }
                 $results[$index] = [
                     'index'      => $index,
-                    'status'     => $response->getStatusCode(),
-                    'body'       => (string) $response->getBody(),
+                    'status'     => $status,
+                    'body'       => $body,
                     'latency_ms' => null, // approximated post-batch
-                    'ok'         => $response->getStatusCode() >= 200 && $response->getStatusCode() < 300,
+                    'ok'         => $ok,
                     'error'      => null,
                 ];
             },
@@ -263,6 +273,18 @@ class E2EStressCommand extends Command
         $requests = [];
         $apiKey = (string) (config('app.api_key') ?: env('MIX_API_KEY', ''));
 
+        // [stress-q13 2026-05-21] Kiosk orders require a quote_token +
+        // quote_signature pair, minted from POST /api/frontend/order/quote
+        // and consumed by POST /api/frontend/order. Each quote is single-use
+        // (OrderQuoteService:373 — 409 if already consumed). We pre-fetch
+        // quotes synchronously here so the parallel order POST pool below
+        // can dispatch without inter-request dependencies.
+        $httpClient = new Client([
+            'timeout' => 15,
+            'connect_timeout' => 5,
+            'http_errors' => false,
+        ]);
+
         for ($i = 0; $i < $totalOrders; $i++) {
             $fixture = $fixtures[$i % count($fixtures)];
             $useKiosk = match ($type) {
@@ -281,12 +303,42 @@ class E2EStressCommand extends Command
 
             if ($useKiosk) {
                 $url = rtrim($baseUrl, '/') . '/api/frontend/order';
-                $body = json_encode($this->minimalKioskOrderPayload($fixture['branch']->id));
+                // [stress-q13 2026-05-21] Per-request UNIQUE quantity so
+                // each canonical_payload yields a unique intent_hash
+                // (OrderQuoteService:74). Without uniqueness, line 80
+                // findOpenQuote collapses identical payloads to ONE shared
+                // open quote — concurrent consumers then race for the
+                // single token and all but one get 409 "already consumed".
+                // The pre-fetch loop is sequential so quote i is created
+                // BEFORE quote i+1 even queries; intent_hash collision is
+                // the only collapse vector. Use $i+1 directly (1..N) so
+                // every quote is a real distinct row in order_quotes.
+                $quantity = $i + 1;
+                $quote = $this->fetchKioskQuote(
+                    $httpClient,
+                    $baseUrl,
+                    $fixture['kiosk_token'],
+                    $apiKey,
+                    $fixture['branch']->id,
+                    $quantity
+                );
+                // [stress-q13] Pass index + quote so the payload carries
+                // the STRESS-Q13-ART- prefix used by iter15:cleanup-test-orders
+                // --token-prefix sweep, plus the consume-once quote pair.
+                $body = json_encode(
+                    $this->minimalKioskOrderPayload($fixture['branch']->id, $i, $quantity)
+                    + [
+                        'quote_token'     => $quote['quote_token'] ?? '',
+                        'quote_signature' => $quote['signature'] ?? '',
+                    ]
+                );
                 $headers = [
                     'Content-Type'      => 'application/json',
                     'Accept'            => 'application/json',
                     'Authorization'     => 'Bearer ' . $fixture['kiosk_token'],
-                    'X-Idempotency-Key' => 'STRESS-K-' . $i . '-' . uniqid(),
+                    // [stress-q13] Idempotency-Key prefix kept aligned with
+                    // payload token prefix so duplicate-key audit also matches.
+                    'X-Idempotency-Key' => 'STRESS-Q13-ART-' . $i . '-' . uniqid(),
                     'x-api-key'         => $apiKey,
                 ];
             } else {
@@ -308,6 +360,43 @@ class E2EStressCommand extends Command
     }
 
     /**
+     * [stress-q13 2026-05-21] Synchronously mint a kiosk order quote so the
+     * follow-up POST /api/frontend/order has the required quote_token +
+     * quote_signature (OrderRequest:175-180). Returns ['quote_token',
+     * 'signature'] on success, empty array on failure (the report will
+     * surface as 422 on the order POST, which is the desired honest signal).
+     */
+    private function fetchKioskQuote(Client $client, string $baseUrl, string $kioskToken, string $apiKey, int $branchId, int $quantity = 1): array
+    {
+        try {
+            $response = $client->post(rtrim($baseUrl, '/') . '/api/frontend/order/quote', [
+                'headers' => [
+                    'Content-Type'  => 'application/json',
+                    'Accept'        => 'application/json',
+                    'Authorization' => 'Bearer ' . $kioskToken,
+                    'x-api-key'     => $apiKey,
+                ],
+                'json' => [
+                    'branch_id'      => $branchId,
+                    'order_type'     => \App\Enums\OrderType::TAKEAWAY,
+                    'source'         => 10,
+                    'payment_method' => \App\Enums\PaymentGateway::CARD,
+                    'items'          => json_encode([
+                        ['item_id' => 1, 'quantity' => $quantity],
+                    ]),
+                ],
+            ]);
+            if ($response->getStatusCode() !== 200) {
+                return [];
+            }
+            $decoded = json_decode((string) $response->getBody(), true);
+            return is_array($decoded['data'] ?? null) ? $decoded['data'] : [];
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
      * Minimal POS order payload — server recomputes pricing from DB so we
      * only need branch_id + an items array. Schema may vary by env: this
      * is a best-effort baseline; if the validator rejects, the run still
@@ -326,16 +415,34 @@ class E2EStressCommand extends Command
         ];
     }
 
-    private function minimalKioskOrderPayload(int $branchId): array
+    private function minimalKioskOrderPayload(int $branchId, int $i = 0, int $quantity = 1): array
     {
+        // [stress-q13 2026-05-21] Four surgical fixes (prior agent's blocked-doc):
+        //   1. items: empty array → ValidJsonOrder rule rejects "must contain at
+        //      least one article". Send a minimal {item_id: 1, quantity: $q}.
+        //   2. order_type: KIOSK=25 → V1 dine-in guard in OrderRequest:220-231
+        //      rejects when pos_dine_in_enabled=false. Use TAKEAWAY=10 (the
+        //      precedent set by the prior blocked agent + GAP-22-1 allows it).
+        //   3. token: pass a STRESS-Q13-ART- prefixed serial so iter15:cleanup-
+        //      test-orders --token-prefix sweep can match the fixtures.
+        //   4. UNIQUE quantity per-request (caller passes $i+1) so each
+        //      canonical_payload intent_hash is unique — without uniqueness,
+        //      OrderQuoteService:80 findOpenQuote collapses concurrent
+        //      requests to one shared quote, and only one consume wins
+        //      while every other hits 409 "already consumed".
         return [
-            'branch_id'      => $branchId,
-            'order_type'     => \App\Enums\OrderType::KIOSK,
-            'payment_method' => \App\Enums\PaymentGateway::CARD,
-            'items'          => json_encode([]),
-            'total'          => 0,
-            'subtotal'       => 0,
-            'discount'       => 0,
+            'branch_id'        => $branchId,
+            'order_type'       => \App\Enums\OrderType::TAKEAWAY,
+            'is_advance_order' => 0,
+            'source'           => 10, // kiosk source
+            'payment_method'   => \App\Enums\PaymentGateway::CARD,
+            'token'            => 'STRESS-Q13-ART-' . $i . '-' . substr(uniqid(), -8),
+            'items'            => json_encode([
+                ['item_id' => 1, 'quantity' => $quantity],
+            ]),
+            'total'            => 0,
+            'subtotal'         => 0,
+            'discount'         => 0,
         ];
     }
 
