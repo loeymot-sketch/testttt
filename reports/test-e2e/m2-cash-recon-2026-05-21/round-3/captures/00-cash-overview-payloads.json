@@ -1,0 +1,298 @@
+[
+  {
+    "url": "http://127.0.0.1:8000/admin/cash-overview",
+    "status": 200,
+    "ts": 1779341403870,
+    "summary": null,
+    "cash_session": null,
+    "meta": null,
+    "tx_count": 0
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/admin/cash-overview?from=2026-05-21&to=2026-05-21",
+    "status": 200,
+    "ts": 1779341407747,
+    "summary": {
+      "total": 112.5,
+      "count": 10,
+      "by_source": {
+        "borne": {
+          "count": 8,
+          "total": 81.7
+        },
+        "livreur": {
+          "count": 1,
+          "total": 18.3
+        },
+        "caisse": {
+          "count": 1,
+          "total": 12.5
+        }
+      },
+      "by_mode": {
+        "cash": {
+          "count": 8,
+          "total": 88.2
+        },
+        "card": {
+          "count": 1,
+          "total": 9.8
+        },
+        "mobile": {
+          "count": 1,
+          "total": 14.5
+        }
+      }
+    },
+    "cash_session": {
+      "id": 13,
+      "branch_id": 1,
+      "opened_at": "2026-05-21T00:06:01+02:00",
+      "opening_amount": 100,
+      "expected_cash": 188.2,
+      "cash_collected": 88.2
+    },
+    "meta": {
+      "from": "2026-05-21T00:00:00+02:00",
+      "to": "2026-05-21T23:59:59+02:00",
+      "tz": "Europe/Paris",
+      "row_count": 10,
+      "capped": false
+    },
+    "tx_count": 10
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/admin/cash-overview?from=2026-05-21&to=2026-05-21&source=livreur",
+    "status": 200,
+    "ts": 1779341411938,
+    "summary": {
+      "total": 18.3,
+      "count": 1,
+      "by_source": {
+        "livreur": {
+          "count": 1,
+          "total": 18.3
+        }
+      },
+      "by_mode": {
+        "cash": {
+          "count": 1,
+          "total": 18.3
+        }
+      }
+    },
+    "cash_session": {
+      "id": 13,
+      "branch_id": 1,
+      "opened_at": "2026-05-21T00:06:01+02:00",
+      "opening_amount": 100,
+      "expected_cash": 188.2,
+      "cash_collected": 88.2
+    },
+    "meta": {
+      "from": "2026-05-21T00:00:00+02:00",
+      "to": "2026-05-21T23:59:59+02:00",
+      "tz": "Europe/Paris",
+      "row_count": 1,
+      "capped": false
+    },
+    "tx_count": 1
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/admin/cash-overview?from=2026-05-21&to=2026-05-21&source=borne",
+    "status": 200,
+    "ts": 1779341413516,
+    "summary": {
+      "total": 81.7,
+      "count": 8,
+      "by_source": {
+        "borne": {
+          "count": 8,
+          "total": 81.7
+        }
+      },
+      "by_mode": {
+        "cash": {
+          "count": 6,
+          "total": 57.4
+        },
+        "card": {
+          "count": 1,
+          "total": 9.8
+        },
+        "mobile": {
+          "count": 1,
+          "total": 14.5
+        }
+      }
+    },
+    "cash_session": {
+      "id": 13,
+      "branch_id": 1,
+      "opened_at": "2026-05-21T00:06:01+02:00",
+      "opening_amount": 100,
+      "expected_cash": 188.2,
+      "cash_collected": 88.2
+    },
+    "meta": {
+      "from": "2026-05-21T00:00:00+02:00",
+      "to": "2026-05-21T23:59:59+02:00",
+      "tz": "Europe/Paris",
+      "row_count": 8,
+      "capped": false
+    },
+    "tx_count": 8
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/admin/cash-overview?from=2026-05-21&to=2026-05-21&source=caisse",
+    "status": 200,
+    "ts": 1779341415133,
+    "summary": {
+      "total": 12.5,
+      "count": 1,
+      "by_source": {
+        "caisse": {
+          "count": 1,
+          "total": 12.5
+        }
+      },
+      "by_mode": {
+        "cash": {
+          "count": 1,
+          "total": 12.5
+        }
+      }
+    },
+    "cash_session": {
+      "id": 13,
+      "branch_id": 1,
+      "opened_at": "2026-05-21T00:06:01+02:00",
+      "opening_amount": 100,
+      "expected_cash": 188.2,
+      "cash_collected": 88.2
+    },
+    "meta": {
+      "from": "2026-05-21T00:00:00+02:00",
+      "to": "2026-05-21T23:59:59+02:00",
+      "tz": "Europe/Paris",
+      "row_count": 1,
+      "capped": false
+    },
+    "tx_count": 1
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/admin/cash-overview?from=2026-05-21&to=2026-05-21",
+    "status": 200,
+    "ts": 1779341416689,
+    "summary": {
+      "total": 112.5,
+      "count": 10,
+      "by_source": {
+        "borne": {
+          "count": 8,
+          "total": 81.7
+        },
+        "livreur": {
+          "count": 1,
+          "total": 18.3
+        },
+        "caisse": {
+          "count": 1,
+          "total": 12.5
+        }
+      },
+      "by_mode": {
+        "cash": {
+          "count": 8,
+          "total": 88.2
+        },
+        "card": {
+          "count": 1,
+          "total": 9.8
+        },
+        "mobile": {
+          "count": 1,
+          "total": 14.5
+        }
+      }
+    },
+    "cash_session": {
+      "id": 13,
+      "branch_id": 1,
+      "opened_at": "2026-05-21T00:06:01+02:00",
+      "opening_amount": 100,
+      "expected_cash": 188.2,
+      "cash_collected": 88.2
+    },
+    "meta": {
+      "from": "2026-05-21T00:00:00+02:00",
+      "to": "2026-05-21T23:59:59+02:00",
+      "tz": "Europe/Paris",
+      "row_count": 10,
+      "capped": false
+    },
+    "tx_count": 10
+  },
+  {
+    "url": "http://127.0.0.1:8000/admin/cash-overview",
+    "status": 200,
+    "ts": 1779341461694,
+    "summary": null,
+    "cash_session": null,
+    "meta": null,
+    "tx_count": 0
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/admin/cash-overview?from=2026-05-21&to=2026-05-21",
+    "status": 200,
+    "ts": 1779341465504,
+    "summary": {
+      "total": 112.5,
+      "count": 10,
+      "by_source": {
+        "borne": {
+          "count": 8,
+          "total": 81.7
+        },
+        "livreur": {
+          "count": 1,
+          "total": 18.3
+        },
+        "caisse": {
+          "count": 1,
+          "total": 12.5
+        }
+      },
+      "by_mode": {
+        "cash": {
+          "count": 8,
+          "total": 88.2
+        },
+        "card": {
+          "count": 1,
+          "total": 9.8
+        },
+        "mobile": {
+          "count": 1,
+          "total": 14.5
+        }
+      }
+    },
+    "cash_session": {
+      "id": 13,
+      "branch_id": 1,
+      "opened_at": "2026-05-21T00:06:01+02:00",
+      "opening_amount": 100,
+      "expected_cash": 188.2,
+      "cash_collected": 88.2
+    },
+    "meta": {
+      "from": "2026-05-21T00:00:00+02:00",
+      "to": "2026-05-21T23:59:59+02:00",
+      "tz": "Europe/Paris",
+      "row_count": 10,
+      "capped": false
+    },
+    "tx_count": 10
+  }
+]
