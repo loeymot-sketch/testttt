@@ -547,10 +547,17 @@ export default {
   transition: transform 80ms ease, border-color 120ms ease, background 120ms ease;
   min-height: 84px;
 }
-.cc-mode-btn:hover:not(:disabled),
+/* [test-e2e fix A-002 round-1 2026-05-21] Separate :hover (subtle hint)
+   from .is-active (brand-red filled state) so a cashier never sees TWO
+   buttons highlighted simultaneously (hover residue + selected mode). */
+.cc-mode-btn:hover:not(:disabled):not(.is-active) {
+  border-color: var(--pos-v5-border-strong, #d4d4d4);
+  background: var(--pos-v5-surface, #fff);
+}
 .cc-mode-btn.is-active {
   border-color: var(--pos-v5-brand-red, #cf3a3a);
   background: var(--pos-v5-brand-red-soft, #ffeaea);
+  box-shadow: inset 0 0 0 1px var(--pos-v5-brand-red, #cf3a3a);
 }
 .cc-mode-btn:active:not(:disabled) { transform: translateY(0); }
 .cc-mode-btn:disabled { opacity: 0.55; cursor: not-allowed; }
