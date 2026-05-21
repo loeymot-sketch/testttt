@@ -48,17 +48,19 @@ import { bootstrapKioskThemeEarly } from './composables/useKioskTheme';
 bootstrapKioskThemeEarly();
 
 // -- FoodKing brand V2 (2026-05-10) — Visual theme par défaut LIGHT ---------
-// KioskAppComponent (frozen) lit `localStorage.foodking:kiosk-theme` au mount
-// avec fallback `'dark'`. Owner gate : on force `'light'` par défaut sans
-// toucher le composant frozen, en pré-seedant la clé localStorage AVANT
-// Vue ne mount. L'utilisateur peut toujours basculer dark via le toggle
-// (l'écriture explicite localStorage prend précédence sur ce default).
+// Owner instruction 2026-05-21 : "je veux plus l'icône de changer de thème,
+// laisse en mode Light c'est tout". Dark mode est désactivé entièrement.
+// On force localStorage='light' au boot, MÊME si l'utilisateur avait stocké
+// 'dark' avant le retrait du toggle (sinon idle/main pages restent dark).
 try {
     if (typeof window !== 'undefined' && window.localStorage) {
-        const stored = window.localStorage.getItem('foodking:kiosk-theme');
-        if (!stored || !['dark', 'light'].includes(stored)) {
-            window.localStorage.setItem('foodking:kiosk-theme', 'light');
-        }
+        window.localStorage.setItem('foodking:kiosk-theme', 'light');
+    }
+    // Propage `data-kiosk-theme="light"` sur <html> immédiatement, avant
+    // que useKioskTheme ne lise localStorage. Évite le FOUC sur le 1er paint
+    // si Vue avait pre-rendered avec `data-kiosk-theme="dark"`.
+    if (typeof document !== 'undefined' && document.documentElement) {
+        document.documentElement.setAttribute('data-kiosk-theme', 'light');
     }
 } catch (_) { /* SSR / private mode — ignore */ }
 
