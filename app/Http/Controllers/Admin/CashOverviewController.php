@@ -209,14 +209,40 @@ class CashOverviewController extends AdminController
 
         $cashSessionPayload = null;
         if ($cashSession) {
-            $cashCollectedToday = (float) ($summary['by_mode']['cash']['total'] ?? 0);
+            // [Wave X-C round-1 2026-05-21] Fix C-003 — when admin has no
+            // explicit branch filter but we fell back to a single drawer
+            // (resolveOpenCashSession), the cash_collected used to compute
+            // expected_cash MUST be scoped to that drawer's branch — not
+            // the global filter. Otherwise we'd be reconciling one branch's
+            // opening_amount against all-branch cash payments. When the
+            // request IS branch-scoped (explicit branch_id OR Branch
+            // Manager), `summary['by_mode']['cash']['total']` is already
+            // the right number and we re-use it without a 2nd query.
+            $sessionBranchId = (int) $cashSession->branch_id;
+            if ($branchFilter !== null && $branchFilter === $sessionBranchId) {
+                $cashCollectedToday = (float) ($summary['by_mode']['cash']['total'] ?? 0);
+            } else {
+                // Admin global view fell back to this branch's drawer —
+                // recompute cash collected restricted to that branch.
+                $cashCollectedToday = (float) $transactions
+                    ->filter(function ($tx) use ($sessionBranchId) {
+                        $order = $tx->order;
+                        return $order && (int) ($order->branch_id ?? 0) === $sessionBranchId;
+                    })
+                    ->filter(function ($tx) {
+                        return self::derivePaymentBucket((string) ($tx->payment_method ?? '')) === 'cash';
+                    })
+                    ->sum(function ($tx) {
+                        return round((float) ($tx->amount ?? 0), 2);
+                    });
+            }
             $expectedCash = round(
                 (float) $cashSession->opening_amount + $cashCollectedToday,
                 2
             );
             $cashSessionPayload = [
                 'id'               => (int) $cashSession->id,
-                'branch_id'        => (int) $cashSession->branch_id,
+                'branch_id'        => $sessionBranchId,
                 'opened_at'        => optional($cashSession->opened_at)->toIso8601String(),
                 'opening_amount'   => round((float) $cashSession->opening_amount, 2),
                 'expected_cash'    => $expectedCash,
@@ -263,25 +289,42 @@ class CashOverviewController extends AdminController
      * Resolve the currently open CashDrawerSession to compute the
      * "espèce attendue" reconciliation column. Admin uses the requested
      * branch_id filter; staff uses their own.
+     *
+     * [Wave X-C round-1 2026-05-21] Fix C-003 — when admin is browsing
+     * without an explicit `?branch_id=` query param we now fall back to
+     * the most-recently-opened drawer session across all branches instead
+     * of returning null. This makes the reconciliation card mount by
+     * default for the admin login the spec exercises, matching the owner
+     * mandate « détecter écarts (cash manquant) » without requiring the
+     * user to first pick a branch. If literally no drawer is open anywhere
+     * the card stays hidden — there is nothing to reconcile against. The
+     * sibling /admin/cash-sessions-report behaviour is unchanged.
      */
     private function resolveOpenCashSession($user, ?int $branchFilter, bool $isGlobalAdmin): ?CashDrawerSession
     {
-        $branchId = $branchFilter ?? (int) ($user->branch_id ?? 0);
-        if ($branchId <= 0) {
-            // Admin without explicit branch filter — no single drawer to
-            // reconcile against. Return null so the UI hides the card.
-            return null;
-        }
-
         $query = CashDrawerSession::query();
         if ($isGlobalAdmin) {
             $query->withoutGlobalScope(BranchScope::class);
         }
-        return $query
-            ->where('branch_id', $branchId)
-            ->where('status', CashDrawerSession::STATUS_OPEN)
-            ->orderByDesc('opened_at')
-            ->first();
+        $query->where('status', CashDrawerSession::STATUS_OPEN);
+
+        if ($branchFilter !== null && $branchFilter > 0) {
+            // Admin with explicit branch_id, OR Branch Manager (forced own).
+            $query->where('branch_id', $branchFilter);
+        } elseif (! $isGlobalAdmin) {
+            // Branch Manager / cashier without their own branch — refuse to
+            // leak another branch's drawer.
+            $ownBranch = (int) ($user->branch_id ?? 0);
+            if ($ownBranch <= 0) {
+                return null;
+            }
+            $query->where('branch_id', $ownBranch);
+        }
+        // Else: global admin, no explicit filter — fall back to the
+        // most-recently-opened drawer across all branches so the card
+        // mounts by default for the admin's daily écart view.
+
+        return $query->orderByDesc('opened_at')->first();
     }
 
     /**

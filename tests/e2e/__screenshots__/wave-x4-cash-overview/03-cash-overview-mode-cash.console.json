@@ -1,0 +1,12 @@
+[
+  {
+    "level": "warning",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=bec39c2e3e51384a2eb4c06e04ebb135",
+      "lineNumber": 1,
+      "columnNumber": 0
+    },
+    "ts": 1779327190147
+  }
+]
