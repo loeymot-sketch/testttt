@@ -1030,6 +1030,17 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/', [\App\Http\Controllers\Admin\CashSessionReportController::class, 'index'])->name('index');
     });
 
+    // [Wave X — X4 2026-05-21] Admin unified cash & transactions overview.
+    // Owner mandate : « toutes les commandes encaissées (POS direct, borne
+    // cash-collected, livreur) au MÊME ENDROIT en base ». Sibling to O4:
+    // O4 lists CashDrawerSession rows day-by-day; X4 lists every Transaction
+    // across all sources with derived source + mode buckets for daily écart
+    // reconciliation. Reuses the `cash-sessions-report` permission (same
+    // role gate — Admin + Branch Manager).
+    Route::prefix('cash-overview')->name('cash-overview.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\CashOverviewController::class, 'index'])->name('index');
+    });
+
     Route::prefix('message')->name('message.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [MessageController::class, 'index']);
         Route::get('/show/{message}', [MessageController::class, 'show']);
@@ -1075,7 +1086,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         // KDS already uses OrderStateMachine guards so replay is provably no-op
         // when target == current (StateMachine throws InvalidTransition on dup).
         Route::post('/change-status/{order}', [KitchenDisplaySystemController::class, 'changeStatus'])
-            ->middleware('idempotency')
+            ->middleware(['idempotency', 'throttle:kds-bump'])
             ->name('change-status');
         Route::get('/items', [KitchenDisplaySystemController::class, 'orderItems']);
         // [F-03 / Lot 1.C] Adaptive polling fallback when WebSocket is degraded.

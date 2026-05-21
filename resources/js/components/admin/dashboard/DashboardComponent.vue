@@ -140,6 +140,10 @@ export default {
             // quotidien des caisses. Owner request : « voir caisses chaque
             // jour, début + fin, transactions ».
             push('/admin/cash-sessions-report', this.$t('menu.cash_sessions_report'), 'lab lab-pos-bold', 'cash-sessions-report', false);
+            // [Wave X — X4 2026-05-21] Lien Quick Access vers la vue caisse
+            // unifiée (toutes transactions POS direct + borne + livreur au
+            // même endroit). Reuses cash-sessions-report permission.
+            push('/admin/cash-overview', this.$t('menu.cash_overview'), 'lab lab-pos-bold', 'cash-sessions-report', false);
             return links;
         },
     },
