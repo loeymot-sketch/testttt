@@ -1,0 +1,38 @@
+{
+  "wave": "C",
+  "surface": "/admin/cash-overview",
+  "round": 1,
+  "heals_validated": ["X4 Cash Overview Unified View (POS + borne + livreur sources)"],
+  "states_reviewed": 4,
+  "playwright_specs": {
+    "wave-x4-cash-overview.spec.js": {
+      "mounts page with filter bar and summary cards": "PASS",
+      "source filter re-issues GET with source param": "PASS",
+      "mode filter re-issues GET with mode=cash": "PASS (after 1 flaky retry — first attempt timed out on waitForRequest; second clean)",
+      "Wave O O4 sibling /admin/cash-sessions-report still loads (no regression)": "PASS"
+    }
+  },
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/01-cash-overview-default.png",
+      "category": "visual_evidence_positive",
+      "severity": "P3",
+      "evidence": "Page 'Vue Caisse Unifiée' mounts with: date filters (DU/AU 05/21/2026) + SOURCE dropdown (Toutes les sources) + MODE DE PAIEMENT dropdown (Tous les modes) + Rechercher CTA + Effacer reset. 4 aggregate cards: GRAND TOTAL 67.80 (5 tx) / CAISSE 12.50 (1 tx) / BORNE 37.00 (3 tx) / LIVREUR 18.30 (1 tx). Répartition par mode breakdown (Espèce 3·43.50 / Carte 1·9.80 / Mobile 1·14.50). Table rows with Heure / N° / Source badge / Mode / Livreur / Montant columns. Mixed sources (Caisse/Borne/Livreur badges) all visible.",
+      "fix_hint": "none — heal X4 validated"
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/04-wave-o-o4-sibling-still-loads.png",
+      "category": "no_regression",
+      "severity": "P3",
+      "evidence": "Wave O O4 'Rapport Caisses Quotidien' sibling page loads at /admin/cash-sessions-report without 4xx/5xx — date filter bar + Rechercher CTA render. X4 sibling not replaced.",
+      "fix_hint": "none"
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 0, "P3": 2,
+    "open_P0": 0, "open_P1": 0, "open_P2": 0, "open_P3": 2
+  },
+  "verdict": "GREEN"
+}

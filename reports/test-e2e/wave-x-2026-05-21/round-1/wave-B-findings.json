@@ -1,0 +1,101 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 4,
+  "artifacts_inspected": [
+    "reports/test-e2e/wave-x-2026-05-21/x3-kds-history/screenshots/X3-01-kds-with-history-button.png",
+    "reports/test-e2e/wave-x-2026-05-21/x3-kds-history/screenshots/X3-02-drawer-open-with-history.png",
+    "reports/test-e2e/wave-x-2026-05-21/x3-kds-history/screenshots/X3-03-drawer-closed.png",
+    "reports/test-e2e/wave-x-2026-05-21/x3-kds-history/screenshots/X3-04-drawer-no-revert-button.png",
+    "reports/test-e2e/wave-x-2026-05-21/x3-kds-history/screenshots/X3-seeded.json",
+    "reports/test-e2e/wave-x-2026-05-21/round-1/playwright-stdout.log",
+    "reports/test-e2e/wave-x-2026-05-21/round-1/wave-x3-rerun.log",
+    "reports/test-e2e/wave-x-2026-05-21/round-1/wave-x3-rerun2.log",
+    "tests/e2e/wave-x3-kds-history.spec.js",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+    "resources/js/languages/fr.json",
+    "resources/js/languages/en.json",
+    "resources/js/languages/ar.json",
+    "public/js/admin-kds.js"
+  ],
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "X3-01-kds-with-history-button.png",
+      "category": "i18n_leak",
+      "severity": "P0",
+      "evidence": "Trigger button in top-right of /admin/kitchen-display-system renders literal raw key text 'label.kds_history_button' (visible, dark pill with book emoji). This is what every chef sees on entering the KDS page — a paying-customer-facing surface. Source: `KitchenDisplaySystemComponent.vue` line 18 `{{ $t('label.kds_history_button') }}` — runtime resolver returns the key unchanged instead of FR 'Historique' / EN 'History' / AR 'السجل'. Key DOES exist in fr.json:701, en.json:1183, ar.json:1031 under top-level `label.*` group, AND the bundle `public/js/admin-kds.js` (mtime 02:44 == JSON mtime) physically contains `label.kds_history_button` three times — so 'stale bundle' is NOT the root cause. The Vue i18n catalog wiring for KDS shell is broken: keys present, lookup fails.",
+      "fix_hint": "Bundle is fresh; root cause is the i18n catalog NOT being loaded into the Vue app for the /admin/kitchen-display-system entry. Check (1) `resources/js/admin-kds.js` boot file — does it `import` the i18n plugin same way as admin-shell or pos-app? (2) `app.use(VueI18n)` ordering vs component mount, (3) `vue-i18n` initial messages payload — verify it includes the `label` namespace by adding a `console.log(this.$i18n.messages)` probe and re-running the spec headed."
+    },
+    {
+      "id": "B-002",
+      "state_artifact": "X3-02-drawer-open-with-history.png",
+      "category": "i18n_leak",
+      "severity": "P0",
+      "evidence": "Drawer header reads literal 'label.kds_history_title (13)' (with count parenthesized correctly — so count interp works but key text doesn't resolve). Every row status badge reads literal 'LABEL.KDS_STATE_DELIVERED', 'LABEL.KDS_STATE_PREPARED' (uppercased by `text-transform: uppercase` from `.kds-history-drawer__status` line 387). Source: `KdsHistoryDrawer.vue` line 40 + line 228-230 `this.$t('label.kds_state_*')`. Same root cause as B-001: keys present in JSON + bundle, runtime lookup returns the key.",
+      "fix_hint": "Same wiring fix as B-001 — both surfaces use `$t('label.*')`. Verify i18n plugin reaches `KdsHistoryDrawer` (child) AND `KitchenDisplaySystemComponent` (parent). One fix should heal both."
+    },
+    {
+      "id": "B-003",
+      "state_artifact": "tests/e2e/wave-x3-kds-history.spec.js:149",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Spec test #2 line 149: `expect(drawerText.toLowerCase()).toMatch(/(prêt|ready|prepared|jaha|قيد)/i);` — VACUOUS. The substring `prepared` appears inside the raw key `LABEL.KDS_STATE_PREPARED` when lowercased. The regex matches because the key itself contains the English word, not because i18n resolved. This is why the spec reports green-on-content despite the visible i18n leak in X3-02 / X3-04. A correct assertion would be exact-string `/^Prêt$|^Ready$|^Livré$|^Delivered$/` on each badge, AND a negative assertion `expect(drawerText).not.toMatch(/^[A-Z]+\\.[A-Z_]+$/m)` to refuse raw keys.",
+      "fix_hint": "Tighten the assertion: (1) replace substring regex with anchored exact match per locale; (2) add a global negative-regex sentinel rejecting `/\\b(label|kiosk|kds)\\.[a-z_.]+\\b/i` and `/\\b[A-Z]+\\.[A-Z_]+\\b/` on any innerText of the rendered drawer; (3) apply same sentinel to ALL Wave X specs to prevent future regressions."
+    },
+    {
+      "id": "B-004",
+      "state_artifact": "reports/test-e2e/wave-x-2026-05-21/round-1/playwright-stdout.log + wave-x3-rerun.log",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "GStack report claimed 'green via --retries=1'. The raw logs tell a different story: `playwright-stdout.log` (final tail) shows tests `:115 clicking trigger opens drawer with history` AND `:178 V1 contract: no revert button` BOTH FAILED with a tinker-shell escaping error: `php artisan tinker --execute  \\$order = new \\App\\Models\\Order(); ...` — the JS-side template builds the command with `\\$` instead of `$`. `wave-x3-rerun2.log` shows the same tests failing AGAIN on retry #1 (22.8s timeout) AND test #4 (close-drawer) also failing. Only test #1 (button-visible) was robustly green. Selling this as 'green' is audit drift. The X3-02 + X3-04 screenshots almost certainly come from a separate manual rerun (or a different commit on the test code that changed line 63's PHP template), NOT from the playwright run whose logs are committed.",
+      "fix_hint": "(1) Fix the tinker seeding template — the spec file lines 63-82 actually use single `$o->` correctly NOW, but the older log shows a broken version with `\\$order`. Verify the current spec file (single `$o`) actually runs green WITHOUT retries by running `npx playwright test tests/e2e/wave-x3-kds-history.spec.js --retries=0` and committing the fresh stdout log; (2) GStack agent should refuse to claim green when `--retries=1` was used to mask deterministic failure — flake tolerance is allowed for transient network glitches, not for code/shell-escape bugs."
+    },
+    {
+      "id": "B-005",
+      "state_artifact": "reports/test-e2e/wave-x-2026-05-21/x3-kds-history/screenshots/",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "The Wave X3 spec writes ONLY `.png` screenshots into `reports/test-e2e/wave-x-2026-05-21/x3-kds-history/screenshots/`. The REVIEWER_PROTOCOL §1 mandates a quartet (PNG + `.dom.html` + `.console.json` + `.network.json`) per visual state to enable category-6 (silent error) and category-10 (unexpected 4xx/5xx) detection. None of those siblings exist for X3-01..X3-04. Consequence: I cannot rule out a silent 4xx on `GET admin/kds-order/history-today` or hidden console errors. (The drawer DID render 13 items in X3-02, so the endpoint is at least returning 200 — but completeness of the audit is downgraded.)",
+      "fix_hint": "Either (a) extend the spec to dump `page.content()` to `.dom.html`, install console + response listeners persisting JSON, OR (b) globally adopt the test-e2e quartet helper used by Wave T R1-R5 specs (`tests/e2e/helpers/state-snapshot.js` if present)."
+    },
+    {
+      "id": "B-006",
+      "state_artifact": "X3-02-drawer-open-with-history.png (drawer rows)",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "Each row status badge uses background `#111111` + text `#ffffff` (header is dark; row badge inherits dark pill style) — ratio 19.5:1, AA OK on its own. HOWEVER the border-left colors `#1e88e5` (prepared = blue) `#fb8c00` (out = orange) `#2e7d32` (delivered = green) sit on `#fafafa` panel background, giving ratios ~3.0:1 (orange #fb8c00 vs #fafafa) — below AA 4.5:1 for non-text but acceptable per WCAG non-text 3:1 minimum. Marginal but probably OK since these are non-text semantic stripes. Flagged for visibility — owner may want to deepen the colors.",
+      "fix_hint": "Optional: darken orange to #e65100 (4.49:1) for chefs with mild deuteranopia. Keep blue/green as-is (both ≥ 3:1)."
+    },
+    {
+      "id": "B-007",
+      "state_artifact": "tests/e2e/wave-x3-kds-history.spec.js (whole)",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Spec coverage gaps for V1 contract: (a) no test for empty-state copy when zero PREPARED/OUT/DELIVERED today (the `kds-history-empty` data-testid is referenced but never asserted to render with the right text); (b) no test for branch-scope isolation — admin (branch_id=0) sees all branches' orders, non-admin chef (branch_id>0) sees only their own. Without this, a future BranchScope drop on `kds-order/history-today` would silently leak cross-branch orders to non-admin chefs (multi-tenant P0); (c) no throttle test (`60/min` per component header) — out of scope V1 but worth a backlog note; (d) no test for the trigger button focus-return after closing (X3-03 should assert `document.activeElement` is the trigger again).",
+      "fix_hint": "Add to V1.0.2 backlog: (1) empty-state test seeding zero today rows + asserting `kds-history-empty` text matches `label.kds_history_empty` (after B-001 fix), (2) BranchScope sentinel: log in as branch=2 user, seed orders in branch=1, hit endpoint, expect ≤2's-only, (3) focus-return assertion via `await expect(trigger).toBeFocused()` after `close`."
+    },
+    {
+      "id": "B-008",
+      "state_artifact": "X3-03-drawer-closed.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "After drawer close, the focus-return to the trigger button is NOT visually evident in X3-03 (no focus-visible ring on the 'label.kds_history_button' pill at top-right). The component has `:focus-visible` styling on `.kds-history-drawer__close:focus` (line 316-320) — outline yellow #ffd400 — but no such treatment is visible on the trigger button itself in `KitchenDisplaySystemComponent.vue` line 2409. Keyboard-only users may lose orientation after dismiss.",
+      "fix_hint": "Add `.kds-history-trigger:focus-visible { outline: 2px solid #ffd400; outline-offset: 2px; }` and a `this.$refs.trigger.focus()` call after `@close` in the host component. Re-run spec headed to verify ring is visible in X3-03."
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 2,
+    "P2": 4,
+    "P3": 0,
+    "open_P0": 2,
+    "open_P1": 2,
+    "open_P2": 4,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "verdict_rationale": "Two confirmed P0 i18n leaks visible on every chef-facing KDS surface (trigger button + drawer header + every status badge). Two P1 audit_integrity defects: spec assertion vacuous (substring `prepared` of raw key satisfies regex) AND GStack 'green-via-retries' framing hides deterministic seeding failure documented in committed logs. Cannot ship to chefs in this state."
+}

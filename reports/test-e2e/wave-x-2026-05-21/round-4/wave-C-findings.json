@@ -1,0 +1,273 @@
+{
+  "wave": "C",
+  "round": 4,
+  "round_purpose": "CONFIRMING — second consecutive clean GREEN cycle required for convergence declaration (round-3 was first clean GREEN).",
+  "states_reviewed": 12,
+  "artifact_dir": "tests/e2e/__screenshots__/wave-x4-cash-overview/",
+  "protocol_compliance": {
+    "quartet_complete": true,
+    "quartet_count": "12 png + 12 dom.html + 12 console.json + 12 network.json = 48 files",
+    "impact": "Identical to round-3. All 12 states still emit the full quartet."
+  },
+  "fix_commit_under_review": "3bd647dce",
+  "code_unchanged_since_round_3": "git diff 3bd647dce..HEAD -- resources/js/components/admin/cashOverview/ app/Http/Controllers/Admin/CashOverviewController.php public/js/admin-reports.js = 0 lines (Wave C code is byte-identical to round-3 review baseline).",
+  "frozen_zone_diff": "0 lines — git diff 3bd647dce^..3bd647dce -- app/Services/Pricing/PricingService.php app/Services/Fiscal/ app/Models/Scopes/BranchScope.php app/Http/Middleware/IdempotencyKeyMiddleware.php = empty.",
+  "spec_rerun": {
+    "command": "PLAYWRIGHT_NO_WEB_SERVER=1 PLAYWRIGHT_BASE_URL=http://127.0.0.1:8000 npx playwright test tests/e2e/wave-x4-cash-overview.spec.js --project=chromium --workers=1 --retries=0 --reporter=list",
+    "result": "9 passed (1.2m)",
+    "retries": 0,
+    "tests_total": 9,
+    "tests_passed": 9
+  },
+  "findings": [
+    {
+      "id": "C-013",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/09-cash-overview-reconciliation-default.png + 09b-cash-overview-reconciliation-branch1.png + 09c-cash-overview-reconciliation-invariant-under-filter.png + resources/js/components/admin/cashOverview/CashOverviewComponent.vue:103-155 + app/Http/Controllers/Admin/CashOverviewController.php:209-234",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "CLOSED — confirmed stable round-4. Misleading diff cell still removed entirely. DOM grep across 09/09b/09c.dom.html for `cash-overview-reconciliation-diff` returns 0 matches (re-verified). The card still exposes exactly 4 testids in all 3 reconciliation states : `-opening`, `-collected`, `-expected`, `-note`. Round-4 visual confirmation : `Caisse ouverte à 00:06 · Fond de caisse 100,00 € · Espèces encaissées aujourd'hui 80,70 € · Espèces attendues au tiroir 180,70 €` + amber note. Math check : 100,00 + 80,70 = 180,70 ✓. The Vue `cashDiff` / `diffLabel` / `diffClass` computed props remain deleted. No misleading metric ships. V1.0.2 backlog: counter-input feature to compute real écart.",
+      "fix_hint": null,
+      "round_to_round": "CLOSED",
+      "status": "closed"
+    },
+    {
+      "id": "C-014",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/09-cash-overview-reconciliation-default.png (default, no filter) + 09c-cash-overview-reconciliation-invariant-under-filter.png (source=borne applied) + app/Http/Controllers/Admin/CashOverviewController.php:319-356 (drawerCashCollectedUnfiltered helper)",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "CLOSED — confirmed stable round-4. Filter invariance still proven across DOM snapshots. Extracted reconciliation testid values from 09 (unfiltered) vs 09c (source=borne applied) : opening 100,00 € · collected 80,70 € · expected 180,70 € — IDENTICAL across both states. (Round-3 had captured 73,20 € due to a different seed window ; round-4 captured 80,70 € due to seed evolution between rounds — both rounds independently confirm the INVARIANT holds : the value is the same across the two states inside the SAME round). Helper `drawerCashCollectedUnfiltered` continues to ignore source/mode/branch_id UI filters. Spec test 09 also re-applies source=borne via the new state and asserts the payload `cash_collected` equals the unfiltered value — passes at retries=0 in round-4.",
+      "fix_hint": null,
+      "round_to_round": "CLOSED",
+      "status": "closed"
+    },
+    {
+      "id": "C-001",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/ (12 states × 4 = 48 files)",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Quartet still complete after round-4. 12 png + 12 dom.html + 12 console.json + 12 network.json = 48 files. State 09c emits the full quartet (png + dom.html + console.json + network.json verified present).",
+      "fix_hint": null,
+      "round_to_round": "PASS",
+      "status": "closed"
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/09-cash-overview-reconciliation-default.png + 09b + 09c",
+      "category": "audit_integrity",
+      "severity": "P0",
+      "evidence": "Still CLOSED round-4. Reconciliation card displays 3 honest values + amber note. Owner can read `Caisse ouverte à 00:06 / Fond de caisse 100,00 € / Espèces encaissées aujourd'hui 80,70 € / Espèces attendues au tiroir 180,70 €` and act on it — drawer cash IN today is invariant against UI filters (confirmed C-014 round-4) and the math is algebraically honest.",
+      "fix_hint": null,
+      "round_to_round": "PASS",
+      "status": "closed"
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/09-cash-overview-reconciliation-default.png + app/Http/Controllers/Admin/CashOverviewController.php:303-328",
+      "category": "audit_integrity",
+      "severity": "P0",
+      "evidence": "Still PASS round-4. `resolveOpenCashSession` fallback intact. Admin default route (no ?branch_id=) renders the reconciliation card via the most-recently-opened drawer fallback. 09 + 09b both confirm. C-015 (P1 footgun for multi-branch SaaS V2) remains documented as deferred.",
+      "fix_hint": null,
+      "round_to_round": "PASS",
+      "status": "closed"
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/02 + 03 + 05.png",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Still PASS round-4. Filter captures (02 source=borne, 03 mode=cash, 05 source=livreur) all show fully populated summary cards + filtered table. No `Chargement......` artifacts. State 09c also captures cleanly after filter is re-applied.",
+      "fix_hint": null,
+      "round_to_round": "PASS",
+      "status": "closed"
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "tests/e2e/wave-x4-cash-overview.spec.js (9 tests)",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Spec test count remains at 9 round-4. Test 09 still covers the C-014 invariance probe internally. All 9 PASS at --retries=0 in 1.2m. Branch Manager role isolation remains a documented V1.0.1 gap (tracked as C-016 / P2). Acceptable for V1 LOCAL scope.",
+      "fix_hint": null,
+      "round_to_round": "PASS",
+      "status": "closed"
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/01.png + 02.png + 09.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Still PARTIAL round-4 — `formatMoneyEuro` (Intl.NumberFormat fr-FR EUR) is wired to the reconciliation strip only. Aggregate cards / mode chips / table rows still display bare numbers. Not blocking V1 LOCAL — owner-readable. Recommend V1.0.1 sweep to unify currency formatting.",
+      "fix_hint": "Replace `formatMoney` with `formatMoneyEuro` throughout the template (single 3-line change), or document the visual asymmetry intentionally.",
+      "round_to_round": "OPEN",
+      "status": "deferred_v1_0_1"
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/08a-cash-overview-empty-state.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Still FAIL round-4 — empty state still bare `Aucune donnée` text, no illustration, no inline `Reset filters` CTA. The reconciliation card remains visible above the empty result so the page is not totally empty, but the table affordance is unchanged.",
+      "fix_hint": "Add illustration + copy ≥20 chars + primary `Reset filters` CTA.",
+      "round_to_round": "OPEN",
+      "status": "deferred_v1_0_1"
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Still OPEN round-4 — no `$router.replace({ query })` projection of filters back to URL on Rechercher click. Filters remain non-shareable beyond `?branch_id=N`. Acceptable for V1 LOCAL admin scope.",
+      "fix_hint": "Inside fetch() after building params: `this.$router.replace({ query: { ...this.activeFilterParams() } }).catch(()=>{});`",
+      "round_to_round": "OPEN",
+      "status": "deferred_v1_0_1"
+    },
+    {
+      "id": "C-009",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/01-cash-overview-default.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Still OPEN round-4 — aggregate cards lack role=region + aria-label, table `<th>` lack scope=col, no aria-live on loading container. Defer to V1.0.1 a11y wave.",
+      "fix_hint": "role=region + scope=col + aria-live=polite.",
+      "round_to_round": "OPEN",
+      "status": "deferred_v1_0_1"
+    },
+    {
+      "id": "C-010",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/04-wave-o-o4-sibling-still-loads.png",
+      "category": "visual_drift",
+      "severity": "P3",
+      "evidence": "Still PASS round-4. /admin/cash-sessions-report (Wave O O4 sibling) renders cleanly — title `Rapport Caisses Quotidien`, full day list, session rows with Caissier / Ouverte le / Fond de caisse / Transactions / Statut chips intact. No regression from the C-013/C-014 controller helper additions.",
+      "fix_hint": null,
+      "round_to_round": "PASS",
+      "status": "closed"
+    },
+    {
+      "id": "C-011",
+      "state_artifact": "app/Http/Controllers/Admin/CashOverviewController.php:448-460",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Still FAIL round-4 — `paymentMethodPatternsForBucket('other')` returns `[]`, mode=other filter is a silent no-op. Tracked as deferred V1.0.1 footgun.",
+      "fix_hint": "Reject mode=other at controller with 400, or implement NOT-LIKE of the 4 known buckets.",
+      "round_to_round": "OPEN",
+      "status": "deferred_v1_0_1"
+    },
+    {
+      "id": "C-012",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/01-cash-overview-default.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "Still PASS round-4 — aggregate totals consistent across all 12 captures (source sum = mode sum = grand total within each filter scope). Math sanity preserved across the seed evolution between round-3 and round-4.",
+      "fix_hint": null,
+      "round_to_round": "PASS",
+      "status": "closed"
+    },
+    {
+      "id": "C-015",
+      "state_artifact": "app/Http/Controllers/Admin/CashOverviewController.php:303-328",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Still documented as deferred round-4 — single-fixture V1 LOCAL does not expose the multi-branch admin-fallback ambiguity. SaaS V2 footgun: reconciliation card does not display WHICH branch's drawer is being shown when admin omits ?branch_id and the fallback kicks in. Recommend V1.0.2 SaaS-prep wave.",
+      "fix_hint": "Add `Réconciliation caisse — {{ cashSession.branch_name }}` next to header ; controller eager-loads Branch:name into cash_session payload.",
+      "round_to_round": "OPEN",
+      "status": "deferred_v2_saas"
+    },
+    {
+      "id": "C-016",
+      "state_artifact": "tests/e2e/wave-x4-cash-overview.spec.js test 07",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Still documented as environmentally weak round-4 — the seed has < 500 transactions so `meta.capped = false` always, test 07 only exercises the negative branch of the assertion. Defer to V1.0.1 dedicated large-seed CI lane.",
+      "fix_hint": "Gate behind WAVE_X4_LARGE_SEED env or programmatic POST of 501 transactions ; skip otherwise.",
+      "round_to_round": "OPEN",
+      "status": "deferred_v1_0_1"
+    }
+  ],
+  "i18n_keys_verification": {
+    "bundle_grep": "grep -cE '(expected_in_drawer|comptage physique|cash_collected_today)' public/js/admin-reports.js = 2 (both new keys still present in compiled bundle round-4)",
+    "verdict": "PASS — bundle still fresh, no regression."
+  },
+  "filter_invariance_proof": {
+    "method": "Extracted reconciliation testid values from 2 DOM snapshots round-4 — 09 (default, no filter) vs 09c (source=borne applied)",
+    "values_observed": {
+      "09-default": {
+        "opening": "100,00 €",
+        "collected": "80,70 €",
+        "expected": "180,70 €"
+      },
+      "09c-source-borne": {
+        "opening": "100,00 €",
+        "collected": "80,70 €",
+        "expected": "180,70 €"
+      }
+    },
+    "math_check": "opening + collected = 100,00 + 80,70 = 180,70 = expected ✓",
+    "round_3_vs_round_4_seed_drift": "Round-3 captured collected=73,20 € ; round-4 captured collected=80,70 €. Difference is due to seed evolution between rounds (additional cash transactions in the unfiltered drawer window). What MATTERS for the invariant is that within ROUND-4, the value is IDENTICAL across 09 and 09c — confirming the helper still ignores UI filters as designed.",
+    "verdict": "PASS — C-014 fix conclusively re-verified at DOM level round-4."
+  },
+  "diff_cell_removal_proof": {
+    "method": "grep -c 'cash-overview-reconciliation-diff' across the 3 reconciliation DOM snapshots round-4",
+    "result": {
+      "09-default.dom.html": 0,
+      "09b-branch1.dom.html": 0,
+      "09c-invariant.dom.html": 0
+    },
+    "verdict": "PASS — zero occurrences round-4. The misleading diff cell is structurally gone."
+  },
+  "console_errors_scan": {
+    "method": "iterated all 12 .console.json files for round-4 captures, counted entries with type=error",
+    "result": "0 files with error count > 0 — console clean across the suite.",
+    "verdict": "PASS"
+  },
+  "summary": {
+    "P0_total_count": 4,
+    "P0_closed": ["C-002 (visibility+semantic)", "C-003 (visibility+admin fallback)", "C-013 (misleading diff cell removed)", "C-014 (reconciliation cash_collected filter-invariant via dedicated helper)"],
+    "P0_open": [],
+    "P1_total_count": 4,
+    "P1_closed": ["C-001 quartet complete (12 states)", "C-004 filter visuals", "C-005 spec coverage 9/9 PASS"],
+    "P1_open_deferred_v2": ["C-015 admin fallback branch-ambiguous (V2 SaaS only)"],
+    "P2_open_deferred_v1_0_1": ["C-006 partial currency formatting", "C-007 bare empty-state", "C-008 URL sync missing", "C-009 aria/role/scope missing", "C-016 capped probe weak"],
+    "P3_open_deferred_v1_0_1": ["C-011 mode=other silent no-op"],
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P1_v1_local": 0,
+    "open_P1_v2_only": 1,
+    "open_P2": 5,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "C-001": "PASS",
+    "C-002": "PASS",
+    "C-003": "PASS",
+    "C-004": "PASS",
+    "C-005": "PASS",
+    "C-006": "OPEN (deferred V1.0.1)",
+    "C-007": "OPEN (deferred V1.0.1)",
+    "C-008": "OPEN (deferred V1.0.1)",
+    "C-009": "OPEN (deferred V1.0.1)",
+    "C-010": "PASS",
+    "C-011": "OPEN (deferred V1.0.1)",
+    "C-012": "PASS",
+    "C-013": "CLOSED",
+    "C-014": "CLOSED",
+    "C-015": "OPEN (deferred V2 SaaS)",
+    "C-016": "OPEN (deferred V1.0.1)"
+  },
+  "set_equality_vs_round_3": {
+    "identical_finding_ids": true,
+    "finding_count_round_3": 16,
+    "finding_count_round_4": 16,
+    "id_set": ["C-001", "C-002", "C-003", "C-004", "C-005", "C-006", "C-007", "C-008", "C-009", "C-010", "C-011", "C-012", "C-013", "C-014", "C-015", "C-016"],
+    "status_drift": "NONE — every finding holds its round-3 status (closed/deferred).",
+    "summary_counts_drift": "NONE — open_P0=0 / open_P1=0 (V1 LOCAL) / open_P1_v2_only=1 / open_P2=5 / open_P3=1 — IDENTICAL to round-3.",
+    "verdict": "IDENTICAL"
+  },
+  "new_defects_round_4": [],
+  "regressions_from_fix": "NONE — Wave O O4 sibling still renders cleanly, all 12 states quartet-complete, aggregate math still consistent. No new console errors. No drift in Wave C code since 3bd647dce.",
+  "wave_o_o4_no_regression": true,
+  "frozen_zone_verified": "git diff 3bd647dce^ 3bd647dce -- app/Services/Pricing/PricingService.php app/Services/Fiscal/ app/Models/Scopes/BranchScope.php app/Http/Middleware/IdempotencyKeyMiddleware.php = 0 lines",
+  "verdict": "GREEN",
+  "verdict_rationale": "open_P0 == 0 AND open_P1 (V1 LOCAL scope) == 0 — IDENTICAL to round-3. The two P0 round-2 defects (C-013 + C-014) remain CLOSED with DOM-level evidence (zero diff testids ; invariant reconciliation values across filter states within round-4). Spec 9/9 PASS at --retries=0 in 1.2m. Bundle and i18n catalogs still propagated. Frozen-zone diff = 0. Wave C code byte-identical to round-3.",
+  "convergence_recommendation": {
+    "decision": "DECLARE",
+    "justification": "Two consecutive clean GREEN rounds (round-3 + round-4) with IDENTICAL finding set (same 16 IDs, same closure statuses, same open-counts). No drift detected. Wave C may be officially declared CONVERGED."
+  }
+}

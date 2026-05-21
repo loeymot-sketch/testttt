@@ -1,0 +1,209 @@
+{
+  "wave": "A",
+  "scope": "POS counter-collect modal (X1) + POS main-page shortcuts (X2)",
+  "round": 2,
+  "states_reviewed": 7,
+  "artifact_dir": "tests/e2e/__screenshots__/wave-x-pos-x1-x2/",
+  "fix_commit_under_review": "e7920caf6",
+  "artifacts_summary": {
+    "png_count": 8,
+    "dom_html_count": 7,
+    "console_json_count": 7,
+    "network_json_count": 7,
+    "note": "8th PNG (03-shortcut-cash-card-row.png) is an intentional clip-crop side-frame, not a full state — no companion files expected. The 7 full states each have the complete quartet."
+  },
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "wave-x-pos-x1-x2/02-pos-shortcuts-visible.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "ROUND-2 EVIDENCE: 02-pos-shortcuts-visible.png now renders real amounts on every PRÊT À LIVRER row — N°A0005=8,50 € | N°A0006=7,00 € | N°A0007=12,40 € | N°A0008=14,50 €. Source-read confirms new app/Http/Resources/PosShortcutOrderResource.php exposes a rounded float `total` and OrderStatusScreenController::index now serializes through PosShortcutOrderResource::collection. publicIndex still uses CDSOrderDetailsResource (no PII leak on the public wall TV). PII surface inspected: PosShortcutOrderResource exposes only {id, order_serial_no, token, queue_number, order_type, status, total} — no email/phone/address/customer/auth-token. The `token` field is the order token already exposed by CDSOrderDetailsResource, not a Sanctum auth token, no regression.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "closure_round": 2,
+      "closure_verdict": "PASS"
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "wave-x-pos-x1-x2/06-counter-collect-card-mode.png",
+      "category": "element_overlap",
+      "severity": "P1",
+      "evidence": "ROUND-2 EVIDENCE: source diff PosCounterCollectModal.vue:550-561 splits `.cc-mode-btn:hover:not(:disabled)` into a NEW selector `:hover:not(:disabled):not(.is-active)` (subtle border/bg, NEVER on the active button) AND `.is-active` (brand-red border + ffeaea fill + inset 1px ring). DOM scan of 06-counter-collect-card-mode.dom.html confirms exactly ONE button carries `is-active`: `cc-mode-btn cc-mode-btn--CARD is-active` (Espèce/Mobile/Ticket do NOT). The 05-counter-collect-cash-mode.png (CASH default) visually confirms the new inset-ring shading: only Espèce shows brand-red border+inset, the other three are plain gray. The visual red border perceived around Espèce in 06 was the in-button mode-icon image (a bill graphic), not the button border (border is gray when not active per the new CSS).",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "closure_round": 2,
+      "closure_verdict": "PASS"
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "wave-x-pos-x1-x2/04-counter-collect-modal-open.png",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "evidence": "ROUND-2 EVIDENCE: 04-counter-collect-modal-open.png shows the modal cleanly composited — backdrop is uniform translucent dark, no underlying POS rows bleed through behind the title, no numpad-over-category overlap. Spec lines 179-180, 239-240, 304-305 add `requestAnimationFrame x2 + page.waitForTimeout(220)` between toBeVisible() and snap(), which clears the 160ms fade-enter transition. Mid-transition artifact eliminated.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "closure_round": 2,
+      "closure_verdict": "PASS"
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "wave-x-pos-x1-x2/04-counter-collect-modal-open.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "ROUND-2 EVIDENCE: still open. Fix commit explicitly defers — `A-004 aria-label on close/numpad-delete — backlog (no a11y-axe gate in this wave; sentinel pattern not yet established)`. Modal close (× glyph) and numpad delete still icon-only without aria-label. Acceptable deferral for this wave since no a11y sentinel exists yet to enforce it, but the finding remains OPEN at P2 — pure-axe gate must enforce this in a follow-up wave.",
+      "fix_hint": "Backlog: add :aria-label=\"$t('label.close')\" on .cc-modal-close and equivalent on the numpad delete button. Add an a11y-axe sentinel for the modal.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "closure_round": null,
+      "closure_verdict": "FAIL (deferred by owner)"
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "wave-x-pos-x1-x2/01-pos-main-mount.png",
+      "category": "loading_state",
+      "severity": "P3",
+      "evidence": "ROUND-2 EVIDENCE: 01-pos-main-mount.png now renders cleanly — no global loader overlay, no striped spinner. Page reached steady state before snap. The 02 capture remains the layout-audit reference, and 01 no longer obscures any operator-bar element. Cosmetic defect resolved by the natural timing of the new mega-audit recorder + the rAF settle pattern adopted across the spec.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "closure_round": 2,
+      "closure_verdict": "PASS"
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "wave-x-pos-x1-x2.spec.js (test 4)",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "ROUND-2 EVIDENCE: new test 4 'Counter-collect CASH confirm POSTs with X-Idempotency-Key + row disappears' (spec line 270) seeds a fresh PENDING_COUNTER kiosk-cash order via seed-kiosk-cash-pending.js, arms waitForRequest + waitForResponse on the POST .../confirm BEFORE clicking, asserts X-Idempotency-Key header matches `^pos-counter-collect-${id}-\\d+-\\d+$` (the documented formula), asserts body {mode: 1 (CASH), received >= prefilled total}, asserts confirm response < 300 (with explicit error-surfacing throw on >=300, not silent), asserts modal hides, then awaits a /pending GET that fires AFTER the confirm response (closure-tracked timestamp) and verifies the seeded order id is no longer in the data array. The 08-counter-collect-confirm-success.png screenshot shows the toast 'Tiroir ouvert (simulation) — Commande N°9219 encaissée' and the À ENCAISSER BORNE row removed. Network.json for state 08 is empty `[]` (no 4xx/5xx, recorder only logs status>=400 or duration>2000ms — confirms the confirm POST returned 2xx cleanly).",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "closure_round": 2,
+      "closure_verdict": "PASS"
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "wave-x-pos-x1-x2.spec.js",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "ROUND-2 EVIDENCE: grep -c '\\.catch(' returns 3 (was 6+ at round-1). Remaining 3 occurrences are: (a) line 56 — a COMMENT in the docblock describing what was removed, (b) line 334 — a fire-and-forget on a side-effect closure that mirrors confirmCompletedAt timestamp, body of catch is empty by design (the same promise IS awaited elsewhere with hard error surfacing on line 361), (c) line 363 — `.text().catch(() => '<no body>')` on an ALREADY-non-OK response while building the error message, which is acceptable defensive code (the spec is already throwing). The new centralised waitForCashPending() (lines 58-65) throws on 5xx or 30s hang — no more silent green-skip on endpoint failure. POS_WAVE_X_REQUIRE_SEED=1 escape hatch documented to hard-fail empty-DB on CI.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "closure_round": 2,
+      "closure_verdict": "PASS"
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "wave-x-pos-x1-x2/ (all states)",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "ROUND-2 EVIDENCE: spec imports attachMegaAuditRecorder from tests/e2e/helpers/mega-audit-snap.js (line 44), attaches a recorder in each of the 4 tests (lines 73, 137, 212, 271), and calls recorder.snap(name) for every full state. Directory listing: 8 PNGs, 7 .dom.html, 7 .console.json, 7 .network.json — quartet complete for every full state (state 03 is an intentional clip-crop side-frame, not a full state, no companion expected). DOM files are 420-430 KB each (well-formed, contains POS shell). console.json contains environmental warnings only (pusher ws://6001 unreachable + info log) — zero JS errors, zero pageerror events. network.json is `[]` for clean states (recorder only logs status>=400 or duration>2000ms by design — an empty array means all responses were <400 and fast, which is the desired state). Adversarial reviewer was able to independently inspect console+DOM+network for every state — protocol §Artifact quartet now satisfied.",
+      "fix_hint": "(closed)",
+      "status": "closed",
+      "first_seen_round": 1,
+      "rounds_open": 1,
+      "closure_round": 2,
+      "closure_verdict": "PASS"
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "wave-x-pos-x1-x2/02-pos-shortcuts-visible.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "ROUND-2 EVIDENCE: still informational, no fix shipped. Empty-state copy 'Aucun article. Sélectionnez un produit dans la grille.' on right-side ticket panel meets the ≥20 chars protocol criterion. Backlog UX polish (add CTA 'Voir le catalogue') — not a blocker.",
+      "fix_hint": "Backlog: add primary CTA to ticket-panel empty state.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "closure_round": null,
+      "closure_verdict": "FAIL (deferred by owner)"
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "wave-x-pos-x1-x2/05-counter-collect-cash-mode.png",
+      "category": "text_truncation",
+      "severity": "P3",
+      "evidence": "ROUND-2 EVIDENCE: 05-counter-collect-cash-mode.png still shows only top numpad row '1 2 3 ⌫' — the rest of the numpad is below-fold in the modal's max-height:92vh overflow-y:auto container at 1280x720 viewport. Not a defect (modal scrolls), but capture does not visually attest the rest of the keypad. Fix commit explicitly deferred. Out of scope.",
+      "fix_hint": "Backlog: widen spec viewport to 1440x900 OR add a 05b-bottom capture after scrolling the modal-internal to the bottom.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 2,
+      "closure_round": null,
+      "closure_verdict": "FAIL (deferred by owner)"
+    }
+  ],
+  "round_to_round_closures": {
+    "A-001": "PASS",
+    "A-002": "PASS",
+    "A-003": "PASS",
+    "A-004": "FAIL (deferred by owner — P2 backlog)",
+    "A-005": "PASS",
+    "A-006": "PASS",
+    "A-007": "PASS",
+    "A-008": "PASS",
+    "A-009": "FAIL (deferred by owner — P3 backlog)",
+    "A-010": "FAIL (deferred by owner — P3 backlog)"
+  },
+  "verified_gstack_claims_round_2": {
+    "pos_shortcut_resource_no_pii_leak": {
+      "claim": "PosShortcutOrderResource exposes only {id, order_serial_no, token, queue_number, order_type, status, total} — no PII",
+      "verdict": "PASS — file read confirms exactly those 7 fields, no email/phone/address/customer. The `token` field is the existing order token (already exposed by CDSOrderDetailsResource on public wall), not a Sanctum auth token. No regression vs. round-1."
+    },
+    "public_wall_still_pii_free": {
+      "claim": "publicIndex still uses CDSOrderDetailsResource → no `total` leak on the lobby TV",
+      "verdict": "PASS — diff of OrderStatusScreenController.php shows only index() swapped; publicIndex still serializes through CDSOrderDetailsResource."
+    },
+    "frozen_zone_diff_zero_in_this_commit": {
+      "claim": "ZERO touches to PaymentComponent.vue / PosV5TrancheRow.vue / PricingService.php / Fiscal services",
+      "verdict": "PASS — `git show e7920caf6 --name-only` lists only: PosShortcutOrderResource.php (NEW), OrderStatusScreenController.php, PosCounterCollectModal.vue (NOT frozen), spec, helpers, mix-rebuild artifacts. NO frozen-zone path appears."
+    },
+    "css_active_state_singular": {
+      "claim": "Cashier sees exactly one active mode at any moment",
+      "verdict": "PASS — DOM grep of 06-counter-collect-card-mode.dom.html shows only `cc-mode-btn--CARD` carries `is-active`; CASH/MOBILE/TICKET have no `is-active` class. CSS selector `:not(.is-active)` on the new hover rule prevents hover residue on the selected button. Visual 05 confirms the inset 1px ring distinguishes the active mode from any hover state."
+    },
+    "console_clean_no_js_errors": {
+      "claim": "No new console errors introduced by test 4",
+      "verdict": "PASS — 04/06/08.console.json show only `warning` (pusher ws://6001 unreachable) + `info` (PosSyncService fallback disabled). Both are environmental, not new. Zero `error` level, zero `pageerror`."
+    },
+    "network_clean_no_4xx_5xx_on_confirm": {
+      "claim": "Confirm POST returns 2xx cleanly",
+      "verdict": "PASS — network.json for 08-counter-collect-confirm-success is `[]` (recorder only logs status>=400 or duration>2000ms). Confirms the POST .../confirm returned <400 and the toast/screenshot show success-state."
+    }
+  },
+  "new_round_2_defects": [],
+  "sentinels_and_frozen_zone": {
+    "paymentComponentEmitsJsdocList_sentinel_present": true,
+    "fix_commit_touched_frozen_files": false,
+    "fix_commit_files": [
+      "app/Http/Controllers/Admin/OrderStatusScreenController.php",
+      "app/Http/Resources/PosShortcutOrderResource.php (NEW)",
+      "public/js/pos-app.js (mix-rebuild)",
+      "public/mix-manifest.json (mix-rebuild)",
+      "resources/js/components/admin/pos/PosCounterCollectModal.vue (NOT frozen)",
+      "tests/e2e/helpers/rate-limit.js",
+      "tests/e2e/helpers/seed-kiosk-cash-pending.js (NEW)",
+      "tests/e2e/wave-x-pos-x1-x2.spec.js"
+    ],
+    "note": "Branch-wide `git diff main..HEAD` shows PaymentComponent.vue heavily modified — this is pre-existing on the heal/cms-pr1-quickwins-2026-05-18 long-running branch (POS V5 design convergence wave), NOT introduced by e7920caf6. The fix commit under review touched zero frozen-zone files."
+  },
+  "summary": {
+    "P0": 1, "P1": 3, "P2": 3, "P3": 3,
+    "open_P0": 0, "open_P1": 0, "open_P2": 1, "open_P3": 2,
+    "closed_in_round_2": 7,
+    "deferred_to_backlog": 3
+  },
+  "verdict": "GREEN",
+  "verdict_reason": "open_P0 == 0 AND open_P1 == 0. All 4 critical-tier findings from round-1 (A-001 P0 numeric integrity, A-002 P1 element overlap, A-006 P1 audit integrity confirm POST, A-007 P1 silent catch swallows, A-008 P1 missing quartet) closed PASS with independent visual + DOM + source-code evidence. The 3 remaining open P2/P3 findings (A-004 aria-label, A-009 empty-state CTA, A-010 numpad below-fold capture) are explicitly deferred to backlog by owner and do not block protocol §verdict GREEN gate (open_P0==0 AND open_P1==0). No new round-2 defects introduced — console clean, network clean, frozen-zone diff zero in fix commit, no PII leak in new resource."
+}

@@ -1,0 +1,203 @@
+{
+  "wave": "C",
+  "round": 2,
+  "states_reviewed": 11,
+  "artifact_dir": "tests/e2e/__screenshots__/wave-x4-cash-overview/",
+  "protocol_compliance": {
+    "quartet_complete": true,
+    "quartet_count": "11 png + 11 dom.html + 11 console.json + 11 network.json = 44 files",
+    "impact": "C-001 (P1 audit_integrity) closed. All 11 states emit the full quartet; reviewer can verify network status, console errors, DOM testids without rerunning."
+  },
+  "fix_commit_under_review": "0f6b18c967",
+  "frozen_zone_diff": "0 lines — PricingService / Fiscal/ / BranchScope / IdempotencyKeyMiddleware unchanged in 0f6b18c967^..0f6b18c967.",
+  "findings": [
+    {
+      "id": "C-013",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/09-cash-overview-reconciliation-default.png + 02-cash-overview-source-borne.png + 03-cash-overview-mode-cash.png + 05-cash-overview-source-livreur.png + 06-cash-overview-date-range-yesterday-today.png + 09b-cash-overview-reconciliation-branch1.png + resources/js/components/admin/cashOverview/CashOverviewComponent.vue:283-288 + app/Http/Controllers/Admin/CashOverviewController.php:239-242",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "The reconciliation diff is tautologically equal to `-opening_amount` and never reflects a real écart. Algebraic proof:\n  • Controller (CashOverviewController.php:239-242): `$expectedCash = $cashSession->opening_amount + $cashCollectedToday`.\n  • Vue (CashOverviewComponent.vue:283-288): `cashDiff = cash_collected - expected_cash`.\n  • Substitute: cashDiff = cash_collected − (opening_amount + cash_collected) = −opening_amount.\nEmpirical confirmation (opening_amount fixture = 100 €):\n  • 09 default: collected 58,20 € − expected 158,20 € = −100,00 € (manquant).\n  • 09b branch1: collected 58,20 € − expected 158,20 € = −100,00 € (manquant).\n  • 02 source=borne: collected 27,40 € − expected 127,40 € = −100,00 € (manquant).\n  • 03 mode=cash: collected 58,20 € − expected 158,20 € = −100,00 € (manquant).\n  • 05 source=livreur: collected 18,30 € − expected 118,30 € = −100,00 € (manquant).\n  • 06 date-range yesterday→today: identical −100,00 €.\nSix independent screen captures all show exactly −opening_amount; this is not a coincidence, it is the algebraic identity above. The owner mandate is « détecter écarts (cash manquant) » — but the diff cannot distinguish a healthy drawer from a 100 €-short drawer. The owner-headline KPI shipped is mathematically meaningless. To compute a true écart, the controller must either ingest a counted-cash value (cashier-input) or compute expected_cash as something independent of cash_collected (e.g. opening + cash_collected and compare to an Actual drawer count). The current model conflates Expected and Collected and is unusable for reconciliation.",
+      "fix_hint": "Two correct shapes: (a) Add a `counted_cash` POST endpoint where cashier records the physical drawer count, then `diff = counted_cash - expected_cash` (where expected = opening + collected); display BOTH counted + expected + diff. (b) For an admin read-only view in V1 LOCAL scope, expose three values without computing a misleading diff: opening / cash_collected_today / 'drawer-count not entered yet — diff unavailable'. Do NOT ship a diff cell whose value is mathematically locked to a fixed identity."
+    },
+    {
+      "id": "C-014",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/02-cash-overview-source-borne.png + 03-cash-overview-mode-cash.png + 05-cash-overview-source-livreur.png + app/Http/Controllers/Admin/CashOverviewController.php:222-238",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "The reconciliation `cash_collected` value is polluted by the source / mode UI filter. Empirical:\n  • Unfiltered (09 / 09b): encaissées = 58,20 € (= all cash transactions, the true drawer cash IN today).\n  • source=borne (02): encaissées = 27,40 € — only borne-cash, NOT the drawer cash.\n  • source=livreur (05): encaissées = 18,30 € — only livreur-cash.\n  • mode=cash (03): encaissées = 58,20 € (happens to match because filter already restricts to cash).\nRoot cause: controller line 223 `$summary['by_mode']['cash']['total']` is consumed after the source/mode SQL where-clauses are applied. The reconciliation strip is a property of the cash drawer session itself — physical cash IN does not change based on what the admin filters in the UI. A cashier glancing at 02 may believe the drawer holds 27,40 € today when it actually holds 58,20 €. Combined with C-013 this means filtering source=borne shows a misleading `Écart caisse : −100,00 € (manquant)` despite the drawer being mathematically untouched. Reconciliation must be computed once per request from an unfiltered scope (or from the dedicated CashDrawerSession aggregate), not from the filtered `$transactions` collection.",
+      "fix_hint": "In CashOverviewController::index, compute the reconciliation `cash_collected` from a SEPARATE query restricted to the drawer's branch + the day, IGNORING the source / mode / branch_id-other-than-drawer UI filters. Alternative: hide the reconciliation card whenever source or mode filters are active (display 'reset filters to view reconciliation'). Either fix dissociates the écart card from the visual filter chrome."
+    },
+    {
+      "id": "C-001",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/ (all 11 states)",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "All 11 states now emit the full quartet (11 png + 11 dom.html + 11 console.json + 11 network.json = 44 files). Verified via `ls | grep -E '\\.(png|dom\\.html|console\\.json|network\\.json)$'` and DOM testids 'cash-overview-reconciliation-{collected,expected,diff}' grep-positive in 09 and 09b DOM snapshots. mega-audit-snap.js helper attached in spec line 30.",
+      "fix_hint": null,
+      "round_to_round": "PASS"
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/09-cash-overview-reconciliation-default.png + 09b-cash-overview-reconciliation-branch1.png + resources/js/components/admin/cashOverview/CashOverviewComponent.vue:108-152",
+      "category": "audit_integrity",
+      "severity": "P0",
+      "evidence": "Reconciliation card now renders. DOM confirms three new testids cash-overview-reconciliation-{collected,expected,diff}. Visually the card shows: Caisse ouverte à 00:06, Fond de caisse 100,00 €, Espèces encaissées 58,20 €, Espèces attendues 158,20 €, Écart caisse −100,00 € (manquant) in text-red-700. Card is reachable in both admin default (09) AND ?branch_id=1 (09b) paths. The unshipped feature is now visible. HOWEVER — see C-013: the diff value displayed is mathematically meaningless. The card RENDERS but the écart MATH is broken, so the owner KPI is not actually shipped. C-002 surface fix landed, semantic fix failed.",
+      "fix_hint": "C-002 (visibility) PASSES. The deeper math defect is escalated to C-013 (P0).",
+      "round_to_round": "PARTIAL"
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/09-cash-overview-reconciliation-default.png + app/Http/Controllers/Admin/CashOverviewController.php:303-328",
+      "category": "audit_integrity",
+      "severity": "P0",
+      "evidence": "`resolveOpenCashSession()` now falls back to the most-recently-opened drawer when admin has no `?branch_id=` (lines 322-327). 09 capture taken WITHOUT branch_id query confirms the card mounts. 09b confirms admin with explicit ?branch_id=1 also works (same drawer because fixture has only one branch). HOWEVER — see C-015 (P1) — the fallback may surface data from a wrong branch when multiple branches each have an open drawer.",
+      "fix_hint": "C-003 (visibility) PASSES.",
+      "round_to_round": "PASS"
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/02-cash-overview-source-borne.png + 03-cash-overview-mode-cash.png + tests/e2e/wave-x4-cash-overview.spec.js:101-110",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Captures 02 and 03 no longer show `Chargement......`. Both render fully populated summary cards + filtered table + dropdown showing the active filter (Borne / Espèce). DOM confirms `data-testid=cash-overview-summary` block fully populated. Spec uses `gotoAndWaitInitial`-style awaiter to gate screenshots.",
+      "fix_hint": null,
+      "round_to_round": "PASS"
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "tests/e2e/wave-x4-cash-overview.spec.js (9 tests)",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Spec test count grew from 4 to 9. Coverage now: 01 mount / 02 source-borne / 03 mode-cash / 04 O4 sibling no-regression / 05 source-livreur / 06 custom date range / 07 capped-probe / 08 empty-state with reset / 09 reconciliation default + branch_id=1. Missing from round-1 wishlist: (a) Branch Manager role isolation (only admin tested) — not in spec; (b) clear filters button - exercised inside test 08 but not standalone-named; (c) invalid date range 422 — not tested. (a) is the only material gap, demoted to C-016 P2.",
+      "fix_hint": null,
+      "round_to_round": "PARTIAL"
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/09-cash-overview-reconciliation-default.png + resources/js/components/admin/cashOverview/CashOverviewComponent.vue:82,94,172,227,386",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "`formatMoneyEuro` (Intl.NumberFormat fr-FR EUR) added but ONLY wired to the reconciliation strip (lines 129/136/143). Aggregate Grand-total / Caisse / Borne / Livreur cards (line 82, 94), mode chips (172), and per-transaction table rows (227) still call the old `formatMoney(v)` which returns bare `Number.toFixed(2)` with no €. Screenshots 01/02/03/05/06/07/09/09b all show `82.50`, `12.50`, `51.70`, etc. without € glyph. Numbers arithmetically correct (source sum 12.50+51.70+18.30 = 82.50 ✓ and mode sum 58.20+9.80+14.50 = 82.50 ✓ across all captures) but currency context is asymmetric: reconciliation strip says `158,20 €` while the source cards say `82.50`.",
+      "fix_hint": "Either (a) replace `formatMoney` with `formatMoneyEuro` throughout (single 3-line change in template), OR (b) document the choice — bare numbers for table density, € for reconciliation. Recommend (a) for V1 consistency.",
+      "round_to_round": "PARTIAL"
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/08a-cash-overview-empty-state.png",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Empty state still rendered as plain centered `Aucune donnée` text. No illustration, no primary CTA (Reset filters button). Fails REVIEWER_PROTOCOL §5 (0 of 3 criteria). The reconciliation card stays visible even with empty results so the page is not totally empty, but the bottom 'no rows' affordance is unchanged from round-1.",
+      "fix_hint": "Same as round-1 hint — add illustration + copy ≥20 chars + primary `Reset filters` CTA.",
+      "round_to_round": "FAIL"
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue:254-269",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Round-1 hint asked for `$router.replace({ query: ... })` to keep address bar in sync with active filters. The component does now hydrate from $route.query on initial mount (watcher block lines 306-309 mentioned) but the active-filter→URL projection on Rechercher click is not visible in the diff. Filter URLs still unsharable beyond ?branch_id=N.",
+      "fix_hint": "Add `this.$router.replace({ query: { ...this.activeFilterParams() } }).catch(()=>{});` inside fetch() after building params.",
+      "round_to_round": "OPEN"
+    },
+    {
+      "id": "C-009",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/01-cash-overview-default.dom.html",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "DOM now available for verification. Aggregate cards still lack `role=region` + aria-label. Table `<th>` lack `scope=col`. No `aria-live` on the loading container. Filter labels exist but use `db-field-title after:hidden` class — screen-reader exposed but visual styling hides the required-* indicator. Mode chips (`Espèce 4 · 58.20`) are plain `<div>` with no role.",
+      "fix_hint": "Same hint as round-1 — role=region + scope=col + aria-live=polite. Defer to V1.0.1 a11y wave if not in V1 LOCAL scope.",
+      "round_to_round": "OPEN"
+    },
+    {
+      "id": "C-010",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/04-wave-o-o4-sibling-still-loads.png",
+      "category": "visual_drift",
+      "severity": "P3",
+      "evidence": "04 capture now shows Filiale chip fully hydrated (`Le Cayenne (Principal)`) and the page title `Rapport Caisses Quotidien` is visible. The sibling /admin/cash-sessions-report rendered without regression from the new resolveOpenCashSession fallback. 04.dom.html also clean, no broken rows from the X4 changes.",
+      "fix_hint": null,
+      "round_to_round": "PASS"
+    },
+    {
+      "id": "C-011",
+      "state_artifact": "app/Http/Controllers/Admin/CashOverviewController.php:448-460",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "`paymentMethodPatternsForBucket('other')` still returns `[]` (line 456). Filter loop becomes silent no-op exactly as round-1 reported. Footgun unchanged.",
+      "fix_hint": "Either reject mode=other at the controller with 400, or implement NOT LIKE of the 4 known buckets. Recommend reject.",
+      "round_to_round": "FAIL"
+    },
+    {
+      "id": "C-012",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/01-cash-overview-default.png",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "Below-the-fold rows. Default seed now has 6 transactions (vs round-1's 5) — first 4 rows visible in screenshot, last 2 below the viewport. Aggregate totals verified consistent across all 11 captures: source sum = mode sum = grand total. No data integrity issue; screenshot framing.",
+      "fix_hint": null,
+      "round_to_round": "PASS"
+    },
+    {
+      "id": "C-015",
+      "state_artifact": "app/Http/Controllers/Admin/CashOverviewController.php:303-328",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "The new admin fallback `resolveOpenCashSession` returns the most-recently-opened drawer across ALL branches when admin omits ?branch_id (lines 322-327, orderByDesc('opened_at')->first()). The controller then sees `branchFilter === null` and the reconciliation `cash_collected` calculation path (line 224-237) recomputes cash scoped to that drawer's branch — GOOD. BUT the rendered card shows ONLY the values (opening / collected / expected / diff) without any indication of WHICH branch's drawer is being reconciled. In a multi-branch deployment the admin clicking /admin/cash-overview on a Monday morning would see the reconciliation of WHATEVER branch happened to open its drawer last — could be a different branch than the one being managed. Single-fixture V1 LOCAL won't expose this but it's a P1 footgun for SaaS V2. Owner-grade UI must label the drawer's branch_id next to 'Réconciliation caisse'.",
+      "fix_hint": "In the reconciliation strip add a labeled span showing the drawer's branch name when admin global view falls back: `Réconciliation caisse — {{ cashSession.branch_name || 'Branche '+cashSession.branch_id }}`. Requires controller to also include `branch_name` in `cash_session` payload (single eager-load on `Branch:name`)."
+    },
+    {
+      "id": "C-016",
+      "state_artifact": "tests/e2e/wave-x4-cash-overview.spec.js (test 07 environmental weakness)",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Test `07 capped notice or full table rendered (probe meta.capped path)` reads `body.meta.capped` and asserts ONE of two branches; the seed fixture has 6 transactions so `cappedFlag = false` always, and only the negative-assertion path executes. The capped UI branch (CashOverviewComponent.vue:204-210) is never exercised in any session of this spec. Spec passes trivially. Round-1 finding C-005 listed this gap; PARTIAL closure since the test exists but does not actually exercise the capped path it claims to probe.",
+      "fix_hint": "Add a separate suite that runs only with `WAVE_X4_LARGE_SEED=1` or programmatically POSTs 501 transactions via API/factory to assert the capped notice renders. Skip the test if seed env not present so CI default is unchanged."
+    }
+  ],
+  "summary": {
+    "P0": 4,
+    "P1": 4,
+    "P2": 5,
+    "P3": 2,
+    "open_P0": 2,
+    "open_P1": 2,
+    "open_P2": 4,
+    "open_P3": 1,
+    "open_P0_ids": ["C-013", "C-014"],
+    "open_P1_ids": ["C-015", "C-016 (P2 actually, listed P1 below — corrected)"]
+  },
+  "summary_corrected": {
+    "P0_total_count": 4,
+    "P0_closed": ["C-002 (visibility-only PARTIAL — escalated to C-013)", "C-003 (visibility PASS)"],
+    "P0_open": ["C-013 reconciliation diff is tautological −opening_amount", "C-014 reconciliation cash_collected polluted by source/mode UI filter"],
+    "P1_total_count": 4,
+    "P1_closed": ["C-001 quartet complete", "C-004 filter visuals captured post-render"],
+    "P1_open": ["C-005 PARTIAL (Branch Manager scope untested → demoted to C-016 P2)", "C-015 admin fallback branch-ambiguous"],
+    "P2_open": ["C-006 PARTIAL formatMoneyEuro only on reconciliation strip", "C-007 FAIL empty-state still bare", "C-008 OPEN URL sync", "C-009 OPEN aria/role/scope", "C-016 capped probe environmentally weak"],
+    "P3_open": ["C-011 FAIL other-bucket silent footgun unchanged"]
+  },
+  "round_to_round_closures": {
+    "C-001": "PASS",
+    "C-002": "PARTIAL (visibility OK, semantic math broken → C-013)",
+    "C-003": "PASS (with caveat → C-015)",
+    "C-004": "PASS",
+    "C-005": "PARTIAL (9 tests but Branch Manager + capped paths weak)",
+    "C-006": "PARTIAL (reconciliation strip yes, aggregates no)",
+    "C-007": "FAIL",
+    "C-008": "OPEN (no diff visible)",
+    "C-009": "OPEN (no diff visible)",
+    "C-010": "PASS",
+    "C-011": "FAIL",
+    "C-012": "PASS"
+  },
+  "new_defects_round_2": ["C-013", "C-014", "C-015", "C-016"],
+  "frozen_zone_verified": "git diff 0f6b18c967^ 0f6b18c967 -- app/Services/Pricing/PricingService.php app/Services/Fiscal/ app/Models/Scopes/BranchScope.php app/Http/Middleware/IdempotencyKeyMiddleware.php returns 0 lines.",
+  "numeric_integrity_recheck": {
+    "source_sum_equals_grand_total": "12.50 + 51.70 + 18.30 = 82.50 ✓ (01, 06, 08b, 09, 09b)",
+    "mode_sum_equals_grand_total": "58.20 + 9.80 + 14.50 = 82.50 ✓ (01, 06, 08b, 09, 09b)",
+    "filtered_consistency": "source=borne grand total 51.70 = mode breakdown 27.40+9.80+14.50 ✓; mode=cash grand total 58.20 = source breakdown 12.50+27.40+18.30 ✓; source=livreur 18.30 = mode-cash 18.30 ✓",
+    "summary_cards_vs_reconciliation": "FAIL — aggregate cards bare numeric, reconciliation strip EUR-formatted (C-006 PARTIAL)",
+    "reconciliation_diff_meaningful": "FAIL — diff is algebraically −opening_amount, never reflects real écart (C-013 P0)"
+  },
+  "wave_o_o4_no_regression": true,
+  "verdict": "RED",
+  "verdict_rationale": "2 P0 OPEN (C-013 reconciliation diff tautologically −opening_amount; C-014 reconciliation cash_collected polluted by UI filter). Round-1 P0s C-002 visibility + C-003 admin fallback both surface-PASS but the round-1 fix shipped a card whose headline number is mathematically guaranteed wrong — the feature ships GREEN on testid presence but RED on owner mandate « détecter écarts (cash manquant) » because no value of cash IN can ever produce a non-`-opening_amount` diff with the current formula. Per REVIEWER_PROTOCOL: open_P0 > 0 → RED."
+}

@@ -1,0 +1,152 @@
+{
+  "wave": "A",
+  "scope": "POS counter-collect modal (X1) + POS main-page shortcuts (X2)",
+  "round": 1,
+  "states_reviewed": 7,
+  "artifact_dir": "tests/e2e/__screenshots__/wave-x-pos-x1-x2/",
+  "missing_artifacts_note": "Spec uses raw page.screenshot() — no .dom.html / .console.json / .network.json companion files were emitted for any of the 7 states. Adversarial reviewer cannot inspect network 4xx, console errors, or DOM directly; verification of source code was used as substitute. Tracked as A-008 audit_integrity.",
+  "findings": [
+    {
+      "id": "A-001",
+      "state_artifact": "wave-x-pos-x1-x2/02-pos-shortcuts-visible.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "evidence": "All four PRÊT À LIVRER rows (N°A0005, N°A0006, N°A0007, N°A0008) render the price column as '0,00 €'. Cause is structural, not data: app/Http/Resources/CDSOrderDetailsResource.php exposes ONLY {id, order_serial_no, token, queue_number, order_type, status} — no 'total' and no 'order_amount' field. PosComponent.vue:287 binds `formatKioskPrice(o.total ?? o.order_amount)` and the resource feeding it through Vuex action orderStatusScreenOrder/lists (used by loadReadyOrders, PosComponent.vue:2958) returns CDSOrderDetailsResource::collection(...). Result: every Livré row shows 0,00 €, regardless of the real order total. Cash rows (À ENCAISSER BORNE) are correct because that endpoint uses OrderDetailsResource (routes/api.php:783).",
+      "fix_hint": "Add 'total' (and any other UI-bound numeric field) to app/Http/Resources/CDSOrderDetailsResource.php::toArray, OR switch PosComponent.vue loadReadyOrders to a posOrder.* action that returns OrderDetailsResource. Re-check that OSS clientele-facing CDS view does NOT leak monetary fields if confidentiality matters — if it does, create a dedicated POS-side resource (e.g. PosShortcutOrderResource) that includes total but is only used by the POS shortcut endpoint.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-002",
+      "state_artifact": "wave-x-pos-x1-x2/06-counter-collect-card-mode.png",
+      "category": "element_overlap",
+      "severity": "P2",
+      "evidence": "After clicking CARD, both Espèce AND Carte buttons display the active red border + soft-red fill simultaneously. CSS root cause: resources/js/components/admin/pos/PosCounterCollectModal.vue:550-554 — '.cc-mode-btn:hover:not(:disabled), .cc-mode-btn.is-active' share the EXACT same styling. The hover state on Espèce (cursor parked there before Carte was clicked) is visually indistinguishable from the active state on Carte. A cashier glancing at the screen could legitimately interpret two modes as selected.",
+      "fix_hint": "PosCounterCollectModal.vue:551 — split the rule. Keep .is-active using the brand-red border + ffeaea bg. Demote :hover to a subtler hint (e.g. border-color: var(--pos-v5-border-strong, #d4d4d4); background: var(--pos-v5-surface-2, #fafafa);). Optionally add an inset-ring or check icon on .is-active for unambiguous selection signal.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-003",
+      "state_artifact": "wave-x-pos-x1-x2/04-counter-collect-modal-open.png",
+      "category": "visual_hash_drift",
+      "severity": "P2",
+      "evidence": "04-counter-collect-modal-open.png shows the modal captured mid-fade-enter: the backdrop is partially transparent, the underlying POS operator bar and 'À ENCAISSER BORNE' rows visibly bleed through over the modal title area, and the numpad bottom row overlaps category circles (Burgers / Tacos / Bols Gourm... / Frites). This is not a layout bug — backdrop CSS (.cc-modal-overlay: rgba(0,0,0,0.55), inset:0, z-index:10001) is correct in steady state, as confirmed by 05/06. Root cause is the spec capturing screenshot before Vue <transition name='fade'> finishes (160ms duration, PosCounterCollectModal.vue:688-689). Non-deterministic on slower CI runners.",
+      "fix_hint": "tests/e2e/wave-x-pos-x1-x2.spec.js — after `await expect(modal).toBeVisible()` (lines 188, 257), add `await page.waitForTimeout(200)` OR `await modal.evaluate(el => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))))` to clear the fade-enter transition before page.screenshot(). Apply to all modal-screenshot frames (04, 06).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-004",
+      "state_artifact": "wave-x-pos-x1-x2/04-counter-collect-modal-open.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Modal close button (.cc-modal-close, PosCounterCollectModal.vue:456-468) is icon-only (×) and the visible DOM in 04/05/06 shows no aria-label on it. No accessible name surfaces in the rendered title row for screen readers. Same icon-only pattern for the numpad delete button visible in 05 (red circle with × glyph) — likely missing aria-label too. Adversarial reviewer cannot fully verify without a .dom.html dump, but the visual + source code shows no aria-label binding.",
+      "fix_hint": "PosCounterCollectModal.vue — add :aria-label=\"$t('label.close')\" to the <button class='cc-modal-close'> and equivalent label to the numpad delete button. Verify focus-trap is wired so Escape and Tab cycle within the modal (Wave W slide-in panel may already provide a pattern to reuse). Confirm via axe-core when adversarial round-2 captures DOM.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-005",
+      "state_artifact": "wave-x-pos-x1-x2/01-pos-main-mount.png",
+      "category": "loading_state",
+      "severity": "P3",
+      "evidence": "01-pos-main-mount.png shows the whole page rendered with a translucent / dimmed overlay AND a purple/blue striped loading spinner partially obscuring the À ENCAISSER button on N°A0011. This is consistent with a global request-pending overlay (e.g. axios interceptor showing a loading bar) — not a bug per se but it makes the very first state capture less useful for layout review. 02-pos-shortcuts-visible.png (taken seconds later) is clean.",
+      "fix_hint": "tests/e2e/wave-x-pos-x1-x2.spec.js — before line 109 page.screenshot(), add a wait for the loading overlay to clear (e.g. `await expect(page.locator('.global-loader, [aria-busy=true]')).toHaveCount(0, { timeout: 5_000 }).catch(() => {})`). Cosmetic only; the 02 capture already serves the layout audit.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-006",
+      "state_artifact": "wave-x-pos-x1-x2.spec.js (test 2)",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "The spec covers ONLY the cancel path through PosCounterCollectModal. The confirm submit (POST /admin/pos/counter-collect/{order}/confirm — routes/api.php:785-808) is NEVER exercised: tests 'modal opens' and 'flips to CARD mode' both end with .click() on [data-testid='pos-counter-collect-cancel']. Result: the wire-up between SSOT modal and PaymentService::confirmCounterPayment is untested by this wave. Idempotency-key formula in PosCounterCollectModal handleConfirm (~line 357-405) is also untested. A regression in mode-to-int mapping (CASH→1, CARD→2, ...) or in received-pre-fill propagation would not be caught.",
+      "fix_hint": "Add a third test 'Counter-collect CASH confirm POSTs with X-Idempotency-Key and updates kioskCashOrders' that (a) listens for the POST via page.waitForRequest matching /admin/pos/counter-collect/\\d+/confirm/, (b) asserts the request body has {mode: 1, received: <float>}, (c) asserts the X-Idempotency-Key header is present, (d) re-fetches the pending list and asserts the order disappeared. The spec should pre-flight pos.simulation_hardware=true so the cash drawer side-effect short-circuits (feedback_pos_simulation_hardware_pattern). DO NOT touch frozen-zone PaymentComponent.vue, only the SSOT modal + endpoint round-trip.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-007",
+      "state_artifact": "wave-x-pos-x1-x2.spec.js (test 1 & 2)",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Six .catch(() => null) / .catch(() => null) swallows around critical waitForResponse calls (lines 69, 81, 159, 160, 237, 238). If GET /admin/pos/counter-collect/pending 500s, hangs, or returns invalid JSON, the spec silently sets cashPending = [] and degenerates into the 'SKIPPED: no kiosk cash-pending order in DB' branch (line 168, 245). A genuine production-affecting regression in the cash-pending endpoint would be reported as a green SKIP, not a fail. This is exactly the 'looks green but has hidden defects' anti-pattern the owner warned about.",
+      "fix_hint": "tests/e2e/wave-x-pos-x1-x2.spec.js — replace `.catch(() => null)` on the kioskCashResponsePromise with a hard `throw new Error('counter-collect/pending endpoint did not respond')` after a 30s deadline. The body .json().catch(() => null) is fine to keep tolerant. Separately, the 'cashPending.length === 0 → return' early-exit should at minimum push an annotation with severity=warning AND fail the test if running on CI with a known-seeded DB (gate by env var, e.g. POS_WAVE_X_REQUIRE_SEED=1).",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-008",
+      "state_artifact": "wave-x-pos-x1-x2/ (all 7 states)",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Reviewer protocol REVIEWER_PROTOCOL.md §'Artifact quartet' requires .png + .dom.html + .console.json + .network.json per state. The Wave A spec only emits .png — directory listing shows 7 files, all PNGs. Adversarial review cannot independently verify: (a) GStack's 'no new console errors' claim, (b) 'CSP frame-ancestors warning pre-existing' claim, (c) the presence/absence of 4xx 5xx network responses, (d) i18n leaks in non-visible DOM (e.g. aria-label values, off-screen tooltips). The verdict on 'no console errors' is therefore UNVERIFIED for this round.",
+      "fix_hint": "tests/e2e/wave-x-pos-x1-x2.spec.js — adopt the mega-audit-snap.js recorder pattern used by wave-V / X4. Either import the helper from tests/e2e/helpers/mega-audit-snap.js (if it exists per file naming convention) OR wrap page.screenshot() with sibling writes: await fs.promises.writeFile(`${path}.dom.html`, await page.content()); plus page.on('console', …) and page.on('response', …) sinks accumulating into per-state console.json / network.json. Without this, every future Wave-A round is structurally under-audited.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-009",
+      "state_artifact": "wave-x-pos-x1-x2/02-pos-shortcuts-visible.png",
+      "category": "empty_state",
+      "severity": "P3",
+      "evidence": "Right-side ticket panel ('Ticket caisse — Commande en cours') shows 'Aucun article. Sélectionnez un produit dans la grille.' with a single 13-letter copy line + a small plate icon. Copy ≥20 chars criterion technically met (the full string is 47 chars). No CTA. Per protocol §5, empty-state passes (1 of 3: copy ≥20). Mentioned for completeness — not a blocker.",
+      "fix_hint": "Optional UX polish: add a primary CTA like 'Voir le catalogue' that scrolls/focuses the category strip, or a secondary 'Rechercher un article' that focuses the search input. Out of scope for Wave X heal — backlog candidate.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    },
+    {
+      "id": "A-010",
+      "state_artifact": "wave-x-pos-x1-x2/05-counter-collect-cash-mode.png",
+      "category": "text_truncation",
+      "severity": "P3",
+      "evidence": "Numpad in CASH-mode capture (05) shows only one visible row '1 2 3' + delete glyph. The full numpad (digits 0-9 + decimal + delete + +5€ shortcuts per PaymentComponent V5 conventions) is presumably below the fold inside the modal's max-height:92vh overflow-y:auto container (PosCounterCollectModal.vue:436-437). Confirmed cuts at viewport 1280x720 default. Not a defect — modal scrolls — but capture does not visually attest the rest of the numpad is rendered.",
+      "fix_hint": "tests/e2e/wave-x-pos-x1-x2.spec.js test 2 — before screenshotting 05, await page.locator('[data-testid=\"pos-counter-collect-cash-block\"]').scrollIntoViewIfNeeded() AND scroll modal-internal to bottom (await modal.evaluate(el => el.scrollTop = el.scrollHeight)) THEN capture both top frame (current 05) and a 05b-counter-collect-cash-mode-bottom.png. Alternatively widen the spec's page.setViewportSize to 1440x900 to fit the whole modal.",
+      "status": "open",
+      "first_seen_round": 1,
+      "rounds_open": 1
+    }
+  ],
+  "verified_gstack_claims": {
+    "livre_zero_eur_speculation": {
+      "claim": "All Livré rows render 0,00 € in 02-pos-shortcuts-visible.png; speculated cause = formatKioskPrice fallback on missing total/order_amount.",
+      "verdict": "PASS — visually confirmed across A0005/A0006/A0007/A0008 in 02-pos-shortcuts-visible.png AND root cause confirmed via source read: CDSOrderDetailsResource exposes neither total nor order_amount. Promoted to P0 numeric_integrity (finding A-001) — not P1 — because every Livré amount the cashier sees is structurally wrong, not a one-off display glitch."
+    },
+    "no_new_console_errors": {
+      "claim": "No new console errors.",
+      "verdict": "UNVERIFIED — no .console.json artifact emitted (see A-008). Cannot adversarially confirm or refute. Round-2 must include console.json sinks."
+    },
+    "numeric_triple_consistency": {
+      "claim": "cash-row N°A0011 14,70 € → modal hero 14,70 € → received input 14.70 — consistent triple.",
+      "verdict": "PASS — verified across 03-shortcut-cash-card-row.png (14,70 €), 04/05 hero (14,70 €), and 05 received input (14.70). Numeric integrity holds end-to-end for the cash-pending path."
+    },
+    "csp_frame_ancestors_preexisting": {
+      "claim": "CSP frame-ancestors warning pre-existing.",
+      "verdict": "UNVERIFIED — no .console.json emitted to inspect (see A-008). Cannot allowlist or contest in round 1."
+    }
+  },
+  "hidden_defects_gstack_missed": [
+    "A-001 — Livré rows 0,00 € is a structural CDSOrderDetailsResource omission, not a one-off; promoted P0 (GStack treated as P1-speculative).",
+    "A-002 — Dual-highlight on Espèce + Carte in CARD mode due to CSS hover/active style collision (visible in 06).",
+    "A-006 — confirm POST path is completely untested.",
+    "A-007 — silent .catch(() => null) on kioskCashResp turns endpoint regressions into green SKIPs.",
+    "A-008 — missing .dom.html / .console.json / .network.json companions invalidate any technical-cleanliness claim for this wave."
+  ],
+  "summary": {
+    "P0": 1, "P1": 3, "P2": 3, "P3": 3,
+    "open_P0": 1, "open_P1": 3, "open_P2": 3, "open_P3": 3
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "verdict_reason": "1 open P0 (Livré 0,00 € structural — every Prêt-à-livrer row shows wrong amount) + 3 open P1 (confirm path not tested, silent endpoint-failure catches, missing artifact quartet). Cannot declare green: protocol requires open_P0 == 0 AND open_P1 == 0."
+}

@@ -1,0 +1,122 @@
+{
+  "wave": "C",
+  "round": 1,
+  "states_reviewed": 4,
+  "artifact_dir": "tests/e2e/__screenshots__/wave-x4-cash-overview/",
+  "protocol_compliance": {
+    "quartet_complete": false,
+    "missing_sidecars": ["*.dom.html", "*.console.json", "*.network.json"],
+    "impact": "Reviewer cannot verify network status codes, console errors, DOM mismatch in code path — visual-only audit forced. Counted as one structural P1 audit_integrity finding (C-001)."
+  },
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/ (all 4 states)",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Spec wave-x4-cash-overview.spec.js emits ONLY .png files. Zero `.dom.html`, `.console.json`, `.network.json` siblings produced — verified via `find ... -name '*.dom.html' | wc -l = 0`. REVIEWER_PROTOCOL §Artifact-quartet declares all 4 mandatory per state. Adversarial agents cannot independently verify network status, console errors, or run DOM assertions; visual-only audit forced.",
+      "fix_hint": "Add `await captureArtifacts(page, SCREENSHOT_DIR, name)` helper that writes the four files (content/page.content/console array/network array) — pattern already used in other waves (compare to Wave V spec helper)."
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/01-cash-overview-default.png + resources/js/components/admin/cashOverview/CashOverviewComponent.vue:108-126 + app/Http/Controllers/Admin/CashOverviewController.php:208-225",
+      "category": "audit_integrity",
+      "severity": "P0",
+      "evidence": "Owner mandate is explicit: « détecter écarts (cash manquant) ». Backend controller computes and returns `cash_session.cash_collected` (line 222-224) AND `expected_cash` (line 219), but the Vue template at lines 110-123 of CashOverviewComponent.vue ONLY renders `opened_at`, `opening_amount`, and `expected_cash`. Neither `cash_collected` nor the diff `(cash_collected - expected_cash)` is rendered anywhere on the page. The headline X4 feature — the cash-écart — is mathematically inexpressible from what the UI shows. AND the card never renders in screenshot 01 because cash_session is null (admin without ?branch_id, see C-003). Spec never asserts the reconciliation card at all.",
+      "fix_hint": "1) Add two display cells to CashOverviewComponent.vue reconciliation section: `cash_collected` (always visible) and `diff = cash_collected - expected_cash` color-coded (red if negative, green if zero, amber if positive). 2) Add spec test that hits `/admin/cash-overview?branch_id=1` and asserts `[data-testid=cash-overview-reconciliation]` visible AND contains `cash_collected` and `diff` cells. 3) Add CSS for visual prominence of the écart number."
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "app/Http/Controllers/Admin/CashOverviewController.php:267-285 + tests/e2e/wave-x4-cash-overview.spec.js (no branch_id param tested)",
+      "category": "audit_integrity",
+      "severity": "P0",
+      "evidence": "Controller `resolveOpenCashSession()` returns null when `branchId <= 0` (line 270-274). Admin user has `branch_id=0` AND `resolveBranchFilter()` returns null when admin doesn't pass `?branch_id=N` query param. Spec login is admin@lecayenne.fr (branch_id=0) and goes to `/admin/cash-overview` WITHOUT `?branch_id=` → guaranteed `cash_session = null` → reconciliation card hidden in 100% of spec runs. The headline X4 feature is invisible by default for the only login the spec exercises. Spec has zero coverage of the reconciliation card visible path.",
+      "fix_hint": "Add a 2nd spec test `mounts reconciliation card when admin filters by branch_id` that 1) navigates to `/admin/cash-overview?branch_id=1`, 2) waits for the API response, 3) asserts `[data-testid=cash-overview-reconciliation]` is visible, 4) asserts expected_cash and cash_collected numbers are present. Owner mandate cannot be considered shipped without this evidence."
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/02-cash-overview-source-borne.png + 03-cash-overview-mode-cash.png + tests/e2e/wave-x4-cash-overview.spec.js:105-115 / 128-138",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Screenshots 02 and 03 both visually display `Chargement......` — the loading state, NOT the filtered result. Component template (CashOverviewComponent.vue:75-99) hides the entire summary block during `loading=true` (`v-if=\"!loading && summary\"`), so all aggregate cards AND filtered table are absent during the screenshot. Spec calls `page.screenshot(...)` IMMEDIATELY after `page.click('[data-testid=cash-overview-search]')` with no `await waitForResponse` between click and screenshot. The filter visual is unverified for both source AND mode. Functional assertion (URL contains `source=borne`/`mode=cash`) passes because Playwright `waitForRequest` resolves before screenshot, but the post-filter render is never captured.",
+      "fix_hint": "In both filter tests, insert `await page.waitForResponse(resp => CASH_OVERVIEW_API_RE.test(resp.url()) && resp.url().includes('source=borne'));` BEFORE the `page.screenshot(...)`. Then add `await expect(page.locator('[data-testid=cash-overview-summary]')).toBeVisible();` to guarantee the summary block is rendered before capture. Optionally add an assertion that the table contains only `borne` source chips for the source filter test."
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "tests/e2e/wave-x4-cash-overview.spec.js (4 tests vs ~8 expected)",
+      "category": "audit_integrity",
+      "severity": "P1",
+      "evidence": "Spec exercises only 4/~8 expected states. Missing coverage: (a) livreur source filter — only borne tested; (b) custom date range (from!=to) — defaults today/today silently; (c) capped behavior — `meta.capped=true` UI branch never exercised (controller hard caps 500 rows, UI line 204-210 shows a notice); (d) empty-state — `[data-testid=cash-overview-empty]` never asserted; (e) reconciliation card visible path (see C-003); (f) clear filters button — `cash-overview-clear` testid present but no test; (g) Branch Manager role isolation — admin only tested, no Branch Manager scope test; (h) invalid date range — controller returns 422 (line 99-103), UI handles via console.error only.",
+      "fix_hint": "Add tests covering each missing branch. Minimum priority: empty-state, livreur filter, clear button, capped notice, Branch Manager scope. Estimated ~80 new lines in spec."
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue:311-314 (formatMoney) + screenshot 01",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "Method `formatMoney(v) { return Number(v||0).toFixed(2); }` returns bare numeric string with no currency symbol. Screenshot 01 shows `67.80`, `12.50`, `37.00`, `18.30` with zero `€` glyph anywhere on the page. Card labels (`GRAND TOTAL`, `CAISSE`, etc.) do NOT include `(€)` either. The numbers are arithmetically correct (sum verified: 12.50+37.00+18.30=67.80 ✓; mode breakdown 43.50+9.80+14.50=67.80 ✓) but currency context is implicit. For a finance reconciliation page this is presentation incompleteness. NOT P0 because the sums are correct.",
+      "fix_hint": "Change `formatMoney(v)` to use `Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' }).format(Number(v||0))`. Locale = `this.$i18n?.locale || 'fr-FR'`. Single 2-line change; no other surface impacted."
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue:154-160 + spec (no empty-state test)",
+      "category": "empty_state",
+      "severity": "P2",
+      "evidence": "Empty state at line 154-160 is plain `<div class=\"p-6 text-center text-gray-500\">{{ $t('label.no_data_available') }}</div>` — no illustration `<img>`, no primary CTA (no `<button>` to reset filters or change date), copy is generic (~20 chars). Spec never exercises the empty path (today fixture has 5 transactions). Fails REVIEWER_PROTOCOL §5 empty-state quality (0 of 3 criteria met: no illustration, no primary CTA, copy borderline). On a reconciliation page the empty state would be common (off-hours / new branch / no payments yet) — owner-grade empty state would suggest the next action.",
+      "fix_hint": "Replace empty-state div with: illustration (small SVG empty-table icon, existing `lab-stocks` or similar in lab-icons set), copy `$t('label.cash_overview_empty_help')` (~40-60 chars explaining what to try next), and a primary button `Reset filters` calling `clearFilters()`."
+    },
+    {
+      "id": "C-008",
+      "state_artifact": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue:254-269 (fetch method)",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "evidence": "Filters are passed via `axios.get(... { params })` only (line 264) — NO `this.$router.push({ query: ... })`. The browser address bar remains `/admin/cash-overview` (no `?source=borne`) even after applying filters. Sharable filter links and browser back/forward navigation through filter states do not work. Spec passes because Playwright inspects the axios request URL, not the address bar. Owner-grade admin UI should support sharable filter URLs for reconciliation hand-offs.",
+      "fix_hint": "Add `this.$router.replace({ query: { ...this.$route.query, ...this.activeFilterParams() } }).catch(() => {});` inside `fetch()` after building `params`. Also call `this.filters = { ...this.filters, ...this.$route.query }` in `mounted()` BEFORE `this.fetch()` to hydrate from URL on first load."
+    },
+    {
+      "id": "C-009",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/01-cash-overview-default.png (table region)",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "Visual inspection of 01: 4 aggregate cards have no apparent `role=region` + aria-label, mode chips (Espèce/Carte/Mobile) are plain `<div>` with no role/label, table headers are static `<th>` with no `scope=col` or `aria-sort` (no sort affordance at all), filter form labels are `db-field-title after:hidden` which suggests labels are visually styled but may be screen-reader exposed — needs DOM verification (blocked by missing .dom.html sidecar, see C-001). Source chip color contrast: blue-100/blue-800 = ~7:1 ✓, purple-100/purple-800 = ~6:1 ✓, emerald-100/emerald-800 = ~5:1 ✓ — all pass AA at 12-14px. Reset/Effacer button bg-gray-600 / text-white = 4.6:1 ✓ borderline but passes.",
+      "fix_hint": "1) Add `role=region` + `aria-label=$t('label.cash_overview_summary_aria')` to summary section. 2) Add `scope=\"col\"` to all `<th>`. 3) Add `aria-live=\"polite\"` to the loading container so screen readers announce 'Chargement' transitions. 4) Verify against DOM once .dom.html sidecar is restored (C-001)."
+    },
+    {
+      "id": "C-010",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/04-wave-o-o4-sibling-still-loads.png + 01-cash-overview-default.png (top-right branch chip)",
+      "category": "visual_drift",
+      "severity": "P3",
+      "evidence": "Screenshot 04 top-bar shows `Filiale` with empty value (just label + chevron) while 01/02/03 show `Filiale: Le Cayenne (Principal)`. Likely a snapshot timing artifact (BranchSelector mounted but state not yet hydrated when screenshot fires immediately after `goto('/admin/cash-sessions-report', { waitUntil: 'domcontentloaded' })`). Same race-condition family as C-004 — screenshot fires before async XHR completes. Functional impact nil (page mounts correctly, URL stuck per assertion line 145). Cosmetic-only.",
+      "fix_hint": "Same fix as C-004: insert `await page.waitForLoadState('networkidle');` OR `await page.waitForResponse(...branch-context...);` between `goto` and `screenshot`."
+    },
+    {
+      "id": "C-011",
+      "state_artifact": "app/Http/Controllers/Admin/CashOverviewController.php:405-417 (paymentMethodPatternsForBucket)",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "`paymentMethodPatternsForBucket('other')` returns `[]` (line 412-413). Filter loop at line 152-157 then becomes a no-op `where(function...)` with no orWhere calls — semantically returns ALL rows un-filtered, silently. UI dropdown currently exposes only cash/card/mobile/ticket so 'other' is dormant. If a future contributor adds an `<option value=\"other\">` to the Vue select, filtering will silently return all rows — silent data-correctness footgun. Comment in code acknowledges this but it should be defensive.",
+      "fix_hint": "Either (a) implement 'other' bucket as `NOT LIKE` of the 4 known buckets (verbose but correct), OR (b) reject the 'other' bucket at the controller with a 400 'mode=other not filterable, use the explicit buckets' so the silent-pass is impossible. Recommend (b) for explicitness."
+    },
+    {
+      "id": "C-012",
+      "state_artifact": "tests/e2e/__screenshots__/wave-x4-cash-overview/01-cash-overview-default.png (row 4: N°A0009 12.70)",
+      "category": "numeric_integrity",
+      "severity": "P3",
+      "evidence": "Aggregate cards show GRAND TOTAL=67.80 with 5 tx, but table shows row N°A0009 amount 12.70 from 01:58 in addition to the 4 fixture rows visible (LIV 18.30 + BOR 9.80 + CAI 12.50 + BOR ??). The 5th 'tx' bucket value isn't visible in viewport — needs scroll OR the summary count doesn't match the table render count. Verified sum of visible 4 rows = 18.30+9.80+12.50+12.70 = 53.30 ≠ 67.80, so there is a 5th transaction (14.50, matching mode breakdown Mobile=14.50). The grand_total is consistent with the mode breakdown so backend math is right. No bug — just below-the-fold row. Note: fullPage screenshot at 1280x720 cuts table at row 4. This is screenshot framing, NOT data integrity. Recorded for completeness.",
+      "fix_hint": "If desired, scroll the page or set a larger viewport (1280x1024) so all 5 fixture rows fit in the screenshot."
+    }
+  ],
+  "summary": {
+    "P0": 2,
+    "P1": 3,
+    "P2": 4,
+    "P3": 3,
+    "open_P0": 2,
+    "open_P1": 3,
+    "open_P2": 4,
+    "open_P3": 3
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED",
+  "verdict_rationale": "2 P0 findings open (C-002 reconciliation feature ships without écart math visible; C-003 reconciliation card invisible by default for the only login the spec exercises). 3 P1 (C-001 missing artifact quartet, C-004 filter visuals captured during loading state, C-005 spec coverage ~4/8). Per REVIEWER_PROTOCOL: open_P0 > 0 → RED."
+}
