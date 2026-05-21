@@ -263,9 +263,19 @@ Loi de Finance France — non-négociable, prison time si violé.
   - `IDEMPOTENCY_MIDDLEWARE_ENABLED != true` (duplicate POST protection)
   - `APP_DEBUG = true` (leaks stack/SQL/secrets)
   - `APP_URL` vide (Sanctum + webhook signing dépendent)
+  - `CACHE_DRIVER in ['array', 'null']` (NF525 audit-chain `Cache::lock`
+    needs cross-worker coherence)
 - Added by commits `2477a2d05`, `dafb6b3c4`, `1e7c65ecc`, `2949e92ed`.
 - L'abstract invariant ("forbidden") est doublé par une `RuntimeException`
   au boot — pas de silent override possible.
+- **Note (verified 2026-05-21)**: the cache-driver forbidden list at
+  `AppServiceProvider.php:215` covers `array`/`null` only — `file` and
+  `database` PASS the guard. Block comment says "redis or memcached"
+  but the implementation is narrower than the stated intent. Tracked
+  as **V1.0.X cloud-prep backlog item UNI-03** (defer to cloud cutover
+  prep — V1 LOCAL Le Cayenne single-box file driver is safe; ALB
+  multi-instance requires widening the list). Source :
+  `reports/audit-verify-other-session-2026-05-21.md` Claim 1.
 
 ### Fiscal Sequence
 - `fiscal_sequence_no` monotonic per branch, gap-free
@@ -317,12 +327,16 @@ Loi de Finance France — non-négociable, prison time si violé.
 ### Spatie Permissions (RBAC)
 - `permission:settings` gate les routes admin sensibles
 - Roles : Admin, Branch Manager, POS Operator, Chef, etc.
-- FormRequest authz unifié sur baseline **69 FormRequests avec
-  `return true;` restantes** (sentinel `FormRequestAuthzDriftSentinelTest`
-  baseline-lock — count GROWS = CI fails). Historique : 77 initial
-  Wave 8 → 74 post Wave 5H → 69 post BUILD-6 (8 critical refactored
-  vers `$this->user()?->can('xxx')`). V1.0.2 BACKLOG : chip-away par
-  vague de commits.
+- FormRequest authz unifié sur sentinel `FormRequestAuthzDriftSentinelTest`
+  (baseline-lock — count GROWS = CI fails). **Verified actual count
+  2026-05-21 = 66 FormRequests avec `return true;`** ; sentinel
+  baseline still set to **69** (ceiling, count<baseline passes).
+  Historique : 77 initial Wave 8 → 74 post Wave 5H → 69 post BUILD-6
+  (8 critical refactored vers `$this->user()?->can('xxx')`) → **66
+  observed today (a further -3 chipped away in subsequent waves
+  without lowering the sentinel constant)**. V1.0.2 BACKLOG : continue
+  chip-away par vague de commits AND lower sentinel `RETURN_TRUE_BASELINE`
+  to 66 to ratchet the ceiling tight.
 
 ### Idempotency
 - HTTP `X-Idempotency-Key` header sur POST mutating
