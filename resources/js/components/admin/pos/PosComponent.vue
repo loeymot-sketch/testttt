@@ -246,6 +246,111 @@
                 </PosV5Button>
             </nav>
         </header>
+
+        <!--
+          [Wave X X2 P-OWNER 2026-05-21] POS main-page shortcut notifications.
+          Owner verbatim: "Caissier ne doit PAS naviguer vers /admin/pos-orders-
+          tracker pour valider commandes prêtes ou encaisser borne. Sur page
+          principale POS, 2 zones notifications compactes."
+          ──────────────────────────────────────────────────────────────────
+          - Left panel  : "Prêt à livrer" (status=PREPARED) ⇒ 1-click Livré
+          - Right panel : "À encaisser borne" (cash-pending kiosk) ⇒ 1-click Encaisser
+          Max 4 rows each + "Voir plus" link to tracker / panel for overflow.
+          Mounted ONLY when either list has content — zero footprint when idle.
+        -->
+        <div
+          v-if="readyOrders.length > 0 || kioskCashOrders.length > 0"
+          class="pos-shortcuts"
+          data-testid="pos-shortcuts"
+        >
+          <!-- Prêt à livrer (PREPARED kiosk / takeaway orders) -->
+          <section
+            v-if="readyOrders.length > 0"
+            class="pos-shortcuts__panel pos-shortcuts__panel--ready"
+            data-testid="pos-shortcuts-ready"
+            :aria-label="$t('label.pos_shortcut_ready_title', { count: readyOrders.length })"
+          >
+            <header class="pos-shortcuts__head">
+              <h2 class="pos-shortcuts__title">
+                <span aria-hidden="true">🛎️</span>
+                {{ $t('label.pos_shortcut_ready_title', { count: readyOrders.length }) }}
+              </h2>
+            </header>
+            <ul class="pos-shortcuts__list" role="list">
+              <li
+                v-for="o in readyOrders.slice(0, 4)"
+                :key="o.id"
+                class="pos-shortcuts__item"
+                :data-testid="`pos-shortcut-ready-${o.id}`"
+              >
+                <span class="pos-shortcuts__num">N°{{ o.queue_number || o.order_serial_no || o.id }}</span>
+                <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
+                <button
+                  type="button"
+                  class="pos-shortcuts__cta pos-shortcuts__cta--ready"
+                  :disabled="o._delivering"
+                  :data-testid="`pos-shortcut-deliver-${o.id}`"
+                  @click="markDelivered(o)"
+                >
+                  {{ o._delivering ? '…' : $t('label.pos_shortcut_delivered_cta') }}
+                </button>
+              </li>
+            </ul>
+            <router-link
+              v-if="readyOrders.length > 4"
+              :to="{ name: 'admin.pos-orders.tracker' }"
+              class="pos-shortcuts__more"
+              data-testid="pos-shortcut-ready-more"
+            >
+              {{ $t('label.pos_shortcut_view_more', { count: readyOrders.length - 4 }) }}
+            </router-link>
+          </section>
+
+          <!-- À encaisser borne (cash-pending kiosk orders) -->
+          <section
+            v-if="kioskCashOrders.length > 0"
+            class="pos-shortcuts__panel pos-shortcuts__panel--cash"
+            data-testid="pos-shortcuts-cash"
+            :aria-label="$t('label.pos_shortcut_cash_title', { count: kioskCashOrders.length })"
+          >
+            <header class="pos-shortcuts__head">
+              <h2 class="pos-shortcuts__title">
+                <span aria-hidden="true">💰</span>
+                {{ $t('label.pos_shortcut_cash_title', { count: kioskCashOrders.length }) }}
+              </h2>
+            </header>
+            <ul class="pos-shortcuts__list" role="list">
+              <li
+                v-for="o in kioskCashOrders.slice(0, 4)"
+                :key="o.id"
+                class="pos-shortcuts__item"
+                :data-testid="`pos-shortcut-cash-${o.id}`"
+              >
+                <span class="pos-shortcuts__num">N°{{ o.queue_number || o.order_serial_no || o.id }}</span>
+                <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
+                <button
+                  type="button"
+                  class="pos-shortcuts__cta pos-shortcuts__cta--cash"
+                  :disabled="o._collecting || o._canceling"
+                  :data-testid="`pos-shortcut-encaisser-${o.id}`"
+                  @click="openCounterCollect(o)"
+                >
+                  {{ o._collecting ? '…' : $t('label.pos_shortcut_cash_cta') }}
+                </button>
+              </li>
+            </ul>
+            <button
+              v-if="kioskCashOrders.length > 4"
+              type="button"
+              class="pos-shortcuts__more"
+              data-testid="pos-shortcut-cash-more"
+              @click="showKioskCashPanel = true"
+            >
+              {{ $t('label.pos_shortcut_view_more', { count: kioskCashOrders.length - 4 }) }}
+            </button>
+          </section>
+        </div>
+
         <!-- [POS-V5] Search V5 — input large unifié, soumission par Enter. -->
         <PosV5SearchInput
             class="pos-v4-search"
@@ -1102,16 +1207,18 @@
                   {{ $t('pos.orders.detail_short') }}
                 </router-link>
                 <!--
-                  [Wave W P-OWNER 2026-05-21] Encaisser now opens a mode picker
-                  (modal) so the cashier can confirm/override the borne-declared
-                  payment mode (ESPÈCE / CARTE / MOBILE / TICKET). See
-                  openEncaisserModal() + confirmEncaisser() in <script>.
+                  [Wave X X1 P-OWNER 2026-05-21] Encaisser opens the SSOT
+                  PosCounterCollectModal (sibling of PaymentComponent) so
+                  all collection surfaces (POS direct, borne, future
+                  driver) converge to the same visual portal. Wave W
+                  picker is replaced by the modal mounted at the section
+                  root above.
                 -->
                 <button
                   class="kiosk-cash-collect-btn"
                   :disabled="order._collecting || order._canceling"
                   :data-testid="`kiosk-cash-collect-${order.id}`"
-                  @click="openEncaisserModal(order)"
+                  @click="openCounterCollect(order)"
                 >
                   {{ order._collecting ? '…' : '✓ Encaisser' }}
                 </button>
@@ -1133,97 +1240,20 @@
     </transition>
 
     <!--
-      [Wave W P-OWNER 2026-05-21] Encaisser borne — payment-mode picker modal.
-      Opens when the cashier clicks "✓ Encaisser" on a kiosk-cash row in the
-      slide-in panel above. The borne flagged the order as cash, but the
-      customer may switch to CARTE/TICKET at the counter — owner verbatim
-      ("Wave W — Encaisser borne button"). Submitting POSTs to
-      /admin/pos/counter-collect/{id}/confirm with the picked mode int + a
-      fresh X-Idempotency-Key header (root-cause of 422). PaymentService::
-      confirmCounterPayment handles the 4 modes server-side; CASH path also
-      triggers the cash-drawer simulation toast per POS_SIMULATION_HARDWARE.
+      [Wave X X1 P-OWNER 2026-05-21] Counter-collect SSOT modal — replaces
+      Wave W mode-picker (commit eb43fa180). Same 4-mode parity but with
+      hero total + V5 numpad for CASH received amount + rendu calc + visual
+      parity with PaymentComponent. Sibling pattern preserves
+      PaymentComponent.vue CLAUDE.md §7 frozen state (sentinel
+      paymentComponentEmitsJsdocList.spec.js unchanged).
+      Multi-tranche split deferred to V1.0.2 — see modal header comment for
+      the backend-extension rationale.
     -->
-    <transition name="fade">
-      <div
-        v-if="encaisserModal.show"
-        class="encaisser-modal-overlay"
-        data-testid="encaisser-modal"
-        @click.self="closeEncaisserModal"
-      >
-        <div class="encaisser-modal" role="dialog" :aria-label="$t('label.encaisser_mode_title')">
-          <div class="encaisser-modal-header">
-            <h3>
-              {{ $t('label.encaisser_mode_title') }}
-              <span class="encaisser-modal-order-no">
-                N° {{ encaisserModal.order?.queue_number || encaisserModal.order?.order_serial_no }}
-              </span>
-              <span class="encaisser-modal-order-total">
-                {{ formatKioskPrice(encaisserModal.order?.total ?? encaisserModal.order?.order_amount ?? 0) }}
-              </span>
-            </h3>
-            <p class="encaisser-modal-hint">{{ $t('label.encaisser_mode_hint') }}</p>
-          </div>
-          <div class="encaisser-mode-grid">
-            <button
-              type="button"
-              class="encaisser-mode-btn encaisser-mode-cash"
-              :disabled="encaisserModal.submitting"
-              data-testid="encaisser-mode-cash"
-              @click="confirmEncaisser('CASH')"
-            >
-              <span class="encaisser-mode-icon" aria-hidden="true">💶</span>
-              <span class="encaisser-mode-label">{{ $t('label.encaisser_mode_cash') }}</span>
-              <span class="encaisser-mode-sub">{{ $t('label.encaisser_mode_cash_sub') }}</span>
-            </button>
-            <button
-              type="button"
-              class="encaisser-mode-btn encaisser-mode-card"
-              :disabled="encaisserModal.submitting"
-              data-testid="encaisser-mode-card"
-              @click="confirmEncaisser('CARD')"
-            >
-              <span class="encaisser-mode-icon" aria-hidden="true">💳</span>
-              <span class="encaisser-mode-label">{{ $t('label.encaisser_mode_card') }}</span>
-              <span class="encaisser-mode-sub">{{ $t('label.encaisser_mode_card_sub') }}</span>
-            </button>
-            <button
-              type="button"
-              class="encaisser-mode-btn encaisser-mode-ticket"
-              :disabled="encaisserModal.submitting"
-              data-testid="encaisser-mode-ticket"
-              @click="confirmEncaisser('TICKET')"
-            >
-              <span class="encaisser-mode-icon" aria-hidden="true">🎟️</span>
-              <span class="encaisser-mode-label">{{ $t('label.encaisser_mode_ticket') }}</span>
-            </button>
-            <button
-              type="button"
-              class="encaisser-mode-btn encaisser-mode-mobile"
-              :disabled="encaisserModal.submitting"
-              data-testid="encaisser-mode-mobile"
-              @click="confirmEncaisser('MOBILE')"
-            >
-              <span class="encaisser-mode-icon" aria-hidden="true">📱</span>
-              <span class="encaisser-mode-label">{{ $t('label.encaisser_mode_mobile') }}</span>
-            </button>
-          </div>
-          <div class="encaisser-modal-footer">
-            <button
-              type="button"
-              class="encaisser-modal-cancel"
-              :disabled="encaisserModal.submitting"
-              data-testid="encaisser-modal-cancel"
-              @click="closeEncaisserModal"
-            >
-              {{ $t('label.cancel') }}
-            </button>
-          </div>
-          <div v-if="encaisserModal.submitting" class="encaisser-modal-submitting">
-            <div class="kiosk-cash-spinner"></div>
-          </div>
-        </div>
-      </div>
-    </transition>
+    <PosCounterCollectModal
+      :order="counterCollectOrder"
+      @confirmed="onCounterCollectConfirmed"
+      @cancel="onCounterCollectCancel"
+    />
     </section>
 </template>
 <script>
@@ -1248,6 +1278,11 @@ import alertService from "../../../services/alertService";
 // hardware_event server-side in production for audit trail.
 import { openDrawer as kioskHardwareOpenDrawer } from "../../../services/kioskHardware";
 import PaymentComponent from "./PaymentComponent.vue";
+// [Wave X X1 P-OWNER 2026-05-21] Counter-collect SSOT sibling modal.
+// Replaces Wave W mode-picker template-block + methods (eb43fa180).
+// PaymentComponent.vue is CLAUDE.md §7 frozen — sibling preserves
+// paymentComponentEmitsJsdocList.spec.js sentinel green.
+import PosCounterCollectModal from "./PosCounterCollectModal.vue";
 import ParkedOrdersComponent from "./ParkedOrdersComponent.vue";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import paymentStatusEnum from "../../../enums/modules/paymentStatusEnum";
@@ -1330,6 +1365,8 @@ export default {
         SkeletonGrid,
         ParkedOrdersComponent,
         PaymentComponent,
+        // [Wave X X1] SSOT counter-collect sibling modal.
+        PosCounterCollectModal,
         // [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Primitives V5
         PosV5Button,
         PosV5Card,
@@ -1376,24 +1413,24 @@ export default {
             kioskCashOrders: [],
             kioskCashLoading: false,
             showKioskCashPanel: false,
-            // [Wave W P-OWNER 2026-05-21] Mode picker for kiosk-cash counter-collect.
+            // [Wave X X1 P-OWNER 2026-05-21] Counter-collect SSOT modal trigger.
             //
-            // Owner-reported UX: "le client borne déclare cash, mais au comptoir
-            // il peut changer pour CARTE/TICKET — il faut un picker". Click on
-            // "Encaisser" opens encaisserModal, cashier picks ESPÈCE/CARTE/
-            // MOBILE/TICKET, then POST hits /counter-collect/{id}/confirm with
-            // the chosen `mode` int + a fresh `X-Idempotency-Key` header (Wave K
-            // Z7 idempotency middleware requires it — bug 422 root-cause).
-            //
-            // `submitting` blocks the modal's mode-row buttons against
-            // double-tap while the POST is in flight (the `order._collecting`
-            // flag in the list view is reset after submit so the picker can
-            // re-open if the cashier cancels).
-            encaisserModal: {
-                show: false,
-                order: null,
-                submitting: false,
-            },
+            // When non-null, PosCounterCollectModal renders with this Order
+            // as its `order` prop and runs through the SSOT-flavored mode
+            // picker (CASH numpad + CARD/MOBILE/TICKET single-tap). Setting
+            // to `null` closes the modal. Replaces Wave W's encaisserModal
+            // state object (commit eb43fa180) — the new modal owns its own
+            // submitting state.
+            counterCollectOrder: null,
+            // [Wave X X2 P-OWNER 2026-05-21] Ready-to-deliver orders for
+            // the POS main-page notification shortcuts (above products grid).
+            // Loaded from OSS list + filtered to PREPARED + scoped to KIOSK
+            // and TAKEAWAY order_types (DELIVERY is excluded because those
+            // belong to the driver flow per Wave O direction). Refreshed
+            // by the same poll + Echo wiring as kioskCashOrders so the
+            // panels appear/disappear in real-time without manual reload.
+            readyOrders: [],
+            readyOrdersLoading: false,
             showParkedOrders: false,
             // [Sprint 1A 2026-05-16] Cash drawer session dialog state.
             // Auto-opened in mounted() after branch_id is resolved if no OPEN
@@ -2012,6 +2049,9 @@ export default {
         }
         this.loadKioskCashOrders();
         this.loadActiveOrdersStats();
+        // [Wave X X2 P-OWNER 2026-05-21] Initial fetch for the "Prêt à livrer"
+        // shortcut panel above the products grid.
+        this.loadReadyOrders();
         this._subscribeEcho();
         this._startKioskPolling();
         this._bindWsService();
@@ -2481,6 +2521,10 @@ export default {
                 this.loadKioskCashOrders();
                 // [POS-V4-ORDERS-TRACKER 2026-05-02] Polling unifié pour le badge tracker.
                 this.loadActiveOrdersStats();
+                // [Wave X X2 P-OWNER 2026-05-21] Same polling tick refreshes
+                // the "Prêt à livrer" shortcut so a freshly bumped order
+                // surfaces within ~15s even if the Echo subscription is down.
+                this.loadReadyOrders();
             }, this._kioskPollingInterval());
         },
         _restartKioskPolling() {
@@ -2507,6 +2551,10 @@ export default {
                             this.loadKioskCashOrders();
                             // [POS-V4-ORDERS-TRACKER 2026-05-02] sync badge tracker
                             this.loadActiveOrdersStats();
+                            // [Wave X X2 2026-05-21] OrderCreated rarely lands in
+                            // PREPARED state directly, but defensive refresh keeps
+                            // the X2 panel coherent on rapid create→bump cycles.
+                            this.loadReadyOrders();
                         },
                     },
                     {
@@ -2515,6 +2563,11 @@ export default {
                             if (this._destroyed) return;
                             this.loadKioskCashOrders();
                             this.loadActiveOrdersStats();
+                            // [Wave X X2 P-OWNER 2026-05-21] OrderStatusChanged is the
+                            // primary trigger for a row appearing in / disappearing
+                            // from the "Prêt à livrer" shortcut (KDS bumped, cashier
+                            // marked Livré, refund returned, …).
+                            this.loadReadyOrders();
                         },
                     },
                     {
@@ -2523,6 +2576,10 @@ export default {
                             if (this._destroyed) return;
                             this.loadKioskCashOrders();
                             this.loadActiveOrdersStats();
+                            // [Wave X X2] Counter-collect may auto-promote ACCEPT→PREPARING
+                            // (Wave S-1). Refresh in case the order skips straight to
+                            // PREPARED via KDS soon after.
+                            this.loadReadyOrders();
                         },
                     },
                     // [POS-9.1.10] React live to admin 86 (item availability change)
@@ -2840,107 +2897,105 @@ export default {
             return !!this.expandedKioskCashOrders[orderId];
         },
 
-        // [Wave W P-OWNER 2026-05-21] Open mode picker instead of CASH-only
-        // POST. See encaisserModal data block above for rationale.
-        openEncaisserModal(order) {
-            if (order._collecting || order._canceling) return;
-            this.encaisserModal = {
-                show: true,
-                order,
-                submitting: false,
-            };
-        },
-        closeEncaisserModal() {
-            // Reset the per-row guard so the picker can re-open if the cashier
-            // cancels mid-flow (changed their mind on mode, network hiccup, …).
-            if (this.encaisserModal.order) {
-                this.encaisserModal.order._collecting = false;
-            }
-            this.encaisserModal = {
-                show: false,
-                order: null,
-                submitting: false,
-            };
-        },
-        // [Wave W P-OWNER 2026-05-21] Idempotency key for counter-collect.
-        //
-        // Mirrors PosLoyaltyRedeemModal.buildIdempotencyKey() pattern (line
-        // 266): minute-bucket so a double-tap or network retry within the
-        // same minute replays the cached 2xx response from
-        // IdempotencyKeyMiddleware (config/idempotency.php Wave K Z7),
-        // avoiding two distinct POSTs racing into PaymentService::
-        // confirmCounterPayment's DB::transaction + lockForUpdate.
-        // Different orders and different modes produce distinct keys.
-        buildKioskCashIdempotencyKey(orderId, modeInt) {
-            const minuteBucket = Math.floor(Date.now() / 60000);
-            return `pos-counter-collect-${orderId}-${modeInt}-${minuteBucket}`;
-        },
-        async confirmEncaisser(modeName) {
-            // Map UI mode-name → posPaymentMethodEnum int. Values come from
-            // resources/js/enums/modules/posPaymentMethodEnum.js — they MUST
-            // match the backend allow-list in PaymentService::
-            // confirmCounterPayment ($allowedModes line 203-209).
-            //   CASH = 1, CARD = 2, MOBILE_BANKING = 3, TICKET_RESTAURANT = 5
-            const modeMap = {
-                CASH: posPaymentMethodEnum.CASH,
-                CARD: posPaymentMethodEnum.CARD,
-                MOBILE: posPaymentMethodEnum.MOBILE_BANKING,
-                TICKET: posPaymentMethodEnum.TICKET_RESTAURANT,
-            };
-            const modeInt = modeMap[modeName];
-            const order = this.encaisserModal.order;
-            if (!order || !modeInt) return;
-            if (this.encaisserModal.submitting) return;
-
-            this.encaisserModal.submitting = true;
+        // [Wave X X1 P-OWNER 2026-05-21] SSOT counter-collect entry point.
+        // Replaces Wave W openEncaisserModal/confirmEncaisser/buildKiosk-
+        // CashIdempotencyKey trio (eb43fa180) — those lived inline because
+        // the picker was a sub-template of PosComponent. The new flow:
+        //   1. openCounterCollect(order) sets `counterCollectOrder = order`
+        //      ⇒ PosCounterCollectModal renders with full V5 visual parity
+        //      to PaymentComponent (hero total + mode grid + numpad +
+        //      rendu calc) and owns its own submitting state.
+        //   2. Modal POSTs to /admin/pos/counter-collect/{id}/confirm
+        //      with X-Idempotency-Key header (same minute-bucket formula
+        //      as Wave W).
+        //   3. On success emits `confirmed` → we refresh the lists.
+        //      On cancel emits `cancel` → we close + clear per-row guard.
+        // Multi-tranche split deferred to V1.0.2 (backend extension required).
+        openCounterCollect(order) {
+            if (!order || order._collecting || order._canceling) return;
+            // Flag the row immediately so a second click on the same row
+            // (during the brief render-tick) does not re-trigger the modal.
             order._collecting = true;
+            this.counterCollectOrder = order;
+        },
+        async onCounterCollectConfirmed(payload) {
+            // payload = { orderId, mode, modeInt, received, total }
+            // The modal already toasted the success message + computed
+            // the simulation copy. We refresh the lists so the row
+            // disappears from both the slide-in panel and the X2
+            // shortcut block (both bound to kioskCashOrders).
+            this.counterCollectOrder = null;
             try {
-                const total = Number(order.total ?? order.order_amount ?? 0);
-                const idempotencyKey = this.buildKioskCashIdempotencyKey(order.id, modeInt);
-                await axios.post(
-                    `admin/pos/counter-collect/${order.id}/confirm`,
-                    {
-                        mode: modeInt,
-                        // Backend only enforces received >= total for CASH; for
-                        // CARD/MOBILE/TICKET it's nullable. Send the order total
-                        // for CASH; null otherwise (matches PaymentService::
-                        // confirmCounterPayment line 235-238 + 247-249).
-                        received: modeName === 'CASH' ? total : null,
-                        note: 'Encaissement borne au comptoir',
-                    },
-                    {
-                        headers: {
-                            'X-Idempotency-Key': idempotencyKey,
-                        },
-                    }
-                );
-                // Simulation feedback per mode. Owner asked for "tiroir s'ouvre
-                // (simulation)" on CASH and "TPE pretend valide" on CARD. The
-                // backend hardware bridge already honors POS_SIMULATION_HARDWARE
-                // (config('pos.simulation_hardware'), AppServiceProvider boot
-                // guard, see CLAUDE.md §8). UI toast confirms to the cashier.
-                const orderLabel = order.queue_number || order.order_serial_no || order.id;
-                if (modeName === 'CASH') {
-                    alertService.success(
-                        this.$t('label.cash_drawer_opened_simulation', { order: orderLabel })
-                    );
-                } else if (modeName === 'CARD') {
-                    alertService.success(
-                        this.$t('label.tpe_validated_simulation', { order: orderLabel })
-                    );
-                } else {
-                    alertService.success(
-                        this.$t('label.encaisser_success', { order: orderLabel })
-                    );
-                }
-                this.closeEncaisserModal();
                 await this.loadKioskCashOrders();
-            } catch (err) {
-                const msg = err?.response?.data?.message
-                    || this.$t('label.encaisser_failed');
+                await this.loadActiveOrdersStats();
+                await this.loadReadyOrders();
+            } catch (_) { /* silent — toast already raised */ }
+        },
+        onCounterCollectCancel() {
+            // Reset per-row guard so the cashier can re-open the modal on
+            // the same row if they changed their mind (mid-flow cancel,
+            // network hiccup, hardware re-connect, etc.).
+            if (this.counterCollectOrder) {
+                this.counterCollectOrder._collecting = false;
+            }
+            this.counterCollectOrder = null;
+        },
+
+        // [Wave X X2 P-OWNER 2026-05-21] Ready orders polling for the
+        // POS main-page "Prêt à livrer" shortcut.
+        //
+        // Source: same Vuex action `orderStatusScreenOrder/lists` used by
+        // loadActiveOrdersStats (the tracker badge). We filter PREPARED
+        // (status=8) AND order_type ∈ {KIOSK, TAKEAWAY} (DELIVERY is the
+        // driver flow per Wave O direction — separate driver UI).
+        //
+        // Polling is piggybacked on _kioskPollTimer (~10-15s) + Echo
+        // OrderStatusChanged so the shortcut appears/disappears in
+        // near-real-time when an order is bumped on KDS.
+        async loadReadyOrders() {
+            this.readyOrdersLoading = true;
+            try {
+                const res = await this.$store.dispatch('orderStatusScreenOrder/lists');
+                const list = (res?.data?.data) || this.$store.getters['orderStatusScreenOrder/lists'] || [];
+                const allowedTypes = new Set([orderTypeEnum.KIOSK, orderTypeEnum.TAKEAWAY, orderTypeEnum.POS]);
+                this.readyOrders = list
+                    .filter((o) => {
+                        const s = parseInt(o.status ?? o.order_status ?? 0, 10);
+                        const t = parseInt(o.order_type ?? 0, 10);
+                        return s === orderStatusEnum.PREPARED && allowedTypes.has(t);
+                    })
+                    // Oldest first — cashier should clear orders that have
+                    // been ready the longest. Mirrors kioskCashOrders sort.
+                    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            } catch (_) {
+                this.readyOrders = [];
+            } finally {
+                this.readyOrdersLoading = false;
+            }
+        },
+        async markDelivered(order) {
+            if (!order || order._delivering) return;
+            order._delivering = true;
+            try {
+                // Reuse the canonical posOrder/changeStatus action — it
+                // builds an Idempotency-Key header per (orderId, status)
+                // payload hash, so a double-tap within the same minute
+                // replays the cached 2xx (CLAUDE.md §9 Idempotency).
+                await this.$store.dispatch('posOrder/changeStatus', {
+                    id: order.id,
+                    status: orderStatusEnum.DELIVERED,
+                });
+                await this.loadReadyOrders();
+                await this.loadActiveOrdersStats();
+                alertService.success(
+                    this.$t('label.pos_shortcut_delivered_toast', {
+                        order: order.queue_number || order.order_serial_no || order.id,
+                    })
+                );
+            } catch (e) {
+                const msg = e?.response?.data?.message || this.$t('message.something_wrong');
                 alertService.error(msg);
-                this.encaisserModal.submitting = false;
-                order._collecting = false;
+                order._delivering = false;
             }
         },
         async cancelKioskCashOrder(order) {
@@ -2953,7 +3008,12 @@ export default {
                 // by advisor review). modeInt 0 is a sentinel here (no
                 // payment mode for cancel) so the key stays distinct from
                 // any /confirm key on the same order.
-                const idempotencyKey = this.buildKioskCashIdempotencyKey(order.id, 0);
+                // [Wave X X1 2026-05-21] Inlined the idempotency-key formula
+                // (was buildKioskCashIdempotencyKey, removed with the Wave W
+                // encaisser modal block — the modal moved to
+                // PosCounterCollectModal.vue which owns its own keys).
+                const minuteBucket = Math.floor(Date.now() / 60000);
+                const idempotencyKey = `pos-counter-collect-${order.id}-0-${minuteBucket}`;
                 await axios.post(
                     `admin/pos/counter-collect/${order.id}/cancel`,
                     { reason: 'Commande borne annulee au comptoir' },
@@ -4169,6 +4229,142 @@ export default {
 }
 
 /* =============================================================================
+   7B. POS MAIN-PAGE SHORTCUTS — [Wave X X2 P-OWNER 2026-05-21]
+   -----------------------------------------------------------------------------
+   2 compact panels rendered ABOVE the search input + category strip when
+   either readyOrders or kioskCashOrders is non-empty. Goal: cashier never
+   has to leave /admin/pos to validate a "Prêt à livrer" or "Encaisser borne"
+   action — the click-targets are 1-tap inline on the main page.
+   - Max 4 rows per panel (slice).
+   - "Voir plus" link appears when count > 4 (overflow to tracker or panel).
+   - Zero footprint when both lists are empty (v-if root).
+   - Compact ~72-88px tall so the products grid stays the primary surface.
+   ============================================================================= */
+.pos-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 10px 0 10px;
+  margin: 0;
+}
+.pos-shortcuts__panel {
+  flex: 1 1 320px;
+  min-width: 280px;
+  background: var(--pos-v5-surface, #fff);
+  border: 1px solid var(--pos-v5-border, #eadfd2);
+  border-radius: 10px;
+  padding: 8px 10px;
+  box-shadow: 0 1px 3px rgba(26, 26, 26, 0.05);
+}
+.pos-shortcuts__panel--ready {
+  border-left: 4px solid var(--pos-v5-success, #2c8c4a);
+}
+.pos-shortcuts__panel--cash {
+  border-left: 4px solid var(--pos-v5-brand-red, #cf3a3a);
+}
+.pos-shortcuts__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.pos-shortcuts__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pos-v5-text, #1a1a1a);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pos-shortcuts__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pos-shortcuts__item {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, auto) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: var(--pos-v5-surface-2, #faf6f1);
+  font-size: 13px;
+}
+.pos-shortcuts__num {
+  font-weight: 700;
+  color: var(--pos-v5-text, #1a1a1a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pos-shortcuts__price {
+  font-variant-numeric: tabular-nums;
+  color: var(--pos-v5-muted, #555);
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+.pos-shortcuts__cta {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: background 120ms ease, transform 80ms ease;
+}
+.pos-shortcuts__cta:hover:not(:disabled) { transform: translateY(-1px); }
+.pos-shortcuts__cta:active:not(:disabled) { transform: translateY(0); }
+.pos-shortcuts__cta:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.pos-shortcuts__cta--ready {
+  background: var(--pos-v5-success, #2c8c4a);
+  color: #fff;
+}
+.pos-shortcuts__cta--ready:hover:not(:disabled) {
+  background: var(--pos-v5-success-dark, #1f6437);
+}
+.pos-shortcuts__cta--cash {
+  background: var(--pos-v5-brand-red, #cf3a3a);
+  color: #fff;
+}
+.pos-shortcuts__cta--cash:hover:not(:disabled) {
+  background: var(--pos-v5-brand-red-dark, #b32f2f);
+}
+.pos-shortcuts__more {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pos-v5-muted, #555);
+  text-decoration: underline;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+}
+.pos-shortcuts__more:hover {
+  color: var(--pos-v5-brand-red, #cf3a3a);
+}
+
+@media (max-width: 640px) {
+  .pos-shortcuts { flex-direction: column; }
+  .pos-shortcuts__panel { flex: 1 1 auto; }
+}
+
+/* =============================================================================
    8. KIOSK CASH PANEL drawer (inline dans PosComponent — restyle V5)
    -----------------------------------------------------------------------------
    Refonte avec tokens V5 — palette warm cohérente, typo Inter, ombres warm.
@@ -4422,132 +4618,17 @@ export default {
 .slide-panel-leave-to .kiosk-cash-panel { transform: translateX(100%); }
 
 /* =============================================================================
-   ENCAISSER MODAL — kiosk-cash counter-collect mode picker
-   [Wave W P-OWNER 2026-05-21]
-   -----------------------------------------------------------------------------
-   Modal opens when cashier clicks "✓ Encaisser" on a kiosk-cash row. Lets
-   cashier override the borne-declared cash with CARTE/TICKET/MOBILE before
-   submitting to /counter-collect/{id}/confirm. 4 large touch-friendly mode
-   buttons (grid 2x2 on desktop, single column ≤ 480px) + cancel + spinner
-   overlay while POST in flight.
+   ENCAISSER MODAL (Wave W) — REMOVED in Wave X X1.
+   The mode-picker template + .encaisser-modal-* / .encaisser-mode-* styles
+   moved into the standalone PosCounterCollectModal.vue sibling component
+   (resources/js/components/admin/pos/PosCounterCollectModal.vue) which
+   reuses the same V5 design language with hero total card + PosV5Numpad +
+   rendu calc. Visual continuity is preserved; CSS class names changed to
+   `.cc-*` (counter-collect) inside the new component, scoped via `<style
+   scoped>` so global selectors are clean. Wave W styles intentionally
+   deleted — keeping orphan classes would trip dead-CSS sentinels and dilute
+   the actual styling surface used by the new SSOT modal.
    ============================================================================= */
-.encaisser-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10001; /* above kiosk-cash-panel (z-index slide-in) */
-  padding: 16px;
-}
-.encaisser-modal {
-  position: relative;
-  background: var(--pos-v5-surface, #fff);
-  border-radius: 12px;
-  width: 100%;
-  max-width: 520px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-  padding: 24px;
-  font-family: var(--pos-v5-font-family, 'Rubik', system-ui, sans-serif);
-}
-.encaisser-modal-header { margin-bottom: 16px; }
-.encaisser-modal-header h3 {
-  margin: 0 0 6px 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--pos-v5-text, #1a1a1a);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: baseline;
-}
-.encaisser-modal-order-no {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--pos-v5-muted, #555);
-}
-.encaisser-modal-order-total {
-  margin-left: auto;
-  font-size: 22px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  color: var(--pos-v5-brand-red, #cf3a3a);
-}
-.encaisser-modal-hint {
-  margin: 0;
-  font-size: 13px;
-  color: var(--pos-v5-muted, #555);
-  line-height: 1.4;
-}
-.encaisser-mode-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin: 16px 0;
-}
-@media (max-width: 480px) {
-  .encaisser-mode-grid { grid-template-columns: 1fr; }
-}
-.encaisser-mode-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 18px 12px;
-  border: 2px solid var(--pos-v5-border, #e0e0e0);
-  border-radius: 10px;
-  background: var(--pos-v5-surface-2, #fafafa);
-  cursor: pointer;
-  font-family: inherit;
-  transition: transform 80ms ease, border-color 120ms ease, background 120ms ease;
-  min-height: 96px;
-}
-.encaisser-mode-btn:hover:not(:disabled) {
-  border-color: var(--pos-v5-brand-red, #cf3a3a);
-  background: var(--pos-v5-brand-red-soft, #ffeaea);
-  transform: translateY(-1px);
-}
-.encaisser-mode-btn:active:not(:disabled) { transform: translateY(0); }
-.encaisser-mode-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-.encaisser-mode-icon { font-size: 28px; line-height: 1; }
-.encaisser-mode-label {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--pos-v5-text, #1a1a1a);
-}
-.encaisser-mode-sub {
-  font-size: 11px;
-  color: var(--pos-v5-muted, #777);
-  text-align: center;
-}
-.encaisser-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-}
-.encaisser-modal-cancel {
-  padding: 10px 18px;
-  background: transparent;
-  border: 1px solid var(--pos-v5-border, #ccc);
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  color: var(--pos-v5-text, #1a1a1a);
-}
-.encaisser-modal-cancel:hover:not(:disabled) {
-  background: var(--pos-v5-surface-2, #f3f3f3);
-}
-.encaisser-modal-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
-.encaisser-modal-submitting {
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-}
 .fade-enter-active,
 .fade-leave-active { transition: opacity 160ms ease; }
 .fade-enter-from,
