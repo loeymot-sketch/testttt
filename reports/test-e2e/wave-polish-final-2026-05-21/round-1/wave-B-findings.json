@@ -1,0 +1,284 @@
+{
+  "wave": "B",
+  "round": 1,
+  "started_at": "2026-05-21T08:18:23.137Z",
+  "ended_at": "2026-05-21T08:20:04.710Z",
+  "states_reviewed": 14,
+  "findings": [],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 0,
+    "open_P3": 0
+  },
+  "scenarios": {
+    "s1": {
+      "name": "Scenario 1 — sauce toggle Q9-S1",
+      "captures": [
+        "B-02-kiosk-idle",
+        "B-03-admin-after-toggle-off",
+        "B-04-kiosk-after-reload"
+      ],
+      "steps": [
+        "opened /admin/stock/rupture",
+        "opened /kiosk/idle in second context",
+        "toggled variation 9 OFF (HTTP 200, 59ms)"
+      ],
+      "assertions": [
+        {
+          "step": "prime cache + target before",
+          "target_found": true,
+          "target_is_available_before": true,
+          "sauce_name_count_before": 10,
+          "sauce_name_available_before": 10
+        },
+        {
+          "step": "snapshot version bump (primary proof)",
+          "verdict": "PASS",
+          "before": 5,
+          "after": 6
+        },
+        {
+          "step": "log invalidation event (supplementary, LOG_LEVEL=warning may suppress)",
+          "verdict": "INFO",
+          "reason": "no_matching_line"
+        },
+        {
+          "step": "kiosk menu cache key absent (supplementary)",
+          "verdict": "PASS"
+        },
+        {
+          "step": "menu after toggle",
+          "target_is_available_after": false,
+          "sauce_name_unavailable_after": 1,
+          "sauce_name_available_after": 9,
+          "fetch_ms": 286
+        }
+      ],
+      "verdict": "GREEN"
+    },
+    "s2": {
+      "name": "Scenario 2 — Borne→KDS→POS→OSS chain",
+      "captures": [
+        "B-05-kiosk-confirmation-api",
+        "B-06-kds-order-arrived",
+        "B-07-pos-shortcut-ready",
+        "B-08-oss-after-deliver"
+      ],
+      "steps": [
+        "payment-confirm: ok=true status=200",
+        "placed kiosk order id=279 serial=210526279 (1009ms)",
+        "KDS bump 4→7 ACCEPT→PREPARING (HTTP 409)",
+        "KDS bump 7→8 PREPARING→PREPARED (HTTP 202, 93ms total)",
+        "clicked POS Livré button",
+        "POS deliver action (194ms)"
+      ],
+      "assertions": [
+        {
+          "step": "KDS shows new order",
+          "verdict": "PASS",
+          "dt_ms": 5326
+        },
+        {
+          "step": "POS shortcut visible",
+          "verdict": "PASS",
+          "dt_ms": 4881
+        },
+        {
+          "step": "OSS removal",
+          "verdict": "PASS",
+          "dt_ms": 5504
+        }
+      ],
+      "verdict": "GREEN"
+    },
+    "s3": {
+      "name": "Scenario 3 — multi-tab Echo broadcast",
+      "captures": [
+        "B-09a-admin-pos-baseline",
+        "B-09b-kds-baseline",
+        "B-09c-oss-baseline",
+        "B-09d-kiosk-baseline",
+        "B-09e-admin-pos-after",
+        "B-09f-kds-after",
+        "B-09g-oss-after"
+      ],
+      "steps": [
+        "payment-confirm: ok=true status=200",
+        "fired multi-tab order id=280 queue=NaN"
+      ],
+      "assertions": [
+        {
+          "step": "kds saw order",
+          "verdict": "PASS",
+          "dt_ms": 1989
+        },
+        {
+          "step": "oss saw order (queue echo)",
+          "verdict": "INFO",
+          "dt_ms": 31356
+        },
+        {
+          "step": "pos saw order (any shortcut panel)",
+          "verdict": "INFO",
+          "dt_ms": 31356
+        }
+      ],
+      "verdict": "AMBER"
+    }
+  },
+  "timings": {
+    "q9_s1_invalidation_signal_ms": {
+      "delta_ms": 941,
+      "expect_max_ms": 5000,
+      "pass": true
+    },
+    "s2_kiosk_to_kds_ms": {
+      "delta_ms": 5326,
+      "expect_max_ms": 10000,
+      "pass": true
+    },
+    "s2_kds_bump_to_pos_shortcut_ms": {
+      "delta_ms": 4881,
+      "expect_max_ms": 5000,
+      "pass": true
+    },
+    "s2_pos_deliver_to_oss_clear_ms": {
+      "delta_ms": 5504,
+      "expect_max_ms": 10000,
+      "pass": true
+    },
+    "s3_broadcast_kds_ms": {
+      "delta_ms": 1989,
+      "expect_max_ms": 15000,
+      "pass": true
+    },
+    "s3_broadcast_oss_ms": {
+      "delta_ms": 31356,
+      "expect_max_ms": 15000,
+      "pass": false
+    },
+    "s3_broadcast_pos_ms": {
+      "delta_ms": 31356,
+      "expect_max_ms": 15000,
+      "pass": false
+    }
+  },
+  "evidence": {
+    "q9_s1_snapshot_before": {
+      "ok": true,
+      "version": 5
+    },
+    "toggle_response": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "ok": true,
+        "variation_id": 9,
+        "branch_id": 1,
+        "is_available": false,
+        "reason": "out_of_stock_manual",
+        "manual_unavailable_since": "2026-05-21T10:18:38+02:00"
+      }
+    },
+    "q9_s1_snapshot_after": {
+      "ok": true,
+      "version": 6
+    },
+    "q9_s1_log": {
+      "found": false,
+      "reason": "no_matching_line",
+      "since": 1779351517
+    },
+    "q9_s1_cache_absent": true,
+    "q9_s1_menu": {
+      "before": {
+        "target": {
+          "found": true,
+          "is_available": true,
+          "item_id": 23,
+          "item_name": "Galette Normale",
+          "name": "Mayonnaise",
+          "raw": {
+            "id": 9,
+            "attribute_id": 5,
+            "item_attribute_id": 5,
+            "name": "Mayonnaise",
+            "price": 0,
+            "convert_price": 0,
+            "currency_price": "0.00€",
+            "thumb": "http://127.0.0.1:8000/images/menu/sauce-mayonnaise.png?v=1779329810",
+            "status": 5,
+            "visible_on": null,
+            "is_available": true,
+            "unavailable_reason": null
+          }
+        },
+        "by_name": {
+          "count": 10,
+          "available": 10,
+          "unavailable": 0,
+          "allUnavailable": false
+        }
+      },
+      "after": {
+        "target": {
+          "found": true,
+          "is_available": false,
+          "item_id": 23,
+          "item_name": "Galette Normale",
+          "name": "Mayonnaise",
+          "raw": {
+            "id": 9,
+            "attribute_id": 5,
+            "item_attribute_id": 5,
+            "name": "Mayonnaise",
+            "price": 0,
+            "convert_price": 0,
+            "currency_price": "0.00€",
+            "thumb": "http://127.0.0.1:8000/images/menu/sauce-mayonnaise.png?v=1779329810",
+            "status": 5,
+            "visible_on": null,
+            "is_available": false,
+            "unavailable_reason": "out_of_stock_manual"
+          }
+        },
+        "by_name": {
+          "count": 10,
+          "available": 9,
+          "unavailable": 1,
+          "allUnavailable": false
+        }
+      },
+      "targetStillVisibleAfterToggle": false
+    },
+    "s2_confirm": {
+      "ok": true,
+      "status": 200
+    },
+    "s2_order": {
+      "id": 279,
+      "serial": "210526279",
+      "total": 1.5,
+      "queue": null
+    },
+    "s3_order": {
+      "id": 280,
+      "queue": null
+    }
+  },
+  "cleanup": {
+    "ok": true,
+    "output": "[iter15] Cleanup applied — deleted 1 test orders (matched 1).\n"
+  },
+  "verdict_per_scenario": {
+    "s1": "GREEN",
+    "s2": "GREEN",
+    "s3": "AMBER"
+  },
+  "verdict": "AMBER"
+}
