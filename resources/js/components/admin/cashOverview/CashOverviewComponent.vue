@@ -23,7 +23,7 @@
                 <form
                     class="p-4 sm:p-5 mb-3 flex flex-wrap items-end gap-3"
                     data-testid="cash-overview-filters"
-                    @submit.prevent="fetch"
+                    @submit.prevent="applyFilters"
                 >
                     <div>
                         <label for="cashOverviewFrom" class="db-field-title after:hidden">{{ $t('label.from_date') }}</label>
@@ -44,6 +44,14 @@
                     </div>
                     <div>
                         <label for="cashOverviewMode" class="db-field-title after:hidden">{{ $t('label.payment_method') }}</label>
+                        <!--
+                            [Wave Z Q7 2026-05-21] Owner-mandated removal of the
+                            `Autre` option — it was a silent no-op (backend's
+                            'other' bucket has no LIKE patterns; cf. controller
+                            line 486). `modeLabel('other')` is kept intact so
+                            rows whose `mode_bucket='other'` (rare fallback)
+                            still render gracefully in the table.
+                        -->
                         <select id="cashOverviewMode" v-model="filters.mode" class="db-field-control">
                             <option value="">{{ $t('label.all_methods') }}</option>
                             <option value="cash">{{ $t('label.mode_cash') }}</option>
@@ -181,13 +189,48 @@
                     {{ $t('label.loading') }}…
                 </div>
 
-                <!-- Empty state -->
+                <!--
+                    [Wave Z Q6 2026-05-21] Empty-state polish — owner mandate :
+                    illustration (inline SVG, brand-tone, aria-hidden) + copy
+                    ≥20 chars + primary reset CTA. Replaces the previous bare
+                    `Aucune donnée` plain-text dead-end which left admins
+                    wondering whether the page had failed silently.
+                -->
                 <div
                     v-else-if="!transactions.length"
-                    class="p-6 text-center text-gray-500"
+                    class="p-8 text-center"
                     data-testid="cash-overview-empty"
                 >
-                    {{ $t('label.no_data_available') }}
+                    <svg
+                        class="mx-auto mb-4 text-gray-300"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="96"
+                        height="96"
+                        viewBox="0 0 96 96"
+                        fill="none"
+                        aria-hidden="true"
+                        data-testid="cash-overview-empty-illustration"
+                    >
+                        <!-- Cayenne brand-tone: subtle cash-drawer outline + diagonal line through, no decorative noise -->
+                        <rect x="14" y="32" width="68" height="44" rx="4" stroke="currentColor" stroke-width="3"/>
+                        <line x1="14" y1="48" x2="82" y2="48" stroke="currentColor" stroke-width="3"/>
+                        <circle cx="48" cy="62" r="6" stroke="currentColor" stroke-width="3"/>
+                        <line x1="20" y1="20" x2="76" y2="84" stroke="#d1d5db" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                    <p
+                        class="text-base text-gray-700 max-w-md mx-auto mb-4"
+                        data-testid="cash-overview-empty-copy"
+                    >
+                        {{ $t('label.cash_overview_empty_copy') }}
+                    </p>
+                    <button
+                        type="button"
+                        class="db-btn py-2 px-4 text-white bg-primary"
+                        data-testid="cash-overview-empty-reset"
+                        @click="clearFilters"
+                    >
+                        {{ $t('button.reset_filters') }}
+                    </button>
                 </div>
 
                 <!-- Transactions table -->
@@ -286,16 +329,29 @@ export default {
         // (opening / collected_today / expected_in_drawer) without a
         // misleading diff.
     },
+    // [Wave Z Q8 2026-05-21] Hydrate filter state from `$route.query` BEFORE
+    // mount so an inbound shareable link (e.g. ?source=borne&from=2026-05-01)
+    // restores the same view for the receiver. Without this hook the form
+    // would default to today's date and the URL params would be ignored
+    // until the user clicked Search.
+    created() {
+        this.hydrateFiltersFromRoute();
+    },
     mounted() {
         this.fetch();
     },
     watch: {
-        // [Wave X-C round-1 2026-05-21] Re-fetch when the URL query changes
-        // (e.g. ?branch_id=1 → ?branch_id=2 stays on the same route component
-        // so `mounted()` doesn't fire again). Without this watcher the admin
-        // would have to hard-reload to switch branch context.
+        // [Wave X-C round-1 2026-05-21 / extended Wave Z Q8 2026-05-21]
+        // The `$route.query` watcher is now the SOLE fetch trigger after
+        // mount — `applyFilters` and `clearFilters` push to the URL and
+        // this watcher fires `fetch()`. That prevents a double-fetch
+        // (push → watcher fires AND we manually call fetch). It also
+        // covers the original Wave X-C use-case: external ?branch_id= flip.
         '$route.query': {
-            handler() { this.fetch(); },
+            handler() {
+                this.hydrateFiltersFromRoute();
+                this.fetch();
+            },
             deep: true,
         },
     },
@@ -338,10 +394,83 @@ export default {
                 this.loading = false;
             }
         },
+        // [Wave Z Q8 2026-05-21] Read serializable filters from `$route.query`
+        // and apply them to `this.filters`. `branch_id` is NOT mirrored here —
+        // it stays read-from-route inside `fetch()` because the form has no
+        // branch_id field (top-bar selector / direct URL is its SSOT).
+        hydrateFiltersFromRoute() {
+            const q = (this.$route && this.$route.query) || {};
+            if (typeof q.from === 'string' && q.from) this.filters.from = q.from;
+            if (typeof q.to === 'string' && q.to) this.filters.to = q.to;
+            this.filters.source = typeof q.source === 'string' ? q.source : '';
+            this.filters.mode = typeof q.mode === 'string' ? q.mode : '';
+        },
+        // [Wave Z Q8 2026-05-21] Form-submit handler. Pushes current filter
+        // state to the URL so refresh / share preserves the view. The
+        // `$route.query` watcher picks up the change and calls `fetch()` —
+        // do NOT call `fetch()` here or you'll get a double-fetch.
+        // `.catch(()=>{})` swallows Vue Router's NavigationDuplicated which
+        // fires when submitting the same filter state twice. When the URL
+        // already matches (idempotent submit), the watcher won't fire so we
+        // call `fetch()` directly to preserve the click-Search UX.
+        applyFilters() {
+            const q = this.buildRouteQuery();
+            const sameAsCurrent = this.routeQueryEquals(q, (this.$route && this.$route.query) || {});
+            if (sameAsCurrent) {
+                this.fetch();
+            } else {
+                this.$router.push({ query: q }).catch(() => {});
+            }
+        },
+        // [Wave Z Q8 2026-05-21] Shallow string-equality compare for route
+        // query objects (Vue Router stores all values as strings or arrays).
+        // Used to detect a no-op submit and avoid relying on
+        // NavigationDuplicated as a control-flow signal.
+        routeQueryEquals(a, b) {
+            const keys = new Set([...Object.keys(a || {}), ...Object.keys(b || {})]);
+            for (const k of keys) {
+                if (String((a || {})[k] || '') !== String((b || {})[k] || '')) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        // [Wave Z Q8 2026-05-21] Build the next URL query from current
+        // filter state, preserving `branch_id` if it was already in the URL
+        // so the branch-pin feature (Wave X-C round-1) stays intact across
+        // filter changes.
+        buildRouteQuery() {
+            const q = {};
+            if (this.filters.from) q.from = this.filters.from;
+            if (this.filters.to) q.to = this.filters.to;
+            if (this.filters.source) q.source = this.filters.source;
+            if (this.filters.mode) q.mode = this.filters.mode;
+            const currentBranch = this.$route && this.$route.query
+                ? this.$route.query.branch_id
+                : null;
+            if (currentBranch) q.branch_id = currentBranch;
+            return q;
+        },
         clearFilters() {
             const today = new Date().toISOString().slice(0, 10);
             this.filters = { from: today, to: today, source: '', mode: '' };
-            this.fetch();
+            // [Wave Z Q8 2026-05-21] Push a clean URL (preserving branch_id
+            // if pinned) and let the `$route.query` watcher trigger fetch.
+            const q = {};
+            const currentBranch = this.$route && this.$route.query
+                ? this.$route.query.branch_id
+                : null;
+            if (currentBranch) q.branch_id = currentBranch;
+            // If URL already matches (no query), router.push is a no-op for
+            // the watcher — in that case fall back to a direct fetch.
+            const currentQ = (this.$route && this.$route.query) || {};
+            const isAlreadyClean = !currentQ.from && !currentQ.to
+                && !currentQ.source && !currentQ.mode;
+            if (isAlreadyClean) {
+                this.fetch();
+            } else {
+                this.$router.push({ query: q }).catch(() => {});
+            }
         },
         sourceLabel(s) {
             switch (s) {
@@ -369,15 +498,15 @@ export default {
                 default:       return m || '—';
             }
         },
+        // [Wave Z Q5 2026-05-21] Owner-mandated unification — `formatMoney`
+        // and `formatMoneyEuro` now share the EUR-formatted body. Previously
+        // `formatMoney` returned bare decimals (`82.50`) on aggregate cards +
+        // chips + table cells, which confused audit-fiscal scans (no € symbol
+        // visible). Aliasing the two functions means every currency render
+        // surfaces `82,50 €` consistently. `formatMoneyEuro` is retained as
+        // an alias so existing call-sites (reconciliation strip) keep working
+        // without a callsite sweep.
         formatMoney(v) {
-            const n = Number(v || 0);
-            return n.toFixed(2);
-        },
-        // [Wave X-C round-1 2026-05-21] Currency-formatted helper used by the
-        // reconciliation card so the écart number is unambiguously EUR. Plain
-        // `formatMoney` kept untouched for the summary cards / table cells to
-        // minimise visual diff outside the reconciliation strip.
-        formatMoneyEuro(v) {
             const n = Number(v || 0);
             try {
                 const locale = (this.$i18n && this.$i18n.locale) || 'fr-FR';
@@ -390,6 +519,9 @@ export default {
             } catch (e) {
                 return `${n.toFixed(2)} €`;
             }
+        },
+        formatMoneyEuro(v) {
+            return this.formatMoney(v);
         },
         formatTime(iso) {
             if (!iso) return '—';

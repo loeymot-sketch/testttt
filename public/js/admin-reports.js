@@ -81,6 +81,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
 function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
@@ -132,16 +139,27 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     // (opening / collected_today / expected_in_drawer) without a
     // misleading diff.
   },
+  // [Wave Z Q8 2026-05-21] Hydrate filter state from `$route.query` BEFORE
+  // mount so an inbound shareable link (e.g. ?source=borne&from=2026-05-01)
+  // restores the same view for the receiver. Without this hook the form
+  // would default to today's date and the URL params would be ignored
+  // until the user clicked Search.
+  created: function created() {
+    this.hydrateFiltersFromRoute();
+  },
   mounted: function mounted() {
     this.fetch();
   },
   watch: {
-    // [Wave X-C round-1 2026-05-21] Re-fetch when the URL query changes
-    // (e.g. ?branch_id=1 → ?branch_id=2 stays on the same route component
-    // so `mounted()` doesn't fire again). Without this watcher the admin
-    // would have to hard-reload to switch branch context.
+    // [Wave X-C round-1 2026-05-21 / extended Wave Z Q8 2026-05-21]
+    // The `$route.query` watcher is now the SOLE fetch trigger after
+    // mount — `applyFilters` and `clearFilters` push to the URL and
+    // this watcher fires `fetch()`. That prevents a double-fetch
+    // (push → watcher fires AND we manually call fetch). It also
+    // covers the original Wave X-C use-case: external ?branch_id= flip.
     '$route.query': {
       handler: function handler() {
+        this.hydrateFiltersFromRoute();
         this.fetch();
       },
       deep: true
@@ -207,6 +225,72 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
         }, _callee, null, [[1, 3, 4, 5]]);
       }))();
     },
+    // [Wave Z Q8 2026-05-21] Read serializable filters from `$route.query`
+    // and apply them to `this.filters`. `branch_id` is NOT mirrored here —
+    // it stays read-from-route inside `fetch()` because the form has no
+    // branch_id field (top-bar selector / direct URL is its SSOT).
+    hydrateFiltersFromRoute: function hydrateFiltersFromRoute() {
+      var q = this.$route && this.$route.query || {};
+      if (typeof q.from === 'string' && q.from) this.filters.from = q.from;
+      if (typeof q.to === 'string' && q.to) this.filters.to = q.to;
+      this.filters.source = typeof q.source === 'string' ? q.source : '';
+      this.filters.mode = typeof q.mode === 'string' ? q.mode : '';
+    },
+    // [Wave Z Q8 2026-05-21] Form-submit handler. Pushes current filter
+    // state to the URL so refresh / share preserves the view. The
+    // `$route.query` watcher picks up the change and calls `fetch()` —
+    // do NOT call `fetch()` here or you'll get a double-fetch.
+    // `.catch(()=>{})` swallows Vue Router's NavigationDuplicated which
+    // fires when submitting the same filter state twice. When the URL
+    // already matches (idempotent submit), the watcher won't fire so we
+    // call `fetch()` directly to preserve the click-Search UX.
+    applyFilters: function applyFilters() {
+      var q = this.buildRouteQuery();
+      var sameAsCurrent = this.routeQueryEquals(q, this.$route && this.$route.query || {});
+      if (sameAsCurrent) {
+        this.fetch();
+      } else {
+        this.$router.push({
+          query: q
+        })["catch"](function () {});
+      }
+    },
+    // [Wave Z Q8 2026-05-21] Shallow string-equality compare for route
+    // query objects (Vue Router stores all values as strings or arrays).
+    // Used to detect a no-op submit and avoid relying on
+    // NavigationDuplicated as a control-flow signal.
+    routeQueryEquals: function routeQueryEquals(a, b) {
+      var keys = new Set([].concat(_toConsumableArray(Object.keys(a || {})), _toConsumableArray(Object.keys(b || {}))));
+      var _iterator = _createForOfIteratorHelper(keys),
+        _step;
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var k = _step.value;
+          if (String((a || {})[k] || '') !== String((b || {})[k] || '')) {
+            return false;
+          }
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+      return true;
+    },
+    // [Wave Z Q8 2026-05-21] Build the next URL query from current
+    // filter state, preserving `branch_id` if it was already in the URL
+    // so the branch-pin feature (Wave X-C round-1) stays intact across
+    // filter changes.
+    buildRouteQuery: function buildRouteQuery() {
+      var q = {};
+      if (this.filters.from) q.from = this.filters.from;
+      if (this.filters.to) q.to = this.filters.to;
+      if (this.filters.source) q.source = this.filters.source;
+      if (this.filters.mode) q.mode = this.filters.mode;
+      var currentBranch = this.$route && this.$route.query ? this.$route.query.branch_id : null;
+      if (currentBranch) q.branch_id = currentBranch;
+      return q;
+    },
     clearFilters: function clearFilters() {
       var today = new Date().toISOString().slice(0, 10);
       this.filters = {
@@ -215,7 +299,22 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
         source: '',
         mode: ''
       };
-      this.fetch();
+      // [Wave Z Q8 2026-05-21] Push a clean URL (preserving branch_id
+      // if pinned) and let the `$route.query` watcher trigger fetch.
+      var q = {};
+      var currentBranch = this.$route && this.$route.query ? this.$route.query.branch_id : null;
+      if (currentBranch) q.branch_id = currentBranch;
+      // If URL already matches (no query), router.push is a no-op for
+      // the watcher — in that case fall back to a direct fetch.
+      var currentQ = this.$route && this.$route.query || {};
+      var isAlreadyClean = !currentQ.from && !currentQ.to && !currentQ.source && !currentQ.mode;
+      if (isAlreadyClean) {
+        this.fetch();
+      } else {
+        this.$router.push({
+          query: q
+        })["catch"](function () {});
+      }
     },
     sourceLabel: function sourceLabel(s) {
       switch (s) {
@@ -257,15 +356,15 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
           return m || '—';
       }
     },
+    // [Wave Z Q5 2026-05-21] Owner-mandated unification — `formatMoney`
+    // and `formatMoneyEuro` now share the EUR-formatted body. Previously
+    // `formatMoney` returned bare decimals (`82.50`) on aggregate cards +
+    // chips + table cells, which confused audit-fiscal scans (no € symbol
+    // visible). Aliasing the two functions means every currency render
+    // surfaces `82,50 €` consistently. `formatMoneyEuro` is retained as
+    // an alias so existing call-sites (reconciliation strip) keep working
+    // without a callsite sweep.
     formatMoney: function formatMoney(v) {
-      var n = Number(v || 0);
-      return n.toFixed(2);
-    },
-    // [Wave X-C round-1 2026-05-21] Currency-formatted helper used by the
-    // reconciliation card so the écart number is unambiguously EUR. Plain
-    // `formatMoney` kept untouched for the summary cards / table cells to
-    // minimise visual diff outside the reconciliation strip.
-    formatMoneyEuro: function formatMoneyEuro(v) {
       var n = Number(v || 0);
       try {
         var locale = this.$i18n && this.$i18n.locale || 'fr-FR';
@@ -278,6 +377,9 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       } catch (e) {
         return "".concat(n.toFixed(2), " \u20AC");
       }
+    },
+    formatMoneyEuro: function formatMoneyEuro(v) {
+      return this.formatMoney(v);
     },
     formatTime: function formatTime(iso) {
       if (!iso) return '—';
@@ -1662,25 +1764,26 @@ var _hoisted_47 = {
   "class": "p-6 text-center text-gray-500"
 };
 var _hoisted_48 = {
-  "class": "p-6 text-center text-gray-500",
+  "class": "p-8 text-center",
   "data-testid": "cash-overview-empty"
 };
 var _hoisted_49 = {
-  "class": "px-4 sm:px-5 pb-5"
+  "class": "text-base text-gray-700 max-w-md mx-auto mb-4",
+  "data-testid": "cash-overview-empty-copy"
 };
 var _hoisted_50 = {
+  "class": "px-4 sm:px-5 pb-5"
+};
+var _hoisted_51 = {
   "class": "overflow-x-auto border rounded-lg",
   "data-testid": "cash-overview-table-wrapper"
 };
-var _hoisted_51 = {
+var _hoisted_52 = {
   "class": "w-full text-sm",
   "data-testid": "cash-overview-table"
 };
-var _hoisted_52 = {
-  "class": "bg-gray-100 text-gray-700"
-};
 var _hoisted_53 = {
-  "class": "px-3 py-2 text-left"
+  "class": "bg-gray-100 text-gray-700"
 };
 var _hoisted_54 = {
   "class": "px-3 py-2 text-left"
@@ -1695,24 +1798,24 @@ var _hoisted_57 = {
   "class": "px-3 py-2 text-left"
 };
 var _hoisted_58 = {
+  "class": "px-3 py-2 text-left"
+};
+var _hoisted_59 = {
   "class": "px-3 py-2 text-right"
 };
-var _hoisted_59 = ["data-testid"];
-var _hoisted_60 = {
+var _hoisted_60 = ["data-testid"];
+var _hoisted_61 = {
   "class": "px-3 py-2 whitespace-nowrap"
 };
-var _hoisted_61 = {
-  "class": "px-3 py-2"
-};
 var _hoisted_62 = {
-  key: 0
+  "class": "px-3 py-2"
 };
 var _hoisted_63 = {
-  key: 1,
-  "class": "text-gray-400"
+  key: 0
 };
 var _hoisted_64 = {
-  "class": "px-3 py-2"
+  key: 1,
+  "class": "text-gray-400"
 };
 var _hoisted_65 = {
   "class": "px-3 py-2"
@@ -1721,9 +1824,12 @@ var _hoisted_66 = {
   "class": "px-3 py-2"
 };
 var _hoisted_67 = {
-  "class": "px-3 py-2 text-right font-semibold"
+  "class": "px-3 py-2"
 };
 var _hoisted_68 = {
+  "class": "px-3 py-2 text-right font-semibold"
+};
+var _hoisted_69 = {
   key: 0,
   "class": "text-xs text-amber-700 mt-2",
   "data-testid": "cash-overview-cap-notice"
@@ -1733,7 +1839,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "p-4 sm:p-5 mb-3 flex flex-wrap items-end gap-3",
     "data-testid": "cash-overview-filters",
     onSubmit: _cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
-      return $options.fetch && $options.fetch.apply($options, arguments);
+      return $options.applyFilters && $options.applyFilters.apply($options, arguments);
     }, ["prevent"]))
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.from_date')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     id: "cashOverviewFrom",
@@ -1755,13 +1861,13 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $data.filters.source = $event;
     }),
     "class": "db-field-control"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.all_sources')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.source_caisse')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.source_borne')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.source_livreur')), 1 /* TEXT */)], 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelSelect, $data.filters.source]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_method')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("select", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.all_sources')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.source_caisse')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.source_borne')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.source_livreur')), 1 /* TEXT */)], 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelSelect, $data.filters.source]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_method')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                            [Wave Z Q7 2026-05-21] Owner-mandated removal of the\n                            `Autre` option — it was a silent no-op (backend's\n                            'other' bucket has no LIKE patterns; cf. controller\n                            line 486). `modeLabel('other')` is kept intact so\n                            rows whose `mode_bucket='other'` (rare fallback)\n                            still render gracefully in the table.\n                        "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("select", {
     id: "cashOverviewMode",
     "onUpdate:modelValue": _cache[3] || (_cache[3] = function ($event) {
       return $data.filters.mode = $event;
     }),
     "class": "db-field-control"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.all_methods')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.mode_cash')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.mode_card')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.mode_mobile')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.mode_ticket')), 1 /* TEXT */)], 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelSelect, $data.filters.mode]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_19, [_cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.all_methods')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.mode_cash')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.mode_card')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.mode_mobile')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.mode_ticket')), 1 /* TEXT */)], 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelSelect, $data.filters.mode]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_19, [_cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-search-line lab-font-size-16"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.search')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
@@ -1770,7 +1876,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[4] || (_cache[4] = function () {
       return $options.clearFilters && $options.clearFilters.apply($options, arguments);
     })
-  }, [_cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-cross-line-2 lab-font-size-22"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.clear')), 1 /* TEXT */)])], 32 /* NEED_HYDRATION */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Summary cards "), !$data.loading && $data.summary ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("section", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.grand_total')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney($data.summary.total)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.summary.count) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.transactions_short')), 1 /* TEXT */)]), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.displayedSources, function (src) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
@@ -1786,17 +1892,24 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.modeLabel(mode)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(stat.count) + " · " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney(stat.total)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_45);
   }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Loading state "), $data.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_47, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.loading')) + "… ", 1 /* TEXT */)) : !$data.transactions.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 4
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Empty state "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.no_data_available')), 1 /* TEXT */)], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                    [Wave Z Q6 2026-05-21] Empty-state polish — owner mandate :\n                    illustration (inline SVG, brand-tone, aria-hidden) + copy\n                    ≥20 chars + primary reset CTA. Replaces the previous bare\n                    `Aucune donnée` plain-text dead-end which left admins\n                    wondering whether the page had failed silently.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<svg class=\"mx-auto mb-4 text-gray-300\" xmlns=\"http://www.w3.org/2000/svg\" width=\"96\" height=\"96\" viewBox=\"0 0 96 96\" fill=\"none\" aria-hidden=\"true\" data-testid=\"cash-overview-empty-illustration\"><!-- Cayenne brand-tone: subtle cash-drawer outline + diagonal line through, no decorative noise --><rect x=\"14\" y=\"32\" width=\"68\" height=\"44\" rx=\"4\" stroke=\"currentColor\" stroke-width=\"3\"></rect><line x1=\"14\" y1=\"48\" x2=\"82\" y2=\"48\" stroke=\"currentColor\" stroke-width=\"3\"></line><circle cx=\"48\" cy=\"62\" r=\"6\" stroke=\"currentColor\" stroke-width=\"3\"></circle><line x1=\"20\" y1=\"20\" x2=\"76\" y2=\"84\" stroke=\"#d1d5db\" stroke-width=\"3\" stroke-linecap=\"round\"></line></svg>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_49, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_overview_empty_copy')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "db-btn py-2 px-4 text-white bg-primary",
+    "data-testid": "cash-overview-empty-reset",
+    onClick: _cache[6] || (_cache[6] = function () {
+      return $options.clearFilters && $options.clearFilters.apply($options, arguments);
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.reset_filters')), 1 /* TEXT */)])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 5
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Transactions table "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_49, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_50, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("table", _hoisted_51, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("thead", _hoisted_52, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_53, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.time')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_number')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_55, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.source')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_56, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_method')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_57, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_boy')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_58, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.amount')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tbody", null, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.transactions, function (tx) {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Transactions table "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_50, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_51, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("table", _hoisted_52, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("thead", _hoisted_53, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.time')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_55, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_number')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_56, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.source')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_57, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_method')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_58, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_boy')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_59, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.amount')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tbody", null, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.transactions, function (tx) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tr", {
       key: tx.id,
       "class": "border-t hover:bg-gray-50",
       "data-testid": "cash-overview-row-".concat(tx.id)
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_60, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatTime(tx.created_at)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_61, [tx.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_62, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(tx.queue_number), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_63, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(tx.order_id), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_64, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_61, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatTime(tx.created_at)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_62, [tx.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_63, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(tx.queue_number), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_64, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(tx.order_id), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_65, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["inline-flex items-center px-2 py-0.5 rounded text-xs", $options.sourceClass(tx.source)])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sourceLabel(tx.source)), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_65, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.modeLabel(tx.mode_bucket)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_66, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(tx.delivery_boy_name || '—'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_67, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney(tx.amount)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_59);
-  }), 128 /* KEYED_FRAGMENT */))])])]), $data.meta.capped ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_68, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_overview_capped_notice')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */))])])])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sourceLabel(tx.source)), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_66, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.modeLabel(tx.mode_bucket)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_67, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(tx.delivery_boy_name || '—'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_68, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney(tx.amount)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_60);
+  }), 128 /* KEYED_FRAGMENT */))])])]), $data.meta.capped ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_69, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_overview_capped_notice')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */))])])])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);
 }
 
 /***/ },
