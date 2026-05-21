@@ -109,6 +109,39 @@ test.describe('Wave X X1 + X2 — POS SSOT counter-collect + main-page shortcuts
             path: path.join(SCREENSHOT_DIR, '01-pos-main-mount.png'),
             fullPage: true,
         });
+
+        // [wave-x adversarial round-1 2026-05-21] Add a dedicated capture of
+        // the X2 shortcuts wrapper (both panels surfaced when DB has rows)
+        // so the reviewer can audit layout + content separately from the
+        // full-page mount frame.
+        if (cashPending.length > 0 || (await shortcutsBlock.count()) > 0) {
+            try {
+                await shortcutsBlock.scrollIntoViewIfNeeded({ timeout: 5_000 });
+            } catch (_) { /* best-effort scroll */ }
+            await page.waitForTimeout(300);
+            await page.screenshot({
+                path: path.join(SCREENSHOT_DIR, '02-pos-shortcuts-visible.png'),
+                fullPage: true,
+            });
+
+            // Close-up of the first cash-row (if any) — pure visual sanity
+            // for queue number + price + Encaisser CTA alignment.
+            const firstCashRow = page.locator('[data-testid^="pos-shortcut-cash-"]').first();
+            if (await firstCashRow.count()) {
+                const box = await firstCashRow.boundingBox();
+                if (box) {
+                    await page.screenshot({
+                        path: path.join(SCREENSHOT_DIR, '03-shortcut-cash-card-row.png'),
+                        clip: {
+                            x: Math.max(box.x - 12, 0),
+                            y: Math.max(box.y - 12, 0),
+                            width: Math.min(box.width + 24, page.viewportSize().width),
+                            height: Math.min(box.height + 24, page.viewportSize().height),
+                        },
+                    });
+                }
+            }
+        }
     });
 
     test('Counter-collect SSOT modal opens from shortcut Encaisser (if cash-pending exists)', async ({ page }) => {
@@ -168,7 +201,19 @@ test.describe('Wave X X1 + X2 — POS SSOT counter-collect + main-page shortcuts
         expect(Number(prefilled)).toBeGreaterThan(0);
 
         await page.screenshot({
-            path: path.join(SCREENSHOT_DIR, '02-counter-collect-modal-open.png'),
+            path: path.join(SCREENSHOT_DIR, '04-counter-collect-modal-open.png'),
+            fullPage: true,
+        });
+
+        // [wave-x adversarial round-1 2026-05-21] Dedicated CASH-mode frame —
+        // V5 numpad section visible, received-input is the active pre-filled
+        // amount. This is the headline visual the reviewer audits for
+        // PaymentComponent parity (no frozen-zone touch but visual mirror).
+        await expect(
+            page.locator('[data-testid="pos-counter-collect-cash-block"]')
+        ).toBeVisible({ timeout: 5_000 });
+        await page.screenshot({
+            path: path.join(SCREENSHOT_DIR, '05-counter-collect-cash-mode.png'),
             fullPage: true,
         });
 
@@ -177,7 +222,7 @@ test.describe('Wave X X1 + X2 — POS SSOT counter-collect + main-page shortcuts
         await expect(modal).toBeHidden({ timeout: 5_000 });
 
         await page.screenshot({
-            path: path.join(SCREENSHOT_DIR, '03-counter-collect-modal-cancelled.png'),
+            path: path.join(SCREENSHOT_DIR, '07-counter-collect-cancel.png'),
             fullPage: true,
         });
     });
@@ -222,7 +267,7 @@ test.describe('Wave X X1 + X2 — POS SSOT counter-collect + main-page shortcuts
         ).toHaveCount(0);
 
         await page.screenshot({
-            path: path.join(SCREENSHOT_DIR, '04-counter-collect-card-mode.png'),
+            path: path.join(SCREENSHOT_DIR, '06-counter-collect-card-mode.png'),
             fullPage: true,
         });
 
