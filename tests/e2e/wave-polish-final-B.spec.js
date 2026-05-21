@@ -944,6 +944,35 @@ function buildFindings() {
     p1 += 1;
   }
 
+  // S3 OSS/POS observations — empirically the KDS picks up the order
+  // within 2s but OSS + POS dashboards stay empty for the full 30s budget.
+  // Visual evidence: tests/e2e/__screenshots__/wave-polish-final-B/B-09f
+  // shows KDS with order N°A0015 (status PREPARING via S-1 auto-promote),
+  // B-09g shows OSS with both columns "En préparation" + "Prêt" empty,
+  // B-09e shows POS with PRÊT À LIVRER (0) + À ENCAISSER BORNE (0).
+  //
+  // POS not surfacing is EXPECTED — `pos-shortcuts-ready` filters
+  // status==PREPARED only (PosComponent.vue:275, readyOrders binding).
+  // The S3 order is at PREPARING after S-1 auto-promote (CARD payment).
+  //
+  // OSS not surfacing is SUSPICIOUS but reproducibility limited — fresh
+  // single-tab smoke would tell us if this is a multi-tab race or a
+  // genuine OSS filter bug. Recording as P2 (UX-quality) finding so the
+  // adversarial reviewer can decide whether to escalate or close.
+  const s3 = runState.scenarios.s3 || {};
+  const ossAssertion = (s3.assertions || []).find((a) => /oss/i.test(a.step || ''));
+  if (s3.verdict === 'AMBER' && ossAssertion && ossAssertion.verdict !== 'PASS') {
+    findings.push({
+      id: 'B-002',
+      state_artifact: 'wave-polish-final-B/B-09g-oss-after.png',
+      category: 'cross_surface_sync',
+      severity: 'P2',
+      evidence: `Multi-tab smoke: OSS dashboard did not surface order id=${evidence.s3_order?.id} (queue=${evidence.s3_order?.queue ?? 'see s3_order'}) within 30s of kiosk-create. KDS picked it up in ~2s confirming the order reached the system; OSS visual (B-09g-oss-after.png) shows both "En préparation" + "Prêt" columns empty. POS empty is expected (shortcuts filter status==PREPARED only). Single-tab Scenario 2 saw the same order chain succeed end-to-end — possible multi-tab race or OssSyncService poll cadence stall under N concurrent contexts.`,
+      fix_hint: 'reproduce with single-tab OSS smoke (no kiosk/KDS/POS contexts mounted) — if still empty, audit OrderStatusScreenOrderService.list() filter (TAKEAWAY status=PREPARING today-window); if surfaces in single-tab, treat as multi-tab Echo subscription drift (OssSyncService::intervalMsWhenDisconnected=2s should have caught it).',
+    });
+    p2 += 1;
+  }
+
   const verdictPerScenario = {};
   for (const key of Object.keys(runState.scenarios)) {
     verdictPerScenario[key] = runState.scenarios[key]?.verdict || 'UNKNOWN';

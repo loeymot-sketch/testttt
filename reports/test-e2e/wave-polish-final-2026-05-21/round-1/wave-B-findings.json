@@ -1,18 +1,27 @@
 {
   "wave": "B",
   "round": 1,
-  "started_at": "2026-05-21T08:18:23.137Z",
-  "ended_at": "2026-05-21T08:20:04.710Z",
+  "started_at": "2026-05-21T08:30:13.349Z",
+  "ended_at": "2026-05-21T08:31:56.157Z",
   "states_reviewed": 14,
-  "findings": [],
+  "findings": [
+    {
+      "id": "B-002",
+      "state_artifact": "wave-polish-final-B/B-09g-oss-after.png",
+      "category": "cross_surface_sync",
+      "severity": "P2",
+      "evidence": "Multi-tab smoke: OSS dashboard did not surface order id=284 (queue=NaN) within 30s of kiosk-create. KDS picked it up in ~2s confirming the order reached the system; OSS visual (B-09g-oss-after.png) shows both \"En préparation\" + \"Prêt\" columns empty. POS empty is expected (shortcuts filter status==PREPARED only). Single-tab Scenario 2 saw the same order chain succeed end-to-end — possible multi-tab race or OssSyncService poll cadence stall under N concurrent contexts.",
+      "fix_hint": "reproduce with single-tab OSS smoke (no kiosk/KDS/POS contexts mounted) — if still empty, audit OrderStatusScreenOrderService.list() filter (TAKEAWAY status=PREPARING today-window); if surfaces in single-tab, treat as multi-tab Echo subscription drift (OssSyncService::intervalMsWhenDisconnected=2s should have caught it)."
+    }
+  ],
   "summary": {
     "P0": 0,
     "P1": 0,
-    "P2": 0,
+    "P2": 1,
     "P3": 0,
     "open_P0": 0,
     "open_P1": 0,
-    "open_P2": 0,
+    "open_P2": 1,
     "open_P3": 0
   },
   "scenarios": {
@@ -26,7 +35,7 @@
       "steps": [
         "opened /admin/stock/rupture",
         "opened /kiosk/idle in second context",
-        "toggled variation 9 OFF (HTTP 200, 59ms)"
+        "toggled variation 9 OFF (HTTP 200, 55ms)"
       ],
       "assertions": [
         {
@@ -39,8 +48,8 @@
         {
           "step": "snapshot version bump (primary proof)",
           "verdict": "PASS",
-          "before": 5,
-          "after": 6
+          "before": 7,
+          "after": 8
         },
         {
           "step": "log invalidation event (supplementary, LOG_LEVEL=warning may suppress)",
@@ -56,7 +65,7 @@
           "target_is_available_after": false,
           "sauce_name_unavailable_after": 1,
           "sauce_name_available_after": 9,
-          "fetch_ms": 286
+          "fetch_ms": 303
         }
       ],
       "verdict": "GREEN"
@@ -71,27 +80,27 @@
       ],
       "steps": [
         "payment-confirm: ok=true status=200",
-        "placed kiosk order id=279 serial=210526279 (1009ms)",
+        "placed kiosk order id=283 serial=210526283 (1110ms)",
         "KDS bump 4→7 ACCEPT→PREPARING (HTTP 409)",
-        "KDS bump 7→8 PREPARING→PREPARED (HTTP 202, 93ms total)",
+        "KDS bump 7→8 PREPARING→PREPARED (HTTP 202, 114ms total)",
         "clicked POS Livré button",
-        "POS deliver action (194ms)"
+        "POS deliver action (980ms)"
       ],
       "assertions": [
         {
           "step": "KDS shows new order",
           "verdict": "PASS",
-          "dt_ms": 5326
+          "dt_ms": 5521
         },
         {
           "step": "POS shortcut visible",
           "verdict": "PASS",
-          "dt_ms": 4881
+          "dt_ms": 4916
         },
         {
           "step": "OSS removal",
           "verdict": "PASS",
-          "dt_ms": 5504
+          "dt_ms": 5424
         }
       ],
       "verdict": "GREEN"
@@ -109,23 +118,23 @@
       ],
       "steps": [
         "payment-confirm: ok=true status=200",
-        "fired multi-tab order id=280 queue=NaN"
+        "fired multi-tab order id=284 queue=NaN"
       ],
       "assertions": [
         {
           "step": "kds saw order",
           "verdict": "PASS",
-          "dt_ms": 1989
+          "dt_ms": 2451
         },
         {
           "step": "oss saw order (queue echo)",
           "verdict": "INFO",
-          "dt_ms": 31356
+          "dt_ms": 31278
         },
         {
           "step": "pos saw order (any shortcut panel)",
           "verdict": "INFO",
-          "dt_ms": 31356
+          "dt_ms": 31278
         }
       ],
       "verdict": "AMBER"
@@ -133,37 +142,37 @@
   },
   "timings": {
     "q9_s1_invalidation_signal_ms": {
-      "delta_ms": 941,
+      "delta_ms": 1005,
       "expect_max_ms": 5000,
       "pass": true
     },
     "s2_kiosk_to_kds_ms": {
-      "delta_ms": 5326,
+      "delta_ms": 5521,
       "expect_max_ms": 10000,
       "pass": true
     },
     "s2_kds_bump_to_pos_shortcut_ms": {
-      "delta_ms": 4881,
+      "delta_ms": 4916,
       "expect_max_ms": 5000,
       "pass": true
     },
     "s2_pos_deliver_to_oss_clear_ms": {
-      "delta_ms": 5504,
+      "delta_ms": 5424,
       "expect_max_ms": 10000,
       "pass": true
     },
     "s3_broadcast_kds_ms": {
-      "delta_ms": 1989,
+      "delta_ms": 2451,
       "expect_max_ms": 15000,
       "pass": true
     },
     "s3_broadcast_oss_ms": {
-      "delta_ms": 31356,
+      "delta_ms": 31278,
       "expect_max_ms": 15000,
       "pass": false
     },
     "s3_broadcast_pos_ms": {
-      "delta_ms": 31356,
+      "delta_ms": 31278,
       "expect_max_ms": 15000,
       "pass": false
     }
@@ -171,7 +180,7 @@
   "evidence": {
     "q9_s1_snapshot_before": {
       "ok": true,
-      "version": 5
+      "version": 7
     },
     "toggle_response": {
       "ok": true,
@@ -182,17 +191,17 @@
         "branch_id": 1,
         "is_available": false,
         "reason": "out_of_stock_manual",
-        "manual_unavailable_since": "2026-05-21T10:18:38+02:00"
+        "manual_unavailable_since": "2026-05-21T10:30:28+02:00"
       }
     },
     "q9_s1_snapshot_after": {
       "ok": true,
-      "version": 6
+      "version": 8
     },
     "q9_s1_log": {
       "found": false,
       "reason": "no_matching_line",
-      "since": 1779351517
+      "since": 1779352227
     },
     "q9_s1_cache_absent": true,
     "q9_s1_menu": {
@@ -261,19 +270,19 @@
       "status": 200
     },
     "s2_order": {
-      "id": 279,
-      "serial": "210526279",
+      "id": 283,
+      "serial": "210526283",
       "total": 1.5,
       "queue": null
     },
     "s3_order": {
-      "id": 280,
+      "id": 284,
       "queue": null
     }
   },
   "cleanup": {
     "ok": true,
-    "output": "[iter15] Cleanup applied — deleted 1 test orders (matched 1).\n"
+    "output": "[iter15] Cleanup applied — deleted 2 test orders (matched 2).\n"
   },
   "verdict_per_scenario": {
     "s1": "GREEN",
