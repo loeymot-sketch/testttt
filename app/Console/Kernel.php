@@ -91,6 +91,24 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // [Q14 BDD auto-backup — owner decision 2026-05-21]
+        // NF525-compliant daily DB backup with 30d daily + 12mo monthly + 24q
+        // quarterly (6y) retention. Runs at 03:00 (before purge-parked-orders
+        // at 03:15 and fiscal-chain-monitor at 03:30, so the dump captures a
+        // clean pre-housekeeping state). Output: storage/backups/db-{daily,
+        // monthly,quarterly}/. Companion of `fiscal:archive` (02:00) which
+        // produces the per-day signed ZIP+JSON archive — this lane is the
+        // full-DB safety net, fiscal:archive is the fiscal-specific lane.
+        // See app/Console/Commands/Backup/RunDailyBackup.php docblock.
+        // withoutOverlapping prevents double-execution if a previous run hangs;
+        // onOneServer mirrors all other daily lanes in this file.
+        $schedule->command('foodking:backup-daily')
+            ->dailyAt('03:00')
+            ->name('foodking-backup-daily')
+            ->description('NF525 daily DB backup with multi-tier 6y retention')
+            ->withoutOverlapping(60)
+            ->onOneServer();
+
         // [RED-team P0 / Outbox unbounded growth — 2026-05-17]
         // domain_events grows unbounded without this prune. NF525 6y retention
         // applies to audit_logs + z_reports ONLY (CLAUDE.md §8), NOT to this
