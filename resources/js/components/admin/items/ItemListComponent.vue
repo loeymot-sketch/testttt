@@ -215,7 +215,18 @@
                             <td class="db-table-body-td">{{ item.category_name }}</td>
                             <td class="db-table-body-td">{{ item.flat_price }}</td>
                             <td class="db-table-body-td">
-                                <span :class="statusClass(item.status)">
+                                <!-- [MISSION FIX D4 2026-05-21] Status pill must reflect per-branch
+                                     availability, not just items.status. Cross-surface parity with
+                                     /admin/stock-rupture-dashboard: an item that is "ACTIVE"
+                                     globally but flagged unavailable in item_branch_availability
+                                     for the current branch renders RUPTURE here too. -->
+                                <span v-if="isItemRuptured(item)"
+                                      class="admin-item-rupture-pill"
+                                      :title="item.availability_reason || ''"
+                                      data-testid="admin-item-rupture-pill">
+                                    {{ $t('label.rupture') }}
+                                </span>
+                                <span v-else :class="statusClass(item.status)">
                                     {{ enums.statusEnumArray[item.status] }}
                                 </span>
                             </td>
@@ -478,25 +489,46 @@ export default {
             return Array.isArray(this.itemCategories) ? this.itemCategories.length : 0;
         },
         activeItemsCount: function () {
+            // [MISSION FIX D4 2026-05-21] Prefer global server-computed count
+            // so the tile reflects the whole catalogue, not the visible page.
+            const metaCount = this.pagination && Number(this.pagination?.meta?.available_count);
+            if (Number.isFinite(metaCount) && metaCount >= 0) {
+                return metaCount;
+            }
             if (!Array.isArray(this.items)) {
                 return 0;
             }
             return this.items.filter((item) => Number(item.status) === Number(statusEnum.ACTIVE)).length;
         },
         unavailableItemsCount: function () {
+            // [MISSION FIX D4 2026-05-21] Prefer server-computed global count
+            // from response meta (matches paginated-total pattern at itemsCount
+            // above). Falls back to local filter only if backend hasn't supplied
+            // the meta key (older deployments / tests stubbing the store).
+            const metaCount = this.pagination && Number(this.pagination?.meta?.unavailable_count);
+            if (Number.isFinite(metaCount) && metaCount >= 0) {
+                return metaCount;
+            }
             if (!Array.isArray(this.items)) {
                 return 0;
             }
-            return this.items.filter((item) => {
-                return item.is_available === false || item.is_available === 0 || item.is_available === '0'
-                    || item.availability_reason || item.unavailable_reason;
-            }).length;
+            return this.items.filter((item) => this.isItemRuptured(item)).length;
         },
 
     },
     methods: {
         permissionChecker(e) {
             return appService.permissionChecker(e);
+        },
+        // [MISSION FIX D4 2026-05-21] SSOT for "is this item ruptured on this branch?"
+        // — same predicate used by the table pill, the header card local fallback,
+        // and the test spec. Strict false (vs falsy) protects against missing API
+        // field on older deployments (a missing key would falsely flag everything).
+        isItemRuptured: function (item) {
+            if (!item) return false;
+            return item.is_available === false
+                || item.is_available === 0
+                || item.is_available === '0';
         },
         statusClass: function (status) {
             return appService.statusClass(status);
@@ -650,6 +682,25 @@ export default {
     .hidden-print {
         display: none !important;
     }
+}
+
+/* [MISSION FIX D4 2026-05-21] Rupture pill — visually distinct from
+   the regular Actif (green) / Inactif (gray) chips so admin spots
+   per-branch stock-rupture at a glance. Aligned with
+   StockRuptureDashboardComponent's red "RUPTURE" treatment. */
+.admin-item-rupture-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    line-height: 1;
 }
 
 .catalog-control-plane {

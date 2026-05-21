@@ -596,6 +596,7 @@
         "catalog_metric_categories": "categories",
         "catalog_metric_active": "active",
         "catalog_metric_unavailable": "unavailable",
+        "rupture": "OUT OF STOCK",
         "catalog_action_products": "Products",
         "catalog_action_categories": "Categories",
         "catalog_action_offers": "Offers",

@@ -47,6 +47,16 @@ import '../css/kiosk/typography-bold.css';
 import { bootstrapKioskThemeEarly } from './composables/useKioskTheme';
 bootstrapKioskThemeEarly();
 
+// -- Wave Y D1 (2026-05-21) — Single-flight CustomEvent debouncer ------------
+// Kills the duplicate "Session rafraîchie automatiquement" toast triggered
+// when N concurrent kiosk requests race on a 401 burst. See
+// `./helpers/kioskAuthInterceptor.js` for the full rationale (why we
+// debounce the EVENT layer and not the axios layer — both lower layers
+// already coalesce). Idempotent install — bootstrap-kiosk may be imported
+// from multiple entries / HMR cycles.
+import { installKioskAuthInterceptor } from './helpers/kioskAuthInterceptor';
+installKioskAuthInterceptor();
+
 // -- FoodKing brand V2 (2026-05-10) — Visual theme par défaut LIGHT ---------
 // Owner instruction 2026-05-21 : "je veux plus l'icône de changer de thème,
 // laisse en mode Light c'est tout". Dark mode est désactivé entièrement.

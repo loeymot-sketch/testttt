@@ -77,7 +77,7 @@
             <div class="pos-v5-operator-bar__brand">
                 <div class="pos-v5-operator-bar__crown" aria-hidden="true">👑</div>
                 <div class="pos-v5-operator-bar__identity min-w-0 flex-1">
-                    <p class="pos-v5-operator-bar__eyebrow pos-v4-eyebrow">Caisse FoodKing</p>
+                    <p class="pos-v5-operator-bar__eyebrow pos-v4-eyebrow">Caisse Le Cayenne</p>
                     <h1 class="pos-v5-operator-bar__title pos-v4-title">Commande rapide</h1>
                     <div class="pos-v5-operator-bar__live pos-v4-status-row">
                         <PosV5StatChip

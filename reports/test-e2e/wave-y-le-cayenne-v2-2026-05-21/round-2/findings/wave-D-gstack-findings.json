@@ -1,0 +1,216 @@
+{
+  "wave": "Y-D",
+  "round": 2,
+  "agent": "GStack capture agent (Wave D Round 2)",
+  "role": "AUDIT-ONLY — no fix authorization (owner constraint: wizards untouchable)",
+  "date": "2026-05-21",
+  "scope": "Re-verify Round 1 F1/F2/F3/F4 post-fix. Kiosk wizard templates (Sandwich Cayenne, Tacos, Big Chicken Burger, Bols) + POS Vanilla JS wizard popup.",
+  "captures_dir": "reports/test-e2e/wave-y-le-cayenne-v2-2026-05-21/round-2/captures/wave-D/",
+  "specs": [
+    "tests/e2e/_wave-y-d-wizard-round2-2026-05-21.spec.js"
+  ],
+  "spec_run_outcome": {
+    "total_tests": 5,
+    "passed": 4,
+    "failed": 1,
+    "wall_clock": "18.5 min",
+    "passed_tests": [
+      "R2-K1 Sandwich Cayenne — D3 OOS-Algérienne + D5 dynamic-N",
+      "R2-K2 Tacos — D3 OOS-Algérienne + D5 dynamic-N",
+      "R2-K3 Chicken Burger — full walk",
+      "R2-K4 Bols — full walk (captured 429 rate-limit screen, see N1)"
+    ],
+    "failed_tests": [
+      "R2-P1 POS wizard popup — login + open wizard (test timeout 180s at /admin/pos navigation post-login; identical pattern to Round 1 G2; POS frozen-zone read-only anyway)"
+    ]
+  },
+  "summary": {
+    "captures_total": 82,
+    "kiosk_wizards_walked": "K1 Sandwich Cayenne FULL (recap reached), K2 Tacos FULL (recap reached), K3 Big Chicken Burger FULL (supplement step reached, G1 coverage gap remediated), K4 Bols BLOCKED by 429 rate-limit (new R2-N1 finding)",
+    "pos_wizard_captured": "no — same Round 1 G2 timeout pattern; POS frozen-zone read-only mission constraint anyway",
+    "round1_findings_status_summary": "F3 CLOSED — F4 CLOSED — F1 CLOSED — F2 STILL OPEN with graceful local-pricing fallback",
+    "new_findings_count": 2,
+    "p0": 0,
+    "p1": 1,
+    "p2": 0,
+    "p3": 1
+  },
+  "verdict": "HEAL — F3 and F4 FULLY CLOSED with discriminating-signal evidence (force-click probe state-unchanged + bundle grep + i18n key + visual). F1 CLOSED — config/cors.php Round 1 fix shipped; zero CORS console errors and zero session-rafraîchie toast across all K1-K4 captures; wizard reaches recap/menu step (vs Round 1 collapse to idle). F2 STILL OPEN — 422 pricing preview persists at incomplete-composition moments, mitigated by client-side local-pricing fallback toast and eventual 200 on valid composition. Two new Round 2 findings: P1 K4 Bols rate-limit (test orchestration artifact, NOT product defect) + P3 K1 Sandwich Cayenne €0,10 recap math gap (single-item display rounding, no Tacos equivalent).",
+  "round1_vs_round2_table": [
+    {
+      "id": "WAVE-D-F1",
+      "title": "CORS broadcasting localhost↔127.0.0.1 + 401 cascade + session-rafraîchie toast spam",
+      "round1": "P1 OPEN — Access-Control-Allow-Origin error every page (1-2 per console), 401 chain triggered wizard reset to idle, 'Session rafraîchie automatiquement' toast user-visible.",
+      "round2": "CLOSED — config/cors.php Round 1 fix shipped. ZERO 'CORS' / 'Access-Control' string in Round 2 console logs across K1-K4 (vs 1-2 per page in Round 1). ZERO 'Session rafraîchie' toast on captures. Wizard NO LONGER collapses to idle — reaches recap/menu step on K1 and K2 and supplément step on K3.",
+      "status_round2": "CLOSED",
+      "observability_note": "Residual: a single 401 on http://localhost:8000/api/login (broadcasting fallback) still appears once at session start, plus a CSP-report-only console message about localhost connection. Both are informational, do not cascade into wizard reset, and disappear in production single-host deployment. Track as observability cleanup post-V1, NOT a regression risk.",
+      "evidence_files": [
+        "round-2/captures/wave-D/_console-K1-sandwich-cayenne.log (0 CORS-strings, 1 × 401 only — vs Round 1 had CORS + 401 cascade)",
+        "round-2/captures/wave-D/_console-K2-tacos.log (0 CORS, wizard reached menu step)",
+        "round-2/captures/wave-D/_console-K3-burger.log (0 CORS, wizard reached supplément step)",
+        "round-2/captures/wave-D/_network-K1-sandwich-cayenne.log (line 11 single 401 localhost/api/login, no subsequent reset)",
+        "round-2/captures/wave-D/115-K1-15-recap-final-viewport.png (wizard reached menu step — vs Round 1 same shot showing 'Bienvenue !' idle collapse)",
+        "round-2/captures/wave-D/116-K1-16-after-add-to-cart-viewport.png (composition strip populated: Pain rustic + Poulet mariné + Andalouse Blanche +1 + Salade Tomate +2 + Menu complet)"
+      ]
+    },
+    {
+      "id": "WAVE-D-F2",
+      "title": "Pricing preview API rejects payload with HTTP 422",
+      "round1": "P1 OPEN — 3× '[kiosk] pricing preview failed: 422' on Sandwich Cayenne, 1× on Tacos, 1× on Bols. Yellow 'Tarif rafraîchi localement' toast user-visible.",
+      "round2": "STILL OPEN — 8 × 422 on K1 console, 6 × 422 on K3, 0 on K2/K4 (because K2 cleared and K4 was rate-limited). K2 network log line 13/16/17 shows '200 POST /api/frontend/pricing/preview' AFTER initial 422s → backend ACCEPTS valid payload; the 422 is correlated with incomplete-composition mid-wizard. K3 network log shows pattern: 3× 422 (incomplete) → 401 (session stale) → re-auth → continue. 'Tarif rafraîchi localement. Le total est vérifié au paiement.' toast still user-visible (capture 301-K3).",
+      "status_round2": "STILL OPEN — but mitigated. Backend ACCEPTS valid composition (verified 200 on K2 line 13). NF525 invariant '100% prices calculated backend' holds because backend is consulted at PAYMENT (not preview); preview is UX-only.",
+      "evidence_files": [
+        "round-2/captures/wave-D/_console-K1-sandwich-cayenne.log (8 × 'pricing preview failed: Request failed with status code 422')",
+        "round-2/captures/wave-D/_console-K3-burger.log (6 × 422)",
+        "round-2/captures/wave-D/_network-K2-tacos.log (line 13/16/17: 200 POST preview proves backend ACCEPTS valid payload)",
+        "round-2/captures/wave-D/_network-K3-burger.log (lines 13-15: 3× 422 then 401 then re-auth — 422 correlated to incomplete composition)",
+        "round-2/captures/wave-D/301-K3-01-wizard-open-viewport.png (yellow toast 'Tarif rafraîchi localement. Le total est vérifié au paiement.' visible)"
+      ],
+      "deferred_fix_path": "Investigate exact 422 response body via Network panel intercept on a real session. Likely needs PricingPreviewRequest validation to either (a) accept partial mid-wizard payloads gracefully (200 with computed-so-far total), or (b) frontend payload composer to skip preview-POST until composition is complete enough. Out-of-scope for capture agent — defer to dedicated fix cycle with response-body forensics."
+    },
+    {
+      "id": "WAVE-D-F3",
+      "title": "Out-of-stock sauce 'Algérienne' appears SELECTABLE despite 'Épuisé' label",
+      "round1": "P1 OPEN — Algérienne showed both 'Épuisé' badge AND orange checkmark badge; composition strip showed 'Algérienne, Andalouse...' after force-click.",
+      "round2": "FULLY CLOSED — D3 fix shipped at resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue lines 243-249 with comment '[D3 FIX 2026-05-21] Unconditional OOS guard'. Bundle public/js/kiosk-wizard-step.js carries the guard (grep verified). Round 2 force-click on Algérienne (idx 0 on K1+K2): probe JSON shows {isSelected: false, orderBadge: null, ariaDisabled: 'true', tabindex: '-1'} BOTH before AND after force-click attempt. Composition strip never contains Algérienne entry. Visual confirms grayed-out card with 'ÉPUISÉ' badge, NO '+' affordance, NO order badge.",
+      "status_round2": "CLOSED",
+      "evidence_files": [
+        "round-2/captures/wave-D/_K1-sauce-probe-initial.json (Algérienne idx 0, isOOS true)",
+        "round-2/captures/wave-D/_K1-sauce-probe-after-algerienne.json (post force-click: Algérienne isSelected=false, orderBadge=null — STATE UNCHANGED)",
+        "round-2/captures/wave-D/_K2-sauce-probe-after-algerienne.json (same on Tacos)",
+        "round-2/captures/wave-D/106-K1-06-algerienne-click-attempt-viewport.png (visual: grayed card with Épuisé, no checkmark)",
+        "round-2/captures/wave-D/203-K2-03-algerienne-click-attempt-viewport.png (same on Tacos)",
+        "resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue:243-249 (toggleSauce: 'if (this.isSauceOos(sauce)) return;' — unconditional OOS guard)"
+      ]
+    },
+    {
+      "id": "WAVE-D-F4",
+      "title": "Copy mismatch — sauce step heading said '14 sauces supplémentaires' but DOM has 13 sauce cards",
+      "round1": "P3 OPEN — '14 sauces supplémentaires (€0,50)' visible above grid; DOM sauce count = 13.",
+      "round2": "FULLY CLOSED — resources/js/languages/fr.json now uses dynamic interpolation: 'extra_one: \"+{n} sauce supplémentaire ({price})\"' and 'extra_many: \"+{n} sauces supplémentaires ({price})\"'. Computed property sauceExtraLine (KioskStepSauceComponent.vue:113-119) feeds {n} = selectedCount - 1. Round 2 with 3 in-stock sauces selected: probe JSON shows sauceExtraLine = '+2 sauces supplémentaires (€0,50)' on BOTH K1 (Sandwich Cayenne) AND K2 (Tacos). Visual confirms.",
+      "status_round2": "CLOSED",
+      "evidence_files": [
+        "round-2/captures/wave-D/_K1-sauce-probe-after-3-instock.json (sauceExtraLine: '+2 sauces supplémentaires (€0,50)')",
+        "round-2/captures/wave-D/_K2-sauce-probe-after-3-instock.json (sauceExtraLine: '+2 sauces supplémentaires (€0,50)')",
+        "round-2/captures/wave-D/107-K1-07-three-sauces-selected-viewport.png (visual: '+2 sauces supplémentaires (€0,50)' label above grid, NOT 14)",
+        "round-2/captures/wave-D/204-K2-04-three-sauces-selected-viewport.png (same on Tacos)",
+        "resources/js/languages/fr.json (extra_one + extra_many with {n} interpolation)",
+        "resources/js/components/frontend/kiosk/steps/KioskStepSauceComponent.vue:113-119 (sauceExtraLine computed: n = selectedCount - 1)"
+      ]
+    }
+  ],
+  "new_findings_round2": [
+    {
+      "id": "WAVE-D-R2-N1",
+      "severity": "P1",
+      "title": "K4 Bols wizard BLOCKED in test orchestration by 429 kiosk-login rate-limit",
+      "surface": "Kiosk login endpoint POST /api/auth/kiosk-login during sequential automated test runs",
+      "evidence": {
+        "captures": [
+          "round-2/captures/wave-D/_network-K4-bols.log (3 × 429 POST /api/auth/kiosk-login, no kiosk-event/menu lines, no item-detail GET)",
+          "round-2/captures/wave-D/400-K4-00-step-base-viewport.png (visual: rate-limit screen 'Trop de requêtes — patientez 37s avant de réessayer' over 'Borne de commande' connexion-automatique idle)"
+        ],
+        "root_cause": "Wave Y rate-limit hardening (commit 2e2400724 'fix(wave-y rate-limit): env-knob admin-mutation + lift owner rapid CTAs + dynamic Retry-After toast') correctly throttles kiosk-login at ~3 attempts in short window. When tests run 4 wizards sequentially without inter-test cool-down or storage-state pre-auth, the 4th test hits the rate-limit ceiling."
+      },
+      "is_product_defect": false,
+      "is_test_orchestration_issue": true,
+      "fix_applied": false,
+      "fix_authorized": false,
+      "proposed_fix": {
+        "approach_1_test_side_only": "Add 30s sleep between kiosk-login attempts in spec, OR pre-create a kiosk session via storageState in playwright.config.js fixture so each test reuses the same auth.",
+        "approach_2_test_side": "Split K1/K2/K3 into one file and K4 into a separate file with describe.serial + beforeAll waiting 60s; OR introduce a /e2e-only test-helper route to issue a fresh kiosk-token without going through rate-limited login.",
+        "estimated_loc": "5-15 LOC test infra; ZERO production code change.",
+        "scope": "test/spec infrastructure only — NO product code change needed",
+        "owner_note": "The rate-limit behaviour itself is CORRECT and protective — visible UX is well-designed ('Trop de requêtes — patientez 37s avant de réessayer' with countdown). Only the TEST suite needs adapting."
+      }
+    },
+    {
+      "id": "WAVE-D-R2-N2",
+      "severity": "P3",
+      "title": "K1 Sandwich Cayenne recap total €10,80 vs computed-expected €10,70 (Δ +€0,10) — no equivalent on K2 Tacos",
+      "surface": "Kiosk wizard recap step for Sandwich Cayenne after full walk (pain + viande + 3 sauces + 2 crudités + menu complet)",
+      "evidence": {
+        "captures": [
+          "round-2/captures/wave-D/115-K1-15-recap-final-viewport.png (Total card bottom-right shows €10,80; composition strip shows: Pain rustic + Poulet mariné + Andalouse Blanche +1 + Salade Tomate +2 + Menu complet (frites + ...))",
+          "round-2/captures/wave-D/116-K1-16-after-add-to-cart-viewport.png (same total €10,80)"
+        ],
+        "computed_components": {
+          "base_sandwich_cayenne": "€7,40",
+          "sauces_2_extra_at_0.50": "+€1,00 (3 selected = 1 free + 2 paid)",
+          "menu_complet_pill_says": "+€2,30 (per-item menu addon price for Sandwich Cayenne, NOT the same €2,50 K2 shows)",
+          "expected_sum": "7.40 + 1.00 + 2.30 = €10,70",
+          "observed_total": "€10,80",
+          "delta": "+€0,10"
+        },
+        "k2_tacos_comparison": "K2 same flow: €6,90 + €1,00 + €2,50 (menu pill +€2,50) = €10,40 ✓ EXACT (capture 210-K2-10-recap)"
+      },
+      "root_cause_hypothesis": "Possible candidates: (a) crudités step has a hidden tiny surcharge (€0,10) for Sandwich Cayenne template not flagged in composition strip; (b) menu pill display rounds down (€2,30 visible vs internal €2,40); (c) frontend kioskPricing.js running-total double-counts a sauce variation. Only K1 shows the gap — K2 Tacos arithmetic matches. The gap is small (€0,10 = 0.93% of base), but per NF525 the displayed price IS what user agrees to.",
+      "is_product_defect": true,
+      "fix_applied": false,
+      "fix_authorized": false,
+      "proposed_fix": {
+        "approach": "(1) Capture network response of last successful /api/frontend/pricing/preview POST on K1 wizard end-state — compare the response body's total field with the displayed €10,80 and the sum of displayed components. (2) Inspect kioskPricing.js calculateKioskRunningTotal — verify whether crudités step contributes any non-zero addon. (3) Verify Item.addons.menu_addon convert_price for Sandwich Cayenne in DB — current pill says €2,30, may be misaligned with effective surcharge.",
+        "estimated_loc": "1-10 LOC depending on root cause (data fix vs frontend display fix vs config)",
+        "files_to_inspect": [
+          "resources/js/helpers/kioskPricing.js (calculateKioskRunningTotal + getKioskMenuAddonPrice)",
+          "resources/js/components/frontend/kiosk/KioskWizardComponent.vue (FROZEN — read-only; total derivation only)",
+          "DB items.addons table row for Sandwich Cayenne (id=22) menu addon convert_price"
+        ]
+      }
+    }
+  ],
+  "numeric_integrity_checks_round2": {
+    "sauce_count_dom": {
+      "sandwich_cayenne_k1": 13,
+      "tacos_k2": 13,
+      "big_chicken_burger_k3": 13,
+      "bols_k4": "inconclusive — wizard blocked by 429",
+      "expected_per_mission": "13 ✓ matches everywhere measurable"
+    },
+    "viande_count_dom": {
+      "sandwich_cayenne_k1": 4,
+      "tacos_k2": 4,
+      "big_chicken_burger_k3": 4,
+      "expected_per_mission": "4 (Poulet mariné/curry/tandoori/crispy) ✓ matches"
+    },
+    "K1_sandwich_cayenne_total_flow": {
+      "starting_price": "€7,40",
+      "after_pain_no_charge": "€7,40 (Pain rustic free)",
+      "after_viande_poulet_marine": "€7,40 (viande free)",
+      "after_3_sauces": "€8,40 (3 selected = 1 free + 2 paid × €0,50) ✓ math correct",
+      "after_2_crudites": "presumably €8,40 (crudités typically free)",
+      "after_menu_complet_added": "€10,80 visible; expected per K1 menu pill (+€2,30): €8,40 + €2,30 = €10,70 — Δ +€0,10 see R2-N2"
+    },
+    "K2_tacos_total_flow": {
+      "starting_price": "€6,90",
+      "after_3_sauces": "€7,90 (Δ +€1,00 = 2 extras × €0,50) ✓",
+      "after_menu_complet_added": "€10,40 (Δ +€2,50 menu complet pill) ✓ EXACT"
+    },
+    "sauce_extra_line_text_round2": {
+      "after_3_instock_selected_k1": "'+2 sauces supplémentaires (€0,50)' ✓ DYNAMIC N=2 NEVER '14'",
+      "after_3_instock_selected_k2": "'+2 sauces supplémentaires (€0,50)' ✓"
+    }
+  },
+  "visual_quality_notes_round2": [
+    "Algérienne OOS card visually correct: grayed image, 'ÉPUISÉ' badge below name, NO '+' affordance, NO order badge — visually unambiguous as non-interactive",
+    "Sauce-extra header '+2 sauces supplémentaires (€0,50)' visually clean — orange pill on cream background, legible",
+    "Composition strip ('VOTRE COMPOSITION') updates correctly across viande / sauce / crudité / menu steps",
+    "Stepper indicator (orange circles) correctly highlights current step + advances across all 4 reachable wizards",
+    "K3 Big Chicken burger wizard NOW REACHED (Round 1 G1 coverage gap remediated) — 4 viandes, sauce step, crudité step, supplément step (Cheddar/Raclette/Emmental/Œuf €0,90 each) all rendered cleanly",
+    "K4 Bols rate-limit screen displays gracefully with retry CTA and countdown — UX of rate-limit itself is well-designed (good defensive ship)",
+    "No raw i18n labels (kiosk.X, Label.Y) observed in any wizard step — i18n resolution OK",
+    "Total card always visible bottom-right, ABANDONNER L'ARTICLE always present",
+    "No 'Session rafraîchie' toast appeared across K1-K4 → F1 user-visible regression vector closed"
+  ],
+  "mission_constraints_observed": {
+    "audit_only": true,
+    "no_code_modified": true,
+    "frozen_zones_untouched": true,
+    "nf525_invariants_unaffected": true,
+    "screenshots_persisted_to_disk": 82,
+    "round1_captures_preserved": true,
+    "round2_isolated_to_round_2_subdir": true,
+    "playwright_runs_passed_kiosk": 4,
+    "playwright_runs_failed_pos_expected_per_round1_G2": 1
+  }
+}

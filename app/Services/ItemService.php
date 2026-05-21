@@ -157,6 +157,66 @@ class ItemService
         });
     }
 
+    /**
+     * [MISSION FIX D4 2026-05-21] Global available/unavailable counts for the
+     * admin catalog header card. Page-local filter on $items would understate
+     * "INDISPONIBLES" when ruptured items don't appear on the visible page
+     * (Wave Y Round 1 C-013 — `/admin/items` showed `0` while
+     * `/admin/stock-rupture-dashboard` listed Chicken Burger as RUPTURE).
+     *
+     * Counts ACTIVE items only (matches the catalog listing default) and
+     * combines the global `items.is_available` flag with per-branch overrides
+     * from `item_branch_availability`. BranchScope on
+     * ItemBranchAvailability is admin-bypass (branch_id=0); we still resolve
+     * to a concrete branchId from the caller so the count is deterministic.
+     */
+    public function availabilityCounts(?int $branchId): array
+    {
+        $activeQuery = Item::query()->where('status', \App\Enums\Status::ACTIVE);
+        $totalActive = (int) (clone $activeQuery)->count();
+
+        if ($branchId === null || $branchId < 1) {
+            // Global fallback (no branch resolvable): use the global flag only.
+            $globallyUnavailable = (int) (clone $activeQuery)
+                ->where(function ($q): void {
+                    $q->where('is_available', false)->orWhere('is_available', 0);
+                })
+                ->count();
+            return [
+                'available_count'   => max(0, $totalActive - $globallyUnavailable),
+                'unavailable_count' => $globallyUnavailable,
+            ];
+        }
+
+        // Per-branch overrides: an item is unavailable on this branch if EITHER
+        // the global flag is false OR there's an override row with is_available=false.
+        $overrideUnavailableIds = ItemBranchAvailability::query()
+            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('branch_id', $branchId)
+            ->where('is_available', false)
+            ->pluck('item_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $globallyUnavailableIds = (clone $activeQuery)
+            ->where(function ($q): void {
+                $q->where('is_available', false)->orWhere('is_available', 0);
+            })
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $unavailableActiveIds = (clone $activeQuery)
+            ->whereIn('id', array_values(array_unique(array_merge($overrideUnavailableIds, $globallyUnavailableIds))) ?: [0])
+            ->pluck('id')
+            ->count();
+
+        return [
+            'available_count'   => max(0, $totalActive - (int) $unavailableActiveIds),
+            'unavailable_count' => (int) $unavailableActiveIds,
+        ];
+    }
+
     private function applyBranchAvailabilityOverlay($result, mixed $branchId): void
     {
         $branchId = (int) $branchId;

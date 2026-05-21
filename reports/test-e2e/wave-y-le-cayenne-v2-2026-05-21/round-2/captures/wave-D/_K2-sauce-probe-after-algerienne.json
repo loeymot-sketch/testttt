@@ -1,0 +1,137 @@
+{
+  "sauceCount": 13,
+  "sauces": [
+    {
+      "idx": 0,
+      "name": "Algérienne",
+      "orderBadge": null,
+      "isSelected": false,
+      "isOOS": true,
+      "isDisabled": true,
+      "ariaDisabled": "true",
+      "tabindex": "-1"
+    },
+    {
+      "idx": 1,
+      "name": "Andalouse",
+      "orderBadge": null,
+      "isSelected": false,
+      "isOOS": false,
+      "isDisabled": false,
+      "ariaDisabled": "false",
+      "tabindex": "0"
+    },
+    {
+      "idx": 2,
+      "name": "Blanche",
+      "orderBadge": null,
+      "isSelected": false,
+      "isOOS": false,
+      "isDisabled": false,
+      "ariaDisabled": "false",
+      "tabindex": "0"
+    },
+    {
+      "idx": 3,
+      "name": "Curry",
+      "orderBadge": null,
+      "isSelected": false,
+      "isOOS": false,
+      "isDisabled": false,
+      "ariaDisabled": "false",
+      "tabindex": "0"
+    },
+    {
+      "idx": 4,
+      "name": "Hannibal",
+      "orderBadge": null,
+      "isSelected": false,
+      "isOOS": false,
+      "isDisabled": false,
+      "ariaDisabled": "false",
+      "tabindex": "0"
+    },
+    {
+      "idx": 5,
+      "name": "Harissa",
+      "orderBadge": null,
+      "isSelected": false,
+      "isOOS": false,
+      "isDisabled": false,
+      "ariaDisabled": "false",
+      "tabindex": "0"
+    },
+    {
+      "idx": 6,
+      "name": "Ketchup",
+      "orderBadge": null,
+      "isSelected": false,
+      "isOOS": false,
+      "isDisabled": false,
+      "ariaDisabled": "false",
+      "tabindex": "0"
+    },
+    {
+      "idx": 7,
+      "name": "Mayonnaise",
+      "orderBadge": null,
+      "isSelected": false,
+      "isOOS": false,
+      "isDisabled": false,
+      "ariaDisabled": "false",
+      "tabindex": "0"
+    },
+    {
+      "idx": 8,
+      "name": "Samouraï",
+      "orderBadge": null,
+      "isSelected": false,
+      "isOOS": false,
+      "isDisabled": false,
+      "ariaDisabled": "false",
+      "tabindex": "0"
+    },
+    {
+      "idx": 9,
+      "name": "Sauce Spicy Maison",
+      "orderBadge": null,
+      "isSelected": false,
+      "isOOS": false,
+      "isDisabled": false,
+      "ariaDisabled": "false",
+      "tabindex": "0"
+    },
+    {
+      "idx": 10,
+      "name": "Barbecue",
+      "orderBadge": null,
+      "isSelected": false,
+      "isOOS": false,
+      "isDisabled": false,
+      "ariaDisabled": "false",
+      "tabindex": "0"
+    },
+    {
+      "idx": 11,
+      "name": "Sauce Fromagère Maison",
+      "orderBadge": null,
+      "isSelected": false,
+      "isOOS": false,
+      "isDisabled": false,
+      "ariaDisabled": "false",
+      "tabindex": "0"
+    },
+    {
+      "idx": 12,
+      "name": "Sans Sauce",
+      "orderBadge": null,
+      "isSelected": false,
+      "isOOS": false,
+      "isDisabled": false,
+      "ariaDisabled": "false",
+      "tabindex": "0"
+    }
+  ],
+  "sauceExtraLine": null,
+  "compositionStrip": null
+}

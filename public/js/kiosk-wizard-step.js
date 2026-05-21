@@ -1273,7 +1273,11 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     },
     toggleSauce: function toggleSauce(sauce) {
       if (!this.sauceFilterAllowed(sauce)) return;
-      if (this.isSauceOos(sauce) && !this.localSelections[this.selectionKey(sauce)]) return;
+      // [D3 FIX 2026-05-21] Unconditional OOS guard — out-of-stock sauces must
+      // never be selectable/deselectable from the wizard UI (previous narrow
+      // guard allowed deselection only, but if F3 reproduces it means the
+      // narrow form has not been sufficient in practice).
+      if (this.isSauceOos(sauce)) return;
       var key = this.sauceKey(sauce);
       var selKey = String(key);
       var newSelections = _objectSpread({}, this.localSelections);

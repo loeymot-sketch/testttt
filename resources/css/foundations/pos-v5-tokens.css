@@ -90,7 +90,7 @@
     --pos-v5-font-mono:        'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
     /* Échelle dense opérateur (caissier — pas tactile xl comme kiosk) */
-    --pos-v5-text-eyebrow:     11px;   /* labels meta UPPER (CAISSE FOODKING) */
+    --pos-v5-text-eyebrow:     11px;   /* labels meta UPPER (CAISSE LE CAYENNE) */
     --pos-v5-text-caption:     12px;   /* meta secondaire                     */
     --pos-v5-text-body:        14px;   /* corps standard                      */
     --pos-v5-text-body-lg:     15px;   /* listes, prix tile                   */

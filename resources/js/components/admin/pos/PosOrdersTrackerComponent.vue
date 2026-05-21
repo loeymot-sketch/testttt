@@ -11,7 +11,7 @@
 
         <header class="pos-tracker-bar">
             <div class="pos-tracker-bar-left min-w-0">
-                <p class="pos-tracker-eyebrow">Caisse FoodKing</p>
+                <p class="pos-tracker-eyebrow">Caisse Le Cayenne</p>
                 <h1 class="pos-tracker-title">{{ $t('pos.tracker.title') }}</h1>
                 <div class="pos-tracker-status-row">
                     <span>
