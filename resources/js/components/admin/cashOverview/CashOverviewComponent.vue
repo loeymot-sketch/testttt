@@ -100,15 +100,16 @@
 
                 <!-- Cash drawer reconciliation card -->
                 <!--
-                    [Wave X-C round-1 2026-05-21] Fix C-002 — render the écart
-                    math the owner mandate requires:
-                      « Permet de détecter écarts (cash manquant). »
-                    We display BOTH cash_collected (from payload) AND the
-                    computed diff = cash_collected - expected_cash, color-coded
-                    so a missing-cash situation pops red. Card is always
-                    visible whenever a cash_session is in payload — see
-                    C-003 fix in controller making admin default to a branch
-                    when ?branch_id= is omitted.
+                    [Wave X-C round-2 2026-05-21] Fix C-013 — the previous
+                    diff cell was algebraically locked to `-opening_amount`
+                    (cashDiff = collected - (opening + collected) = -opening),
+                    so it always displayed `-100 € (manquant)` even when the
+                    drawer was perfectly healthy. A real écart requires a
+                    `counted_physical_cash` input compared to `expected_cash`
+                    (= opening + collected). The cashier-count input is V1.0.2
+                    backlog; until then we show 3 HONEST values + an info
+                    note. No misleading diff cell.
+                    Source: GET /api/admin/cash-overview cash_session payload.
                 -->
                 <section
                     v-if="!loading && cashSession"
@@ -119,37 +120,38 @@
                         <div class="text-sm font-semibold text-amber-900">
                             {{ $t('label.cash_drawer_reconciliation') }}
                         </div>
-                        <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-sm">
+                        <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                             <div>
                                 <span class="text-gray-600">{{ $t('label.drawer_opened_at') }}:</span>
                                 <strong class="ml-1">{{ formatTime(cashSession.opened_at) }}</strong>
                             </div>
                             <div>
                                 <span class="text-gray-600">{{ $t('label.opening_amount') }}:</span>
-                                <strong class="ml-1">{{ formatMoneyEuro(cashSession.opening_amount) }}</strong>
+                                <strong
+                                    class="ml-1"
+                                    data-testid="cash-overview-reconciliation-opening"
+                                >{{ formatMoneyEuro(cashSession.opening_amount) }}</strong>
                             </div>
                             <div>
-                                <span class="text-gray-600">{{ $t('label.cash_collected') }}:</span>
+                                <span class="text-gray-600">{{ $t('label.cash_collected_today') }}:</span>
                                 <strong
                                     class="ml-1"
                                     data-testid="cash-overview-reconciliation-collected"
                                 >{{ formatMoneyEuro(cashSession.cash_collected) }}</strong>
                             </div>
                             <div>
-                                <span class="text-gray-600">{{ $t('label.expected_cash') }}:</span>
+                                <span class="text-gray-600">{{ $t('label.expected_in_drawer') }}:</span>
                                 <strong
                                     class="ml-1 text-amber-900"
                                     data-testid="cash-overview-reconciliation-expected"
                                 >{{ formatMoneyEuro(cashSession.expected_cash) }}</strong>
                             </div>
-                            <div>
-                                <span class="text-gray-600">{{ $t('label.cash_diff') }}:</span>
-                                <strong
-                                    class="ml-1"
-                                    :class="diffClass"
-                                    data-testid="cash-overview-reconciliation-diff"
-                                >{{ diffLabel }}</strong>
-                            </div>
+                        </div>
+                        <div
+                            class="mt-2 text-xs text-amber-800"
+                            data-testid="cash-overview-reconciliation-note"
+                        >
+                            {{ $t('label.cash_drawer_count_pending_note') }}
                         </div>
                     </div>
                 </section>
@@ -276,29 +278,13 @@ export default {
                 stat: stats[key] || { count: 0, total: 0 },
             }));
         },
-        // [Wave X-C round-1 2026-05-21] Fix C-002 — écart math derived from
-        // payload. Backend ships `cash_collected` and `expected_cash`; the
-        // diff is the owner's headline KPI : negative = manquant (cash IN
-        // less than expected), positive = excédent, zero = équilibré.
-        cashDiff() {
-            if (!this.cashSession) return 0;
-            const collected = Number(this.cashSession.cash_collected || 0);
-            const expected  = Number(this.cashSession.expected_cash  || 0);
-            return Math.round((collected - expected) * 100) / 100;
-        },
-        diffLabel() {
-            const v = this.cashDiff;
-            const fmt = this.formatMoneyEuro(Math.abs(v));
-            if (v < 0) return `- ${fmt} (${this.$t('label.manquant')})`;
-            if (v > 0) return `+ ${fmt} (${this.$t('label.excedent')})`;
-            return `${fmt} (${this.$t('label.equilibre')})`;
-        },
-        diffClass() {
-            const v = this.cashDiff;
-            if (v < 0) return 'text-red-700';
-            if (v > 0) return 'text-amber-700';
-            return 'text-emerald-700';
-        },
+        // [Wave X-C round-2 2026-05-21] Fix C-013 — dropped `cashDiff`,
+        // `diffLabel`, `diffClass` computed props (and the diff cell that
+        // used them). The previous diff was algebraically `-opening_amount`
+        // and never reflected a real écart. Until V1.0.2 ships a cashier
+        // count-input feature the page displays 3 honest values
+        // (opening / collected_today / expected_in_drawer) without a
+        // misleading diff.
     },
     mounted() {
         this.fetch();

@@ -113,6 +113,23 @@
                 "quality_issue": "Problème qualité"
             }
         },
+        "stock_mgmt": {
+            "title": "Gestion Produits & Stock",
+            "subtitle": "Activez ou désactivez chaque produit pour cette branche. Le changement est synchronisé en temps réel sur la caisse, la borne et le wizard.",
+            "search": "Rechercher un produit…",
+            "empty": "Aucun produit dans cette catégorie.",
+            "in_stock": "EN STOCK",
+            "out_of_stock": "RUPTURE",
+            "loading_error": "Impossible de charger les produits. Réessayez.",
+            "toggle_error": "Erreur lors du changement de statut. Réessayez.",
+            "branch_all": "Toutes les branches",
+            "branch_label": "Branche",
+            "rail_items": "Catégories produits",
+            "rail_extras": "Suppléments",
+            "rail_variations": "Variations",
+            "loading": "Chargement…",
+            "read_only": "Lecture seule (droit items_edit requis)"
+        },
         "observability_outbox": {
             "title": "Pipeline outbox & événements",
             "subtitle": "Santé du pipeline domain_events, files de jobs et workers",
@@ -294,7 +311,7 @@
         "item": "Article",
         "items": "Articles",
         "catalog": "Catalogue",
-        "stock_rupture": "Tableau de bord stock",
+        "stock_rupture": "Produits & Stock",
         "product_list": "Liste produits",
         "customers": "Clients",
         "loyalty_setup": "Fidélité",
@@ -986,6 +1003,9 @@
         "drawer_opened_at": "Caisse ouverte à",
         "expected_cash": "Espèces attendues",
         "cash_collected": "Espèces encaissées",
+        "cash_collected_today": "Espèces encaissées aujourd'hui",
+        "expected_in_drawer": "Espèces attendues au tiroir",
+        "cash_drawer_count_pending_note": "Pour calculer l'écart, saisir le comptage physique du tiroir (à venir).",
         "cash_diff": "Écart caisse",
         "manquant": "manquant",
         "excedent": "excédent",

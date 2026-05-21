@@ -209,33 +209,22 @@ class CashOverviewController extends AdminController
 
         $cashSessionPayload = null;
         if ($cashSession) {
-            // [Wave X-C round-1 2026-05-21] Fix C-003 — when admin has no
-            // explicit branch filter but we fell back to a single drawer
-            // (resolveOpenCashSession), the cash_collected used to compute
-            // expected_cash MUST be scoped to that drawer's branch — not
-            // the global filter. Otherwise we'd be reconciling one branch's
-            // opening_amount against all-branch cash payments. When the
-            // request IS branch-scoped (explicit branch_id OR Branch
-            // Manager), `summary['by_mode']['cash']['total']` is already
-            // the right number and we re-use it without a 2nd query.
+            // [Wave X-C round-2 2026-05-21] Fix C-014 — the reconciliation
+            // `cash_collected` is a property of the cash drawer session itself
+            // (physical cash IN today, scoped to drawer's branch + day).
+            // It MUST be invariant against the UI source/mode/branch filters
+            // applied to the transactions list — otherwise filtering
+            // source=borne would falsely show the drawer holds only the
+            // borne portion of the cash. We compute it from a SEPARATE
+            // bounded query restricted to drawer.branch_id + the current
+            // day window, IGNORING all UI filters.
             $sessionBranchId = (int) $cashSession->branch_id;
-            if ($branchFilter !== null && $branchFilter === $sessionBranchId) {
-                $cashCollectedToday = (float) ($summary['by_mode']['cash']['total'] ?? 0);
-            } else {
-                // Admin global view fell back to this branch's drawer —
-                // recompute cash collected restricted to that branch.
-                $cashCollectedToday = (float) $transactions
-                    ->filter(function ($tx) use ($sessionBranchId) {
-                        $order = $tx->order;
-                        return $order && (int) ($order->branch_id ?? 0) === $sessionBranchId;
-                    })
-                    ->filter(function ($tx) {
-                        return self::derivePaymentBucket((string) ($tx->payment_method ?? '')) === 'cash';
-                    })
-                    ->sum(function ($tx) {
-                        return round((float) ($tx->amount ?? 0), 2);
-                    });
-            }
+            $cashCollectedToday = (float) $this->drawerCashCollectedUnfiltered(
+                $sessionBranchId,
+                $startBound,
+                $endBound,
+                $isGlobalAdmin
+            );
             $expectedCash = round(
                 (float) $cashSession->opening_amount + $cashCollectedToday,
                 2
@@ -325,6 +314,47 @@ class CashOverviewController extends AdminController
         // mounts by default for the admin's daily écart view.
 
         return $query->orderByDesc('opened_at')->first();
+    }
+
+    /**
+     * [Wave X-C round-2 2026-05-21] Fix C-014 — compute the drawer's
+     * `cash_collected` from a SEPARATE bounded query restricted to the
+     * drawer's branch + the current day window, IGNORING the UI
+     * source/mode/branch filters used to build `$transactions`.
+     *
+     * Reconciliation cash IN is a physical-drawer invariant: it does NOT
+     * change because the admin filtered the transactions list to
+     * source=borne or mode=card. Returns the rounded total in EUR.
+     *
+     * Cost: one extra SELECT bounded by (branch_id + day + type=payment +
+     * cash LIKE patterns), well below 100 rows in realistic operation —
+     * negligible vs the main list query already capped at 500.
+     */
+    private function drawerCashCollectedUnfiltered(
+        int $branchId,
+        Carbon $startBound,
+        Carbon $endBound,
+        bool $isGlobalAdmin
+    ): float {
+        $cashPatterns = $this->paymentMethodPatternsForBucket('cash');
+
+        $q = Transaction::query()
+            ->whereBetween('created_at', [$startBound, $endBound])
+            ->where('type', 'payment')
+            ->whereHas('order', function ($oq) use ($branchId, $isGlobalAdmin) {
+                if ($isGlobalAdmin) {
+                    $oq->withoutGlobalScope(BranchScope::class);
+                }
+                $oq->where('branch_id', $branchId);
+            })
+            ->where(function ($pq) use ($cashPatterns) {
+                foreach ($cashPatterns as $pattern) {
+                    $pq->orWhere('payment_method', 'like', $pattern);
+                }
+            });
+
+        $sum = (float) $q->sum('amount');
+        return round($sum, 2);
     }
 
     /**

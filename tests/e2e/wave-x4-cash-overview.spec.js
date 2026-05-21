@@ -315,50 +315,54 @@ test.describe('Wave X4 — Admin unified cash overview', () => {
         await snap('08b-cash-overview-after-reset');
     });
 
-    test('09 reconciliation card visible by default with cash_collected and diff cells (C-002 + C-003 fix)', async ({ page }) => {
+    test('09 reconciliation card visible with 3 honest values + count-pending note (C-013 + C-014 fix)', async ({ page }) => {
         const { snap } = attachMegaAuditRecorder(page, path.resolve(SCREENSHOT_DIR));
 
-        // [C-003 fix] No ?branch_id= query — admin's default landing path.
-        // Backend now falls back to most-recent open drawer so the card
-        // mounts by default. If no drawer is open anywhere in the test DB
-        // the card stays null (legitimately nothing to reconcile against)
-        // and the test self-skips the card-visible assertion but still
-        // emits the artifact quartet for the reviewer.
+        // [Round-2 C-013 fix] The previous build shipped a 5th "Écart caisse"
+        // cell that was algebraically `-opening_amount` — mathematically
+        // meaningless. We now show 3 HONEST values (opening / collected_today
+        // / expected_in_drawer) + an info note explaining the diff is V1.0.2.
+        // [Round-2 C-014 fix] `cash_collected` is now computed via a separate
+        // unfiltered query, so it stays invariant against the UI source/mode
+        // filters (assertion below: same value across default + filtered).
         const body = await gotoAndWaitInitial(page, CASH_OVERVIEW_PATH);
 
         const cashSessionPresent = body && body.cash_session !== null;
+        let unfilteredCollected = null;
         if (cashSessionPresent) {
             await expect(
                 page.locator('[data-testid="cash-overview-reconciliation"]')
             ).toBeVisible({ timeout: 10_000 });
 
-            // [C-002 fix] All three reconciliation cells (collected + expected
-            // + diff) must be present — the écart math is the headline KPI.
+            // Three honest cells must be present.
+            await expect(
+                page.locator('[data-testid="cash-overview-reconciliation-opening"]')
+            ).toBeVisible({ timeout: 5_000 });
             await expect(
                 page.locator('[data-testid="cash-overview-reconciliation-collected"]')
             ).toBeVisible({ timeout: 5_000 });
             await expect(
                 page.locator('[data-testid="cash-overview-reconciliation-expected"]')
             ).toBeVisible({ timeout: 5_000 });
+
+            // [Round-2 C-013] No diff cell anymore — assert it's gone.
             await expect(
                 page.locator('[data-testid="cash-overview-reconciliation-diff"]')
+            ).toHaveCount(0);
+
+            // Info note must be present (replaces the misleading diff).
+            await expect(
+                page.locator('[data-testid="cash-overview-reconciliation-note"]')
             ).toBeVisible({ timeout: 5_000 });
 
-            // Numeric integrity probe : diff visible label MUST match
-            // cash_collected - expected_cash from the payload.
-            const expected  = Number(body.cash_session.expected_cash  || 0);
+            // Numeric integrity: expected_cash == opening_amount + cash_collected.
+            const opening   = Number(body.cash_session.opening_amount || 0);
             const collected = Number(body.cash_session.cash_collected || 0);
-            const diff      = Math.round((collected - expected) * 100) / 100;
+            const expected  = Number(body.cash_session.expected_cash  || 0);
+            const recomputed = Math.round((opening + collected) * 100) / 100;
+            expect(recomputed).toBeCloseTo(expected, 2);
 
-            const diffText = await page
-                .locator('[data-testid="cash-overview-reconciliation-diff"]')
-                .innerText();
-            // Match the magnitude in the label (sign formatting can vary :
-            // `Intl.NumberFormat fr-FR` may use comma vs dot, NBSP vs space).
-            const absDiffFixed = Math.abs(diff).toFixed(2).replace('.', ',');
-            const absDiffDot   = Math.abs(diff).toFixed(2);
-            const hasMagnitude = diffText.includes(absDiffFixed) || diffText.includes(absDiffDot);
-            expect(hasMagnitude).toBeTruthy();
+            unfilteredCollected = collected;
         } else {
             // eslint-disable-next-line no-console
             console.warn('[wave-x4 test 09] cash_session=null (no open drawer in test DB) — card-visible assertion skipped, artifact quartet still emitted.');
@@ -375,9 +379,41 @@ test.describe('Wave X4 — Admin unified cash overview', () => {
             ).toBeVisible({ timeout: 10_000 });
             await expect(
                 page.locator('[data-testid="cash-overview-reconciliation-diff"]')
+            ).toHaveCount(0);
+            await expect(
+                page.locator('[data-testid="cash-overview-reconciliation-note"]')
             ).toBeVisible({ timeout: 5_000 });
         }
 
         await snap('09b-cash-overview-reconciliation-branch1');
+
+        // [Round-2 C-014 fix] cash_collected must NOT change when a UI source
+        // filter is applied — the drawer cash IN is a physical invariant.
+        // Re-apply source=borne and confirm payload cash_collected stays the
+        // same as the unfiltered value above.
+        if (cashSessionPresent && unfilteredCollected !== null) {
+            const filteredApi = page.waitForResponse(
+                (resp) =>
+                    CASH_OVERVIEW_API_RE.test(resp.url())
+                    && resp.url().includes('source=borne')
+                    && resp.status() < 500,
+                { timeout: 15_000 }
+            );
+            await page.selectOption('#cashOverviewSource', 'borne');
+            await page.click('[data-testid="cash-overview-search"]');
+            const resp = await filteredApi;
+            const fbody = await resp.json().catch(() => null);
+            expect(fbody).not.toBeNull();
+            expect(fbody).toHaveProperty('cash_session');
+            if (fbody.cash_session) {
+                const filteredCollected = Number(fbody.cash_session.cash_collected || 0);
+                expect(filteredCollected).toBeCloseTo(unfilteredCollected, 2);
+            }
+            // [Round-2] Already consumed the source=borne XHR via filteredApi
+            // above — pass null to avoid double-listener deadlock per spec
+            // comment on waitForFilteredSummary; just wait for summary repaint.
+            await waitForFilteredSummary(page, null);
+            await snap('09c-cash-overview-reconciliation-invariant-under-filter');
+        }
     });
 });

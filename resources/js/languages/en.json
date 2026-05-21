@@ -113,6 +113,23 @@
                 "quality_issue": "Quality issue"
             }
         },
+        "stock_mgmt": {
+            "title": "Products & Stock Management",
+            "subtitle": "Enable or disable each product for this branch. Changes sync in real time to POS, Kiosk and the wizard.",
+            "search": "Search a product…",
+            "empty": "No products in this category.",
+            "in_stock": "IN STOCK",
+            "out_of_stock": "OUT OF STOCK",
+            "loading_error": "Could not load products. Try again.",
+            "toggle_error": "Could not change status. Try again.",
+            "branch_all": "All branches",
+            "branch_label": "Branch",
+            "rail_items": "Product categories",
+            "rail_extras": "Supplements",
+            "rail_variations": "Variations",
+            "loading": "Loading…",
+            "read_only": "Read-only (items_edit permission required)"
+        },
         "observability_outbox": {
             "title": "Outbox & event pipeline",
             "subtitle": "domain_events pipeline health, job queues and worker status",
@@ -296,7 +313,7 @@
         "item": "Article",
         "items": "Articles",
         "catalog": "Catalogue",
-        "stock_rupture": "Stock",
+        "stock_rupture": "Products & Stock",
         "product_list": "Produits",
         "taxes": "Taxes",
         "currencies": "Currencies",
@@ -383,6 +400,9 @@
         "setup": "Setup"
     },
     "label": {
+        "cash_collected_today": "Cash collected today",
+        "expected_in_drawer": "Expected cash in drawer",
+        "cash_drawer_count_pending_note": "To compute the variance, enter the physical drawer count (coming soon).",
         "previous": "Previous",
         "next": "Next",
         "transactions": "Transactions",
