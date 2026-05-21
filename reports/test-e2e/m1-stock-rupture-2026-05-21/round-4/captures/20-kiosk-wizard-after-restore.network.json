@@ -1,0 +1,51 @@
+[
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/kiosk-event",
+    "method": "POST",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779337808519
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1779337808565
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/menu",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779337808597
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/kiosk-login",
+    "method": "POST",
+    "status": 201,
+    "duration_ms": null,
+    "ts": 1779337808880
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/kiosk-event",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779337808915
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/pricing/preview",
+    "method": "POST",
+    "status": 422,
+    "duration_ms": null,
+    "ts": 1779337828198
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/kiosk-event",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779337898499
+  }
+]

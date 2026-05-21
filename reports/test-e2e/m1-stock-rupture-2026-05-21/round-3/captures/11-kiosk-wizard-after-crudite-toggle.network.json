@@ -1,0 +1,30 @@
+[
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/kiosk-event",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779333863589
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/csp-report",
+    "method": "POST",
+    "status": 204,
+    "duration_ms": null,
+    "ts": 1779333863639
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/pricing/preview",
+    "method": "POST",
+    "status": 422,
+    "duration_ms": null,
+    "ts": 1779333883222
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/frontend/kiosk-event",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779333953601
+  }
+]

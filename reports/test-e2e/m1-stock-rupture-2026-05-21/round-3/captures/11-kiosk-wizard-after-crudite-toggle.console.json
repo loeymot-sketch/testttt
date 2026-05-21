@@ -1,0 +1,52 @@
+[
+  {
+    "level": "info",
+    "text": "Connecting to 'http://localhost:8000/api/broadcasting/auth' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1779333860",
+      "lineNumber": 194,
+      "columnNumber": 0
+    },
+    "ts": 1779333863562
+  },
+  {
+    "level": "error",
+    "text": "Access to XMLHttpRequest at 'http://localhost:8000/api/broadcasting/auth' from origin 'http://127.0.0.1:8000' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: The 'Access-Control-Allow-Origin' header has a value 'http://localhost:8000' that is not equal to the supplied origin.",
+    "location": {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779333863649
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "location": {
+      "url": "http://localhost:8000/api/broadcasting/auth",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779333863649
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)",
+    "location": {
+      "url": "http://127.0.0.1:8000/api/frontend/pricing/preview",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779333883222
+  },
+  {
+    "level": "warning",
+    "text": "[kiosk] pricing preview failed: Request failed with status code 422",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=0d1d9f12247bfb265fedf40e81616726",
+      "lineNumber": 55337,
+      "columnNumber": 18
+    },
+    "ts": 1779333883223
+  }
+]

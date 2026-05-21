@@ -1,0 +1,37 @@
+[
+  {
+    "url": "http://127.0.0.1:8000/api/admin/menu/availability/variation/toggle",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779337779590
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/admin/menu/availability/variation/toggle",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779337779664
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/admin/menu/availability/variation/toggle",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779337779806
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/admin/menu/availability/variation/toggle",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779337779843
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/admin/menu/availability/variation/toggle",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779337779984
+  }
+]

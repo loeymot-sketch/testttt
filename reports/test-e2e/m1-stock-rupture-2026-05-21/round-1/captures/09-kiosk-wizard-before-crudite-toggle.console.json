@@ -1,0 +1,1002 @@
+[
+  {
+    "level": "warning",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75",
+      "lineNumber": 1661,
+      "columnNumber": 0
+    },
+    "ts": 1779330578730
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579028
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579028
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579029
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579029
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579034
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579034
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579034
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579034
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579083
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579083
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579083
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579083
+  },
+  {
+    "level": "info",
+    "text": "Connecting to 'http://localhost:8000/api/broadcasting/auth' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https:\". The policy is report-only, so the violation has been logged but no further action has been taken.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/pos-wizard.js?v=9-1779330575",
+      "lineNumber": 194,
+      "columnNumber": 0
+    },
+    "ts": 1779330579102
+  },
+  {
+    "level": "error",
+    "text": "Access to XMLHttpRequest at 'http://localhost:8000/api/broadcasting/auth' from origin 'http://127.0.0.1:8000' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: The 'Access-Control-Allow-Origin' header has a value 'http://localhost:8000' that is not equal to the supplied origin.",
+    "location": {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779330579184
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: net::ERR_FAILED",
+    "location": {
+      "url": "http://localhost:8000/api/broadcasting/auth",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779330579185
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579833
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579833
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579833
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330579833
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330580633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330580633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330580633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330580633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330581433
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330581433
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330581433
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330581433
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330582233
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330582233
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330582233
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330582233
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330583033
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330583033
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330583033
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330583033
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330583832
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330583832
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330583832
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330583832
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330584633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330584633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330584633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330584633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330585433
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330585433
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330585433
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330585433
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330586233
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330586233
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330586233
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330586233
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330587033
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330587033
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330587033
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330587033
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330587833
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330587833
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330587833
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330587833
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330588633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330588633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330588633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330588633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330589433
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330589433
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330589433
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330589433
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330590232
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330590232
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330590233
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330590233
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330591032
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330591032
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330591032
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330591033
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330591832
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330591832
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330591832
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330591833
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330592633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330592633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330592633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330592633
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330593432
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330593432
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330593432
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330593433
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330594233
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330594233
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330594233
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330594233
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330595032
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330595032
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330595032
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330595032
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.choose_label' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330595832
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330595832
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.takeaway_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330595832
+  },
+  {
+    "level": "warning",
+    "text": "[intlify] Not found 'kiosk.order_type.required_hint' key in 'fr' locale messages.",
+    "location": {
+      "url": "http://127.0.0.1:8000/js/app.js?id=4071b4aae218c4ab860e2c06672ee367",
+      "lineNumber": 137599,
+      "columnNumber": 16
+    },
+    "ts": 1779330595833
+  }
+]

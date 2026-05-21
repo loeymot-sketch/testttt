@@ -1,0 +1,9 @@
+[
+  {
+    "url": "http://127.0.0.1:8000/api/auth/authcheck",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779337539546
+  }
+]
