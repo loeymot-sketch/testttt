@@ -3,11 +3,20 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
- * @FK-ID  WAVE-X-X2 | @source plan reports/test-e2e/wave-x-2026-05-21/PLAN.md
+ * @FK-ID  WAVE-X-X2 + Q10 | @source plan reports/test-e2e/wave-x-2026-05-21/PLAN.md
+ *                          + owner Q10 decisions-v1.html 2026-05-21
  * @reason
  *   Wave X X2 adds 2 compact notification panels at the top of the POS main
  *   page so the cashier validates "Prêt à livrer" + "À encaisser borne"
  *   actions without navigating to /admin/pos-orders-tracker.
+ *
+ *   Q10 (2026-05-21) FIX: panels were hidden when both lists were empty,
+ *   making a calm period indistinguishable from a WebSocket / polling
+ *   outage. Owner mandate ⇒ ALWAYS render the 2 panels. Empty state shows
+ *   a subtle copy + "Mis à jour il y a Xs" timestamp as a visible health
+ *   signal. The root v-if is removed; individual panel bodies switch
+ *   between filled list and empty copy.
+ *
  *   Contract:
  *     - readyOrders[] data, hydrated from `orderStatusScreenOrder/lists`,
  *       filtered to status=PREPARED AND order_type ∈ {KIOSK, TAKEAWAY, POS}
@@ -17,8 +26,11 @@ import { resolve } from 'node:path';
  *     - 1-click markDelivered(order) via posOrder/changeStatus action
  *     - 1-click openCounterCollect(order) opens PosCounterCollectModal
  *     - Polling tick + Echo `OrderStatusChanged` both refresh readyOrders
+ *     - Empty-state testids: pos-shortcuts-ready-empty + pos-shortcuts-cash-empty
+ *     - Last-refresh testids: pos-shortcuts-ready-refresh + pos-shortcuts-cash-refresh
+ *     - Stamps lastReadyRefresh + lastCashRefresh on successful loads
  *   This sentinel locks the structural surface so future refactors keep
- *   the X2 promise stable.
+ *   the X2 + Q10 promise stable.
  */
 describe('PosComponent shortcuts — Wave X X2 main-page notifications', () => {
     const posPath = resolve(
@@ -37,9 +49,36 @@ describe('PosComponent shortcuts — Wave X X2 main-page notifications', () => {
         expect(source).toMatch(/data-testid="pos-shortcuts-cash"/);
     });
 
-    it('renders only when at least one list has content (zero-footprint when idle)', () => {
-        // The root v-if must check both lists are non-empty.
-        expect(source).toMatch(/v-if="readyOrders\.length\s*>\s*0\s*\|\|\s*kioskCashOrders\.length\s*>\s*0"/);
+    it('Q10: always renders both panels (root v-if removed for visible health signal)', () => {
+        // Q10 mandate — the panels MUST render even when both lists are
+        // empty so the cashier sees the empty-state copy + last-refresh
+        // timestamp (calm period vs polling outage signal). The legacy
+        // root v-if `readyOrders.length>0 || kioskCashOrders.length>0` is
+        // forbidden. Empty-state copy + refresh testids must be wired.
+        expect(source).not.toMatch(/v-if="readyOrders\.length\s*>\s*0\s*\|\|\s*kioskCashOrders\.length\s*>\s*0"/);
+        expect(source).toMatch(/data-testid="pos-shortcuts-ready-empty"/);
+        expect(source).toMatch(/data-testid="pos-shortcuts-cash-empty"/);
+        expect(source).toMatch(/data-testid="pos-shortcuts-ready-refresh"/);
+        expect(source).toMatch(/data-testid="pos-shortcuts-cash-refresh"/);
+    });
+
+    it('Q10: lastRefresh state is stamped on successful loads', () => {
+        // Both loaders must set their refresh timestamp inside the try{}
+        // success path so the empty-state label can render
+        // "Mis à jour il y a Xs". A failure path must NOT stamp (we want
+        // a stale timestamp to surface the outage).
+        expect(source).toMatch(/lastReadyRefresh:\s*null/);
+        expect(source).toMatch(/lastCashRefresh:\s*null/);
+        expect(source).toMatch(/this\.lastReadyRefresh\s*=\s*Date\.now\(\)/);
+        expect(source).toMatch(/this\.lastCashRefresh\s*=\s*Date\.now\(\)/);
+    });
+
+    it('Q10: empty-state copy + 3 refresh-label i18n keys are referenced', () => {
+        expect(source).toMatch(/pos_shortcut_ready_empty/);
+        expect(source).toMatch(/pos_shortcut_cash_empty/);
+        expect(source).toMatch(/pos_shortcut_last_refresh_now/);
+        expect(source).toMatch(/pos_shortcut_last_refresh_sec/);
+        expect(source).toMatch(/pos_shortcut_last_refresh_min/);
     });
 
     it('slices each panel to a maximum of 4 rows', () => {

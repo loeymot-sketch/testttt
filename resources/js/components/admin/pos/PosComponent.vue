@@ -256,17 +256,22 @@
           - Left panel  : "Prêt à livrer" (status=PREPARED) ⇒ 1-click Livré
           - Right panel : "À encaisser borne" (cash-pending kiosk) ⇒ 1-click Encaisser
           Max 4 rows each + "Voir plus" link to tracker / panel for overflow.
-          Mounted ONLY when either list has content — zero footprint when idle.
+
+          [Q10 P-OWNER 2026-05-21] Always-render variant: previously the root
+          v-if hid both panels when both lists were empty. Cashier could not
+          distinguish a calm period from a WebSocket / polling outage. The
+          panels now always render. When their list is empty, a subtle copy
+          + "Mis à jour il y a Xs" timestamp signals "polling is alive but
+          nothing pending" — visible health beacon for the cashier.
         -->
         <div
-          v-if="readyOrders.length > 0 || kioskCashOrders.length > 0"
           class="pos-shortcuts"
           data-testid="pos-shortcuts"
         >
           <!-- Prêt à livrer (PREPARED kiosk / takeaway orders) -->
           <section
-            v-if="readyOrders.length > 0"
             class="pos-shortcuts__panel pos-shortcuts__panel--ready"
+            :class="{ 'pos-shortcuts__panel--empty': readyOrders.length === 0 }"
             data-testid="pos-shortcuts-ready"
             :aria-label="$t('label.pos_shortcut_ready_title', { count: readyOrders.length })"
           >
@@ -276,7 +281,11 @@
                 {{ $t('label.pos_shortcut_ready_title', { count: readyOrders.length }) }}
               </h2>
             </header>
-            <ul class="pos-shortcuts__list" role="list">
+            <ul
+              v-if="readyOrders.length > 0"
+              class="pos-shortcuts__list"
+              role="list"
+            >
               <li
                 v-for="o in readyOrders.slice(0, 4)"
                 :key="o.id"
@@ -296,6 +305,14 @@
                 </button>
               </li>
             </ul>
+            <!-- [Q10] Subtle empty-state copy when no PREPARED kiosk/takeaway. -->
+            <p
+              v-else
+              class="pos-shortcuts__empty"
+              data-testid="pos-shortcuts-ready-empty"
+            >
+              {{ $t('label.pos_shortcut_ready_empty') }}
+            </p>
             <router-link
               v-if="readyOrders.length > 4"
               :to="{ name: 'admin.pos-orders.tracker' }"
@@ -304,12 +321,21 @@
             >
               {{ $t('label.pos_shortcut_view_more', { count: readyOrders.length - 4 }) }}
             </router-link>
+            <!-- [Q10] Last-refresh timestamp — visible health signal. -->
+            <p
+              v-if="readyLastRefreshLabel"
+              class="pos-shortcuts__refresh"
+              data-testid="pos-shortcuts-ready-refresh"
+              aria-live="off"
+            >
+              {{ readyLastRefreshLabel }}
+            </p>
           </section>
 
           <!-- À encaisser borne (cash-pending kiosk orders) -->
           <section
-            v-if="kioskCashOrders.length > 0"
             class="pos-shortcuts__panel pos-shortcuts__panel--cash"
+            :class="{ 'pos-shortcuts__panel--empty': kioskCashOrders.length === 0 }"
             data-testid="pos-shortcuts-cash"
             :aria-label="$t('label.pos_shortcut_cash_title', { count: kioskCashOrders.length })"
           >
@@ -319,7 +345,11 @@
                 {{ $t('label.pos_shortcut_cash_title', { count: kioskCashOrders.length }) }}
               </h2>
             </header>
-            <ul class="pos-shortcuts__list" role="list">
+            <ul
+              v-if="kioskCashOrders.length > 0"
+              class="pos-shortcuts__list"
+              role="list"
+            >
               <li
                 v-for="o in kioskCashOrders.slice(0, 4)"
                 :key="o.id"
@@ -339,6 +369,14 @@
                 </button>
               </li>
             </ul>
+            <!-- [Q10] Subtle empty-state copy when no cash-pending kiosk. -->
+            <p
+              v-else
+              class="pos-shortcuts__empty"
+              data-testid="pos-shortcuts-cash-empty"
+            >
+              {{ $t('label.pos_shortcut_cash_empty') }}
+            </p>
             <button
               v-if="kioskCashOrders.length > 4"
               type="button"
@@ -348,6 +386,15 @@
             >
               {{ $t('label.pos_shortcut_view_more', { count: kioskCashOrders.length - 4 }) }}
             </button>
+            <!-- [Q10] Last-refresh timestamp — visible health signal. -->
+            <p
+              v-if="cashLastRefreshLabel"
+              class="pos-shortcuts__refresh"
+              data-testid="pos-shortcuts-cash-refresh"
+              aria-live="off"
+            >
+              {{ cashLastRefreshLabel }}
+            </p>
           </section>
         </div>
 
@@ -1431,6 +1478,17 @@ export default {
             // panels appear/disappear in real-time without manual reload.
             readyOrders: [],
             readyOrdersLoading: false,
+            // [Q10 P-OWNER 2026-05-21] Last-refresh timestamps for the X2
+            // shortcut panels. Updated at the end of each successful
+            // loadReadyOrders()/loadKioskCashOrders() call. Used by the
+            // empty-state copy to give the cashier a visible health signal
+            // (so a calm period vs a broken WebSocket are distinguishable).
+            // _lastRefreshTick is bumped every 5 s by _shortcutsRefreshTicker
+            // so the "Mis à jour il y a Xs" label re-renders without a poll.
+            lastReadyRefresh: null,
+            lastCashRefresh: null,
+            _lastRefreshTick: 0,
+            _shortcutsRefreshTicker: null,
             showParkedOrders: false,
             // [Sprint 1A 2026-05-16] Cash drawer session dialog state.
             // Auto-opened in mounted() after branch_id is resolved if no OPEN
@@ -1617,6 +1675,22 @@ export default {
     computed: {
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
+        },
+        // [Q10 P-OWNER 2026-05-21] Localized "Mis à jour il y a Xs" labels
+        // for the X2 shortcut panels' empty/idle state. Bound to
+        // `_lastRefreshTick` so the value re-renders every 5 s without
+        // depending on a fresh poll. < 5 s ⇒ "à l'instant"; < 60 s ⇒
+        // seconds; otherwise minutes. Returns an empty string before the
+        // first successful load so we don't show "il y a 0s" on a cold
+        // mount (the loader status itself signals "in flight").
+        readyLastRefreshLabel: function () {
+            // Reactive dep — DO NOT remove.
+            void this._lastRefreshTick;
+            return this._formatLastRefresh(this.lastReadyRefresh);
+        },
+        cashLastRefreshLabel: function () {
+            void this._lastRefreshTick;
+            return this._formatLastRefresh(this.lastCashRefresh);
         },
         // [Sprint 1A 2026-05-16] Indicateur visuel — bouton "Caisse" en tone "ready"
         // si une session est OPEN pour le caissier courant.
@@ -1992,6 +2066,12 @@ export default {
             } catch (_e) { /* defensive */ }
         }
         if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
+        // [Q10 P-OWNER 2026-05-21] Stop the 5 s ticker that re-renders the
+        // X2 shortcut panels' "Mis à jour il y a Xs" labels.
+        if (this._shortcutsRefreshTicker) {
+            clearInterval(this._shortcutsRefreshTicker);
+            this._shortcutsRefreshTicker = null;
+        }
         // [POS-V5 WAVE 3] Cleanup animations timers
         if (this._cartBumpTimer) { clearTimeout(this._cartBumpTimer); this._cartBumpTimer = null; }
         if (this._totalFlashTimer) { clearTimeout(this._totalFlashTimer); this._totalFlashTimer = null; }
@@ -2054,6 +2134,16 @@ export default {
         this.loadReadyOrders();
         this._subscribeEcho();
         this._startKioskPolling();
+        // [Q10 P-OWNER 2026-05-21] 5 s ticker bumps `_lastRefreshTick` so
+        // the X2 shortcut panels' "Mis à jour il y a Xs" labels re-render
+        // even when no poll completes (idle / WebSocket-only refresh). The
+        // ticker is a single setInterval, cleared on unmount.
+        if (!this._shortcutsRefreshTicker) {
+            this._shortcutsRefreshTicker = setInterval(() => {
+                if (this._destroyed) return;
+                this._lastRefreshTick += 1;
+            }, 5000);
+        }
         this._bindWsService();
         this._startPosSyncFallback();
         try {
@@ -2873,6 +2963,24 @@ export default {
             }
         },
 
+        // [Q10 P-OWNER 2026-05-21] Format helper for the always-rendered
+        // X2 shortcut panels' "Mis à jour il y a Xs" timestamp. Used by
+        // readyLastRefreshLabel + cashLastRefreshLabel computed getters.
+        // Pure — no reactive side effects.
+        _formatLastRefresh(ts) {
+            if (!ts) return '';
+            const diffMs = Date.now() - ts;
+            const diffSec = Math.max(0, Math.floor(diffMs / 1000));
+            if (diffSec < 5) {
+                return this.$t('label.pos_shortcut_last_refresh_now');
+            }
+            if (diffSec < 60) {
+                return this.$t('label.pos_shortcut_last_refresh_sec', { seconds: diffSec });
+            }
+            const diffMin = Math.floor(diffSec / 60);
+            return this.$t('label.pos_shortcut_last_refresh_min', { minutes: diffMin });
+        },
+
         // ── Kiosk cash orders ──────────────────────────────────────────────
         async loadKioskCashOrders() {
             this.kioskCashLoading = true;
@@ -2881,6 +2989,11 @@ export default {
                 const all = res?.data?.data || [];
                 this.kioskCashOrders = all
                     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                // [Q10 P-OWNER 2026-05-21] Stamp the successful refresh so
+                // the always-rendered shortcut panel can show "Mis à jour
+                // il y a Xs" — visible health signal even when the list is
+                // empty (calm period vs polling failure).
+                this.lastCashRefresh = Date.now();
             } catch (_) {
                 this.kioskCashOrders = [];
             } finally {
@@ -2967,6 +3080,12 @@ export default {
                     // Oldest first — cashier should clear orders that have
                     // been ready the longest. Mirrors kioskCashOrders sort.
                     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                // [Q10 P-OWNER 2026-05-21] Stamp the successful refresh so
+                // the always-rendered shortcut panel can show "Mis à jour
+                // il y a Xs". When the list is empty we still tell the
+                // cashier polling is alive — distinguishes a calm period
+                // from a WebSocket/poll outage.
+                this.lastReadyRefresh = Date.now();
             } catch (_) {
                 this.readyOrders = [];
             } finally {
@@ -4357,6 +4476,35 @@ export default {
 }
 .pos-shortcuts__more:hover {
   color: var(--pos-v5-brand-red, #cf3a3a);
+}
+
+/* [Q10 P-OWNER 2026-05-21] Empty-state + last-refresh subtleties.
+   - .pos-shortcuts__empty : single faint italic line, centered, ~13px so
+     it does NOT take more visual space than the 4 filled rows would.
+   - .pos-shortcuts__refresh : 11px gray label, anchored under the empty
+     copy (or under the list when filled), giving the cashier a visible
+     "polling is alive" health signal even on a calm period.
+   - .pos-shortcuts__panel--empty : softer left border tint so an empty
+     panel is visually less assertive than a filled one (no red/green
+     alarm at idle). */
+.pos-shortcuts__empty {
+  margin: 6px 0 0 0;
+  padding: 6px 4px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--pos-v5-muted, #6b6b6b);
+  text-align: center;
+  background: transparent;
+}
+.pos-shortcuts__refresh {
+  margin: 4px 0 0 0;
+  font-size: 11px;
+  color: var(--pos-v5-muted-2, #9a9a9a);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.pos-shortcuts__panel--empty {
+  border-left-color: var(--pos-v5-border, #eadfd2);
 }
 
 @media (max-width: 640px) {
