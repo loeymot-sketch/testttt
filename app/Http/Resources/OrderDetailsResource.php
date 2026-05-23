@@ -28,6 +28,12 @@ class OrderDetailsResource extends JsonResource
             'order_serial_no' => $this->order_serial_no,
             'queue_number' => $this->queue_number,
             'token' => $this->token,
+            // [G5-F-001 / G2-HEAL-01 2026-05-23] Expose refund counter-entry
+            // parent FK so ReceiptRemboursementMarker.vue (F2-HEAL-03 /
+            // commit 8ebbd057a) can render the REMBOURSEMENT badge on
+            // refund tickets (NF525 visual distinction requirement,
+            // Loi de Finance France). Marker keys on this exact field.
+            'parent_order_id' => $this->parent_order_id,
             // Montants numériques (SSOT) pour kiosk / TPE / intégrations — complément des *_currency_price.
             'subtotal' => round((float) ($this->subtotal ?? 0), 2),
             'discount' => round((float) ($this->discount ?? 0), 2),
