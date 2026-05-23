@@ -1,0 +1,4 @@
+22:// Per-call overrides still possible via { timeout: N } in axios.post(...).
+23:window.axios.defaults.timeout = 30000;
+25:window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+270:                    toast.error(message, { timeout: 6000 });

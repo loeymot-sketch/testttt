@@ -69710,6 +69710,15 @@ window._ = (lodash__WEBPACK_IMPORTED_MODULE_0___default());
 
 
 window.axios = axios__WEBPACK_IMPORTED_MODULE_2__["default"];
+
+// [GOAL-F2-HEAL-01 2026-05-23] Global axios timeout 30s. Without this,
+// browser default (~5min OS-level TCP keepalive) made stalled FPM responses
+// appear to "hang" to the cashier with no escape hatch besides page reload
+// (which orphans the in-flight promise). 30s is generous for fiscal_sequence
+// allocation under contention (Cache::lock TTL 5s + DB FOR UPDATE) while
+// still surfacing pathological hangs to the operator within useful time.
+// Per-call overrides still possible via { timeout: N } in axios.post(...).
+window.axios.defaults.timeout = 30000;
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
 // [NEW-04 / Audit T G9] Capture the X-Correlation-ID echoed back by
