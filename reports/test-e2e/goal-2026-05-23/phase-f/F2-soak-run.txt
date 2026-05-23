@@ -1,0 +1,272 @@
+[soak] started_at_epoch=1779566624 at sam. 23 mai 2026 22:03:44 CEST
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=100 branches=1 concurrency=2 type=kiosk
+[stress]   base-url=http://127.0.0.1:8000
+[stress] Built 100 requests across 1 branch fixtures.
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** FAIL
+**Generated:** 2026-05-23 22:03:49
+**Base URL:** http://127.0.0.1:8000
+
+## Parameters
+
+- orders: 100
+- branches: 1
+- concurrency: 2
+- type: kiosk
+
+## Timing
+
+- total_duration_s: 4.68
+- batch_duration_s: 1.708
+- avg_latency_ms: 17.08
+- throughput_rps: 58.56
+
+## HTTP Results
+
+- total: 100
+- ok: 0
+- failed: 100
+- status_breakdown:
+  - 429: 100
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 751 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+
+[stress] Report written to reports/test-e2e/goal-2026-05-23/phase-f/F2-soak-stress-report.md
+[soak] finished_at_epoch=1779566629 at sam. 23 mai 2026 22:03:49 CEST duration_sec=5
+
+===== SECOND RUN: POS type 100 orders concurrency 2 (rate-limit-headroom: 1000/min) =====
+[soak-pos] started_at_epoch=1779566693 at sam. 23 mai 2026 22:04:53 CEST
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=100 branches=1 concurrency=2 type=pos
+[stress]   base-url=http://127.0.0.1:8000
+[stress] Built 100 requests across 1 branch fixtures.
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** FAIL
+**Generated:** 2026-05-23 22:04:56
+**Base URL:** http://127.0.0.1:8000
+
+## Parameters
+
+- orders: 100
+- branches: 1
+- concurrency: 2
+- type: pos
+
+## Timing
+
+- total_duration_s: 2.657
+- batch_duration_s: 2.607
+- avg_latency_ms: 26.07
+- throughput_rps: 38.36
+
+## HTTP Results
+
+- total: 100
+- ok: 0
+- failed: 100
+- status_breakdown:
+  - 422: 100
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 751 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+
+[stress] Report written to reports/test-e2e/goal-2026-05-23/phase-f/F2-soak-stress-report-pos.md
+[soak-pos] finished_at_epoch=1779566696 at sam. 23 mai 2026 22:04:56 CEST duration_sec=3
+
+===== THIRD RUN: POS type 10 orders verbose to capture 422 root cause =====
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=10 branches=1 concurrency=1 type=pos
+[stress]   base-url=http://127.0.0.1:8000
+[stress] Built 10 requests across 1 branch fixtures.
+[stress] #0 status=422 body={"message":"The is advance order field is required. (and 3 more errors)","errors":{"is_advance_order":["The is advance order field is required."],"source":["The source field is required."],"items":["L
+[stress] #1 status=422 body={"message":"The is advance order field is required. (and 3 more errors)","errors":{"is_advance_order":["The is advance order field is required."],"source":["The source field is required."],"items":["L
+[stress] #2 status=422 body={"message":"The is advance order field is required. (and 3 more errors)","errors":{"is_advance_order":["The is advance order field is required."],"source":["The source field is required."],"items":["L
+[stress] #3 status=422 body={"message":"The is advance order field is required. (and 3 more errors)","errors":{"is_advance_order":["The is advance order field is required."],"source":["The source field is required."],"items":["L
+[stress] #4 status=422 body={"message":"The is advance order field is required. (and 3 more errors)","errors":{"is_advance_order":["The is advance order field is required."],"source":["The source field is required."],"items":["L
+[stress] #5 status=422 body={"message":"The is advance order field is required. (and 3 more errors)","errors":{"is_advance_order":["The is advance order field is required."],"source":["The source field is required."],"items":["L
+[stress] #6 status=422 body={"message":"The is advance order field is required. (and 3 more errors)","errors":{"is_advance_order":["The is advance order field is required."],"source":["The source field is required."],"items":["L
+[stress] #7 status=422 body={"message":"The is advance order field is required. (and 3 more errors)","errors":{"is_advance_order":["The is advance order field is required."],"source":["The source field is required."],"items":["L
+[stress] #8 status=422 body={"message":"The is advance order field is required. (and 3 more errors)","errors":{"is_advance_order":["The is advance order field is required."],"source":["The source field is required."],"items":["L
+[stress] #9 status=422 body={"message":"The is advance order field is required. (and 3 more errors)","errors":{"is_advance_order":["The is advance order field is required."],"source":["The source field is required."],"items":["L
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** FAIL
+**Generated:** 2026-05-23 22:05:04
+**Base URL:** http://127.0.0.1:8000
+
+## Parameters
+
+- orders: 10
+- branches: 1
+- concurrency: 1
+- type: pos
+
+## Timing
+
+- total_duration_s: 0.276
+- batch_duration_s: 0.254
+- avg_latency_ms: 25.39
+- throughput_rps: 39.39
+
+## HTTP Results
+
+- total: 10
+- ok: 0
+- failed: 10
+- status_breakdown:
+  - 422: 10
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 751 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+
+
+===== FOURTH RUN: POS 5 orders post-payload-repair (verify 422 cleared) =====
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=5 branches=1 concurrency=1 type=pos
+[stress]   base-url=http://127.0.0.1:8000
+[stress] Built 5 requests across 1 branch fixtures.
+[stress] #0 status=422 body={"message":"The pos payment method field is required.","errors":{"pos_payment_method":["The pos payment method field is required."]}}
+[stress] #1 status=422 body={"message":"The pos payment method field is required.","errors":{"pos_payment_method":["The pos payment method field is required."]}}
+[stress] #2 status=422 body={"message":"The pos payment method field is required.","errors":{"pos_payment_method":["The pos payment method field is required."]}}
+[stress] #3 status=422 body={"message":"The pos payment method field is required.","errors":{"pos_payment_method":["The pos payment method field is required."]}}
+[stress] #4 status=422 body={"message":"The pos payment method field is required.","errors":{"pos_payment_method":["The pos payment method field is required."]}}
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** FAIL
+**Generated:** 2026-05-23 22:07:17
+**Base URL:** http://127.0.0.1:8000
+
+## Parameters
+
+- orders: 5
+- branches: 1
+- concurrency: 1
+- type: pos
+
+## Timing
+
+- total_duration_s: 0.166
+- batch_duration_s: 0.126
+- avg_latency_ms: 25.13
+- throughput_rps: 39.8
+
+## HTTP Results
+
+- total: 5
+- ok: 0
+- failed: 5
+- status_breakdown:
+  - 422: 5
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 763 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+
+
+===== FIFTH RUN: POS 3 orders with CASH payment shape =====
+[stress] Starting F-017 Suite 7 stress run
+[stress]   orders=3 branches=1 concurrency=1 type=pos
+[stress]   base-url=http://127.0.0.1:8000
+[stress] Built 3 requests across 1 branch fixtures.
+[stress] #0 status=401 body={"status":false,"message":"Order quote token and signature are required together."}
+[stress] #1 status=401 body={"status":false,"message":"Order quote token and signature are required together."}
+[stress] #2 status=401 body={"status":false,"message":"Order quote token and signature are required together."}
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** FAIL
+**Generated:** 2026-05-23 22:07:46
+**Base URL:** http://127.0.0.1:8000
+
+## Parameters
+
+- orders: 3
+- branches: 1
+- concurrency: 1
+- type: pos
+
+## Timing
+
+- total_duration_s: 0.937
+- batch_duration_s: 0.899
+- avg_latency_ms: 299.73
+- throughput_rps: 3.34
+
+## HTTP Results
+
+- total: 3
+- ok: 0
+- failed: 3
+- status_breakdown:
+  - 401: 3
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 763 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.
+

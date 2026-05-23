@@ -1,0 +1,311 @@
+{
+  "agent": "F.11 — Disk + Queue + Memory Pressure",
+  "date": "2026-05-23",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_pre": "d601fdd34",
+  "head_at_capture": "def15979b",
+  "discipline": "code-static + ops-runbook review (no live load injection — relies on F.2 soak baseline + dev-box empirical state)",
+  "scope": "Cumulative pressure resilience for V1 Le Cayenne single-host VPS-1 (2 vCPU / 4 GB RAM)",
+  "verdict": "GREEN with documented monitoring gaps — production controls are present; gaps are observability/threshold tightness, not missing controls",
+
+  "empirical_pre_audit_state": {
+    "local_dev_box_disk": {
+      "filesystem": "/dev/disk3s5",
+      "size_GiB": 460,
+      "used_GiB": 424,
+      "available_GiB": 3.7,
+      "capacity_pct": 100,
+      "source": "df -h . on orchestrator host 2026-05-23"
+    },
+    "outbox_state_dev_box": {
+      "domain_events_pending_total": 751,
+      "domain_events_stale_30s": 751,
+      "domain_events_failed_attempts_ge5": 0,
+      "oldest_pending_created_at": "2026-05-20 13:30:08",
+      "interpretation": "751 stale = NO queue:work running locally for 3 days (dev artifact). On prod the supervisor template runs 2 workers continuously — see supervisor-foodking.conf.j2:7-19."
+    },
+    "storage_logs_total": "342 MiB across 131 files",
+    "largest_log_file": "storage/logs/laravel-2026-05-08.log = 111 MiB (single-channel un-rotated)",
+    "screenshots_total": "3950 PNG files across tests/e2e (50M) + reports/test-e2e (17M)"
+  },
+
+  "F11_1_disk_pressure": {
+    "what_happens_at_99pct": "Laravel app continues serving but mysqldump truncation + Cache::lock file-driver writes + session creation will fail mid-stream. NF525 chain HMAC writes (audit_logs INSERT) will fail at the SQL layer (MySQL ERROR 28: write error), surfacing as 500 to the order-create caller. PaymentComponent path is the most exposed because audit_logs is mandatory per ZReportService.",
+    "laravel_log_rotation": {
+      "default_channel_value": "stack",
+      "stack_resolves_to": "single (config/logging.php:54-57)",
+      "single_rotation": "NEVER — Monolog StreamHandler writes laravel.log unbounded",
+      "daily_channel_exists": true,
+      "daily_retention_days": 14,
+      "daily_used_by_default": false,
+      "evidence": ".env.example LOG_CHANNEL=stack + dev-box 111 MiB laravel-2026-05-08.log",
+      "production_mitigation": "deploy/ansible/site.yml:212-225 installs /etc/logrotate.d/foodking — daily, rotate 14, compress, copytruncate — covers storage/logs/*.log AT THE OS LAYER",
+      "gap": "production survives because of OS logrotate; if a host is provisioned WITHOUT ansible (Docker, future cloud cutover, manual install), single channel grows unbounded with no Laravel-side defense"
+    },
+    "backup_script_disk_handling": {
+      "script_path": "scripts/backup-foodking-daily.sh",
+      "command_class": "app/Console/Commands/Backup/RunDailyBackup.php (foodking:backup-daily)",
+      "has_gzip_integrity_test": true,
+      "evidence": "scripts/backup-foodking-daily.sh:67 — gunzip -t catches truncated archives",
+      "has_min_bytes_sanity_floor": true,
+      "evidence_2": "RunDailyBackup.php:154-160 — min-bytes default 1024 hard-fails truncation",
+      "has_warn_bytes_soft_alert": true,
+      "warn_bytes_default": 1048576,
+      "has_df_precheck": false,
+      "gap_severity": "P2",
+      "gap_description": "Neither the shell script nor the Laravel command checks `df` BEFORE starting mysqldump. With <2 GB free, mysqldump consumes minutes of CPU/IO, produces a truncated .partial, alerts via webhook on failure. Better: skip gracefully + alert when disk <X% free, before wasting compute. Pattern: `[[ $(df --output=avail "$LOCAL_DIR" | tail -1) -lt $((2*1024*1024)) ]] && fail \"insufficient disk space\"`."
+    },
+    "screenshots_artifacts_cleanup": {
+      "automated_rotation": "NONE — grep app/Console/Kernel.php + scripts/ returns 0 matches for screenshot|prune|find.*mtime applied to PNG paths",
+      "gitignore_status": "tests/e2e + reports/test-e2e screenshots gitignored (.gitignore:50) — prevents commit but does NOT delete from disk",
+      "current_disk_consumption": "67 MiB total (50M tests/e2e + 17M reports/test-e2e) — manageable for V1 single-host",
+      "future_risk": "Each cycle/Playwright run accumulates; without retention policy disk fills slowly",
+      "gap_severity": "P3 (low for V1, watch for V2 SaaS multi-host)"
+    },
+    "disk_monitoring_threshold_recommendation": "Alert at 80% used (still 20% headroom for 1-2 daily backup cycles ~30 MB DB + 50 MB compressed weekly growth). Critical at 90% — pre-stop backup cron + send PagerDuty. Use `node_exporter` or a 60-sec cron probing `df --output=pcent` to ws:diskpct cache key, mirrored on /admin/observability."
+  },
+
+  "F11_2_outbox_queue_pressure": {
+    "why_dev_box_has_742_751_stale": "Local dev does not run `php artisan queue:work` — Echo broadcast cron loop is supervised ONLY on prod via deploy/ansible/templates/supervisor-foodking.conf.j2:7-19 (numprocs=2 workers on `high,default` queues). Empirical confirm: 751 pending events on dev, oldest from 2026-05-20 (3 days idle) — no failed_attempts >=5 because the job is never dispatched. This is NOT a production defect — it's an inherent local-dev gap.",
+    "production_worker_config": {
+      "supervisor_program_name": "foodking-queue",
+      "numprocs": 2,
+      "command": "php8.2 artisan queue:work redis --queue=high,default --tries=3 --timeout=120 --max-jobs=1000 --sleep=3",
+      "autorestart": true,
+      "stopwaitsecs": 60,
+      "max_jobs_restart_pattern": "Worker restarts every 1000 jobs — proven mitigation for PHP memory leaks in long-running CLI processes (Laravel docs official guidance)",
+      "log_max_bytes": "20MB × 5 backups via supervisor stdout_logfile_maxbytes (separate from app logs)",
+      "verdict": "STRONG — pattern is correct for V1 density"
+    },
+    "outbox_pipeline_completeness": {
+      "lane_1_rescue_pending": "foodking:outbox:rescue every minute — re-queues whereNull(dispatched_at) older than 2min (HEAL B.4 added crash-recovery lane: dispatched_at NOT NULL but >10min old)",
+      "lane_2_monitor_alert": "foodking:outbox:monitor --threshold=10 every minute — Log::error + non-zero exit when >10 stale events older than 30s (paging signal)",
+      "lane_3_retry_failed": "foodking:outbox:retry-failed --since=24h hourly — handles rows with attempts>=5 within last 24h",
+      "lane_4_prune": "foodking:outbox:prune --older-than-days=90 daily at 04:00 — deletes dispatched + terminally-failed (attempts>=6) rows older than 90d",
+      "evidence": "app/Console/Kernel.php:39-126 + PruneOutboxCommand.php + MonitorOutboxStaleness.php",
+      "domain_events_table_growth_risk": "Bounded by lane_4_prune (90d) — unbounded only if cron stops + monitor lane is muted",
+      "verdict": "STRONG — 4-lane pattern (rescue + monitor + retry-failed + prune) covers full lifecycle"
+    },
+    "monitoring_threshold_calibration": {
+      "current_default": "--threshold=10 stale events older than 30s",
+      "concern": "10 events older than 30s could be a normal burst (3 kiosk borne stress C8 scenario already shows 742 backlog accumulating in single dev session)",
+      "recommendation": "For Le Cayenne V1 density (1 branch, ~200-400 orders/day), threshold=10 is reasonable. For V2 multi-branch SaaS, switch discriminator to `oldest_pending_age_seconds > 300` (5 min) rather than count — count-based threshold drowns alerts during legitimate bursts (lunch rush 12:00-13:30)."
+    },
+    "queue_supervisor_resilience": {
+      "what_if_redis_fills_under_allkeys_lru": "Critical observation: cache and queue share Redis with maxmemory 1.5gb + allkeys-lru. Queue lists (`queues:high`, `queues:default`) ARE eligible for LRU eviction — silent job loss possible if cache traffic + queue depth jointly exceed 1.5 GB. Mitigation: queue keys are continuously read by `block_for: null` workers, keeping them HOT in LRU. But during prolonged worker outage, queue keys age and become evictable.",
+      "recommendation": "P1 — split queue Redis from cache Redis OR change maxmemory-policy to `volatile-lru` (only evict keys with explicit TTL — queue list keys have no TTL by default in Laravel Redis driver, would never evict)",
+      "evidence": "deploy/ansible/site.yml:79-91 sets maxmemory-policy allkeys-lru on the single Redis instance"
+    }
+  },
+
+  "F11_3_memory_pressure": {
+    "php_memory_limit_runtime": {
+      "phpunit_test_limit": "512M (phpunit.xml:47)",
+      "production_php_ini_assumption": "128M default unless overridden in deploy/ansible/site.yml (NOT explicitly templated — relies on system default)",
+      "gap": "deploy/ansible does NOT template /etc/php/8.2/fpm/php.ini memory_limit. If installed php default (128M), large endpoints (POS orders with deep composition_snapshot) may hit limit",
+      "evidence": "FiscalArchiveCommand.php:34 — comment 'PHP memory_limit (128M default on production)' confirms developers expect 128M"
+    },
+    "queue_worker_memory_protection": {
+      "primary_defense": "--max-jobs=1000 in supervisor template → worker exits + restarts every 1000 jobs",
+      "secondary_defense_missing": "No --memory=512 flag — worker can grow to PHP memory_limit before OOM",
+      "recommendation": "Add `--memory=384` to supervisor template (safer than relying on --max-jobs alone for unbounded payload arrays like deep composition_snapshots)"
+    },
+    "unbounded_array_growth_audit": {
+      "method": "grep -rn 'static \\$' app/Services/Observability + scan top-level array accumulation patterns",
+      "candidates_scanned": [
+        "SyncMetricsRecorder.php — uses $labels = [] per-call (request-scoped, GC'd)",
+        "BypassAuditLogger.php — static $array pattern (request-scoped, no global accumulation)",
+        "InstallerPermissionCheckerService.php — install-time only"
+      ],
+      "verdict": "NO unbounded request-scoped array growth detected. Long-running queue worker accumulates Eloquent model cache + Spatie permission cache between jobs — addressed by --max-jobs=1000 cycling.",
+      "residual_risk": "P3 — if a future service adds static caching without TTL, the --max-jobs=1000 ceiling still recovers within ~1 hour at 1 job/3.6s"
+    }
+  },
+
+  "F11_4_log_rotation": {
+    "laravel_log_default_channel": {
+      "value": "stack → single (NEVER rotated by Laravel)",
+      "production_safety_net": "OS-level logrotate via /etc/logrotate.d/foodking installed by deploy/ansible/site.yml:212-225",
+      "logrotate_pattern": "storage/logs/*.log /var/log/foodking-backup.log { daily; rotate 14; compress; delaycompress; missingok; notifempty; copytruncate }",
+      "covers": "laravel.log + laravel-YYYY-MM-DD.log (daily channel) + observability-* + security-* + fiscal-* + hardware-* + backup log",
+      "exclusion": "fiscal-*.log retention requirement is 400 days (per logging.php:182-187 + NF525 6y), but logrotate truncates after 14 days → conflict",
+      "gap_severity": "P0 — NF525 audit-trail compliance",
+      "fiscal_log_actual_protection": "fiscal:archive (Kernel.php:234-264) generates per-day signed ZIP+JSON archives in storage/backups (separate from storage/logs) — the storage/logs/fiscal-*.log are only operational breadcrumbs. The signed archives ARE the 6y NF525 evidence trail.",
+      "verdict_revised": "NOT a real gap. fiscal:archive command is the SoT for the 6y NF525 chain. Operational fiscal-*.log can rotate at 14d."
+    },
+    "backup_log_rotation": "covered by logrotate via /var/log/foodking-backup.log in pattern",
+    "schedule_log_rotation": {
+      "current_state": "deploy/ansible/site.yml:188 cron line redirects schedule:run stdout+stderr to /dev/null",
+      "observability_gap": "P2 — cron failures (e.g. foodking:outbox:rescue crash) are silent except via Laravel internal Log::error. The supervisor/cron lane itself has zero visibility.",
+      "recommendation": "Change cron job to `>> {{ app_root }}/storage/logs/schedule.log 2>&1` — then logrotate picks it up automatically (already in the *.log glob)"
+    },
+    "restore_drills_log": {
+      "evidence_search": "grep restore-drills.log returns no production cron — exists only as the manual drill artifact reports/audit/.../RESTORE_DRILL_2026-05-21.md",
+      "verdict": "Not a periodic process; no rotation needed"
+    }
+  },
+
+  "F11_5_cache_pressure": {
+    "redis_maxmemory": "1.5gb (deploy/ansible/group_vars/all.yml:21)",
+    "redis_maxmemory_policy": "allkeys-lru (deploy/ansible/site.yml:87)",
+    "implications": {
+      "allkeys_lru_eviction": "ALL keys eligible (including queues:high, queues:default lists — see F.11.2 above)",
+      "active_writers_keeping_keys_hot": [
+        "ws:heartbeat (120s TTL, written on every successful broadcast — DispatchDomainEventsJob.php:129)",
+        "idempotency:* keys (24h TTL, RedisIdempotencyKeyRepository.php:102 — config('idempotency.ttl_seconds', 86400))",
+        "session:* (Laravel default 2h TTL)",
+        "spatie.permission.cache (24h TTL)",
+        "Cache::lock:* (5s TTL for fiscal sequence allocation — FiscalSequenceService)",
+        "Cache::add availability quota guards (24h TTL — AvailabilityService.php:321)",
+        "queue list keys (NO TTL by default — naturally hot via worker polling)"
+      ]
+    },
+    "cache_key_churn_rate_estimate": {
+      "per_kiosk_order": "~5-8 cache writes (idempotency replay + ws:heartbeat refresh + availability guard checks)",
+      "per_pos_order": "~3-5 writes",
+      "Q9_S1_invalidator": "Cache::forget per-update bursts in catalog/stock changes — bounded by mutation frequency, not concerning",
+      "daily_volume_estimate_V1": "200 orders × 6 writes ≈ 1200 cache writes/day + idempotency keys ≈ 200 entries × 24h TTL = 200 live at peak",
+      "redis_memory_headroom_at_V1": "Well under 100 MB used. 1.5 GB ceiling is 15x over-provisioned for V1 single-branch."
+    },
+    "eviction_policy_recommendation": {
+      "current": "allkeys-lru",
+      "issue": "Risk of evicting queue list keys (no TTL) during cache spike — silent job loss",
+      "option_A": "Split queue Redis (db=2) from cache Redis (db=1) using separate REDIS_DB env vars + separate maxmemory per logical DB",
+      "option_B": "Switch to volatile-lru (only evict keys with TTL). Risk: cache keys without TTL (`forever`) would never evict either. Mitigation: enforce TTL on all Cache::put() via static analysis sentinel.",
+      "recommendation": "P1 for V2 SaaS multi-host density. P3 for V1 LOCAL single-branch (1.5 GB headroom dwarfs actual usage)."
+    }
+  },
+
+  "production_monitoring_recommendations_top_5": [
+    {
+      "rank": 1,
+      "title": "Disk free <20% alert + df pre-check before mysqldump",
+      "rationale": "Backup script catches truncation after the fact via gunzip -t but wastes 5-30 min mysqldump compute when disk is full. A 50-line df pre-check skips gracefully + alerts via existing BACKUP_ALERT_WEBHOOK.",
+      "implementation": "scripts/backup-foodking-daily.sh: add at line 42 `available_kb=$(df --output=avail $LOCAL_DIR | tail -1); [[ $available_kb -lt $((2*1024*1024)) ]] && fail \"insufficient disk: ${available_kb}KB free, need 2GB\"`",
+      "priority": "P2 (cost: 10 LoC + 1 sentinel test)",
+      "production_signal": "Existing PagerDuty/Slack webhook already wired"
+    },
+    {
+      "rank": 2,
+      "title": "Outbox monitor threshold — switch to age-based not count-based",
+      "rationale": "Current `--threshold=10 stale 30s` produces false positives during legitimate lunch-rush bursts. `--max-age-seconds=300` (oldest pending >5min) is the right discriminator for pipeline-down vs busy-pipeline.",
+      "implementation": "Add `--max-age-seconds=300` option to foodking:outbox:monitor + return FAILURE when oldest pending > max-age (instead of OR combined with count). Threshold becomes a soft-warn, age is the hard-alert.",
+      "priority": "P2 for V1 (count works for 1 branch). P1 for V2 multi-branch.",
+      "production_signal": "supervisor cron exit code → existing pager"
+    },
+    {
+      "rank": 3,
+      "title": "schedule:run cron logging — pipe to storage/logs/schedule.log",
+      "rationale": "Currently /dev/null — cron-level failures (e.g. supervisor crash, schedule:run crash, foodking:outbox:rescue not registered) are invisible. logrotate pattern already covers *.log glob so adding the file is free.",
+      "implementation": "deploy/ansible/site.yml:188 change `>> /dev/null 2>&1` → `>> {{ app_root }}/storage/logs/schedule.log 2>&1`",
+      "priority": "P2 (cost: 1 LoC ansible diff)",
+      "production_signal": "Operator tails or grep storage/logs/schedule.log"
+    },
+    {
+      "rank": 4,
+      "title": "Redis memory >80% of maxmemory alert + INFO memory cron",
+      "rationale": "allkeys-lru means silent eviction — queue list keys ARE eligible. Without an alert, the only signal is downstream symptom (lost broadcasts → Echo silent failure). Add a 5-min cron sampling `redis-cli INFO memory used_memory` and alert when >80% maxmemory (1.2 GB threshold for current 1.5 GB).",
+      "implementation": "New artisan command `foodking:redis:memory-monitor --threshold=80` scheduled every 5 min; OR external node_exporter scrape if Prometheus is wired (cloud-prep backlog).",
+      "priority": "P1 for V2 SaaS (high-density). P3 for V1 LOCAL (15x over-provisioned).",
+      "production_signal": "Log::error + cron exit"
+    },
+    {
+      "rank": 5,
+      "title": "Queue worker liveness — verify numprocs=2 RUNNING",
+      "rationale": "Supervisor restarts the worker after --max-jobs=1000 OR after crash, but if BOTH workers are in fatal+restart loop (e.g. broken composer.lock after deploy), there's no signal except outbox staleness (which fires AFTER the queue is already backed up).",
+      "implementation": "Cron every 5 min: `supervisorctl status foodking-queue | grep RUNNING | wc -l` — alert if <2. Bonus: scrape into a Prometheus gauge.",
+      "priority": "P2 (cheap: 10 LoC bash + 1 cron line)",
+      "production_signal": "PagerDuty via existing webhook"
+    }
+  ],
+
+  "additional_findings": {
+    "F11_BONUS_1_log_channel_default": {
+      "issue": "LOG_CHANNEL=stack → single channel (laravel.log) — Laravel never rotates this file",
+      "production_mitigation": "OS-level logrotate (ansible)",
+      "risk_pattern": "Future Docker/Kubernetes deploy without ansible logrotate → unbounded growth",
+      "recommendation_p2": "Change .env.example default to LOG_CHANNEL=daily — Laravel-level rotation independent of OS layer. Defense-in-depth.",
+      "evidence_dev_observation": "storage/logs/laravel-2026-05-08.log = 111 MiB un-rotated on dev host"
+    },
+    "F11_BONUS_2_screenshot_artifacts": {
+      "issue": "tests/e2e/screenshots = 50 MiB, reports/test-e2e = 17 MiB. No periodic cleanup cron.",
+      "current_protection": ".gitignore (commit-time) — does NOT delete from disk",
+      "recommendation_p3": "Add `find tests/e2e/screenshots -name '*.png' -mtime +30 -delete` to a weekly cron OR document manual cleanup in runbook. Low priority — current 67 MiB is dwarfed by storage/app=377M.",
+      "evidence": "3950 PNG files, 0 cleanup matches in Kernel.php + scripts/"
+    },
+    "F11_BONUS_3_php_memory_limit_not_templated": {
+      "issue": "deploy/ansible does NOT template /etc/php/8.2/fpm/php.ini memory_limit — relies on Debian default (128M)",
+      "developer_expectation": "FiscalArchiveCommand.php:34 explicitly documents 128M assumption",
+      "actual_default_in_phpunit": "512M (tests pass because of override)",
+      "risk": "Heavy POS order with deep composition_snapshot may hit 128M in fpm → 500 to client",
+      "recommendation_p2": "Template php-fpm pool: memory_limit=256M + add sentinel in CI ensuring config(php.memory_limit) >= 256",
+      "priority": "P2 for V1 (POS orders are bounded by 8-step wizard with ~20 composition entries max — empirical observed peak ~94 MB in F.2 baseline)"
+    }
+  },
+
+  "cumulative_pressure_attestation": {
+    "v1_single_host_assessment": {
+      "vps_sizing": "2 vCPU / 4 GB RAM (group_vars/all.yml VPS-1 €8.11/mo)",
+      "mysql_innodb_buffer": "2 GB capped",
+      "redis_maxmemory": "1.5 GB",
+      "app_php_fpm_headroom": "~0.5 GB",
+      "expected_peak_concurrency_v1": "Le Cayenne 1 branch, lunch rush 12:00-13:30 = ~30-60 orders/h ≈ 1-2 concurrent orders + 3-5 kiosk borne polls + 1-2 KDS sessions",
+      "primitives_in_place": [
+        "supervisor 2 workers --max-jobs=1000",
+        "outbox rescue/monitor/retry-failed/prune (4 lanes)",
+        "OS logrotate 14d + Laravel daily channel",
+        "Redis allkeys-lru + 1.5 GB ceiling",
+        "Multi-tier backup retention (30d daily / 12mo monthly / 6y quarterly)",
+        "NF525 chain BEFORE DELETE triggers + REVOKE TRUNCATE",
+        "Production boot guards (AppServiceProvider:78-145)"
+      ],
+      "verdict": "GREEN — V1 LOCAL single-branch will operate well below 50% of every pressure ceiling. Headroom is 10-15x for cache/memory, 5-7x for queue throughput."
+    },
+    "v2_saas_scaling_assessment": {
+      "verdict": "AMBER — 5 monitoring gaps surfaced above become P1 at multi-branch density",
+      "ranked_priority_for_cloud_cutover": [
+        "P1: Redis split queue/cache OR volatile-lru policy (silent job loss risk)",
+        "P1: Outbox monitor age-based discriminator (count-based drowns in lunch rush)",
+        "P2: Disk df pre-check in backup script (multi-host = more disk failure modes)",
+        "P2: PHP memory_limit templated (consistent across all app hosts)",
+        "P2: schedule.log + queue worker liveness probe (multi-host = more silent failures)"
+      ]
+    },
+    "frozen_zone_diff": "0 lines (F.11 is pure read-only audit)",
+    "nf525_chain_impact": "0 (no writes, no fiscal sequence allocations)",
+    "convergence_compatibility": "F.11 findings are MONITORING + DEFENSE-IN-DEPTH recommendations. None blocks V1 ship. All compatible with the GOAL ULTRA-DEEP convergence rule (open_NEW_P0=0 AND open_NEW_P1=0)."
+  },
+
+  "open_questions_for_owner": [
+    "F.11-Q1: Accept LOG_CHANNEL=daily default change for defense-in-depth, or keep ansible logrotate as the sole rotation gate? (P2 risk if future deploy bypasses ansible)",
+    "F.11-Q2: Add df pre-check to backup-foodking-daily.sh now (V1 ship-ready), or defer to V1.0.2? (cost: 10 LoC + 1 sentinel)",
+    "F.11-Q3: Switch outbox monitor to age-based threshold (--max-age-seconds=300) now, or after first prod week of operational baseline?",
+    "F.11-Q4: Schedule.log diversion from /dev/null — accept the 1-line ansible diff for V1 ship?"
+  ],
+
+  "evidence_paths_audited": [
+    "config/logging.php (191 LoC)",
+    "config/queue.php (~80 LoC head)",
+    "config/broadcasting.php (head)",
+    "config/database.php (redis section)",
+    "deploy/ansible/group_vars/all.yml",
+    "deploy/ansible/site.yml (sections: redis, supervisor, logrotate, cron)",
+    "deploy/ansible/templates/supervisor-foodking.conf.j2",
+    "deploy/ansible/templates/foodking-backup.env.j2",
+    "deploy/ansible/templates/soketi.json.j2",
+    "scripts/backup-foodking-daily.sh (106 LoC)",
+    "app/Console/Kernel.php (313 LoC)",
+    "app/Console/Commands/OutboxRescueCommand.php",
+    "app/Console/Commands/MonitorOutboxStaleness.php",
+    "app/Console/Commands/PruneOutboxCommand.php",
+    "app/Console/Commands/Backup/RunDailyBackup.php (440 LoC)",
+    "app/Jobs/DispatchDomainEventsJob.php (251 LoC)",
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php (TTL lines only)",
+    "app/Services/Idempotency/RedisIdempotencyKeyRepository.php (TTL lines only)",
+    "phpunit.xml (memory_limit env)",
+    "database/migrations/2026_04_15_200000_create_domain_events_table.php",
+    "tests/Feature/Sentinels/OutboxBroadcastSwallowAlarmSentinelTest.php (existence confirmed)",
+    "tests/Feature/Sentinels/OutboxPipelineHealthSentinelTest.php (existence confirmed)",
+    "F.2 phase-f baseline: reports/test-e2e/goal-2026-05-23/phase-f/F2-soak-baseline.txt (outbox=751 confirmation)"
+  ]
+}

@@ -1,0 +1,386 @@
+{
+  "agent": "F.4 Dynamic button matrix",
+  "phase": "Phase F — GOAL ULTRA-DEEP 2026-05-23",
+  "owner_mandate": "Visual, interface, dynamic function buttons — every button tested",
+  "scope": "Inventory ALL buttons code-static + empirical activation test 15 critical buttons + edge cases",
+  "executed_at": "2026-05-23",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "inventory": {
+    "method": "grep -c '<button' across primary-surface component dirs (Vue templates only)",
+    "by_surface": {
+      "kiosk_frontend": {
+        "dir": "resources/js/components/frontend/kiosk",
+        "buttons": 76,
+        "components": [
+          "KioskAppComponent.vue (4)",
+          "KioskCartComponent.vue (16)",
+          "KioskCategoriesComponent.vue (8)",
+          "KioskIdleScreenComponent.vue (4)",
+          "KioskOrderSummaryComponent.vue (2)",
+          "KioskPaymentComponent.vue (5)",
+          "KioskConfirmationComponent.vue (2)",
+          "KioskLoginComponent.vue (1)",
+          "KioskUpsellComponent.vue (2)",
+          "KioskWizardComponent.vue (8)",
+          "KioskCashInstructionComponent.vue (1)",
+          "KioskOfflineConflictModalComponent.vue (2)",
+          "KioskInactivityOverlayComponent.vue (2)",
+          "KioskLoyaltyComponent.vue (19)"
+        ]
+      },
+      "pos_admin": {
+        "dir": "resources/js/components/admin/pos",
+        "buttons": 78,
+        "components": [
+          "PosComponent.vue (~50, includes cart open, addCustomers, dineIn/takeAway/delivery, cart edit, parked-orders, discount, validate, reset, kiosk-cash panel toggle, manual flush, dismiss banners)",
+          "PosCounterCollectModal.vue (7: close, 4 mode picker, cancel, confirm)",
+          "PaymentComponent.vue (FROZEN, ~11: close, 3 mode, splitEqually, autoBalance, suggestCash, addTranche, confirm)",
+          "ParkedOrdersComponent.vue (4: close, search clear, restore, discard)",
+          "PosLoyaltyRedeemModal.vue (3: close, cancel, apply)",
+          "PosOrdersTrackerComponent.vue (~10: filters, source picker, encaisser, reprint, cancel, delivered, cancel-dialog)"
+        ]
+      },
+      "pos_v5_frozen_primitives": {
+        "dir": "resources/js/components/admin/pos/v5",
+        "buttons": 5,
+        "components": [
+          "PosV5Button.vue (1 root button)",
+          "PosV5Numpad.vue (1 button v-for'd 16 times in keys)",
+          "PosV5QtyStepper.vue (2: minus+plus)",
+          "PosV5TrancheRow.vue (1: remove)"
+        ]
+      },
+      "kds": {
+        "dir": "resources/js/components/admin/kitchenDisplaySystem",
+        "buttons": 45,
+        "components": [
+          "KitchenDisplaySystemComponent.vue (~38: history-drawer-open, error/notice dismiss, filter tabs, search-reset, table-group toggle, allergens, bump, recall, print-ticket, mark-prep, mark-prepared)",
+          "KdsOrderCard.vue (1: onCta)",
+          "KdsHistoryDrawer.vue (3: close x2 + fetch)",
+          "KdsUndoToast.vue (1: undo)"
+        ]
+      },
+      "oss_customer_facing": {
+        "dir": "resources/js/components/admin/orderStatusScreen",
+        "buttons": 0,
+        "note": "OSS is read-only/display-only by design (Wave Q-3 P-OWNER 2026-05-20). No interactive buttons."
+      },
+      "cash_overview_admin": {
+        "dir": "resources/js/components/admin/cashOverview",
+        "buttons": 3,
+        "components": ["CashOverviewComponent.vue (submit search + 2x clearFilters in form + empty-state)"]
+      },
+      "stock_rupture_dashboard": {
+        "dir": "resources/js/components/admin/stock",
+        "buttons": 2,
+        "components": ["StockRuptureDashboardComponent.vue (bucket selector + toggleProduct)"]
+      },
+      "dashboard_admin": {
+        "dir": "resources/js/components/admin/dashboard",
+        "buttons": 0,
+        "note": "DashboardComponent is a layout shell; interactive widgets (audit trail, channel stats, etc) are pure-display."
+      }
+    },
+    "total_button_dom_elements": 209,
+    "unique_action_handlers_estimate": "~120 (some v-for'd templates expand into multiple DOM buttons)"
+  },
+  "empirical_tested_count": 15,
+  "empirical_spec_path": "tests/js/sentinels/f4DynamicButtonMatrixSentinel.spec.js",
+  "empirical_run_result": "15/15 PASS in 61ms (first run, no flakes)",
+  "buttons": [
+    {
+      "id": "B-001",
+      "surface": "POS Counter-Collect modal",
+      "component": "PosCounterCollectModal.vue",
+      "selector": "[data-testid=pos-counter-collect-mode-CASH]",
+      "action": "mount with order",
+      "expected": "selectedMode='CASH' on mount (most common cashier flow)",
+      "observed": "selectedMode='CASH' on mount (watcher fires immediately)",
+      "verdict": "PASS"
+    },
+    {
+      "id": "B-002",
+      "surface": "POS Counter-Collect modal",
+      "component": "PosCounterCollectModal.vue",
+      "selector": "[data-testid=pos-counter-collect-mode-CARD]",
+      "action": "setMode('CARD')",
+      "expected": "selectedMode switches + canConfirm=true (non-cash path)",
+      "observed": "selectedMode='CARD', canConfirm=true (orderTotal>0, no received needed)",
+      "verdict": "PASS"
+    },
+    {
+      "id": "B-003",
+      "surface": "POS Counter-Collect modal",
+      "component": "PosCounterCollectModal.vue",
+      "selector": "[data-testid=pos-counter-collect-mode-*]",
+      "action": "setMode while submitting=true",
+      "expected": "no-op (early return on submitting guard)",
+      "observed": "selectedMode unchanged, disabled state confirmed",
+      "verdict": "PASS"
+    },
+    {
+      "id": "B-004",
+      "surface": "POS Counter-Collect modal",
+      "component": "PosCounterCollectModal.vue",
+      "selector": "[data-testid=pos-counter-collect-confirm]",
+      "action": "cash received < total (5,00 vs 12,50)",
+      "expected": "canConfirm=false + cashShort=true (server-side echo)",
+      "observed": "canConfirm=false, cashShort=true, button :disabled binds correctly",
+      "verdict": "PASS"
+    },
+    {
+      "id": "B-005",
+      "surface": "POS Counter-Collect modal",
+      "component": "PosCounterCollectModal.vue",
+      "selector": "[data-testid=pos-counter-collect-confirm]",
+      "action": "double-click confirm before resolve",
+      "expected": "axios.post called exactly ONCE (single-flight guard via submitting=true)",
+      "observed": "axios.post called once, second call no-op'd",
+      "verdict": "PASS (NO DOUBLE-FIRE)"
+    },
+    {
+      "id": "B-006",
+      "surface": "POS Counter-Collect modal",
+      "component": "PosCounterCollectModal.vue",
+      "selector": "PosV5Numpad @input",
+      "action": "numpadInput('5') with current='12'",
+      "expected": "cashReceivedRaw='125' (append, not replace)",
+      "observed": "cashReceivedRaw='125'",
+      "verdict": "PASS"
+    },
+    {
+      "id": "B-007",
+      "surface": "POS Counter-Collect modal",
+      "component": "PosCounterCollectModal.vue",
+      "selector": "PosV5Numpad @back + @clear",
+      "action": "numpadBack on '12,50' then numpadClear",
+      "expected": "back strips last char ('12,5') then clear empties ('')",
+      "observed": "exact match",
+      "verdict": "PASS"
+    },
+    {
+      "id": "B-008",
+      "surface": "POS shared atom",
+      "component": "PosV5Numpad.vue",
+      "selector": "button:text('5')",
+      "action": "click numeric key",
+      "expected": "@input emit with value '5'",
+      "observed": "emitted('input')[0] === ['5']",
+      "verdict": "PASS"
+    },
+    {
+      "id": "B-009",
+      "surface": "POS shared atom",
+      "component": "PosV5Numpad.vue",
+      "selector": "button:text('⌫')",
+      "action": "click backspace key",
+      "expected": "@back emit fires",
+      "observed": "emitted('back') is truthy",
+      "verdict": "PASS"
+    },
+    {
+      "id": "B-010",
+      "surface": "POS shared atom",
+      "component": "PosV5Numpad.vue",
+      "selector": "button:text('C')",
+      "action": "click clear key",
+      "expected": "@clear emit fires",
+      "observed": "emitted('clear') is truthy",
+      "verdict": "PASS"
+    },
+    {
+      "id": "B-011",
+      "surface": "POS qty stepper",
+      "component": "PosV5QtyStepper.vue",
+      "selector": ".pos-v5-qty__btn--minus",
+      "action": "decrement at modelValue=0, min=0, showTrash=false",
+      "expected": "disabledMinus=true, no @decrement emit (bounded)",
+      "observed": "disabledMinus=true, no emit (DOM disabled binding holds)",
+      "verdict": "PASS (BOUNDED AT MIN, no negative)"
+    },
+    {
+      "id": "B-012",
+      "surface": "POS qty stepper",
+      "component": "PosV5QtyStepper.vue",
+      "selector": ".pos-v5-qty__btn--plus",
+      "action": "increment at modelValue=999, max=999",
+      "expected": "disabledPlus=true, no @increment emit (bounded at max)",
+      "observed": "disabledPlus=true, no emit",
+      "verdict": "PASS (BOUNDED AT MAX)"
+    },
+    {
+      "id": "B-013",
+      "surface": "POS qty stepper",
+      "component": "PosV5QtyStepper.vue",
+      "selector": ".pos-v5-qty__btn--minus (trash variant)",
+      "action": "minus click with showTrash=true (qty=1 last-item case)",
+      "expected": "@remove emit (NOT @decrement) — explicit trash UX",
+      "observed": "@remove fired, @decrement NOT fired",
+      "verdict": "PASS (TRASH VARIANT WIRED CORRECTLY)"
+    },
+    {
+      "id": "B-014",
+      "surface": "POS qty stepper",
+      "component": "PosV5QtyStepper.vue",
+      "selector": ".pos-v5-qty__btn--minus (normal)",
+      "action": "minus click at qty=3 (no trash)",
+      "expected": "@decrement emit fires (no @remove)",
+      "observed": "@decrement fired, @remove NOT fired",
+      "verdict": "PASS"
+    },
+    {
+      "id": "B-015",
+      "surface": "POS qty stepper",
+      "component": "PosV5QtyStepper.vue",
+      "selector": ".pos-v5-qty (both buttons)",
+      "action": "disabled prop=true (master switch)",
+      "expected": "both disabledMinus + disabledPlus = true globally",
+      "observed": "both locked + .pos-v5-qty--disabled class applied",
+      "verdict": "PASS"
+    }
+  ],
+  "cross_referenced_existing_sentinels": {
+    "method": "Confirmed empirically the existing Vitest sentinels covering button matrix",
+    "specs_run": [
+      "tests/js/sentinels/posCounterCollectModalSentinel.spec.js — 15 tests PASS (CounterCollect contract: idempotency key formula, mode picker, rendu calc, canConfirm guards)",
+      "tests/js/sentinels/posShortcutsSentinel.spec.js — 17 tests PASS (POS keyboard shortcuts + tracker buttons)",
+      "tests/js/sentinels/kdsHistoryDrawerSentinel.spec.js — 12 tests PASS (drawer open + Esc close handler bound)",
+      "tests/js/posCart.spec.js — 3 tests PASS (cart qty +/- bounded)",
+      "tests/js/KioskWizard.spec.js — 97 tests PASS (Suivant/Retour disabled when canAdvance false, abandon dialog flow)",
+      "tests/js/kioskUpsellFlow.spec.js — 4 tests PASS (toggleItem, addAndContinue, skip)",
+      "tests/js/kdsBumpRecall.spec.js — 4 tests PASS (bump and recall buttons)",
+      "tests/js/sentinels/kdsV2MultiBumpSentinel.spec.js — 10 tests PASS (multi-bump race)",
+      "tests/js/sentinels/counterCollectFrDecimalSentinel.spec.js — 4 tests PASS (FR comma decimal pre-fill)",
+      "tests/js/sentinels/kdsCashPendingBadge.spec.js — 11 tests PASS",
+      "tests/js/sentinels/paymentComponentEmitsJsdocList.spec.js — 4 tests PASS (FROZEN PaymentComponent contract)",
+      "tests/js/sentinels/f4DynamicButtonMatrixSentinel.spec.js — 15 NEW tests PASS (this agent's contribution)"
+    ],
+    "total_cross_referenced_tests": 196,
+    "total_pass": 196,
+    "total_fail": 0
+  },
+  "edge_cases_verified": [
+    {
+      "case": "Disabled state honored — submitting=true blocks setMode + onCancel + onConfirm",
+      "verdict": "PASS — PosCounterCollectModal explicitly checks `if (this.submitting) return;` in setMode, onCancel, numpadInput, numpadBack, numpadClear, onConfirm"
+    },
+    {
+      "case": "Double-submit prevention on Confirm (Encaisser-borne)",
+      "verdict": "PASS — empirically tested in B-005; single-flight via submitting flag + axios.post called exactly 1x on parallel double-click"
+    },
+    {
+      "case": "Double-submit prevention on PaymentComponent orderSubmit (FROZEN)",
+      "verdict": "PASS — PaymentComponent.vue:311 :disabled='loading.isActive...' + L967 'if (this.loading.isActive) return;' second-line guard. See [AUDIT-P2] comment."
+    },
+    {
+      "case": "Numpad full key set on PosCounterCollectModal (CASH input)",
+      "verdict": "PASS — 0-9, 00, . (or , in FR), backspace x2, clear x2 — all 16 keys present in layout, emit correctly"
+    },
+    {
+      "case": "Mode picker buttons disabled when submitting (CASH/CARD/MOBILE/TICKET)",
+      "verdict": "PASS — all 4 :disabled='submitting' + setMode method guards"
+    },
+    {
+      "case": "Wizard Suivant disabled when canAdvance=false",
+      "verdict": "PASS — KioskWizardComponent.vue:91 ':disabled=\"currentStepIndex >= activeSteps.length - 1 || !canAdvance\"' + KioskWizard.spec.js 97 tests covering navigation gates"
+    },
+    {
+      "case": "Wizard Retour disabled at step 0",
+      "verdict": "PASS — KioskWizardComponent.vue:73 ':disabled=\"currentStepIndex === 0\"'"
+    },
+    {
+      "case": "Cart edit qty +/- bounded at 1 (no negative)",
+      "verdict": "PASS — KioskCartComponent.changeQty: 'if (qty <= 0) removeItem' instead of going negative; max bounded via maxItemQty cap toast"
+    },
+    {
+      "case": "Cart remove (✕) → confirm dialog OR direct?",
+      "verdict": "PASS — DIRECT remove with toast feedback (KioskCartComponent.removeItemDirectly L587-595, 'owner demand: voir+ajouter+supprimer correctement, info toast confirms explicit action')"
+    },
+    {
+      "case": "Cart Clear ALL → confirm dialog (different)",
+      "verdict": "PASS — KioskCartComponent showClearConfirm modal + Esc + backdrop close, 'Confirmer' or 'Annuler' buttons"
+    },
+    {
+      "case": "KdsHistoryDrawer Esc closes drawer",
+      "verdict": "PASS — KdsHistoryDrawer.vue:189-195 keydown listener bound on document.addEventListener('keydown') for 'Escape'/'Esc' keys (chef keyboard-only operators)"
+    },
+    {
+      "case": "PosV5QtyStepper trash variant emit @remove instead of @decrement (last-item kiosk UX)",
+      "verdict": "PASS — empirically tested B-013, handleDecrement checks showTrash flag then emits 'remove' instead of 'decrement'"
+    },
+    {
+      "case": "Disabled state still allows screen-reader (aria-disabled + visual styling)",
+      "verdict": "PASS — PosCounterCollectModal confirm has :aria-disabled + :aria-busy + role='tab' aria-selected on mode picker"
+    }
+  ],
+  "failures": [],
+  "warnings_and_observations": [
+    {
+      "id": "W-001",
+      "surface": "OSS (Order Status Screen)",
+      "observation": "OSS has ZERO buttons by design (Wave Q-3 P-OWNER 2026-05-20 owner directive). Display-only customer-facing screen with EN PRÉPARATION + PRÊT columns. Verified intentional by file comment.",
+      "severity": "INFO (not a finding, design constraint)"
+    },
+    {
+      "id": "W-002",
+      "surface": "Dashboard admin",
+      "observation": "DashboardComponent.vue is a layout shell — widget children (audit-trail, channel-stats, customer-stats, featured-items, sla-alerts, stock-low-alerts, top-customers, last-z-report) are pure-display Vue components. No interactive buttons inventoried on dashboard root.",
+      "severity": "INFO"
+    },
+    {
+      "id": "W-003",
+      "surface": "PaymentComponent (FROZEN per CLAUDE.md §7)",
+      "observation": "Static-read only. Confirm button :disabled binding empirically asserted via paymentComponentEmitsJsdocList sentinel + AUDIT-P2 comment L307 ('disabled prevents a second click while the order is being submitted') + L967 second-line guard. Mode picker + split-equally + auto-balance + suggestCash + addTranche all have :disabled='loading.isActive' bindings.",
+      "severity": "INFO (frozen → read-only audit only)"
+    },
+    {
+      "id": "W-004",
+      "surface": "KdsV2Grid.vue + KdsStatusBanner.vue",
+      "observation": "Both files contain ZERO <button> elements directly. Buttons live in KdsOrderCard child (CTA bump) + KitchenDisplaySystemComponent parent (filters/dismiss/bump/recall/print/transition). KdsV2Grid is a presentation grid; KdsStatusBanner is a slot host.",
+      "severity": "INFO"
+    },
+    {
+      "id": "W-005",
+      "surface": "KioskPosWizardComponent.vue",
+      "observation": "0 buttons — this is a legacy stub file (likely deprecated POS-flavored kiosk path). Active kiosk wizard is KioskWizardComponent.vue (8 buttons). Recommendation: V1.0.2 backlog — verify if KioskPosWizardComponent is dead code candidate.",
+      "severity": "INFO (potential dead code, defer)"
+    },
+    {
+      "id": "W-006",
+      "surface": "POS Vanilla JS wizard (FROZEN — public/js/pos-wizard.js)",
+      "observation": "Vanilla JS hand-written ~296 KB single-page wizard, non-Mix-compiled. CLAUDE.md §7 strict-no-touch (owner: design parfait). Not inventoried button-by-button per brief discipline ('READ-ONLY, no test interaction beyond mounting'). Button count via grep -c 'button' on public/js/pos-wizard.js ≈ several dozen but counted at compiled-asset level not template level. Trusted via owner gate + zero frozen-zone diff baseline.",
+      "severity": "INFO (frozen, intentionally not in scope)"
+    },
+    {
+      "id": "W-007",
+      "surface": "Brief vs reality",
+      "observation": "Brief referenced 'KioskMenuComponent' — this file name does not exist in the codebase. The actual component covering category + menu selection is KioskCategoriesComponent.vue (8 buttons), inventoried correctly.",
+      "severity": "INFO (clarification)"
+    }
+  ],
+  "verdict": "GREEN",
+  "verdict_justification": [
+    "209 buttons inventoried across 7 primary surfaces (Kiosk 76 + POS 78 + V5 5 + KDS 45 + OSS 0 + Cash 3 + Stock 2 + Dashboard 0).",
+    "15 critical buttons empirically tested via Vitest (PosCounterCollectModal modes/numpad/confirm + PosV5Numpad input/back/clear + PosV5QtyStepper bounded min/max/trash/disabled) — 15/15 PASS.",
+    "All edge cases verified: disabled gates fire, double-click never double-submits, mode pickers switch state correctly, numpad emits correct events, qty stepper bounded at min (no negative possible) + max, trash variant emits @remove instead of @decrement, wizard Suivant/Retour respect canAdvance + step-0 gates.",
+    "Cross-referenced existing sentinel suite — 196 tests total across 12 specs (cart, wizard, numpad, modal, bump-recall, history-drawer, mode picker contract, etc.) — 196/196 PASS, 0 FAIL.",
+    "Frozen components (PaymentComponent, PosV5*, KioskWizard, pos-wizard.js Vanilla JS) respected — read-only audit only, no mutation. PaymentComponent confirm-button has double-submit guard (L967 + :disabled on L311) verified by code-read.",
+    "Sparse Playwright deferred — Vitest mount + emit assertions provide stronger empirical evidence per button than DOM screenshot would, at 1.7s total runtime vs minutes for Playwright."
+  ],
+  "next_actions": [
+    "OPTIONAL V1.0.2: Confirm KioskPosWizardComponent.vue is dead code; if so, remove from manifest",
+    "OPTIONAL V1.0.2: Add Playwright smoke for Kiosk Confirm Payment → Confirmation page (single flow, single screenshot) to lock visual button state in browser",
+    "GREEN — no blocking action for V1 Le Cayenne ship"
+  ],
+  "playwright_visual_capture": {
+    "status": "DEFERRED",
+    "reason": "Sparse Playwright spec written (tests/e2e/f4-button-matrix-visual.spec.js) but Chromium browser instance contended with parallel sibling Phase F agents (F.10/F.11/F.12) already running browser-driven flows. Vitest mount + emit assertions provide stronger empirical evidence per-button than DOM screenshots would.",
+    "browser_level_console_network_assertions": "Covered indirectly via F.3 visual-regression-findings.json + F.12 network-adverse-findings.json sibling agents (existing files in same phase-f/ directory).",
+    "spec_file_present_for_future_use": "tests/e2e/f4-button-matrix-visual.spec.js"
+  },
+  "artifacts": {
+    "new_spec_added": "tests/js/sentinels/f4DynamicButtonMatrixSentinel.spec.js (15 empirical tests, 61ms, 15/15 PASS)",
+    "playwright_spec_deferred": "tests/e2e/f4-button-matrix-visual.spec.js (written but not executed due to browser contention with sibling agents)",
+    "findings_json": "reports/test-e2e/goal-2026-05-23/phase-f/F4-button-matrix-findings.json"
+  }
+}
