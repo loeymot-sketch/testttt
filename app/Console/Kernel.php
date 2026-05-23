@@ -262,6 +262,40 @@ class Kernel extends ConsoleKernel
             ->name('foodking-fiscal-archive-daily')
             ->withoutOverlapping()
             ->onOneServer();
+
+        // [GOAL-G2-HEAL-06 2026-05-23] NF525 Z-close safety-net at 23:55 Paris.
+        //
+        // Phase G.6 audit (P1 operational) caught a cumulative gap: Z-close
+        // has NO production trigger today — no UI button (V1.0.X owner-gate
+        // proposal), no cron, no documented runbook. F.10 verified the
+        // SERVICE-LAYER invariants (13/13 GREEN) but the operational layer
+        // was missing — an owner forgetting to run the close every night
+        // would silently leak transactions into the next business_date.
+        //
+        // 23:55 Paris = after the cashier's effective shift end (most
+        // restaurants close by 23:00) but BEFORE midnight, so the close
+        // happens on the SAME business_date as the transactions — required
+        // by NF525 same-day semantics. Staggered after lane #16 (fiscal
+        // archive 02:00) and #15 (chain monitor 03:30) so the archive of
+        // J-1 always sees a closed Z (no half-open chain in archives).
+        //
+        // Double-close-safe: the command does a STATUS_OPEN pre-check per
+        // branch and `info`-logs (not error) when no open Z exists. So a
+        // cashier who already manually closed earlier in the evening sees
+        // no false-alarm pager from this cron. Per-branch isolation: one
+        // branch crash never halts the rest. Mirrors fiscal-chain-monitor
+        // pattern (this file, lane #15 above).
+        //
+        // ZReportService FROZEN §7 — this lane only CALLS service.close(),
+        // it does not modify the service. Frozen-zone diff = 0.
+        $schedule->command('fiscal:close-all-active-branches')
+            ->dailyAt('23:55')
+            ->timezone('Europe/Paris')
+            ->name('foodking-z-close-safety-net')
+            ->description('NF525 Z-close safety-net per active branch (before midnight Paris)')
+            ->onOneServer()
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**

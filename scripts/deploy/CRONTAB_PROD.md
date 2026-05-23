@@ -70,9 +70,23 @@ driven by `schedule:run`.
 | 14| `availability-reset-stale-quota`         | daily 00:05          | 174–178         | Quota counters reset for low-traffic branches                         |
 | 15| **`fiscal-chain-monitor-all-branches`**  | **daily 03:30**      | **192–226**     | **NF525 dual-chain verify per active branch (see §6)**                |
 | 16| **`foodking-fiscal-archive-daily`**      | **daily 02:00**      | **234–264**     | **NF525 signed ZIP+JSON per active branch**                           |
+| 17| **`foodking-z-close-safety-net`**        | **daily 23:55 Paris**| **272–293**     | **NF525 Z-close safety-net per active branch (G2-HEAL-06, 2026-05-23)**|
 
-Lanes #8/#15/#16 are the **NF525 compliance triple** — they MUST run
+Lanes #8/#15/#16/#17 are the **NF525 compliance quartet** — they MUST run
 nightly and any non-zero exit pages the on-call.
+
+> **Lane #17 background (Phase G.6 audit, P1 operational).** Z-close had
+> NO production trigger pre-2026-05-23 — no UI button, no cron, no
+> documented runbook. F.10 verified the service-layer invariants (13/13
+> GREEN) but the operational layer was missing. The safety-net runs at
+> 23:55 Paris (BEFORE midnight = same `business_date` as the
+> transactions) and is **double-close-safe**: the command pre-checks
+> `ZReport::STATUS_OPEN` per branch and `info`-logs (not error) when
+> nothing is open, so a cashier who already manually closed earlier in
+> the evening never triggers a false-alarm pager. Per-branch isolation:
+> one branch crash never halts the rest. The UI button is V1.0.X
+> owner-gate (see `proposals/PROPOSAL_ZCLOSE_VUE_UI_BUTTON.md`); this
+> cron is the V1 LOCAL operational floor until the button ships.
 
 ---
 
@@ -438,10 +452,11 @@ sudo -u lecayenne /usr/local/bin/lecayenne-health-check
 | Daily backup 03:00 NF525 6y retention      | Lines 105–110 `dailyAt('03:00')`     |
 | Fiscal archive 02:00 per active branch     | Lines 234–264 `dailyAt('02:00')`     |
 | Fiscal chain verify 03:30 per active branch| Lines 192–226 `dailyAt('03:30')`     |
+| Z-close safety-net 23:55 Paris per branch  | Lines 272–293 `dailyAt('23:55')`     |
 | Outbox prune 04:00, 90d retention          | Lines 119–125                        |
 | Webhook prune 04:15, 180d retention        | Lines 135–141                        |
 | POS parked-order purge 03:15 (24h TTL)     | Lines 89–92                          |
-| `activeBranchIds()` covers status 1 + 5    | Lines 305–312                        |
+| `activeBranchIds()` covers status 1 + 5    | Lines 333–340                        |
 | `onOneServer()` declared on all daily lanes| Verified per lane                    |
 | `withoutOverlapping()` on every long lane  | Verified per lane                    |
 
@@ -450,4 +465,4 @@ If `Kernel.php` changes, regenerate Section 1 table.
 
 ---
 
-*Last verified: 2026-05-23. Kernel.php HEAD: branch `heal/cms-pr1-quickwins-2026-05-18`.*
+*Last verified: 2026-05-23 (G2-HEAL-06 added lane #17). Kernel.php HEAD: branch `heal/cms-pr1-quickwins-2026-05-18`.*
