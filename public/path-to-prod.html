@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Path to Production — Le Cayenne</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#fafaf7;color:#1a1a1a;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .container{max-width:1000px;margin:0 auto;padding:32px 20px 220px}
+
+  /* HERO */
+  .hero{background:linear-gradient(135deg,#1a1a1a 0%,#2a1a1a 50%,#3a1f1f 100%);color:#fff;border-radius:28px;padding:50px 38px;margin-bottom:28px;position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;top:-30%;right:-15%;width:500px;height:500px;background:radial-gradient(circle,rgba(244,80,30,0.30) 0%,transparent 65%);pointer-events:none}
+  .hero::after{content:"";position:absolute;bottom:-30%;left:-10%;width:400px;height:400px;background:radial-gradient(circle,rgba(255,193,7,0.15) 0%,transparent 65%);pointer-events:none}
+  .hero-content{position:relative;z-index:1}
+  .hero .tag{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.2em;color:#22C55E;background:rgba(34,197,94,0.15);padding:6px 14px;border-radius:99px;margin-bottom:24px}
+  .hero h1{font-size:42px;font-weight:800;letter-spacing:-0.025em;margin-bottom:12px;line-height:1.08}
+  .hero h1 .red{color:#F4501E}
+  .hero h1 .green{color:#22C55E}
+  .hero p{font-size:17px;opacity:0.88;max-width:680px;margin-bottom:8px}
+  .hero .small{font-size:13px;opacity:0.55;margin-top:14px;font-family:"SF Mono",Menlo,monospace}
+
+  /* STATUS GRID */
+  .status-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px;position:relative;z-index:1}
+  .status-box{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:14px 18px;backdrop-filter:blur(8px)}
+  .status-box .lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;opacity:0.6;margin-bottom:4px}
+  .status-box .val{font-size:18px;font-weight:800;color:#fff}
+  .status-box.ok .val{color:#22C55E}
+  .status-box.pending .val{color:#FFC107}
+
+  /* GLOBAL PROGRESS */
+  .progress{background:#fff;border:1px solid #e5e5e0;border-radius:16px;padding:18px 24px;margin-bottom:24px;display:flex;align-items:center;gap:16px;position:sticky;top:16px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,0.05)}
+  .progress .lbl{font-size:13px;color:#666;font-weight:600;flex-shrink:0}
+  .progress .count{font-size:22px;font-weight:800;color:#F4501E;flex-shrink:0}
+  .progress-bar{flex:1;height:8px;background:#f0ede8;border-radius:99px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,#F4501E,#FFC107,#22C55E);width:0%;transition:width 0.35s;border-radius:99px}
+  .btn-reset{background:transparent;border:1px solid #e5e5e0;color:#666;font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+  .btn-reset:hover{background:#f4f1eb}
+
+  /* PHASE */
+  .phase{margin-top:40px;position:relative}
+  .phase-head{display:flex;align-items:center;gap:18px;margin-bottom:18px}
+  .phase-num{width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#fff;flex-shrink:0;box-shadow:0 8px 20px rgba(0,0,0,0.15)}
+  .phase-0 .phase-num{background:linear-gradient(135deg,#F4501E,#d4400e)}
+  .phase-1 .phase-num{background:linear-gradient(135deg,#FFC107,#f59e0b)}
+  .phase-2 .phase-num{background:linear-gradient(135deg,#3b82f6,#2563eb)}
+  .phase-3 .phase-num{background:linear-gradient(135deg,#22C55E,#16A34A)}
+  .phase-4 .phase-num{background:linear-gradient(135deg,#a855f7,#9333ea)}
+  .phase-5 .phase-num{background:linear-gradient(135deg,#ec4899,#db2777)}
+  .phase-meta{flex:1}
+  .phase-title{font-size:26px;font-weight:800;letter-spacing:-0.02em;line-height:1.15;color:#1a1a1a}
+  .phase-when{font-size:13px;color:#666;margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em}
+  .phase-progress{background:#f4f1eb;border-radius:99px;padding:6px 14px;font-size:13px;font-weight:800;color:#666}
+  .phase-progress.complete{background:#dcfce7;color:#15803d}
+  .phase-desc{font-size:15px;color:#666;margin-left:72px;margin-bottom:18px;line-height:1.6}
+
+  /* CHECK CARD */
+  .check-card{background:#fff;border-radius:16px;padding:18px 22px;margin-bottom:10px;border:1px solid #e8e6df;display:flex;align-items:flex-start;gap:14px;transition:all 0.15s;cursor:pointer}
+  .check-card:hover{border-color:#FFC107;transform:translateY(-1px)}
+  .check-card.done{background:linear-gradient(135deg,#f0fdf4 0%,#ffffff 60%);border-color:#22C55E}
+  .check-card.done .check-title{text-decoration:line-through;opacity:0.7}
+  .check-card.done .check-box{background:#22C55E;color:#fff}
+  .check-card.done .check-box::after{content:"✓"}
+  .check-card.critical{border-left:5px solid #F4501E}
+  .check-card.warn{border-left:5px solid #FFC107}
+  .check-card.normal{border-left:5px solid #94a3b8}
+
+  .check-box{width:26px;height:26px;border-radius:8px;border:2px solid #d4d4d4;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;margin-top:2px;transition:all 0.15s}
+  .check-card:hover .check-box{border-color:#F4501E}
+  .check-body{flex:1;min-width:0}
+  .check-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px;flex-wrap:wrap}
+  .check-title{font-size:16px;font-weight:800;line-height:1.3;color:#1a1a1a}
+  .check-badges{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap}
+  .badge{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;padding:3px 8px;border-radius:99px;white-space:nowrap}
+  .badge.who-owner{background:#fef3c7;color:#92400e}
+  .badge.who-claude{background:#dbeafe;color:#1e40af}
+  .badge.who-both{background:#ede9fe;color:#5b21b6}
+  .badge.time{background:#f3f4f6;color:#374151}
+  .badge.crit{background:#FEE2E2;color:#991B1B}
+
+  .check-desc{font-size:14px;color:#374151;line-height:1.6;margin-bottom:6px}
+  .check-desc code{background:#1a1a1a;color:#a3e635;padding:2px 7px;border-radius:5px;font-family:"SF Mono",Menlo,monospace;font-size:12px;font-weight:600}
+  .check-cmd{background:#1a1a1a;color:#a3e635;padding:10px 14px;border-radius:8px;font-family:"SF Mono",Menlo,monospace;font-size:12px;margin-top:8px;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+
+  /* OWNER GATE BLOCK */
+  .gate-block{background:linear-gradient(135deg,#FEE2E2,#FEF3C7);border:2px solid #F4501E;border-radius:18px;padding:24px 28px;margin-bottom:14px}
+  .gate-block h4{font-size:18px;font-weight:800;color:#991B1B;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .gate-block p{font-size:14px;color:#1a1a1a;line-height:1.6}
+
+  /* MILESTONE */
+  .milestone{background:linear-gradient(135deg,#1a1a1a,#2a1a1a);color:#fff;border-radius:18px;padding:24px 28px;margin-top:24px;position:relative;overflow:hidden}
+  .milestone::before{content:"";position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle,rgba(34,197,94,0.25) 0%,transparent 70%);pointer-events:none}
+  .milestone h4{font-size:18px;font-weight:800;color:#22C55E;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;position:relative}
+  .milestone p{font-size:14px;opacity:0.88;line-height:1.6;position:relative}
+
+  /* SUBMIT */
+  .submit-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e5e0;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 -4px 24px rgba(0,0,0,0.1);z-index:100}
+  .submit-bar-inner{max-width:1000px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .submit-status{font-size:14px;color:#666}
+  .submit-status strong{color:#1a1a1a;font-size:16px}
+  .btn-launch{background:linear-gradient(135deg,#F4501E,#d4400e);color:#fff;border:none;font-size:15px;font-weight:800;padding:14px 28px;border-radius:12px;cursor:pointer;transition:all 0.15s;letter-spacing:0.02em;text-transform:uppercase}
+  .btn-launch:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(244,80,30,0.4)}
+
+  @media (max-width:680px){
+    .container{padding:20px 14px 220px}
+    .hero{padding:36px 24px;border-radius:20px}
+    .hero h1{font-size:30px}
+    .status-grid{grid-template-columns:repeat(2,1fr)}
+    .phase-title{font-size:20px}
+    .phase-desc{margin-left:0;margin-top:8px}
+    .check-card{padding:16px}
+    .check-title{font-size:15px}
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-content">
+      <span class="tag">✅ GOAL converged 2026-05-23</span>
+      <h1>Le Cayenne — du <span class="green">local validé</span><br>vers <span class="red">production live</span>.</h1>
+      <p>14 commits, 0 frozen-zone touch, NF525 chain intacte, 94 propositions écrites. Voici LA roadmap claire pour aller de "GOAL converged" à "premier client réel encaissé".</p>
+
+      <div class="status-grid">
+        <div class="status-box ok"><div class="lbl">Code GOAL</div><div class="val">✓ Converged</div></div>
+        <div class="status-box ok"><div class="lbl">NF525</div><div class="val">✓ CHAIN OK</div></div>
+        <div class="status-box ok"><div class="lbl">Frozen</div><div class="val">✓ 0 touch</div></div>
+        <div class="status-box pending"><div class="lbl">Owner gates</div><div class="val">5 à arbitrer</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress">
+    <div class="lbl">Avancement</div>
+    <div class="count" id="cnt">0 / 32</div>
+    <div class="progress-bar"><div class="progress-fill" id="fill"></div></div>
+    <button class="btn-reset" id="btn-reset">Reset</button>
+  </div>
+
+  <!-- ====== PHASE 0 — OWNER GATES ====== -->
+  <div class="phase phase-0">
+    <div class="phase-head">
+      <div class="phase-num">0</div>
+      <div class="phase-meta">
+        <div class="phase-title">Arbitrer les 5 owner-gates ouverts</div>
+        <div class="phase-when">Aujourd'hui · ~15 min · pré-requis cloud</div>
+      </div>
+      <div class="phase-progress" id="p0">0/5</div>
+    </div>
+    <div class="phase-desc">5 propositions attendent ton arbitrage. Le GOAL n'a rien tranché sans toi — tu dis quoi pour chacun, on agit après. La sécurité (pos-wizard XSS) est prioritaire car ça traîne depuis 8 jours.</div>
+
+    <div class="check-card critical" data-task="g0a">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G0.1 — Décider sur le LOCK pos-wizard XSS (sécurité)</div>
+          <div class="check-badges"><span class="badge crit">P0 sécurité</span><span class="badge who-owner">Owner</span><span class="badge time">3 min</span></div>
+        </div>
+        <div class="check-desc">Faille XSS stockée dans <code>public/js/pos-wizard.js</code> ligne 3180+3187. Le fix est prêt et minimal (escape HTML sur input clients). Bloque depuis 8 jours. Lecture : <code>plans/LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17.md</code> + addendum 2026-05-23. Tu signes au bas du LOCK.</div>
+        <div class="check-cmd">Action : ouvrir plans/LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17.md → ajouter signature à la fin (date + initiales)</div>
+      </div>
+    </div>
+
+    <div class="check-card critical" data-task="g0b">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G0.2 — Décider sur le LOCK PricingService NF525 F1 (discount unclamped)</div>
+          <div class="check-badges"><span class="badge crit">P0 NF525</span><span class="badge who-owner">Owner</span><span class="badge time">5 min</span></div>
+        </div>
+        <div class="check-desc">Le calcul <code>$calculatedDiscount</code> n'est pas borné (peut dépasser le total). Risque fiscal si exploité (commande à -2€ pourrait casser la chain NF525). Fix proposé : clamp entre 0 et finalTotal. LOCK à écrire + countersigner.</div>
+        <div class="check-cmd">Lecture : proposals/ + cherche "PRICING" "F1" — décision oui/non</div>
+      </div>
+    </div>
+
+    <div class="check-card critical" data-task="g0c">
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G0.3 — Politique TVA : single-rate (10%) ou multi-rate cart ?</div>
+          <div class="check-badges"><span class="badge crit">P0 NF525</span><span class="badge who-owner">Owner</span><span class="badge time">2 min</span></div>
+        </div>
+        <div class="check-desc">Le PricingService doit décider : V1 applique-t-il un seul taux TVA (10% restauration sur place + à emporter, simple) OU un cart multi-rate (sandwich 5,5% + boisson alcool 20% + sur place 10%, complexe) ?</div>
+        <div class="check-cmd">Recommandation Claude: SINGLE-RATE 10% V1 (fast-food simple) → multi-rate V1.0.2 si tu vends alcool ou produits différents</div>
+        <div class="check-box"></div>
+      </div>
+    </div>
+
+    <div class="check-card warn" data-task="g0d">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G0.4 — Décider layout KDS chef-rush (Option A/B/C)</div>
+          <div class="check-badges"><span class="badge crit">P0 archi</span><span class="badge who-owner">Owner</span><span class="badge time">5 min</span></div>
+        </div>
+        <div class="check-desc">Quand 5+ commandes affichées, le chef doit-il scroller ou non ? 3 options dans <code>proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md</code>. Option A=grille 4×2 fixe, Option B=fluide auto-resize, Option C=2 lignes max + "Voir plus".</div>
+        <div class="check-cmd">Recommandation Claude: Option B (fluide auto-resize, garantit visibilité ≤8 commandes sans scroll). Tu valides A, B ou C.</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g0e">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G0.5 — Countersigner LOCK_PAY currency (cosmétique € format)</div>
+          <div class="check-badges"><span class="badge">P3 polish</span><span class="badge who-owner">Owner</span><span class="badge time">1 min</span></div>
+        </div>
+        <div class="check-desc">PaymentComponent affiche <code>4.90€</code> au lieu de <code>4,90 €</code>. Fix trivial (1 ligne) mais zone protégée donc owner-gate. Tu signes le LOCK ou tu laisses skip (V1.0.2).</div>
+        <div class="check-cmd">Lecture : plans/LOCK_PAY_PaymentComponent_currency_2026-05-23.md — signer ou ignorer</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== PHASE 1 — AUDIT STRUCTURE LOCALE ====== -->
+  <div class="phase phase-1">
+    <div class="phase-head">
+      <div class="phase-num">1</div>
+      <div class="phase-meta">
+        <div class="phase-title">Audit visuel structure locale (manuel)</div>
+        <div class="phase-when">Aujourd'hui · ~20 min · valider l'œil owner</div>
+      </div>
+      <div class="phase-progress" id="p1">0/8</div>
+    </div>
+    <div class="phase-desc">Avant de pousser sur cloud, tu valides VISUELLEMENT chaque surface fonctionne en local. Le code dit "OK" mais ton œil owner est le juge final. Ouvre chaque URL dans Chrome et coche ce qui marche.</div>
+
+    <div class="check-card normal" data-task="g1a">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G1.1 — Borne kiosk fonctionne bout-en-bout</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">5 min</span></div>
+        </div>
+        <div class="check-desc">Ouvre <code>http://127.0.0.1:8000/kiosk/idle</code>. Tape pour démarrer. Choisis À emporter. Choisis Burgers → Cayenne. Ajoute sauces. Va au panier. Clique Valider. Tu dois arriver à l'écran paiement sans erreur (la confirmation peut être skippée).</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g1b">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G1.2 — Caisse POS reçoit commande borne</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">3 min</span></div>
+        </div>
+        <div class="check-desc">Avec la commande créée en G1.1, ouvre <code>http://127.0.0.1:8000/admin/pos</code> (login admin@lecayenne.fr / 123456). Tu dois voir la commande dans le panneau rouge "À encaisser borne".</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g1c">
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G1.3 — Encaisser via popup SSOT</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">3 min</span></div>
+        </div>
+        <div class="check-desc">Click "Encaisser" sur la commande borne. Le popup PosCounterCollectModal s'ouvre. Choisis Espèces → tape montant → Confirmer. La commande passe en "Prêt à livrer". Click Livré → row vanishes.</div>
+        <div class="check-box"></div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g1d">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G1.4 — KDS reçoit la commande pendant la prépa</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">3 min</span></div>
+        </div>
+        <div class="check-desc">Place une nouvelle commande borne G1.1. Encaisse en G1.3 mais NE clique pas "Livré" tout de suite. Ouvre <code>http://127.0.0.1:8000/kds</code>. La commande doit apparaître. Click pour bump PREPARING → PREPARED.</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g1e">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G1.5 — OSS écran client affiche bien</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">2 min</span></div>
+        </div>
+        <div class="check-desc">Ouvre <code>http://127.0.0.1:8000/order-status-screen</code>. Tu dois voir la commande en cours de prépa. Quand chef bumpe en KDS → elle passe en "Prêt" ici dans ≤10s.</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g1f">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G1.6 — Cash Overview montre les transactions</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">2 min</span></div>
+        </div>
+        <div class="check-desc">Ouvre <code>http://127.0.0.1:8000/admin/cash-overview</code>. Tu dois voir les transactions du jour (G1.1+G1.4). Vérifie € partout, filtre par source Borne, F5, filtre persiste.</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g1g">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G1.7 — Sync sauce off → kiosk en ≤5s (test critique)</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">3 min</span></div>
+        </div>
+        <div class="check-desc">Ouvre 2 onglets : admin <code>/admin/stock/rupture</code> + borne <code>/kiosk/idle</code>. Sur la borne, démarre une commande → arrive à l'étape sauces. Sur admin, toggle Algérienne OFF. Reload la borne F5. Algérienne doit disparaître en ≤5s.</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g1h">
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G1.8 — NF525 chain CHAIN OK</div>
+          <div class="check-badges"><span class="badge who-claude">Terminal</span><span class="badge time">30s</span></div>
+        </div>
+        <div class="check-desc">Dans le terminal du projet :</div>
+        <div class="check-cmd">php artisan fiscal:verify-chain</div>
+        <div class="check-desc" style="margin-top:8px">Doit dire "CHAIN OK (audit_logs + z_reports)". Si KO → STOP, on investigue avant cloud.</div>
+        <div class="check-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MILESTONE 1 -->
+  <div class="milestone">
+    <h4>🏁 Milestone — Local validé</h4>
+    <p>Si Phase 0 arbitrée + Phase 1 toutes vertes → le code est PROD-READY local. On peut commencer à préparer le cloud.</p>
+  </div>
+
+  <!-- ====== PHASE 2 — CLOUD + DOMAIN ====== -->
+  <div class="phase phase-2">
+    <div class="phase-head">
+      <div class="phase-num">2</div>
+      <div class="phase-meta">
+        <div class="phase-title">Cloud + domaine</div>
+        <div class="phase-when">Ce soir / demain · ~1h owner + ~30 min Claude</div>
+      </div>
+      <div class="phase-progress" id="p2">0/6</div>
+    </div>
+    <div class="phase-desc">Tu as dit que tu t'occupes du cloud + domain. Voici exactement la séquence + ce que je peux faire dès que tu me donnes les accès.</div>
+
+    <div class="check-card normal" data-task="g2a">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G2.1 — Acheter lecayenne.fr chez OVH</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">5 min · ~5€</span></div>
+        </div>
+        <div class="check-desc">Va sur <code>ovh.com</code> → Domaines → Recherche "lecayenne.fr" → Commande (4,99€ HT année 1). Recommandation : prends aussi .com et .eu (~21€ total) pour protéger la marque.</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g2b">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G2.2 — Créer compte Hetzner + serveur CX32</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">15 min · 6,80€/mo</span></div>
+        </div>
+        <div class="check-desc">Va sur <code>console.hetzner.cloud</code>. Crée un compte. Ajoute carte bancaire. Crée projet "Le Cayenne". Provisionne serveur : Type=CX32 (4 vCPU/8GB), Image=Ubuntu 22.04, Location=Falkenstein (Allemagne, RGPD), SSH key=tu en génères une (ou Claude te guide).</div>
+        <div class="check-cmd">Tu obtiens : IP serveur + login SSH (root) → tu me partages dans le chat</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g2c">
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G2.3 — Pointer DNS lecayenne.fr → IP Hetzner</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">5 min</span></div>
+        </div>
+        <div class="check-desc">Dans OVH manager → Domaines → lecayenne.fr → Zone DNS → Modifier l'entrée A record → "@" pointe vers IP Hetzner. Ajoute aussi entrée A pour "www". Propagation DNS 1-4h.</div>
+        <div class="check-box"></div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g2d">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G2.4 — Claude déploie le code via deploy.sh</div>
+          <div class="check-badges"><span class="badge who-claude">Claude</span><span class="badge time">30 min</span></div>
+        </div>
+        <div class="check-desc">Quand tu me partages l'IP Hetzner + clé SSH (ou tu m'autorises temporairement), je lance les scripts prêts dans <code>scripts/deploy/</code> :</div>
+        <div class="check-cmd">1. server-setup.sh (LAMP + Node + Soketi + Certbot)
+2. deploy.sh (clone repo + composer + npm build + migrate)
+3. nginx + supervisor configs
+4. Let's Encrypt SSL auto</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g2e">
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G2.5 — Test depuis ton téléphone 4G</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">5 min</span></div>
+        </div>
+        <div class="check-desc">Coupe le WiFi du téléphone (4G uniquement, prouve qu'on passe par internet réel). Tape <code>https://lecayenne.fr/kiosk/idle</code>. La borne doit apparaître. Cadenas vert HTTPS. Tu places une commande de test depuis ton téléphone → tu vois qu'elle arrive dans la caisse de ton PC (autre tab).</div>
+        <div class="check-box"></div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g2f">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G2.6 — Configure backup quotidien + monitoring</div>
+          <div class="check-badges"><span class="badge who-claude">Claude</span><span class="badge time">15 min</span></div>
+        </div>
+        <div class="check-desc">Sur le serveur : crontab schedule:run + alertes Discord/email si backup fail + Uptime Kuma self-hosted (gratuit, surveille les 7 surfaces).</div>
+        <div class="check-cmd">Output : tu reçois 1 alerte mail si le serveur tombe ou backup fail</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MILESTONE 2 -->
+  <div class="milestone">
+    <h4>🏁 Milestone — Cloud live, accessible internet</h4>
+    <p>Système Le Cayenne accessible via <strong>lecayenne.fr</strong> depuis n'importe quel navigateur. Borne / caisse / cuisine / écran client pointent vers le cloud. C'est ÇA la production technique.</p>
+  </div>
+
+  <!-- ====== PHASE 3 — AUDIT POST-CLOUD ====== -->
+  <div class="phase phase-3">
+    <div class="phase-head">
+      <div class="phase-num">3</div>
+      <div class="phase-meta">
+        <div class="phase-title">Audit post-cloud — refaire les tests Phase 1 en LIVE</div>
+        <div class="phase-when">Après G2 · ~20 min</div>
+      </div>
+      <div class="phase-progress" id="p3">0/4</div>
+    </div>
+    <div class="phase-desc">Le cloud a tendance à révéler des bugs invisibles en local (HTTPS, DNS, latency, WebSocket via reverse proxy). Tu refais les tests Phase 1 mais via le domaine internet.</div>
+
+    <div class="check-card normal" data-task="g3a">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G3.1 — Rejoue G1.1 → G1.8 sur lecayenne.fr</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">15 min</span></div>
+        </div>
+        <div class="check-desc">Même séquence que Phase 1 mais sur <code>https://lecayenne.fr/...</code> au lieu de 127.0.0.1. Note tous les comportements différents (latency, erreurs).</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g3b">
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G3.2 — Test multi-device (PC + téléphone + tablette)</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">5 min</span></div>
+        </div>
+        <div class="check-desc">Ouvre 3 onglets sur 3 appareils différents : PC = caisse, téléphone = borne, tablette (si tu as) = KDS. Place commande borne → elle doit arriver instantanément sur PC et tablette. Synchro live confirmée.</div>
+        <div class="check-box"></div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g3c">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G3.3 — Vérifie NF525 chain LIVE</div>
+          <div class="check-badges"><span class="badge who-claude">Claude SSH</span><span class="badge time">1 min</span></div>
+        </div>
+        <div class="check-desc">SSH au serveur Hetzner :</div>
+        <div class="check-cmd">ssh deploy@lecayenne.fr
+cd /var/www/foodking
+php artisan fiscal:verify-chain</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g3d">
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G3.4 — Premier backup cloud lance bien</div>
+          <div class="check-badges"><span class="badge who-claude">Owner+Claude</span><span class="badge time">5 min</span></div>
+        </div>
+        <div class="check-desc">Demain matin après 03h00 UTC : tail logs backup, verify dump créé dans storage/backups/db-daily/, taille reasonable (1-10 MB).</div>
+        <div class="check-cmd">ssh deploy@lecayenne.fr 'ls -lt /var/www/foodking/storage/backups/db-daily/ | head -3'</div>
+        <div class="check-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== PHASE 4 — HARDWARE ====== -->
+  <div class="phase phase-4">
+    <div class="phase-head">
+      <div class="phase-num">4</div>
+      <div class="phase-meta">
+        <div class="phase-title">Connecter le matériel — TPE + imprimantes</div>
+        <div class="phase-when">Après G3 OK · J+3-7 jours (livraison SumUp)</div>
+      </div>
+      <div class="phase-progress" id="p4">0/6</div>
+    </div>
+    <div class="phase-desc">Cloud + domaine OK ? Maintenant le matériel. Plan : SumUp Solo Lite via Shine pour la caisse (rapide, ~3-5j). Worldline Valina sur la borne : DÉFÉRÉ V1.0.2 (8-12 sem activation, trop long). Imprimantes Epson déjà là (borne intégrée + caisse).</div>
+
+    <div class="check-card warn" data-task="g4a">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G4.1 — Chat Shine in-app : activer SumUp Solo Lite exclusif</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">15 min</span></div>
+        </div>
+        <div class="check-desc">App Shine → 💬 Aide → écris :</div>
+        <div class="check-cmd">Bonjour, je suis [nom], compte pro Le Cayenne. Je voudrais activer l'offre SumUp Solo Lite exclusive Shine (24€ TPE + 1,49% commission). Pouvez-vous me guider pour la souscription ? Documents prêts : Kbis, IBAN Shine, pièce d'identité.</code></div>
+        <div class="check-desc" style="margin-top:8px">Délai livraison TPE : 3-5 jours ouvrés.</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g4b">
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G4.2 — Réception SumUp Solo Lite + activation</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">10 min</span></div>
+        </div>
+        <div class="check-desc">Le TPE arrive par La Poste. Charge la batterie. Allume. Suit tuto intégré (5 min). Login compte Shine x SumUp. Fais 1 transaction test à 1€ sur ta carte perso pour valider que ça encaisse.</div>
+        <div class="check-box"></div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g4c">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G4.3 — Tester l'imprimante caisse (Epson)</div>
+          <div class="check-badges"><span class="badge who-claude">Claude SSH</span><span class="badge time">10 min</span></div>
+        </div>
+        <div class="check-desc">Branche l'Epson caisse (USB ou Ethernet). Je crée la config Printer dans la DB :</div>
+        <div class="check-cmd">php artisan tinker
+$p = new \App\Models\Printer();
+$p->name = "Caisse"; $p->host = "192.168.1.X"; // IP de l'imprimante
+$p->port = 9100; $p->type = "escpos_tcp"; $p->station = "receipt";
+$p->branch_id = 1; $p->is_active = true; $p->save();
+$p->testPrint();</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g4d">
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G4.4 — Tester l'imprimante borne (Epson intégrée)</div>
+          <div class="check-badges"><span class="badge who-claude">Claude SSH</span><span class="badge time">10 min</span></div>
+        </div>
+        <div class="check-desc">Même chose pour l'imprimante intégrée à la borne. Vérifie qu'elle imprime un ticket "À encaisser à la caisse" quand client passe commande borne.</div>
+        <div class="check-box"></div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g4e">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G4.5 — Tester tiroir-caisse ouvre via imprimante</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">5 min</span></div>
+        </div>
+        <div class="check-desc">Branche le tiroir-caisse à l'arrière de l'imprimante caisse (câble RJ11/12). Sur la caisse POS, fais 1 vente espèces test → l'imprimante doit déclencher l'ouverture du tiroir.</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g4f">
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G4.6 — Worldline Valina borne : DÉFÉRÉ V1.0.2 (décision)</div>
+          <div class="check-badges"><span class="badge">Décision owner</span><span class="badge time">1 min</span></div>
+        </div>
+        <div class="check-desc">Borne en mode "Payer à la caisse" V1 (8-12 semaines pour activer Valina, trop long). Confirme : "OK pour borne sans paiement intégré V1" ?</div>
+        <div class="check-cmd">Alternative future : si volume justifie (>5k€/mois CB borne) → activer Valina V1.0.2 (~12 semaines + 3-12k€)</div>
+        <div class="check-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MILESTONE 3 -->
+  <div class="milestone">
+    <h4>🏁 Milestone — Hardware live</h4>
+    <p>SumUp Solo Lite caisse + imprimantes + tiroir tous fonctionnels. Tu peux encaisser de vraies cartes bancaires + imprimer tickets + ouvrir tiroir. C'est ÇA un restaurant opérationnel.</p>
+  </div>
+
+  <!-- ====== PHASE 5 — DAY-1 PRODUCTION ====== -->
+  <div class="phase phase-5">
+    <div class="phase-head">
+      <div class="phase-num">5</div>
+      <div class="phase-meta">
+        <div class="phase-title">Jour 1 production — Premier client réel</div>
+        <div class="phase-when">Quand TOI tu dis "go" · journée d'ouverture</div>
+      </div>
+      <div class="phase-progress" id="p5">0/3</div>
+    </div>
+    <div class="phase-desc">Tout est prêt. Tu ouvres quand tu veux. Le matin de l'ouverture, suis ce checklist minute par minute.</div>
+
+    <div class="check-card normal" data-task="g5a">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G5.1 — Checklist matin pré-ouverture (10 min)</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">10 min</span></div>
+        </div>
+        <div class="check-desc">Suis <code>reports/playbooks/OWNER_OPERATIONS_PLAYBOOK_2026-05-23.md §1</code> à la lettre. 10 checks avant d'ouvrir les portes. Si UN check fail → ne pas ouvrir.</div>
+        <div class="check-cmd">php artisan fiscal:verify-chain → CHAIN OK
+ls storage/backups/db-daily/ → fichier nuit présent
+curl https://lecayenne.fr/login → 200</div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g5b">
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G5.2 — Premier client : observation totale</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">vigilance haute</span></div>
+        </div>
+        <div class="check-desc">Tu es DERRIÈRE le caissier (K) pendant les 10 premières commandes. Tu observes chaque étape. Si un truc bug, tu interviens immédiatement (photo écran + WhatsApp à Claude orateur). Les 10 premières commandes définissent la confiance système.</div>
+        <div class="check-box"></div>
+      </div>
+    </div>
+
+    <div class="check-card normal" data-task="g5c">
+      <div class="check-box"></div>
+      <div class="check-body">
+        <div class="check-head">
+          <div class="check-title">G5.3 — Fin de journée : Z-report + verification</div>
+          <div class="check-badges"><span class="badge who-owner">Owner</span><span class="badge time">15 min</span></div>
+        </div>
+        <div class="check-desc">Compte physiquement le tiroir. Imprime Z-report fiscal. Compare avec Cash Overview système. Écart = investigation. Backup nuit déclenché automatiquement. Demain matin = G5.1 again.</div>
+        <div class="check-cmd">Suis playbook §3 — Fin de journée (6 checks ~15 min)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINAL MILESTONE -->
+  <div class="milestone" style="background:linear-gradient(135deg,#22C55E,#16A34A)">
+    <h4>🎉 V1 EN PRODUCTION RÉELLE</h4>
+    <p>Tu as un restaurant qui tourne. Tu peux te concentrer sur le service. La routine playbook (matin/soir/hebdo/mensuel) te maintient en sécurité. V1.0.2 plus tard : Worldline Valina si volume + dashboard redesign + multi-tranche + etc.</p>
+  </div>
+
+</div>
+
+<!-- SUBMIT BAR -->
+<div class="submit-bar">
+  <div class="submit-bar-inner">
+    <div class="submit-status"><strong id="status-count">0/32</strong> étapes faites</div>
+    <button class="btn-launch" id="btn-launch">📋 Copier plan validé</button>
+  </div>
+</div>
+
+<script>
+const TOTAL = 32;
+const STORAGE = 'lecayenne-path-prod';
+const PHASES = {
+  0: ['g0a','g0b','g0c','g0d','g0e'],
+  1: ['g1a','g1b','g1c','g1d','g1e','g1f','g1g','g1h'],
+  2: ['g2a','g2b','g2c','g2d','g2e','g2f'],
+  3: ['g3a','g3b','g3c','g3d'],
+  4: ['g4a','g4b','g4c','g4d','g4e','g4f'],
+  5: ['g5a','g5b','g5c']
+};
+
+const saved = JSON.parse(localStorage.getItem(STORAGE) || '{}');
+document.querySelectorAll('[data-task]').forEach(card => {
+  if (saved[card.dataset.task]) card.classList.add('done');
+});
+
+function save() {
+  const data = {};
+  document.querySelectorAll('[data-task]').forEach(card => {
+    if (card.classList.contains('done')) data[card.dataset.task] = true;
+  });
+  localStorage.setItem(STORAGE, JSON.stringify(data));
+  update();
+}
+
+function update() {
+  let total = 0;
+  document.querySelectorAll('[data-task]').forEach(card => {
+    if (card.classList.contains('done')) total++;
+  });
+  document.getElementById('cnt').textContent = `${total} / ${TOTAL}`;
+  document.getElementById('status-count').textContent = `${total}/${TOTAL}`;
+  document.getElementById('fill').style.width = (total/TOTAL*100) + '%';
+  Object.entries(PHASES).forEach(([p, ids]) => {
+    const done = ids.filter(id => {
+      const c = document.querySelector(`[data-task="${id}"]`);
+      return c && c.classList.contains('done');
+    }).length;
+    const el = document.getElementById(`p${p}`);
+    if (el) {
+      el.textContent = `${done}/${ids.length}`;
+      if (done === ids.length) el.classList.add('complete');
+      else el.classList.remove('complete');
+    }
+  });
+}
+
+document.querySelectorAll('[data-task]').forEach(card => {
+  card.addEventListener('click', e => {
+    if (e.target.closest('input,a,button')) return;
+    card.classList.toggle('done');
+    save();
+  });
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if (!confirm('Reset tout ?')) return;
+  document.querySelectorAll('[data-task]').forEach(c => c.classList.remove('done'));
+  localStorage.removeItem(STORAGE);
+  update();
+});
+
+document.getElementById('btn-launch').addEventListener('click', () => {
+  let out = '🎯 Path to Production — Le Cayenne · état actuel\n';
+  out += 'Owner snapshot ' + new Date().toLocaleString('fr-FR') + '\n';
+  out += '═══════════════════════════════════════\n\n';
+  Object.entries(PHASES).forEach(([p, ids]) => {
+    const done = ids.filter(id => {
+      const c = document.querySelector(`[data-task="${id}"]`);
+      return c && c.classList.contains('done');
+    }).length;
+    out += `Phase ${p} : ${done}/${ids.length}\n`;
+    ids.forEach(id => {
+      const c = document.querySelector(`[data-task="${id}"]`);
+      if (!c) return;
+      const title = c.querySelector('.check-title')?.textContent || id;
+      const status = c.classList.contains('done') ? '✅' : '⬜';
+      out += `  ${status} ${title}\n`;
+    });
+    out += '\n';
+  });
+  navigator.clipboard.writeText(out).then(() => {
+    const b = document.getElementById('btn-launch');
+    b.textContent = '✅ Copié dans presse-papier';
+    setTimeout(() => { b.textContent = '📋 Copier plan validé'; }, 2500);
+  }).catch(() => alert('Sélectionne manuellement :\n\n' + out));
+});
+
+update();
+</script>
+
+</body>
+</html>
