@@ -5102,6 +5102,18 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     },
     _kioskPollingInterval: function _kioskPollingInterval() {
       var _window$_wsService;
+      // [GOAL-HEAL-SYNC-001 2026-05-23] C2 P1 fix: ensure ≤5s cadence
+      // even when Echo subscribed because Echo subscription can fail
+      // silently (CSP violation on /api/broadcasting/auth) without
+      // surfacing a console error. If readyOrders empty OR last refresh
+      // >30s ago, force 5s cadence regardless of Echo state.
+      var now = Date.now();
+      var lastRefresh = this.lastReadyRefresh || 0;
+      var isStale = now - lastRefresh > 30000;
+      var isEmpty = !this.readyOrders || this.readyOrders.length === 0;
+      if (isEmpty || isStale) {
+        return 5000;
+      }
       return (_window$_wsService = window._wsService) !== null && _window$_wsService !== void 0 && _window$_wsService.isConnected() ? 60000 : 5000;
     },
     _startKioskPolling: function _startKioskPolling() {

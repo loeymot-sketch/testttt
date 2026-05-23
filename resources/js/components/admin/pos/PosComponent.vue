@@ -2600,6 +2600,18 @@ export default {
             if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
         },
         _kioskPollingInterval() {
+            // [GOAL-HEAL-SYNC-001 2026-05-23] C2 P1 fix: ensure ≤5s cadence
+            // even when Echo subscribed because Echo subscription can fail
+            // silently (CSP violation on /api/broadcasting/auth) without
+            // surfacing a console error. If readyOrders empty OR last refresh
+            // >30s ago, force 5s cadence regardless of Echo state.
+            const now = Date.now();
+            const lastRefresh = this.lastReadyRefresh || 0;
+            const isStale = (now - lastRefresh) > 30000;
+            const isEmpty = !this.readyOrders || this.readyOrders.length === 0;
+            if (isEmpty || isStale) {
+                return 5000;
+            }
             return window._wsService?.isConnected() ? 60000 : 5000;
         },
         _startKioskPolling() {
