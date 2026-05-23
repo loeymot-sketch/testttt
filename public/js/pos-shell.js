@@ -7197,7 +7197,12 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       return Number((_ref = (_this$order$total = this.order.total) !== null && _this$order$total !== void 0 ? _this$order$total : this.order.order_amount) !== null && _ref !== void 0 ? _ref : 0);
     },
     cashReceivedNumber: function cashReceivedNumber() {
-      var v = parseFloat(this.cashReceivedRaw);
+      // [GOAL-D2 2026-05-23] Accept BOTH `.` and `,` as decimal separator
+      // so the FR pre-fill ("8,50") parses correctly AND user-typed
+      // values keep working in either locale flavour. Mirrors locale
+      // tolerance pattern used by FR POS Vanilla wizard.
+      var raw = String(this.cashReceivedRaw || '').replace(',', '.');
+      var v = parseFloat(raw);
       return Number.isFinite(v) ? v : 0;
     },
     cashChange: function cashChange() {
@@ -7240,7 +7245,10 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       immediate: true,
       handler: function handler(newOrder) {
         if (newOrder && newOrder.id) {
-          this.cashReceivedRaw = String(this.orderTotal.toFixed(2));
+          // [GOAL-D2 2026-05-23] Pre-fill INPUT with FR decimal separator
+          // so the cashier sees "8,50" instead of "8.50". Parser at
+          // cashReceivedNumber accepts both `,` and `.`.
+          this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
           this.selectedMode = 'CASH';
           this.submitting = false;
         }
@@ -7253,8 +7261,9 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       this.selectedMode = modeId;
       // When switching back to CASH, re-pre-fill the received field if
       // the cashier had emptied it via the numpad C key.
-      if (modeId === 'CASH' && (this.cashReceivedRaw === '' || Number(this.cashReceivedRaw) <= 0)) {
-        this.cashReceivedRaw = String(this.orderTotal.toFixed(2));
+      if (modeId === 'CASH' && (this.cashReceivedRaw === '' || Number(String(this.cashReceivedRaw).replace(',', '.')) <= 0)) {
+        // [GOAL-D2 2026-05-23] FR decimal pre-fill (see watcher comment).
+        this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
       }
     },
     onReceivedInput: function onReceivedInput(e) {
