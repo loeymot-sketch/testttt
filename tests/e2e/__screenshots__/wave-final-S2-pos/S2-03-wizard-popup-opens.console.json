@@ -3,20 +3,20 @@
     "level": "log",
     "text": "[POS-WIZARD] wizard_template from API: sandwich",
     "location": {
-      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1779533718",
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1779535810",
       "lineNumber": 321,
       "columnNumber": 20
     },
-    "ts": 1779533724345
+    "ts": 1779535816165
   },
   {
     "level": "log",
     "text": "[POS-WIZARD] wizard_template from API: sandwich",
     "location": {
-      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1779533718",
+      "url": "http://localhost:8000/js/pos-wizard.js?v=9-1779535810",
       "lineNumber": 321,
       "columnNumber": 20
     },
-    "ts": 1779533724346
+    "ts": 1779535816166
   }
 ]

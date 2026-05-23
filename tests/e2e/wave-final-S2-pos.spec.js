@@ -236,20 +236,43 @@ test.describe('Wave Final S2 — POS caisse 12 states', () => {
 
         // ---- S2-04 — Item composed + added to cart.
         //
-        // FROZEN wizard: pos-wizard.js owns its own "Ajouter au panier" button
-        // inside the #item-variation-modal host. We DO NOT introspect the
-        // frozen DOM contract; we hand off to the wizard's text button by
-        // visible text. Short timeout (5s) + Esc fallback if it's disabled
-        // or unreachable — we still capture the state for evidence.
+        // Per advisor §2 (reconcile call): clicking visible UI buttons inside
+        // the FROZEN modal IS normal interaction (frozen-zone means don't
+        // EDIT pos-wizard.js source; clicking buttons it draws is exactly
+        // what cashiers do). We drive the Viande pick (mandatory 0/1) via
+        // the first data-action="plus" button (skip the suppl variant), then
+        // hit "Ajouter au panier".
+        const viandePlus = page
+            .locator('#item-variation-modal.active button.viande-btn.plus[data-action="plus"]')
+            .first();
+        if (await viandePlus.isVisible({ timeout: 3_000 }).catch(() => false)) {
+            await viandePlus.click({ timeout: 3_000 }).catch(() => {});
+            await page.waitForTimeout(500);
+        }
+        // Sauce 1ère gratuite — pick first sauce chip (data-type="sauce").
+        const sauceChip = page
+            .locator('#item-variation-modal.active button.sauce-chip[data-type="sauce"]')
+            .first();
+        if (await sauceChip.isVisible({ timeout: 2_000 }).catch(() => false)) {
+            await sauceChip.click({ timeout: 2_000 }).catch(() => {});
+            await page.waitForTimeout(300);
+        }
+
+        // The FROZEN wizard owns its own add-cart button:
+        //   <button class="wizard-btn-cart" data-action="add-to-cart">
+        // It dispatches the 'wizard:add-to-cart' custom event consumed by
+        // ItemComponent.vue:1480 to push the line into posCart store.
         const ajouterBtn = page
-            .locator('#item-variation-modal.active button', { hasText: /Ajouter au panier/i })
+            .locator('#item-variation-modal.active button[data-action="add-to-cart"]')
             .first();
         const ajouterEnabled = await ajouterBtn.isEnabled({ timeout: 5_000 }).catch(() => false);
 
         if (ajouterEnabled) {
             await ajouterBtn.click({ timeout: 5_000 }).catch(() => {});
-            await page.waitForTimeout(900);
-            // Modal may auto-close on successful add. If still open, Esc out.
+            await page.waitForTimeout(1200);
+            // Modal usually auto-closes on successful add. If still open,
+            // Esc out (Crudités may have a min-select gate the default
+            // selections don't satisfy on rare items).
             const stillOpen = await page.locator('#item-variation-modal.active')
                 .isVisible({ timeout: 1_500 }).catch(() => false);
             if (stillOpen) {
@@ -257,33 +280,11 @@ test.describe('Wave Final S2 — POS caisse 12 states', () => {
                 await page.waitForTimeout(400);
             }
         } else {
-            // Wizard requires composition we won't drive (frozen contract).
-            // Close + try a simpler item (Frites Seules id=2) which the
-            // server returns without composer_profile_id → simple variation
-            // modal with the Vue "Ajouter au panier" button enabled by default.
             await page.keyboard.press('Escape');
             await page.waitForTimeout(400);
-            const simpleTile = page.locator('[data-pos-item-id="2"]');
-            if (await simpleTile.isVisible({ timeout: 3_000 }).catch(() => false)) {
-                await simpleTile.click();
-                await page.waitForTimeout(1500);
-                const simpleAjouter = page
-                    .locator('#item-variation-modal.active button', { hasText: /Ajouter au panier/i })
-                    .first();
-                if (await simpleAjouter.isEnabled({ timeout: 5_000 }).catch(() => false)) {
-                    await simpleAjouter.click({ timeout: 5_000 }).catch(() => {});
-                    await page.waitForTimeout(900);
-                } else {
-                    await page.keyboard.press('Escape');
-                    await page.waitForTimeout(400);
-                }
-            }
         }
 
-        // Verify cart has at least one line — pos-grand-total testid is the
-        // canonical signal that the cart layer is live. We record visibility
-        // for the findings.json (may be 0 if both add attempts failed).
-        await page.waitForTimeout(400);
+        await page.waitForTimeout(500);
         await snap('S2-04-item-in-cart');
 
         // ---- S2-05 — Open PaymentComponent (FROZEN — read only).

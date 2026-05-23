@@ -4,13 +4,13 @@
     "method": "POST",
     "status": 201,
     "duration_ms": null,
-    "ts": 1779533716847
+    "ts": 1779535808726
   },
   {
     "url": "http://localhost:8000/api/auth/authcheck",
     "method": "POST",
     "status": 200,
     "duration_ms": null,
-    "ts": 1779533721338
+    "ts": 1779535813235
   }
 ]
