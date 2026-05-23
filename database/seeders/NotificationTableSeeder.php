@@ -31,9 +31,14 @@ class NotificationTableSeeder extends Seeder
             'notification_fcm_json_file'           => '',
         ]);
 
-        if ($envService->getValue('DEMO') && file_exists(public_path('/file/service-account-file.json'))) {
+        // [GOAL-HEAL-SEC-001 2026-05-23] Demo Firebase service-account JSON
+        // source moved from public/file/ (web-accessible) to storage/app/firebase/
+        // (non-public). The 'notification-file' media collection is also pinned
+        // to the firebase_private disk via NotificationSetting::registerMediaCollections.
+        // Phase B.3 Security RED-team finding B3.2-001.
+        if ($envService->getValue('DEMO') && file_exists(storage_path('app/firebase/service-account-file.json'))) {
             $setting = NotificationSetting::where('key', 'notification_fcm_json_file')->first();
-            $setting->addMedia(public_path('/file/service-account-file.json'))->preservingOriginal()->usingFileName('service-account-file.json')->toMediaCollection('notification-file');
+            $setting->addMedia(storage_path('app/firebase/service-account-file.json'))->preservingOriginal()->usingFileName('service-account-file.json')->toMediaCollection('notification-file');
         }
     }
 }

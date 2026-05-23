@@ -28,3 +28,26 @@
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
 </IfModule>
+
+# [GOAL-HEAL-SEC-001 2026-05-23] Defense-in-depth — deny direct access to
+# credential bundle file extensions anywhere under public/ (recursive,
+# applies to public/file/, public/storage/ symlink target, future subdirs).
+# The Firebase Admin service-account JSON has been relocated to
+# storage/app/firebase/ (non-public) and pinned via the firebase_private
+# disk on NotificationSetting's media collection — this rule is a belt-
+# and-braces guard against future regressions or operator mistakes.
+# Phase B.3 Security RED-team finding B3.2-001.
+<FilesMatch "\.(pem|key|p12|pkcs12|crt|cer|ppk|asc|gpg)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+# NOTE: *.json is denied ONLY under public/file/ (see public/file/.htaccess)
+# because public/storage/ legitimately serves JSON-shaped media metadata
+# from non-credential Spatie collections. Credential-bearing JSON would
+# represent a regression and is caught by the sentinel
+# tests/Feature/Security/FirebaseKeyStorageSecurityTest.php.

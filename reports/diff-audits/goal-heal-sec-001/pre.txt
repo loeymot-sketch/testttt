@@ -1,0 +1,332 @@
+=== H-SEC-001 PRE-AUDIT 2026-05-23T15:05:38Z ===
+
+=== HEAD ===
+8be02fb16763c2950e8224e98b69242d1e35cea7
+
+=== File existence ===
+-rw-rw-r--@ 1 1millnonstop  staff  2387 20 oct.   2025 public/file/service-account-file.json
+
+=== Git tracked ===
+public/file/service-account-file.json
+
+=== Content fingerprint (private_key REDACTED) ===
+{
+  "type": "service_account",
+  "project_id": "foodking-inilabs",
+  "private_key [REDACTED]
+  "private_key [REDACTED]
+=== project_id / client_email ===
+"project_id": "foodking-inilabs"
+"client_email": "firebase-adminsdk-kpdbd@foodking-inilabs.iam.gserviceaccount.com"
+
+=== File SHA-256 (for tamper-evidence) ===
+3f4138ae2514632ae75d28f2408f1951fa74bfcd765255fc64fe2d4f49f88f05  public/file/service-account-file.json
+
+=== Consumers found via grep ===
+app/Http/Resources/NotificationResource.php:37:            "notification_fcm_json_file"           => $this->notificationFile('notification_fcm_json_file')->file,
+app/Http/Requests/NotificationRequest.php:36:            'notification_fcm_json_file'           => ['nullable', 'file', 'mimes:json', 'max:2048']
+app/Http/Requests/NotificationRequest.php:43:            if (empty(request('notification_fcm_json_file'))) {
+app/Http/Requests/NotificationRequest.php:44:                $notificationSetting = NotificationSetting::where(['key' => 'notification_fcm_json_file'])->first();
+app/Http/Requests/NotificationRequest.php:47:                    $validator->errors()->add('notification_fcm_json_file', 'The file field is required');
+app/Services/NotificationService.php:47:                if ($request->notification_fcm_json_file) {
+app/Services/NotificationService.php:48:                    $newFilename = 'service-account-file' . '.' . $request->file('notification_fcm_json_file')->getClientOriginalExtension();
+app/Services/NotificationService.php:49:                    $setting = NotificationSetting::where('key', 'notification_fcm_json_file')->first();
+app/Services/NotificationService.php:51:                    $setting->addMedia($request->file('notification_fcm_json_file'))->usingFileName($newFilename)->toMediaCollection('notification-file');
+app/Services/FirebaseService.php:71:        $notificationSetting = NotificationSetting::where(['key' => 'notification_fcm_json_file'])->first();
+
+=== NotificationService.php content (pre) ===
+<?php
+
+namespace App\Services;
+
+use Exception;
+use App\Libraries\AppLibrary;
+use App\Models\NotificationSetting;
+use Illuminate\Support\Facades\Log;
+use Dipokhalder\EnvEditor\EnvEditor;
+use App\Libraries\QueryExceptionLibrary;
+use Smartisan\Settings\Facades\Settings;
+use App\Http\Requests\NotificationRequest;
+
+class NotificationService
+{
+    public $envService;
+
+    public function __construct(EnvEditor $envEditor)
+    {
+        $this->envService = $envEditor;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function list()
+    {
+        try {
+            return Settings::group('notification')->all();
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * @param NotificationRequest $request
+     * @return
+     * @throws Exception
+     */
+    public function update(NotificationRequest $request)
+    {
+        try {
+            if (!$this->envService->getValue('DEMO')) {
+                AppLibrary::fcmDataBind($request);
+                Settings::group('notification')->set($request->validated());
+                if ($request->notification_fcm_json_file) {
+                    $newFilename = 'service-account-file' . '.' . $request->file('notification_fcm_json_file')->getClientOriginalExtension();
+                    $setting = NotificationSetting::where('key', 'notification_fcm_json_file')->first();
+                    $setting->clearMediaCollection('notification-file');
+                    $setting->addMedia($request->file('notification_fcm_json_file'))->usingFileName($newFilename)->toMediaCollection('notification-file');
+                }
+                return $this->list();
+            } else {
+                throw new Exception(trans('all.message.feature_disable'), 422);
+            }
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+}
+
+=== NotificationSetting.php content (pre) ===
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+
+class NotificationSetting extends Model implements HasMedia
+{
+    use InteractsWithMedia;
+
+    protected $table = "settings";
+
+    public function getFileAttribute(): string
+    {
+        if (!empty($this->getFirstMediaUrl('notification-file'))) {
+            return asset($this->getFirstMediaUrl('notification-file'));
+        }
+        return '';
+    }
+}
+
+=== FirebaseService.php content (pre) ===
+<?php
+
+namespace App\Services;
+
+
+use Exception;
+use GuzzleHttp\Client;
+use App\Models\NotificationSetting;
+use Illuminate\Support\Facades\Log;
+use Smartisan\Settings\Facades\Settings;
+use Google\Auth\Credentials\ServiceAccountCredentials;
+
+class FirebaseService
+{
+    public $filePath;
+
+    public function sendNotification($data, $fcmTokens, $topicName): void
+    {
+
+        try {
+            $notification = Settings::group('notification')->all();
+
+            $url = 'https://fcm.googleapis.com/v1/projects/' . $notification['notification_fcm_project_id'] . '/messages:send';
+            $accessToken = $this->getAccessToken();
+
+            $client  = new Client();
+            $headers = [
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type'  => 'application/json',
+            ];
+            foreach ($fcmTokens as $fcmToken) {
+
+                $payload = [
+                    'message' => [
+                        'token' => $fcmToken,
+                        'notification' => [
+                            'title' => $data->title,
+                            'body' => $data->description,
+                            'image' => $data->image ?? null,
+                        ],
+                        'data' => [
+                            'title' => $data->title,
+                            'body' => $data->description,
+                            'sound' => 'default',
+                            'image' => $data->image ?? null,
+                            'topicName' => $topicName,
+                        ],
+                        'webpush' => [
+                            "headers" => [
+                                "Urgency" => "high"
+                            ]
+                        ],
+                    ],
+                ];
+
+                try {
+                    $client->post($url, [
+                        'headers' => $headers,
+                        "body"    => json_encode($payload)
+                    ]);
+                } catch (\Throwable $th) {
+                }
+            }
+        } catch (Exception $e) {
+            Log::info($e->getMessage());
+        }
+    }
+
+    function getAccessToken()
+    {
+        $notificationSetting = NotificationSetting::where(['key' => 'notification_fcm_json_file'])->first();
+        if (!$notificationSetting || !$notificationSetting->file) {
+            throw new Exception('FCM JSON file setting not found');
+        }
+        $keyFilePath = $notificationSetting->file;
+        $parsed_url = parse_url($keyFilePath);
+
+        if (isset($parsed_url['path'])) {
+            $relative_path = ltrim($parsed_url['path'], '/storage');
+            $this->filePath = storage_path('app/public/' . $relative_path);
+        } else {
+            throw new Exception('No file found in the URL');
+        }
+
+        $SCOPES = ['https://www.googleapis.com/auth/cloud-platform'];
+
+        if (!file_exists($this->filePath)) {
+            throw new Exception('Service account key file not found');
+        }
+
+        $credentials = new ServiceAccountCredentials($SCOPES, $this->filePath);
+        $token = $credentials->fetchAuthToken();
+
+        if (isset($token['access_token'])) {
+            return $token['access_token'];
+        } else {
+            throw new Exception('Failed to fetch access token');
+        }
+    }
+}
+=== NotificationTableSeeder.php content (pre) ===
+<?php
+
+namespace Database\Seeders;
+
+
+use Illuminate\Database\Seeder;
+use App\Models\NotificationSetting;
+use Dipokhalder\EnvEditor\EnvEditor;
+use Smartisan\Settings\Facades\Settings;
+
+
+class NotificationTableSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
+    public function run()
+    {
+        $envService = new EnvEditor();
+        Settings::group('notification')->set([
+            'notification_fcm_public_vapid_key'    => $envService->getValue('DEMO') ? 'BKAvKJbnB3QATdp8n1aUo_uhoNK3exVKLVzy7MP8VKydjjzthdlAWdlku6LQISxm4zA7dWoRACI9AHymf4V64kA' : '',
+            'notification_fcm_api_key'             => $envService->getValue('DEMO') ? 'AIzaSyDg1xBSwmHKV0usIKxTFL5a6fFTb4s3XVM' : '',
+            'notification_fcm_auth_domain'         => $envService->getValue('DEMO') ? 'foodking-inilabs.firebaseapp.com' : '',
+            'notification_fcm_project_id'          => $envService->getValue('DEMO') ? 'foodking-inilabs' : '',
+            'notification_fcm_storage_bucket'      => $envService->getValue('DEMO') ? 'foodking-inilabs.appspot.com' : '',
+            'notification_fcm_messaging_sender_id' => $envService->getValue('DEMO') ? '843456771665' : '',
+            'notification_fcm_app_id'              => $envService->getValue('DEMO') ? '1:843456771665:web:fb1e3115e9e17ee1582a70' : '',
+            'notification_fcm_measurement_id'      => $envService->getValue('DEMO') ? 'G-GSJPS921XW' : '',
+            'notification_fcm_json_file'           => '',
+        ]);
+
+        if ($envService->getValue('DEMO') && file_exists(public_path('/file/service-account-file.json'))) {
+            $setting = NotificationSetting::where('key', 'notification_fcm_json_file')->first();
+            $setting->addMedia(public_path('/file/service-account-file.json'))->preservingOriginal()->usingFileName('service-account-file.json')->toMediaCollection('notification-file');
+        }
+    }
+}
+
+=== filesystems.php disks (pre) ===
+    'default' => env('FILESYSTEM_DISK', 'local'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Filesystem Disks
+    |--------------------------------------------------------------------------
+--
+        'local' => [
+            'driver' => 'local',
+            'root' => storage_path('app'),
+            'throw' => false,
+        ],
+
+        'public' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public'),
+            // [iter15-mega-fix C-004 2026-05-10] Storage URLs were absolute via APP_URL
+            // (e.g. http://localhost:8000/storage/...). When the kiosk surface is served
+            // from http://127.0.0.1:8000 the resulting cross-origin <img src> triggered
+            // CSP `img-src` violations (report-only today, but blocking once enforce
+--
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
+        's3' => [
+            'driver' => 's3',
+
+=== .gitignore current public/file mentions ===
+(no mention)
+
+=== public/.htaccess current ===
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# [SEC-30-1] Security headers — prevent clickjacking, MIME sniffing, XSS
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+</IfModule>
+
+=== public/file/.htaccess existing? ===
+cat: public/file/.htaccess: No such file or directory

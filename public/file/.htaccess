@@ -1,0 +1,17 @@
+# [GOAL-HEAL-SEC-001 2026-05-23] Defense-in-depth deny rule.
+# Firebase Admin SDK service-account JSON (and any credential bundle) now
+# lives under storage/app/firebase/ (non-public, see NotificationSetting
+# media collection pin). This .htaccess is a belt-and-braces guard in case
+# any future code or operator accidentally drops a key file under
+# public/file/. Phase B.3 Security RED-team finding B3.2-001.
+<FilesMatch "\.(json|pem|key|p12|pkcs12|crt|cer|ppk|asc|gpg)$">
+    # Apache 2.4 syntax (Le Cayenne V1 LOCAL stack)
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    # Apache 2.2 fallback
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
