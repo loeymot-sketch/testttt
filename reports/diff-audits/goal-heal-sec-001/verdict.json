@@ -5,7 +5,7 @@
   "verdict": "CLEAN-FIX",
   "timestamp_utc": "2026-05-23T15:08:00Z",
   "git_head_pre": "8be02fb16763c2950e8224e98b69242d1e35cea7",
-  "commit_sha": null,
+  "commit_sha": "9da21c7cdf7a56b988d3e8521c522076ab4a493b",
   "branch": "heal/cms-pr1-quickwins-2026-05-18",
   "files_modified": [
     "app/Models/NotificationSetting.php",

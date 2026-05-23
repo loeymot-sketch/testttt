@@ -1,0 +1,162 @@
+D1 POST-AUDIT 2026-05-23T13:55:32Z
+File: resources/js/bootstrap.js
+Lines 100-258 verbatim (extended window — file grew +23 LOC):
+    }
+
+    // Suppress toast for these path patterns (auth flows + form validations).
+    const _ALLOWLIST_PATTERNS = [
+        '/api/auth/logout',
+        '/api/auth/login',
+        '/login',
+        '/logout',
+        '/csp-report',
+        '/api/broadcasting/auth',
+    ];
+
+    function _shouldAllowlist(error) {
+        const url = String(error?.config?.url || '');
+        return _ALLOWLIST_PATTERNS.some((p) => url.includes(p));
+    }
+
+    // [Wave T R3 F1 — silent 422 visibility for critical paths] Paths where a
+    // 4xx SHOULD be visible to the operator because the failure is not handled
+    // by a local form error state. POS catalog (/api/admin/item) is the SSOT
+    // for tile clickability — a silent 422 ships kiosk-only or stale tiles.
+    // Fiscal endpoints (/api/admin/fiscal/*) are NF525 chain-critical — any
+    // 4xx must surface so the cashier escalates instead of silently drifting.
+    // We intentionally toast 422 here ONLY for these patterns (matching the
+    // mission STEP 3 ask). All other 422 stay silent (form-level validation
+    // is handled inline by the FormRequest field-error rendering).
+    const _CRITICAL_4XX_PATTERNS = [
+        '/api/admin/item',
+        '/api/admin/fiscal/',
+    ];
+    function _isCriticalPath(error) {
+        const url = String(error?.config?.url || '');
+        return _CRITICAL_4XX_PATTERNS.some((p) => url.includes(p));
+    }
+
+    // [GOAL-D1 TELEMETRY 2026-05-23] Telemetry endpoints intentionally accept
+    // 429 silently (the call-site already wraps in `.catch(()=>{})` and the
+    // event is fire-and-forget — losing a single event is acceptable). Without
+    // this allowlist, a kiosk burst of /kiosk/event POSTs surfaces a customer-
+    // facing "Trop de requêtes" toast on the borne idle screen — UX regression
+    // surfaced by Wave Final 2026-05-23 S1-002 P1. The allowlist suppresses
+    // the toast ONLY; the rejection chain stays intact so per-call .catch()
+    // still runs and metrics can drop the event.
+    const _TELEMETRY_ALLOWLIST_PATTERNS = [
+        '/api/frontend/kiosk/event',
+        '/api/admin/client-metrics',
+    ];
+    function _isTelemetryEndpoint(error) {
+        const url = String(error?.config?.url || '');
+        return _TELEMETRY_ALLOWLIST_PATTERNS.some((p) => url.includes(p));
+    }
+
+    window.axios.interceptors.response.use(
+        (response) => response,
+        (error) => {
+            try {
+                if (axios.isCancel?.(error)
+                    || error?.code === 'ERR_CANCELED'
+                    || error?.message === 'canceled') {
+                    return Promise.reject(error);
+                }
+
+                const status = Number(error?.response?.status || 0);
+                // 401 is handled by surface-specific handlers (app.js / pos-app.js
+                // — router push to /login). 422 is form-level validation. 304 / 204
+                // are not errors.
+                const TOAST_STATUSES = new Set([408, 425, 429, 502, 503, 504]);
+                // [Wave T R3 F1] Critical-path 4xx (400/403/404/422) must also toast
+                // so silent failures on POS catalog / fiscal endpoints surface to
+                // the operator. Auth (401) is handled by router push — skip it.
+                const isCriticalPathError = status !== 401
+                    && status >= 400
+                    && status < 500
+                    && _isCriticalPath(error);
+                if (!TOAST_STATUSES.has(status) && !isCriticalPathError) {
+                    return Promise.reject(error);
+                }
+
+                if (_shouldAllowlist(error)) {
+                    return Promise.reject(error);
+                }
+
+                const now = Date.now();
+                let bucket = 'oth';
+                let message;
+                if (isCriticalPathError) {
+                    bucket = 'crit';
+                    const url = String(error?.config?.url || '');
+                    if (url.includes('/api/admin/fiscal/')) {
+                        message = _i18nMessage(
+                            'error.fiscal_unavailable',
+                            'Service fiscal indisponible — alertez le manager.'
+                        );
+                    } else {
+                        message = _i18nMessage(
+                            'error.catalog_unavailable',
+                            'Catalogue produits indisponible — actualisez la page.'
+                        );
+                    }
+                } else if (status === 429) {
+                    // [GOAL-D1 2026-05-23] Suppress toast for telemetry endpoints.
+                    // Rejection still propagates so per-call .catch() handler can
+                    // drop the metric event without surfacing UX noise.
+                    if (_isTelemetryEndpoint(error)) {
+                        return Promise.reject(error);
+                    }
+                    bucket = 'rl';
+                    // [Wave Y RATE-LIMIT 2026-05-21] Read real Retry-After header
+                    // instead of hardcoding "30s" — Laravel's perMinute limiter
+                    // returns up to 60s, so the prior hardcoded copy misled
+                    // owners into restarting too early and re-hitting the wall.
+                    const _retryAfterRaw = error?.response?.headers?.['retry-after']
+                        ?? error?.response?.headers?.['Retry-After'];
+                    const _retryAfter = parseInt(_retryAfterRaw, 10);
+                    const _seconds = Number.isFinite(_retryAfter) && _retryAfter > 0
+                        ? _retryAfter
+                        : null;
+                    message = _i18nMessage(
+                        'error.rate_limited',
+                        _seconds !== null
+                            ? `Trop de requêtes — patientez ${_seconds}s avant de réessayer.`
+                            : 'Trop de requêtes. Veuillez patienter quelques instants.',
+                        _seconds !== null ? { seconds: _seconds } : undefined
+                    );
+                } else if (status >= 500) {
+                    bucket = 'srv';
+                    message = _i18nMessage(
+                        'error.service_unavailable',
+                        'Service indisponible — réessayez dans quelques instants.'
+                    );
+                } else {
+                    message = _i18nMessage(
+                        'error.network_issue',
+                        'Problème réseau — réessayez.'
+                    );
+                }
+
+                if (now - (_lastToastAt[bucket] || 0) < _BUCKET_MIN_GAP_MS) {
+                    return Promise.reject(error);
+                }
+                _lastToastAt[bucket] = now;
+
+                const toast = _resolveToast();
+                if (toast && typeof toast.error === 'function') {
+                    toast.error(message, { timeout: 6000 });
+                } else if (typeof window !== 'undefined' && window.console?.warn) {
+                    // Last-resort visibility — never silent.
+                    window.console.warn('[axios-error-toast]', status, message);
+                }
+            } catch (_) {
+                // Interceptor must never break the response chain.
+            }
+            return Promise.reject(error);
+        }
+    );
+} catch (_) {
+    // Defensive — interceptors not available, surface silently rejected.
+}
+

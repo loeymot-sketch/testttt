@@ -55,7 +55,7 @@
       "frozen_zone_touch_required": false,
       "proposal_doc_path": null,
       "scope_minimal_fix_applied": true,
-      "commit_sha_if_fixed": "(see commit at end of audit — fix lands in same agent session)",
+      "commit_sha_if_fixed": "f28688675",
       "fix_diff_summary": "resources/js/bootstrap.js lines 143-160: replace ['/api/frontend/kiosk/event', '/api/admin/client-metrics'] with ['frontend/kiosk/event', 'frontend/kiosk-event', 'admin/client-metrics']. Covers all 6 kiosk call sites (KioskAppComponent x2, KioskPayment x3, KsConsentModal x2, KsA11ySettings x1, KioskCashInstruction x1, kioskPrinter x1, kioskOfflineQueue x1, useKioskA11y) + admin client-metrics PostHog batch sender. Source LOC delta: +13 lines (comments + 3 patterns), zero behavioral change to other interceptor branches. Bundle rebuilt via npm run dev (app.js, pos-app.js refreshed).",
       "sentinel_added": "tests/js/sentinels/telemetryAllowlistSentinel.spec.js — added 4th assertion 'runtime check: _isTelemetryEndpoint matches the three actual call shapes' which extracts the live allowlist patterns and asserts each of the 3 real call-shape URLs hits at least one pattern via substring. Prevents future regression of the same shape.",
       "verification_status": "GREEN post-fix: 70 burst calls produced 40 server 429s but ZERO user-visible toasts. 8/8 sentinel tests pass."

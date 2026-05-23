@@ -1,0 +1,383 @@
+{
+  "wave": "GOAL ULTRA-DEEP 2026-05-23 — Persona P3 Cashier-Multitask synthesis",
+  "round": 1,
+  "system": "P3",
+  "agent_role": "PERSONA AGENT P3 — Karim/Sarah, cashier, 30 ans, 8h shift, café n°3, customer impatient, standing",
+  "persona_identity": {
+    "name": "Karim / Sarah",
+    "age": 30,
+    "shift_hours": 8,
+    "fatigue_marker": "café n°3 — mid-shift attention dip beginning",
+    "posture": "standing behind comptoir",
+    "customer_pressure": "customer impatient, file d'attente derrière",
+    "multitasking_load": "3 concurrent flows simultaneous: (a) walk-in direct-sale at POS, (b) kiosk-cash encaissement at counter, (c) borne-prepared-pickup hand-off"
+  },
+  "scope": "POS Caisse (/admin/pos) + Cash Overview (/admin/cash-overview) + KDS visible peripherally + receipt-reprint via tracker. Synthesizes existing GOAL ULTRA-DEEP round-1 evidence (S2, C2, C5, C6, S5) through the cashier-multitask POV. Static review + reference to existing captures — NO new MCP browser run (would steal focus from parallel S* agents per advisor §V6.5 + scope-rails).",
+  "captures_dir": "reports/test-e2e/goal-2026-05-23/round-1/captures/ (referenced only — no new captures minted in P3 synthesis)",
+  "commit_under_audit": "f286886759538555ed673ecc9bcfe66acd2ce39c (HEAD heal/cms-pr1-quickwins-2026-05-18 — same as S2/C2/C5/C6 siblings)",
+  "frozen_zones_verified_read_only": [
+    "resources/js/components/admin/pos/PaymentComponent.vue — NOT touched in P3 synthesis (S2-002 P3 finding referenced, not re-investigated)",
+    "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue — NOT touched",
+    "public/js/pos-wizard.js — NOT touched",
+    "public/css/pos-wizard.css — NOT touched"
+  ],
+  "nf525_chain_invariant": {
+    "baseline_audit_count": 64,
+    "baseline_last_hash": "8daed68a65b8c8e7",
+    "final_audit_count": 64,
+    "final_last_hash": "8daed68a65b8c8e7",
+    "result": "BIT_IDENTICAL — P3 synthesis is read-only + reference-only (no clicks on POS confirm / pos-counter-collect-confirm / KDS bump / OSS state transitions). Matches S2 + C6 sibling baselines (same HEAD f286886759).",
+    "audit_method": "Inherited from S2-mega-findings.json + C6-multi-tab-echo.json sibling reports — same audit window, same HEAD, same baseline observed by both"
+  },
+  "scenarios": {
+    "1_notifications_panels_at_a_glance": {
+      "scenario_label": "POS main: notifications panels visible at a glance (Q10 fix)",
+      "persona_question": "Quand je reviens au comptoir après 30s loin (rangement frigo, échange runner), est-ce que je vois IMMÉDIATEMENT s'il y a des commandes à encaisser ou à livrer sans cliquer ailleurs?",
+      "verdict": "GOOD",
+      "category": "GOOD",
+      "evidence_refs": [
+        "S2-mega-findings.json — S2-01 (pos-shortcuts-ready + pos-shortcuts-cash testid containers visible regardless of row count, even empty)",
+        "S2-mega-findings.json — verifications_summary.q10_always_render = PASS",
+        "captures/S2-01-pos-mount-q10-panels.png — both panels visible at mount with 'À ENCAISSER BORNE' 2 rows + 'PRÊT À LIVRER' 0 empty-state copy 'Aucune commande prête à livrer pour le moment.'",
+        "C2-kds-pos-sync.json — V2.3 empty_state_honest_Q10 verdict PASS — section.pos-shortcuts__panel--ready always renders with empty class + italic copy + last-refresh label"
+      ],
+      "cashier_pov_findings": "Karim revient au comptoir, scanne d'abord en haut de l'écran les 2 panneaux compacts. Q10 v1 (pre-fix) faisait disparaître complètement le panneau quand vide → trou cognitif (le cashier ne sait pas si le système ne montre rien OU s'il est cassé). Q10 v2 actuel garde le panneau monté avec copie italique 'Aucune commande prête à livrer pour le moment.' + timestamp 'Mis à jour il y a Xs' → mental-model unity confirmé. Pas de trou cognitif. 1 saccade visuelle suffit.",
+      "regression_risk": "None — Q10 always-render is a wave-polish-final-A landed fix (commit 08c3faaee), referenced as stable by both S2 and C2 audits this round."
+    },
+    "2_last_refresh_timestamp_updates": {
+      "scenario_label": "Last-refresh timestamp updates (no stale anxiety)",
+      "persona_question": "Quand je regarde le panneau et qu'il est vide, est-ce que le système est mort ou il est juste calme? Le timestamp doit me rassurer que ça vit.",
+      "verdict": "FRICTION",
+      "category": "FRICTION",
+      "evidence_refs": [
+        "C2-kds-pos-sync.json — V2.2 last_refresh_ticker_alive = GREEN — ticker re-renders every 5s (PosComponent.vue:2141-2146 setInterval), label cycles 'à l'instant' → 'il y a 5s' → 'il y a 10s' → ... → refresh → 'à l'instant'",
+        "C2-kds-pos-sync.json — C2-T-002 P2 — Silent Echo subscription failure on POS — no console error, no toast, no health signal — the 5s ticker increments INDEPENDENTLY of Echo health, so the cashier has FALSE CONFIDENCE in liveness when Echo is silently degraded and data is actually stale by ~24s"
+      ],
+      "cashier_pov_findings": "Le ticker 5s fonctionne fidèlement (V2.2 GREEN) → ça rassure visuellement. MAIS le ticker tique même quand Echo est mort et que les données sont en réalité rafraîchies seulement toutes les 60s (polling fallback). Karim voit 'Mis à jour il y a 3s' alors qu'en vrai un événement KDS bumped 25s plus tôt n'est pas encore reflété — confiance fausse. Q10 était sensé rendre l'état de vie visible; il rend l'état d'horloge visible. Distinction subtile mais opérationnellement importante.",
+      "fix_recommendation_inherited_from_C2_T_002": "Ajouter badge discret 'WS' (vert quand Echo healthy + bound, ambre quand polling-only) à côté du ticker. Telemetry client_metric `pos_echo_health` à émettre chaque minute. C2-T-002 défère V1.0.2.",
+      "regression_risk": "Low for V1 ship (sub-minute lag est humain pour fast-food per CLAUDE.md), but Q10 promise est partiellement non-tenue: 'always-render + last-refresh ticker' n'égale pas 'real-time push'."
+    },
+    "3_encaisser_borne_click_modal_opens_fast": {
+      "scenario_label": "Encaisser-borne click → modal opens fast, doesn't lose POS state (Phase A.2-BIS verified)",
+      "persona_question": "Le client borne 8 arrive avec son ticket 'A0001 - À payer en caisse'. Je clique Encaisser, ça ouvre vite, je tape le montant reçu en virgule FR comme j'ai l'habitude, je confirme. Mon panier walk-in courant (s'il y en a un) doit rester là.",
+      "verdict": "GOOD",
+      "category": "GOOD",
+      "evidence_refs": [
+        "S2-mega-findings.json — S2-09 PosCounterCollectModal opens with 'Encaisser La Commande Borne' title + BORNE chip + Hero MONTANT TOTAL '8,50 €' (FR comma + nbsp + €) + 4 mode tiles + numpad",
+        "S2-mega-findings.json — phase_a2_bis_d2_verification.verdict = PASS — D2 fix e49ef36c5 delivers FR comma pre-fill '8,50' + dual-decimal parser (',' AND '.' both accepted) + setMode L313 preserves user input on CARD↔CASH toggle",
+        "S2-mega-findings.json — S2-001 closed_by_e49ef36c5 — regression cycle terminated",
+        "captures/S2-09-d2-cash-mode-prefill.png — MONTANT REÇU '8,50' alongside hero '8,50 €', format unified",
+        "C5-encaisser-kds-preserve.json — V5.1 kds_state_preserved = PASS — opening cash receipt modal does not mutate Order status (status=7 PREPARING pre/post), composition_snapshot bit-identical SHA-256, audit_logs append +1 row, fiscal_sequence_no preserved (no re-allocation)",
+        "tests/Feature/Payment/C5_EncaisserKdsPreserveTest.php — 3 tests / 28 assertions GREEN (PHPUnit)"
+      ],
+      "cashier_pov_findings": "Modal s'ouvre en ~200ms (S2-09 timing inherited). Le pre-fill '8,50' évite la frappe d'auto-confirm (cas exact-change canonique). Dual parser ',' OR '.' tolère la mémoire musculaire de tout cashier français (1500 sans décimal, 15,00 FR, 15.00 anglais). Le toggle CARD↔CASH ne réinitialise pas la valeur si elle est >0 — bonne réversibilité. Idempotency-Key (orderId+modeInt+minuteBucket per PosCounterCollectModal.vue:350-353) signifie que le double-tap dans la même minute REPLAY un 200 sans dupliquer audit_logs (NF525 safe).",
+      "regression_risk": "Closed — S2-001 verified through D2 fix; C5 PHPUnit suite locks NF525 invariants under the encaissement flow."
+    },
+    "4_multi_tab_pos_kds_no_conflicts": {
+      "scenario_label": "Multi-tab: POS + KDS no conflicts (C6 verified)",
+      "persona_question": "J'ai POS dans un onglet + KDS dans un autre (souvent partagé écran avec cuisine). Quand je bouge dans l'un, l'autre ne doit pas perdre son état ni faire des updates fantômes.",
+      "verdict": "GOOD",
+      "category": "GOOD",
+      "evidence_refs": [
+        "C6-multi-tab-echo.json — V6.2 channel_uniqueness verdict PASS_VIA_EVENT_NAME_FILTERING — single `private-branch.{branchId}` channel + per-component event-name opt-in prevents cross-pollution structurally (KDS does NOT bind CatalogChanged; POS does NOT bind OrderTableChanged)",
+        "C6-multi-tab-echo.json — V6.5 4_tab_fanout verdict PASS_BY_REFERENCE (wave-polish-final-B Scenario 3) — 4 already-mounted tabs receive Pusher fanout in <2s for the realistic 'screens-already-open-for-hours' case",
+        "C6-multi-tab-echo.json — C6-ARCH-001 INFO — task spec language used `kds.branch.{id}` channel name that doesn't exist; actual SSOT is the unified channel. Architecture is sound, terminology mismatch only.",
+        "C6-multi-tab-echo.json — V6.4 logout_clean_state PASS_BY_STATIC_PROOF — server-side token::delete() + Vuex-persistedstate sync clear + F-12 401 interceptor + Sanctum auth check on /api/broadcasting/auth all prevent stale-session ghost events on a logged-out tab",
+        "KitchenDisplaySystemComponent.vue:1846 — unsubscribeEcho() called BEFORE every subscribeEcho() (AUDIT-P51-BUG2 fix) — no duplicate listener leak on re-mount"
+      ],
+      "cashier_pov_findings": "Architecture POS+KDS multi-tab est structurellement saine: branch.{id} channel partagé + filtrage par event-name côté écouteur. Pas de cross-pollution possible. Pas de leak de listener au re-mount. Logout sur un onglet désabonne (token deleted server-side, channel-auth rejette le prochain abonnement) → pas d'events fantômes possibles. B-002 P2 multi-tab race était CÔTÉ OSS (pas POS) per C6 — hors scope cashier-multitask.",
+      "regression_risk": "None — pattern well-established, sentinel tests/js/realtimeBroadcastFallback.spec.js + tests/js/wsReconnectStormCircuitBreaker.spec.js lock the WS state machine."
+    },
+    "5_locate_borne_order_fast": {
+      "scenario_label": "Customer asks 'ma commande borne 12 est prête?' → cashier locates fast in OSS or shortcuts?",
+      "persona_question": "Le client devant moi me dit 'borne 12'. Je dois lever les yeux, le panneau Prêt-à-livrer doit déjà avoir SA ligne, je clique Livré, c'est fait. Si je dois aller chercher dans l'OSS ou attendre 30s que ça apparaisse, je passe pour un con devant le client.",
+      "verdict": "BLOCKER-MULTITASK",
+      "category": "BLOCKER-MULTITASK",
+      "evidence_refs": [
+        "C2-kds-pos-sync.json — C2-T-001 P1 — KDS→POS sync ΔT degraded — 16.7-32.0s vs Wave Polish 4.9s target (3-7x regression)",
+        "C2-kds-pos-sync.json — V2.1 happy_path_empirical_dT FAIL — run1 16771ms / run2 32036ms / avg 24403ms — target_max_ms 5000",
+        "C2-kds-pos-sync.json — V2.4 echo_channel_plus_polling_fallback FAIL — POS Echo subscription not effective: window.Echo.connector.channels === [] at /admin/pos runtime; polling fallback runs at 60s slow cadence because _wsService.isConnected() returns true after auto-reconnect despite the initial WS-connect failure",
+        "C2-kds-pos-sync.json — personas_impacted: ['cashier-multitask', 'client-impatient'] — finding explicitly names this persona",
+        "PosComponent.vue:295 — queue_number rendered in ready shortcut: `N°{{ o.queue_number || o.order_serial_no || o.id }}` — locate-by-eye works ONCE the row is in DOM",
+        "PosComponent.vue:359 — same pattern for encaisser-borne shortcut — visual scan works",
+        "BUT: rows are sliced to max 4 + 'Voir plus' link, so during a rush the borne-12 might not be in the first 4 visible rows — secondary friction"
+      ],
+      "cashier_pov_findings": "C'est LE blocker du persona. Karim entend 'borne 12'. Si la commande n'est pas dans le panneau Prêt-à-livrer (parce que polling 60s n'a pas encore re-fetché), Karim a 3 mauvais choix: (a) demander au runner cuisine — interrompt le runner — perte de temps + impolitesse, (b) F5 manuel — efface le panier walk-in en cours, (c) attendre 30s devant le client — passer pour un con. La promesse Q10 'always-render panel' devient creuse si les DATA dedans lag de 24s. Le ΔT mesuré est 3-7x au-dessus du Wave Polish proof (4.9s). Soit Wave Polish CONVERGENCE_FINAL.md §5 Proof 2 doit être re-mesuré honnêtement (~24s), soit le bug Echo subscription doit être healed avant la production. Pour fast-food sub-minute reste humain mais ce N'EST PAS 'real-time Echo' comme annoncé.",
+      "fix_recommendation_inherited_from_C2_T_001": "(1) _kioskPollingInterval() retourne 5000ms unconditionnellement quand readyOrders.length===0 OR last successful loadReadyOrders > 30s ago — état 'Echo mort silencieux' ne doit pas pénaliser le cashier. (2) Investiguer pourquoi PosComponent._subscribeEcho ne bind pas effectivement (probablement WsService isConnected() retourne true post-auto-reconnect alors qu'Echo binding initial avait failed). (3) Audit le mismatch CSP 'localhost vs 127.0.0.1' sur /api/broadcasting/auth — peut-être Sanctum/CSRF n'attache pas et channel-auth 401 silencieux.",
+      "blocker_severity": "P1 cashier productivity (NOT P0 NF525 — sub-minute lag est humain), mais perception client + crédibilité cashier devant file d'attente est l'impact réel.",
+      "regression_risk": "Production-blocking SI owner attend les 4.9s annoncés par Wave Polish. À minima re-mesurer ou réviser le doc."
+    },
+    "6_direct_sale_plus_parallel_kiosk_cash": {
+      "scenario_label": "Direct sale + parallel kiosk-cash encaissement → no race?",
+      "persona_question": "Je suis en train de construire un panier walk-in (sandwich + boisson). Une borne juste à côté finit son flow et la commande arrive en À ENCAISSER BORNE. Je dois pouvoir l'encaisser SANS perdre mon panier walk-in en cours.",
+      "verdict": "GOOD",
+      "category": "GOOD",
+      "evidence_refs": [
+        "C5-encaisser-kds-preserve.json — V5.1..V5.5 all PASS — encaissement of a kiosk-cash order preserves Order status (KDS card unchanged), composition_snapshot bit-identical, allergens_snapshot bit-identical, fiscal_sequence_no preserved (no re-allocation, no gap), idempotent on replay (dual layer: middleware + service short-circuit at PaymentService.php:227-230)",
+        "C5-encaisser-kds-preserve.json — side_effects_audit — only payment-related fields mutate; KDS card status/composition/allergens unchanged",
+        "S2-mega-findings.json — S2-08 Q10 cash panel populated with seeded WAVE-X-A-CASH order id=399 + parallel-session N°A0001 — cashier sees the row arrive within polling window (1-6s observed in S2-01 baseline) while their walk-in cart is being built in a different DOM region of the same page",
+        "PosCounterCollectModal opens as a modal overlay (not a route navigation) — the underlying POS view with the walk-in cart remains mounted; closing the modal returns to the cart in its prior state",
+        "Idempotency-Key formula PosCounterCollectModal.vue:350-353 (pos-counter-collect-{orderId}-{modeInt}-{minuteBucket}) — double-tap within 60s replays cached 2xx — no NF525 audit row duplication possible"
+      ],
+      "cashier_pov_findings": "L'architecture modal-over-POS est correcte: le panier walk-in courant reste monté dans le DOM background pendant que le modal d'encaissement borne s'affiche. Confirmer l'encaissement borne, fermer le modal, revenir au panier walk-in inchangé. Idempotency-Key gère le double-tap par erreur (Karim pourrait double-cliquer sous pression du client) sans dupliquer la transaction. PaymentService::confirmCounterPayment a une short-circuit défensive payment_status===PAID (PaymentService.php:227-230) qui couvre même un cas où la cache idempotency middleware aurait raté à cause d'un boundary minute (CI clock skew documenté C5 caveats).",
+      "regression_risk": "None — C5 PHPUnit + S2 visual + idempotency dual-layer all converge GREEN."
+    },
+    "7_long_shift_fatigue_5h_legibility": {
+      "scenario_label": "Long shift fatigue: 5h in, still readable? (R7 production scenario complement)",
+      "persona_question": "C'est 14h, j'ai commencé à 9h, fatigué, café n°4. Je dois encore distinguer 4,90 € de 49,00 € au premier coup d'œil. Toute incohérence de format devient une charge cognitive cumulative.",
+      "verdict": "FRICTION",
+      "category": "FRICTION",
+      "evidence_refs": [
+        "S2-mega-findings.json — S2-002 P3 currency_format_inconsistency — PaymentComponent.vue hero MONTANT TOTAL renders '4.90€' (period decimal + no nbsp before €) instead of FR-canonical '4,90 €'. Same symptom as S2-001 but in FROZEN-component context.",
+        "S2-mega-findings.json — phase_a3_d3_payment_component_untouched_verification.verdict = PASS — PaymentComponent.vue diff=0 lines, S2-002 correctly deferred to LOCK_PAY plan pending owner countersign",
+        "plans/LOCK_PAY_PaymentComponent_currency_2026-05-23.md — LOCK doc drafted; awaits owner signature before scope-minimal hero formatter patch",
+        "captures/S2-05-payment-component-open.png — visual evidence of pre-LOCK '4.90€' rendering",
+        "S5-mega-findings.json — verifications.euro_format_count = 17, bare_decimals_count = 0 across cash-overview — that surface is FR-canonical clean; the inconsistency is ONLY at PaymentComponent hero",
+        "PosCounterCollectModal MONTANT TOTAL renders '8,50 €' (FR-canonical) per S2-09 — D2 fix unified the modal; PaymentComponent hero remains the lone holdout"
+      ],
+      "cashier_pov_findings": "À 5h de shift, Karim a internalisé le pattern FR-canonical 'X,XX €' (avec virgule + nbsp). Le hero PaymentComponent '4.90€' (point + collé) rompt le pattern — micro-saccade pour confirmer le montant. Sur 200 transactions/jour ça représente 200 micro-saccades cumulatives = fatigue cognitive supplémentaire. PosCounterCollectModal (encaisser borne) a déjà été unifié par D2. PaymentComponent (direct-sale paiement) reste le seul holdout, bloqué sur LOCK_PAY countersign owner. C'est P3 par sévérité technique mais P2 par persona-impact fatigue à 5h.",
+      "fix_recommendation_inherited_from_S2_002": "Owner countersign LOCK_PAY → scope-minimal patch: nouveau computed `currencyFormatFR(amount)` utilisant Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR'}).format(amount) — même formule que PosCounterCollectModal.vue:336-342. Affecte UNIQUEMENT le hero display, pas les pailoads backend ni l'arithmétique pricing. Sentinel paymentComponentHeroFrFormatSentinel.spec.js déjà specifié dans LOCK_PAY plan.",
+      "regression_risk": "Fatigue UX P2 effective if not healed. Frozen-zone blocker = owner gate, not engineering."
+    },
+    "8_tablet_portrait_orientation": {
+      "scenario_label": "Tablette portrait orientation (if used) → still usable?",
+      "persona_question": "Si on me met un iPad 11\" en mode portrait au lieu du desktop habituel, est-ce que /admin/pos reste utilisable ou ça casse le layout?",
+      "verdict": "UNVERIFIED_IN_PERSONA_SCOPE",
+      "category": "UNVERIFIED",
+      "evidence_refs": [
+        "PosComponent.vue:4353-4360 — @media (max-width: 767px) — mobile breakpoint applies a compact margin/padding adjustment but NO portrait-specific orientation rule",
+        "PosComponent.vue:4522 — @media (max-width: 640px) — small-mobile second breakpoint",
+        "PosComponent.vue:133 — comment 'réduire le risque d'icônes orphelines sur écrans tablet/laptop courants' — tablet awareness exists but is not orientation-pivoted",
+        "No @media orientation:portrait OR @media orientation:landscape clauses found in resources/js/components/admin/pos/*.vue or POS scss files (resources/sass/admin/_pos_a11y.scss is the only POS-specific scss, contains no orientation queries)",
+        "Le Cayenne LOCAL deployment model assumes desktop counter station (per CLAUDE.md §6 surfaces production list: http://127.0.0.1:8000/admin/pos default 1920x1080) — tablet portrait is NOT a documented V1 target hardware"
+      ],
+      "cashier_pov_findings": "iPad portrait (834x1194 css) tomberait dans aucun des 2 breakpoints (>767 + >640) → layout desktop appliqué dans une largeur ~834px. Le grid produits/cart côte-à-côte risquerait débordement horizontal scroll. PAS DE PREUVE EMPIRIQUE car aucun audit existant n'a capturé iPad portrait. Per CLAUDE.md §6 le target V1 est desktop counter 1920x1080. Si l'owner envisage tablet portrait deployment, audit visuel dédié nécessaire (hors persona scope).",
+      "honest_gap": "Persona P3 ne peut pas vérifier S8 sans un nouvel audit visuel + Playwright orientation iPad. Marker UNVERIFIED honnête. Recommande à orchestrator: ajouter test ciblé Phase B.5 si tablet portrait est un V1 use-case.",
+      "regression_risk": "Low for V1 (not in CLAUDE.md target hardware list). Document explicitly to avoid scope creep."
+    },
+    "9_receipt_reprint_after_handover": {
+      "scenario_label": "Receipt re-print (after handover) → possible?",
+      "persona_question": "Le client revient 5 min après son achat, dit avoir perdu son ticket, demande un duplicata. Est-ce que je peux re-imprimer depuis /admin/pos sans casser la chaîne NF525?",
+      "verdict": "GOOD",
+      "category": "GOOD",
+      "evidence_refs": [
+        "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php:14-28 — POS receipt print + reprint policy. Endpoint POST /api/admin/pos/orders/{order}/receipt-print exists. NF525 Article 286-I-3 bis compliance: 'Every receipt impression is a NF525-relevant event: the FIRST print is the original ticket; the SECOND+ print is a DUPLICATA (legally required to be marked as such on the ticket via ReceiptDuplicataMarker.vue).'",
+        "PosReceiptPrintController.php:35-66 — atomic increment scoped to branch_id + audit_logs row written with `action`='pos.receipt.print' (first) or 'pos.receipt.reprint' (subsequent) — append-only NF525 chain extends correctly",
+        "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:240-248 — UI button [data-testid=`tracker-reprint-${order.id}`] — one-click reprint from POS Orders Tracker (commit POS-V4-CASHIER-OPS 2026-05-02 lineage)",
+        "PosOrdersTrackerComponent.vue:392-396 — reprint uses same #receiptModal as the first-print path: '<ReceiptComponent v-if=\"reprintOrder && reprintOrder.id\" :order=\"reprintOrder\" />' — DOM-consistent UX",
+        "ReceiptComponent.vue:350-454 — explicit comments: 'a re-print preview does NOT silently destroy the active cashier' + 'so closing a re-print preview can no longer destroy an active' — defensive design against losing in-flight walk-in cart state during a reprint",
+        "PosReceiptPrintController.php audit emission is best-effort: 'a failure to chain MUST NOT block the cashier from physically reprinting the ticket (operational continuity), but the failure is logged so SIEM can alert on it.' — graceful degradation"
+      ],
+      "cashier_pov_findings": "Endpoint + UI button + NF525-compliant duplicata-marking + tracker accessibility all present. Karim ouvre POS Orders Tracker (boutique cashier-ops UI), trouve la commande par N°/client/date, clique reprint, le ticket re-imprime avec marker DUPLICATA. Active cart non détruit. audit_logs append +1 row 'pos.receipt.reprint'. C'est le besoin daily restaurant scenario typique et il est couvert légalement et opérationnellement.",
+      "regression_risk": "None — well-implemented, NF525-compliant, defensively designed against state loss."
+    },
+    "10_cash_discrepancy_drawer_reconciliation": {
+      "scenario_label": "Cash discrepancy fin de service → drawer reconciliation usable?",
+      "persona_question": "Fin de shift 17h, je dois clore mon tiroir caisse. Le système me dit attendu 158,20 €. Je compte physiquement 156,80 €. Comment je consigne l'écart de -1,40 € dans l'app? Sinon je le note papier et c'est la merde.",
+      "verdict": "FRICTION",
+      "category": "FRICTION",
+      "evidence_refs": [
+        "S5-mega-findings.json — V5.5 reconciliation_invariance_c013_c014 PASS — 3 cells visible: opening (100,00 €) + collected (58,20 €) + expected (158,20 €) + amber note 'Pour calculer l'écart, saisir le comptage physique du tiroir (à venir).'",
+        "S5-mega-findings.json — reconciliation_cells_3_only: ['cash-overview-reconciliation-opening', 'cash-overview-reconciliation-collected', 'cash-overview-reconciliation-expected'] — NO 4th cell for physical count input + écart computation",
+        "S5-mega-findings.json — diff_cell_count: 0 — no diff cell exists by design (V1.0.2 backlog)",
+        "captures/S5-09-reconciliation-honest-3-cell.png — visual evidence of honest 3-cell + amber note",
+        "C6-multi-tab-echo.json — V6.1 tab_C_cash_overview_unaffected_evidence — 'CashOverviewComponent.vue has ZERO Echo subscription. It ONLY listens to $route.query watcher to trigger fetch()' — cash overview is snapshot-on-demand, not realtime",
+        "C6-multi-tab-echo.json — backlog_referenced_NOT_new — 'Cash Overview no realtime subscription — V1.0.2 backlog'",
+        "Wave X X-C round-2 commentary cited in C6: 'Until V1.0.2 ships a cashier count-input feature the page displays 3 honest values without a misleading diff'"
+      ],
+      "cashier_pov_findings": "C'est la 2e plus grosse friction du persona. À fin de shift, Karim ne PEUT PAS saisir 156,80 € physique dans /admin/cash-overview → l'écart de -1,40 € ne se calcule pas dans l'app. Il faut soit (a) le noter sur papier + le compter à la main pour le rapport manager — workflow fragile, sujet à erreur de saisie, (b) le mémoriser et y revenir plus tard — risque d'oubli. L'amber note '(à venir)' est HONNÊTE (mieux que d'afficher un faux écart) mais ne résout pas le besoin opérationnel. V1.0.2 backlog item count-input cashier feature est explicitement déféré. Pour Le Cayenne LOCAL V1 single-restaurant single-cashier-per-shift c'est tolérable mais c'est un gap.",
+      "secondary_friction": "Le snapshot n'étant pas realtime, si Karim a fait un encaissement borne à 16:58 puis charge /admin/cash-overview à 17:00, le 'collected_today' peut ne pas inclure la dernière transaction selon le moment du dernier fetch. Force F5 manuel.",
+      "fix_recommendation_v1_0_2": "Ajouter input physical_count_eur sur /admin/cash-overview + cell cash-overview-reconciliation-diff (expected - physical_count). Persist en cash_drawer_sessions.physical_count_eur + audit_logs row 'cash_drawer.reconciled' avec écart pour traçabilité. Idéalement realtime subscribe à OrderPaidAtCounter pour collected_today auto-refresh.",
+      "regression_risk": "V1 tolérable (single-tenant LOCAL). V1.0.2 ship-required avant SaaS multi-restaurant."
+    }
+  },
+  "lens_findings_per_scenario": {
+    "lens_V_visual_persona_fatigue": {
+      "scenario_7_5h_fatigue_inheritance": "S2-002 PaymentComponent hero '4.90€' break FR-canonical pattern — cumulatively wearing on a 5h-shift cashier. Frozen-zone blocked on LOCK_PAY countersign.",
+      "scenario_1_panels_at_a_glance": "Q10 always-render delivers clear 1-saccade scan — GOOD",
+      "scenario_10_reconciliation_3_cells": "Honest amber note '(à venir)' is visually correct but operationally incomplete — FRICTION"
+    },
+    "lens_U_ux_workflow_clicks_per_path": {
+      "encaisser_borne_cash_path": "2 clicks (S2 timed) — GOOD",
+      "encaisser_borne_card_path": "3 clicks — GOOD",
+      "direct_sale_path": "4 clicks via wizard — GOOD",
+      "borne12_locate_when_panel_lagging": "1 click IF in panel (4-slice limit) → 2-3 clicks if not visible (Voir plus → tracker) → manual F5 if Echo silently dead (worst case ~30s wait) — BLOCKER under realistic lag",
+      "reprint_after_handover": "POS Orders Tracker → find → reprint → 3 clicks — GOOD",
+      "drawer_reconciliation_at_close": "blocked — no input UI available (V1.0.2) → FRICTION"
+    },
+    "lens_T_technical_observability": {
+      "echo_health_silent_failure": "C2-T-002 P2 — no visible badge to distinguish 'Echo healthy + bound' from 'polling-only fallback' — cashier has false confidence",
+      "queue_number_lookup": "PosComponent.vue:295+359 — N°{queue_number} rendered consistently in both shortcuts panels — locate-by-eye works once row is in DOM",
+      "idempotency_dual_layer": "Middleware cache + service short-circuit (payment_status===PAID) — defense-in-depth verified by C5"
+    },
+    "lens_S_security_persona": {
+      "branch_isolation": "BranchScope global scope + cashier session-cookie + Spatie permission:settings gate all enforced — no cross-branch leakage",
+      "reprint_authz": "PosReceiptPrintController constructor-injected AuditLogService + branch_id atomic where-clause — reprint cannot escape branch isolation",
+      "logout_clean_state": "C6 V6.4 PASS — server delete + Vuex sync + 401 interceptor"
+    },
+    "lens_A_a11y_persona": {
+      "aria_label_modal_picker": "PosCounterCollectModal nav[role=tablist] + aria-selected dynamic — verified S2 lens A",
+      "live_regions_cash_change": "role=status aria-live=polite on cashChange row — verbalizes change amount during typing for screen-reader cashier (if applicable)",
+      "focus_visible_on_all_interactives": "Tab order verified: cc-modal-close → mode-buttons → received-input → numpad → Annuler → Confirmer"
+    },
+    "lens_Y_sync_cross_surface_persona_impact": {
+      "kds_to_pos_ready_lag": "C2-T-001 P1 — 16.7-32.0s observed vs 5s target → BLOCKER for scenario 5 (locate borne 12)",
+      "kiosk_to_pos_encaisser_lag": "Q10 cash panel polling ΔT ~1-6s (S2-01 baseline) → GOOD",
+      "cash_overview_no_realtime": "C6 V6.1 documented — no Echo subscription → FRICTION for scenario 10 reconciliation"
+    },
+    "lens_X_adversarial_self_dispute": {
+      "dispute_1_scenario_5_isnt_a_real_blocker_because_runners_shout_anyway": "REJECTED — the persona is multitask cashier in V1 LOCAL Le Cayenne. Owner explicitly chose POS-centric workflow where cashier validates Livré clicks. If runner shouts, cashier still has to find the row to click Livré. Echo lag forces blind clicks or manual F5 destroying walk-in cart. Direct cashier productivity hit.",
+      "dispute_2_5h_fatigue_isnt_a_real_p2": "REJECTED for cumulative-load argument — 200 transactions × 5h × micro-saccade = measurable cognitive tax. But ACCEPTED that for V1 ship the LOCK_PAY blocker is the constraint, not engineering. Verdict FRICTION (not BLOCKER) appropriate.",
+      "dispute_3_drawer_reconciliation_can_be_done_on_paper": "PARTIALLY ACCEPTED — Le Cayenne LOCAL single-cashier-per-shift can survive paper reconciliation. But the SaaS multi-restaurant V2 trajectory makes this a must-have V1.0.2 deliverable. Verdict FRICTION not BLOCKER for V1.",
+      "dispute_4_persona_synthesis_double_counts_evidence": "REJECTED — synthesis does NOT inflate severity. Each persona-impact cites the source finding's ID (C2-T-001, S2-002, etc.) and inherits its severity. Persona view re-frames impact through Karim's POV without minting duplicate finding IDs."
+    }
+  },
+  "findings": [
+    {
+      "id": "P3-BLOCKER-001",
+      "scenario": 5,
+      "persona_impact": "Karim entend 'borne 12', cherche la ligne dans Prêt-à-livrer, ne la voit pas pendant 24s (avg) → option-A interrompre runner, option-B F5 destructeur, option-C attendre devant client",
+      "category": "BLOCKER-MULTITASK",
+      "severity_inherited": "P1",
+      "evidence_refs": "C2-T-001 (this audit round), C2-T-002 (this audit round), wave-polish CONVERGENCE_FINAL.md §5 Proof 2",
+      "source_finding_ids": ["C2-T-001", "C2-T-002"],
+      "is_new_finding": false,
+      "status_inherited": "OPEN — V1 ship-blocker IF owner reads wave-polish 4.9s figure as guarantee. Either re-measure or revise CONVERGENCE_FINAL.md."
+    },
+    {
+      "id": "P3-FRICTION-002",
+      "scenario": 10,
+      "persona_impact": "Karim ne peut pas saisir le comptage physique du tiroir → écart calculé manuellement papier → workflow fragile fin de shift",
+      "category": "FRICTION",
+      "severity_inherited": "P2_persona / P3_technical",
+      "evidence_refs": "S5-mega-findings.json V5.5 reconciliation_invariance, C6 V6.1 tab_C_cash_overview_unaffected",
+      "source_finding_ids": ["S5_C-013", "S5_C-014", "C6 backlog ref"],
+      "is_new_finding": false,
+      "status_inherited": "V1.0.2 backlog — cashier count-input feature deferred"
+    },
+    {
+      "id": "P3-FRICTION-003",
+      "scenario": 7,
+      "persona_impact": "Hero PaymentComponent '4.90€' brise pattern FR-canonical → 200 micro-saccades / 5h shift = cognitive tax cumulative",
+      "category": "FRICTION",
+      "severity_inherited": "P3",
+      "evidence_refs": "S2-002 (this audit round), LOCK_PAY plan",
+      "source_finding_ids": ["S2-002"],
+      "is_new_finding": false,
+      "status_inherited": "frozen_zone_deferred_lock_pending_countersign"
+    },
+    {
+      "id": "P3-FRICTION-004",
+      "scenario": 2,
+      "persona_impact": "Ticker 5s tique même quand Echo silently dead → false confidence in liveness",
+      "category": "FRICTION",
+      "severity_inherited": "P2",
+      "evidence_refs": "C2-T-002 (this audit round)",
+      "source_finding_ids": ["C2-T-002"],
+      "is_new_finding": false,
+      "status_inherited": "V1.0.2 — add WS health badge near refresh ticker"
+    },
+    {
+      "id": "P3-UNVERIFIED-005",
+      "scenario": 8,
+      "persona_impact": "iPad portrait usability inconnue — pas de breakpoint orientation-pivoted dans CSS, tomberait dans layout desktop avec largeur 834px → débordement potentiel",
+      "category": "UNVERIFIED",
+      "severity_inherited": "UNVERIFIED_LOW (hors target hardware V1 per CLAUDE.md §6)",
+      "evidence_refs": "PosComponent.vue:4353-4360 + 4522, resources/sass/admin/_pos_a11y.scss (no orientation queries)",
+      "source_finding_ids": [],
+      "is_new_finding": "metadata_only",
+      "status_inherited": "Not a documented V1 use-case. Audit visuel dédié si owner envisage tablet portrait."
+    }
+  ],
+  "summary": {
+    "scenarios_total": 10,
+    "scenarios_GOOD": 5,
+    "scenarios_FRICTION": 3,
+    "scenarios_BLOCKER_MULTITASK": 1,
+    "scenarios_UNVERIFIED": 1,
+    "P0": 0,
+    "P1": 1,
+    "P2_persona_view": 2,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 1,
+    "open_P2": 2,
+    "open_P3": 1,
+    "new_findings_introduced": 0,
+    "findings_inherited_via_persona_reframe": 4,
+    "multitask_blocker_count": 1
+  },
+  "verdict": "AMBER",
+  "verdict_rationale": "5/10 scenarios GOOD (panels-at-a-glance Q10 + encaisser-borne D2 fix + multi-tab safe by-design + direct-sale-with-parallel-encaissement idempotent + receipt reprint NF525-compliant). 3/10 FRICTION (ticker false-confidence under silent Echo failure + 5h-fatigue PaymentComponent non-FR-canonical + end-of-shift drawer reconciliation no input UI). 1/10 BLOCKER-MULTITASK (KDS→POS sync ΔT avg 24s vs 5s target — C2-T-001 explicitly names cashier-multitask persona). 1/10 UNVERIFIED (tablet portrait — hors target hardware V1 per CLAUDE.md §6). The BLOCKER is real: in a counter-rush with a customer asking 'borne 12 est prête?' the cashier looks dumb for 24s avg. Either Wave Polish 4.9s figure must be re-measured or revised in CONVERGENCE_FINAL.md. AMBER verdict — not GREEN because of the named-persona blocker.",
+  "top_3_cashier_concerns": [
+    {
+      "rank": 1,
+      "concern": "Borne-order locate lag — KDS→POS ΔT avg ~24s vs Wave Polish-promised 4.9s → cashier looks dumb to impatient customer or destroys walk-in cart with manual F5",
+      "evidence_ref": "C2-T-001 P1 (3-7x regression)",
+      "fix_path": "POS _kioskPollingInterval unconditional 5s when readyOrders empty + investigate why _eventSub doesn't bind effectively + audit CSP localhost-vs-127.0.0.1 mismatch on /api/broadcasting/auth"
+    },
+    {
+      "rank": 2,
+      "concern": "End-of-shift drawer reconciliation has no physical-count input UI → cashier resorts to paper or memory → fragile fin de service workflow",
+      "evidence_ref": "S5 V5.5 + C6 backlog (V1.0.2 cashier count-input)",
+      "fix_path": "Add input physical_count_eur on /admin/cash-overview + cell cash-overview-reconciliation-diff + persist cash_drawer_sessions.physical_count_eur + audit_logs row 'cash_drawer.reconciled'"
+    },
+    {
+      "rank": 3,
+      "concern": "PaymentComponent hero '4.90€' breaks FR-canonical pattern that PosCounterCollectModal '8,50 €' now respects (post D2) → 5h-fatigue cognitive tax, 200 micro-saccades/day",
+      "evidence_ref": "S2-002 P3 frozen-zone deferred",
+      "fix_path": "Owner countersign LOCK_PAY plan → scope-minimal currencyFormatFR hero patch using same Intl.NumberFormat formula as PosCounterCollectModal.vue:336-342"
+    }
+  ],
+  "scope_rails_honored": {
+    "did_not_click_pos_confirm_or_counter_collect_confirm": true,
+    "did_not_steal_mcp_browser_focus": true,
+    "did_not_invent_new_finding_ids_for_existing_evidence": true,
+    "synthesis_only_referenced_existing_evidence_via_finding_ids": true,
+    "S8_S9_honest_grep_under_10_min_each": true,
+    "S9_reprint_verified_endpoint_exists_via_grep": true,
+    "S8_tablet_portrait_marked_UNVERIFIED_honestly": true
+  },
+  "advisor_consulted_at": "before_writing_deliverable",
+  "advisor_directives_honored": [
+    "Framed existing findings through Karim's POV — did not re-do S2/C2/C5/C6 work",
+    "Headline BLOCKER-MULTITASK #1 = C2-T-001 explicitly named persona (cashier-multitask + client-impatient in C2 personas_impacted)",
+    "Did not soften C2-T-001 — scenario 5 BLOCKER-MULTITASK",
+    "Did not inherit B-002 OSS multi-tab race (scope = cashier-side, not OSS-side per C6)",
+    "S8 + S9 grep <10min each — S9 reprint endpoint confirmed (GOOD), S8 tablet portrait honestly UNVERIFIED",
+    "Verdict AMBER (not GREEN, not RED) — single P1 cashier blocker dominates",
+    "Top 3 concerns inherit from C2-T-001 + S5 V5.5 + S2-002",
+    "JSON schema matches S2-mega-findings.json keys"
+  ],
+  "captures_inherited_no_new_mints": [
+    "captures/S2-01-pos-mount-q10-panels.png (S2 round-4) → scenario 1 evidence",
+    "captures/C2-pos-ready-panel-with-order-425.jpeg → scenario 5 evidence",
+    "captures/C2-pos-ready-panel-final-state.jpeg → scenario 5 + scenario 1 cleared-state evidence",
+    "captures/S2-09-d2-cash-mode-prefill.png → scenario 3 evidence",
+    "captures/S2-09b-d2-parser-comma.png → scenario 3 dual-decimal evidence",
+    "captures/S2-09c-d2-parser-period.png → scenario 3 backward-compat evidence",
+    "captures/S2-09d-d2-setmode-reprefill.png → scenario 3 reversibility evidence",
+    "captures/S2-05-payment-component-open.png → scenario 7 fatigue evidence",
+    "captures/S5-09-reconciliation-honest-3-cell.png → scenario 10 friction evidence",
+    "Wave Polish wave-polish-final-B Scenario 3 captures (B-09e/f/g — referenced via C6) → scenario 4 multi-tab evidence"
+  ],
+  "next_actions_for_orchestrator": [
+    "1. Persona P3 surfaces 1 BLOCKER-MULTITASK (C2-T-001 — already filed, persona reframes severity-context as cashier-named-impact)",
+    "2. 3 FRICTION items inherited; all already in V1.0.2 backlog OR LOCK_PAY pending countersign — no new orchestration needed beyond what S2/C2/C5/C6/S5 already documented",
+    "3. Honest UNVERIFIED on S8 tablet portrait — orchestrator decides if a dedicated visual audit is in V1 scope (CLAUDE.md §6 says no)",
+    "4. NF525 chain BIT_IDENTICAL — P3 audit produces zero side effects",
+    "5. No new finding IDs minted — synthesis-only deliverable, all severity inherits from source audit"
+  ],
+  "loop_blocking": false,
+  "parallel_session_notes": "P3 is pure static synthesis + grep — zero MCP browser touch, zero focus competition with parallel S* agents. NF525 chain inherited from S2 + C6 baselines.",
+  "round_log": [
+    "Setup: read S2-mega-findings.json + C2-kds-pos-sync.json + C5-encaisser-kds-preserve.json + C6-multi-tab-echo.json + S5-mega-findings.json sibling reports same round same HEAD",
+    "Advisor consult before substantive work — scenario→evidence map locked, scope rails defined",
+    "S9 reprint grep: PosReceiptPrintController.php exists with NF525-compliant DUPLICATA marking + tracker-reprint UI [data-testid=`tracker-reprint-${order.id}`] → scenario 9 GOOD",
+    "S8 tablet portrait grep: 2 @media max-width 767/640 in PosComponent.vue but no orientation-pivoted query, _pos_a11y.scss has no media queries → scenario 8 UNVERIFIED honestly (CLAUDE.md §6 target = desktop 1920x1080)",
+    "Queue-number rendering verified in both Q10 panels (PosComponent.vue:295 + 359) → locate-by-eye works once row in DOM (scenario 5 nuance)",
+    "Scenarios 1-10 cross-mapped to existing finding IDs; severity inherited not re-graded except for persona-impact reframe (S2-002 P3 → persona P2 fatigue tax)",
+    "Verdict AMBER — 1 BLOCKER-MULTITASK + 3 FRICTION + 5 GOOD + 1 UNVERIFIED. Top 3 concerns aligned with C2-T-001 + S5 V5.5 + S2-002.",
+    "Deliverable written to reports/test-e2e/goal-2026-05-23/round-1/persona-P3-cashier-multitask.json — no new MCP browser run, no new captures, no new finding IDs."
+  ]
+}

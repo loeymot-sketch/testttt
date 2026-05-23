@@ -1,0 +1,448 @@
+{
+  "wave": "GOAL ULTRA-DEEP 2026-05-23 — Phase B.4 PERSONA AGENT P6 MULTI-TENANT-FUTURE",
+  "round": 1,
+  "persona_id": "P6",
+  "persona_role": "V2 SaaS architect (future cycle) — hunt single-tenant assumptions that will break V2 multi-resto SaaS",
+  "audit_date": "2026-05-23",
+  "audit_mode": "read-only static source-of-truth review",
+  "commit_under_audit": "9da21c7cd (HEAD heal/cms-pr1-quickwins-2026-05-18 — Firebase service-account JSON to storage/ non-public)",
+  "scope_note": "V1 is single-resto Le Cayenne LOCAL. Owner has NOT initiated V2 — V2-BLOCKERS are INFO for visibility + V2.0 backlog tracking. All findings severity=INFO per spec; the V2 classification field carries the dispatch verdict.",
+  "audit_methodology": "Static source grep across app/ + config/ + database/migrations/ + scripts/. Cross-referenced with sibling round-1 artifacts B3.1-architect-findings.json, B3.3-dba-findings.json, C6-multi-tab-echo.json so existing findings are CITED (not duplicated). No MCP browser run. No DB write. No tinker execute.",
+  "evidence_collection_grep_keys": [
+    "grep 'Cache::lock' app/ → 19 lockKey patterns examined (12 branch-keyed, 2 GLOBAL — outbox retry locks, rest are scoped per business object)",
+    "grep 'Settings::group' app/ → 31 distinct call sites for smartisan/settings — ALL use group() WITHOUT settingable morph (global per-tenant value)",
+    "grep 'private-branch' app/Listeners/Persist*.php → 12 outbox listeners ALL keyed 'private-branch.{branch_id}' (V2-safe per C6-ARCH-001)",
+    "grep 'onQueue' app/Jobs/ → 2 queue names: 'high' (DispatchDomainEventsJob) + 'notifications' (SendFcmNotificationJob) — neither branch-prefixed",
+    "find database/migrations 'create_settings_table' → schema confirmed: nullableMorphs('settingable') EXISTS but UNUSED by all 31 call sites",
+    "config/cache.php:108 → CACHE_PREFIX env-driven, single global prefix (no per-branch prefix infra)",
+    "config/media-library.php:66 → DefaultPathGenerator = {media_id}/{filename}, no branch_id segment in storage path",
+    "scripts/backup-foodking-daily.sh → mysqldump entire DB (multi-tenant safe because all branches share schema; per-branch extraction NOT supported)"
+  ],
+  "files_audited_sample": [
+    "config/queue.php (full read 93 lines — no per-branch queue infra, default='sync' env-driven)",
+    "config/cache.php:108 (CACHE_PREFIX single global)",
+    "config/media-library.php:66 (DefaultPathGenerator)",
+    "database/migrations/2022_05_24_204620_create_settings_table.php (settings schema — nullableMorphs unused)",
+    "database/migrations/2026_05_19_100000_create_loyalty_qr_nonces_consumed_table.php (loyalty QR explicit GLOBAL nonce — V2-OK by design)",
+    "app/Services/FirebaseService.php (FCM topic mechanism — no branch in topicName)",
+    "app/Services/Fiscal/FiscalSequenceService.php (branch-keyed Cache::lock 'fiscal_seq_{branch}' — V2-OK)",
+    "app/Services/Fiscal/ZReportService.php (branch-keyed 'z_report_b{n}' — V2-OK)",
+    "app/Services/Fiscal/AuditLogService.php (branch-keyed 'audit_chain_b{n}' — V2-OK)",
+    "app/Services/Cash/CashDrawerService.php (branch+user-keyed lock — V2-OK)",
+    "app/Services/KdsSyncService.php:49 (cache key includes branchId — V2-OK)",
+    "app/Console/Commands/OutboxRetryFailedCommand.php:42 (LOCK_KEY = 'outbox.retry-failed.lock' — GLOBAL not branch-keyed — V2-BLOCKER #2)",
+    "app/Console/Commands/OutboxWebhookRetryFailedCommand.php:62 (LOCK_KEY = 'outbox.webhook-retry-failed.lock' — GLOBAL — V2-BLOCKER #2)",
+    "app/Jobs/DispatchDomainEventsJob.php:46 (onQueue('high') — shared queue across branches)",
+    "app/Jobs/DispatchDomainEventsJob.php:129 (Cache::put('ws:heartbeat', ...) — GLOBAL observability key)",
+    "app/Jobs/SendFcmNotificationJob.php:67 (onQueue('notifications') — shared queue across branches)",
+    "app/Http/Controllers/Frontend/MenuController.php:67 ('kiosk.menu.branch.{branchId}' — V2-OK)",
+    "app/Http/Controllers/Admin/StockRuptureDashboardController.php:79+236 ('stock_scan_rupture:last_summary:branch:{id}' — V2-OK)",
+    "app/Models/LoyaltyTransaction.php (no BranchScope import — cross-branch loyalty by explicit design)",
+    "app/Models/Item.php + app/Http/Controllers/Admin/ItemPhotoController.php (Spatie addMediaFromRequest → toMediaCollection('item') — no branch in storage path)",
+    "scripts/backup-foodking-daily.sh + app/Console/Commands/Backup/RunDailyBackup.php (whole-DB dump, single artifact)"
+  ],
+  "scenario_results": {
+    "S1_branchscope_coverage_sentinel": {
+      "scenario": "BranchScope coverage sentinel 20 models verified (per B3.3 DBA)",
+      "v2_classification": "V1-OK-V2-WATCH",
+      "evidence": "B3.3-dba-findings.json DBA-F4 PASS — BranchScopeCoverageSentinelTest covers 20 models + 12 documented exemptions (2 architectural Branch/Customer + 10 V1.0.2 BACKLOG: FrontendDiningTable, ZReport, AuditLog, OrderDiscountLog, Message, DiningTableAuditLog, KioskPromo, UpsellRule, ActionLog, DomainEvent).",
+      "v2_impact": "V1 single-tenant Le Cayenne LOCAL is SAFE — only one branch exists. V2 multi-resto SaaS: 10 EXEMPTED_MODELS will hard-fail isolation (cross-tenant data leak). Already on V1.0.2 backlog per CLAUDE.md §9 + B3.3 BACKLOG-V102.",
+      "remediation_proposal": "V2.0 prerequisite — add BranchScope to all 10 EXEMPTED_MODELS BACKLOG items + per-model regression test. CITES B3.3-dba-findings.json BACKLOG-V102 (rank 2 top_3_concerns).",
+      "v1_blocker": false
+    },
+    "S2_cache_keys_branch_scoped": {
+      "scenario": "Cache keys all branch-scoped (no global 'menu' without branch suffix)",
+      "v2_classification": "V2-BLOCKER for 2 keys / V1-OK-V2-WATCH for 1 key / V2-OK for all business cache",
+      "evidence_branch_keyed_safe": [
+        "'fiscal_seq_{branch}' (FiscalSequenceService.php:66) — V2-OK",
+        "'z_report_b{n}' (ZReportService.php:79+192) — V2-OK",
+        "'audit_chain_b{n}' (AuditLogService.php:101) — V2-OK",
+        "'kiosk.menu.branch.{id}' (MenuController.php:67 + InvalidateKioskMenuCache* listeners) — V2-OK",
+        "'stock_scan_rupture:last_summary:branch:{id}' (StockRuptureDashboardController.php:79+236, StockScanRupture.php:141) — V2-OK",
+        "Cash drawer & delivery boy locks (CashDrawerService.php:78, DeliveryBoyCashSessionService.php:82) — branch + user keyed, V2-OK",
+        "Order idempotency Cache::lock per (branch, user, hash) (OrderService.php:627, FrontendOrderService.php:157) — V2-OK"
+      ],
+      "evidence_global_keys_problematic": [
+        "'outbox.retry-failed.lock' (OutboxRetryFailedCommand.php:42 LOCK_KEY = literal constant) — V2-BLOCKER. One slow branch retry serially blocks ALL branches' outbox retries.",
+        "'outbox.webhook-retry-failed.lock' (OutboxWebhookRetryFailedCommand.php:62 LOCK_KEY = literal constant) — V2-BLOCKER. Same as above for webhook retries.",
+        "'ws:heartbeat' (DispatchDomainEventsJob.php:129 + SyncOverviewController.php:531) — V1-OK-V2-WATCH. Used for cross-worker WS-up observability. V2 multi-resto wants per-branch dashboards: should become 'ws:heartbeat:branch:{id}'."
+      ],
+      "v2_impact": "Two outbox retry cron commands hold a GLOBAL Cache::lock for the WHOLE retry batch. In V2 with 50 branches × concurrent retries, branch_id=37's slow Pusher endpoint will starve branch_id=12's retry until lock TTL expires. Sequential not parallel. Per-branch retry sharding required.",
+      "remediation_proposal": "V2 prerequisite — extend OutboxRetryFailedCommand + OutboxWebhookRetryFailedCommand to accept --branch=N flag + per-branch Cache::lock('outbox.retry-failed.branch.{n}'). Cron schedule expands to one entry per branch (or job dispatch fan-out). 'ws:heartbeat' key add branch suffix at same time.",
+      "v1_blocker": false
+    },
+    "S3_echo_channels_branch_scoped": {
+      "scenario": "Echo channels branch-scoped (per C6 ARCH-001: 'private-branch.{id}' single channel by-event-name filter — design intentional)",
+      "v2_classification": "OK_BY_DESIGN",
+      "evidence": "C6-multi-tab-echo.json C6-ARCH-001 confirms single unified 'private-branch.{branchId}' channel with per-event-name filtering. routes/channels.php:41-62 authz callback enforces branch_id isolation at subscription layer: kiosk-token → own machine's branch only; Admin/Tenant Admin → cross-branch allowed (V1 single-tenant pattern, V2 wants more granular); regular staff → own branch_id only.",
+      "v2_impact": "Channel architecture is V2-ready. V2 multi-tenant addition needed: routes/channels.php:56-58 'Admin' role currently allows CROSS-BRANCH subscribe — V2 needs tenant_admin scope (one restaurant's admin cannot subscribe to another restaurant's channel). Minor authz callback patch, not a refactor.",
+      "remediation_proposal": "V2.0 — tighten routes/channels.php Admin authz branch to scope by tenant_id (one tenant_admin can subscribe to all of HIS tenant's branches, not Le Cayenne's). Single-file ~10 LOC change. CITES C6-ARCH-001.",
+      "v1_blocker": false
+    },
+    "S4_storage_paths_branch_scoped": {
+      "scenario": "Storage paths branch-scoped (or designed for it)",
+      "v2_classification": "V1-OK-V2-WATCH",
+      "evidence": [
+        "config/media-library.php:7 → MEDIA_DISK=env('public') — single disk, no branch prefix",
+        "config/media-library.php:66 → Spatie DefaultPathGenerator stores at storage/app/public/{media_id}/filename (media_id is globally unique auto-increment, no branch in path)",
+        "app/Http/Controllers/Admin/ItemPhotoController.php:58 → $item->addMediaFromRequest('photo')->toMediaCollection('item') (no per-branch disk routing)",
+        "Firebase JSON moved to 'firebase_private' disk by goal-heal-sec-001 (storage/app/firebase/...) — separate disk for sensitive secrets, but still global not per-branch"
+      ],
+      "v2_impact": "V1 single-tenant SAFE — media_id is globally unique, no collision risk. V2 multi-resto: (a) per-tenant CDN routing impossible (all media on one disk), (b) per-tenant backup extraction impossible (cannot 'dump just tenant X's photos'), (c) tenant offboarding requires DB scan of media table by branch FK chain (slow). Not a P0 V2 BLOCKER but a V2 architectural friction point.",
+      "remediation_proposal": "V2 design — switch path_generator to a custom BranchAwarePathGenerator that returns 'branch/{branch_id}/{media_id}/{filename}'. Requires Spatie path generator override + migration to re-shuffle existing media files (storage migration script). Defer to V2.0.",
+      "v1_blocker": false
+    },
+    "S5_backup_script_multi_resto": {
+      "scenario": "Backup script multi-resto-friendly (Q14 backup script — scan)",
+      "v2_classification": "V1-OK-V2-WATCH",
+      "evidence": [
+        "scripts/backup-foodking-daily.sh:55-61 → mysqldump --single-transaction dumps ENTIRE DB foodking — multi-tenant safe (all branches share schema, all rows captured) but indivisible (cannot extract 'just tenant 37')",
+        "app/Console/Commands/Backup/RunDailyBackup.php (Q14 Laravel command) → same whole-DB dump pattern, 3-tier retention (30d daily + 12mo monthly + 24q quarterly = 6yr NF525)",
+        "scripts/db/backup.sh + scripts/restore-foodking-from-backup.sh → whole-DB restore (drops + recreates entire schema)"
+      ],
+      "v2_impact": "V1 single-tenant Le Cayenne: backup design is excellent (NF525-compliant, atomic, retention OK). V2 multi-resto: (a) tenant offboarding REQUIRES 'dump just tenant X' for GDPR portability — current backup cannot do this, (b) restore drill for one tenant impossible without affecting all, (c) backup file grows linearly with tenant count (50 tenants × 6yr retention = quarterly file size × 50 → S3 cost grows linearly).",
+      "remediation_proposal": "V2 design — add a 'tenant_extract' sub-command that filters mysqldump by branch_id (via --where clauses on every multi-tenant table). Trickier than expected because audit_logs.branch_id is NULLABLE (B3.3 AMBER-F11) — system-level rows need explicit handling. Alternative: per-tenant DB schema (microservice-style). Defer V2.0.",
+      "v1_blocker": false
+    },
+    "S6_search_filter_queries_respect_branchscope": {
+      "scenario": "Search/filter queries respect BranchScope",
+      "v2_classification": "V1-OK-V2-WATCH",
+      "evidence": [
+        "BranchScope global scope (B3.3 DBA-F4 PASS) is auto-applied on every Model::query() / where() call — admin role (branch_id=0) bypasses, regular staff scoped to own branch",
+        "B3.1-architect-findings.json B3-ARCH-003 found 113 ::query() calls in admin controllers — all rely on BranchScope global scope (no explicit ->where('branch_id', $x) needed)",
+        "Reports controllers (CashOverviewController, StockRuptureDashboardController, CashSessionReportController) audited: NO explicit ->where('branch_id', ...) — they trust BranchScope + filter UI is admin-cross-branch by current design",
+        "Admin role explicitly bypasses BranchScope (V1 design: super-admin sees all of Le Cayenne)"
+      ],
+      "v2_impact": "V1 single-tenant safe — only one branch. V2 multi-resto: admin role currently sees ALL branches across ALL tenants. Tenant_admin needs to be scoped to OWN-tenant branches only. This means BranchScope needs a TenantScope upstream layer. Reports also need per-branch filter UI (currently absent because there's only one branch).",
+      "remediation_proposal": "V2.0 — add TenantScope global scope above BranchScope. Add 'branch_id' filter dropdown to all admin reports. Likely cascades to ~20 admin Vue components.",
+      "v1_blocker": false
+    },
+    "S7_audit_logs_branch_scoped": {
+      "scenario": "Audit logs branch-scoped (audit_logs.branch_id column)",
+      "v2_classification": "V1-OK-V2-WATCH (CITES B3.3 AMBER-F11)",
+      "evidence": "audit_logs.branch_id IS present BUT NULLABLE per B3.3-dba-findings.json AMBER-F11 (system-level admin actions allowed cross-branch). Chain integrity carried by UNIQUE(branch_id, prev_hash) — V2-safe at the column level. AuditLogService Cache::lock('audit_chain_b{n}') is branch-keyed (per-branch chain integrity preserved).",
+      "v2_impact": "V2 multi-tenant: branch_id nullable rows (system-level audits) currently invisible to BranchScope filter. V2 admin querying 'show me tenant X's audit trail' must whereNull/where manually. Already noted as AMBER for synthesis.",
+      "remediation_proposal": "V2.0 — add a sentinel test asserting NULL branch_id rows are well-defined system actions only (not accidental leaks from a bug). Augment admin reporting to surface 'system-level' bucket explicitly. CITES B3.3 AMBER-F11.",
+      "v1_blocker": false
+    },
+    "S8_fiscal_sequence_branch_scoped": {
+      "scenario": "fiscal_sequence_no branch-scoped (monotonic per branch — yes per CLAUDE.md §8)",
+      "v2_classification": "OK_BY_DESIGN",
+      "evidence": "FiscalSequenceService.php:66 Cache::lock('fiscal_seq_{branch}', 5) + lockForUpdate() on Order::withoutGlobalScope(BranchScope::class)->withTrashed()->where('branch_id', $branchId)->max('fiscal_sequence_no'). UNIQUE INDEX orders(branch_id, fiscal_sequence_no). Triple defense per CLAUDE.md §8 + LOCK_FISCAL_WGS_Z6_P1_2026-05-19.",
+      "v2_impact": "V2-READY — fiscal sequence is monotonic per branch. Each tenant's restaurant gets its own gap-free fiscal sequence regardless of cross-branch contention. The Cache::lock key is dynamically composed, scales to N branches without code change.",
+      "remediation_proposal": "NONE — exemplary V2-ready design.",
+      "v1_blocker": false
+    },
+    "S9_loyalty_cards_branch_or_cross_branch": {
+      "scenario": "Loyalty cards branch-scoped or cross-branch by design choice",
+      "v2_classification": "OK_BY_DESIGN (intentional cross-branch)",
+      "evidence": [
+        "app/Models/LoyaltyTransaction.php — no BranchScope import; keyed by user_id + loyalty_code (cross-branch by design)",
+        "database/migrations/2026_05_19_100000_create_loyalty_qr_nonces_consumed_table.php:60-63 — explicit comment: 'GLOBAL unique on nonce (per advisor — customer scans at any branch, no branch_id scoping)'",
+        "Customer model in EXEMPTED_MODELS (B3.3 DBA-F4) — architectural exemption due to Sanctum customer-token recursion risk",
+        "FrontendOrder.loyalty_customer_code, Order.loyalty_customer_code, LoyaltyService::refundPoints — all operate by loyalty_code, not branch_id"
+      ],
+      "v2_impact": "V1 single-tenant: trivially OK. V2 multi-resto: this is a business model decision — does a customer's loyalty card work at ALL of Tenant Lecayenne's branches OR across all restaurants on the SaaS platform? Currently the schema is platform-wide (any user, any branch). For V2 SaaS, the loyalty_code likely needs tenant_id scoping: 'this loyalty card is valid for Tenant X's branches only'.",
+      "remediation_proposal": "V2.0 product decision — owner choice: (a) keep platform-wide (cross-tenant loyalty network, FoodKing-branded), or (b) scope to tenant_id (each restaurant chain owns its own loyalty). Both are valid V2 product strategies. Schema change required for option (b): add tenant_id to LoyaltyTransaction + loyalty_qr_nonces_consumed.",
+      "v1_blocker": false
+    },
+    "S10_reports_filterable_by_branch": {
+      "scenario": "Reports filterable by branch",
+      "v2_classification": "V1-OK-V2-WATCH",
+      "evidence": [
+        "Admin reports (CashOverview, StockRuptureDashboard, CashSessionReport) currently rely on BranchScope global scope — no explicit branch filter UI because V1 has one branch",
+        "B3.1-architect-findings.json B3-ARCH-003 documents 113 Eloquent ::query() in admin controllers — all rely on global scope",
+        "Admin role bypass means super-admin sees ALL branches summed (V1 design)",
+        "No UI dropdown 'select branch to view' in current report Vue components"
+      ],
+      "v2_impact": "V2 multi-resto: admin viewing 'cash overview' needs to (a) see total across owned branches OR (b) drill down per-branch. Currently impossible without UI work. Reports also conflate kiosk + POS + delivery cash across branches.",
+      "remediation_proposal": "V2.0 — add ?branch_id=N query param + branch-selector dropdown to all admin reports. Backend: relax admin BranchScope bypass to honor the explicit ?branch_id= filter. Likely ~20 Vue components + 5-10 backend controllers touched.",
+      "v1_blocker": false
+    }
+  },
+  "additional_v2_findings_outside_10_scenarios": [
+    {
+      "id": "P6-EXTRA-001",
+      "v2_classification": "V2-BLOCKER",
+      "severity": "INFO",
+      "domain": "Configuration SSOT",
+      "title": "smartisan/settings — ALL 31 call sites use GLOBAL group, none use the nullableMorphs('settingable') column",
+      "evidence": {
+        "schema": "database/migrations/2022_05_24_204620_create_settings_table.php:15-22 — nullableMorphs('settingable') exists in schema",
+        "all_callsites_use_global": "grep 'Settings::group' app/ returns 31 distinct call sites — every single one calls Settings::group('site|notification|order_setup|loyalty|pos|...')->get(...) with NO settingable parameter (global per-tenant value)",
+        "affected_features": [
+          "site_default_branch, site_default_currency, site_copyright (Settings::group('site'))",
+          "pos_dine_in_enabled (Settings::group('pos'))",
+          "order_setup_delivery, order_setup_takeaway, order_setup_schedule_order_slot_duration (Settings::group('order_setup'))",
+          "loyalty point rates pointsPerEuro, pointsFor1Euro, minRedeem, rawTiers (Settings::group('loyalty'))",
+          "notification_fcm_project_id, notification_fcm_json_file (Settings::group('notification'))",
+          "OTP / SMS / order_setup / Stripe currency config — all settings:group GLOBAL"
+        ],
+        "concrete_examples": [
+          "app/Traits/DefaultAccessModelTrait.php:28+46 — Settings::group('site')->get('site_default_branch')",
+          "app/Libraries/AppLibrary.php:214 — same",
+          "app/Http/Resources/SettingResource.php:124 — Settings::group('pos')->get('pos_dine_in_enabled')",
+          "app/Http/Requests/PosOrderRequest.php:75+166 — same",
+          "app/Http/PaymentGateways/Gateways/Stripe.php:42 — Settings::group('site')->get('site_default_currency')"
+        ]
+      },
+      "rationale": "smartisan/settings supports per-model settings via settingable morph. The migration includes it. The codebase does not. V2 multi-resto needs per-tenant currency, per-tenant pos_dine_in_enabled, per-tenant loyalty rates, per-tenant FCM project — none of these can vary by tenant in current code. Highest-blast-radius V2 refactor: all 31 call sites need re-routing to a tenant-scoped Settings reader (e.g. SettingsForTenant::group('site')->get(...)).",
+      "v2_impact": "Without this refactor, V2 launching a second tenant means ALL of Tenant B's restaurants share Tenant A's currency / loyalty rules / FCM topic / dine-in flag. Show-stopper for V2 SaaS.",
+      "v1_blocker": false,
+      "remediation_proposal": "V2.0 prerequisite — create SettingsForTenant facade that resolves Tenant from request context, then queries settings where settingable_type='Tenant' AND settingable_id=$tenantId. Migrate 31 call sites. Add sentinel test 'no Settings::group() call without tenant scope' that ratchets the count down. ~2 weeks of work."
+    },
+    {
+      "id": "P6-EXTRA-002",
+      "v2_classification": "V2-BLOCKER",
+      "severity": "INFO",
+      "domain": "Cron / outbox concurrency",
+      "title": "OutboxRetryFailedCommand + OutboxWebhookRetryFailedCommand hold GLOBAL Cache::lock — serializes retries across all branches",
+      "evidence": {
+        "file_a": "app/Console/Commands/OutboxRetryFailedCommand.php:42 — private const LOCK_KEY = 'outbox.retry-failed.lock'; (literal constant string, not branch-keyed)",
+        "file_b": "app/Console/Commands/OutboxWebhookRetryFailedCommand.php:62 — private const LOCK_KEY = 'outbox.webhook-retry-failed.lock'; (same global pattern)",
+        "ttl": "LOCK_TTL_SECONDS = 300 in both — 5-minute single-tenant lock window",
+        "schedule": "Kernel.php cron schedules these as periodic jobs; comment on OutboxRetryFailedCommand.php:28 says 'TTL raised 60→300s (Wave 3c) because audit-chain Cache::lock'"
+      },
+      "rationale": "V1 single-branch: lock+process+release fine. V2 50 branches × shared lock means one branch's slow Pusher dispatch blocks ALL branches' retry attempts for up to 5 minutes. Order-status broadcasts to KDS/POS/OSS will stall during the lock window. Real-time SLA breaks under load.",
+      "v2_impact": "Cross-tenant contention on shared cron lock. Tenant A's outbox backlog blocks Tenant B's broadcasts. Cascade failure mode at scale.",
+      "v1_blocker": false,
+      "remediation_proposal": "V2 prerequisite — extend signature to accept --branch=N flag; replace LOCK_KEY constant with 'outbox.retry-failed.branch.{n}'. Cron schedule: fan out one entry per branch (Kernel.php → foreach branch). Alternative: dispatch a Job-per-branch and let queue parallelism handle it. ~1 day of work + 1 day of cron operational testing."
+    },
+    {
+      "id": "P6-EXTRA-003",
+      "v2_classification": "V1-OK-V2-WATCH",
+      "severity": "INFO",
+      "domain": "Queue infrastructure",
+      "title": "Queues 'high' + 'notifications' shared across all branches — no per-branch queue routing",
+      "evidence": {
+        "file_a": "app/Jobs/DispatchDomainEventsJob.php:46 — $this->onQueue('high'); (broadcast outbox dispatcher)",
+        "file_b": "app/Jobs/SendFcmNotificationJob.php:67 — $this->onQueue('notifications'); (FCM push)",
+        "file_c": "config/queue.php — no per-branch queue connection infrastructure (single 'redis' / 'database' connection)"
+      },
+      "rationale": "Laravel onQueue('name') is a runtime string. V2 can introduce per-tenant queues like 'high.tenant.{id}' OR per-branch 'high.branch.{id}' WITHOUT touching the calling code if the Job's queue resolution becomes config-driven. The infrastructure isn't there yet, but it's a routing layer not a rewrite.",
+      "v2_impact": "V1 single-tenant: no issue. V2 multi-tenant: one tenant's traffic burst can starve another tenant's high-priority broadcasts (queue worker reads any 'high' job FIFO). Mitigable with per-tenant Redis priorities + dedicated queue workers per tenant tier.",
+      "v1_blocker": false,
+      "remediation_proposal": "V2 design — runtime-configurable queue name per Job via app(QueueRouter::class)->routeFor($job). Introduce per-tenant queue workers (supervisor config). Mitigable post-launch, NOT a V1 blocker. Defer V2.0."
+    },
+    {
+      "id": "P6-EXTRA-004",
+      "v2_classification": "V1-OK-V2-WATCH",
+      "severity": "INFO",
+      "domain": "Observability",
+      "title": "'ws:heartbeat' Cache key is GLOBAL — V2 wants per-branch heartbeat dashboard",
+      "evidence": {
+        "writer": "app/Jobs/DispatchDomainEventsJob.php:129 — Cache::put('ws:heartbeat', now()->timestamp, 120)",
+        "reader": "app/Http/Controllers/Admin/Observability/SyncOverviewController.php:531 — Cache::get('ws:heartbeat')"
+      },
+      "rationale": "Single observability key tells admin 'is WS up'. V1 single-tenant: fine. V2 multi-tenant: admin wants 'is WS up for tenant X branch 7?' — need 'ws:heartbeat:branch:{id}' or 'ws:heartbeat:tenant:{id}'. Trivial 2-line patch when V2 happens.",
+      "v2_impact": "Observability gap — one branch's WS outage can be masked by another branch's still-fresh heartbeat key.",
+      "v1_blocker": false,
+      "remediation_proposal": "V2 prerequisite (low cost) — change key to 'ws:heartbeat:branch:{id}', update SyncOverviewController to query per-branch. ~30 min of work."
+    },
+    {
+      "id": "P6-EXTRA-005",
+      "v2_classification": "V1-OK-V2-WATCH",
+      "severity": "INFO",
+      "domain": "Authorization",
+      "title": "routes/channels.php Admin role allows CROSS-BRANCH Echo subscription — V2 needs tenant_admin scope",
+      "evidence": "C6-multi-tab-echo.json V6.2 channel_inventory_actual.private-branch.{branchId}.authorization_callback_summary line 64 — 'Admin / Tenant Admin role → cross-branch allowed (V1 single-tenant pattern)'.",
+      "rationale": "V1: Admin sees all of Le Cayenne (single tenant). V2: a Tenant_Admin should ONLY see his own tenant's branches (not Tenant B's). Currently the Admin role bypass is unbounded.",
+      "v2_impact": "Tenant_admin cross-tenant Echo subscription = info disclosure across SaaS tenants. SECURITY-V2-BLOCKER if not heavily caveated.",
+      "v1_blocker": false,
+      "remediation_proposal": "V2.0 — patch routes/channels.php:56-58 to scope by Tenant model relationship. ~10 LOC patch. CITES C6-ARCH-001."
+    },
+    {
+      "id": "P6-EXTRA-006",
+      "v2_classification": "V1-OK-V2-WATCH",
+      "severity": "INFO",
+      "domain": "Storage layout",
+      "title": "Spatie media files stored at storage/app/public/{media_id}/filename — no branch_id in path",
+      "evidence": "config/media-library.php:66 — DefaultPathGenerator. media_id is globally unique auto-increment. Files pooled under MEDIA_DISK='public' default.",
+      "rationale": "media_id uniqueness avoids V1 collisions. V2 friction: per-tenant CDN routing impossible; tenant offboarding requires DB scan of media → branch relationship to identify the right files to extract.",
+      "v2_impact": "Tenant GDPR portability friction; per-tenant backup extraction friction; per-tenant CDN routing friction.",
+      "v1_blocker": false,
+      "remediation_proposal": "V2 design — custom BranchAwarePathGenerator extending Spatie's, returning 'branch/{branch_id}/{media_id}/{filename}'. Requires data migration of existing files. Defer V2.0."
+    },
+    {
+      "id": "P6-EXTRA-007",
+      "v2_classification": "V1-OK-V2-WATCH",
+      "severity": "INFO",
+      "domain": "Backup",
+      "title": "Whole-DB backup is multi-branch-safe but NOT tenant-extractable for V2 SaaS offboarding",
+      "evidence": "scripts/backup-foodking-daily.sh:55-61 + app/Console/Commands/Backup/RunDailyBackup.php — mysqldump --single-transaction on full DB. NF525-compliant retention (30d daily + 12mo + 24q quarterly = 6yr).",
+      "rationale": "V1: backup design is excellent for single tenant. V2: cannot extract just one tenant's data for GDPR portability or offboarding without writing per-table --where='branch_id IN (...)' clauses. audit_logs.branch_id NULLABLE (B3.3 AMBER-F11) complicates this further.",
+      "v2_impact": "V2 SaaS GDPR portability impossible without backup rework. NF525 compliance preserved (whole-DB still captured), but tenant exit becomes a complex DBA task.",
+      "v1_blocker": false,
+      "remediation_proposal": "V2 prerequisite — add foodking:backup-tenant {tenant_id} command that does selective dump. Handle NULL branch_id audit rows via 'system-level' bucket exposed to all tenants. CITES B3.3 AMBER-F11."
+    },
+    {
+      "id": "P6-EXTRA-008",
+      "v2_classification": "OK_BY_DESIGN",
+      "severity": "INFO",
+      "domain": "FCM topic naming",
+      "title": "FCM uses token-based delivery (not topic broadcast) — no per-branch topic-naming concern",
+      "evidence": "app/Services/FirebaseService.php:17-67 — sendNotification($data, $fcmTokens, $topicName) iterates fcmTokens and POSTs per-token (line 31 'foreach ($fcmTokens as $fcmToken)'). The $topicName parameter is used as a STRING TAG in the payload['data']['topicName'] but does NOT route via /topics/X. Delivery is per-device-token, scoped by which tokens are passed in.",
+      "rationale": "Per-token delivery means each branch's customer/staff tokens are passed explicitly — no FCM-topic-namespace collision risk in V2. Tokens are scoped by branch via the caller passing only branch-relevant tokens.",
+      "v2_impact": "V2-OK — caller-driven scoping. As long as the upstream layer (notification dispatcher) filters tokens by branch, FCM delivery stays scoped.",
+      "v1_blocker": false,
+      "remediation_proposal": "NONE — design is V2-safe."
+    },
+    {
+      "id": "P6-EXTRA-009",
+      "v2_classification": "OK_BY_DESIGN",
+      "severity": "INFO",
+      "domain": "Outbox pattern",
+      "title": "All 12 outbox listeners hard-code 'private-branch.{branch_id}' channel — V2-safe",
+      "evidence": "grep 'private-branch' app/Listeners/Persist*.php → 12 listeners (PersistCatalogChangedToOutbox, PersistBranchStatusChangedToOutbox, PersistCouponChangedToOutbox, PersistItemVariationAvailabilityChangedToOutbox, PersistItemAvailabilityChangedToOutbox×2 (single+multi-branch), PersistItemExtraAvailabilityChangedToOutbox, PersistOrderPaymentStatusChangedToOutbox, PersistOrderCreatedToOutbox, PersistOrderStatusChangedToOutbox, PersistOrderPaidAtCounterToOutbox, PersistSettingsUpdatedToOutbox, PersistOrderTableChangedToOutbox).",
+      "rationale": "Every Persist*ToOutbox listener composes 'private-branch.' . $branch_id dynamically. PersistItemAvailabilityChangedToOutbox even handles multi-branch via map() (line 46). The outbox channel keying is V2-ready.",
+      "v2_impact": "V2-READY — outbox channel keying scales to N branches without code change. CITES B3.1-architect-findings.json B3-ARCH-007 (outbox pattern consistency).",
+      "v1_blocker": false,
+      "remediation_proposal": "NONE — exemplary V2-ready design."
+    }
+  ],
+  "v2_blocker_count": 2,
+  "v2_watch_count": 7,
+  "v2_ok_count": 3,
+  "v2_blocker_list": [
+    "P6-EXTRA-001 — smartisan/settings GLOBAL for all 31 call sites (currency, loyalty rates, pos_dine_in, FCM project — ALL not per-tenant)",
+    "P6-EXTRA-002 — OutboxRetryFailedCommand + OutboxWebhookRetryFailedCommand hold GLOBAL Cache::lock (cross-branch starvation under load)"
+  ],
+  "v2_watch_list": [
+    "P6-EXTRA-003 — queues 'high' + 'notifications' shared (mitigable via runtime routing)",
+    "P6-EXTRA-004 — 'ws:heartbeat' GLOBAL observability key (trivial patch)",
+    "P6-EXTRA-005 — routes/channels.php Admin cross-branch Echo subscription (V2 SECURITY-WATCH)",
+    "P6-EXTRA-006 — Spatie media path no branch_id segment (CDN/extraction friction)",
+    "P6-EXTRA-007 — backup script not per-tenant extractable (GDPR portability friction)",
+    "S6 — admin reports use BranchScope global scope, no per-branch filter UI (V2 UX work)",
+    "S9 — loyalty cross-branch is a V2 PRODUCT decision (platform-wide vs tenant-scoped)"
+  ],
+  "v2_ok_by_design_list": [
+    "S3 — single 'private-branch.{id}' Echo channel with per-event-name filtering (C6-ARCH-001)",
+    "S8 — fiscal_sequence_no monotonic per branch (CLAUDE.md §8 + LOCK_FISCAL_WGS_Z6_P1_2026-05-19)",
+    "P6-EXTRA-009 — outbox listeners hard-code 'private-branch.{branch_id}' (B3-ARCH-007)"
+  ],
+  "cross_references_to_sibling_artifacts": {
+    "B3.1-architect-findings.json": [
+      "B3-ARCH-007 (outbox pattern V2-ready)",
+      "B3-ARCH-003 (113 admin Eloquent ::query() calls trust BranchScope)",
+      "B3-ARCH-001 (OrderService god-class — orthogonal to V2 concerns)"
+    ],
+    "B3.3-dba-findings.json": [
+      "DBA-F4 (BranchScope sentinel PASS, 20 models covered, 12 exemptions)",
+      "AMBER-F11 (audit_logs.branch_id NULLABLE — V2 reporting friction)",
+      "BACKLOG-V102 top_3_concerns rank 2 (10 EXEMPTED_MODELS V2 hard-fail)"
+    ],
+    "C6-multi-tab-echo.json": [
+      "C6-ARCH-001 (single 'private-branch.{id}' channel — V2-ready architecture, Admin role authz V2-WATCH)"
+    ]
+  },
+  "nf525_chain_invariant": {
+    "audit_method": "read-only static source review — zero DB writes, zero tinker execute, zero MCP browser run",
+    "tinker_check_skipped_reason": "Per advisor — read-only attest (no writes performed by this persona). NF525 chain bit-identical attestation is owned by sibling B3.3-dba-findings.json (which DID inspect the chain) and C6-multi-tab-echo.json (count=64, last_hash=8daed68a65b8c8e7 same HEAD).",
+    "result": "READ_ONLY_ATTESTED_NO_WRITES — chain untouched by P6"
+  },
+  "frozen_zones_verified_read_only": [
+    "All frozen-zone files NOT touched (audit is grep-based static review)",
+    "PaymentComponent.vue, PosV5TrancheRow.vue, KioskWizardComponent.vue, KioskAppComponent.vue, KioskUpsellComponent.vue — read for context only, ZERO writes",
+    "FiscalSequenceService.php, ZReportService.php, AuditLogService.php — read for V2 V8/S7 attestation, ZERO writes",
+    "BranchScope.php, IdempotencyKeyMiddleware.php, PricingService.php, OrderStateMachine.php — read for V2 isolation attestation, ZERO writes"
+  ],
+  "lens_findings": {
+    "lens_V_visual": {
+      "v2_findings": "N/A — P6 is static source-review, no UI"
+    },
+    "lens_U_ux_workflow": {
+      "v2_findings": [
+        "S10 — admin reports have NO per-branch filter UI today (V2 needs branch-selector dropdown)",
+        "S9 — loyalty UX cross-branch is currently platform-wide (V2 product decision needed)"
+      ]
+    },
+    "lens_T_tech_debt": {
+      "v2_findings": [
+        "P6-EXTRA-001 — 31 Settings::group() call sites need tenant scoping (highest blast radius)",
+        "P6-EXTRA-002 — 2 outbox retry commands need --branch flag",
+        "S6 — 113 admin controller ::query() calls per B3-ARCH-003 trust BranchScope; V2 needs TenantScope upstream"
+      ]
+    },
+    "lens_S_security": {
+      "v2_findings": [
+        "P6-EXTRA-005 — routes/channels.php Admin cross-branch Echo subscription = V2 cross-tenant info disclosure unless patched"
+      ]
+    },
+    "lens_A_a11y": {
+      "v2_findings": "N/A"
+    },
+    "lens_Y_observability": {
+      "v2_findings": [
+        "P6-EXTRA-004 — 'ws:heartbeat' GLOBAL key, V2 wants per-branch dashboard"
+      ]
+    },
+    "lens_X_cross_surface": {
+      "v2_findings": [
+        "Outbox listeners V2-ready (P6-EXTRA-009)",
+        "Echo channel keying V2-ready (S3, CITES C6-ARCH-001)"
+      ]
+    }
+  },
+  "verdict": "GREEN_WITH_V2_BACKLOG",
+  "verdict_summary": "All 10 scoped scenarios verified. Zero V1 blockers (severity=INFO across the board per spec). TWO V2-BLOCKERS surfaced: (1) smartisan/settings global for currency/loyalty/pos/FCM/order_setup (31 call sites, highest blast radius — show-stopper for V2 multi-tenant launch), (2) outbox retry locks GLOBAL (cross-branch starvation under load). SEVEN V2-WATCH items (queues, ws:heartbeat, Echo Admin authz, Spatie media path, backup per-tenant extraction, admin report UI, loyalty cross-branch product decision) — all mitigable. THREE V2-OK items confirmed (Echo channel, fiscal sequence, outbox listeners). Sibling artifacts B3.1 + B3.3 + C6 properly cited (10 EXEMPTED_MODELS, audit_logs.branch_id NULLABLE, single private-branch channel). NF525 chain READ_ONLY_ATTESTED_NO_WRITES (no writes performed). Frozen-zones diff = 0. V1 single-tenant Le Cayenne LOCAL is SAFE; V2 SaaS requires ~2 weeks of Settings migration + ~1 day outbox lock fix + ~1 week of reports UI work + per-tenant backup tooling.",
+  "p0_count": 0,
+  "p1_count": 0,
+  "p2_count": 0,
+  "p3_count": 0,
+  "info_count_v2_blocker": 2,
+  "info_count_v2_watch": 7,
+  "info_count_v2_ok": 3,
+  "top_3_v2_architectural_concerns": [
+    {
+      "rank": 1,
+      "id": "P6-EXTRA-001",
+      "title": "smartisan/settings global for ALL configuration (currency, loyalty rates, pos_dine_in, FCM project, order_setup)",
+      "v2_classification": "V2-BLOCKER",
+      "impact": "31 call sites must be re-routed to tenant-scoped Settings. Without this, V2 launching Tenant B means Tenant B's restaurants share Tenant A's currency, loyalty rules, FCM, dine-in flag. Show-stopper for V2 SaaS.",
+      "v1_blocker": false,
+      "remediation_cost_estimate": "~2 weeks (refactor + sentinel test + tenant resolution layer)",
+      "owner_action": "V2.0 prerequisite — track in V2.0 backlog as BLOCKER_V2_001"
+    },
+    {
+      "rank": 2,
+      "id": "P6-EXTRA-002",
+      "title": "OutboxRetryFailedCommand + OutboxWebhookRetryFailedCommand hold GLOBAL Cache::lock (one branch starves all)",
+      "v2_classification": "V2-BLOCKER",
+      "impact": "Cross-branch contention on shared cron locks. Tenant A's outbox backlog blocks Tenant B's real-time broadcasts for up to 5 minutes (LOCK_TTL=300s). KDS/POS/OSS sync SLA breaks at scale.",
+      "v1_blocker": false,
+      "remediation_cost_estimate": "~1 day (signature --branch flag + Cache::lock key + cron fan-out)",
+      "owner_action": "V2.0 prerequisite — track as BLOCKER_V2_002, low cost so do early"
+    },
+    {
+      "rank": 3,
+      "id": "BACKLOG-V102 + P6-EXTRA-005",
+      "title": "BranchScope drift (10 EXEMPTED_MODELS) + Echo Admin cross-branch authz (V2 cross-tenant disclosure)",
+      "v2_classification": "V2-BLOCKER (combined)",
+      "impact": "EXEMPTED_MODELS list includes ZReport, AuditLog, DomainEvent, ActionLog — all reporting/audit surfaces. V2 multi-tenant: a tenant_admin querying these will see cross-tenant data unless scoped. Combined with Echo Admin authz being cross-branch (C6-ARCH-001), V2 multi-tenant has a SECURITY-V2-BLOCKER cluster on cross-tenant info disclosure.",
+      "v1_blocker": false,
+      "remediation_cost_estimate": "~1 week (10 model BranchScope additions + per-model regression test + Echo authz tightening)",
+      "owner_action": "V2.0 prerequisite — combined with B3.3 BACKLOG-V102 (CITES B3.3 top_3_concerns rank 2)"
+    }
+  ],
+  "advisor_consulted_at": "before_writing_deliverable",
+  "advisor_directives_honored": [
+    "Severity=INFO across the board per spec ('V2-BLOCKERS are INFO for visibility')",
+    "Separate v2_classification field (V2-BLOCKER | V1-OK-V2-WATCH | OK_BY_DESIGN) carries the dispatch verdict",
+    "Sibling artifacts B3.1 + B3.3 + C6 CITED, not duplicated (10 EXEMPTED_MODELS, audit_logs NULLABLE, single private-branch channel)",
+    "Closed coverage gaps S4 (Spatie media path) and S10 (reports filter UI) via 2-min grep verification",
+    "Queues classified V2-WATCH not V2-BLOCKER (mitigable via runtime routing without code touch)",
+    "Settings global classified V2-BLOCKER (high LOC, wide blast radius, every call site must change)",
+    "Outbox retry locks classified V2-BLOCKER (cited file:line, cited LOCK_KEY constant)",
+    "NF525 chain attestation per persona: READ_ONLY_ATTESTED_NO_WRITES (no tinker, no writes)",
+    "Schema matches B3.3 / C6 sibling JSON structure (wave/round/agent_id/role/audit_methodology/findings/verdict/top_X_concerns/lens_findings)",
+    "Verdict GREEN_WITH_V2_BACKLOG (per advisor framing — no V1 blocker, V2 backlog tracked)"
+  ],
+  "next_actions_for_orchestrator": [
+    "1. Track P6-EXTRA-001 (smartisan/settings global) as the highest-priority V2.0 prerequisite — 2-week refactor needed before any V2 second-tenant launch",
+    "2. Track P6-EXTRA-002 (outbox retry locks GLOBAL) as low-cost V2.0 prerequisite — do early because it's a 1-day fix that prevents production SLA breaks at scale",
+    "3. Combine P6-EXTRA-005 (Echo Admin authz) + B3.3 BACKLOG-V102 (10 EXEMPTED_MODELS) into a V2.0 cross-tenant security cluster — single sprint of ~1 week",
+    "4. Defer S4/S5/P6-EXTRA-006/P6-EXTRA-007 (Spatie media path, backup per-tenant extraction) to V2.0 design phase — not blockers, but tenant offboarding will be painful without",
+    "5. V1 stays GREEN — no findings escalate to V1.0.x backlog from P6 audit. CITES B3.3 + B3.1 + C6 instead of duplicating."
+  ]
+}

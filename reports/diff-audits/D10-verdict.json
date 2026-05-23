@@ -1,0 +1,25 @@
+{
+  "agent": "A.4-D10",
+  "scope": "phpunit.xml exclude @group manual",
+  "pre_fail_count": 2,
+  "post_fail_count": 0,
+  "pre_skip_count": 0,
+  "post_skip_count": 4,
+  "pre_pass_count": 2,
+  "post_pass_count": 0,
+  "delta_LOC": 13,
+  "diff_clean": true,
+  "broad_smoke_clean": true,
+  "nf525_chain_ok": true,
+  "frozen_zone_touched": false,
+  "verdict": "CLEAN-FIX",
+  "notes": [
+    "Pre-fix: 4 AllergenCoverage methods ran; 2 failed (coverage_meets_eu_1169_minimum_threshold + required_allergens_are_set_per_signature_item), 2 passed (explicitly_none_items_are_empty_array_not_null + ssot_cache_consistency_holds_post_seed).",
+    "Post-fix: All 4 methods carry @group manual annotation (verified via grep), and the new <groups><exclude><group>manual</group></exclude></groups> block filters them out. PHPUnit reports 'No tests executed!' for --filter=AllergenCoverage, confirming all 4 are excluded.",
+    "Diff: exactly 13 lines added (10-line comment + 5-line groups block including indentation). No other lines changed.",
+    "NF525 chain: 'CHAIN OK (audit_logs + z_reports) (branch=1)' — bit-identical baseline preserved.",
+    "Broad smoke: PricingService 33 passed, BranchScope 34 passed — exclude does not accidentally skip other tests.",
+    "Frozen zone: phpunit.xml is not in the frozen-zone list. Zero frontend/backend/migration touch.",
+    "Re-enable path: remove @group manual from individual methods in tests/Feature/Sentinels/AllergenCoverageSentinelTest.php once chef-signed mapping is delivered (V1.0.2 backlog)."
+  ]
+}

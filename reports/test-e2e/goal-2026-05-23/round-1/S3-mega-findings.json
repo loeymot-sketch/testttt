@@ -1,0 +1,165 @@
+{
+  "system": "S3 KDS Cuisine",
+  "agent": "MEGA-SYSTEM AGENT S3",
+  "round": 1,
+  "wave": "GOAL ULTRA-DEEP 2026-05-23 Phase B.1",
+  "scope_urls": [
+    "http://127.0.0.1:8000/admin/kitchen-display-system"
+  ],
+  "viewport_canonical": { "w": 1920, "h": 1080 },
+  "seeded_orders_today": 9,
+  "execution_summary": {
+    "seven_lenses_status": {
+      "V_visual": "DONE — viewport overflow proven numerically + visually",
+      "U_ux_chef_rush": "RED — R1 + R2 fail owner-mandate persona",
+      "T_technical": "GREEN — Wave V race-fix sound, idempotency PATCH path correct",
+      "S_security": "GREEN — BranchScope enforced on Order/OrderItem feed (verified service code reads with admin bypass), permission:kitchen-display-system gate",
+      "A_a11y": "GREEN — aria-live polite (slot changes), aria-live assertive role=alert on allergen pill, sr-only message region present",
+      "Y_yourcache_freshness": "GREEN — bundle mtime 1779544549 > src mtime 1779318646; sentinel 3122214175 in commit history",
+      "X_cross_sync_kiosk_pos": "OUT-OF-SCOPE for S3 — covered by S1/S2 inter-system tests"
+    },
+    "production_real_scenarios": {
+      "R1_5_orders_no_scroll": "PASS",
+      "R1_6_orders_no_scroll": "BLOCKER-IF-RUSH",
+      "R1_7_orders_no_scroll": "BLOCKER-IF-RUSH",
+      "R1_8_orders_layout_2line": "BLOCKER-IF-RUSH",
+      "R1_9plus_orders_silently_dropped": "BLOCKER",
+      "R2_long_order_15_items_visible": "BLOCKER",
+      "R3_allergen_glance_1s": "N/A_no_real_data",
+      "R4_multi_bump_race_safe": "PASS",
+      "R5_historique_esc_dismiss": "PASS"
+    }
+  },
+  "chef_rush_persona_blockers": [
+    {
+      "id": "S3-CHEF-001",
+      "title": "Bottom-row card buttons cut off below viewport fold at 1920x1080 with ≥6 orders",
+      "severity": "P0_BLOCKER-IF-RUSH",
+      "owner_mandate_verbatim": "il doit y avoir maximum 5 commandes affichées en une ligne, sinon faire 2 lignes. Chaque commande doit être lisible sans scroll. Sinon le chef sous stress va sortir une commande incomplète.",
+      "evidence": {
+        "captures": [
+          "reports/test-e2e/goal-2026-05-23/round-1/captures/S3-R1-8orders-1920x1080-truncated.png",
+          "reports/test-e2e/goal-2026-05-23/round-1/captures/S3-R1-6orders-1920x1080.png",
+          "reports/test-e2e/goal-2026-05-23/round-1/captures/S3-R2-long-order-1920x1080.png"
+        ],
+        "dom_measurements": {
+          "grid_template_columns": "450px 450px 450px 450px",
+          "grid_template_rows": "462px 462px",
+          "grid_top": 164,
+          "grid_bottom": 1136,
+          "viewport_height": 1080,
+          "overflow_px": 56,
+          "last_card_box": { "top": 658, "bottom": 1120, "height": 462 }
+        },
+        "math": "grid_top(164) + 2*row(462) + gap(16) + padding(32) = 1136px ⇒ overflow by 56px ⇒ bottom-row Prêt buttons OR end-of-card content below fold."
+      },
+      "source": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:352-368 (CSS) + KdsV2Grid.vue:55 (slice 0,8)",
+      "fix_options": [
+        "A. Adaptive 1-row layout: ≤5 active orders ⇒ single row of 5 columns at full card height ~880px (no overflow), ≥6 ⇒ 2 rows of 5 cols = 10 slots, vertical card height ~440px each, rows fitting in 880+16+32 = ~970 < 1080",
+        "B. Dynamic compaction: row count = ceil(N/5), col count = max(min(N,5), N_per_row), with min card-height clamp 380px so chef stays glanceable. Caps at 10 displayed (1+9 overflow indicator pill).",
+        "C. Owner-mandate strict: 5-col grid with 'plus N' overflow chip in lower-right if N>5 ⇒ chef KNOWS extras exist behind a click (vs current silent slice 0,8)."
+      ],
+      "decision_required": "Owner gate — touch KdsV2Grid.vue layout. Architectural — write PROPOSAL doc, do NOT auto-modify."
+    },
+    {
+      "id": "S3-CHEF-002",
+      "title": "Order ≥9 silently truncated (no overflow indicator). Active order #9..#13 invisible to chef.",
+      "severity": "P0_BLOCKER",
+      "owner_mandate_verbatim": "chef devrait scroller parfois, il ferait pas attention il va sortir la commande pas complète",
+      "evidence": {
+        "source_line": "KdsV2Grid.vue:55 → v-for=\"(o, idx) in activeOrders.slice(0, 8)\"",
+        "no_overflow_chip_in_template": true,
+        "dom_test": "Seeded 8 today + had 1 prior (9 total) ⇒ only 8 rendered, no UI indication of #9. Verified via DOM eval grid.children.length === 8."
+      },
+      "fix_required": "Add overflow chip showing '+N hidden' near bottom-right of grid when activeOrders.length > visible slots. Even minimal — a passive count badge — would notify chef the queue is over capacity.",
+      "decision_required": "Implement chip alongside option B/C of S3-CHEF-001."
+    },
+    {
+      "id": "S3-CHEF-003",
+      "title": "Long-order content (15+ items) clipped inside card with discoverable but non-mandate-compliant scroll",
+      "severity": "P0_BLOCKER",
+      "owner_mandate_verbatim": "j'ai même les commandes qui sont sortis déjà est-ce qu'il peut les commen cours est-ce que ils doivent scroller pour voir ou bien on affichera toute la commande affiché en une seule fois sans scroller pour voir les détails",
+      "evidence": {
+        "capture": "reports/test-e2e/goal-2026-05-23/round-1/captures/S3-R2-long-order-1920x1080.png",
+        "card_height": 462,
+        "items_visible_first_view": "~3 of 15 (Menu, Frites Seules, Boisson Seule + trailing 'Cheddar...' cut)",
+        "scroll_mechanism": "overflow-y:auto in .kds-card__body (KdsOrderCard.vue:574). Wave U Owner-reported bug acknowledged this — fix made scrollbar VISIBLE but did NOT eliminate scroll requirement."
+      },
+      "fix_options": [
+        "A. Card-expansion-on-click: tap card ⇒ fullscreen modal with all items visible. (Wave Q-2 had similar pattern via tap-to-expand.)",
+        "B. Auto-shrink-to-fit: dynamic font-size + line-height when items > 8 ⇒ all 15 fit visually in 462px",
+        "C. Hybrid: first 5-6 items shown by default + 'N+ more' chip; tap reveals overlay with full list"
+      ],
+      "decision_required": "Owner gate — semantic UX choice."
+    }
+  ],
+  "non_blocker_findings": [
+    {
+      "id": "S3-INFO-001",
+      "severity": "P2",
+      "title": "POS Caisse pending order shows 'EN ATTENTE ENCAISSEMENT' yellow banner — visually distinct from chef-actionable orders. Good UX.",
+      "evidence": "S3-R1-8orders-1920x1080.png shows N°A0001 with EN ATTENTE ENCAISSEMENT footer instead of Prêt CTA"
+    },
+    {
+      "id": "S3-INFO-002",
+      "severity": "P2",
+      "title": "Wave Q-2 banner 'Les pastilles Prêt sont mémorisées sur ce poste — pas synchronisées entre plusieurs écrans KDS' informs chef of local-only state. LOCAL pill in top-right.",
+      "evidence": "Sub-bar text visible in all captures"
+    },
+    {
+      "id": "S3-INFO-003",
+      "severity": "P2",
+      "title": "Historique du jour pill shipped Wave X X3. Source-verified Esc + backdrop dismiss (KdsHistoryDrawer.vue:194-200).",
+      "scenario_status": "R5 PASS (source-verified, browser test inconclusive due to parallel-agent session contention)"
+    },
+    {
+      "id": "S3-INFO-004",
+      "severity": "P2",
+      "title": "Multi-bump race safety architecturally sound — Wave V removed pendingTimeoutId single-slot serialization. Each click emits PATCH immediately. Backend uses lockForUpdate + idempotency-key UUID v4. Concurrent PATCH on DIFFERENT orders are independent; duplicate PATCH on SAME order returns 409.",
+      "scenario_status": "R4 PASS (source-verified)"
+    }
+  ],
+  "frozen_zone_diff": {
+    "files_modified": [],
+    "scope_minimal_commits": [],
+    "rationale": "No frozen file in S3 scope. KdsV2Grid.vue is owner-architectural — layout change requires owner gate + PROPOSAL doc, not auto-edit (per MEGA agent mandate). KdsHistoryDrawer.vue is read-only audit. KdsOrderCard.vue scroll behavior is architectural — change requires owner gate."
+  },
+  "evidence_capture_index": [
+    {
+      "id": "S3-R1-8orders-1920x1080-truncated.png",
+      "scenario": "R1 — 8 active orders @ 1920x1080",
+      "key_visual": "Bottom row cards 803-806 with Prêt buttons clipped at viewport fold y=1080. Top row N°A0001 (pending counter) + 901/801/802 fit cleanly."
+    },
+    {
+      "id": "S3-R1-6orders-1920x1080.png",
+      "scenario": "R1 — 7 active orders (901 + 803-808)",
+      "key_visual": "Even at 7 orders, grid still 4×2 = bottom row 806/807/808 + slot H placeholder. Same overflow."
+    },
+    {
+      "id": "S3-R1-8orders-fullpage.png",
+      "scenario": "R1 — full-page screenshot identical to viewport (document equals viewport, content clipped not scrolled)",
+      "key_visual": "Confirms NO page scroll — cards truly clipped, not below-fold-scrollable."
+    },
+    {
+      "id": "S3-R2-long-order-1920x1080.png",
+      "scenario": "R2 — Order 999 with 15 items + 8 sauces + 4 variations + 3 notes",
+      "key_visual": "Card H (slot bottom-right) shows order 999 with first 3 items (Menu, Frites Seules with 'Choix Note client 2', Boisson Seule with 'Choix Note client 3', Cheddar partial). Remaining 11+ items below scroll fold within card. Chef glance ≤3s impossible."
+    },
+    {
+      "id": "S3-R1-13orders-default.png",
+      "scenario": "R1 — Initial state pre-seed (dashboard view captured in error during nav drift)",
+      "key_visual": "Dashboard with 'Alertes SLA (Cuisine + 15min)' panel showing 4 stale orders 30s+. Side observation: SLA panel works as expected."
+    }
+  ],
+  "proposal_docs_written": [
+    "proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md"
+  ],
+  "verdict": "RED",
+  "verdict_rationale": "Three P0 chef-rush BLOCKERs proven with visual + numeric evidence. Owner verbatim mandate violated. Auto-fix forbidden per MEGA mandate (architectural layout decision). PROPOSAL doc + this findings JSON delivered for owner gate.",
+  "owner_action_required": [
+    "Decide layout option A/B/C for S3-CHEF-001 (5+ orders fit-without-scroll)",
+    "Decide overflow-chip pattern for S3-CHEF-002 (visible queue-over-capacity indicator)",
+    "Decide long-order display pattern for S3-CHEF-003 (modal / shrink-to-fit / hybrid)"
+  ],
+  "browser_session_caveat": "Parallel MEGA agents (S1/S2/S4/S5/S6/S7) shared the same Playwright Chrome session during this audit, causing intermittent route drift. R5 (Historique Esc dismiss) was source-verified rather than browser-tested. R1/R2 evidence is solid — captures taken within 50ms of router.push completion. All measurements via document.querySelector('.kds-v2__grid').getBoundingClientRect() ⇒ deterministic numeric proof, viewport-independent of parallel contention."
+}

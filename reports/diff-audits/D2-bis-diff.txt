@@ -1,0 +1,23 @@
+249c249,254
+<       const v = parseFloat(this.cashReceivedRaw);
+---
+>       // [GOAL-D2 2026-05-23] Accept BOTH `.` and `,` as decimal separator
+>       // so the FR pre-fill ("8,50") parses correctly AND user-typed
+>       // values keep working in either locale flavour. Mirrors locale
+>       // tolerance pattern used by FR POS Vanilla wizard.
+>       const raw = String(this.cashReceivedRaw || '').replace(',', '.');
+>       const v = parseFloat(raw);
+292c297,300
+<           this.cashReceivedRaw = String(this.orderTotal.toFixed(2));
+---
+>           // [GOAL-D2 2026-05-23] Pre-fill INPUT with FR decimal separator
+>           // so the cashier sees "8,50" instead of "8.50". Parser at
+>           // cashReceivedNumber accepts both `,` and `.`.
+>           this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
+305,306c313,315
+<       if (modeId === 'CASH' && (this.cashReceivedRaw === '' || Number(this.cashReceivedRaw) <= 0)) {
+<         this.cashReceivedRaw = String(this.orderTotal.toFixed(2));
+---
+>       if (modeId === 'CASH' && (this.cashReceivedRaw === '' || Number(String(this.cashReceivedRaw).replace(',', '.')) <= 0)) {
+>         // [GOAL-D2 2026-05-23] FR decimal pre-fill (see watcher comment).
+>         this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');

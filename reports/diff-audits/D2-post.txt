@@ -1,0 +1,44 @@
+     699 resources/js/components/admin/pos/PosCounterCollectModal.vue
+20:    accepts a SINGLE mode + single received only, AND short-circuits
+48:              {{ $t('label.encaisser_mode_title') }}
+61:              N° {{ order?.queue_number || order?.order_serial_no || order?.id }}
+63:            <span class="cc-modal-source">{{ $t('label.cc_source_kiosk') }}</span>
+69:          <p class="cc-hero-label">{{ $t('label.total_amount') }}</p>
+71:            {{ formatPrice(orderTotal) }}
+77:          <p class="cc-section-title">{{ $t('label.select_payment_method') }}</p>
+90:              <span class="cc-mode-icon" aria-hidden="true">{{ m.icon }}</span>
+91:              <span class="cc-mode-label">{{ $t(m.labelKey) }}</span>
+92:              <span v-if="m.subKey" class="cc-mode-sub">{{ $t(m.subKey) }}</span>
+97:        <!-- Cash sub-section: received amount input + numpad + rendu calc -->
+104:            {{ $t('label.received_amount') }}
+108:            ref="receivedInput"
+115:            data-testid="pos-counter-collect-received-input"
+119:            :aria-label="$t('label.received_amount')"
+127:            v-if="cashChange > 0"
+135:              {{ $t('label.change_due') }}
+137:            <span class="cc-change-value cc-tabular">{{ formatPrice(cashChange) }}</span>
+140:            {{ $t('label.cc_cash_short') }}
+150:          <p class="cc-mode-info-text">{{ modeHint }}</p>
+162:            {{ $t('label.cancel') }}
+175:            {{ submitting ? $t('label.processing') : $t('button.confirm_and_print') }}
+197: *   - confirmed: payload { orderId, mode, modeInt, received } after 2xx persist
+202: *   body: { mode: int, received: number|null, note: string|null }
+209: *   - PosV5Numpad shared atom for CASH received input
+244:    orderTotal() {
+252:    cashChange() {
+254:      const diff = this.cashReceivedNumber - this.orderTotal;
+260:      return this.cashReceivedNumber < this.orderTotal && this.cashReceivedNumber > 0;
+265:        // For CASH: require received >= total. Backend
+269:        return this.cashReceivedNumber >= this.orderTotal && this.orderTotal > 0;
+271:      // For CARD / MOBILE / TICKET: backend allows null received (L247-249);
+273:      return this.orderTotal > 0;
+285:    // Pre-fill the received input with the order total the moment the
+292:          this.cashReceivedRaw = String(this.orderTotal.toFixed(2));
+303:      // When switching back to CASH, re-pre-fill the received field if
+306:        this.cashReceivedRaw = String(this.orderTotal.toFixed(2));
+327:    formatPrice(amount) {
+360:      const total = this.orderTotal;
+361:      // CASH path sends explicit received (backend enforces >= total).
+363:      const received = this.selectedMode === 'CASH' ? this.cashReceivedNumber : null;
+372:            received,
+403:          received,

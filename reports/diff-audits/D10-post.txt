@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="./vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory suffix="Test.php">./tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory suffix="Test.php">./tests/Feature</directory>
+        </testsuite>
+        <!-- [F-017 Suite 7] Stress and load suite (rush midi simulation).
+             Lives in tests/load/ per the F-017 plan. Tests are tagged
+             group=stress so they can be targeted via
+             php artisan test group=stress. They also run as part of
+             the default Load testsuite so regressions on fiscal+queue
+             monotonicity invariants surface in normal CI. -->
+        <testsuite name="Load">
+            <directory suffix="Test.php">./tests/load</directory>
+        </testsuite>
+    </testsuites>
+    <!-- [GOAL-D10 2026-05-23 owner decision] Exclude @group manual annotated
+         tests from CI runs. These are tests whose pre-conditions (e.g.
+         chef-signed allergen mapping) are not yet met in V1 production
+         data. The annotation is decorative without this exclude block —
+         Wave Q-4 NOOPed LeCayenneAllergenSeeder but the sentinel methods
+         still ran in CI. This block matches code intent to CI behavior.
+         Re-enable per-method by removing the @group manual annotation
+         once the pre-condition is satisfied (chef-signed mapping). -->
+    <groups>
+        <exclude>
+            <group>manual</group>
+        </exclude>
+    </groups>
+    <coverage processUncoveredFiles="true">
+        <include>
+            <directory suffix=".php">./app</directory>
+        </include>
+    </coverage>
+    <php>
+        <!-- [C1] Default PHP CLI memory_limit (128M) overflows on the full
+             Feature suite (562 tests, heavy fixtures + Spatie permission
+             cache). Bump to 512M so runs do not require `-d memory_limit=512M`
+             on the CLI. Mirrors the limit used in CI runners. -->
+        <ini name="memory_limit" value="512M"/>
+        <env name="APP_ENV" value="testing"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="CACHE_DRIVER" value="array"/>
+        <env name="BROADCAST_DRIVER" value="log"/>
+        <env name="DB_CONNECTION" value="sqlite"/>
+        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="APP_KEY" value="base64:xStyFkYpE7z2419nS+F0eDk1xQ89H9xY4S/r+F+Z4eY="/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="MIX_API_KEY" value="test-api-key"/>
+        <env name="LOGIN_LOCKOUT_MAX_ATTEMPTS" value="1000"/>
+        <env name="LOGIN_LOCKOUT_DECAY_MINUTES" value="1"/>
+        <env name="API_THROTTLE_PER_MINUTE" value="120"/>
+        <env name="STAFF_ONLY_MODE" value="false"/>
+        <env name="KIOSK_USE_POS_WIZARD" value="false"/>
+        <env name="KIOSK_MACHINE_USERNAME" value="kiosk-lecayenne"/>
+        <env name="KIOSK_MACHINE_PASSWORD" value="kiosk123"/>
+        <env name="MIX_PUSHER_APP_KEY" value="local-test-key"/>
+        <env name="MIX_PUSHER_HOST" value="127.0.0.1"/>
+        <env name="MIX_PUSHER_PORT" value="6001"/>
+        <!-- [POS-9.4.BL] Force empty Pusher creds in test env so
+             DispatchDomainEventsJob short-circuits the broadcast (mirrors
+             CI where .env.example leaves PUSHER_* empty). Without this a
+             developer with a local .env pointing at a soketi dev instance
+             would see cURL errors on Kiosk Menu/Allergen listener tests. -->
+        <env name="PUSHER_APP_KEY" value=""/>
+        <env name="PUSHER_APP_SECRET" value=""/>
+        <env name="PUSHER_APP_ID" value=""/>
+        <!-- [POS-9.4.BL] AuditLogService / ZReportService require a non-empty
+             HMAC secret even in APP_ENV=testing. These 48-char strings are
+             NOT in fiscal.dev_sentinels, so production still rejects any
+             attempt to reuse them via assertProductionSafe(). -->
+        <env name="FISCAL_AUDIT_SECRET" value="testing-fiscal-audit-secret-padding-48chars-ok"/>
+        <env name="FISCAL_Z_REPORT_SECRET" value="testing-fiscal-zreport-secret-padding-48chars-ok"/>
+    </php>
+</phpunit>
