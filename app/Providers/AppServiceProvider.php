@@ -221,6 +221,26 @@ class AppServiceProvider extends ServiceProvider
                 );
             }
         }
+
+        // [GOAL-F2-HEAL-02 2026-05-23] Per-session innodb_lock_wait_timeout
+        // bounded at 5s to prevent FPM pool starvation under hot-row
+        // contention (fiscal_sequence allocation + Idempotency-Key locks +
+        // OrderStateMachine lockForUpdate). MySQL default 50s × worker pool
+        // = realistic DoS surface. SQLite ignores this (SQLite has busyTimeout
+        // 5s by default per Laravel); guard ensures noop on non-MySQL.
+        // Env override: DB_LOCK_WAIT_TIMEOUT (default 5).
+        if (app('db')->connection()->getDriverName() === 'mysql') {
+            $timeout = (int) env('DB_LOCK_WAIT_TIMEOUT', 5);
+            try {
+                \DB::statement("SET SESSION innodb_lock_wait_timeout = ?", [$timeout]);
+            } catch (\Throwable $e) {
+                // Non-fatal — log + continue. Pool starvation is a perf risk,
+                // not a correctness risk.
+                \Log::warning('[F2-HEAL-02] Failed to set innodb_lock_wait_timeout', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     private function registerSqliteRegexpIfNeeded(): void
