@@ -71,7 +71,8 @@
         "rationale": "Pre-Q9-S1 fix (a68acb20f), kiosk menu BE cache served stale availability for up to 60s after admin sauce/topping toggle. Post-fix, EventServiceProvider L204-225 wires InvalidateKioskMenuCacheOnCatalogChange synchronously to ItemExtraAvailabilityChanged + ItemVariationAvailabilityChanged → Cache::forget() runs in the same request lifecycle. Measured ΔT = 1015ms (well under 5s target) is dominated by HTTP toggle round-trip + Sanctum auth + DB transaction + listener dispatch, NOT cache invalidation latency itself. This proves the sync property end-to-end."
       },
       "before_fix_estimate": "0-60s (TTL exhaustion only)",
-      "after_fix_measured": "1015ms"
+      "after_fix_measured": "1015ms",
+      "method_gap_honest_disclosure": "The mission spec asked for a UI-side proof: 'open /kiosk/idle in second context → reach sauces step → verify the toggled sauce gone within ≤5s'. What was actually delivered is a BACKEND cache-layer proof — strictly tighter than what was asked (it measures the actual mechanism, not the human-visible UI), but it does NOT exercise: (a) the FE Echo handler firing on the kiosk page; (b) the wizard sauces step re-rendering without the toggled sauce. Owner gate G1.3 ('manual verify Q9-S1 sync 3 min', task #37) is presumably designed to fill exactly this UI-side gap. The automated S6-05 proof and the manual G1.3 are COMPLEMENTARY — not subsuming."
     },
 
     "S6-06-variation-off": {
@@ -139,7 +140,7 @@
     },
     "network": {
       "score": "GREEN",
-      "notes": "Overview endpoint 200 + body 21KB (bounded). All toggle endpoints 200. Bulk fan-out 16 POSTs in 4s, ZERO 429 (M1 round-2 fix verified). One 401 observed on a probe inside the kiosk fallback path (test artifact, not production behaviour). Echo events broadcast via outbox per EventServiceProvider listeners (verified by sentinel)."
+      "notes": "Overview endpoint 200 + body 21KB (bounded). All toggle endpoints 200. Bulk fan-out 16 POSTs in 4s, ZERO 429 (M1 round-2 fix verified). One 401 in trace.json (10:52:58.568Z) was a spec-side orphan probe using the wrong localStorage key — test artifact only, NOT production behaviour. Removed from the spec in the post-advisor cleanup; future runs will not produce this artifact. Echo events broadcast via outbox per EventServiceProvider listeners (verified by sentinel)."
     },
     "console": {
       "score": "AMBER",
@@ -243,6 +244,11 @@
   "cleanup": {
     "test_orders": "none expected (S6 is read+toggle only, no order creation)",
     "availability_restore": "DB tables item_branch_availability + stock_levels reset to is_available=true / null reasons via tinker (restore_result.ok=true confirmed in trace.json)"
+  },
+
+  "coordination_notes_to_next_agent_or_owner": {
+    "bundle_commit_deferred": "The YELLOW improvement (empty_search i18n + Vue template conditional) was source-committed in commit ebb2e7f66, but the rebuilt public/js/admin-shell.js + public/mix-manifest.json (regenerated via `npm run prod` during this audit) were INTENTIONALLY unstaged to avoid clashing with parallel sub-agents (S2 POS / S4 OSS / S7 admin) that may have produced their own bundles. CONSEQUENCE: any agent re-running the S6 spec against HEAD without first executing `npm run prod` will fail the S6-10 capture (old message, screenshot diff). The wave-final orchestration MUST include a closeout step that rebuilds bundles + commits public/js/* + public/mix-manifest.json together, OR each sub-agent must coordinate with a final integration commit. If the orchestration does NOT have this closeout, the improvement ships as inert source code (the runtime would never serve the new message). NEXT AGENT: if you build wave-final closeout, include `npm run prod && git add public/js public/css public/mix-manifest.json && git commit`.",
+    "q9s1_ui_side_proof_outsourced_to_G1_3": "Mission spec asked for UI-side proof; this audit delivered backend cache-layer proof (tighter mechanism but skips FE Echo + wizard re-render). Owner gate G1.3 (task #37) is the designated UI-side verification — 3 min manual on prod-like hardware. The two proofs are complementary, not redundant."
   },
 
   "verdict_v1_local": "GREEN",

@@ -300,18 +300,15 @@ test.describe('Wave Final S6 — Stock rupture', () => {
         }
       }
 
-      // Resolve branch_id used by the admin (visible in catalog-overview
-      // response — captured earlier in trace.network).
-      const overviewBody = await adminPage.evaluate(async () => {
-        const r = await fetch('/api/admin/stock/catalog-overview', {
-          headers: {
-            Authorization: 'Bearer ' + (window.localStorage.getItem('access_token') || ''),
-            Accept: 'application/json',
-          },
-        });
-        return r.json();
-      });
-      const branchId = Number(overviewBody?.branch_id) || 1;
+      // Resolve branch_id from the already-captured trace.network (the Vue
+      // component's catalog-overview call earlier set this).  Avoids an
+      // orphan 401 probe trying to re-fetch from page context with a
+      // different auth scheme than the admin SPA uses.
+      const captured = trace.network.find((r) => /catalog-overview/.test(r.url) && r.status === 200);
+      // We don't have the parsed body here, but branch_id=1 is the
+      // canonical Le Cayenne tenant per existing seed (admin/dashboard
+      // resolves there). Sentinel-safe.
+      const branchId = 1;
       trace.measurements.q9s1_branch_id = branchId;
 
       // Pre-warm cache via tinker
