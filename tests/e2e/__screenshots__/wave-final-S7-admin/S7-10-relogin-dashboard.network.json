@@ -1,0 +1,219 @@
+[
+  {
+    "url": "http://localhost:8000/api/auth/login",
+    "method": "POST",
+    "status": 201,
+    "duration_ms": null,
+    "ts": 1779532671659
+  },
+  {
+    "url": "http://localhost:8000/api/auth/authcheck",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779532676587
+  },
+  {
+    "url": "http://localhost:8000/api/admin/default-access",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676590
+  },
+  {
+    "url": "http://localhost:8000/api/admin/setting/branch?paginate=0&order_column=id&order_type=asc&status=5",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676592
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/total-sales",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676592
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/total-orders",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676594
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/total-menu-items",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676594
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/realtime-report",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676594
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/sla-alerts",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676594
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/channel-statistics",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676600
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/audit-trail",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676600
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/order-statistics",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676601
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/sales-summary",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676606
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/order-summary",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676610
+  },
+  {
+    "url": "http://localhost:8000/api/admin/fiscal/z-report",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676622
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/featured-items",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676648
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/popular-items",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676661
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/total-sales",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676674
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/total-orders",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676685
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/total-menu-items",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676696
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/realtime-report",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676706
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/sla-alerts",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676716
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/channel-statistics",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676726
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/audit-trail",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676735
+  },
+  {
+    "url": "http://localhost:8000/api/auth/logout",
+    "method": "POST",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676787
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/order-statistics",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676797
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/sales-summary",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676808
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/order-summary",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676818
+  },
+  {
+    "url": "http://localhost:8000/api/admin/fiscal/z-report",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676828
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/featured-items",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676838
+  },
+  {
+    "url": "http://localhost:8000/api/admin/dashboard/popular-items",
+    "method": "GET",
+    "status": 401,
+    "duration_ms": null,
+    "ts": 1779532676848
+  }
+]

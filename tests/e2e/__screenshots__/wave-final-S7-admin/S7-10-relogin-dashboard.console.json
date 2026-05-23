@@ -1,0 +1,352 @@
+[
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/default-access",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676590
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/setting/branch?paginate=0&order_column=id&order_type=asc&status=5",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676592
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/total-sales",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676592
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/total-orders",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676594
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/total-menu-items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676594
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/realtime-report",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676594
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/sla-alerts",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676600
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/channel-statistics",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676600
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/audit-trail",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676600
+  },
+  {
+    "level": "pageerror",
+    "text": "Request failed with status code 401",
+    "stack": "AxiosError: Request failed with status code 401\n    at settle (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:10901:12)\n    at XMLHttpRequest.onloadend (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:9130:68)",
+    "ts": 1779532676601
+  },
+  {
+    "level": "pageerror",
+    "text": "Request failed with status code 401",
+    "stack": "AxiosError: Request failed with status code 401\n    at settle (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:10901:12)\n    at XMLHttpRequest.onloadend (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:9130:68)",
+    "ts": 1779532676601
+  },
+  {
+    "level": "pageerror",
+    "text": "Request failed with status code 401",
+    "stack": "AxiosError: Request failed with status code 401\n    at settle (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:10901:12)\n    at XMLHttpRequest.onloadend (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:9130:68)",
+    "ts": 1779532676601
+  },
+  {
+    "level": "pageerror",
+    "text": "Request failed with status code 401",
+    "stack": "AxiosError: Request failed with status code 401\n    at settle (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:10901:12)\n    at XMLHttpRequest.onloadend (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:9130:68)",
+    "ts": 1779532676601
+  },
+  {
+    "level": "pageerror",
+    "text": "Request failed with status code 401",
+    "stack": "AxiosError: Request failed with status code 401\n    at settle (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:10901:12)\n    at XMLHttpRequest.onloadend (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:9130:68)",
+    "ts": 1779532676601
+  },
+  {
+    "level": "pageerror",
+    "text": "Request failed with status code 401",
+    "stack": "AxiosError: Request failed with status code 401\n    at settle (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:10901:12)\n    at XMLHttpRequest.onloadend (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:9130:68)",
+    "ts": 1779532676601
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/order-statistics",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676601
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/sales-summary",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676606
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/order-summary",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676610
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/fiscal/z-report",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676622
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/featured-items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676648
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/popular-items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676661
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/total-sales",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676674
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/total-orders",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676685
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/total-menu-items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676696
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/realtime-report",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676706
+  },
+  {
+    "level": "pageerror",
+    "text": "Request failed with status code 401",
+    "stack": "AxiosError: Request failed with status code 401\n    at settle (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:10901:12)\n    at XMLHttpRequest.onloadend (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:9130:68)",
+    "ts": 1779532676707
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/sla-alerts",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676716
+  },
+  {
+    "level": "pageerror",
+    "text": "Request failed with status code 401",
+    "stack": "AxiosError: Request failed with status code 401\n    at settle (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:10901:12)\n    at XMLHttpRequest.onloadend (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:9130:68)",
+    "ts": 1779532676716
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/channel-statistics",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676726
+  },
+  {
+    "level": "pageerror",
+    "text": "Request failed with status code 401",
+    "stack": "AxiosError: Request failed with status code 401\n    at settle (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:10901:12)\n    at XMLHttpRequest.onloadend (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:9130:68)",
+    "ts": 1779532676726
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/audit-trail",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676735
+  },
+  {
+    "level": "pageerror",
+    "text": "Request failed with status code 401",
+    "stack": "AxiosError: Request failed with status code 401\n    at settle (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:10901:12)\n    at XMLHttpRequest.onloadend (http://localhost:8000/js/vendor.js?id=0700986e06877b444d68a7add07dcb75:9130:68)",
+    "ts": 1779532676736
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/auth/logout",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676787
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/order-statistics",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676797
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/sales-summary",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676808
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/order-summary",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676818
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/fiscal/z-report",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676828
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/featured-items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676838
+  },
+  {
+    "level": "error",
+    "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "location": {
+      "url": "http://localhost:8000/api/admin/dashboard/popular-items",
+      "lineNumber": 0,
+      "columnNumber": 0
+    },
+    "ts": 1779532676848
+  }
+]
