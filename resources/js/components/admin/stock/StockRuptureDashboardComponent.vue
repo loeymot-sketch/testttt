@@ -145,7 +145,14 @@
                     class="px-2 py-6 text-center text-sm text-slate-500"
                     data-testid="stock-mgmt-empty"
                 >
-                    {{ $t('admin.stock_mgmt.empty') }}
+                    <!-- [Wave Final S6 2026-05-23] Differentiate the empty
+                         message: "no result" when the user typed a search
+                         query that excluded everything, vs "no products in
+                         category" when the bucket is genuinely empty.
+                         Same FR-only V1 polish. -->
+                    {{ searchQuery && searchQuery.trim()
+                        ? $t('admin.stock_mgmt.empty_search')
+                        : $t('admin.stock_mgmt.empty') }}
                 </p>
 
                 <div

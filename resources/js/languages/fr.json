@@ -118,6 +118,7 @@
             "subtitle": "Activez ou désactivez chaque produit pour cette branche. Le changement est synchronisé en temps réel sur la caisse, la borne et le wizard.",
             "search": "Rechercher un produit…",
             "empty": "Aucun produit dans cette catégorie.",
+            "empty_search": "Aucun produit ne correspond à votre recherche.",
             "in_stock": "EN STOCK",
             "out_of_stock": "RUPTURE",
             "loading_error": "Impossible de charger les produits. Réessayez.",
