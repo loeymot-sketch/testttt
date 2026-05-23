@@ -7,27 +7,6 @@
   "v2_layout": true,
   "v2_auto_transition": false,
   "order_state_machine_frozen": true,
-  "findings": [
-    {
-      "id": "S3-INFO-CARD-ITEMS-MISSING",
-      "severity": "INFO",
-      "state_ref": "S3-08",
-      "classification": "Seed pipeline shortcut (saveQuietly bypasses order_items)",
-      "dom_evidence": "No .kds-card__items / .kds-order-line visible on seeded card.",
-      "network_evidence": null,
-      "evidence_path": null,
-      "fix_hint": "Expected for tinker-seeded orders — real orders bumped via POS flow render items correctly (covered by Wave T)."
-    },
-    {
-      "id": "S3-INFO-SERVED-STRIP-HIDDEN",
-      "severity": "INFO",
-      "state_ref": "S3-12",
-      "classification": "Wave U interaction with KDS feed filter — likely backend feed excludes PREPARED beyond N-min window, not a regression.",
-      "dom_evidence": "Wave U .kds-v2__served strip not visible with 2 PREPARED orders seeded today.",
-      "network_evidence": null,
-      "evidence_path": null,
-      "fix_hint": "Check KitchenDisplaySystemController list() query — if PREPARED filter is time-windowed, this is expected; otherwise investigate Wave U recentlyServed computed."
-    }
-  ],
-  "generated_at": "2026-05-23T11:01:50.284Z"
+  "findings": [],
+  "generated_at": "2026-05-23T11:09:56.767Z"
 }

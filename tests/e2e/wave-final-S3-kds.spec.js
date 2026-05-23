@@ -70,6 +70,35 @@ function artisan(code) {
   );
 }
 
+// [Round-2 healing] Attach a real `order_items` row so the V2 card body
+// renders item lines — without this the card body is blank for tinker-seeded
+// orders and S3-08 (item/variation rendering) cannot be visually verified.
+function attachOrderItem(orderId, { itemId = 1, branchId = 1, quantity = 1 } = {}) {
+  try {
+    const phpCode = `
+      $oi = new \\App\\Models\\OrderItem();
+      $oi->order_id = ${orderId};
+      $oi->branch_id = ${branchId};
+      $oi->item_id = ${itemId};
+      $oi->quantity = ${quantity};
+      $oi->released_qty = 0;
+      $oi->discount = 0;
+      $oi->price = 12.50;
+      $oi->tax_rate = 5.5;
+      $oi->tax_amount = 0;
+      $oi->item_variation_total = 0;
+      $oi->item_extra_total = 0;
+      $oi->total_price = 12.50;
+      $oi->saveQuietly();
+      echo $oi->id;
+    `.replace(/\s+/g, ' ');
+    const out = artisan(phpCode).trim();
+    return parseInt(out.split('\n').pop().trim(), 10);
+  } catch (_err) {
+    return -1;
+  }
+}
+
 function seedOrder({ token, status, branchId = 1, orderType = 10 }) {
   // orderType=10 = TAKEAWAY per task spec.
   //
@@ -121,8 +150,13 @@ function readOrderStatus(orderId) {
 
 function cleanupSeededOrders() {
   try {
+    // [Round-2 healing] Delete attached order_items first to avoid FK
+    // integrity violation when our seeds had OrderItem rows attached for
+    // S3-08 visibility coverage.
     artisan(
-      `\\App\\Models\\Order::where('order_serial_no', 'like', '${TOKEN_PREFIX}%')->withoutGlobalScopes()->forceDelete();`,
+      `$ids = \\App\\Models\\Order::where('order_serial_no', 'like', '${TOKEN_PREFIX}%')->withoutGlobalScopes()->pluck('id')->toArray(); ` +
+      `if (!empty($ids)) { \\App\\Models\\OrderItem::whereIn('order_id', $ids)->withoutGlobalScopes()->forceDelete(); ` +
+      `\\App\\Models\\Order::whereIn('id', $ids)->withoutGlobalScopes()->forceDelete(); }`,
     );
   } catch (_err) {
     // Best-effort.
@@ -334,13 +368,16 @@ test.describe('Wave Final — S3 KDS bump-board + history drawer', () => {
   test('S3-07..09 ACCEPTED order appears in V2 grid → bump to PREPARING', async ({ page }) => {
     const tNow = Date.now();
     const orderId = seedOrder({ token: `${TOKEN_PREFIX}BUMP-${tNow}`, status: 4 }); // ACCEPT
+    // [Round-2 healing] Attach a real OrderItem so the card body renders
+    // an item line — proves S3-08 visibility assertion is meaningful.
+    const orderItemId = attachOrderItem(orderId);
 
     await pinV2Layout(page);
     await loginAsAdmin(page);
     await gotoKds(page);
 
-    // V2 grid render — KdsOrderCard surface
-    const card = page.locator('.kds-card, [class*="kds-card"]').first();
+    // V2 grid render — scope to OUR seeded card
+    const card = page.locator(`[data-order-id="${orderId}"]`);
     await expect(card).toBeVisible({ timeout: 15_000 });
 
     await page.screenshot({
@@ -348,24 +385,37 @@ test.describe('Wave Final — S3 KDS bump-board + history drawer', () => {
       fullPage: true,
     });
 
-    // S3-08 expand card (the V2 card shows items by default; we capture detail
-    // surface here for evidence of items + sauces visibility).
-    const orderLineList = page.locator('.kds-card__items, .kds-card-items, .kds-order-line').first();
-    if (await orderLineList.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    // S3-08 verify the card body actually renders the attached item line.
+    // KdsOrderLine emits the qty + item name; check both.
+    const cardBody = card.locator('.kds-card__body, .kds-order-line').first();
+    if (await cardBody.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      const bodyText = (await cardBody.innerText()).trim();
+      // Asserts item rendering ran — we expect a quantity marker or the item
+      // name we just seeded. Default item is "Menu (Frites + Boisson)" id=1.
+      if (!/\b(Menu|Frites|Boisson|x\s*1|×|\d+\s*x)/i.test(bodyText)) {
+        recordFinding({
+          id: 'S3-FIND-CARD-BODY-NOT-RENDERING-ITEMS',
+          severity: 'IMPROVEMENT',
+          state: 'S3-08',
+          dom: `Card body text after seeding OrderItem id=${orderItemId}: "${bodyText.slice(0, 150)}"`,
+          classification: 'Item rendering surface drift (KdsOrderLine may not handle minimal-field seeded items)',
+          evidence: 'S3-08-card-details-visible.png',
+          fix_hint: 'Inspect resources/js/helpers/kdsCustomization.js renderItem() — likely missing fallback when `composition_snapshot` is null.',
+        });
+      }
       await page.screenshot({
         path: path.join(SHOT_DIR, 'S3-08-card-details-visible.png'),
         fullPage: true,
       });
     } else {
-      // Items not rendered → record as INFO (could be empty order_items relation
-      // — happens with seeded orders bypassing the full order pipeline)
       recordFinding({
-        id: 'S3-INFO-CARD-ITEMS-MISSING',
-        severity: 'INFO',
+        id: 'S3-FIND-CARD-BODY-INVISIBLE',
+        severity: 'CRITICAL',
         state: 'S3-08',
-        dom: 'No .kds-card__items / .kds-order-line visible on seeded card.',
-        classification: 'Seed pipeline shortcut (saveQuietly bypasses order_items)',
-        fix_hint: 'Expected for tinker-seeded orders — real orders bumped via POS flow render items correctly (covered by Wave T).',
+        dom: `Card body wrapper not visible despite OrderItem ${orderItemId} attached to order ${orderId}.`,
+        classification: 'V2 grid card body fail-render — chef cannot see what to prepare',
+        evidence: 'S3-08-card-details-empty.png',
+        fix_hint: 'Investigate KdsOrderCard.vue v-for over order.order_items — Vuex feed may not be hydrating relation. Check axios.get(admin/kds-order/list) eager-load.',
       });
       await page.screenshot({
         path: path.join(SHOT_DIR, 'S3-08-card-details-empty.png'),
@@ -552,44 +602,43 @@ test.describe('Wave Final — S3 KDS bump-board + history drawer', () => {
   // -------------------------------------------------------------------------
   test('S3-12 Wave U recentlyServed strip renders alongside drawer trigger', async ({ page }) => {
     const tNow = Date.now();
-    // Seed 2 PREPARED orders — the Wave U strip renders the last 4 PREPARED
-    // by updated_at desc (filter on .kds-v2__served).
+    // [Round-2 healing] Seed 2 PREPARED orders + 1 ACTIVE so the grid is
+    // non-empty (empty-state would replace the grid entirely and naturally
+    // hide the served strip — that's not "intact" verification).
+    //
+    // KdsV2Grid.recentlyServed reads from visibleOrders (status 4/7/8) — the
+    // backend feed via KitchenReleaseRule::visibleStatuses includes PREPARED.
+    // So seeded PREPARED orders MUST appear in the strip.
     seedOrder({ token: `${TOKEN_PREFIX}SERVED-1-${tNow}`, status: 8 });
     seedOrder({ token: `${TOKEN_PREFIX}SERVED-2-${tNow}`, status: 8 });
+    seedOrder({ token: `${TOKEN_PREFIX}SERVED-ACTIVE-${tNow}`, status: 4 });
 
     await pinV2Layout(page);
     await loginAsAdmin(page);
     await gotoKds(page);
 
+    // Wait for at least one active card so we know the grid hydrated.
+    await expect(page.locator('[data-testid="kds-card-cta-ready"]').first())
+      .toBeVisible({ timeout: 15_000 });
+
     const strip = page.locator('.kds-v2__served');
-    const stripVisible = await strip.isVisible({ timeout: 12_000 }).catch(() => false);
+    // Wave U "intact" assertion — strip MUST be visible when PREPARED orders
+    // exist alongside an active card. If not, the X3 drawer add regressed it.
+    await expect(strip).toBeVisible({ timeout: 10_000 });
 
-    if (!stripVisible) {
-      // The strip is computed from `recentlyServed` (filter status===8). If
-      // it does not render with seeded PREPARED orders today, Wave U is
-      // regressed — but only if Wave U was supposed to ship. Mark INFO if
-      // PREPARED orders are filtered out by the controller feed (might
-      // restrict to within-N-minutes by updated_at).
-      recordFinding({
-        id: 'S3-INFO-SERVED-STRIP-HIDDEN',
-        severity: 'INFO',
-        state: 'S3-12',
-        dom: 'Wave U .kds-v2__served strip not visible with 2 PREPARED orders seeded today.',
-        classification: 'Wave U interaction with KDS feed filter — likely backend feed excludes PREPARED beyond N-min window, not a regression.',
-        fix_hint: 'Check KitchenDisplaySystemController list() query — if PREPARED filter is time-windowed, this is expected; otherwise investigate Wave U recentlyServed computed.',
-      });
-    } else {
-      // Pill content sanity — must show "N°<num>" and FR ago label.
-      const stripText = (await strip.innerText()).trim();
-      expect(stripText).toMatch(/N°\d+/);
-
-      // Also assert the strip label is FR-resolved (label.kds_recently_served).
-      expect(stripText).not.toMatch(/label\.kds_recently_served/i);
-    }
-
+    // Screenshot WHILE the strip is asserted visible (parallel sessions may
+    // bump or delete in flight; ordering ensures the PNG captures the truth).
     await page.screenshot({
       path: path.join(SHOT_DIR, 'S3-12-wave-u-served-strip.png'),
       fullPage: true,
     });
+
+    const stripText = (await strip.innerText()).trim();
+    expect(stripText).toMatch(/N°\d+/);
+    // FR-resolved label
+    expect(stripText).not.toMatch(/label\.kds_recently_served/i);
+    // Each PREPARED order produces one .kds-v2__served-pill
+    const pillCount = await strip.locator('.kds-v2__served-pill').count();
+    expect(pillCount).toBeGreaterThanOrEqual(2);
   });
 });
