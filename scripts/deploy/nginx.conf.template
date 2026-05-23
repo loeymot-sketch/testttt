@@ -1,0 +1,185 @@
+# =============================================================================
+# FoodKing Le Cayenne — nginx vhost template (lecayenne.fr)
+# -----------------------------------------------------------------------------
+# Agent D.2 — Phase D — Owner D7=prepare-now
+#
+# DEPLOYMENT
+#   1. cp scripts/deploy/nginx.conf.template /etc/nginx/sites-available/lecayenne.conf
+#   2. Substitute placeholders below (LECAYENNE_*) with real values.
+#   3. cp scripts/deploy/nginx-deny-sensitive-files.conf \
+#        /etc/nginx/snippets/foodking-deny-sensitive-files.conf
+#   4. ln -s /etc/nginx/sites-available/lecayenne.conf /etc/nginx/sites-enabled/
+#   5. certbot --nginx -d lecayenne.fr -d www.lecayenne.fr
+#   6. nginx -t && systemctl reload nginx
+#
+# PLACEHOLDERS
+#   __LECAYENNE_DOMAIN__       — e.g. lecayenne.fr
+#   __LECAYENNE_WWW_DOMAIN__   — e.g. www.lecayenne.fr
+#   __LECAYENNE_ROOT__         — e.g. /var/www/lecayenne/public
+#   __PHP_FPM_SOCKET__         — e.g. /run/php/php8.4-fpm.sock
+#   __SOKETI_BACKEND__         — e.g. 127.0.0.1:6001
+#   __STRIPE_JS_HOST__         — js.stripe.com (CSP)
+#   __PUSHER_JS_HOST__         — js.pusher.com (CSP — only if using Pusher hosted)
+#
+# NOTES
+#   - HTTP→HTTPS redirect is wired by Certbot's --nginx plugin on first run,
+#     OR you can keep the explicit redirect block below. Both are fine.
+#   - The CSP is a starting baseline. After first browser console pass, owner
+#     should tighten/loosen based on actual violations. DO NOT ship as-is
+#     without checking DevTools Console on /admin/pos, /kiosk/idle, /kds, /oss.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Port 80 — redirect to HTTPS. Certbot --nginx may add ACME challenge stanzas
+# automatically; keep this block tolerant of those.
+# -----------------------------------------------------------------------------
+server {
+    listen 80;
+    listen [::]:80;
+    server_name __LECAYENNE_DOMAIN__ __LECAYENNE_WWW_DOMAIN__;
+
+    # Allow Certbot HTTP-01 challenge if used.
+    location /.well-known/acme-challenge/ {
+        root /var/www/letsencrypt;
+    }
+
+    # Everything else → HTTPS.
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# -----------------------------------------------------------------------------
+# Port 443 — TLS, primary app + WebSocket reverse-proxy for soketi.
+# -----------------------------------------------------------------------------
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name __LECAYENNE_DOMAIN__ __LECAYENNE_WWW_DOMAIN__;
+
+    root __LECAYENNE_ROOT__;
+    index index.php index.html;
+
+    # ---------- TLS (Let's Encrypt) ------------------------------------------
+    ssl_certificate     /etc/letsencrypt/live/__LECAYENNE_DOMAIN__/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/__LECAYENNE_DOMAIN__/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    # OCSP stapling.
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    # ---------- Security headers ---------------------------------------------
+    # HSTS — 1 year, include subdomains. Once shipped, removal is hard; verify
+    # production DNS BEFORE first deploy.
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    # CSP — tunable baseline. Owner verifies via DevTools Console after first
+    # load on /admin/pos, /kiosk/idle, /kds, /oss; tighten or loosen as needed.
+    # `'unsafe-inline'` on style-src is required by Laravel Mix CSS scaffolding
+    # and some Bootstrap-era inline styles. `'unsafe-eval'` is intentionally
+    # NOT in script-src — if a bundle breaks, refactor it, don't loosen CSP.
+    add_header Content-Security-Policy "default-src 'self'; \
+script-src 'self' 'unsafe-inline' https://__STRIPE_JS_HOST__ https://__PUSHER_JS_HOST__; \
+style-src 'self' 'unsafe-inline'; \
+img-src 'self' data: blob: https:; \
+font-src 'self' data:; \
+connect-src 'self' https://__LECAYENNE_DOMAIN__ wss://__LECAYENNE_DOMAIN__ https://__STRIPE_JS_HOST__; \
+frame-src https://__STRIPE_JS_HOST__; \
+frame-ancestors 'none'; \
+base-uri 'self'; \
+form-action 'self';" always;
+
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    # ---------- Defense-in-depth: deny credential bundles --------------------
+    # Provided by repo. Either install to /etc/nginx/snippets/ (recommended)
+    # or include from the repo path directly. Pick one — both lines below
+    # point to the same content; leave the SECOND commented to avoid double
+    # include warnings.
+    include /etc/nginx/snippets/foodking-deny-sensitive-files.conf;
+    # include __LECAYENNE_ROOT__/../scripts/deploy/nginx-deny-sensitive-files.conf;
+
+    # Belt-and-braces explicit denies for files the snippet does NOT cover.
+    location = /.env { deny all; access_log off; log_not_found off; }
+    location ~ /\.git { deny all; access_log off; log_not_found off; }
+    location ~ ^/storage/oauth- { deny all; access_log off; log_not_found off; }
+    location ~ ^/(composer\.(json|lock)|artisan|server\.php|package\.json)$ {
+        deny all; access_log off; log_not_found off;
+    }
+
+    # ---------- WebSocket reverse-proxy: soketi ------------------------------
+    # Pusher protocol clients hit /app/<app-key>, /apps/<app-id>/events, etc.
+    # Soketi binds to 127.0.0.1:6001 (private); nginx terminates WSS here.
+    location /app/ {
+        proxy_pass http://__SOKETI_BACKEND__;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400s;       # long-lived ws
+        proxy_send_timeout 86400s;
+    }
+    location /apps/ {
+        proxy_pass http://__SOKETI_BACKEND__;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # ---------- Static asset caching -----------------------------------------
+    # Mix-built assets (versioned via mix-manifest.json) and Spatie media.
+    location ~* ^/(build|js|css|images|fonts|file)/ {
+        expires 30d;
+        access_log off;
+        add_header Cache-Control "public, max-age=2592000, immutable";
+        try_files $uri =404;
+    }
+    location ~* ^/storage/ {
+        expires 7d;
+        access_log off;
+        add_header Cache-Control "public, max-age=604800";
+        try_files $uri =404;
+    }
+
+    # ---------- Laravel front-controller -------------------------------------
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:__PHP_FPM_SOCKET__;
+        fastcgi_index index.php;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        fastcgi_param DOCUMENT_ROOT   $realpath_root;
+        fastcgi_param HTTPS           on;
+        fastcgi_param HTTP_PROXY      "";   # CVE-2016-5385
+        fastcgi_read_timeout 120s;
+        fastcgi_buffers 16 16k;
+        fastcgi_buffer_size 32k;
+    }
+
+    # ---------- Upload size + timeouts ---------------------------------------
+    client_max_body_size 25m;   # Spatie media uploads (admin item images)
+    keepalive_timeout 65s;
+    server_tokens off;
+
+    # ---------- Logs ---------------------------------------------------------
+    access_log /var/log/nginx/lecayenne_access.log;
+    error_log  /var/log/nginx/lecayenne_error.log warn;
+}

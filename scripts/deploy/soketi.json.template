@@ -1,0 +1,93 @@
+{
+  "_README": [
+    "FoodKing Le Cayenne — soketi WebSocket server config",
+    "Agent D.2 — Phase D — Owner D7=prepare-now",
+    "",
+    "DEPLOYMENT",
+    "  1. cp scripts/deploy/soketi.json.template /var/www/lecayenne/soketi.json",
+    "  2. Replace __PLACEHOLDERS__ with values that MATCH the Laravel .env:",
+    "       PUSHER_APP_ID     →  apps[0].id",
+    "       PUSHER_APP_KEY    →  apps[0].key",
+    "       PUSHER_APP_SECRET →  apps[0].secret",
+    "  3. chown www-data:www-data /var/www/lecayenne/soketi.json",
+    "  4. chmod 640 /var/www/lecayenne/soketi.json",
+    "  5. supervisorctl restart lecayenne-soketi",
+    "",
+    "BIND",
+    "  127.0.0.1:6001 — private (nginx reverse-proxies via WSS on /app/ + /apps/).",
+    "  This MUST NOT be exposed publicly: TLS termination happens at nginx.",
+    "",
+    "CORS",
+    "  Allow only the production origin. If owner adds staging or admin",
+    "  subdomain later, append to the allowed_origins array.",
+    "",
+    "PLACEHOLDERS",
+    "  __SOKETI_APP_ID__     — opaque id, e.g. 'lecayenne'",
+    "  __SOKETI_APP_KEY__    — public key (used by browsers; PUSHER_APP_KEY in .env)",
+    "  __SOKETI_APP_SECRET__ — server secret (PUSHER_APP_SECRET in .env)"
+  ],
+
+  "debug": false,
+
+  "host": "127.0.0.1",
+  "port": 6001,
+
+  "appManager": {
+    "driver": "array",
+    "array": {
+      "apps": [
+        {
+          "id": "__SOKETI_APP_ID__",
+          "key": "__SOKETI_APP_KEY__",
+          "secret": "__SOKETI_APP_SECRET__",
+          "maxConnections": 5000,
+          "enableClientMessages": false,
+          "enabled": true,
+          "maxBackendEventsPerSecond": 100,
+          "maxClientEventsPerSecond": 100,
+          "maxReadRequestsPerSecond": 100
+        }
+      ]
+    }
+  },
+
+  "cors": {
+    "credentials": true,
+    "origin": [
+      "https://lecayenne.fr",
+      "https://www.lecayenne.fr"
+    ],
+    "methods": ["GET", "POST"],
+    "allowedHeaders": [
+      "Origin",
+      "Content-Type",
+      "X-Auth-Token",
+      "X-Requested-With",
+      "Accept",
+      "Authorization",
+      "X-CSRF-TOKEN",
+      "X-Socket-ID"
+    ]
+  },
+
+  "metrics": {
+    "enabled": false,
+    "driver": "prometheus",
+    "host": "127.0.0.1",
+    "port": 9601
+  },
+
+  "rateLimiter": {
+    "driver": "local"
+  },
+
+  "ssl": {
+    "certPath": "",
+    "keyPath": "",
+    "passphrase": "",
+    "caPath": ""
+  },
+
+  "shutdownGracePeriod": 3000,
+  "userAuthenticationTimeout": 30000
+}
