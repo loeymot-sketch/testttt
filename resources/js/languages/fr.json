@@ -543,6 +543,8 @@
         "scan_nfc_card": "Scanner la carte NFC",
         "siret": "SIRET",
         "duplicata": "DUPLICATA #{n}",
+        "remboursement": "REMBOURSEMENT",
+        "status_22": "Remboursé",
         "tendered_breakdown": "Détail paiement",
         "vat_intra": "TVA intra",
         "name": "Nom",

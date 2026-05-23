@@ -72,6 +72,7 @@
                             <p v-if="order.operator_name">{{ $t('label.operator') }}: {{ order.operator_name }}</p>
                         </div>
                         <receipt-duplicata-marker :order="effectiveOrder" />
+                        <receipt-remboursement-marker :order="order" />
                         <div class="text-center pb-3.5 border-b border-dashed border-gray-400">
                             <h3 class="text-2xl font-bold mb-1">{{ company.company_name }}</h3>
                             <h4 class="text-sm font-normal">{{ receiptBranch.address }}</h4>
@@ -330,6 +331,7 @@ import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import ReceiptDuplicataMarker from "./ReceiptDuplicataMarker.vue";
+import ReceiptRemboursementMarker from "./ReceiptRemboursementMarker.vue";
 import {
     formatPaymentsBreakdown as buildPaymentLines,
     buildNf525Footer,
@@ -341,7 +343,7 @@ import {
 
 export default {
     name: "ReceiptComponent",
-    components: { ReceiptDuplicataMarker },
+    components: { ReceiptDuplicataMarker, ReceiptRemboursementMarker },
     props: {
         order: Object,
         // [iter15-mega-fix B-009 round-7 2026-05-10 — addendum]
