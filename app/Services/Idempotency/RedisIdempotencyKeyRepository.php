@@ -64,11 +64,21 @@ final class RedisIdempotencyKeyRepository implements IdempotencyKeyRepository
             state:       'PENDING',
         ))->toArray();
 
+        // [Phase F.6 finding F-6-6-FIND-04 P2 / 2026-05-23]
+        // PENDING placeholder uses a dedicated short TTL (default 30s) decoupled
+        // from the caller-supplied $ttlSeconds (24h for COMPLETED). Rationale:
+        // SIGKILL / PHP-FPM restart between Phase-2 acquire() and Phase-3
+        // release() must NOT trap the key for 24h returning 425
+        // IDEMPOTENCY_IN_FLIGHT to legitimate retries. The COMPLETED record
+        // written by complete() still honors $ttlSeconds (24h).
+        // Source: config/idempotency.php `pending_ttl_seconds`.
+        $pendingTtl = (int) config('idempotency.pending_ttl_seconds', 30);
+
         try {
             // Cache::add() is atomic across all drivers: returns true only
             // when the key was created. Equivalent to `SET key val NX EX ttl`
             // when the redis driver is in use.
-            return (bool) $this->store()->add($scopedKey, $placeholder, $ttlSeconds);
+            return (bool) $this->store()->add($scopedKey, $placeholder, $pendingTtl);
         } catch (\Throwable $e) {
             throw new IdempotencyStorageUnavailableException($e->getMessage(), 0, $e);
         }

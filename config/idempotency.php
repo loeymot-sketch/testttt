@@ -3,24 +3,33 @@
 /**
  * F-VERIFY-09-02 — HTTP-level idempotency configuration.
  *
- * `enabled`        : master flag, default OFF for safe roll-out (per PLAN_P11 §2).
- * `ttl_seconds`    : how long a replay record is kept (24h default).
- * `race_wait_ms`   : time to wait for an in-flight twin request to publish
- *                    its COMPLETED record before returning 425.
- * `fail_open`      : when true, missing/unhealthy storage falls back to the
- *                    app-layer UNIQUE backstop instead of returning 503.
- * `required_routes`: opt-in list. Routes outside this list are *not*
- *                    rejected when the header is missing — backwards-compat
- *                    with existing kiosk/mobile clients.
- * `cache_store`    : null = `cache.default` (`array` in tests, `redis` in prod).
- *                    Override only in unusual deployments.
+ * `enabled`             : master flag, default OFF for safe roll-out (per PLAN_P11 §2).
+ * `ttl_seconds`         : how long a COMPLETED replay record is kept (24h default).
+ * `pending_ttl_seconds` : how long a PENDING placeholder lives before self-
+ *                         expiring (30s default). Decoupled from `ttl_seconds`
+ *                         so SIGKILL/server-restart between Phase-2 acquire()
+ *                         and Phase-3 release() does NOT trap the key for 24h.
+ *                         Source: Phase F.6 audit finding F-6-6-FIND-04 P2.
+ *                         Trade-off: with 30s, a >30s slow request can be
+ *                         re-acquired during execution; DB UNIQUE backstop
+ *                         (PLAN_P11 §1.2) remains the safety net, not this TTL.
+ * `race_wait_ms`        : time to wait for an in-flight twin request to publish
+ *                         its COMPLETED record before returning 425.
+ * `fail_open`           : when true, missing/unhealthy storage falls back to the
+ *                         app-layer UNIQUE backstop instead of returning 503.
+ * `required_routes`     : opt-in list. Routes outside this list are *not*
+ *                         rejected when the header is missing — backwards-compat
+ *                         with existing kiosk/mobile clients.
+ * `cache_store`         : null = `cache.default` (`array` in tests, `redis` in prod).
+ *                         Override only in unusual deployments.
  */
 
 return [
-    'enabled'      => env('IDEMPOTENCY_MIDDLEWARE_ENABLED', false),
-    'ttl_seconds'  => (int) env('IDEMPOTENCY_TTL_SECONDS', 86400),
-    'race_wait_ms' => (int) env('IDEMPOTENCY_RACE_WAIT_MS', 1500),
-    'fail_open'    => (bool) env('IDEMPOTENCY_FAIL_OPEN', false),
+    'enabled'             => env('IDEMPOTENCY_MIDDLEWARE_ENABLED', false),
+    'ttl_seconds'         => (int) env('IDEMPOTENCY_TTL_SECONDS', 86400),
+    'pending_ttl_seconds' => (int) env('IDEMPOTENCY_PENDING_TTL_SECONDS', 30),
+    'race_wait_ms'        => (int) env('IDEMPOTENCY_RACE_WAIT_MS', 1500),
+    'fail_open'           => (bool) env('IDEMPOTENCY_FAIL_OPEN', false),
 
     'required_routes' => [
         'api/admin/pos',
