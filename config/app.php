@@ -79,6 +79,17 @@ return [
     // [Wave Y RATE-LIMIT 2026-05-21]
     'admin_mutation_rate_limit' => max(1, (int) env('ADMIN_MUTATION_RATE_LIMIT', 60)),
 
+    // [GOAL Phase F.1 2026-05-23] throttle:menu-availability dedicated bucket
+    // for /admin/menu/availability/{toggle,extra/toggle,variation/toggle}
+    // (routes/api.php:256-268). Sibling-group structure preserved so this
+    // bucket doesn't share with admin-mutation — keeps bulk-86 fan-out from
+    // StockRuptureDashboard isolated from cashier admin-CRUD ops. Default
+    // 60/min for backwards compatibility (prior hardcoded ceiling); local
+    // dev raises via MENU_AVAILABILITY_RATE_LIMIT=1000 to absorb manager
+    // bulk-toggle bursts. NF525 chain unaffected — toggle is not a fiscal
+    // write.
+    'menu_availability_rate_limit' => max(1, (int) env('MENU_AVAILABILITY_RATE_LIMIT', 60)),
+
     // Full /api/health IP gate — read via config() so tests can override and config:cache works in prod.
     'health_ips_allowed' => env('HEALTH_IPS_ALLOWED', ''),
 

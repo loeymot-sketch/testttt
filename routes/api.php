@@ -253,7 +253,13 @@ Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', '
 // Laravel additionne les middlewares throttle et la limite effective devient
 // min(30, 60) = 30/min, ce qui ne résout PAS le self-DoS. Récurrent RED-R3
 // → ORCHESTRATOR → B3.
-Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:60,1'])->group(function () {
+// [GOAL Phase F.1 2026-05-23] Replaced hardcoded `throttle:60,1` with the named
+// `menu-availability` limiter (defined in RouteServiceProvider). Same 60/min
+// default for backwards compatibility, but now env-configurable
+// (MENU_AVAILABILITY_RATE_LIMIT). Local dev raises to 1000/min to absorb
+// bulk-86 fan-out from StockRuptureDashboard (manager toggling many items
+// at once during rush). NF525 chain unaffected — no fiscal write here.
+Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:menu-availability'])->group(function () {
     Route::post('/menu/availability/toggle', [AvailabilityController::class, 'toggle'])
         ->name('menu.availability.toggle');
 

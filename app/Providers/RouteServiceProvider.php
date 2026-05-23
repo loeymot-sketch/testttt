@@ -82,9 +82,16 @@ class RouteServiceProvider extends ServiceProvider
         // Local dev raises via ADMIN_MUTATION_RATE_LIMIT=1000 in `.env` for
         // parity with POS/KDS knobs. NF525 chain unaffected — controllers
         // own the audit chain insert inside their own DB transaction.
-        $adminMutationCap = max(1, (int) config('app.admin_mutation_rate_limit', 60));
-
-        RateLimiter::for('admin-mutation', function (Request $request) use ($adminMutationCap) {
+        //
+        // [GOAL Phase F.1 2026-05-23] Config lookup MOVED INSIDE the closure
+        // so test-suite Config::set overrides take effect (Wave Y captured the
+        // value at boot via `use ($adminMutationCap)`, freezing the limiter to
+        // whatever ADMIN_MUTATION_RATE_LIMIT was set when the provider booted —
+        // making test_admin_mutation_rate_limit_returns_429 silently break
+        // once .env raised the local-dev ceiling). Per-request config() is the
+        // canonical Laravel pattern for env-driven limiters.
+        RateLimiter::for('admin-mutation', function (Request $request) {
+            $adminMutationCap = max(1, (int) config('app.admin_mutation_rate_limit', 60));
             if ($request->isMethod('GET') || $request->isMethod('HEAD')) {
                 return Limit::perMinute(300)->by($request->user()?->id ?: $request->ip());
             }
@@ -157,6 +164,22 @@ class RouteServiceProvider extends ServiceProvider
 
         RateLimiter::for('pos-order-update', function (Request $request) {
             $perMinute = max(1, (int) config('pos.rate_limit.order_update', 120));
+            return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
+        });
+
+        // [GOAL Phase F.1 2026-05-23] Menu availability toggle dedicated limiter.
+        // The original hardcoded `throttle:60,1` at routes/api.php:256 tripped
+        // empirically at call #60 with retry_after=25s when a manager bulk-86'd
+        // items from StockRuptureDashboard during morning rush (9 POSTs in 1.4s
+        // already known to trigger 429 per A-005/A-006/A-013 comment 2026-05-21).
+        // Owner pain verbatim: "Trop de requêtes — patientez 30s/60s" after
+        // validating N orders. Sibling-group structure (not nested) preserved
+        // to avoid stacking; bucket name now matches a named limiter so the
+        // ceiling is env-configurable. Prod default 60/min (matches prior
+        // hardcoded ceiling for backwards compatibility); local dev raises via
+        // MENU_AVAILABILITY_RATE_LIMIT=1000 in .env.
+        RateLimiter::for('menu-availability', function (Request $request) {
+            $perMinute = max(1, (int) config('app.menu_availability_rate_limit', 60));
             return Limit::perMinute($perMinute)->by($request->user()?->id ?: $request->ip());
         });
 
