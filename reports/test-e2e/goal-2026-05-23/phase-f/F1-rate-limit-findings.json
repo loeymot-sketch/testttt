@@ -88,7 +88,8 @@
     "verified_at": "2026-05-23T22:35:00Z"
   },
   "proposal_doc": null,
-  "commit_sha": "69472c32c",
+  "commit_sha": "10539a012",
+  "commit_sha_note": "Initial commit was 0e044e1ad — amended 3× to embed the correct SHA in the findings JSON, final HEAD SHA above. The 'fix' content is identical across amends; only the JSON metadata refers to itself in a circular way that amend re-rolls.",
   "verdict": "GREEN",
   "verdict_rationale": "Empirical evidence DECISIVE: pre-fix global api bucket trips at #113 with retry_after=26s (matches owner verbatim '30 secondes') and hardcoded menu-availability bucket trips at #60 with retry_after=25s (matches owner manager bulk-86 workflow). Post-fix both buckets cleared 70-140 sequential calls with zero 429s. Phase F.1 owner pain point resolved. 151/151 PHPUnit sentinel tests pass. 0 frozen-zone diff. NF525 audit chain unaffected (rate-limit buckets are HTTP-layer only, not fiscal write path). V2 SaaS multi-tenant note: per-user 1000/min is V1 LOCAL Le Cayenne single-resto trusted-admin appropriate; V2 must reconsider with per-tenant + per-IP composite — explicitly documented in .env.example comment.",
   "top_finding": "Global per-user `api` throttle bucket at 120/min (RouteServiceProvider.php:54, env API_THROTTLE_PER_MINUTE) was the binding constraint matching owner's '30s/60s' verbatim. POS shell idle polling alone burns 36 req/min/user (5s cadence × 3 endpoints/tick), leaving only 84 actions/min headroom — easily exhausted in a real fast-food cashier rush stacking search keystrokes + customer lookup + add-items + payment + collect-kiosk-cash. Secondary finding: hardcoded `throttle:60,1` at routes/api.php:256 (manager bulk-86 path) tripped at call #60 — historical comment at StockRuptureDashboardComponent.vue:589 confirmed prior known trip.",
