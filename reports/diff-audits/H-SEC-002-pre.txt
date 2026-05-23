@@ -46,13 +46,7 @@ class LoginController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email'    => ['required', 'string', 'email', 'max:255'],
-            // [GOAL-HEAL-SEC-002 2026-05-23] OWASP guidance: don't expose password
-            // policy at login (information leak). bcrypt + rate-limiter enforce
-            // correctness server-side. Min:6 here was Laravel scaffold legacy drift
-            // — EmployeeRequest creation enforces Password::min(12) for new users;
-            // legacy users with weak passwords will be forced to rotate via V1.0.2
-            // post-login password-rotation prompt.
-            'password' => 'required|string',
+            'password' => ['required', 'string', 'min:6'],
         ]);
 
         if ($validator->fails()) {
