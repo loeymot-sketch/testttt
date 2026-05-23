@@ -1,32 +1,44 @@
 <?php
 
 /**
- * Wave 3c — KDS-ADV3C-01 / KDS-ADV3C-02 / KDS-ADV3C-03 / KDS-ADV3C-04 sentinel.
- * Authority: reports/audit/critical-focus-2026-05-18/wave-3c/adv-1-kds-heals-r3.md
+ * Wave T R5 KDS+OSS Adversarial — corrected sentinel (GOAL-G2-HEAL-04 2026-05-23).
+ * Authority: commit 27d95e066 (Wave T R5, 2026-05-20) + commit 4905138fa
+ * (Wave 3c, 2026-05-18, superseded).
  *
- * Wave 2c heals KdsSyncService + KitchenDisplaySystemOrderService + the two
- * OSS list paths. Wave 3c adversarial flagged that the SAME Paris-vs-UTC
- * bug-class survives in adjacent services:
+ * HISTORY (read together with class header)
+ * - Wave 3c heal (4905138fa) applied UTC-conversion to Paris-local Carbon
+ *   boundaries ASSUMING MySQL session_tz=UTC, and this sentinel suite was
+ *   written to PIN that assumption (assert UTC literal, forbid Paris-local
+ *   literal).
+ * - Wave T R5 (27d95e066) caught the assumption empirically: production
+ *   `SELECT @@session.time_zone` returns 'SYSTEM' (= Europe/Paris) because
+ *   config/database.php connections.mysql.timezone is NULL and PDO inherits
+ *   the OS local TZ. Under session_tz=Paris, UTC bind literals are re-
+ *   interpreted as Paris-local → window shift backward by 1-2h → last
+ *   ~2h of every Paris day silently dropped.
+ * - Wave T R5 corrected KDS/OSS service queries (and corresponding
+ *   sentinels in SisterServicesTzAwareTest) to bind Paris-local Carbon
+ *   directly. GOAL-G2-HEAL-04 extends the same correction to:
+ *     - DashboardService (every admin widget)               (was KDS-ADV3C-01)
+ *     - OrderService::list + salesReportOverview            (was KDS-ADV3C-02)
+ *     - OrderStatusScreenOrderService now()->subHours()     (was KDS-ADV3C-04)
+ *   ResetStaleDailyQuotaCommand (was KDS-ADV3C-03) was already fixed by
+ *   885c625383 (cron-bug003, 2026-05-19); AvailabilityService DATE column
+ *   path was never UTC-shifted.
  *
- *   - DashboardService (every admin widget)               KDS-ADV3C-01 P0
- *   - OrderService::list + salesReportOverview (PaginateRequest from_date) KDS-ADV3C-02 P1
- *   - ResetStaleDailyQuotaCommand + AvailabilityService daily reset        KDS-ADV3C-03 P1
- *   - OrderStatusScreenOrderService now()->subHours(N) prune line          KDS-ADV3C-04 P0
- *
- * Bug: `Carbon::today()` and bare `now()` resolve in app.timezone='Europe/Paris'.
- * The mysql connection in config/database.php has NO `timezone` key — PDO's
- * MySQL session TZ defaults to UTC. Eloquent serializes the Carbon to
- * 'Y-m-d H:i:s' Paris-local and binds raw to UTC-stored TIMESTAMP columns →
- * window shift of 1-2h every day (DST-dependent).
- *
- * Heal: convert Paris-local boundary → UTC before binding (KdsSyncService /
- * KitchenDisplaySystemOrderService pattern) OR call `now('UTC')` for raw
- * subHours predicates.
+ * CONTRACT (post G2-HEAL-04)
+ * Bound Carbon literals MUST be Paris-local (matching MySQL session_tz=
+ * Paris face-value). UTC-converted literals MUST NOT appear (Wave 3c
+ * regression).
  *
  * SQLite (test driver) has no session-TZ concept, so a row-count behavioral
- * test would pass both pre- and post-heal. These sentinels pin the compiled
- * SQL bindings: they assert the bound literals are UTC representations of
- * Paris-local boundaries, NOT the Paris-local literal.
+ * test would pass either way. These sentinels pin the compiled SQL
+ * bindings.
+ *
+ * INVARIANT DEPENDENCY (same as service inline comments):
+ * heal assumes session_tz=OS-local (Paris). Future
+ * config/database.php connections.mysql.timezone => '+00:00' MUST
+ * re-evaluate BOTH the services AND this sentinel.
  */
 
 namespace Tests\Feature\Services;
@@ -70,7 +82,8 @@ class SisterServicesTzAwareV2Test extends TestCase
 
     /**
      * Pin "now" to a Paris-winter timestamp (no DST ambiguity, Paris = UTC+1).
-     * Returns the expected UTC literals for assertions.
+     * Returns the expected Paris-local bound literals (Wave T R5 contract,
+     * GOAL-G2-HEAL-04 extension).
      *
      * @return array{0:string,1:string,2:string,3:CarbonImmutable}
      */
@@ -80,17 +93,17 @@ class SisterServicesTzAwareV2Test extends TestCase
         Carbon::setTestNow($now);
         CarbonImmutable::setTestNow($now);
 
-        $appTz = config('app.timezone');
-        $expectedStartUtc = Carbon::today($appTz)->setTimezone('UTC')->format('Y-m-d H:i:s');
-        $expectedEndUtc = Carbon::today($appTz)->endOfDay()->setTimezone('UTC')->format('Y-m-d H:i:s');
-        $expectedTomorrowUtc = Carbon::tomorrow($appTz)->setTimezone('UTC')->format('Y-m-d H:i:s');
+        $appTz = config('app.timezone'); // 'Europe/Paris'
+        $expectedStart = Carbon::today($appTz)->format('Y-m-d H:i:s');
+        $expectedEnd = Carbon::today($appTz)->endOfDay()->format('Y-m-d H:i:s');
+        $expectedTomorrow = Carbon::tomorrow($appTz)->format('Y-m-d H:i:s');
 
-        // Sanity: Paris winter = UTC+1.
-        $this->assertSame('2026-01-14 23:00:00', $expectedStartUtc);
-        $this->assertSame('2026-01-15 22:59:59', $expectedEndUtc);
-        $this->assertSame('2026-01-15 23:00:00', $expectedTomorrowUtc);
+        // Sanity: Paris-local midnight literals (NOT UTC-shifted).
+        $this->assertSame('2026-01-15 00:00:00', $expectedStart);
+        $this->assertSame('2026-01-15 23:59:59', $expectedEnd);
+        $this->assertSame('2026-01-16 00:00:00', $expectedTomorrow);
 
-        return [$expectedStartUtc, $expectedEndUtc, $expectedTomorrowUtc, $now];
+        return [$expectedStart, $expectedEnd, $expectedTomorrow, $now];
     }
 
     /**
@@ -126,14 +139,14 @@ class SisterServicesTzAwareV2Test extends TestCase
     }
 
     /**
-     * Assert at least one binding contains the UTC literal AND no binding
-     * carries the Paris-local midnight literal (which would indicate the
-     * pre-heal Paris-bound regression).
+     * Assert at least one binding contains the Paris-local literal AND no
+     * binding carries the UTC-converted literal (GOAL-G2-HEAL-04 inversion
+     * of the prior Wave 3c contract).
      */
-    private function assertBindingsContainUtcNotParisLocal(
+    private function assertBindingsContainParisNotUtcConverted(
         array $queries,
-        string $expectedUtcLiteral,
-        string $parisLocalLiteral,
+        string $expectedParisLiteral,
+        string $forbiddenUtcLiteral,
         string $service
     ): void {
         $this->assertNotEmpty(
@@ -149,32 +162,41 @@ class SisterServicesTzAwareV2Test extends TestCase
         }
         $joined = implode(' | ', $allBindings);
 
+        // ASSERT (negative): UTC-converted Paris-day-start MUST NOT appear.
+        // That was the Wave 3c regression — empirical session_tz=Paris (NOT
+        // UTC as the Wave 3c commit asserted) means UTC literals get re-
+        // interpreted as Paris-local, shifting the window backward by 1-2h.
         $this->assertStringNotContainsString(
-            $parisLocalLiteral,
+            $forbiddenUtcLiteral,
             $joined,
-            "$service MUST NOT bind Paris-local literal '$parisLocalLiteral' (pre-heal regression).\n"
+            "$service MUST NOT bind UTC-converted literal '$forbiddenUtcLiteral'. "
+            . 'Empirical session_tz=SYSTEM (Paris-local) on this deployment, '
+            . 'so UTC literals get re-interpreted as Paris-local, shifting '
+            . "the active window. Wave T R5 / GOAL-G2-HEAL-04.\n"
             . "Captured: $joined"
         );
 
+        // ASSERT (positive): Paris-local literal MUST be bound directly.
         $this->assertStringContainsString(
-            $expectedUtcLiteral,
+            $expectedParisLiteral,
             $joined,
-            "$service MUST bind UTC literal '$expectedUtcLiteral'.\n"
+            "$service MUST bind Paris-local literal '$expectedParisLiteral'. "
+            . "Wave T R5 / GOAL-G2-HEAL-04.\n"
             . "Captured: $joined"
         );
     }
 
     // ---------------------------------------------------------------------
-    // KDS-ADV3C-01 P0 — DashboardService TZ-aware
+    // GOAL-G2-HEAL-04 — DashboardService Paris-local bound (was KDS-ADV3C-01)
     // ---------------------------------------------------------------------
 
     /**
-     * RED: fails when DashboardService::orderStatistics binds Paris-local
-     *      midnight literal ('2026-01-15 00:00:00') to MySQL UTC session.
-     * GREEN: post-heal binds Paris-today start in UTC ('2026-01-14 23:00:00')
-     *        and Paris-tomorrow start in UTC ('2026-01-15 23:00:00').
+     * GREEN: post-G2-HEAL-04, DashboardService::orderStatistics binds
+     *        Paris-local today-start ('2026-01-15 00:00:00') so MySQL
+     *        session_tz=Paris interprets it at face value. Pre-heal regression
+     *        (UTC '2026-01-14 23:00:00') MUST NOT appear.
      */
-    public function test_dashboard_orderStatistics_binds_utc_converted_today(): void
+    public function test_dashboard_orderStatistics_binds_paris_today(): void
     {
         [, , , $now] = $this->pinParisWinterNow();
 
@@ -196,20 +218,20 @@ class SisterServicesTzAwareV2Test extends TestCase
             app(DashboardService::class)->orderStatistics(new Request());
         });
 
-        $this->assertBindingsContainUtcNotParisLocal(
+        $this->assertBindingsContainParisNotUtcConverted(
             $queries,
-            '2026-01-14 23:00:00',        // expected UTC lower bound
-            '2026-01-15 00:00:00',        // forbidden Paris-local midnight
+            '2026-01-15 00:00:00',        // expected Paris-local today-start
+            '2026-01-14 23:00:00',        // forbidden UTC-shifted boundary
             'DashboardService::orderStatistics'
         );
     }
 
     /**
-     * RED: fails when DashboardService::realtimeReport binds Paris-local
-     *      midnight literal to MySQL UTC session.
-     * GREEN: post-heal binds the UTC TIMESTAMP boundary pair.
+     * GREEN: post-G2-HEAL-04, DashboardService::realtimeReport binds
+     *        Paris-local today-start. Pre-heal UTC-shifted bound MUST NOT
+     *        appear.
      */
-    public function test_dashboard_realtimeReport_binds_utc_converted_today(): void
+    public function test_dashboard_realtimeReport_binds_paris_today(): void
     {
         [, , , $now] = $this->pinParisWinterNow();
 
@@ -230,29 +252,30 @@ class SisterServicesTzAwareV2Test extends TestCase
             app(DashboardService::class)->realtimeReport();
         });
 
-        $this->assertBindingsContainUtcNotParisLocal(
+        $this->assertBindingsContainParisNotUtcConverted(
             $queries,
-            '2026-01-14 23:00:00',
             '2026-01-15 00:00:00',
+            '2026-01-14 23:00:00',
             'DashboardService::realtimeReport'
         );
     }
 
     // ---------------------------------------------------------------------
-    // KDS-ADV3C-04 P0 — OSS stale-prune `now()->subHours()` UTC binding
+    // GOAL-G2-HEAL-04 — OSS stale-prune `now()->subHours()` Paris-local bind
+    // (was KDS-ADV3C-04, inverted)
     // ---------------------------------------------------------------------
 
     /**
-     * RED: fails when OrderStatusScreenOrderService::list binds
-     *      Paris-local 'now()->subHours(8)' literal to MySQL UTC.
-     * GREEN: passes when service uses now('UTC')->subHours(N) so the bound
-     *        literal matches the UTC-stored TIMESTAMP column.
+     * GREEN: post-G2-HEAL-04, OSS::list binds now(Paris)->subHours(8) so
+     *        MySQL session_tz=Paris interprets the bound literal at face
+     *        value (matching the surrounding day-bound queries which are
+     *        Paris-local since Wave T R5).
      *
      * Paris-winter now = 2026-01-15 12:00 UTC = 2026-01-15 13:00 Paris.
-     * Pre-heal: now() in Paris → 13:00 - 8h = 05:00 (Paris-local '2026-01-15 05:00:00').
-     * Post-heal: now('UTC') → 12:00 - 8h = 04:00 (UTC '2026-01-15 04:00:00').
+     * Post-G2-HEAL-04: now(Paris) → 13:00 - 8h = 05:00 Paris ('2026-01-15 05:00:00').
+     * Pre-heal regression: now('UTC') → 12:00 - 8h = 04:00 UTC ('2026-01-15 04:00:00').
      */
-    public function test_oss_list_stale_prune_binds_utc_now(): void
+    public function test_oss_list_stale_prune_binds_paris_now(): void
     {
         [, , , $now] = $this->pinParisWinterNow();
 
@@ -286,27 +309,29 @@ class SisterServicesTzAwareV2Test extends TestCase
         }
         $joined = implode(' | ', $allBindings);
 
-        // Heal: now('UTC') = 2026-01-15 12:00 - 8h = 2026-01-15 04:00 UTC.
+        // Post-heal: now(Paris) = 13:00 Paris - 8h = '2026-01-15 05:00:00'.
         $this->assertStringContainsString(
-            '2026-01-15 04:00:00',
+            '2026-01-15 05:00:00',
             $joined,
-            "OSS::list MUST bind now('UTC')->subHours(8) = '2026-01-15 04:00:00'.\n"
+            "OSS::list MUST bind now(Paris)->subHours(8) = '2026-01-15 05:00:00' "
+            . "(Wave T R5 / GOAL-G2-HEAL-04 contract).\n"
             . "Captured: $joined"
         );
 
-        // Negative: Paris-local would have been 2026-01-15 05:00:00 (13:00 Paris - 8h).
+        // Negative: UTC-shifted would have been 2026-01-15 04:00:00 (12:00 UTC - 8h).
         $this->assertStringNotContainsString(
-            '2026-01-15 05:00:00',
+            '2026-01-15 04:00:00',
             $joined,
-            "OSS::list MUST NOT bind Paris-local now()->subHours(8) = '2026-01-15 05:00:00' (pre-heal regression).\n"
+            "OSS::list MUST NOT bind UTC-shifted now('UTC')->subHours(8) = '2026-01-15 04:00:00' "
+            . "(Wave 3c regression — re-interpreted as Paris-local under session_tz=Paris).\n"
             . "Captured: $joined"
         );
     }
 
     /**
-     * RED mirror of the previous test for the listForBranch() public path.
+     * Mirror of previous test for the listForBranch() public path.
      */
-    public function test_oss_listForBranch_stale_prune_binds_utc_now(): void
+    public function test_oss_listForBranch_stale_prune_binds_paris_now(): void
     {
         [, , , $now] = $this->pinParisWinterNow();
 
@@ -336,34 +361,37 @@ class SisterServicesTzAwareV2Test extends TestCase
         $joined = implode(' | ', $allBindings);
 
         $this->assertStringContainsString(
-            '2026-01-15 04:00:00',
+            '2026-01-15 05:00:00',
             $joined,
-            "OSS::listForBranch MUST bind now('UTC')->subHours(8) UTC literal.\n"
+            "OSS::listForBranch MUST bind now(Paris)->subHours(8) Paris-local literal "
+            . "(Wave T R5 / GOAL-G2-HEAL-04 contract).\n"
             . "Captured: $joined"
         );
 
         $this->assertStringNotContainsString(
-            '2026-01-15 05:00:00',
+            '2026-01-15 04:00:00',
             $joined,
-            "OSS::listForBranch MUST NOT bind Paris-local now()->subHours(8) literal (pre-heal regression).\n"
+            "OSS::listForBranch MUST NOT bind UTC-shifted literal (Wave 3c regression).\n"
             . "Captured: $joined"
         );
     }
 
     // ---------------------------------------------------------------------
-    // KDS-ADV3C-02 P1 — OrderService Sales Report TZ-aware
+    // GOAL-G2-HEAL-04 — OrderService Sales Report Paris-local from_date
+    // (was KDS-ADV3C-02, inverted)
     // ---------------------------------------------------------------------
 
     /**
-     * RED: fails when OrderService::list compiles `whereDate('order_datetime',
-     *      '>=', $from_date)` with Paris-local strings.
-     * GREEN: passes when service uses `where('order_datetime', '>=', $fromUtc)`
-     *        with UTC-converted boundaries.
+     * GREEN: post-G2-HEAL-04, OrderService::list binds Paris-local from_date
+     *        ('2026-01-15 00:00:00') so MySQL session_tz=Paris interprets it
+     *        at face value. Pre-heal UTC-shifted bound ('2026-01-14 23:00:00')
+     *        MUST NOT appear (Wave 3c regression).
      *
      * Input: user picker sends from_date='2026-01-15', to_date='2026-01-15'
-     * (Paris-local business day). UTC boundary lower = 2026-01-14 23:00:00.
+     * (Paris-local business day). Lower bound binds Paris-day startOfDay
+     * directly.
      */
-    public function test_orderService_list_binds_utc_converted_from_date(): void
+    public function test_orderService_list_binds_paris_from_date(): void
     {
         $this->pinParisWinterNow();
 
@@ -397,12 +425,23 @@ class SisterServicesTzAwareV2Test extends TestCase
         }
         $joined = implode(' | ', $allBindings);
 
-        // Heal binds Paris-day 2026-01-15 startOfDay → UTC = '2026-01-14 23:00:00'.
-        // Tomorrow exclusive upper bound = 2026-01-16 startOfDay → UTC = '2026-01-15 23:00:00'.
+        // Post-heal: Paris-day '2026-01-15' startOfDay = '2026-01-15 00:00:00'
+        // bound directly. Tomorrow exclusive upper bound = '2026-01-16 00:00:00'.
         $this->assertStringContainsString(
+            '2026-01-15 00:00:00',
+            $joined,
+            "OrderService::list MUST bind Paris-local from_date '2026-01-15 00:00:00' "
+            . "(Wave T R5 / GOAL-G2-HEAL-04 contract).\n"
+            . "Captured: $joined"
+        );
+
+        // Negative: UTC-shifted '2026-01-14 23:00:00' MUST NOT appear
+        // (Wave 3c regression that this heal corrects).
+        $this->assertStringNotContainsString(
             '2026-01-14 23:00:00',
             $joined,
-            "OrderService::list MUST bind UTC-converted from_date '2026-01-14 23:00:00' (Paris-day 2026-01-15 00:00 → UTC).\n"
+            "OrderService::list MUST NOT bind UTC-shifted '2026-01-14 23:00:00' "
+            . "(Wave 3c regression — re-interpreted as Paris-local under session_tz=Paris).\n"
             . "Captured: $joined"
         );
     }

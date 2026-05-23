@@ -107,14 +107,29 @@ class OrderStatusScreenOrderService
                 // sibling whereDate(today()) filter the effective TTL is
                 // min(today, N hours from order_datetime).
                 //
-                // [Wave 3c KDS-ADV3C-04 P0 2026-05-18] `now()` resolves in
-                // app.timezone='Europe/Paris'. Eloquent binds the Carbon as
-                // 'Y-m-d H:i:s' Paris-local string vs UTC-stored TIMESTAMP
-                // column → prune window slipped by 1-2h (prunes orders 6-7h
-                // old instead of 8h in winter). Heal: instantiate now() in
-                // UTC explicitly so the bound literal matches the column's
-                // storage TZ. Sentinel: SisterServicesTzAwareV2Test.
-                ->where('order_datetime', '>=', now('UTC')->subHours((int) config('oss.stale_window_hours', 8)));
+                // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
+                // Wave T R5 Paris bounds (commit 27d95e066). The Wave 3c
+                // heal (commit 4905138fa, 2026-05-18) instantiated now() in
+                // UTC ASSUMING MySQL session_tz=UTC — empirically FALSE on
+                // this deployment (`SELECT @@session.time_zone` returns
+                // 'SYSTEM' = Europe/Paris because config/database.php
+                // connections.mysql.timezone is NULL and PDO inherits OS
+                // local). UTC bind literals are then re-interpreted as
+                // Paris-local under session_tz=Paris, shifting the prune
+                // window forward by 2h (winter) → orders 6-7h old were
+                // already pruned instead of 8h. The two prune-window heals
+                // CANCELLED each other in the wrong direction.
+                //
+                // Correct heal: instantiate now() in app.timezone (Paris)
+                // so the bound literal matches MySQL session_tz=Paris face-
+                // value interpretation. Mirrors KitchenDisplaySystemOrderService::list
+                // pattern (line 122-125). Sentinel: SisterServicesTzAwareV2Test
+                // (inverted to assert Paris-local literal).
+                //
+                // INVARIANT DEPENDENCY: this heal assumes session_tz=
+                // OS-local (Paris). Any future
+                // connections.mysql.timezone => '+00:00' MUST re-evaluate.
+                ->where('order_datetime', '>=', now(config('app.timezone'))->subHours((int) config('oss.stale_window_hours', 8)));
 
             // [M-09] Branch filter: only global Admin may request branch_id=0/global OSS.
             if ($branchScope !== null) {
@@ -234,9 +249,11 @@ class OrderStatusScreenOrderService
                 // sibling list() comment. Keeps the public customer wall
                 // identical to the admin dashboard in shape AND in TTL.
                 //
-                // [Wave 3c KDS-ADV3C-04 P0 2026-05-18] UTC binding mirror —
-                // see sibling list() comment for full rationale.
-                ->where('order_datetime', '>=', now('UTC')->subHours((int) config('oss.stale_window_hours', 8)));
+                // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
+                // Wave T R5 Paris bounds (commit 27d95e066). Sister-of
+                // list() — keep byte-identical per service docstring. See
+                // sibling list() comment for full rationale.
+                ->where('order_datetime', '>=', now(config('app.timezone'))->subHours((int) config('oss.stale_window_hours', 8)));
 
             if ($branchId > 0) {
                 $query->where('branch_id', $branchId);

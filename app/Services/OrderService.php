@@ -131,24 +131,33 @@ class OrderService
                 'user'
             ])->where(function ($query) use ($requests) {
                 if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
-                    // [Wave 3c KDS-ADV3C-02 P1 2026-05-18] User-input dates are
-                    // Y-m-d Paris-local (front-end picker). whereDate compares
-                    // DATE(order_datetime) in MySQL UTC session vs the literal
-                    // → orders at [00:00-02:00 Paris]/day cross the UTC date
-                    // boundary and fall outside the requested range. Heal:
-                    // interpret the user date as Paris-local, convert to UTC
-                    // range, use whereBetween/< (sargable on idx_order_datetime).
-                    // Sentinel: SisterServicesTzAwareV2Test::test_sales_report.
+                    // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
+                    // Wave T R5 Paris bounds (commit 27d95e066). User-input
+                    // dates are Y-m-d Paris-local (front-end picker). The
+                    // Wave 3c heal (commit 4905138fa, 2026-05-18) converted
+                    // them to UTC ASSUMING MySQL session_tz=UTC — empirically
+                    // FALSE on this deployment (session_tz=SYSTEM=Paris
+                    // because config/database.php connections.mysql.timezone
+                    // is NULL and PDO inherits OS local). UTC bind literals
+                    // were re-interpreted as Paris-local under session_tz=
+                    // Paris, shifting the report window backward by 2h →
+                    // sales report dropped the last ~2h of every Paris day.
+                    //
+                    // Correct heal: bind Paris-local Carbon directly so
+                    // MySQL session_tz=Paris interprets at face value.
+                    // Sentinel: SisterServicesTzAwareV2Test (inverted).
+                    //
+                    // INVARIANT DEPENDENCY: assumes session_tz=OS-local
+                    // (Paris). Future connections.mysql.timezone => '+00:00'
+                    // MUST re-evaluate.
                     $appTz = config('app.timezone');
-                    $fromUtc = Carbon::parse($requests['from_date'], $appTz)
-                        ->startOfDay()
-                        ->setTimezone('UTC');
-                    $toUtcExclusive = Carbon::parse($requests['to_date'], $appTz)
+                    $fromParis = Carbon::parse($requests['from_date'], $appTz)
+                        ->startOfDay();
+                    $toParisExclusive = Carbon::parse($requests['to_date'], $appTz)
                         ->addDay()
-                        ->startOfDay()
-                        ->setTimezone('UTC');
-                    $query->where('order_datetime', '>=', $fromUtc)
-                          ->where('order_datetime', '<', $toUtcExclusive);
+                        ->startOfDay();
+                    $query->where('order_datetime', '>=', $fromParis)
+                          ->where('order_datetime', '<', $toParisExclusive);
                 }
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {
@@ -2435,20 +2444,17 @@ class OrderService
 
             $orders = Order::with('transaction', 'orderItems')->where(function ($query) use ($requests) {
                 if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
-                    // [Wave 3c KDS-ADV3C-02 P1 2026-05-18] TZ-aware boundary
-                    // mirror of list() — see sibling comment for full
-                    // rationale. Sales Report Overview reads same paginated
-                    // path as list/export/pdf.
+                    // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
+                    // Wave T R5 Paris bounds — sibling of list() above, keep
+                    // byte-identical. See list() comment for full rationale.
                     $appTz = config('app.timezone');
-                    $fromUtc = Carbon::parse($requests['from_date'], $appTz)
-                        ->startOfDay()
-                        ->setTimezone('UTC');
-                    $toUtcExclusive = Carbon::parse($requests['to_date'], $appTz)
+                    $fromParis = Carbon::parse($requests['from_date'], $appTz)
+                        ->startOfDay();
+                    $toParisExclusive = Carbon::parse($requests['to_date'], $appTz)
                         ->addDay()
-                        ->startOfDay()
-                        ->setTimezone('UTC');
-                    $query->where('order_datetime', '>=', $fromUtc)
-                          ->where('order_datetime', '<', $toUtcExclusive);
+                        ->startOfDay();
+                    $query->where('order_datetime', '>=', $fromParis)
+                          ->where('order_datetime', '<', $toParisExclusive);
                 }
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {

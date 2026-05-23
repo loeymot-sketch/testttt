@@ -61,24 +61,35 @@ class DashboardService
         try {
             $order = $this->orderQuery();
 
-            // [Wave 3c KDS-ADV3C-01 P0 2026-05-18] orders.order_datetime is a
-            // TIMESTAMP column (MySQL stores UTC). The legacy whereDate(today)
-            // pattern compared Paris-local Y-m-d against DATE(order_datetime)
-            // computed in UTC session — orders [00:00-02:00 Paris]/day fell
-            // outside the day window. Heal mirrors Wave 2b KdsSyncService
-            // (148dbebce): convert the Paris-day boundary to a full UTC
-            // TIMESTAMP and use sargable `whereBetween` (also picks up
-            // idx_orders_datetime). Sentinel: SisterServicesTzAwareV2Test.
-            [$startUtc, $endUtcExclusive] = $this->resolveDayBoundaryUtc(
+            // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
+            // Wave T R5 Paris bounds (commit 27d95e066). The Wave 3c
+            // heal (commit 4905138fa, 2026-05-18) converted Paris-day
+            // boundaries to UTC ASSUMING MySQL session_tz=UTC —
+            // empirically FALSE on this deployment (session_tz=SYSTEM=
+            // Paris because config/database.php connections.mysql.timezone
+            // is NULL and PDO inherits OS local). UTC bind literals were
+            // re-interpreted as Paris-local under session_tz=Paris,
+            // shifting the day window backward by 2h → admin dashboard
+            // silently dropped the last ~2h of every Paris day.
+            //
+            // Correct heal: bind Paris-local Carbon bounds directly so
+            // MySQL session_tz=Paris interprets them at face value.
+            // Sentinel: SisterServicesTzAwareV2Test (inverted to assert
+            // Paris-local literal).
+            //
+            // INVARIANT DEPENDENCY: this heal assumes session_tz=OS-local
+            // (Paris). Future config/database.php
+            // connections.mysql.timezone => '+00:00' MUST re-evaluate.
+            [$startParis, $endParisExclusive] = $this->resolveDayBoundaryParis(
                 $request->first_date,
                 $request->last_date
             );
 
             $orderStatisticsArray = [];
 
-            $apply = static function ($q) use ($startUtc, $endUtcExclusive) {
-                return $q->where('order_datetime', '>=', $startUtc)
-                         ->where('order_datetime', '<', $endUtcExclusive);
+            $apply = static function ($q) use ($startParis, $endParisExclusive) {
+                return $q->where('order_datetime', '>=', $startParis)
+                         ->where('order_datetime', '<', $endParisExclusive);
             };
 
             $orderStatisticsArray["total_order"] = $apply(clone $order)->count();
@@ -100,14 +111,20 @@ class DashboardService
     }
 
     /**
-     * [Wave 3c KDS-ADV3C-01 P0 2026-05-18] Convert a user-supplied (or
-     * fallback to "today") Paris-local Y-m-d pair to the UTC TIMESTAMP
-     * range [startUtc, endUtcExclusive). The upper bound is exclusive
+     * [GOAL-G2-HEAL-04 2026-05-23] Resolve user-supplied (or fallback to
+     * "today") Paris-local Y-m-d pair to a Paris-local Carbon range
+     * [startParis, endParisExclusive). The upper bound is exclusive
      * (start of day-after) to avoid double-counting the boundary instant.
+     *
+     * Wave T R5 lesson (commit 27d95e066): MySQL session_tz=SYSTEM=Paris
+     * on this deployment; binding Paris-local Carbon objects directly
+     * matches face-value interpretation. The earlier UTC conversion
+     * (renamed-from `resolveDayBoundaryUtc`) shifted the window backward
+     * by 2h and silently dropped 22h-minuit Paris from analytics.
      *
      * @return array{0:\Carbon\Carbon,1:\Carbon\Carbon}
      */
-    private function resolveDayBoundaryUtc($firstDate, $lastDate): array
+    private function resolveDayBoundaryParis($firstDate, $lastDate): array
     {
         $appTz = config('app.timezone');
 
@@ -119,10 +136,7 @@ class DashboardService
             $endParis = Carbon::tomorrow($appTz);
         }
 
-        return [
-            $startParis->copy()->setTimezone('UTC'),
-            $endParis->copy()->setTimezone('UTC'),
-        ];
+        return [$startParis, $endParis];
     }
 
 
@@ -130,10 +144,11 @@ class DashboardService
     {
         try {
             $order = $this->orderQuery();
-            // [Wave 3c KDS-ADV3C-01 P0 2026-05-18] TZ-aware month boundary —
-            // see orderStatistics() comment. The user-supplied path uses raw
-            // Y-m-d strings; the default-month path falls back to the current
-            // Paris-local month (first day Y-m-01 .. last day Y-m-t).
+            // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to Wave T R5
+            // Paris bounds — see orderStatistics() comment for full rationale.
+            // The user-supplied path uses raw Y-m-d strings; the default-month
+            // path falls back to the current Paris-local month (first day
+            // Y-m-01 .. last day Y-m-t).
             $appTz = config('app.timezone');
             if ($request->first_date && $request->last_date) {
                 $firstDateParisDay = Carbon::parse($request->first_date, $appTz)->startOfDay();
@@ -142,17 +157,17 @@ class DashboardService
                 $firstDateParisDay = Carbon::today($appTz)->startOfMonth();
                 $lastDateParisDay = Carbon::today($appTz)->endOfMonth()->startOfDay();
             }
-            $startUtc = $firstDateParisDay->copy()->setTimezone('UTC');
-            $endUtcExclusive = $lastDateParisDay->copy()->addDay()->setTimezone('UTC');
+            $startParis = $firstDateParisDay->copy();
+            $endParisExclusive = $lastDateParisDay->copy()->addDay();
 
             $first_date = $firstDateParisDay->toDateString();
             $last_date = $lastDateParisDay->toDateString();
 
             $orderSummaryArray = [];
 
-            $apply = static function ($q) use ($startUtc, $endUtcExclusive) {
-                return $q->where('order_datetime', '>=', $startUtc)
-                         ->where('order_datetime', '<', $endUtcExclusive);
+            $apply = static function ($q) use ($startParis, $endParisExclusive) {
+                return $q->where('order_datetime', '>=', $startParis)
+                         ->where('order_datetime', '<', $endParisExclusive);
             };
 
             $total_order = $apply(clone $order)->count();
@@ -184,8 +199,8 @@ class DashboardService
     public function salesSummary(Request $request)
     {
         $order = $this->orderQuery();
-        // [Wave 3c KDS-ADV3C-01 P0 2026-05-18] TZ-aware month boundary — see
-        // orderStatistics() comment for full rationale.
+        // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to Wave T R5
+        // Paris bounds — see orderStatistics() comment for full rationale.
         $appTz = config('app.timezone');
         if ($request->first_date && $request->last_date) {
             $firstDateParisDay = Carbon::parse($request->first_date, $appTz)->startOfDay();
@@ -194,8 +209,8 @@ class DashboardService
             $firstDateParisDay = Carbon::today($appTz)->startOfMonth();
             $lastDateParisDay = Carbon::today($appTz)->endOfMonth()->startOfDay();
         }
-        $startUtc = $firstDateParisDay->copy()->setTimezone('UTC');
-        $endUtcExclusive = $lastDateParisDay->copy()->addDay()->setTimezone('UTC');
+        $startParis = $firstDateParisDay->copy();
+        $endParisExclusive = $lastDateParisDay->copy()->addDay();
         $first_date = $firstDateParisDay->toDateString();
         $last_date = $lastDateParisDay->toDateString();
 
@@ -204,8 +219,8 @@ class DashboardService
 
         $total_sales = AppLibrary::flatAmountFormat(
             (clone $order)
-                ->where('order_datetime', '>=', $startUtc)
-                ->where('order_datetime', '<', $endUtcExclusive)
+                ->where('order_datetime', '>=', $startParis)
+                ->where('order_datetime', '<', $endParisExclusive)
                 ->where('payment_status', PaymentStatus::PAID)
                 ->sum('total')
         );
@@ -219,13 +234,14 @@ class DashboardService
 
         $dateRangeValueArray = [];
         for ($i = 0; $i <= count($dateRangeArray) - 1; $i++) {
-            // Per-day Paris range, converted to UTC TIMESTAMP boundaries.
-            $dayStartUtc = Carbon::parse($dateRangeArray[$i], $appTz)->startOfDay()->setTimezone('UTC');
-            $nextDayStartUtc = $dayStartUtc->copy()->addDay();
+            // Per-day Paris range — bind Paris-local Carbon directly
+            // (Wave T R5 pattern, session_tz=Paris face-value).
+            $dayStartParis = Carbon::parse($dateRangeArray[$i], $appTz)->startOfDay();
+            $nextDayStartParis = $dayStartParis->copy()->addDay();
             $per_day = AppLibrary::flatAmountFormat(
                 (clone $order)
-                    ->where('order_datetime', '>=', $dayStartUtc)
-                    ->where('order_datetime', '<', $nextDayStartUtc)
+                    ->where('order_datetime', '>=', $dayStartParis)
+                    ->where('order_datetime', '<', $nextDayStartParis)
                     ->where('payment_status', PaymentStatus::PAID)
                     ->sum('total')
             );
@@ -250,8 +266,8 @@ class DashboardService
     public function customerStates(Request $request)
     {
         $order = $this->orderQuery();
-        // [Wave 3c KDS-ADV3C-01 P0 2026-05-18] TZ-aware month boundary — see
-        // orderStatistics() comment for full rationale.
+        // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to Wave T R5
+        // Paris bounds — see orderStatistics() comment for full rationale.
         $appTz = config('app.timezone');
         if ($request->first_date && $request->last_date) {
             $firstDateParisDay = Carbon::parse($request->first_date, $appTz)->startOfDay();
@@ -260,8 +276,8 @@ class DashboardService
             $firstDateParisDay = Carbon::today($appTz)->startOfMonth();
             $lastDateParisDay = Carbon::today($appTz)->endOfMonth()->startOfDay();
         }
-        $startUtc = $firstDateParisDay->copy()->setTimezone('UTC');
-        $endUtcExclusive = $lastDateParisDay->copy()->addDay()->setTimezone('UTC');
+        $startParis = $firstDateParisDay->copy();
+        $endParisExclusive = $lastDateParisDay->copy()->addDay();
 
         $timeArray = ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"];
 
@@ -278,8 +294,8 @@ class DashboardService
             // would surface time-of-day in MySQL session UTC. This is a known
             // V1.0.2 backlog item (KDS-ADV3C-12) — see CONVERGENCE_FINAL.md.
             $total_customer = (clone $order)
-                ->where('order_datetime', '>=', $startUtc)
-                ->where('order_datetime', '<', $endUtcExclusive)
+                ->where('order_datetime', '>=', $startParis)
+                ->where('order_datetime', '<', $endParisExclusive)
                 ->whereTime('order_datetime', '>=', Carbon::parse($first_time))
                 ->whereTime('order_datetime', '<=', Carbon::parse($last_time))
                 ->get()->count();
@@ -355,24 +371,23 @@ class DashboardService
     public function realtimeReport()
     {
         try {
-            // [Wave 3c KDS-ADV3C-01 P0 2026-05-18] TZ-aware boundary — see
-            // orderStatistics() comment. Paris-day range [startUtc, endUtc)
-            // bound against UTC-stored TIMESTAMP column.
+            // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to Wave T R5
+            // Paris bounds — see orderStatistics() comment for full rationale.
             $appTz = config('app.timezone');
-            $startUtc = Carbon::today($appTz)->setTimezone('UTC');
-            $endUtcExclusive = Carbon::tomorrow($appTz)->setTimezone('UTC');
+            $startParis = Carbon::today($appTz);
+            $endParisExclusive = Carbon::tomorrow($appTz);
 
             // Total CA du jour (Commandes payées)
             $daily_sales = $this->orderQuery()
-                ->where('order_datetime', '>=', $startUtc)
-                ->where('order_datetime', '<', $endUtcExclusive)
+                ->where('order_datetime', '>=', $startParis)
+                ->where('order_datetime', '<', $endParisExclusive)
                 ->where('payment_status', PaymentStatus::PAID)
                 ->sum('total');
 
             // Nombre de commandes
             $daily_orders = $this->orderQuery()
-                ->where('order_datetime', '>=', $startUtc)
-                ->where('order_datetime', '<', $endUtcExclusive)
+                ->where('order_datetime', '>=', $startParis)
+                ->where('order_datetime', '<', $endParisExclusive)
                 ->count();
 
             // Ticket Moyen
@@ -419,14 +434,14 @@ class DashboardService
     public function channelStatistics()
     {
         try {
-            // [Wave 3c KDS-ADV3C-01 P0 2026-05-18] TZ-aware Paris-day boundary
-            // — see orderStatistics() comment.
+            // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to Wave T R5
+            // Paris bounds — see orderStatistics() comment for full rationale.
             $appTz = config('app.timezone');
-            $startUtc = Carbon::today($appTz)->setTimezone('UTC');
-            $endUtcExclusive = Carbon::tomorrow($appTz)->setTimezone('UTC');
+            $startParis = Carbon::today($appTz);
+            $endParisExclusive = Carbon::tomorrow($appTz);
             $orders = $this->orderQuery()
-                ->where('order_datetime', '>=', $startUtc)
-                ->where('order_datetime', '<', $endUtcExclusive)
+                ->where('order_datetime', '>=', $startParis)
+                ->where('order_datetime', '<', $endParisExclusive)
                 ->get();
             $total = $orders->count();
 
