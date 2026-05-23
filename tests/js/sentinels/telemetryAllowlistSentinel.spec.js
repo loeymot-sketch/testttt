@@ -36,22 +36,60 @@ describe('GOAL-D1 — telemetry 429 allowlist (Wave Final S1-002)', () => {
         );
     });
 
-    it('lists /api/frontend/kiosk/event in the telemetry allowlist', () => {
-        // Anchor on the allowlist declaration to make sure the kiosk event
-        // pattern lives inside the array (not somewhere else in the file).
+    it('lists frontend/kiosk/event (slash alias) in the telemetry allowlist', () => {
+        // [GOAL-D1-FIX 2026-05-23 mega-S1 round-1] Pattern is relative because
+        // axios stores baseURL ('/api') SEPARATELY from config.url. At runtime
+        // `error.config.url === 'frontend/kiosk/event'` (no /api prefix), so
+        // the allowlist must match the relative form. Anchor on the array.
         const allowlistBlock = bootstrap.match(
             /_TELEMETRY_ALLOWLIST_PATTERNS\s*=\s*\[[\s\S]*?\]/
         );
         expect(allowlistBlock).not.toBeNull();
-        expect(allowlistBlock[0]).toMatch(/['"]\/api\/frontend\/kiosk\/event['"]/);
+        expect(allowlistBlock[0]).toMatch(/['"]frontend\/kiosk\/event['"]/);
     });
 
-    it('lists /api/admin/client-metrics in the telemetry allowlist', () => {
+    it('lists frontend/kiosk-event (hyphen legacy alias) in the telemetry allowlist', () => {
+        // KioskAppComponent, KioskPayment, KsConsentModal, KsA11ySettings,
+        // kioskPrinter, kioskOfflineQueue all call axios.post('frontend/kiosk-event', ...)
+        // — the legacy hyphen alias is still live (routes/api.php). Must be allowlisted.
         const allowlistBlock = bootstrap.match(
             /_TELEMETRY_ALLOWLIST_PATTERNS\s*=\s*\[[\s\S]*?\]/
         );
         expect(allowlistBlock).not.toBeNull();
-        expect(allowlistBlock[0]).toMatch(/['"]\/api\/admin\/client-metrics['"]/);
+        expect(allowlistBlock[0]).toMatch(/['"]frontend\/kiosk-event['"]/);
+    });
+
+    it('lists admin/client-metrics in the telemetry allowlist', () => {
+        const allowlistBlock = bootstrap.match(
+            /_TELEMETRY_ALLOWLIST_PATTERNS\s*=\s*\[[\s\S]*?\]/
+        );
+        expect(allowlistBlock).not.toBeNull();
+        expect(allowlistBlock[0]).toMatch(/['"]admin\/client-metrics['"]/);
+    });
+
+    it('runtime check: _isTelemetryEndpoint matches the three actual call shapes', () => {
+        // Behavioural sentinel — extract the allowlist literal from source,
+        // simulate config.url shapes that real call sites produce, and assert
+        // a substring-includes match. Prevents future regressions like the
+        // 2026-05-23 round-1 finding (allowlist had /api prefix; runtime URL
+        // had no /api prefix; substring match silently failed).
+        const blockMatch = bootstrap.match(
+            /_TELEMETRY_ALLOWLIST_PATTERNS\s*=\s*\[([\s\S]*?)\]/
+        );
+        expect(blockMatch).not.toBeNull();
+        const patterns = Array.from(
+            blockMatch[1].matchAll(/['"]([^'"]+)['"]/g)
+        ).map((m) => m[1]);
+        // Three real shapes observed empirically in the kiosk surface.
+        const callShapes = [
+            'frontend/kiosk-event',     // hyphen, no leading slash (KioskAppComponent)
+            '/frontend/kiosk/event',    // slash, leading slash (KioskCashInstruction)
+            'frontend/kiosk/event',     // slash, no leading slash (useKioskA11y)
+        ];
+        for (const shape of callShapes) {
+            const hit = patterns.some((p) => shape.includes(p));
+            expect(hit, `allowlist must match call shape '${shape}'`).toBe(true);
+        }
     });
 
     it('declares _isTelemetryEndpoint(error) helper', () => {

@@ -69823,6 +69823,16 @@ try {
   // surfaced by Wave Final 2026-05-23 S1-002 P1. The allowlist suppresses
   // the toast ONLY; the rejection chain stays intact so per-call .catch()
   // still runs and metrics can drop the event.
+  //
+  // [GOAL-D1-FIX 2026-05-23 mega-S1 round-1] The initial allowlist matched
+  // only `'/api/frontend/kiosk/event'` (the absolute path). Axios stores
+  // `baseURL` separately from `config.url`, so at runtime `error.config.url`
+  // is the relative form passed at the call site (`'frontend/kiosk-event'`,
+  // `'/frontend/kiosk/event'`, etc.) WITHOUT the `/api` prefix. Empirical
+  // 35-call burst confirmed the toast still surfaced on both hyphen and
+  // slash aliases despite the source patch. The corrected list matches
+  // every relative form actually emitted by kiosk call sites + a defensive
+  // absolute form for any direct fetch helper that bypasses `baseURL`.
   var _isTelemetryEndpoint = function _isTelemetryEndpoint(error) {
     var _error$config3;
     var url = String((error === null || error === void 0 || (_error$config3 = error.config) === null || _error$config3 === void 0 ? void 0 : _error$config3.url) || '');
@@ -69840,7 +69850,17 @@ try {
   var _BUCKET_MIN_GAP_MS = 3000;
   var _ALLOWLIST_PATTERNS = ['/api/auth/logout', '/api/auth/login', '/login', '/logout', '/csp-report', '/api/broadcasting/auth'];
   var _CRITICAL_4XX_PATTERNS = ['/api/admin/item', '/api/admin/fiscal/'];
-  var _TELEMETRY_ALLOWLIST_PATTERNS = ['/api/frontend/kiosk/event', '/api/admin/client-metrics'];
+  var _TELEMETRY_ALLOWLIST_PATTERNS = [
+  // Slash alias (current preferred path) — relative + leading-slash + absolute.
+  'frontend/kiosk/event',
+  // Hyphen alias (legacy, still active per routes/api.php) — relative + absolute.
+  'frontend/kiosk-event',
+  // Admin client metrics (PostHog batch sender).
+  'admin/client-metrics'
+  // Defensive: kiosk a11y settings + consent + offline-queue all hit the
+  // hyphen variant via the same axios instance. Already covered by
+  // 'frontend/kiosk-event' (includes() substring match).
+  ];
   window.axios.interceptors.response.use(function (response) {
     return response;
   }, function (error) {
