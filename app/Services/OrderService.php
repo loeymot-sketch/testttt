@@ -638,7 +638,11 @@ class OrderService
                 10
             );
             $idempotencyLock->block(5);
-            $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId);
+            // [H2-HEAL-01] Pass customer_id as $userId so recovery is scoped
+            // (branch, customer, key) — closes cross-customer collision case.
+            // Empty/0 → null so anonymous walk-ins keep (branch, key) recovery.
+            $recoveryCustomerId = ((int) ($request->customer_id ?? 0)) ?: null;
+            $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId, $recoveryCustomerId);
             if ($existing) {
                 $idempotencyLock?->release();
                 return $existing;
@@ -697,6 +701,15 @@ class OrderService
                 $this->order = Order::create(
                     $validated + [
                         'user_id' => $request->customer_id,
+                        // [H.1 P1 AMBER 2026-05-24 / H2-HEAL-02] NF525 6-year
+                        // traceability: orders.user_id stores the customer
+                        // (Walking Customer id=2 for anonymous POS), NOT the
+                        // cashier. Persist the operator on creator_id so
+                        // "which cashier opened order X?" is answerable from
+                        // a persisted column (in addition to the audit_logs
+                        // 'order.created.pos' event written below for the
+                        // tamper-evident HMAC chain).
+                        'creator_id' => Auth::check() ? (int) Auth::id() : null,
                         'status' => $posInitialStatus,
                         'token' => $request->token,
                         'payment_status' => PaymentStatus::PAID,
@@ -1091,6 +1104,38 @@ class OrderService
                     ]);
                 }
 
+                // [H.1 P1 AMBER 2026-05-24 / H2-HEAL-02] NF525 6-year traceability:
+                // append cashier attribution event on the HMAC chain. Phase H.1
+                // audit caught audit_logs delta=0 after POS order create POSTs —
+                // making it impossible to answer "which cashier opened order X?"
+                // tamper-evidently. Written INSIDE the same DB::transaction as
+                // Order::create + OrderItem::insert so either everything commits
+                // (order + chain row in lockstep) or everything rolls back. Same
+                // call-site shape as the discount audit above. Frozen AuditLogService
+                // is called via the public write() API — its code is unchanged.
+                app(AuditLogService::class)->write([
+                    'branch_id'   => (int) $this->order->branch_id,
+                    'user_id'     => Auth::check() ? (int) Auth::id() : null,
+                    'action'      => 'order.created.pos',
+                    'resource'    => 'order',
+                    'resource_id' => (int) $this->order->id,
+                    'payload'     => [
+                        'order_id'           => (int) $this->order->id,
+                        'order_serial_no'    => (string) $this->order->order_serial_no,
+                        'cashier_id'         => Auth::check() ? (int) Auth::id() : null,
+                        'cashier_name'       => Auth::check() ? (string) (Auth::user()->name ?? '') : null,
+                        'branch_id'          => (int) $this->order->branch_id,
+                        'customer_id'        => (int) ($this->order->user_id ?? 0),
+                        'order_type'         => (int) $this->order->order_type,
+                        'pos_payment_method' => (int) ($this->order->pos_payment_method ?? 0),
+                        'payment_status'     => (int) $this->order->payment_status,
+                        'status'             => (int) $this->order->status,
+                        'total'              => round((float) $this->order->total, 2),
+                        'subtotal'           => round((float) $this->order->subtotal, 2),
+                        'discount'           => round((float) $this->order->discount, 2),
+                    ],
+                ]);
+
                 // [F-SPLIT-PAYMENT-001] Persist multi-tender breakdown when provided.
                 //
                 // - Strictly additive : legacy `pos_payment_method` + `pos_received_amount`
@@ -1175,7 +1220,12 @@ class OrderService
             // Return the existing order gracefully instead of a 500 error.
             if ($qe->getCode() === '23000' && $idempotencyKey) {
                 $targetBranchId = (int) ($request->branch_id ?: 0); // allow: idempotency recovery scope only
-                $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId);
+                // [H2-HEAL-01] Pass customer_id as $userId — matches the new
+                // (branch_id, user_id, idempotency_key) UNIQUE so the race
+                // recovery resolves to the correct row when a different
+                // customer collided on the same key.
+                $recoveryCustomerId = ((int) ($request->customer_id ?? 0)) ?: null;
+                $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId, $recoveryCustomerId);
                 if ($existing) {
                     Log::info('[POS Idempotency] Duplicate key caught at DB level — returning existing order #' . $existing->id);
                     return $existing;
@@ -2704,7 +2754,29 @@ class OrderService
             );
     }
 
-    protected function findExistingOrderForIdempotencyRecovery(?string $idempotencyKey, int $branchId): ?Order
+    /**
+     * [H2-HEAL-01 / H.1 P0 RED 2026-05-24] Branch + user scoped idempotency
+     * recovery (defense-in-depth backstop for FROZEN §7 HTTP middleware).
+     *
+     * Scope MUST mirror CLAUDE.md §9 IdempotencyKey contract:
+     * (branch_id, user_id, hash(key)).
+     *
+     * Note: `orders.user_id` semantically stores the CUSTOMER id (see
+     * posOrderStore: `'user_id' => $request->customer_id`). Passing a
+     * customer_id here CLOSES the cross-customer collision case (two
+     * different customers sharing a key on the same branch). For anonymous
+     * walk-ins (customer = null/0) the caller passes null so the filter
+     * is skipped and (branch, key) recovery still rescues legitimate
+     * retries — anonymous protection is the L7 middleware's job.
+     *
+     * $userId is OPTIONAL (default null) for backward compatibility with
+     * existing sentinels (IdempotencyRecoveryBranchScoped,
+     * IdempotencyMiddlewareSentinel, F006PosIdempotencyParity) that invoke
+     * the method with 2 args. The WHERE clause order is preserved
+     * (idempotency_key → branch_id → user_id) to satisfy the F-006
+     * regex sentinel.
+     */
+    protected function findExistingOrderForIdempotencyRecovery(?string $idempotencyKey, int $branchId, ?int $userId = null): ?Order
     {
         if (blank($idempotencyKey) || $branchId <= 0) {
             return null;
@@ -2713,6 +2785,7 @@ class OrderService
         return Order::query()
             ->where('idempotency_key', $idempotencyKey)
             ->where('branch_id', $branchId)
+            ->when($userId !== null, fn ($q) => $q->where('user_id', $userId))
             ->first();
     }
 

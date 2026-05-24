@@ -55,6 +55,14 @@ class Order extends Model implements BroadcastableOrder
         // alloc fails inside finalizePaidKioskOrder so a retry cron can pick
         // the order up without losing its PAID+PENDING state.
         'fiscal_alloc_error_at',
+        // [H.1 P1 AMBER 2026-05-24 / H2-HEAL-02] NF525 6-year traceability:
+        // cashier attribution on POS-created orders. orders.user_id stores the
+        // CUSTOMER (Walking Customer id=2 for anonymous POS sales), not the
+        // operator. creator_id was previously NULL on every POS-created order
+        // — making it impossible to answer "which cashier opened order X?"
+        // from any persisted column or audit row. Now populated from
+        // Auth::id() at Order::create() time inside OrderService::posOrderStore.
+        'creator_id',
     ];
 
     protected $casts = [
@@ -84,6 +92,8 @@ class Order extends Model implements BroadcastableOrder
         'pos_received_amount' => 'decimal:6',
         // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
         'fiscal_alloc_error_at' => 'datetime',
+        // [H.1 P1 AMBER 2026-05-24 / H2-HEAL-02] cashier attribution
+        'creator_id' => 'integer',
     ];
 
     protected static function boot(): void
