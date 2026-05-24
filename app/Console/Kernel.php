@@ -159,6 +159,35 @@ class Kernel extends ConsoleKernel
             ->runInBackground()
             ->appendOutputTo(storage_path('logs/sanctum-prune-expired.log'));
 
+        // [GOAL-K2-HEAL-05 2026-05-24] Phase K.8 K8-F-01 P1.
+        //
+        // Stripe `charge.succeeded` webhook stages CapturePaymentNotification
+        // and immediately returns 200; Order.payment_status flip is deferred
+        // to Stripe::success which only runs when the customer browser visits
+        // payment.success. Browser death (kiosk crash, customer walks away,
+        // network drop) leaves a stranded CPN + Stripe-charged-but-order-UNPAID
+        // with NO recovery path — the DLQ retry lane re-fires the webhook
+        // handler which is a no-op (CPN already exists), so the order sits
+        // forever PENDING.
+        //
+        // Every 5 min covers the next kiosk-restart cycle without thrashing
+        // legitimate browser flows (--older-than-minutes=5 means an in-flight
+        // browser redirect has at least 5 minutes to complete before we drain).
+        // Europe/Paris for parity with the NF525 quartet lanes (#8/#15/#16/#17).
+        // onOneServer prevents cross-host double-drain when V2 scales out;
+        // withoutOverlapping prevents same-host re-entry if a previous run
+        // hangs on a slow Stripe API call. runInBackground + appendOutputTo
+        // keep stdout from polluting schedule.log.
+        $schedule->command('stripe:drain-stranded-cpn', ['--older-than-minutes=5'])
+            ->everyFiveMinutes()
+            ->timezone('Europe/Paris')
+            ->name('stripe-drain-stranded-cpn')
+            ->description('Drain stranded Stripe CPN rows whose browser never flushed payment_status (K.8 K8-F-01 P1)')
+            ->onOneServer()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/stripe-drain-cpn.log'));
+
         $schedule->job(new SloEvaluatorJob())
             ->everyFiveMinutes()
             ->withoutOverlapping(5)

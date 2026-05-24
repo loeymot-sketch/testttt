@@ -825,6 +825,24 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 throw $http;
             } catch (\Illuminate\Validation\ValidationException $validation) {
                 throw $validation;
+            } catch (\App\Exceptions\Payment\PaymentAlreadyCollectedException $alreadyCollected) {
+                // [GOAL-K2-HEAL-01 2026-05-24] Phase K.4 H9 P1 + J-CASCADE H9
+                // — typed catch MUST live above the generic Exception fallback
+                // so the 409 conversion happens before the 422 default. The
+                // exception extends \RuntimeException (not HttpException) on
+                // purpose; see PaymentAlreadyCollectedException docblock for
+                // the rationale (Handler.php:105-113 would otherwise downgrade
+                // any HttpException to 422). error_code lets the frontend
+                // modal branch on a stable identifier instead of parsing the
+                // (translated) message.
+                return response()->json([
+                    'status' => false,
+                    'message' => $alreadyCollected->getMessage(),
+                    'error_code' => 'payment_already_collected',
+                    'order_id' => $alreadyCollected->orderId,
+                    'collected_by_user_id' => $alreadyCollected->collectedByUserId,
+                    'collected_at' => $alreadyCollected->collectedAt,
+                ], 409);
             } catch (\Exception $exception) {
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }

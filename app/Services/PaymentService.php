@@ -224,9 +224,89 @@ class PaymentService
 
             $this->assertCounterOrderVisible($locked);
 
+            // [GOAL-K2-HEAL-01 2026-05-24] Phase K.4 H9 P1 + J-CASCADE H9
+            // UNHEALED — when two cashiers simultaneously click "Encaisser"
+            // on the same Q10 pending-counter row, cashier A wins the
+            // lockForUpdate above and flips payment_status=PAID. Cashier B's
+            // transaction then enters this branch on its post-acquire reread.
+            //
+            // PRE-HEAL behavior unconditionally short-circuited to a 200
+            // no-op for ANY caller (same-cashier replay OR different-cashier
+            // race). For cashier B that meant the route closure shipped a
+            // 200 + OrderDetailsResource back, the `PosCounterCollectModal`
+            // success branch toasted `cash_drawer_opened_simulation`, and
+            // cashier B believed they had collected the money. Phantom
+            // drawer-open + till-count drift risk. Data integrity was
+            // intact (single fiscal_sequence_no, single cash_movement,
+            // single audit row, single Transaction row) but the
+            // operational defect was real — reported by Phase J adversarial
+            // round + Phase K.4 deep audit.
+            //
+            // POST-HEAL: discriminate on WHO collected vs WHO is calling
+            // now. The source of truth for the original collector is the
+            // `order.counter_payment_confirmed` audit_logs row written by
+            // the first transaction (lines 309-321 below). Its `user_id`
+            // is the cashier who actually won the lockForUpdate.
+            //
+            //   - Same cashier replaying (middleware cache miss, network
+            //     blip, double-tap with fresh idempotency key): preserve
+            //     the V5.5 sister-guard no-op pattern documented in
+            //     `C5_EncaisserKdsPreserveTest:302-355` — return 200 with
+            //     the locked attributes hydrated onto $order. This is a
+            //     deliberate defense layer behind IdempotencyKeyMiddleware
+            //     and must keep working.
+            //
+            //   - Different cashier (race loser) OR unknown collector (no
+            //     audit row found — pre-heal historical data, or audit
+            //     write failed): throw typed
+            //     PaymentAlreadyCollectedException. The route closure
+            //     (`routes/api.php:808-845`) catches it ABOVE the generic
+            //     Exception→422 fallback and converts to 409 Conflict with
+            //     a structured `error_code: payment_already_collected`
+            //     payload. The modal `onConfirm` catch matches on error_code
+            //     and shows a clear FR error toast + emits `cancel` so the
+            //     Q10 panel refreshes and the cashier moves on without the
+            //     phantom drawer-open simulation.
+            //
+            // 409 is intentionally NOT cached by IdempotencyKeyMiddleware
+            // (only stores 2xx) so a subsequent retry with a fresh
+            // idempotency key still surfaces the conflict.
+            //
+            // collected_at is honestly populated from the audit row's
+            // created_at timestamp; collected_by_user_id from its user_id.
+            // No new migration / column required.
             if ((int) $locked->payment_status === PaymentStatus::PAID) {
-                $order->setRawAttributes($locked->getAttributes(), true);
-                return;
+                $currentUserId = Auth::check() ? (int) Auth::id() : null;
+
+                $collectorAudit = \App\Models\AuditLog::query()
+                    ->where('resource', 'order')
+                    ->where('resource_id', (int) $locked->id)
+                    ->where('action', 'order.counter_payment_confirmed')
+                    ->latest('id')
+                    ->first();
+
+                $collectorUserId = $collectorAudit?->user_id !== null
+                    ? (int) $collectorAudit->user_id
+                    : null;
+
+                // V5.5 sister guard — same cashier replay → no-op (200).
+                if ($currentUserId !== null
+                    && $collectorUserId !== null
+                    && $currentUserId === $collectorUserId) {
+                    $order->setRawAttributes($locked->getAttributes(), true);
+                    return;
+                }
+
+                // K2-HEAL-01 — different cashier (race loser) OR unknown
+                // collector → 409. Treating unknown collector as foreign
+                // is the safe default: if the audit write somehow failed
+                // historically, prefer surfacing the conflict over silently
+                // hiding it behind a 200.
+                throw new \App\Exceptions\Payment\PaymentAlreadyCollectedException(
+                    orderId: (int) $locked->id,
+                    collectedByUserId: $collectorUserId,
+                    collectedAt: $collectorAudit?->created_at?->toIso8601String(),
+                );
             }
 
             $this->assertCounterDeferredOrder($locked);

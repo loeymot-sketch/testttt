@@ -67,6 +67,30 @@ class Handler extends ExceptionHandler
             );
         }
 
+        // [GOAL-K2-HEAL-01 2026-05-24] Phase K.4 H9 P1 + J-CASCADE H9 —
+        // Defense-in-depth render mapping. The primary 409 conversion lives
+        // in the counter-collect route closure (routes/api.php) ABOVE the
+        // generic Exception→422 catch so the typed exception never reaches
+        // Handler::render on that path. This branch covers any future
+        // non-route call paths (queue jobs, console commands, alternative
+        // controllers) that might bubble the exception up to the global
+        // handler. Extends \RuntimeException (not HttpException) because
+        // the HttpException branch below hardcodes 422 and would defeat
+        // the 409.
+        if ($e instanceof \App\Exceptions\Payment\PaymentAlreadyCollectedException) {
+            return new JsonResponse(
+                [
+                    'status' => false,
+                    'message' => $e->getMessage(),
+                    'error_code' => 'payment_already_collected',
+                    'order_id' => $e->orderId,
+                    'collected_by_user_id' => $e->collectedByUserId,
+                    'collected_at' => $e->collectedAt,
+                ],
+                409
+            );
+        }
+
         // [test-e2e fix E-004 round-3] i18n leak — Laravel ModelNotFoundException
         // surfaced raw English ("No query results for model.") into French POS
         // toasts. Translate via lang/{fr,en,ar}.all.message.order_not_found and

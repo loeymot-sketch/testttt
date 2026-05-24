@@ -413,6 +413,29 @@ export default {
           total,
         });
       } catch (err) {
+        // [GOAL-K2-HEAL-01 2026-05-24] Phase K.4 H9 P1 + J-CASCADE H9 —
+        // Race protection. When two cashiers click "Encaisser" on the
+        // same Q10 row simultaneously, the loser receives a 409 Conflict
+        // carrying `error_code: payment_already_collected` from
+        // PaymentService::confirmCounterPayment (formerly a silent
+        // short-circuit that toasted `cash_drawer_opened_simulation` as
+        // success → drawer-open + till-count drift risk).
+        //
+        // We branch on error_code (stable identifier) rather than the
+        // translated message string, surface a clear FR error toast, and
+        // emit `cancel` so the parent Q10 panel refreshes and removes the
+        // already-paid row from view. Phantom drawer-open simulation
+        // never fires.
+        if (
+          err?.response?.status === 409
+          && err?.response?.data?.error_code === 'payment_already_collected'
+        ) {
+          const fallbackMsg = 'Cette commande a déjà été encaissée par un autre caissier.';
+          alertService.error(err?.response?.data?.message || fallbackMsg);
+          this.submitting = false;
+          this.$emit('cancel');
+          return;
+        }
         const msg = err?.response?.data?.message || this.$t('label.encaisser_failed');
         alertService.error(msg);
         this.submitting = false;

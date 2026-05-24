@@ -48,8 +48,9 @@ sudo -u lecayenne -- bash -lc 'cd /var/www/lecayenne && php artisan schedule:lis
 
 ### Lanes currently registered (cross-reference)
 
-Source of truth: `app/Console/Kernel.php` lines 22–317. Verified
-2026-05-24 (lane #18 sanctum:prune-expired added by I2-HEAL-04).
+Source of truth: `app/Console/Kernel.php` lines 22–340. Verified
+2026-05-24 (lane #18 sanctum:prune-expired added by I2-HEAL-04;
+lane #19 stripe-drain-stranded-cpn added by K2-HEAL-05).
 **Do not duplicate these in /etc/cron.d/** — they are driven by
 `schedule:run`.
 
@@ -73,6 +74,7 @@ Source of truth: `app/Console/Kernel.php` lines 22–317. Verified
 | 16| **`foodking-fiscal-archive-daily`**      | **daily 02:00**      | **253–283**     | **NF525 signed ZIP+JSON per active branch**                           |
 | 17| **`foodking-z-close-safety-net`**        | **daily 23:55 Paris**| **310–317**     | **NF525 Z-close safety-net per active branch (G2-HEAL-06, 2026-05-23)**|
 | 18| `sanctum:prune-expired --hours=24`       | daily 04:30 Paris    | 154–160         | Prune expired Sanctum tokens with 24h forensic grace (I2-HEAL-04, 2026-05-24) |
+| 19| `stripe-drain-stranded-cpn`              | every 5 min Paris    | 169–186         | Drain stranded Stripe CPN rows (browser-death window) (K2-HEAL-05 K.8 K8-F-01 P1, 2026-05-24) |
 
 Lanes #8/#15/#16/#17 are the **NF525 compliance quartet** — they MUST run
 nightly and any non-zero exit pages the on-call.
@@ -208,6 +210,8 @@ sudo logrotate -d /etc/logrotate.d/lecayenne
 - `storage/logs/restore-drills.log` — quarterly drill journal (§6)
 - `storage/logs/fiscal.log` — NF525 channel (configured in
   `config/logging.php`, `'fiscal'` channel)
+- `storage/logs/sanctum-prune-expired.log` — lane #18 stdout
+- `storage/logs/stripe-drain-cpn.log` — lane #19 stdout (K2-HEAL-05)
 - `/var/log/lecayenne/schedule.log` — Laravel scheduler stdout/stderr
 - `/var/log/lecayenne/alerts.log` — pager placeholder output
 
@@ -456,6 +460,7 @@ sudo -u lecayenne /usr/local/bin/lecayenne-health-check
 | Fiscal chain verify 03:30 per active branch| Lines 211–245 `dailyAt('03:30')`     |
 | Z-close safety-net 23:55 Paris per branch  | Lines 310–317 `dailyAt('23:55')`     |
 | Sanctum prune 04:30 Paris (I2-HEAL-04)     | Lines 154–160 `dailyAt('04:30')`     |
+| Stripe CPN drain every 5 min (K2-HEAL-05)  | Lines 169–186 `everyFiveMinutes()`   |
 | Outbox prune 04:00, 90d retention          | Lines 119–125                        |
 | Webhook prune 04:15, 180d retention        | Lines 135–141                        |
 | POS parked-order purge 03:15 (24h TTL)     | Lines 89–92                          |
@@ -468,4 +473,4 @@ If `Kernel.php` changes, regenerate Section 1 table.
 
 ---
 
-*Last verified: 2026-05-24 (I2-HEAL-04 added lane #18 sanctum:prune-expired). Kernel.php HEAD: branch `heal/cms-pr1-quickwins-2026-05-18`.*
+*Last verified: 2026-05-24 (K2-HEAL-05 added lane #19 stripe-drain-stranded-cpn — Phase K.8 K8-F-01 P1 browser-death drain). Kernel.php HEAD: branch `heal/cms-pr1-quickwins-2026-05-18`.*
