@@ -2065,7 +2065,10 @@ export default {
                 });
             } catch (_e) { /* defensive */ }
         }
-        if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
+        // [N-HEAL-04 M-POS-4 G-003 P2 2026-05-24] Self-recursive setTimeout
+        // (was setInterval) — clear with clearTimeout to cancel the next
+        // queued tick before it can re-arm the timer chain.
+        if (this._kioskPollTimer) clearTimeout(this._kioskPollTimer);
         // [Q10 P-OWNER 2026-05-21] Stop the 5 s ticker that re-renders the
         // X2 shortcut panels' "Mis à jour il y a Xs" labels.
         if (this._shortcutsRefreshTicker) {
@@ -2626,9 +2629,16 @@ export default {
             return window._wsService?.isConnected() ? 60000 : 5000;
         },
         _startKioskPolling() {
-            this._kioskPollTimer = setInterval(() => {
+            // [N-HEAL-04 M-POS-4 G-003 P2 2026-05-24] Self-recursive setTimeout
+            // re-evaluates _kioskPollingInterval() every tick. If Echo silently
+            // dies mid-shift (channel-auth fail with persistent ws socket up),
+            // cadence downshifts to 5s per call instead of staying stuck at 60s
+            // for the life of a setInterval. H-SYNC-001's pure-function fix
+            // alone only locked the decision tree; the running-clock integration
+            // needed this refactor to actually observe the downshift mid-shift.
+            const tick = () => {
                 // [WT-R1-F2 2026-05-20] No-op when teardown already started —
-                // prevents the trailing tick (queued before clearInterval) from
+                // prevents the trailing tick (queued before clearTimeout) from
                 // mutating reactive state on an unmounting component.
                 if (this._destroyed) return;
                 this.loadKioskCashOrders();
@@ -2638,10 +2648,13 @@ export default {
                 // the "Prêt à livrer" shortcut so a freshly bumped order
                 // surfaces within ~15s even if the Echo subscription is down.
                 this.loadReadyOrders();
-            }, this._kioskPollingInterval());
+                const nextIntervalMs = this._kioskPollingInterval();
+                this._kioskPollTimer = setTimeout(tick, nextIntervalMs);
+            };
+            tick();
         },
         _restartKioskPolling() {
-            if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
+            if (this._kioskPollTimer) clearTimeout(this._kioskPollTimer);
             this._startKioskPolling();
         },
         // ── Echo real-time subscription for kiosk cash orders ─────────────

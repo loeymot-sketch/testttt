@@ -109,7 +109,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-v2[data-v-3992cfe5] {\n    flex: 1;\n    display: flex;\n    flex-direction: column;\n    background: #F9FAFB;\n    position: relative;\n    font-family: 'Inter', system-ui, sans-serif;\n    min-height: 0;\n}\n[dir=\"rtl\"] .kds-v2[data-v-3992cfe5] {\n    font-family: 'Noto Naskh Arabic', 'Inter', system-ui, sans-serif;\n}\n.kds-v2__grid[data-v-3992cfe5] {\n    flex: 1;\n    display: grid;\n    grid-template-columns: repeat(4, minmax(0, 1fr));\n    grid-template-rows: repeat(2, minmax(0, 1fr));\n    gap: 16px;\n    padding: 16px;\n    min-height: 0;\n}\n\n/* 4K: 5 cols × 2 rows, more breathing room */\n@media (min-width: 2560px) {\n.kds-v2__grid[data-v-3992cfe5] {\n        grid-template-columns: repeat(5, minmax(0, 1fr));\n        grid-template-rows: repeat(2, minmax(0, 1fr));\n}\n}\n.kds-v2__placeholder[data-v-3992cfe5] {\n    border: 2px dashed #E5E7EB;\n    border-radius: 12px;\n    min-height: 200px;\n}\n\n/* [Wave U 2026-05-21] Récemment servies — compact archive strip.\n   Lives below the 4x2 active grid. Single row, small footprint\n   (~60px total) so it never steals vertical budget from the active\n   cards. Pills are read-only (no CTA, no keyboard, no timer-pulse). */\n.kds-v2__served[data-v-3992cfe5] {\n    flex-shrink: 0;\n    display: flex;\n    align-items: center;\n    gap: 12px;\n    padding: 8px 16px 12px;\n    border-top: 1px solid #E5E7EB;\n    background: #F9FAFB;\n}\n.kds-v2__served-label[data-v-3992cfe5] {\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.06em;\n    text-transform: uppercase;\n    color: #6B7280;\n    flex-shrink: 0;\n}\n.kds-v2__served-list[data-v-3992cfe5] {\n    display: flex;\n    flex-wrap: nowrap;\n    gap: 8px;\n    overflow-x: auto;\n    overscroll-behavior: contain;\n    min-width: 0;\n}\n.kds-v2__served-pill[data-v-3992cfe5] {\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    padding: 6px 12px;\n    border-radius: 9999px;\n    background: #ECFDF5;\n    color: #065F46;\n    border: 1px solid #A7F3D0;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 13px;\n    font-weight: 700;\n    line-height: 1;\n    flex-shrink: 0;\n}\n.kds-v2__served-pill-num[data-v-3992cfe5] {\n    font-weight: 800;\n    letter-spacing: -0.02em;\n}\n.kds-v2__served-pill-ago[data-v-3992cfe5] {\n    font-family: 'Inter', system-ui, sans-serif;\n    font-size: 11px;\n    font-weight: 600;\n    color: #047857;\n    opacity: 0.85;\n    letter-spacing: 0.02em;\n}\n.kds-v2__empty[data-v-3992cfe5] {\n    flex: 1;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    color: #9CA3AF;\n    padding: 32px;\n}\n.kds-v2__empty-illustration[data-v-3992cfe5] {\n    position: relative;\n    width: 200px;\n    height: 200px;\n    margin-bottom: 32px;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n.kds-v2__empty-glow[data-v-3992cfe5] {\n    position: absolute;\n    inset: 0;\n    border-radius: 9999px;\n    background: radial-gradient(closest-side, #F3F4F6, transparent 70%);\n}\n.kds-v2__empty-title[data-v-3992cfe5] {\n    font-size: 32px;\n    font-weight: 700;\n    color: #374151;\n}\n.kds-v2__empty-sub[data-v-3992cfe5] {\n    margin-top: 8px;\n    font-size: 16px;\n    color: #9CA3AF;\n}\n.sr-only[data-v-3992cfe5] {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-v2[data-v-3992cfe5] {\n    flex: 1;\n    display: flex;\n    flex-direction: column;\n    background: #F9FAFB;\n    position: relative;\n    font-family: 'Inter', system-ui, sans-serif;\n    min-height: 0;\n}\n[dir=\"rtl\"] .kds-v2[data-v-3992cfe5] {\n    font-family: 'Noto Naskh Arabic', 'Inter', system-ui, sans-serif;\n}\n.kds-v2__grid[data-v-3992cfe5] {\n    flex: 1;\n    display: grid;\n    grid-template-columns: repeat(4, minmax(0, 1fr));\n    grid-template-rows: repeat(2, minmax(0, 1fr));\n    gap: 16px;\n    padding: 16px;\n    min-height: 0;\n}\n\n/* 4K: 5 cols × 2 rows, more breathing room */\n@media (min-width: 2560px) {\n.kds-v2__grid[data-v-3992cfe5] {\n        grid-template-columns: repeat(5, minmax(0, 1fr));\n        grid-template-rows: repeat(2, minmax(0, 1fr));\n}\n}\n.kds-v2__placeholder[data-v-3992cfe5] {\n    border: 2px dashed #E5E7EB;\n    border-radius: 12px;\n    min-height: 200px;\n}\n\n/* [Wave N M-KDS-6 F1 P0 2026-05-24] Overflow chip — chef visibility safety net.\n   Cayenne red (#F4501E) high-contrast pill, absolute top-right of .kds-v2\n   (which is position:relative). z-index:100 keeps it above grid cards but the\n   parent .kds-v2 stacking context contains the chip below any modal overlay.\n   Pulse keyframe pulls peripheral attention; the `prefers-reduced-motion`\n   media query disables animation for vestibular-sensitive operators. */\n.kds-overflow-chip[data-v-3992cfe5] {\n    position: absolute;\n    top: 16px;\n    right: 16px;\n    padding: 8px 16px;\n    background: #F4501E;\n    color: white;\n    border-radius: 8px;\n    font-weight: 700;\n    font-size: 16px;\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);\n    animation: kds-overflow-pulse-3992cfe5 2s ease-in-out infinite;\n    z-index: 100;\n}\n.kds-overflow-chip__icon[data-v-3992cfe5] {\n    font-size: 18px;\n    line-height: 1;\n    font-weight: 900;\n}\n@keyframes kds-overflow-pulse-3992cfe5 {\n0%, 100% { transform: scale(1);\n}\n50% { transform: scale(1.05);\n}\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-overflow-chip[data-v-3992cfe5] {\n        animation: none;\n}\n}\n\n/* [Wave U 2026-05-21] Récemment servies — compact archive strip.\n   Lives below the 4x2 active grid. Single row, small footprint\n   (~60px total) so it never steals vertical budget from the active\n   cards. Pills are read-only (no CTA, no keyboard, no timer-pulse). */\n.kds-v2__served[data-v-3992cfe5] {\n    flex-shrink: 0;\n    display: flex;\n    align-items: center;\n    gap: 12px;\n    padding: 8px 16px 12px;\n    border-top: 1px solid #E5E7EB;\n    background: #F9FAFB;\n}\n.kds-v2__served-label[data-v-3992cfe5] {\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.06em;\n    text-transform: uppercase;\n    color: #6B7280;\n    flex-shrink: 0;\n}\n.kds-v2__served-list[data-v-3992cfe5] {\n    display: flex;\n    flex-wrap: nowrap;\n    gap: 8px;\n    overflow-x: auto;\n    overscroll-behavior: contain;\n    min-width: 0;\n}\n.kds-v2__served-pill[data-v-3992cfe5] {\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    padding: 6px 12px;\n    border-radius: 9999px;\n    background: #ECFDF5;\n    color: #065F46;\n    border: 1px solid #A7F3D0;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 13px;\n    font-weight: 700;\n    line-height: 1;\n    flex-shrink: 0;\n}\n.kds-v2__served-pill-num[data-v-3992cfe5] {\n    font-weight: 800;\n    letter-spacing: -0.02em;\n}\n.kds-v2__served-pill-ago[data-v-3992cfe5] {\n    font-family: 'Inter', system-ui, sans-serif;\n    font-size: 11px;\n    font-weight: 600;\n    color: #047857;\n    opacity: 0.85;\n    letter-spacing: 0.02em;\n}\n.kds-v2__empty[data-v-3992cfe5] {\n    flex: 1;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    color: #9CA3AF;\n    padding: 32px;\n}\n.kds-v2__empty-illustration[data-v-3992cfe5] {\n    position: relative;\n    width: 200px;\n    height: 200px;\n    margin-bottom: 32px;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n.kds-v2__empty-glow[data-v-3992cfe5] {\n    position: absolute;\n    inset: 0;\n    border-radius: 9999px;\n    background: radial-gradient(closest-side, #F3F4F6, transparent 70%);\n}\n.kds-v2__empty-title[data-v-3992cfe5] {\n    font-size: 32px;\n    font-weight: 700;\n    color: #374151;\n}\n.kds-v2__empty-sub[data-v-3992cfe5] {\n    margin-top: 8px;\n    font-size: 16px;\n    color: #9CA3AF;\n}\n.sr-only[data-v-3992cfe5] {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -818,6 +818,14 @@ var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
         return tb - ta;
       });
       return prepared.slice(0, 4);
+    },
+    // [Wave N M-KDS-6 F1 P0 2026-05-24] Overflow count for the chef-visibility
+    // safety chip. Counts ACTIVE orders (ACCEPT|PREPARING) beyond the 8 slots
+    // the FIFO grid actually renders — recentlyServed (PREPARED) orders are
+    // NOT counted (they live in the bottom strip and are not "waiting"). Stays
+    // 0 when the queue fits the grid (overflow chip stays hidden via v-if).
+    overflowActiveCount: function overflowActiveCount() {
+      return Math.max(0, this.activeOrders.length - 8);
     }
   },
   watch: {
@@ -2949,21 +2957,30 @@ var _hoisted_4 = {
 var _hoisted_5 = {
   "class": "kds-v2__grid"
 };
-var _hoisted_6 = ["aria-label"];
+var _hoisted_6 = {
+  key: 2,
+  "class": "kds-overflow-chip",
+  role: "status",
+  "aria-live": "polite"
+};
 var _hoisted_7 = {
+  "class": "kds-overflow-chip__text"
+};
+var _hoisted_8 = ["aria-label"];
+var _hoisted_9 = {
   "class": "kds-v2__served-label"
 };
-var _hoisted_8 = {
+var _hoisted_10 = {
   "class": "kds-v2__served-list"
 };
-var _hoisted_9 = ["title"];
-var _hoisted_10 = {
+var _hoisted_11 = ["title"];
+var _hoisted_12 = {
   "class": "kds-v2__served-pill-num"
 };
-var _hoisted_11 = {
+var _hoisted_13 = {
   "class": "kds-v2__served-pill-ago"
 };
-var _hoisted_12 = {
+var _hoisted_14 = {
   "class": "sr-only",
   "aria-live": "polite",
   "aria-atomic": "true"
@@ -2998,20 +3015,23 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       key: "ph-".concat(i),
       "class": "kds-v2__placeholder"
     });
-  }), 128 /* KEYED_FRAGMENT */))])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Wave U 2026-05-21] Récemment servies — compact archive strip.\n         Renders the 4 most recently PREPARED orders with elapsed-since-served.\n         Small footprint (60px row) so it never steals space from the active grid. "), $options.recentlyServed.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
-    key: 2,
+  }), 128 /* KEYED_FRAGMENT */))])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Wave N M-KDS-6 F1 P0 2026-05-24] Overflow chip — chef visibility safety net.\n         Wave M empirical finding: KdsV2Grid:55 slice(0,8) silently dropped orders 9+\n         from the rendered FIFO grid. No chip, no count, no [I]–… keyboard shortcut\n         beyond [H]. Owner verbatim mandate « chef qui pourrait sortir une commande\n         incomplète » = operational safety risk: if chef thinks the board fully shows\n         the queue, orders 9+ silently age past SLA. This chip is the independent\n         operational safety net BEFORE the full S3 PROPOSAL Option A/B/C layout\n         redesign (owner-gate). Trigger = activeOrders.length > 8 (the partition the\n         grid actually slices — NOT total feed length, which would falsely count\n         recently-served PREPARED orders in the bottom strip). "), $options.overflowActiveCount > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_6, [_cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kds-overflow-chip__icon",
+    "aria-hidden": "true"
+  }, "!", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_7, "+" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.overflowActiveCount) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_orders_waiting_more')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Wave U 2026-05-21] Récemment servies — compact archive strip.\n         Renders the 4 most recently PREPARED orders with elapsed-since-served.\n         Small footprint (60px row) so it never steals space from the active grid. "), $options.recentlyServed.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 3,
     "class": "kds-v2__served",
     role: "region",
     "aria-label": _ctx.$t('label.kds_recently_served')
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_recently_served')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.recentlyServed, function (o) {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_recently_served')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.recentlyServed, function (o) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       key: "served-".concat(o.id),
       "class": "kds-v2__served-pill keep-latin",
       title: _ctx.$t('label.kds_served_pill_title', {
         queue: o.queue_number || o.id
       })
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_10, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(o.queue_number || o.id), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.servedAgoLabel(o)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_9);
-  }), 128 /* KEYED_FRAGMENT */))])], 8 /* PROPS */, _hoisted_6)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Wave V 2026-05-21] KdsUndoToast removed — chef Prêt tap now PATCHes\n         immediately. The 3s undo window + single-slot serialization\n         (clearTimeout(pendingTimeoutId)) caused a cross-order race: when chef\n         chained \"Prêt\" on 3+ orders within 3s, the previous order's PATCH\n         was cancelled by the next click → only the LAST order transitioned,\n         the rest stayed EN COURS until chef re-clicked (perceived as a 30s\n         retry-after toast). Per owner mandate \"enlève cette sécurité\".\n         Component file kept for instant rollback. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" aria-live region for screen readers "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.liveMessage), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_1);
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(o.queue_number || o.id), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.servedAgoLabel(o)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_11);
+  }), 128 /* KEYED_FRAGMENT */))])], 8 /* PROPS */, _hoisted_8)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Wave V 2026-05-21] KdsUndoToast removed — chef Prêt tap now PATCHes\n         immediately. The 3s undo window + single-slot serialization\n         (clearTimeout(pendingTimeoutId)) caused a cross-order race: when chef\n         chained \"Prêt\" on 3+ orders within 3s, the previous order's PATCH\n         was cancelled by the next click → only the LAST order transitioned,\n         the rest stayed EN COURS until chef re-clicked (perceived as a 30s\n         retry-after toast). Per owner mandate \"enlève cette sécurité\".\n         Component file kept for instant rollback. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" aria-live region for screen readers "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.liveMessage), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_1);
 }
 
 /***/ },

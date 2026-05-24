@@ -4557,7 +4557,10 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
         });
       } catch (_e) {/* defensive */}
     }
-    if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
+    // [N-HEAL-04 M-POS-4 G-003 P2 2026-05-24] Self-recursive setTimeout
+    // (was setInterval) — clear with clearTimeout to cancel the next
+    // queued tick before it can re-arm the timer chain.
+    if (this._kioskPollTimer) clearTimeout(this._kioskPollTimer);
     // [Q10 P-OWNER 2026-05-21] Stop the 5 s ticker that re-renders the
     // X2 shortcut panels' "Mis à jour il y a Xs" labels.
     if (this._shortcutsRefreshTicker) {
@@ -5153,9 +5156,16 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     },
     _startKioskPolling: function _startKioskPolling() {
       var _this1 = this;
-      this._kioskPollTimer = setInterval(function () {
+      // [N-HEAL-04 M-POS-4 G-003 P2 2026-05-24] Self-recursive setTimeout
+      // re-evaluates _kioskPollingInterval() every tick. If Echo silently
+      // dies mid-shift (channel-auth fail with persistent ws socket up),
+      // cadence downshifts to 5s per call instead of staying stuck at 60s
+      // for the life of a setInterval. H-SYNC-001's pure-function fix
+      // alone only locked the decision tree; the running-clock integration
+      // needed this refactor to actually observe the downshift mid-shift.
+      var _tick = function tick() {
         // [WT-R1-F2 2026-05-20] No-op when teardown already started —
-        // prevents the trailing tick (queued before clearInterval) from
+        // prevents the trailing tick (queued before clearTimeout) from
         // mutating reactive state on an unmounting component.
         if (_this1._destroyed) return;
         _this1.loadKioskCashOrders();
@@ -5165,10 +5175,13 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
         // the "Prêt à livrer" shortcut so a freshly bumped order
         // surfaces within ~15s even if the Echo subscription is down.
         _this1.loadReadyOrders();
-      }, this._kioskPollingInterval());
+        var nextIntervalMs = _this1._kioskPollingInterval();
+        _this1._kioskPollTimer = setTimeout(_tick, nextIntervalMs);
+      };
+      _tick();
     },
     _restartKioskPolling: function _restartKioskPolling() {
-      if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
+      if (this._kioskPollTimer) clearTimeout(this._kioskPollTimer);
       this._startKioskPolling();
     },
     // ── Echo real-time subscription for kiosk cash orders ─────────────
