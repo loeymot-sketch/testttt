@@ -1926,19 +1926,42 @@ class OrderService
                 }
             } else {
                 // [CYCLE-002b] Atomic branch check, cashback, status save + ActionLog; notifications after commit.
+                // [GOAL-K2-HEAL-02 2026-05-24 K.2 H5 P1] Re-fetch order with
+                // lockForUpdate inside the transaction to prevent multi-cashier
+                // POS Livré race. Without this, 2 cashiers clicking Livré on
+                // the same PREPARED order both read the same in-memory
+                // route-bound model, both passed the idempotent gate, and
+                // both wrote `order_status_transitions` + `action_logs` rows
+                // → ambiguous "who delivered" attribution. Mirrors the
+                // existing self-cancel pattern at lines 1871-1901 in this
+                // same method + PaymentService::confirmCounterPayment:219-249
+                // + KitchenDisplaySystemOrderService::changeStatus:257-261.
+                //
+                // After the closure mutates $locked, we sync attributes back
+                // to the route-bound $order via setRawAttributes() so the
+                // post-tx SendOrderMail/Sms/Push + OrderStatusChanged +
+                // OrderCanceled dispatches at lines 2049-2068 read fresh
+                // persisted state, not stale pre-lock attributes.
                 $oldStatusForBroadcast = null;
                 DB::transaction(function () use ($order, $request, $targetStatus, &$oldStatusForBroadcast) {
+                    $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+
                     // [AUDIT-FIX P0-2 / POS-9-H.1.1] Branch isolation: non-Admin staff can only modify orders of their branch.
                     // Use abort() so the 403 is a real HttpException and bubbles untouched through the generic catch below.
                     if (Auth::check() && !Auth::user()->hasRole('Admin')) {
                         $userBranch = Auth::user()->branch_id ?? null;
-                        if ($userBranch && (int) $userBranch !== (int) $order->branch_id) {
+                        if ($userBranch && (int) $userBranch !== (int) $locked->branch_id) {
                             abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
                         }
                     }
 
                     $toStatus = $targetStatus;
-                    if ((int) $order->status === $toStatus) {
+                    if ((int) $locked->status === $toStatus) {
+                        // Idempotent: another concurrent request already won.
+                        // Sync route-bound model so caller observes the
+                        // already-persisted state and post-tx code short-
+                        // circuits via the $oldStatusForBroadcast===null guard.
+                        $order->setRawAttributes($locked->getAttributes(), true);
                         return;
                     }
 
@@ -1956,15 +1979,15 @@ class OrderService
                         if ($toStatus === OrderStatus::RETURNED) {
                             try {
                                 app(\App\Services\Order\SealedOrderGuard::class)
-                                    ->assertMutable($order, 'changeStatus → RETURNED');
+                                    ->assertMutable($locked, 'changeStatus → RETURNED');
                             } catch (\App\Exceptions\OrderSealedException $sealedEx) {
                                 try {
                                     app(\App\Services\Fiscal\AuditLogService::class)->write([
-                                        'branch_id'   => (int) $order->branch_id,
+                                        'branch_id'   => (int) $locked->branch_id,
                                         'user_id'     => Auth::check() ? (int) Auth::id() : null,
                                         'action'      => 'pos.refund.post_z_blocked',
                                         'resource'    => 'order',
-                                        'resource_id' => (int) $order->id,
+                                        'resource_id' => (int) $locked->id,
                                         'payload'     => [
                                             'attempted_transition' => 'RETURNED',
                                             'sealed_by_z_id'       => $sealedEx->sealedByZReportId,
@@ -1979,25 +2002,25 @@ class OrderService
                         }
 
                         if ($request->reason) {
-                            $order->reason = $request->reason;
+                            $locked->reason = $request->reason;
                         }
-                        if ($order->transaction) {
+                        if ($locked->transaction) {
                             app(PaymentService::class)->cashBack(
-                                $order,
+                                $locked,
                                 'credit',
                                 'TXN-' . \Illuminate\Support\Str::random(12)
                             );
                         }
-                        app(LoyaltyService::class)->refundPoints($order, 'pos');
+                        app(LoyaltyService::class)->refundPoints($locked, 'pos');
                     }
 
-                    $oldStatusForBroadcast = $order->status;
-                    $order->status = $request->status;
-                    $order->save();
+                    $oldStatusForBroadcast = $locked->status;
+                    $locked->status = $request->status;
+                    $locked->save();
 
                     OrderStateMachine::recordTransition(
                         Order::class,
-                        (int) $order->id,
+                        (int) $locked->id,
                         (int) $oldStatusForBroadcast,
                         (int) $request->status,
                         Auth::check() ? (int) Auth::id() : null,
@@ -2007,7 +2030,7 @@ class OrderService
                     \App\Models\ActionLog::create([
                         'user_id'  => Auth::check() ? Auth::user()->id : null,
                         'action'   => 'Changement de statut',
-                        'resource' => 'Commande #' . $order->order_serial_no,
+                        'resource' => 'Commande #' . $locked->order_serial_no,
                         'details'  => sprintf(
                             'Nouveau statut: %s | Par: %s (branch_id=%s)',
                             trans('all.order.status.' . $request->status),
@@ -2024,22 +2047,28 @@ class OrderService
                                 ? 'order.rejected'
                                 : 'order.returned');
                         app(AuditLogService::class)->write([
-                            'branch_id'   => (int) $order->branch_id,
+                            'branch_id'   => (int) $locked->branch_id,
                             'user_id'     => Auth::check() ? (int) Auth::id() : null,
                             'action'      => $action,
                             'resource'    => 'order',
-                            'resource_id' => (int) $order->id,
+                            'resource_id' => (int) $locked->id,
                             'payload'     => [
-                                'order_serial_no' => $order->order_serial_no,
+                                'order_serial_no' => $locked->order_serial_no,
                                 'from_status'     => (int) $oldStatusForBroadcast,
                                 'to_status'       => (int) $request->status,
                                 'reason'          => $request->reason,
-                                'total'           => round((float) $order->total, 2),
-                                'payment_status'  => (int) $order->payment_status,
-                                'fiscal_sequence_no' => $order->fiscal_sequence_no,
+                                'total'           => round((float) $locked->total, 2),
+                                'payment_status'  => (int) $locked->payment_status,
+                                'fiscal_sequence_no' => $locked->fiscal_sequence_no,
                             ],
                         ]);
                     }
+
+                    // [GOAL-K2-HEAL-02] Sync route-bound model so post-tx
+                    // broadcasts (SendOrderMail/Sms/Push + OrderStatusChanged
+                    // + OrderCanceled dispatched at lines 2049-2068) read
+                    // the persisted state — not the pre-lock attributes.
+                    $order->setRawAttributes($locked->getAttributes(), true);
                 });
 
                 if ($oldStatusForBroadcast === null) {

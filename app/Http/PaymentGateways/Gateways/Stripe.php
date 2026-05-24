@@ -3,10 +3,15 @@
 namespace App\Http\PaymentGateways\Gateways;
 
 use App\Enums\Activity;
+use App\Enums\PaymentStatus;
+use App\Events\RefundCreated;
 use App\Models\CapturePaymentNotification;
 use App\Models\Currency;
+use App\Models\Order;
 use App\Models\PaymentGateway;
 use App\Models\WebhookEvent;
+use App\Services\Fiscal\AuditLogService;
+use App\Services\Order\SealedOrderGuard;
 use App\Services\PaymentAbstract;
 use App\Services\PaymentService;
 use Exception;
@@ -310,6 +315,135 @@ class Stripe extends PaymentAbstract
                     }
 
                     $event->markProcessed($orderId);
+                } elseif ($eventType === 'charge.refunded') {
+                    // [GOAL-K2-HEAL-04 2026-05-24] Phase K.8 K8-F-03 P1:
+                    // Owner manually refunds via Stripe dashboard → webhook
+                    // fires `charge.refunded`. Pre-heal: this event was
+                    // bucketed into the `else` branch (forensic log only),
+                    // so Order stayed PAID, Z-report diverged from Stripe
+                    // payout, stock not released, no realtime broadcast.
+                    // End-of-month reconciliation = manual nightmare.
+                    //
+                    // Bridge: dispatch RefundCreated so the existing listener
+                    // cascade fires (PersistOrderPaymentStatusChangedOnRefundCreated
+                    // → mutates payment_status=REFUNDED + broadcasts via
+                    // OrderPaymentStatusChanged outbox; ReleaseStockOnRefundCreated;
+                    // ReleaseAvailabilityOnRefundCreated; ClawbackLoyaltyPointsOnRefund).
+                    //
+                    // IMPORTANT: do NOT pre-mutate payment_status to REFUNDED
+                    // here — the listener at PersistOrderPaymentStatusChangedOnRefundCreated.php:81-83
+                    // early-returns when payment_status is already REFUNDED,
+                    // which would suppress the realtime broadcast. Let the
+                    // listener cascade own the mutation + broadcast.
+                    //
+                    // Idempotency: WebhookEvent::firstOrCreate (lines 255-275)
+                    // short-circuits storm retries at the HTTP layer (same
+                    // event.id → 200 duplicate_ignored, never reach this
+                    // branch). Within a single event, we early-return on
+                    // payment_status === REFUNDED so a re-drive via DLQ
+                    // does not re-fire the cascade.
+                    //
+                    // Sealed parent (post-Z order): the listener
+                    // PersistOrderPaymentStatusChangedOnRefundCreated is
+                    // sealed-aware (skips mutation, still broadcasts).
+                    // However, no mirror counter-entry is auto-created here
+                    // — the NF525 mirror must be produced via
+                    // RefundWithCounterEntryService by ops tooling.
+                    // V1 scope: log a structured warning so the divergence
+                    // is observable in the fiscal channel; V1.0.2 backlog
+                    // will wire automatic mirror creation. This keeps the
+                    // webhook path NF525-conservative (no fiscal-sequence
+                    // allocation under webhook concurrency).
+                    $charge = $stripeEvent->data->object ?? null;
+                    $chargeId = (string) ($charge->id ?? '');
+                    $amountRefunded = isset($charge->amount_refunded)
+                        ? ((int) $charge->amount_refunded) / 100
+                        : null;
+
+                    $orderId = $this->resolveOrderFromCharge($charge);
+                    if ($orderId === null) {
+                        Log::channel('fiscal')->warning('stripe.webhook.charge_refunded.unknown_order', [
+                            'event'     => 'stripe_charge_refunded_unknown_order',
+                            'event_id'  => $stripeEvent->id ?? null,
+                            'charge_id' => $chargeId,
+                        ]);
+                        $event->markProcessed();
+                    } else {
+                        $order = Order::find($orderId);
+                        if (! $order instanceof Order) {
+                            Log::channel('fiscal')->warning('stripe.webhook.charge_refunded.order_not_found', [
+                                'event'     => 'stripe_charge_refunded_order_not_found',
+                                'event_id'  => $stripeEvent->id ?? null,
+                                'charge_id' => $chargeId,
+                                'order_id'  => $orderId,
+                            ]);
+                            $event->markProcessed();
+                        } elseif ((int) $order->payment_status === PaymentStatus::REFUNDED) {
+                            // Already refunded — idempotent skip.
+                            Log::channel('fiscal')->info('stripe.webhook.charge_refunded.already_refunded', [
+                                'event'     => 'stripe_charge_refunded_already_refunded',
+                                'event_id'  => $stripeEvent->id ?? null,
+                                'charge_id' => $chargeId,
+                                'order_id'  => $orderId,
+                            ]);
+                            $event->markProcessed($orderId);
+                        } else {
+                            // Observability for sealed parent (post-Z) — no
+                            // mirror counter-entry is created in the webhook
+                            // path. Mirror via RefundWithCounterEntryService
+                            // is V1.0.2 backlog. Log so reconciliation sees
+                            // the divergence at the source.
+                            $sealedNote = null;
+                            try {
+                                app(SealedOrderGuard::class)
+                                    ->assertMutable($order, 'stripe-charge-refunded-webhook');
+                            } catch (\App\Exceptions\OrderSealedException) {
+                                $sealedNote = 'parent_sealed_mirror_deferred_v1_0_2';
+                                Log::channel('fiscal')->warning('stripe.webhook.charge_refunded.sealed_parent', [
+                                    'event'     => 'stripe_charge_refunded_sealed_parent',
+                                    'event_id'  => $stripeEvent->id ?? null,
+                                    'charge_id' => $chargeId,
+                                    'order_id'  => $orderId,
+                                    'note'      => 'Z-window closed; counter-entry must be created manually via RefundWithCounterEntryService.',
+                                ]);
+                            }
+
+                            // NF525 audit trail — append-only via the frozen
+                            // AuditLogService public API. Must precede the
+                            // event dispatch so the audit row commits inside
+                            // the same DB::transaction as the WebhookEvent
+                            // status flip. DispatchableAfterCommit makes the
+                            // RefundCreated cascade fire post-commit.
+                            app(AuditLogService::class)->write([
+                                'branch_id'   => (int) $order->branch_id,
+                                'action'      => 'order.refunded.stripe_dashboard',
+                                'resource'    => 'order',
+                                'resource_id' => (int) $order->id,
+                                'payload'     => array_filter([
+                                    'order_id'        => (int) $order->id,
+                                    'charge_id'       => $chargeId,
+                                    'amount_refunded' => $amountRefunded,
+                                    'source'          => 'stripe_dashboard_webhook',
+                                    'webhook_id'      => (string) ($stripeEvent->id ?? ''),
+                                    'sealed_note'     => $sealedNote,
+                                ], static fn ($v) => $v !== null && $v !== ''),
+                            ]);
+
+                            // Bridge to RefundCreated cascade. Listener order
+                            // (EventServiceProvider:182-196):
+                            //   1) PersistOrderPaymentStatusChangedOnRefundCreated
+                            //      → payment_status=REFUNDED + outbox broadcast
+                            //   2) ReleaseStockOnRefundCreated
+                            //   3) ReleaseAvailabilityOnRefundCreated
+                            //   4) ClawbackLoyaltyPointsOnRefund
+                            // Empty refundedItems array signals "full refund"
+                            // per RefundCreated PHPDoc — matches Stripe's
+                            // dashboard semantics (full charge refund).
+                            RefundCreated::dispatch($order);
+
+                            $event->markProcessed($orderId);
+                        }
+                    }
                 } else {
                     // Non-capture events: log only, mark processed so we
                     // don't retry. Forensic payload remains queryable.
@@ -333,6 +467,43 @@ class Stripe extends PaymentAbstract
         }
 
         return response()->json(['status' => 'ok'], 200);
+    }
+
+    /**
+     * [GOAL-K2-HEAL-04 2026-05-24] Phase K.8 K8-F-03 P1.
+     *
+     * Resolve the originating Order id from a Stripe charge object received
+     * over the `charge.refunded` (or `charge.succeeded`) webhook. The
+     * canonical link is `metadata.order_id`, injected by {@see payment()}
+     * at line 73 since the P0-POS-01 round-2 fix (2026-05-18).
+     *
+     * Fallback chain:
+     *  1) `charge->metadata->order_id` — canonical, set by our payment()
+     *     call when initiating the Stripe charge.
+     *  2) (future) lookup by `charge->payment_intent` against an orders
+     *     table column — pending V1.0.2 schema addition.
+     *
+     * Returns `null` when no link can be established (legacy charges,
+     * charges initiated outside FoodKing). Callers must log + skip — never
+     * raise (Stripe would retry forever for events we cannot reconcile).
+     */
+    private function resolveOrderFromCharge($charge): ?int
+    {
+        if (! is_object($charge)) {
+            return null;
+        }
+
+        if (isset($charge->metadata) && is_object($charge->metadata)
+            && isset($charge->metadata->order_id)
+            && (string) $charge->metadata->order_id !== ''
+        ) {
+            $candidate = (int) $charge->metadata->order_id;
+            if ($candidate > 0) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     /**
