@@ -231,13 +231,14 @@ Ce script (cf. **`scripts/deploy/deploy.sh`** — fourni par D.2 agent) exécute
 1. `cd /var/www/lecayenne && git clone <repo> .` (premier deploy)
 2. `composer install --no-dev --optimize-autoloader --no-interaction`
 3. `npm ci && npm run production` (Mix bundle assets)
-4. `php artisan migrate --force` (NF525 triggers `BEFORE DELETE` créés)
-5. `php artisan storage:link`
-6. `php artisan config:cache && php artisan route:cache && php artisan view:cache`
-7. `php artisan event:cache`
-8. `chown -R deploy:www-data storage bootstrap/cache && chmod -R 775 storage bootstrap/cache`
-9. `php artisan migrate:status` (vérifie 0 pending)
-10. **Boot dry-run** : `php artisan tinker --execute='echo "BOOT_OK"'` — si l'un
+4. **Pré-migrate backup automatique** (Phase H.4 REC-1, 2026-05-24) : `bash scripts/db/backup.sh --env=production ...` écrit un dump horodaté + manifest dans `storage/app/migration-backups/` AVANT chaque migrate. Backup fail = deploy abort (`exit 1`). Aucune action owner.
+5. `php artisan migrate --force` (NF525 triggers `BEFORE DELETE` créés)
+6. `php artisan storage:link`
+7. `php artisan config:cache && php artisan route:cache && php artisan view:cache`
+8. `php artisan event:cache`
+9. `chown -R deploy:www-data storage bootstrap/cache && chmod -R 775 storage bootstrap/cache`
+10. `php artisan migrate:status` (vérifie 0 pending)
+11. **Boot dry-run** : `php artisan tinker --execute='echo "BOOT_OK"'` — si l'un
     des 5 guards échoue, l'exception RuntimeException sera levée ICI, et le
     script échoue **avant** d'enchaîner Phase 3. **C'est le comportement voulu.**
 

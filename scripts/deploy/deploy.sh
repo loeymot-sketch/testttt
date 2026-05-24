@@ -221,6 +221,34 @@ sudo -u "$APP_USER" php "$APP_DIR/artisan" storage:link || true
 # ---------- 8. Migrations ----------------------------------------------------
 
 echo "[8/12] php artisan migrate --force..."
+
+# [GOAL-H2-HEAL-03 2026-05-24] Pre-migrate backup safety net (Phase H.4 REC-1).
+# Phase H.4 audit caught this step running `migrate --force` with NO prior
+# backup, even though scripts/db/backup.sh exists and RunDailyBackup.php
+# docblock explicitly designates it as "the pre-migration safety net".
+# Backup failure ABORTS the deploy (set -e + explicit exit 1) — no
+# partial-state risk. Credentials are read from .env via env_get() (above
+# at L149) since `sudo -u` does not export the shell's environment, and
+# the production guards (--allow-production + --i-understand-production)
+# are required because deploy.sh enforces APP_ENV=production (L153-157).
+echo "  ==> Pre-migrate safety backup (scripts/db/backup.sh)..."
+BACKUP_DIR="$APP_DIR/storage/app/migration-backups"
+sudo -u "$APP_USER" mkdir -p "$BACKUP_DIR"
+sudo -u "$APP_USER" bash "$APP_DIR/scripts/db/backup.sh" \
+    --env=production \
+    --driver="$(env_get DB_CONNECTION)" \
+    --database="$(env_get DB_DATABASE)" \
+    --host="$(env_get DB_HOST)" \
+    --port="$(env_get DB_PORT)" \
+    --username="$(env_get DB_USERNAME)" \
+    --password="$(env_get DB_PASSWORD)" \
+    --output-dir="$BACKUP_DIR" \
+    --i-understand-backup \
+    --allow-production \
+    --i-understand-production \
+    || { echo "  FATAL: pre-migrate backup failed, ABORTING deploy"; exit 1; }
+echo "  ==> Backup OK, proceeding to migrate..."
+
 sudo -u "$APP_USER" php "$APP_DIR/artisan" migrate --force
 
 # ---------- 9. Caches (config / route / view) --------------------------------
