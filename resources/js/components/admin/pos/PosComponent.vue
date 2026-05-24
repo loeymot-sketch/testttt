@@ -2084,6 +2084,17 @@ export default {
         this._posSyncBranchId = null;
         this._unsubscribeEcho();
         this._unbindWsService();
+        // [N-HEAL-03 M-POS-4 G-001+G-002 P3] Clear delivery-autocomplete debounce
+        // timer and close the AudioContext used for new-order beep. Both leak over
+        // long (5h+) cashier shifts otherwise (Google Maps debounce + Web Audio).
+        if (this._deliveryAcTimer) {
+            clearTimeout(this._deliveryAcTimer);
+            this._deliveryAcTimer = null;
+        }
+        if (this._audioCtx && typeof this._audioCtx.close === 'function') {
+            this._audioCtx.close().catch(() => {});
+            this._audioCtx = null;
+        }
     },
     mounted() {
         this._debouncedListRefresh = debounce(() => {

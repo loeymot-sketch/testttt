@@ -61214,6 +61214,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   buildNf525Footer: () => (/* binding */ buildNf525Footer),
 /* harmony export */   buildPaymentBreakdownLines: () => (/* binding */ buildPaymentBreakdownLines),
 /* harmony export */   formatPaymentsBreakdown: () => (/* binding */ formatPaymentsBreakdown),
+/* harmony export */   normalizeReceiptAddons: () => (/* binding */ normalizeReceiptAddons),
 /* harmony export */   normalizeReceiptExtras: () => (/* binding */ normalizeReceiptExtras),
 /* harmony export */   normalizeReceiptVariations: () => (/* binding */ normalizeReceiptVariations),
 /* harmony export */   receiptBranchHeader: () => (/* binding */ receiptBranchHeader),
@@ -61450,6 +61451,49 @@ function normalizeReceiptExtras(rawExtras) {
     return {
       name: String(e.name || e.extra_name || ''),
       quantity: qty || 1
+    };
+  }).filter(function (line) {
+    return line.name !== '';
+  });
+}
+
+/**
+ * [G2-HEAL-03 / G.5 G5-F-002 P1 2026-05-23]
+ * Normalize an order_item.item_addons payload (composer addons — kiosk
+ * menu_formule bundled drinks/sides, etc.) into a flat array ready to
+ * render on the receipt.
+ *
+ * Snapshot shape (CompositionSnapshotBuilder.php L153-164):
+ *   {addon_id, addon_item_id, addon_name, role, quantity,
+ *    unit_price, line_total, catalog_price}
+ *
+ * NF525 CORRECTNESS: rendered amount MUST be `line_total` (ratio-adjusted
+ * via menuRoleAdjustedAddonPrice), NEVER `catalog_price`. A Coca bundled
+ * with a Big Burger has catalog_price=3.00 but line_total≈1.20 — the
+ * customer ticket must surface what was actually charged.
+ *
+ * Returns [{name, quantity, line_total}] — line_total is a Number ≥0.
+ */
+function normalizeReceiptAddons(rawAddons) {
+  if (rawAddons === null || rawAddons === undefined) {
+    return [];
+  }
+  var list = Array.isArray(rawAddons) ? rawAddons : Object.values(rawAddons);
+  return list.filter(function (a) {
+    return a && _typeof(a) === 'object';
+  }).map(function (a) {
+    var qtyRaw = a.quantity;
+    var qty = Number.isFinite(Number(qtyRaw)) ? Math.max(0, Number(qtyRaw)) : 1;
+    var lineTotalRaw = a.line_total;
+    var lineTotal = Number.isFinite(Number(lineTotalRaw)) ? Number(lineTotalRaw) : NaN;
+    if (!Number.isFinite(lineTotal)) {
+      var unit = Number(a.unit_price);
+      lineTotal = Number.isFinite(unit) ? unit * (qty || 1) : 0;
+    }
+    return {
+      name: String(a.addon_name || a.name || a.addon_item_name || ''),
+      quantity: qty || 1,
+      line_total: Math.max(0, lineTotal)
     };
   }).filter(function (line) {
     return line.name !== '';
