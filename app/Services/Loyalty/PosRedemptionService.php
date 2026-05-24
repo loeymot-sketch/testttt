@@ -190,7 +190,27 @@ final class PosRedemptionService
             $currentTax      = (float) ($order->total_tax ?? 0);
             $currentDelivery = (float) ($order->delivery_charge ?? 0);
             $newDiscount     = round($currentDiscount + $discountEur, 2);
-            $newTotal        = round($subtotal - $newDiscount + $currentTax + $currentDelivery, 2);
+
+            // [H.5 EDGE-3 P1 2026-05-24] Mirror PricingService::computePricing
+            // lines 350-354 — the discount post-recompute MUST branch on TTC/HT
+            // because Order.subtotal semantics differ between modes:
+            //   TTC mode (V1 default): subtotal already contains tax INSIDE the
+            //     TTC line totals. total = subtotal − discount + delivery.
+            //     Adding $currentTax here was DOUBLE-COUNTING and OVERCHARGED
+            //     loyalty-redeeming customers (e.g. 50€ free-order redeem
+            //     landed at total=4.55€ instead of 0€).
+            //   HT mode (legacy/tests): subtotal is tax-EXCLUSIVE, tax is
+            //     SEPARATE and must be re-added.
+            // The kiosk mirror (FrontendOrderService → DiscountCalculator →
+            // PricingService) gets this right because it applies the discount
+            // INSIDE the create-transaction via PricingService. The POS path
+            // here operates POST-create and re-derives total inline, so the
+            // TTC/HT branch must be duplicated here.
+            if ((bool) config('pricing.tax_inclusive_prices', true)) {
+                $newTotal = round(max(0, $subtotal - $newDiscount + $currentDelivery), 2);
+            } else {
+                $newTotal = round(max(0, $subtotal - $newDiscount + $currentTax + $currentDelivery), 2);
+            }
 
             // [Z6-P1-WGS 2026-05-19] singular form — Order HAS SoftDeletes;
             // a soft-deleted Order must NOT receive a loyalty redeem update,
