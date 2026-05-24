@@ -1,0 +1,228 @@
+{
+  "agent": "I.7 Sanctum token revocation race",
+  "phase": "I — Indirect + hidden tests",
+  "scope": "FoodKing Le Cayenne V1 — Sanctum token lifecycle, revocation race-windows, ability-scope leak re-attest",
+  "method": "Static code audit (Auth controllers, Sanctum vendor Guard, Console scheduler, routes, tests/Sentinels) + token-cache analysis. Empirical race-loop skipped: local database.sqlite is 0-byte (no server running, no seed data). Static evidence sufficient per advisor guidance.",
+  "primary_sources_read": [
+    "config/sanctum.php",
+    "app/Http/Controllers/Auth/LoginController.php",
+    "app/Http/Controllers/Auth/KioskMachineLoginController.php",
+    "app/Http/Controllers/Auth/RefreshTokenController.php",
+    "app/Http/Controllers/Auth/ForgotPasswordController.php",
+    "app/Listeners/RevokeTokensOnBranchDeactivated.php",
+    "app/Console/Kernel.php",
+    "database/migrations/2019_12_14_000001_create_personal_access_tokens_table.php",
+    "vendor/laravel/sanctum/src/Guard.php",
+    "routes/api.php (abilities middleware grep)"
+  ],
+
+  "scenarios_audited": [
+    {
+      "id": "R1 logout tab A while tab B mid-request",
+      "verdict": "AMBER (inherent TOCTOU, NF525 chain mitigates attribution risk)",
+      "evidence": "LoginController.php:207-216 logout() deletes PersonalAccessToken via $current->delete() OR PersonalAccessToken::findToken($bearer)->delete(). Sanctum Guard (vendor/laravel/sanctum/src/Guard.php:152-168 isValidAccessToken) reads token row at request-start; if DELETE lands between Guard auth and controller execution, the in-flight request completes with valid auth. This is an inherent TOCTOU in any database-backed token system, NOT a Sanctum-specific defect. The NF525 HMAC audit chain (audit_logs) records the action with user_id captured AT request start — attribution is correct (user WAS authenticated when the request started). Race-window is sub-request-duration (~10-200ms typical), and a 'logged-out user did X' framing is misleading: they were logged in when X started, logged out before X finished. NO server-side cancellation of in-flight requests is implemented — Laravel/PHP-FPM does not natively support that pattern.",
+      "race_window_ms": "request_duration (~10-500ms typical, longer for slow endpoints)",
+      "mitigation": "NF525 audit chain captures user_id at request start (HMAC-signed, append-only). No silent attribution drift.",
+      "blocking": false
+    },
+    {
+      "id": "R2 token rotation race (T1 → T2)",
+      "verdict": "PASS",
+      "evidence": "LoginController.php:155 explicitly `$user->tokens()->where('name', 'auth_token')->delete();` BEFORE minting the new token at :157-161. KioskMachineLoginController.php:96 mirrors this for kiosk-token name. Schema check: personal_access_tokens migration (2019_12_14_000001) uses hard DELETE — NO SoftDeletes, NO deleted_at column. PersonalAccessToken vendor model also has no SoftDeletes trait. After T1 deletion, `PersonalAccessToken::findToken(T1)` returns null → Guard isValidAccessToken receives null → 401. Replay-after-relogin is impossible by construction. Tested by tests/Feature/Branch/BranchDestroyRevokesTokensTest.php + BranchDeactivationTokenRevokeTest.php + PasswordResetRevokesTokensSentinelTest.php (3 sentinels).",
+      "race_window_ms": 0,
+      "blocking": false
+    },
+    {
+      "id": "R3 multiple concurrent logins (mobile + desktop)",
+      "verdict": "RACE (intentional — revoke-on-relogin, NOT multi-device coexistence)",
+      "evidence": "LoginController.php:148-155 comment explicitly states: 'Revoke prior auth_token rows on relogin to prevent token sprawl. CLAUDE.md §9 explicitly required this; the original LoginController issued a fresh token every login without invalidating the previous one'. Scoped delete: `where('name', 'auth_token')` — kiosk-token rows untouched. KioskMachineLoginController.php:96 mirrors with `where('name', 'kiosk-token')`. CONSEQUENCE: a single user logged in on mobile + desktop simultaneously will have ONLY the most recent device's token valid — the first device gets silently logged out on next request (401). This is the documented behavior per CLAUDE.md §9 'Old tokens revoked à chaque relogin (prevent token sprawl)'. NOT multi-device support; one-active-session-per-token-name. Tokens of DIFFERENT names (auth_token vs kiosk-token vs pos-login per BranchDeactivation test :39) coexist.",
+      "design_decision": "Single-session-per-user (per token name). Multi-device coexistence is NOT supported by design.",
+      "ux_concern": "AMBER — owner should know that mobile-then-desktop login pattern silently kills mobile session. No 'you've been logged out on another device' UX exists.",
+      "blocking": false
+    },
+    {
+      "id": "R4 token revocation propagation delay (cache layer)",
+      "verdict": "PASS",
+      "evidence": "Grep `personal_access_tokens` across app/ + config/ returns ZERO custom cache wrappers. Grep `Cache::` near `PersonalAccessToken` returns nothing. Sanctum's vendor `Guard::authenticate()` calls `Sanctum::$personalAccessTokenModel::findToken($token)` which performs a direct DB SELECT each request (no internal caching). No `Sanctum::useTokenModel` override registered in any ServiceProvider (AppServiceProvider, AuthServiceProvider, RouteServiceProvider all checked). Revocation propagation is INSTANT — next request after `->delete()` returns 401 with no delay. RISK NOTE: production cache_driver is constrained by AppServiceProvider production-boot guard (CLAUDE.md §8) which only blocks `array`/`null` drivers; file/database/redis all pass. None of these cache Sanctum token validity by default. CONFIRMED: no caching layer interposed.",
+      "propagation_delay_ms": 0,
+      "blocking": false
+    },
+    {
+      "id": "R5 admin force-logout user",
+      "verdict": "PARTIAL — branch-level force-logout exists, user-level admin endpoint absent",
+      "evidence": "Direct admin-side `tokens()->delete()` controller endpoint: NOT FOUND (grep app/Http/Controllers/Admin/ returns 0 results). EXISTING coverage: (a) app/Listeners/RevokeTokensOnBranchDeactivated.php deletes ALL tokens for ALL users whose branch_id matches a branch transitioning ACTIVE→INACTIVE — fires from BranchStatusChanged event, scoped strict to `tokenable_type = User::class` (kiosk-machine tokens preserved); (b) tests/Feature/Branch/BranchDestroyRevokesTokensTest.php asserts branch deletion cascades token revocation; (c) ForgotPasswordController.php:181 `$user->tokens()->delete()` revokes ALL tokens (any name, any ability) on password-reset completion — broader scope than relogin per WJ-3 WI-5 SEC-RST-01 sentinel. GAP: no per-user 'force-logout button' for a Branch Manager to kick a single staff member without deactivating the whole branch or rotating their password. UX: when admin DOES force-logout (via branch deactivation), the user's next request returns 401 with no graceful UX redirect — frontend axios interceptor must catch 401 → /login (not verified in this audit, scope-deferred to a frontend agent).",
+      "missing_feature": "Per-user admin force-logout endpoint (e.g. POST /api/admin/users/{id}/revoke-tokens)",
+      "blocking": false,
+      "backlog_recommendation": "V1.0.2 — add an admin endpoint that calls $user->tokens()->delete() with audit log + RBAC `permission:user-force-logout`."
+    },
+    {
+      "id": "R6 cron-triggered token cleanup (expired-token pruning)",
+      "verdict": "RED (P2 storage bloat / NF525-adjacent housekeeping miss)",
+      "evidence": "Grep `sanctum:prune-expired|PruneExpired` across app/Console/, routes/console.php, bootstrap/app.php returns ZERO matches in project code. The Laravel Sanctum vendor command `vendor/laravel/sanctum/src/Console/Commands/PruneExpired.php` EXISTS (signature `sanctum:prune-expired {--hours=24}`) but is NEVER SCHEDULED in app/Console/Kernel.php. Kernel currently schedules: purge-expired-otps (every 15min), outbox:rescue/monitor/retry-failed/prune, webhook:retry-failed/prune, pos:purge-parked-orders, BDD backup, fiscal-chain-monitor — NO sanctum:prune-expired. CONSEQUENCE: personal_access_tokens table grows unbounded. Token row count = sum of all relogin events × (480-min TTL window expired but undeleted). With Sanctum 480-min TTL and continuous staff/kiosk relogin throughout a 6-year NF525 retention horizon, this is a real storage bloat vector. Compounding: every relogin DOES `where('name', 'auth_token')->delete()` for ACTIVE-name rows, which masks the bloat for the auth_token name BUT does NOT touch kiosk-token, pos-login, or any other named token whose owner has not re-logged in. Race-window question becomes MOOT (no cleanup cron exists, no T+1min race possible), but the absence is itself the finding.",
+      "race_window_ms": "N/A — no cron exists",
+      "storage_bloat_risk": "HIGH over 6y horizon, MODERATE in V1 first year",
+      "blocking": false,
+      "backlog_recommendation": "V1.0.2 — `$schedule->command('sanctum:prune-expired --hours=24')->daily()->onOneServer()->name('sanctum-prune-expired');` Mirror cadence of outbox-prune. Zero NF525 risk (expired tokens are by definition not in active use)."
+    },
+    {
+      "id": "R7 kiosk machine token long-lived",
+      "verdict": "PASS (task hypothesis 'long-lived no expiry?' is REFUTED)",
+      "evidence": "KioskMachineLoginController.php:98-102 EXPLICITLY mints kiosk tokens with `now()->addMinutes((int) config('sanctum.expiration', 480))` — identical 8h expiry as admin/staff auth_token. Default config('sanctum.expiration') = env('SANCTUM_TOKEN_EXPIRATION', 480) per config/sanctum.php:51. Kiosk tokens are NOT long-lived; they expire identically. POSITIVE attestation: BRAIN §9 line 'TTL 480 minutes (config sanctum.expiration)' is accurate AND applies to kiosk-token. Mass-revoke via admin: branch deactivation listener uses `tokenable_type = User::class` scope which EXCLUDES kiosk-machine tokens (Wave 5G R10 advisor note 8). UX impact: when a kiosk-token expires mid-day at the 8h mark, the kiosk WILL silently 401 on next checkout — no auto-refresh visible in KioskMachineLoginController (no refresh endpoint kiosk-side; only RefreshTokenController which is shared). If a kiosk borne re-logs in via stored credentials on 401, the cycle continues. Owner risk: unattended-kiosk auto-relogin pattern not verified in this audit (frontend agent scope).",
+      "kiosk_token_ttl_minutes": 480,
+      "blocking": false
+    },
+    {
+      "id": "R8 Sanctum ability scope leak re-attest (BRAIN claim '8 controllers WI-7')",
+      "verdict": "STALE BRAIN CLAIM — actual coverage broader (13 unique files), but BRAIN ceiling-style claim still safe",
+      "evidence": "Actual tokenCan() call sites (grep app/ --include='*.php'): 19 occurrences across 13 unique files. Breakdown: Controllers=6 calls (Frontend/MenuController, Frontend/UpsellController, Frontend/LoyaltyController×2, Frontend/PaymentReconcileController, Auth/GuestSignupController-comment-only), Requests=10 calls (OrderStatusRequest×2, OrderRequest×3, Frontend/PaymentConfirmRequest, Kiosk/PromoValidateRequest, Kiosk/PricingPreviewRequest), Resources=2 calls (ItemResource, NormalItemResource), Services=1 (OrderQuoteService). PLUS route-level `abilities:kiosk:order` middleware at routes/api.php:1354 and :1400 (audit-log + scan endpoints). CLAUDE.md §9 says 'tokenCan(kiosk:order) checks dans 8 controllers (verified WI-7)' — this is STALE. Re-attested count today (2026-05-24): 13 files with tokenCan, 19 total checks, 2 route-level abilities middleware. NO ENDPOINT FOUND that accepts a kiosk-token without an ability gate (defense-in-depth: even if route middleware missed, FormRequest authz catches it). No leak attestable. RECOMMENDATION: update CLAUDE.md §9 baseline from '8 controllers' to '13 files (6 controllers + 10 FormRequest authz + 2 Resources + 1 Service + 2 route-level abilities middleware) re-attested 2026-05-24 phase-i I.7'.",
+      "ability_check_count_actual": 19,
+      "ability_check_files_actual": 13,
+      "route_level_abilities_middleware_count": 2,
+      "brain_claim_stale": true,
+      "leak_found": false,
+      "blocking": false
+    }
+  ],
+
+  "token_lifecycle_attested": true,
+  "ability_scope_check_count": 19,
+  "ability_scope_check_files_count": 13,
+  "token_caching_layer_present": false,
+  "token_soft_delete_present": false,
+  "kiosk_token_ttl_minutes": 480,
+  "admin_token_ttl_minutes": 480,
+
+  "race_windows_identified": [
+    {
+      "id": "R1-TOCTOU",
+      "window_ms": "request_duration",
+      "severity": "AMBER",
+      "mitigation": "NF525 audit chain captures user_id at request start (HMAC-signed). Attribution is correct."
+    }
+  ],
+
+  "stale_brain_claims": [
+    {
+      "location": "CLAUDE.md §9 Multi-Tenant + Auth Invariants → Sanctum kiosk:order",
+      "stale_text": "tokenCan('kiosk:order') checks dans 8 controllers (verified WI-7)",
+      "actual_2026_05_24": "19 tokenCan() checks across 13 unique files (Controllers 6, FormRequests 10, Resources 2, Services 1) + 2 route-level abilities middleware",
+      "recommended_update": "Bump baseline to '13 files re-attested 2026-05-24 I.7' — coverage is BROADER than BRAIN claims, not narrower (no leak)."
+    }
+  ],
+
+  "missing_features_v102_backlog": [
+    {
+      "id": "I7-BL-01",
+      "title": "Schedule sanctum:prune-expired daily",
+      "rationale": "personal_access_tokens table grows unbounded over 6y NF525 retention horizon. Vendor command exists, never scheduled.",
+      "proposed_implementation": "app/Console/Kernel.php: $schedule->command('sanctum:prune-expired --hours=24')->daily()->onOneServer()->name('sanctum-prune-expired')->description('Purge personal_access_tokens rows expired >24h ago');",
+      "severity": "P2 (storage bloat, not security)",
+      "nf525_impact": "Zero — expired tokens are by definition unusable"
+    },
+    {
+      "id": "I7-BL-02",
+      "title": "Admin per-user force-logout endpoint",
+      "rationale": "Today only branch-level (deactivation) and password-reset can force-revoke tokens. Branch Manager has no surgical kick-single-staff capability.",
+      "proposed_implementation": "POST /api/admin/users/{id}/revoke-tokens, RBAC permission:user-force-logout, audit_logs append user.tokens_revoked_by_admin with admin_user_id + target_user_id.",
+      "severity": "P2 (operational nice-to-have, no security regression)"
+    },
+    {
+      "id": "I7-BL-03",
+      "title": "Frontend 401 → /login graceful redirect (verify or build)",
+      "rationale": "When branch deactivation + password-reset + relogin-revoke fires while user has active session, axios should catch 401 + redirect /login without console error spam. Not verified in this scope-bounded audit.",
+      "proposed_implementation": "Audit resources/js/utils/axios.js interceptor for 401 handler; ensure it preserves intended-route for post-relogin redirect.",
+      "severity": "P2 (UX)",
+      "scope_deferred_to": "Frontend agent / I-class follow-up"
+    }
+  ],
+
+  "positive_attestations": [
+    {
+      "id": "PA-01",
+      "claim": "Replay-after-relogin impossible (R2)",
+      "evidence": "Hard DELETE in LoginController:155 + no SoftDeletes on personal_access_tokens migration. PersonalAccessToken::findToken returns null → Guard returns null → 401.",
+      "sentinels": [
+        "tests/Feature/Branch/BranchDestroyRevokesTokensTest.php",
+        "tests/Feature/Branch/BranchDeactivationTokenRevokeTest.php",
+        "tests/Feature/Sentinels/PasswordResetRevokesTokensSentinelTest.php",
+        "tests/Feature/Auth/RefreshTokenAbilityPreserveTest.php"
+      ]
+    },
+    {
+      "id": "PA-02",
+      "claim": "Revocation propagates instantly (R4)",
+      "evidence": "Zero custom cache wrappers around findToken. Sanctum Guard performs direct DB lookup each request."
+    },
+    {
+      "id": "PA-03",
+      "claim": "RefreshTokenController preserves abilities verbatim (R8-adjacent)",
+      "evidence": "RefreshTokenController.php:42-45 'PRIVILEGE-ESCALATION FIX' [iter15-P0-07] — was previously ['*'] hard-coded; now uses $token->abilities ?? []. Sentinel: tests/Feature/Auth/RefreshTokenAbilityPreserveTest.php. Kiosk-token cannot escalate via refresh."
+    },
+    {
+      "id": "PA-04",
+      "claim": "Branch-deactivation listener strict-scoped (R5 lateral)",
+      "evidence": "RevokeTokensOnBranchDeactivated.php:53 `where('tokenable_type', User::class)` excludes kiosk-machine tokens. Scope verified by BranchDeactivationTokenRevokeTest test_kiosk_machine_tokens_not_touched (advisor note 8)."
+    },
+    {
+      "id": "PA-05",
+      "claim": "Login audit chain robust (R1 mitigation foundation)",
+      "evidence": "LoginController.php:117-144 + :224-249 — user.login and user.logout events APPENDED to HMAC chain BEFORE/AFTER token rotation, with try/catch + Log::warning so audit hiccup never blocks the user. NF525 attribution intact even during race-window."
+    }
+  ],
+
+  "verdict": "AMBER",
+  "verdict_rationale": "Token revocation core mechanics are SOLID — replay impossible (PA-01), propagation instant (PA-02), kiosk scope strict (PA-04), audit chain robust (PA-05). The R1 TOCTOU is inherent to any DB-backed token system and properly mitigated by NF525 audit chain capturing user_id at request start. Two real concerns: (1) R6 sanctum:prune-expired NEVER scheduled — storage bloat over 6y horizon, P2 not security; (2) BRAIN §9 '8 controllers' claim is STALE (actual 13 files broader coverage, no leak found, just inaccurate baseline). One operational gap: R5 no per-user admin force-logout endpoint. None of these are V1 ship-blockers; all are V1.0.2 backlog candidates (I7-BL-01/02/03). Overall lifecycle production-grade with documented edges.",
+
+  "top_3_token_race_concerns": [
+    {
+      "rank": 1,
+      "id": "R6 / I7-BL-01",
+      "title": "sanctum:prune-expired NEVER scheduled — personal_access_tokens table unbounded growth",
+      "severity": "P2",
+      "blocking_v1": false,
+      "impact": "6y storage bloat: every relogin chains a DELETE for active name only; expired rows of all other token names accumulate forever. Operationally fixable in one Kernel.php line."
+    },
+    {
+      "rank": 2,
+      "id": "R3 silent multi-device kick",
+      "title": "Mobile-then-desktop login silently kills mobile session, no UX warning",
+      "severity": "P2 UX",
+      "blocking_v1": false,
+      "impact": "By design (CLAUDE.md §9 'prevent token sprawl'), but no 'logged out on another device' UX exists. User experiences silent 401 with no explanation. Frontend axios interceptor should ideally emit a toast on 401-after-recent-login."
+    },
+    {
+      "rank": 3,
+      "id": "R5 / I7-BL-02",
+      "title": "No per-user admin force-logout endpoint (only branch-deactivation or password-reset)",
+      "severity": "P2 operational",
+      "blocking_v1": false,
+      "impact": "Branch Manager who needs to kick a single staff member must deactivate the whole branch (collateral damage) or reset the user's password (collateral damage too). Real but operational-not-security."
+    }
+  ],
+
+  "evidence_files_referenced": [
+    "app/Http/Controllers/Auth/LoginController.php:148-216",
+    "app/Http/Controllers/Auth/KioskMachineLoginController.php:85-131",
+    "app/Http/Controllers/Auth/RefreshTokenController.php:34-53",
+    "app/Http/Controllers/Auth/ForgotPasswordController.php:181",
+    "app/Listeners/RevokeTokensOnBranchDeactivated.php:22-67",
+    "app/Console/Kernel.php (no sanctum:prune-expired scheduled — entire file scanned)",
+    "config/sanctum.php:51",
+    "database/migrations/2019_12_14_000001_create_personal_access_tokens_table.php (no SoftDeletes)",
+    "vendor/laravel/sanctum/src/Guard.php:152-168 (isValidAccessToken)",
+    "vendor/laravel/sanctum/src/Console/Commands/PruneExpired.php (exists but unscheduled)",
+    "routes/api.php:1354, 1400 (abilities:kiosk:order route-level)",
+    "tests/Feature/Branch/BranchDestroyRevokesTokensTest.php",
+    "tests/Feature/Branch/BranchDeactivationTokenRevokeTest.php",
+    "tests/Feature/Sentinels/PasswordResetRevokesTokensSentinelTest.php",
+    "tests/Feature/Auth/RefreshTokenAbilityPreserveTest.php"
+  ],
+
+  "empirical_race_test_status": "SKIPPED",
+  "empirical_skip_reason": "database.sqlite is 0-byte (no server running, no seed data). Static evidence (LoginController:155 hard delete + no SoftDeletes on personal_access_tokens migration + Sanctum vendor Guard isValidAccessToken direct-DB-lookup) is sufficient to attest R2 replay impossibility. R1 TOCTOU window is inherent to DB-backed token systems and cannot be eliminated by code — only mitigated by NF525 audit chain, which is already done.",
+
+  "owner_action_required": false,
+  "v1_ship_blocker": false,
+  "frozen_zone_touched": false,
+  "nf525_chain_impact": "none — read-only audit, no code change"
+}

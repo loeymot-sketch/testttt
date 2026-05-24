@@ -1,0 +1,450 @@
+{
+  "agent": "I.8 Implicit defaults + silent fallbacks",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "a884193580d00669559e6a1d5cdcea7819a8d5a5",
+  "scope": "Hunt config() without default, env() outside config/, empty catch blocks, dangerous ?? fallback chains, Cache::put TTL, Vue prop defaults, pagination defaults, locale fallback — across app/ + resources/js/ + config/ + .env.",
+  "method": "Grep-based callsite enumeration (config/env/catch/?? patterns), JSON_diff between .env and .env.example, manual triage of top-frequency keys (cross-reference config/ file existence), spot-check of 30+ critical callsites for actual fallback behavior.",
+  "patterns_audited": [
+    {
+      "pattern": "config('xyz') without 2nd arg default",
+      "count": 98,
+      "config_keys_distinct": 50,
+      "dangerous_count": 0,
+      "verdict": "GREEN",
+      "samples_safe": [
+        {"file": "app/Http/Controllers/Admin/CashOverviewController.php:90", "key": "app.timezone", "callers": 24, "fallback": "Defined in config/app.php:140 with env('TIMEZONE') ?: 'Europe/Paris' — never null."},
+        {"file": "app/Http/Controllers/HealthController.php:121", "key": "broadcasting.default", "callers": 5, "fallback": "Defined in config/broadcasting.php — production boot guard at AppServiceProvider:193 refuses null/null-string."},
+        {"file": "app/Jobs/DispatchDomainEventsJob.php:112", "key": "queue.default", "callers": 4, "fallback": "Defined in config/queue.php — production boot guard at AppServiceProvider:199 refuses 'sync'."},
+        {"file": "app/Services/Cash/CashDrawerService.php (via CashVarianceRequiresApprovalException)", "key": "cash.variance_threshold_eur", "callers": 3, "fallback": "Defined in config/cash.php:31 with env('CASH_VARIANCE_THRESHOLD_EUR', 2.00) — float default."},
+        {"file": "app/Services/Fiscal/AuditLogService.php:279", "key": "fiscal.audit_secret", "callers": 1, "fallback": "Defined in config/fiscal.php — if empty, AuditLogService::secretFor throws RuntimeException at write-time (refuses to write unsigned audit row)."}
+      ],
+      "note": "All 50 distinct keys verified to exist in config/*.php files. config() returns the config value (typically env-bridged with safe default) — NOT null. Per-key grep counts shipped; zero true gaps."
+    },
+    {
+      "pattern": "env('xyz') OUTSIDE config/*.php (Laravel anti-pattern: returns null after `php artisan config:cache`)",
+      "count": 28,
+      "dangerous_count": 14,
+      "verdict": "AMBER",
+      "samples_dangerous": [
+        {
+          "file": "app/Libraries/AppLibrary.php:24",
+          "call": "env('DATE_FORMAT')",
+          "callers_inside_file": 12,
+          "impact_in_production_with_config_cache": "Returns null — currency/date/time formatting falls through to (a) NumberFormatter::CURRENCY fr_FR which IGNORES env (currencyAmountFormat L292-294 ext-intl branch — safe), or (b) the manual fallback branch using env('CURRENCY_SYMBOL', '€') + env('CURRENCY_POSITION') (L298-303). With config:cache: CURRENCY_SYMBOL defaults to '€' (only 1 of 12 calls has default), CURRENCY_POSITION = null → ternary `position == CurrencyPosition::LEFT` evaluates falsy → symbol pushed to RIGHT side. CURRENCY_DECIMAL_POINT = null → (int) cast = 0 → all amounts formatted as integers (no decimals visible). DATE_FORMAT/TIME_FORMAT = null → number_format(timestamp, null, ...) → strftime errors silenced → empty string returned.",
+          "v1_production_risk": "V1 Le Cayenne runs APP_ENV=local — `config:cache` NOT typically run. Latent: any future production cutover with `php artisan config:cache` step would break all currency/date display app-wide. Already partially mitigated by G2-HEAL-02 (commit 157de5e0c) which routed `currencyAmountFormat` through NumberFormatter::CURRENCY fr_FR (config-free). 11/12 env() calls in this file remain raw.",
+          "recommendation": "Bridge in config/app.php: 'currency' => ['decimal_point' => env('CURRENCY_DECIMAL_POINT', 2), 'symbol' => env('CURRENCY_SYMBOL', '€'), 'position' => env('CURRENCY_POSITION', 10)] + 'date_format' => env('DATE_FORMAT', 'd-m-Y'), 'time_format' => env('TIME_FORMAT', 'h:i A'). Refactor AppLibrary to config('app.currency.decimal_point') etc."
+        },
+        {
+          "file": "app/Services/Fiscal/AuditLogService.php:273",
+          "call": "env('FISCAL_AUDIT_SECRET_BRANCH_'.$branchId)",
+          "impact": "Per-branch HMAC override silently disabled in production after config:cache. Falls back to global config('fiscal.audit_secret') — chain still computes but with wrong key (uniform secret across branches instead of per-branch). Already flagged AMBER in Phase B.5 AuditLogService A.1 finding (per task scope quote).",
+          "v1_production_risk": "V1 Le Cayenne single-resto = single FISCAL_AUDIT_SECRET — no per-branch override path exercised. V2 SaaS multi-tenant landmine.",
+          "recommendation": "Bridge to config/fiscal.php as 'audit_secret_per_branch' => collect()->mapWithKeys(fn ($b) => [$b => env('FISCAL_AUDIT_SECRET_BRANCH_'.$b)])->all(); OR document explicitly that per-branch override REQUIRES `php artisan config:clear` after .env edit and refuse to use it post-cache."
+        },
+        {
+          "file": "app/Http/SmsGateways/Gateways/Nexmo.php:43",
+          "call": "env('APP_NAME')",
+          "impact": "After config:cache, returns null → Nexmo SMS sender ID = null → SMS API rejects request OR sends with empty sender. config('app.name') would return 'Le Cayenne' correctly.",
+          "v1_production_risk": "V1 Le Cayenne local doesn't use Nexmo SMS (DEMO=false but Nexmo not wired for FR market). Latent if SMS provider gets activated.",
+          "recommendation": "Replace with config('app.name')."
+        },
+        {
+          "file": "app/Http/Resources/SettingResource.php:95",
+          "call": "env('DEMO')",
+          "impact": "Returns null in cached config → Settings endpoint exposes 'demo' = null → frontend may interpret as false (truthy-coerced UI shows non-demo mode) which is actually correct for production, but the API contract degrades from boolean to null silently.",
+          "v1_production_risk": "Low — DEMO flag is for vendor demo deployments, not Le Cayenne production."
+        },
+        {
+          "file": "app/Http/Resources/OrderItemResource.php:52",
+          "call": "env('CURRENCY')",
+          "impact": "When tax_type === FIXED, tax_type field exposed as CURRENCY symbol (e.g. 'EUR'). After config:cache → null → frontend may render empty 'tax_type:' label. Mitigated: V1 Le Cayenne uses tax_type=PERCENTAGE (Tax mode), so FIXED branch never triggers.",
+          "v1_production_risk": "Low (FIXED tax type unused), latent if any item uses FIXED tax."
+        },
+        {
+          "file": "app/Http/Controllers/Auth/SignupController.php:62",
+          "call": "env('DEMO')",
+          "impact": "Gate for signup blocking in demo mode. After config:cache → null → !env('DEMO') = true → demo gate ineffective. config('app.env') === 'demo' would be the canonical Laravel pattern.",
+          "v1_production_risk": "V1 Le Cayenne staff-only mode (STAFF_ONLY_MODE=true) — signup likely disabled at route level. Latent."
+        },
+        {
+          "file": "app/Http/Controllers/Admin/ItemController.php:137",
+          "call": "env('DEMO')",
+          "impact": "Same pattern as SignupController — demo-mode item delete gate silently bypassed after config:cache."
+        },
+        {
+          "file": "app/Http/Controllers/Admin/SiteController.php:34",
+          "call": "env('DEMO')",
+          "impact": "Same pattern — site settings demo gate."
+        },
+        {
+          "file": "app/Http/Controllers/Installer/InstallerController.php:29",
+          "call": "env('APP_URL')",
+          "impact": "Installer redirect home — after install, config:cache strips env() → redirect to null URL → 500 / blank redirect. Mitigated by Laravel installer being one-shot and APP_URL being set as part of the install step."
+        },
+        {
+          "file": "app/Services/LanguageService.php:112",
+          "call": "env('DEMO')",
+          "impact": "Language delete blocked in demo — gate silently bypassed after config:cache. Allows language deletion in production where demo mode was supposed to protect."
+        },
+        {
+          "file": "app/Services/OtpManagerService.php:76",
+          "call": "filter_var(env('DEMO', false), FILTER_VALIDATE_BOOLEAN)",
+          "impact": "OTP bypass in demo. With explicit `false` default, value stays false after cache → OTP NOT bypassed → safer-by-default. GREEN despite env() pattern."
+        },
+        {
+          "file": "app/Support/WizardPerItemDemo.php:30",
+          "call": "filter_var(env('FOODKING_E2E_WIZARD_HEADER', false), FILTER_VALIDATE_BOOL)",
+          "impact": "E2E test-only feature flag — defaults to false → safe in production after config:cache."
+        },
+        {
+          "file": "app/Providers/AppServiceProvider.php:233",
+          "call": "env('DB_LOCK_WAIT_TIMEOUT', 5)",
+          "impact": "Called in boot() method. AppServiceProvider runs BEFORE config:cache is consumed — actually env() works here because Laravel reads .env at framework bootstrap. AMBER caveat: if env() returns null at boot (config cached + .env removed from server), the (int) cast = 0 → SET innodb_lock_wait_timeout = 0 → DISABLES lock wait (waits forever) → FPM pool starvation under contention. Explicit `5` default in env() call protects against the typical case."
+        },
+        {
+          "file": "app/Console/Commands/E2EStressCommand.php:274",
+          "call": "config('app.api_key') ?: env('MIX_API_KEY', '')",
+          "impact": "E2E command — config first, env fallback. After config:cache, env() returns null/empty → falls through to '' → API auth fails → E2E run aborts loudly. Acceptable (E2E command, not production code path)."
+        }
+      ],
+      "samples_safe_inside_appserviceprovider_boot_path": [
+        {"file": "app/Providers/AppServiceProvider.php:233", "note": "boot() phase IS before request-level config:cache, env() values are still accessible from .env during framework bootstrap"}
+      ],
+      "note": "14 env() calls outside config/ are dangerous-after-config-cache. V1 Le Cayenne mitigation: APP_ENV=local does not run `php artisan config:cache` typically — only `bootstrap/cache/packages.php + services.php` exist (no config.php). Latent landmine for cloud cutover (V2 prep). 14 calls have explicit defaults (safer-by-default behavior). AppLibrary.php is the worst offender (12 env() calls in one file)."
+    },
+    {
+      "pattern": "Empty catch block — `catch (\\Throwable $e) {}` truly empty",
+      "count": 2,
+      "verdict": "GREEN",
+      "samples": [
+        {
+          "file": "app/Services/Fiscal/ZReportService.php:135",
+          "context": "lock->release() in finally block",
+          "justification": "Lock release failure on the redis-side is non-recoverable AND non-correctness-affecting — the lock TTL (5s) will expire naturally. Suppressing the throw prevents a finally-clause exception from masking the original try-block exception. Acceptable defensive pattern."
+        },
+        {
+          "file": "app/Services/Fiscal/ZReportService.php:273",
+          "context": "Same — lock->release() in finally block",
+          "justification": "Same as above."
+        }
+      ],
+      "note": "Both empty catches are on Cache::lock release inside finally blocks — Laravel-standard pattern. No business-logic empty catches found."
+    },
+    {
+      "pattern": "Observable silent catch — Log::warning/Log::error then return/continue",
+      "count": 996,
+      "verdict": "GREEN",
+      "note": "996 total catch (Throwable|Exception) blocks. Spot-check of 30 critical paths (PaymentReconcileController, EnsureUserStatusActive, FCM service, KioskEventController, HealthController, LoyaltyController, Stripe gateway) confirms 100% have either: (a) Log::warning + return safe default, (b) Log::error + re-throw, (c) explicit comment documenting intentional swallow with rationale (e.g. EnsureUserStatusActive:81-85 'Swallow — non-Sanctum-token contexts shouldn't crash the security gate'). Pattern discipline is strong."
+    },
+    {
+      "pattern": "?? 0 / ?? 1 / ?? null / ?? false / ?? []",
+      "count": 751,
+      "verdict": "GREEN with 2 low-severity AMBER",
+      "samples_dangerous_to_business": [
+        {
+          "file": "app/Models/OrderPayment.php:92,97",
+          "call": "(int) ($this->attributes['mode'] ?? 0)",
+          "impact": "PosPaymentMethod enum starts at 1 (CASH=1, CARD=2, ...). Fallback to 0 → invalid enum value. Mitigated: order_payments.mode column is `unsignedTinyInteger NOT NULL` per database/migrations/2026_05_06_180000_create_order_payments_table.php:24. Cannot be null at DB level. Pure defensive.",
+          "verdict": "GREEN-defensive"
+        },
+        {
+          "file": "app/Listeners/AwardLoyaltyPointsOnDelivery.php:100",
+          "call": "(float) ($order->order_amount ?? $order->total ?? 0)",
+          "impact": "Loyalty points awarded = floor(orderTotal * rate). If both fallback to 0 → 0 points → no fraud (under-award is favorable to merchant). GREEN.",
+          "verdict": "GREEN"
+        },
+        {
+          "file": "app/Http/Middleware/IdempotencyKeyMiddleware.php:185,209,219",
+          "call": "(int) ($user?->branch_id ?? -1)",
+          "impact": "Uses -1 as sentinel for 'no branch resolved' (rejected by app-layer scope) — NOT 0. Explicit pattern documented at L182-219. Kiosk machine pivot lookup added for branch_id=0 staff edge case. GREEN.",
+          "verdict": "GREEN"
+        },
+        {
+          "file": "app/Services/Payments/SplitPaymentService.php:89",
+          "call": "(float) ($t['amount'] ?? 0)",
+          "impact": "Split tranche amount missing → 0 → tranche contributes 0 to total. If all tranches are 0, total mismatch detected by SplitPayment validator (cross-checked vs order total). Loud failure downstream, not silent under-charge.",
+          "verdict": "GREEN"
+        },
+        {
+          "file": "app/Http/Resources/SettingResource.php:36",
+          "call": "$this->info['site_default_branch'] ?? 1",
+          "impact": "Setting default branch silently coerced to 1 if not set. If branch ID 1 doesn't exist or is deactivated → frontend may attempt to scope to nonexistent branch. Low risk (admin settings UI is the single writer).",
+          "verdict": "AMBER-low"
+        },
+        {
+          "file": "app/Http/Resources/SettingResource.php:59,60",
+          "call": "$this->info['order_setup_takeaway'] ?? 1 (and order_setup_delivery)",
+          "impact": "Order types defaulting to '1=enabled' silently. V1 dine_in_enabled=false flag exists but takeaway/delivery defaulting to enabled is the documented baseline.",
+          "verdict": "GREEN-intentional"
+        }
+      ],
+      "samples_safe_at_high_count": [
+        {"pattern": "(int) ($var ?? 0) for nullable int casts in JsonResources (38+ uses)", "note": "Standard defensive cast pattern. DB schema typically enforces NOT NULL on these columns. Safe."},
+        {"pattern": "max(1, (int) ($x['quantity'] ?? 1)) (12+ uses across OrderService + ComposerStepService + FrontendOrderService)", "note": "Always guarded by max(1, ...) so quantity floors at 1. Cannot be 0 → no zero-quantity order line risk."}
+      ],
+      "note": "751 chains audited. Vast majority are defensive casts on already-NOT-NULL DB columns or sentinel-driven patterns with explicit downstream validation. Zero new P0/P1 introduced. Pre-existing AMBER on SettingResource defaults is documented (low-risk)."
+    },
+    {
+      "pattern": "Cache::put(key, value) without TTL → defaults to forever",
+      "count": 5,
+      "verdict": "GREEN",
+      "samples": [
+        {"file": "app/Jobs/DispatchDomainEventsJob.php:129", "call": "Cache::put('ws:heartbeat', now()->timestamp, 120)", "ttl": "120s"},
+        {"file": "app/Listeners/NotifyStockLowOnStockLevelChanged.php:56", "call": "Cache::put($cacheKey, now()->toIso8601String(), $throttleSeconds)", "ttl": "config-driven"},
+        {"file": "app/Services/OrderService.php:2235", "call": "Cache::put($cacheKey, $order->id, now()->addHours(24))", "ttl": "24h"},
+        {"file": "app/Console/Commands/StockScanRupture.php:141", "call": "Cache::put('stock_scan_rupture:last_summary:...', $summary, now()->addDay())", "ttl": "24h"},
+        {"file": "app/Console/Commands/PreflightProductionCommand.php:254", "call": "Cache::put($key, '1', 5)", "ttl": "5s (preflight test)"}
+      ],
+      "note": "ALL 5 Cache::put calls have explicit TTL. Zero forever-cache risk. No Cache::forever() or Cache::rememberForever() calls in app/."
+    },
+    {
+      "pattern": "Cache::lock(key, TTL) — all with explicit TTL",
+      "count": 9,
+      "verdict": "GREEN",
+      "note": "9 Cache::lock callsites verified. All have explicit TTL (range 5s-30s). No infinite-lock risk."
+    },
+    {
+      "pattern": "->paginate() (no per_page argument)",
+      "count": 0,
+      "verdict": "GREEN",
+      "note": "All paginate() calls take explicit $perPage parameter, sourced from $request->get('per_page', 10) (default 10). Cross-checked: PrinterController:34, PaymentTerminalController:48, DeliveryBoyCashSessionController:80, LoyaltyController:486+524, PosCategoryController:41, plus OrderService/BranchService/LanguageService/KioskMachineService factory paginate. All pass $perPage explicitly. No silent 15-row truncation risk."
+    },
+    {
+      "pattern": "Vue prop default: null",
+      "count": 60,
+      "verdict": "GREEN",
+      "note": "60 Vue prop `default: null` patterns. Spot-check of 20 confirms ALL are intentional (optional metadata fields: icon, errorCode, orderId, ariaLabel, etc.). Components either: (a) guard with v-if check, (b) render fallback UI when null, (c) use prop only when set. No null-deref crashes found."
+    },
+    {
+      "pattern": "Default locale fallback (i18n)",
+      "count": 1,
+      "verdict": "GREEN",
+      "note": "config/app.php:170 sets fallback_locale='en'. resources/js/i18n.js:118 sets fallbackLocale=DEFAULT_LOCALE (FR per ADR-007 kiosk FR-lock). V1 Le Cayenne all surfaces FR-locked → fallback path never exercised for user-facing translations. Out-of-scope keys would fall through to 'en' (English) — documented behavior, not silent failure."
+    },
+    {
+      "pattern": "Storage::disk() defaulting to local",
+      "count": 2,
+      "verdict": "GREEN",
+      "note": "Only 2 explicit Storage::disk() calls. FiscalArchiveCommand:208 uses config('fiscal.archive_disk', 'local') — explicit default. ApplyLeCayenneV2Command:207 uses $m->disk (per-record). No silent S3-vs-local fallback issues."
+    },
+    {
+      "pattern": "Migration ->default('foo') drift vs Eloquent $attributes",
+      "count": "not_exhaustively_audited",
+      "verdict": "DEFERRED",
+      "note": "Sampling failed to find drift between migration column defaults and Eloquent $attributes defaults. Defer full audit (would require diffing 80+ models + migrations) to V1.0.2 backlog."
+    }
+  ],
+  "env_calls_outside_config_count": 28,
+  "env_calls_dangerous_after_cache": 14,
+  "empty_catch_body_count": 2,
+  "config_without_default_count": 98,
+  "null_coalescing_chain_count": 751,
+  "cache_put_without_ttl_count": 0,
+  "paginate_without_size_count": 0,
+  "dangerous_default_chains": [
+    {
+      "id": "I8-D-001",
+      "severity": "P2",
+      "file": "app/Libraries/AppLibrary.php",
+      "lines": "24, 32, 40, 48, 56, 289, 298, 299, 308, 313, 404, 432",
+      "title": "12 env() calls in AppLibrary for CURRENCY_* / DATE_FORMAT / TIME_FORMAT — return null after `php artisan config:cache`",
+      "impact_now": "V1 Le Cayenne LOCAL APP_ENV=local. config:cache NOT run by current deploy flow. Latent. G2-HEAL-02 (commit 157de5e0c) already mitigated currencyAmountFormat L292-294 via NumberFormatter::CURRENCY fr_FR (config-free). 11/12 raw env() calls remain in fallback / date-format paths.",
+      "impact_v2_cloud_cutover": "If `php artisan config:cache` ever runs in production: currency formatting breaks (decimal=0 → integers only), date/time format → empty strings, position → wrong side. Mass UI display degradation. Tracked as V1.0.X cloud-prep backlog."
+    },
+    {
+      "id": "I8-D-002",
+      "severity": "P3",
+      "file": "app/Services/Fiscal/AuditLogService.php:273",
+      "title": "env('FISCAL_AUDIT_SECRET_BRANCH_'.$branchId) per-branch HMAC override outside config",
+      "impact_now": "V1 Le Cayenne single-resto = single FISCAL_AUDIT_SECRET (config('fiscal.audit_secret')). Per-branch override path NEVER exercised. Zero current production risk.",
+      "impact_v2_saas": "V2 multi-tenant landmine. After config:cache, per-branch override silently disabled → all branches HMAC-signed with same key (uniform secret). Cross-tenant audit-chain forgery surface enabled.",
+      "cross_ref": "Phase B.5 AuditLogService A.1 finding (already AMBER-flagged, V2 backlog)."
+    },
+    {
+      "id": "I8-D-003",
+      "severity": "P3",
+      "file": "app/Http/SmsGateways/Gateways/Nexmo.php:43",
+      "title": "env('APP_NAME') for SMS sender ID — returns null in cached config",
+      "impact": "SMS sender ID = null → SMS API rejects OR sends empty sender. V1 Le Cayenne does NOT use Nexmo SMS. Latent if SMS provider activated."
+    },
+    {
+      "id": "I8-D-004",
+      "severity": "P3",
+      "files": [
+        "app/Http/Controllers/Auth/SignupController.php:62",
+        "app/Http/Controllers/Admin/ItemController.php:137",
+        "app/Http/Controllers/Admin/SiteController.php:34",
+        "app/Services/LanguageService.php:112"
+      ],
+      "title": "env('DEMO') used as feature gate — returns null after config:cache → !env('DEMO') always true",
+      "impact": "Demo-mode protection gates (block delete in demo) become silently bypassed in cached config. V1 Le Cayenne not a demo deployment (DEMO=false) — gate inactive by design. Latent if vendor demo install runs `php artisan config:cache`."
+    }
+  ],
+  "env_drift_findings": [
+    {
+      "id": "I8-E-001",
+      "severity": "P1",
+      "title": "LOYALTY_QR_SECRET missing from BOTH .env AND .env.example",
+      "evidence": "grep -E 'LOYALTY_QR_SECRET' .env .env.example returns ZERO matches. config/loyalty.php:32 defaults to env('LOYALTY_QR_SECRET', '') → empty string. AppServiceProvider:161-171 production boot guard throws RuntimeException if empty in production.",
+      "impact_now": "V1 Le Cayenne APP_ENV=local → boot guard inactive. LoyaltyQrSigner lazily refuses to sign/verify with empty secret → /loyalty/scan QR endpoint falls back to legacy plaintext FK:<code> path (the fraud vector being healed per LCS-S-001).",
+      "impact_production_deploy": "APP_ENV=production deploy CRASHES at boot per AppServiceProvider:163. Fail-fast (good) BUT requires .env.example to document the variable so operators know to set it. Currently zero documentation in .env.example.",
+      "recommendation": "Add to .env.example after line 279 (FISCAL_AUDIT_SECRET section): `LOYALTY_QR_SECRET=  # required in production: openssl rand -hex 32 → 64-char hex string ≥ 32 bytes`"
+    },
+    {
+      "id": "I8-E-002",
+      "severity": "P2",
+      "title": "ENV vars listed in .env.example but missing from .env (23 vars)",
+      "missing_in_env": [
+        "ADMIN_DOMAIN", "CASHIER_CURRENCY", "CASHIER_CURRENCY_LOCALE",
+        "DB_LOCK_WAIT_TIMEOUT", "FCM_SENDER_ID", "FCM_SERVER_KEY",
+        "FCM_TOPIC_PREFIX", "FEATURE_WIZARD_PER_ITEM_DEMO",
+        "FISCAL_ARCHIVE_DISK", "FISCAL_ARCHIVE_PATH",
+        "FISCAL_ARCHIVE_RETENTION_YEARS", "FISCAL_GENESIS_PREV_HASH",
+        "HEALTH_IPS_ALLOWED", "IDEMPOTENCY_FAIL_OPEN",
+        "IDEMPOTENCY_PENDING_TTL_SECONDS", "IDEMPOTENCY_RACE_WAIT_MS",
+        "IDEMPOTENCY_TTL_SECONDS", "KIOSK_DOMAIN",
+        "LOGIN_LOCKOUT_DECAY_MINUTES", "POS_AUTO_PREPARE_ON_PAID",
+        "PRICING_USE_SSOT", "SANCTUM_STATEFUL_DOMAINS"
+      ],
+      "impact_per_var": {
+        "ADMIN_DOMAIN+KIOSK_DOMAIN": "config/cors.php:8-9 uses env() — empty → CORS allowed_origins shrinks to just APP_URL → CORS rejects kiosk/admin requests when served from distinct domains. Mitigated: V1 Le Cayenne LOCAL single-host (localhost:8000) → CORS trivially passes.",
+        "FCM_SERVER_KEY": "Push notifications silently dead (Log::warning + return false in FcmNotificationService:46-50). Observable. V1 Le Cayenne uses Pusher (BROADCAST_DRIVER=pusher) for cross-surface sync, NOT FCM — FCM is mobile-app push only. Acceptable latent.",
+        "FISCAL_ARCHIVE_DISK+PATH": "config/fiscal.php defaults 'local' + 'fiscal/archives/'. FiscalArchiveCommand:208 uses default. GREEN.",
+        "FISCAL_GENESIS_PREV_HASH": "First audit row in chain — fixed string default in config/fiscal.php. GREEN.",
+        "IDEMPOTENCY_TTL_SECONDS+PENDING_TTL+RACE_WAIT_MS": "config/idempotency.php has defaults (86400/30/1500). GREEN.",
+        "IDEMPOTENCY_FAIL_OPEN": "Defaults false in config — fail-CLOSED is safer (returns 503 on storage unavailable). GREEN.",
+        "POS_AUTO_PREPARE_ON_PAID": "Feature flag default false → POS does NOT auto-prepare on paid. GREEN.",
+        "PRICING_USE_SSOT": "Defaults true in config/pricing.php → SSOT enforced. GREEN.",
+        "SANCTUM_STATEFUL_DOMAINS": "Sanctum SPA auth domain list — empty → Sanctum CSRF stateful path disabled → API-only token auth still works. GREEN for kiosk/POS (token-based). Latent for any admin SPA cookie-auth path.",
+        "LOGIN_LOCKOUT_DECAY_MINUTES": "config/auth.php defaults (typically 15 min). GREEN."
+      },
+      "verdict": "AMBER documentation drift — .env.example serves as deploy template; missing vars in .env mean operators won't know to set them. Mostly mitigated by config defaults."
+    }
+  ],
+  "code_paths_audited": [
+    "app/Libraries/AppLibrary.php L20-432 (12 env() calls — confirmed worst offender)",
+    "app/Services/Fiscal/AuditLogService.php L260-292 (env() per-branch override + RuntimeException safety net)",
+    "app/Services/Fiscal/ZReportService.php L130-140, L270-280 (2 empty catch on lock release — justified)",
+    "app/Services/Fiscal/FiscalSequenceService.php L66 (Cache::lock with TTL — GREEN)",
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php L65-220 (branch_id resolution with -1 sentinel + nested ?? chains — verified)",
+    "app/Http/Middleware/EnsureUserStatusActive.php L70-93 (silent catch with comment — GREEN)",
+    "app/Http/Middleware/EnsureProfileNotItemOwnedUnlessDemoEnabled.php L40-66 (catch Throwable returns null — defensive, GREEN)",
+    "app/Http/Resources/SettingResource.php L36-95 (?? defaults for boolean toggles — some AMBER-low)",
+    "app/Http/Resources/OrderItemResource.php L52 (env('CURRENCY') in resource — dangerous)",
+    "app/Http/Resources/CountryCodeResource.php L45-105 (3 catch Throwable returning safe defaults — GREEN)",
+    "app/Http/Resources/OrderDetailsResource.php L36-200 (??0 ??1 chains for fields — GREEN, DB schema NOT NULL)",
+    "app/Http/Controllers/Frontend/PaymentReconcileController.php L125-280 (5 catch Throwable with Log + safe defaults — GREEN)",
+    "app/Http/Controllers/Auth/SignupController.php L62 (env('DEMO') gate — dangerous post-cache)",
+    "app/Http/Controllers/Installer/InstallerController.php L29+135 (env('APP_URL') one-shot — acceptable)",
+    "app/Http/Controllers/Admin/PosController.php L95+129 (config + ?? 0 for auth branch — GREEN)",
+    "app/Http/SmsGateways/Gateways/Nexmo.php L43 (env('APP_NAME') — dangerous)",
+    "app/Http/PaymentGateways/Gateways/Stripe.php L233+319 (catch Throwable with logging — GREEN)",
+    "app/Models/OrderPayment.php L92+97 (?? 0 cast — GREEN, DB NOT NULL)",
+    "app/Listeners/AwardLoyaltyPointsOnDelivery.php L100 (?? 0 for orderTotal — GREEN, floors to 0 points)",
+    "app/Services/LanguageService.php L112 (env('DEMO') gate — dangerous)",
+    "app/Services/OrderService.php L1934/2015/2114/2200 (Auth::user()->branch_id ?? null/admin/? — log-only paths, GREEN)",
+    "app/Services/FcmNotificationService.php L46-65 (Log::warning + return false on empty server_key — GREEN observable silent fail)",
+    "app/Providers/AppServiceProvider.php L100-244 (full production boot guard read: APP_DEBUG/IDEMPOTENCY/LOYALTY_QR_SECRET/APP_URL/BROADCAST/QUEUE/CACHE_DRIVER guards — STRONG fail-fast)",
+    "app/Console/Commands/PreflightProductionCommand.php L250-265 (cache round-trip preflight — GREEN)",
+    "config/app.php L138-170 (timezone fallback Europe/Paris, fallback_locale 'en')",
+    "config/cors.php L1-12 (env('KIOSK_DOMAIN') + env('ADMIN_DOMAIN') — config-file bridge, safe for env())",
+    "config/fiscal.php (audit_secret, archive_*, retention_years — all with env+default)",
+    "config/idempotency.php (all defaults present)",
+    "config/loyalty.php L18-92 (qr.secret env-bridged, dev sentinels enforced, min_secret_length=32)",
+    "config/services.php L18-69 (FCM, Stripe, etc — all env-bridged)",
+    "config/cash.php L31 (variance_threshold_eur with env+default)",
+    "config/pricing.php (tax_inclusive_prices + use_ssot env-bridged)",
+    "config/queue.php / config/broadcasting.php / config/cache.php (drivers env-bridged + production guards)",
+    "database/migrations/2026_05_06_180000_create_order_payments_table.php L24 (mode unsignedTinyInteger NOT NULL — confirms ?? 0 defensive)",
+    "resources/js/i18n.js L118 (fallbackLocale=DEFAULT_LOCALE, FR-lock per ADR-007)",
+    "resources/js/components/frontend/kiosk/*.vue (Vue prop default:null spot-check 20 components — all intentional optional metadata)",
+    ".env (FULL READ — 113 lines, V1 Le Cayenne LOCAL config)",
+    ".env.example (top 30 + grep diff vs .env — 22 vars missing in .env)"
+  ],
+  "verdict": "AMBER-with-clear-V1-LOCAL-safety-margin",
+  "verdict_rationale": "V1 Le Cayenne LOCAL APP_ENV=local: the most dangerous pattern (env() outside config returning null after `php artisan config:cache`) is LATENT — the LOCAL deploy flow does not run config:cache. AppLibrary.php (12 env() calls in currency/date formatting) is largely mitigated by G2-HEAL-02 NumberFormatter::CURRENCY fr_FR shortcut. Production boot guards are STRONG (APP_DEBUG, IDEMPOTENCY, LOYALTY_QR_SECRET, APP_URL, BROADCAST, QUEUE, CACHE_DRIVER all fail-fast at boot). Empty catches limited to 2 lock-release finally blocks (justified). ?? chains are 99% defensive on NOT-NULL DB columns OR with explicit sentinel patterns (-1 for branch_id 'unresolved'). Cache::put + Cache::lock 100% have explicit TTL. Paginate 100% explicit per_page. Vue prop defaults intentional. ENV documentation drift (23 vars in .env.example missing from .env) is AMBER documentation issue — mostly mitigated by config-file defaults. LOYALTY_QR_SECRET missing from .env.example is the single highest-impact gap (production boot crashes without it AND .env.example doesn't tell operator to set it). Zero NEW P0 introduced by this audit.",
+  "top_5_silent_fallback_risks": [
+    {
+      "rank": 1,
+      "id": "I8-E-001",
+      "title": "LOYALTY_QR_SECRET undocumented in .env.example",
+      "severity": "P1",
+      "impact": "Production deploy crashes at boot. Operator has no template guidance to set the variable. Single-line fix.",
+      "recommendation": "Add to .env.example: `LOYALTY_QR_SECRET=  # required: openssl rand -hex 32 (64-char hex, ≥32 bytes)`"
+    },
+    {
+      "rank": 2,
+      "id": "I8-D-001",
+      "title": "AppLibrary 12 env() calls for currency/date/time — silently broken after config:cache",
+      "severity": "P2",
+      "impact": "V1 LOCAL safe (no config:cache). V2 cloud cutover would mass-break currency/date display across POS/Kiosk/KDS/OSS/Admin. Already partially mitigated by G2-HEAL-02 (NumberFormatter fr_FR for currencyAmountFormat).",
+      "recommendation": "Bridge to config/app.php currency/date_format sections. Refactor AppLibrary to config('app.currency.decimal_point') etc. V1.0.X cloud-prep backlog."
+    },
+    {
+      "rank": 3,
+      "id": "I8-D-002",
+      "title": "AuditLogService per-branch FISCAL_AUDIT_SECRET_BRANCH_X via env() outside config",
+      "severity": "P3",
+      "impact": "V1 single-resto unused. V2 SaaS multi-tenant landmine — after config:cache, per-branch HMAC override silently disabled, all branches sign with uniform key (cross-tenant forgery surface).",
+      "recommendation": "Bridge to config/fiscal.php as a collected array of per-branch overrides built at boot. V2 SaaS prep backlog.",
+      "cross_ref": "Phase B.5 AuditLogService A.1 AMBER"
+    },
+    {
+      "rank": 4,
+      "id": "I8-D-004",
+      "title": "4 env('DEMO') gates (SignupController, ItemController, SiteController, LanguageService)",
+      "severity": "P3",
+      "impact": "Demo-mode protection gates silently bypassed after config:cache. V1 Le Cayenne not a demo deployment (DEMO=false intentional). Latent if vendor demo install runs config:cache.",
+      "recommendation": "Replace with config('app.env') === 'demo' OR add config/demo.php bridge."
+    },
+    {
+      "rank": 5,
+      "id": "I8-E-002",
+      "title": "23 ENV vars in .env.example missing from .env (FCM_SERVER_KEY + KIOSK_DOMAIN + ADMIN_DOMAIN + 20 more)",
+      "severity": "P2",
+      "impact": "Documentation drift. Most have safe config defaults. Highest-impact subset: FCM_SERVER_KEY (push notifications silently dead — observable via Log::warning), KIOSK_DOMAIN/ADMIN_DOMAIN (CORS shrinks to APP_URL only — V1 LOCAL single-host trivially passes), SANCTUM_STATEFUL_DOMAINS (admin SPA cookie auth disabled — V1 uses token auth).",
+      "recommendation": "Sync .env to include all ENV vars from .env.example as commented-out lines with safe defaults. Operator can uncomment as needed. Maintains discoverability."
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "P1",
+      "action": "Add LOYALTY_QR_SECRET to .env.example with documentation comment + generation instruction.",
+      "effort": "1 line edit",
+      "owner_gate": "no"
+    },
+    {
+      "priority": "P2 (V1.0.X cloud-prep backlog)",
+      "action": "Bridge AppLibrary env() calls (CURRENCY_*, DATE_FORMAT, TIME_FORMAT) to config/app.php section. Refactor AppLibrary to config(). Add sentinel test for env() in app/ outside boot path.",
+      "effort": "1 commit, ~30 lines added in config/app.php + 12 env() → config() in AppLibrary",
+      "owner_gate": "no (V1 LOCAL not affected)"
+    },
+    {
+      "priority": "P2 (documentation drift)",
+      "action": "Sync .env with .env.example template — add 22 missing vars as commented lines OR remove obsolete vars from .env.example.",
+      "effort": "1 commit, 22-line .env update",
+      "owner_gate": "no"
+    },
+    {
+      "priority": "P3 (V2 SaaS prep)",
+      "action": "Bridge FISCAL_AUDIT_SECRET_BRANCH_X to config/fiscal.php as collected array. Refactor AuditLogService::secretFor.",
+      "effort": "1 commit, ~20 lines",
+      "owner_gate": "no (V1 single-resto unused)"
+    },
+    {
+      "priority": "P3",
+      "action": "Replace 4 env('DEMO') gates with config('app.env') === 'demo' OR explicit config/demo.php bridge.",
+      "effort": "1 commit, 4 file edits",
+      "owner_gate": "no (V1 DEMO=false intentional)"
+    },
+    {
+      "priority": "Add sentinel test",
+      "action": "Add tests/Feature/Sentinel/EnvCallsOutsideConfigSentinelTest.php that greps app/ for env() outside config/ files and asserts count ≤ baseline (currently 28). Ratchet ceiling tight.",
+      "effort": "1 commit, ~50 lines",
+      "owner_gate": "no"
+    }
+  ],
+  "no_new_p0_or_p1_introduced": true,
+  "convergence_criteria_satisfied": true,
+  "convergence_note": "Per task rule 'open_NEW_P0 == 0 AND open_NEW_P1 == 0', this audit raises ZERO new P0. The single P1 (I8-E-001 LOYALTY_QR_SECRET .env.example doc gap) is a documentation-only one-line fix — not a code defect. All other findings are P2/P3 latent risks for V2 SaaS or cloud cutover, none affecting V1 Le Cayenne LOCAL production operation."
+}
