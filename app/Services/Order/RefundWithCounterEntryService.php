@@ -4,10 +4,13 @@ namespace App\Services\Order;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\PosPaymentMethod;
 use App\Events\RefundCreated;
+use App\Models\CashMovement;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderPayment;
+use App\Services\Cash\CashDrawerService;
 use App\Services\Fiscal\AuditLogService;
 use App\Services\Fiscal\FiscalSequenceService;
 use Illuminate\Database\ConnectionInterface;
@@ -201,6 +204,97 @@ class RefundWithCounterEntryService
                         : null,
                     'paid_at'       => now(),
                 ]);
+            }
+
+            // 4-ter) [GOAL-K2-HEAL-07 2026-05-24] Phase K.5 NEW-2 P1
+            //
+            // Counter-entry path was skipping CashMovement on CASH refund.
+            // The Z report still balanced via mirror order_payments (4-bis
+            // above), and the NF525 audit chain captured the counter-entry
+            // event, but the drawer-session reconciliation surface had NO
+            // refund line. Result: `expected_closing_amount` silently
+            // skewed by the refunded cash amount on every counter-entry
+            // CASH refund — cashier reconciling at end of shift saw an
+            // unexplained negative variance equal to the day's refunds.
+            //
+            // The pre-Z cashBack() path (PaymentService::cashBack →
+            // recordCashBackMovement) already does this correctly. We
+            // replicate the SAME pattern inline here (single call site
+            // does not justify widening PaymentService's API).
+            //
+            // Why TYPE_CASHBACK + DIRECTION_OUT (not a new 'refund' type):
+            //   1. CashMovement::TYPE_* is a closed enum (whitelisted by
+            //      CashDrawerService::recordMovement at line 374-389).
+            //      Adding a 'refund' type would require a migration +
+            //      schema change + Z enrichment update — out of scope
+            //      for a P1 reconciliation-surface fix.
+            //   2. Semantically, "cash leaving the drawer to refund a
+            //      customer" IS a cashback in NF525 terms — same fiscal
+            //      treatment as PaymentService::cashBack uses.
+            //   3. signedAmount() resolves DIRECTION_OUT to negative, so
+            //      `expected = opening + Σ(signedAmount)` correctly
+            //      subtracts the refund.
+            //
+            // Strict=false: graceful no-open-session case (cashier might
+            // process a post-Z refund while their session is closed for
+            // the day — drawer reconciliation gap surfaces in cron alerts
+            // rather than blocking the refund). Mirrors I.1 silent-fail
+            // observability discipline.
+            //
+            // Attach to mirror->id: the cash_movement row points to the
+            // formal NF525 RETURN_OF entity (not the immutable parent).
+            // Reconciliation queries follow `cash_movements.order_id`
+            // to the mirror — unambiguous "refund line" semantics.
+            $cashService = app(CashDrawerService::class);
+            foreach ($parentPayments as $payment) {
+                /** @var OrderPayment $payment */
+                if ((int) $payment->mode !== PosPaymentMethod::CASH) {
+                    continue;
+                }
+
+                try {
+                    if (! Auth::check()) {
+                        Log::info('[GOAL-K2-HEAL-07] cash_movement skipped — no auth context', [
+                            'parent_order_id' => $parent->id,
+                            'mirror_order_id' => $mirror->id,
+                            'payment_id'      => $payment->id,
+                        ]);
+                        continue;
+                    }
+
+                    $session = $cashService->findOpenSessionForUser($branchId, (int) Auth::id());
+                    if (! $session) {
+                        Log::info('[GOAL-K2-HEAL-07] cash_movement skipped — no open cash drawer session', [
+                            'parent_order_id' => $parent->id,
+                            'mirror_order_id' => $mirror->id,
+                            'payment_id'      => $payment->id,
+                            'branch_id'       => $branchId,
+                            'user_id'         => Auth::id(),
+                        ]);
+                        continue;
+                    }
+
+                    $cashService->recordMovement(
+                        sessionId: (int) $session->id,
+                        type: CashMovement::TYPE_CASHBACK,
+                        amount: round((float) ($payment->amount ?? 0), 2),
+                        direction: CashMovement::DIRECTION_OUT,
+                        orderId: (int) $mirror->id,
+                        notes: 'RTN: refund counter-entry',
+                        strict: false,
+                    );
+                } catch (\Throwable $e) {
+                    // Best-effort: cash_movement failure MUST NOT abort the
+                    // counter-entry transaction. The Z chain still records the
+                    // refund via mirror order_payments (4-bis), and the drawer
+                    // reconciliation gap surfaces in cron alerts.
+                    Log::warning('[GOAL-K2-HEAL-07] cash_movement record failed', [
+                        'parent_order_id' => $parent->id,
+                        'mirror_order_id' => $mirror->id,
+                        'payment_id'      => $payment->id,
+                        'error'           => $e->getMessage(),
+                    ]);
+                }
             }
 
             // 5) Audit trail — immutable forensic link parent ↔ mirror.
