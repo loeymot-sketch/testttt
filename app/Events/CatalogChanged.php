@@ -43,6 +43,13 @@ class CatalogChanged
             return new self('item', (int) $event->itemId, 'created', $branchId !== null ? (int) $branchId : null);
         }
 
+        // [GOAL-I2-HEAL-02 2026-05-24] Phase I.3 RISK-01 AMBER bridge:
+        // ItemUpdated (admin rename/reprice/desc) emits CATALOG_CHANGED outbox row
+        // so kiosk private-branch.{id} subscribers refresh without waiting 60s TTL.
+        if ($event instanceof ItemUpdated) {
+            return new self('item', (int) $event->itemId, 'updated', $branchId !== null ? (int) $branchId : null);
+        }
+
         if ($event instanceof ItemDeleted) {
             return new self('item', (int) $event->itemId, 'deleted', $branchId !== null ? (int) $branchId : null);
         }

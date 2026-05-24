@@ -10,6 +10,7 @@ use App\Enums\Status;
 use Illuminate\Support\Str;
 use App\Events\ItemCreated;
 use App\Events\ItemDeleted;
+use App\Events\ItemUpdated;
 use App\Models\ItemBranchAvailability;
 use App\Models\ItemVariation;
 use App\Models\ItemExtra;
@@ -381,6 +382,15 @@ class ItemService
                             ->delete();
                     }
                 }
+
+                // [GOAL-I2-HEAL-02 2026-05-24] Phase I.3 RISK-01 AMBER:
+                // Dispatch ItemUpdated so kiosk menu cache invalidates immediately
+                // (mirrors store/destroy symmetry). Without this, admin rename/reprice
+                // shows OLD on kiosk up to 60s TTL.
+                $updatedItemId = (int) $item->id;
+                DB::afterCommit(function () use ($updatedItemId): void {
+                    event(new ItemUpdated($updatedItemId));
+                });
             });
             $refreshed = $item->refresh();
             $this->warnCatalogChannelsNullIfNeeded($refreshed, 'update');

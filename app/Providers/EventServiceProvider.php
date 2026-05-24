@@ -17,6 +17,7 @@ use App\Events\IngredientAvailabilityChanged;
 use App\Events\ItemAvailabilityChanged;
 use App\Events\ItemCreated;
 use App\Events\ItemDeleted;
+use App\Events\ItemUpdated;
 // [F-016a-BIS] Branch-scoped extras / variations rupture toggles.
 use App\Events\ItemExtraAvailabilityChanged;
 use App\Events\ItemVariationAvailabilityChanged;
@@ -230,6 +231,13 @@ class EventServiceProvider extends ServiceProvider
             PersistCatalogChangedToOutbox::class,
         ],
         ItemCreated::class => [
+            InvalidateKioskMenuCacheOnCatalogChange::class,
+            PersistCatalogChangedToOutbox::class,
+        ],
+        // [GOAL-I2-HEAL-02 2026-05-24] Phase I.3 RISK-01 AMBER:
+        // Mirror ItemCreated/ItemDeleted so admin rename/reprice flushes
+        // kiosk.menu.branch.{id} cache instead of waiting 60s TTL.
+        ItemUpdated::class => [
             InvalidateKioskMenuCacheOnCatalogChange::class,
             PersistCatalogChangedToOutbox::class,
         ],
