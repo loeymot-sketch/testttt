@@ -31,6 +31,10 @@ class KDSOrderDetailsResource extends JsonResource
             // Eloquent already casts `created_at` to Carbon; we add a stable wire
             // format that the new unified-queue grid sorts on without local-tz drift.
             'created_at_iso'                      => $this->created_at?->toIso8601String(),
+            // [N-HEAL-02 M-KDS-4 F-01 2026-05-24] KdsHistoryDrawer renders
+            // `<time :datetime="order.updated_at">{{ formatTime(order.updated_at) }}</time>`
+            // — without exposing updated_at the bumped-at cell is permanently empty.
+            'updated_at'                          => $this->updated_at?->toIso8601String(),
             'order_datetime'                      => AppLibrary::datetime($this->order_datetime),
             'order_date'                          => AppLibrary::date($this->order_datetime),
             'order_time'                          => AppLibrary::time($this->order_datetime),

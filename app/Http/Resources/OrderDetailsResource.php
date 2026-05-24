@@ -34,6 +34,15 @@ class OrderDetailsResource extends JsonResource
             // refund tickets (NF525 visual distinction requirement,
             // Loi de Finance France). Marker keys on this exact field.
             'parent_order_id' => $this->parent_order_id,
+            // [N-HEAL-02 K.5 NEW-1 2026-05-24] Trace-back line on refund
+            // receipt — ReceiptRemboursementMarker.vue:53 falls back to
+            // bare parent_order_id when this is null. Order model has no
+            // `parent` relation defined (verified 2026-05-24), so lookup
+            // via direct value(); withoutGlobalScopes deliberately omitted
+            // since parent always lives in same branch as counter-entry.
+            'parent_order_serial_no' => $this->parent_order_id
+                ? \App\Models\Order::query()->where('id', $this->parent_order_id)->value('order_serial_no')
+                : null,
             // Montants numériques (SSOT) pour kiosk / TPE / intégrations — complément des *_currency_price.
             'subtotal' => round((float) ($this->subtotal ?? 0), 2),
             'discount' => round((float) ($this->discount ?? 0), 2),
