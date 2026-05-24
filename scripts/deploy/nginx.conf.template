@@ -30,6 +30,24 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
+# [GOAL-L2.2 2026-05-24] Rate-limit zones — declared at http context so they
+# can be referenced from any server/location block. The zones below MUST live
+# OUTSIDE the server{} stanzas; they are scoped via `include` from nginx.conf
+# OR placed in a conf.d/ snippet. If this template is dropped into
+# /etc/nginx/sites-available/, the zones still parse because nginx hoists
+# http-context directives at config-load. Tuned for V1 single-resto LAN
+# traffic — login lane is the brute-force surface; api lane is generic DoS
+# breaker for /api/* (POS + Kiosk + Admin); both burst with nodelay so
+# legitimate flurries (kiosk submit + KDS poll) don't 429.
+#
+# Trade-off : narrow zones first (login=5r/s = ~150 login attempts / 30s
+# window per IP), wider zones lower-priority. Owner widens on first false-
+# positive rather than start too loose.
+# -----------------------------------------------------------------------------
+limit_req_zone $binary_remote_addr zone=lecayenne_login:10m rate=5r/s;
+limit_req_zone $binary_remote_addr zone=lecayenne_api:10m rate=30r/s;
+
+# -----------------------------------------------------------------------------
 # Port 80 — redirect to HTTPS. Certbot --nginx may add ACME challenge stanzas
 # automatically; keep this block tolerant of those.
 # -----------------------------------------------------------------------------
@@ -153,6 +171,22 @@ form-action 'self';" always;
         access_log off;
         add_header Cache-Control "public, max-age=604800";
         try_files $uri =404;
+    }
+
+    # ---------- Rate-limited surfaces ----------------------------------------
+    # [GOAL-L2.2 2026-05-24] /login is the brute-force lane (Spatie
+    # FormRequest authz reaches Auth::attempt under burst). burst=10 nodelay
+    # lets a legitimate operator retype a mis-typed password without 429,
+    # while sustained > 5r/s gets queued/rejected. The api lane is a DoS
+    # breaker on /api/* (POS + Kiosk + Admin XHR fan-out); 30r/s sustained
+    # with burst=60 covers normal kiosk-submit + KDS poll bursts.
+    location = /login {
+        limit_req zone=lecayenne_login burst=10 nodelay;
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+    location /api/ {
+        limit_req zone=lecayenne_api burst=60 nodelay;
+        try_files $uri $uri/ /index.php?$query_string;
     }
 
     # ---------- Laravel front-controller -------------------------------------

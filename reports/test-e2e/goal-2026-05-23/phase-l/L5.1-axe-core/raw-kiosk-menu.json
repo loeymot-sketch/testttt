@@ -1,0 +1,28 @@
+{
+  "url": "http://127.0.0.1:8000/kiosk/menu",
+  "counts": {
+    "critical": 0,
+    "serious": 1,
+    "moderate": 0,
+    "minor": 0
+  },
+  "total_violations": 1,
+  "total_nodes": 1,
+  "violations": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "tags": [
+        "wcag2aa",
+        "wcag143"
+      ],
+      "node_count": 1,
+      "sample_target": [
+        "a"
+      ],
+      "sample_html": "<a href=\"/home\" class=\"w-full max-w-[250px] py-3 rounded-3xl capitalize text-base font-medium leading-6 text-center bg-primary text-white transition hover:bg-orange-700\">Retour à l’accueil</a>",
+      "sample_failure_summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.49 (foreground color: #ffffff, background color: #f4501e, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+    }
+  ]
+}

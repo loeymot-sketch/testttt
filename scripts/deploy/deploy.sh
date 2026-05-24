@@ -297,6 +297,19 @@ supervisorctl restart lecayenne-soketi 2>/dev/null || \
 
 nginx -t && systemctl reload nginx
 
+# [GOAL-L2.2 / I3-RISK-02 2026-05-24] Flush OPcache so the new .php files
+# emitted by `git reset --hard` (L108) + `composer install` (L200) actually
+# replace the bytecode cached in shared memory. `systemctl reload php8.4-fpm`
+# is the graceful-reload signal — masters re-exec workers cleanly, no
+# dropped requests. Without this step, if the operator ever sets
+# `opcache.validate_timestamps=0` for production perf (Phase I.3 risk
+# scenario), new code would NEVER load until php-fpm is manually
+# restarted. See `reports/test-e2e/goal-2026-05-23/phase-i/I3-hidden-caching-findings.json`
+# entry "I3-RISK-02". The reload is a no-op cost (~50ms) on the
+# default validate_timestamps=1 setup, so always safe to ship.
+systemctl reload php8.4-fpm 2>/dev/null || systemctl reload php-fpm 2>/dev/null || \
+    echo "  WARN: php-fpm reload skipped (service not found — verify OPcache fresh after deploy)"
+
 # Hit nginx on loopback. Follow redirects (-L) in case 80→443 is wired.
 # Use --resolve if needed; here we trust 127.0.0.1 maps via /etc/hosts or
 # nginx default_server.

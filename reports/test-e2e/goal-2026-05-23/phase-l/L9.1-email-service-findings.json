@@ -1,0 +1,434 @@
+{
+  "agent": "L9.1 — Email service code path audit",
+  "phase": "PHASE L AGENT L9.1",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope": "FoodKing Le Cayenne V1 — full code path audit of email subsystem: MailService config layer, 5 Mail classes, 5 markdown templates, 4 listener/builder dispatch paths, i18n status, queue posture, PII content, sentinel coverage, production cutover gates",
+  "method": "Static-only code traversal. Read every file in app/Mail (5), app/Listeners/Send*Mail* (3), app/Services/*MailNotificationBuilder.php (3), app/Services/MailService.php, resources/views/emails (5 blade templates), config/mail.php, config/queue.php, config/services.php, .env.example MAIL_*/QUEUE_* sections, EventServiceProvider listen map. Cross-referenced L7.2-ssrf-findings.json (MAIL_HOST SSRF defense already shipped) and L7.3-header-injection-findings.json (PIN-only password reset design). Inventoried 11 NotificationAlert language keys + 8 OrderStatus dispatch branches. Verified existing sentinel coverage in tests/Feature/Security/MailHostAllowlistSentinelTest.php (SSRF, NOT flow). NO E2E test ever sent a real or faked email — confirmed by grep over tests/ for Mail::fake / assertSent / EmailFlow*.",
+
+  "environment": {
+    "php_version": "8.2.30",
+    "laravel_mail_driver_default": "smtp",
+    "default_from_address_fallback": "hello@example.com (config/mail.php:95)",
+    "default_from_name_fallback": "Example (config/mail.php:96)",
+    "config_mail_smtp_host_default": "smtp.mailgun.org (config/mail.php:39 — fallback only, NOT installed)",
+    "queue_default_dev": "sync (config/queue.php:16)",
+    "queue_default_prod": "redis (.env.example:153 MANDATORY)",
+    "app_locale": "fr (config/app.php — DO NOT CHANGE marker)",
+    "app_fallback_locale": "en",
+    "lang_dirs": ["lang/ar", "lang/bn", "lang/de", "lang/en", "lang/fr"]
+  },
+
+  "email_inventory": {
+    "transactional_classes_implemented": [
+      {
+        "id": "OrderMail",
+        "file": "app/Mail/OrderMail.php",
+        "template": "resources/views/emails/order.blade.php",
+        "subject_literal": "Order Notification",
+        "trigger_event": "App\\Events\\SendOrderMail",
+        "listener": "app/Listeners/SendOrderMailNotification.php",
+        "builder": "app/Services/OrderMailNotificationBuilder.php",
+        "dispatched_on_statuses": ["PENDING", "ACCEPT", "PREPARING", "PREPARED", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELED", "REJECTED", "RETURNED"],
+        "recipient": "$user->email (FrontendOrder->user)",
+        "guards": [
+          "order.source != 10 (kiosk excluded to prevent branch spamming — OrderMailNotificationBuilder.php:33)",
+          "NotificationAlert->mail === SwitchBox::ON (per status key — 9 separate switches)",
+          "user.email != null"
+        ],
+        "default_on_off_state": "ALL 9 status switches default SwitchBox::OFF (NotificationAlertTableSeeder.php:55) — no emails sent until operator flips switches in admin UI",
+        "should_queue": false,
+        "dispatch_pattern": "Mail::to($email)->send(new OrderMail(...)) — SYNCHRONOUS, no ->queue()"
+      },
+      {
+        "id": "OrderGotMail",
+        "file": "app/Mail/OrderGotMail.php",
+        "template": "resources/views/emails/orderGot.blade.php",
+        "subject_literal": "You got a new order",
+        "trigger_event": "App\\Events\\SendOrderGotMail",
+        "listener": "app/Listeners/SendOrderGotMailNotification.php",
+        "builder": "app/Services/OrderGotMailNotificationBuilder.php",
+        "dispatched_on": "Frontend order creation (any channel)",
+        "recipient": "Admin (global branch_id=0) + Admin (branch_id) + Branch Manager (branch_id) — pluck unique emails, send to[0]->cc(all)",
+        "guards": [
+          "FrontendOrder exists (find by id)",
+          "NotificationAlert key admin_and_branch_manager_new_order_message ON",
+          "At least one recipient email"
+        ],
+        "default_on_off_state": "OFF (seeder default)",
+        "should_queue": false,
+        "dispatch_pattern": "Mail::to($emailArray[0])->cc($emailArray)->send(new OrderGotMail(...)) — SYNCHRONOUS"
+      },
+      {
+        "id": "ResetPassword",
+        "file": "app/Mail/ResetPassword.php",
+        "template": "resources/views/emails/password.blade.php",
+        "subject_literal": "Reset Password",
+        "trigger_event": "App\\Events\\SendResetPassword",
+        "listener": "app/Listeners/SendResetPasswordNotification.php",
+        "dispatched_from": "app/Http/Controllers/Auth/ForgotPasswordController.php:53 (after random_int(100000,999999) PIN insert into password_resets table)",
+        "recipient": "$request->post('email')",
+        "design_note": "PIN-ONLY (6-digit random_int) per L7.3-V01 intrinsic defense against Host-header injection — no URL, no clickable link in body. Confirmed L7.3 finding.",
+        "should_queue": false,
+        "dispatch_pattern": "Mail::to($email)->send(new ResetPassword($pin)) — SYNCHRONOUS, no retry on failure"
+      },
+      {
+        "id": "VerifyEmail",
+        "file": "app/Mail/VerifyEmail.php",
+        "template": "resources/views/emails/verify.blade.php",
+        "subject_literal": "Email Verification",
+        "trigger_event": "Illuminate\\Auth\\Events\\Registered (Laravel default SendEmailVerificationNotification listener)",
+        "listener": "Illuminate\\Auth\\Listeners\\SendEmailVerificationNotification (framework default)",
+        "design_note": "Class HAS `use Illuminate\\Contracts\\Queue\\ShouldQueue` IMPORTED at line 6 but DOES NOT IMPLEMENT ShouldQueue — dead import, sends synchronously. Sole Mail class with the import.",
+        "should_queue": false,
+        "verified": "Read app/Mail/VerifyEmail.php — class signature `class VerifyEmail extends Mailable { use Queueable, SerializesModels; }` — no `implements ShouldQueue`."
+      },
+      {
+        "id": "SubscriberMail",
+        "file": "app/Mail/SubscriberMail.php",
+        "template": "resources/views/emails/subscriber.blade.php",
+        "subject_literal": "Subscriber Notification",
+        "trigger_event": "Manual via app/Services/SubscriberService.php broadcast",
+        "should_queue": false,
+        "scope_note": "Newsletter-style — out of V1 Le Cayenne single-resto SaaS retail flow (no subscriber UI surfaced in operator console)"
+      }
+    ],
+    "delivery_boy_email_path": {
+      "service": "app/Services/OrderDeliveryBoyMailNotificationBuilder.php",
+      "listener": "app/Listeners/SendOrderDeliveryBoyMailNotification.php",
+      "event": "App\\Events\\SendOrderDeliveryBoyMail",
+      "only_status_handled": "101 (DeliveryBoy assigned) — single branch in message()",
+      "reuses_class": "OrderMail (same subject + template as customer)",
+      "default_on_off_state": "OFF (NotificationAlert delivery_boy_after_assign_message default OFF)"
+    },
+    "notification_alert_keys_seeded_11": [
+      "order_pending_message",
+      "order_confirmation_message",
+      "order_preparing_message",
+      "order_prepared_message",
+      "order_out_for_delivery_message",
+      "order_delivered_message",
+      "order_canceled_message",
+      "order_rejected_message",
+      "order_returned_message",
+      "delivery_boy_after_assign_message",
+      "admin_and_branch_manager_new_order_message"
+    ],
+    "notification_alert_default_state": "ALL 11 keys: mail=OFF, sms=OFF, push_notification=OFF (NotificationAlertTableSeeder.php:55-57)",
+    "stripe_receipt_emails": {
+      "status": "DISABLED (or never enabled)",
+      "evidence": "grep for receipt_email in app/ returned ZERO matches — Stripe customer email receipts not configured",
+      "implication": "Customer pays by Stripe in kiosk → no Stripe-side email receipt either. NF525 paper ticket from printer is the sole proof-of-purchase artifact."
+    }
+  },
+
+  "missing_email_scenarios": [
+    {
+      "id": "L9.1-MISSING-01",
+      "name": "Customer order confirmation (kiosk + POS)",
+      "status": "NEVER SENT — kiosk source=10 explicitly excluded (OrderMailNotificationBuilder.php:33); POS orders have no $user with email (anonymous cash-and-carry). The only path that fires customer mail is FRONTEND order (e.g. delivery / pickup via web/mobile) AND user account has email AND operator flipped 9 separate switches ON",
+      "severity": "P2 (V1 retail walk-in scope — kiosk customers don't expect mail; if customer email collection added later → MUST implement)"
+    },
+    {
+      "id": "L9.1-MISSING-02",
+      "name": "Order ready-for-pickup notification",
+      "status": "NONE — no Mail class. OSS screen replaces this for in-store flow; remote pickup customers get nothing",
+      "severity": "P2 (V1 scope — OSS covers in-store; remote pickup not in V1 Le Cayenne)"
+    },
+    {
+      "id": "L9.1-MISSING-03",
+      "name": "Refund confirmation email",
+      "status": "NONE — no RefundMail class. RefundCreated event has 4 listeners (Persist, ReleaseStock, ReleaseAvailability, ClawbackLoyaltyPoints) — ZERO send mail. Customer who got refunded receives no email proof",
+      "severity": "P1 (legal expectation — refund > 50€ on Stripe should email customer per consumer-protection norms FR; printer receipt is sole proof currently)"
+    },
+    {
+      "id": "L9.1-MISSING-04",
+      "name": "Z-report daily close email to owner",
+      "status": "NONE — grep ZReport in app/Mail returned ZERO; ZReportService.php emits chain-signed report but no mail dispatch",
+      "severity": "P2 (NF525 stores report 6y in DB — operator queries admin UI; owner ergonomic ask only, not legal requirement)"
+    },
+    {
+      "id": "L9.1-MISSING-05",
+      "name": "Stock low alert to branch manager",
+      "status": "LOG ONLY — NotifyStockLowOnStockLevelChanged.php:67 explicit comment: `Future: dispatch a Notification (Mail / Database) here. V1 = log only to avoid sending mail without explicit human-gate sign-off on recipients`",
+      "severity": "P2 (intentional V1 deferral, documented; backlog for V1.0.X)"
+    },
+    {
+      "id": "L9.1-MISSING-06",
+      "name": "Loyalty milestone email (e.g. customer hit 1000 points)",
+      "status": "NONE — no LoyaltyMail class. AwardLoyaltyPointsOnDelivery + ClawbackLoyaltyPointsOnRefund both silent on email side",
+      "severity": "P3 (re-engagement nice-to-have, not V1 blocker)"
+    },
+    {
+      "id": "L9.1-MISSING-07",
+      "name": "Inactive user re-engagement / cart abandonment",
+      "status": "NONE",
+      "severity": "P3 (growth feature, deferred)"
+    },
+    {
+      "id": "L9.1-MISSING-08",
+      "name": "System health alert (cron miss, queue worker down, outbox stalled)",
+      "status": "NONE on mail; observed via OUTBOX MONITOR + DR drill scripts (L11.1) + boot-guard refuse-to-boot (L12.1) — fail-loud but not via email",
+      "severity": "P2 (operational; SMS/push could substitute but no channel chosen)"
+    },
+    {
+      "id": "L9.1-MISSING-09",
+      "name": "Welcome email after registration (Customer or Staff)",
+      "status": "PARTIAL — VerifyEmail Mailable exists + Laravel Registered::class wired to SendEmailVerificationNotification (framework default). But no separate WelcomeMail with branding / first-order coupon",
+      "severity": "P3"
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "L9.1-F-01",
+      "severity": "P1",
+      "title": "All 5 Mail classes use hardcoded ENGLISH subjects despite locale=fr",
+      "files": [
+        "app/Mail/OrderMail.php:32 — subject(\"Order Notification\")",
+        "app/Mail/OrderGotMail.php:30 — subject(\"You got a new order\")",
+        "app/Mail/ResetPassword.php:28 — subject(\"Reset Password\")",
+        "app/Mail/VerifyEmail.php:33 — subject(\"Email Verification\")",
+        "app/Mail/SubscriberMail.php:30 — subject(\"Subscriber Notification\")"
+      ],
+      "evidence": "config/app.php declares `'locale' => 'fr'` with explicit `DO NOT CHANGE - French locale required` comment. lang/fr/ directory exists alongside lang/en, lang/ar, etc. Yet ZERO Mail class uses trans('emails.foo') or __('emails.bar') for the subject — every subject is a literal English string. L9.5 finding (`i18n FR-only proper — no English fallback`) is VIOLATED at every email subject.",
+      "impact": "French customers receive emails titled 'Order Notification' / 'Reset Password' in their inbox — looks unprofessional, raises spam-filter signals (FR locale body + EN subject = often flagged), erodes Le Cayenne brand trust. Also breaks consumer-perception of French retail.",
+      "fix_recommended": "Add lang/fr/emails.php + lang/en/emails.php with keys (order_notification_subject, order_got_subject, reset_password_subject, email_verification_subject, subscriber_subject). Refactor each Mail class: `->subject(trans('emails.order_notification_subject', ['name' => config('app.name')]))`. Owner-gate: confirm French copy strings before commit."
+    },
+    {
+      "id": "L9.1-F-02",
+      "severity": "P1",
+      "title": "All 5 email blade templates are HARDCODED ENGLISH with no @lang / trans()",
+      "files": [
+        "resources/views/emails/order.blade.php (heading '# Order Notification', 'Hello {{$name}}', 'Order ID', 'Thanks')",
+        "resources/views/emails/orderGot.blade.php (heading '# Order Notification', 'Order ID', 'Thanks')",
+        "resources/views/emails/password.blade.php (heading '# Reset Password', 'Your code is', 'Please do not share your One Time Code With Anyone', 'You made a request to reset your password...', 'Thanks')",
+        "resources/views/emails/verify.blade.php (heading '# Email Verification', 'Thank you for signing up', 'Your six-digit code is', 'Thanks')",
+        "resources/views/emails/subscriber.blade.php (heading '# Subscriber Notification', 'Subject', 'Thanks')"
+      ],
+      "evidence": "Read each template — zero @lang, zero trans() / __() / @choice. All English literal. Even the dynamic content from NotificationAlert::mail_message is seeded English (`'Your order is successfully placed.'` etc — NotificationAlertTableSeeder.php:31-42).",
+      "impact": "Customer sees full English body with French-named restaurant. Cumulative with F-01 = entire customer email flow English in France.",
+      "fix_recommended": "Replace literals with @lang('emails.password.heading') / @lang('emails.order.greeting', ['name' => $name]). Seed mail_message FR strings in NotificationAlertTableSeeder OR keep operator-editable in admin UI but ship French defaults. Owner-gate French copy."
+    },
+    {
+      "id": "L9.1-F-03",
+      "severity": "P1",
+      "title": "NO email is queued — all send synchronously, blocking HTTP request",
+      "files": [
+        "app/Mail/* (5 classes — NONE implements ShouldQueue, only `use Queueable` trait which is dormant without the interface)",
+        "app/Listeners/SendOrderMailNotification.php — uses Mail::to()->send() not ->queue()",
+        "app/Listeners/SendOrderGotMailNotification.php — same",
+        "app/Listeners/SendOrderDeliveryBoyMailNotification.php — same",
+        "app/Listeners/SendResetPasswordNotification.php — same",
+        "app/Services/Order*MailNotificationBuilder.php (3 files) — all Mail::to()->send()"
+      ],
+      "evidence": "grep `ShouldQueue` over app/Mail returned only `VerifyEmail.php:6 use Illuminate\\Contracts\\Queue\\ShouldQueue` — IMPORT line, but class declaration `class VerifyEmail extends Mailable` does NOT `implements ShouldQueue`. Dead import. grep `Mail::queue\\|->onQueue` over app/Mail + app/Listeners/Send*Mail* returned ZERO matches. Every dispatch is `Mail::to(...)->send(...)`.",
+      "impact": "Production: customer clicks 'pay' → backend tries to send email → SMTP handshake to MAIL_HOST blocks the HTTP request for the duration of SMTP RTT (typically 200ms-5s depending on provider/network). On SMTP timeout (provider down, DNS issue, rate-limit), the HTTP request stalls or 500s. With QUEUE_CONNECTION=redis in production (.env.example:153 mandatory), the email SHOULD be queued and processed by `php artisan queue:work` daemon out-of-band. Currently it isn't.",
+      "fix_recommended": "Add `implements ShouldQueue` + `Illuminate\\Bus\\Queueable` (already trait-used) to all 5 Mail classes. Or change dispatch sites to `Mail::to($x)->queue(new OrderMail(...))`. With redis queue + worker daemon, emails flow into `emails` or `default` queue and HTTP returns immediately. Retry on failure becomes automatic via Laravel's queue tries config."
+    },
+    {
+      "id": "L9.1-F-04",
+      "severity": "P1",
+      "title": "Listener try/catch SWALLOWS Mail send failures — no retry, no alerting, no dead-letter",
+      "files": [
+        "app/Listeners/SendOrderMailNotification.php:14-18 — `catch(\\Exception $e) { Log::info($e->getMessage()); }`",
+        "app/Listeners/SendOrderGotMailNotification.php:14-19 — same pattern",
+        "app/Listeners/SendOrderDeliveryBoyMailNotification.php:13-21 — same pattern",
+        "app/Listeners/SendResetPasswordNotification.php:32-37 — same pattern",
+        "app/Services/OrderMailNotificationBuilder.php:69-76 (private mail() method) — same try/catch",
+        "app/Services/OrderGotMailNotificationBuilder.php:46-49 — same",
+        "app/Services/OrderDeliveryBoyMailNotificationBuilder.php:49-55 — same"
+      ],
+      "evidence": "Every Mail send is wrapped in `try { Mail::to(...)->send(...); } catch (\\Exception $e) { Log::info($e->getMessage()); }`. `Log::info` (not `Log::error` / `Log::warning`) — passes below most alert thresholds. No retry, no dead-letter table, no escalation. SMTP transient failure (rate-limit, TLS handshake) → silent drop.",
+      "impact": "Password reset email lost → user can't login → silent breakage. Customer order confirmation lost → confused customer / refund request. Operator has no telemetry on email delivery success rate. Compounds with F-03 (sync send) because even if queue worker is added, the listener still catches and swallows the failure BEFORE Laravel's queue-retry kicks in.",
+      "fix_recommended": "(a) Remove try/catch from listeners — let exceptions propagate to Laravel queue handler which auto-retries with backoff. (b) If catch must stay (for sync send compatibility), use `Log::error()` + dispatch an alert event (`MailDeliveryFailedEvent` → email-channel-fallback / Slack webhook). (c) Add `dead_letter_emails` table (provider, recipient, subject, payload, last_error, attempts) for ops visibility. F-03 fix (ShouldQueue) is prerequisite for clean failure model."
+    },
+    {
+      "id": "L9.1-F-05",
+      "severity": "P1",
+      "title": "Production cutover BLOCKER — no email provider picked; defaults to hello@example.com",
+      "files": [
+        "config/mail.php:95 — `'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com')`",
+        "config/mail.php:96 — `'name' => env('MAIL_FROM_NAME', 'Example')`",
+        "config/mail.php:39 — `'host' => env('MAIL_HOST', 'smtp.mailgun.org')` (defaults to Mailgun MX but with no credentials)",
+        "config/services.php:18-21 — Mailgun service config block present (`MAILGUN_DOMAIN`, `MAILGUN_SECRET`, `MAILGUN_ENDPOINT`) — half-wired, no driver active"
+      ],
+      "evidence": "If operator deploys without setting MAIL_FROM_ADDRESS, emails go out as From: hello@example.com — SPF will fail, DMARC will reject, gmail bounces immediately. No production boot guard exists for MAIL_FROM_ADDRESS or MAIL_USERNAME / MAIL_PASSWORD. Mailgun config block is in config/services.php but no API key, no domain bound, no smoke-test command. SPF / DKIM / DMARC records are DNS-side concerns owner must coordinate with domain registrar — not auditable from code.",
+      "impact": "Day-1 production: zero customer emails will land in inbox (SPF=fail, DMARC=reject). Password reset emails will silently drop. Branch admin order notifications will silently drop. Compounded with F-04 (failures swallowed), no telemetry surface signals the breakdown.",
+      "fix_recommended": "OWNER-GATE: pick provider. Recommended for V1 Le Cayenne single-resto: Mailgun (already half-wired, free tier ~5k mails/mo). Alternatives: SendGrid, Postmark, Brevo (FR-hosted, RGPD-friendly), Amazon SES (cheapest at scale but heavy ops). Once picked: (a) DNS: SPF TXT record (v=spf1 include:mailgun.org ~all) + DKIM CNAME + DMARC TXT (v=DMARC1; p=quarantine; rua=mailto:dmarc@lecayenne.example). (b) Add AppServiceProvider boot guard: refuse to boot in production if MAIL_FROM_ADDRESS contains 'example.com' or is empty — mirrors the existing MAIL_HOST SSRF guard (L7.2). (c) Smoke-test artisan command `php artisan mail:smoke noreply@lecayenne.example.com` that sends a probe + asserts SMTP 250.",
+      "production_gate_items": [
+        "Owner picks provider (Mailgun / Brevo / SendGrid / SES)",
+        "DNS: SPF + DKIM + DMARC published (24-48h propagation)",
+        "MAIL_FROM_ADDRESS=noreply@<lecayenne-domain> set in .env production",
+        "MAIL_USERNAME / MAIL_PASSWORD / MAILGUN_SECRET set",
+        "Boot guard: AppServiceProvider rejects MAIL_FROM_ADDRESS containing 'example.com'",
+        "Bounce-webhook subscription (Mailgun/SendGrid webhook → app/Http/Controllers/Webhook/MailBounceController) — not currently wired"
+      ]
+    },
+    {
+      "id": "L9.1-F-06",
+      "severity": "P2",
+      "title": "NO bounce / spam-complaint handling — bounces are silently dropped on provider side",
+      "files": ["app/Http/Controllers/* — no MailBounceController, no MailWebhookController grep matches"],
+      "evidence": "No route, no controller, no listener for Mailgun/SendGrid bounce webhooks. Customer typos email → hard bounce → provider records it → app has no visibility, will keep trying to send to dead address. Eventually provider reputation degrades.",
+      "impact": "Sender reputation slowly poisoned by repeated bounces — provider may rate-limit or suspend account. No way to disable email for users who bounce repeatedly.",
+      "fix_recommended": "Add `bounced_emails` table + `MailWebhookController::handleBounce()` with provider signature verification. On hard bounce → flag `users.email_bounced_at`. Skip mail dispatch if flag set. Mailgun: webhook signing via timestamp+signature HMAC."
+    },
+    {
+      "id": "L9.1-F-07",
+      "severity": "P2",
+      "title": "PII over-share — emails include order_serial_no but lack RGPD data-minimization labelling / consent footer",
+      "files": [
+        "resources/views/emails/order.blade.php (name, orderId, message)",
+        "resources/views/emails/orderGot.blade.php (orderId only — admin-facing, less risk)"
+      ],
+      "evidence": "Customer-facing OrderMail body contains: customer name, order serial number, status message. Does NOT contain pricing details / item names — that's NOT in the email body, only an order ID reference. Data minimization is decent. HOWEVER: no unsubscribe link in any template (RGPD Article 21 right to object), no privacy-policy link, no `Pour cesser de recevoir ces emails, contactez...` footer.",
+      "impact": "RGPD Article 12-14 transparency requirement: every electronic comm must reference the data controller + give opt-out path. Article 21: right to object to direct marketing. Transactional emails have a narrower exemption (legitimate interest for service delivery) but contact info + opt-out for non-essential mails is best practice.",
+      "fix_recommended": "Add footer to mail layout: `Le Cayenne — <address>. Vous recevez cet email suite à votre commande #{order_id}. Pour gérer vos préférences, contactez nous@lecayenne.fr`. For NotificationAlert-keyed mails (non-essential): add unsubscribe link or per-status opt-out in user account."
+    },
+    {
+      "id": "L9.1-F-08",
+      "severity": "P2",
+      "title": "Locale NOT switched per recipient — emails always render in app current-request locale (which is FR for site default, but no per-user pref)",
+      "files": [
+        "app/Listeners/Send*Mail* (none call `$this->locale($user->locale)` on the Mailable)",
+        "app/Services/*MailNotificationBuilder.php (none switch locale)"
+      ],
+      "evidence": "Laravel Mailable supports `(new OrderMail($x))->locale($user->locale)` to render in recipient's language. NONE of the 4 dispatch paths use this. If `users` table grows a `locale` column (or already has one and code ignores it), emails render in the requesting agent's locale not the recipient's. For Le Cayenne V1 (FR-only customers), this is moot — but for SaaS V2 multi-tenant it's a P0.",
+      "fix_recommended": "Add `$mailable->locale($recipient->locale ?? config('app.locale'))` to every dispatch. Lock down to ['fr', 'en', 'ar'] allowlist matching app supported locales. V1 = nice-to-have; V2 SaaS = mandatory."
+    },
+    {
+      "id": "L9.1-F-09",
+      "severity": "P3",
+      "title": "NotificationAlert mail_message stored as varchar(255) — truncates long messages silently",
+      "files": ["database/migrations/2023_03_27_140107_create_notification_alerts_table.php:20 — `$table->string('mail_message')->nullable()`"],
+      "evidence": "Default Laravel `string()` = varchar(255). Operator typing a long mail body in admin UI gets silently truncated to 255 chars at DB insert. No validation in MailRequest visible enforces length cap.",
+      "fix_recommended": "Migrate column to TEXT. Or add MailRequest validator `'mail_message' => ['max:255']` and document the cap in admin UI tooltip."
+    },
+    {
+      "id": "L9.1-F-10",
+      "severity": "P3",
+      "title": "Subject lines reused — `OrderGotMail` (admin-facing) heading is `# Order Notification` not `# New order received`",
+      "files": ["resources/views/emails/orderGot.blade.php:2"],
+      "evidence": "Admin opens inbox, sees 'Order Notification' subject for new-order alert AND for customer-facing order updates (sent from the SAME admin email if admin also a customer). No visual disambiguation. Minor UX issue.",
+      "fix_recommended": "Rename template heading + Mailable subject to clearly distinguish 'Nouvelle commande reçue' vs 'Mise à jour de votre commande'."
+    },
+    {
+      "id": "L9.1-F-11",
+      "severity": "P3",
+      "title": "No test infrastructure for email — Mailpit / Mailtrap not declared in .env.example dev section, no docker-compose entry verified",
+      "files": [".env.example:163 — `MAIL_HOST=mailpit` literal but no docker-compose.yml installed for it"],
+      "evidence": "Dev env points to `mailpit` host but no `docker compose up` setup verified. Developers running locally without Mailpit hit DNS resolution error → Mail::send throws → caught by F-04 swallow → silent test-time noise.",
+      "fix_recommended": "Document mailpit setup OR switch default dev MAIL_MAILER to `log` (writes to storage/logs/laravel.log for easy inspection). Add `make dev-mail` target that starts mailpit container."
+    }
+  ],
+
+  "queue_analysis": {
+    "current_state": "ALL emails dispatched SYNCHRONOUSLY via Mail::to()->send() — none use ->queue() or implements ShouldQueue",
+    "default_dev_queue_driver": "sync (config/queue.php:16)",
+    "default_prod_queue_driver_per_env_example": "redis (REQUIRED per .env.example:153 comment)",
+    "implication_with_redis_queue": "Even with QUEUE_CONNECTION=redis in production, the Mail classes don't trigger queue dispatch — only outbox/FCM/domain-event jobs use the queue. Email send still blocks HTTP. F-03 must be fixed for queue mandate to actually cover mail.",
+    "retry_policy": "NONE — listener try/catch swallows exception (F-04), Laravel queue retry never sees the failure",
+    "blocking_impact_estimate": "200ms-5s per HTTP request that triggers Mail (depends on SMTP RTT + provider)"
+  },
+
+  "pii_in_emails_analysis": {
+    "customer_name": "OrderMail includes $name (from user.name)",
+    "phone_number": "NOT in any current template",
+    "address": "NOT in any current template",
+    "order_details_pricing": "NOT in any current template (only order_serial_no + status_message)",
+    "payment_card_details": "NOT in any current template (Stripe handles directly)",
+    "rgpd_data_minimization_score": "GOOD — minimal PII (name + order ID); BAD — no unsubscribe footer, no privacy-policy link (F-07)",
+    "nf525_receipt_vs_email_content": "NF525 paper ticket (printer) is the legal proof-of-purchase. Email is informational only — contains NO total amount, NO TVA breakdown, NO fiscal_sequence_no. This SEPARATION is correct: email != receipt. NF525 6y retention is in audit_logs/z_reports tables, NOT in email body."
+  },
+
+  "test_infrastructure_findings": {
+    "mailtrap_or_mailpit_dev": "PARTIALLY configured (.env.example:163 MAIL_HOST=mailpit) but no docker-compose entry verified — see F-11",
+    "production_provider_picked": "NOT PICKED — Mailgun config block exists in services.php but no API key wired. Owner-gate required (F-05)",
+    "smoke_test_artisan_command": "ABSENT — no `php artisan mail:smoke` or equivalent. Operator must rely on manual `tinker` invocation",
+    "spf_dkim_dmarc": "DNS-side — out of scope for code audit. Owner must coordinate with domain registrar AT PROVIDER PICK TIME"
+  },
+
+  "existing_sentinel_coverage": {
+    "found": "tests/Feature/Security/MailHostAllowlistSentinelTest.php (FK-MAIL-HOST-ALLOWLIST-SENTINEL) — covers L7.2 SSRF defense for MAIL_HOST",
+    "scope": "Verifies SafeRemoteHost rule rejects internal IPs, MailRequest wires the rule, AppServiceProvider boot guard refuses production MAIL_HOST=169.254.169.254 etc.",
+    "scope_NOT_covered": "Email FLOW (no Mail::fake / assertSent), subject correctness, body var presence, FR locale, PII over-share — ZERO test coverage",
+    "missing_sentinel": "tests/Feature/Mail/EmailFlowSentinel.php — see task §8"
+  },
+
+  "sentinel_to_write": {
+    "path": "tests/Feature/Mail/EmailFlowSentinel.php",
+    "id": "FK-EMAIL-FLOW-SENTINEL",
+    "source": "GOAL ULTRA-FINAL Phase L L9.1 (2026-05-24)",
+    "scope": [
+      "Send OrderMail via Mail::fake() — assertSent + subject contains expected literal (or trans key when F-01 fixed)",
+      "Assert email body contains $orderId, $name, $message (NO regression of accidental PII drop)",
+      "Assert FR locale rendering when app()->setLocale('fr') (CURRENTLY FAILS until F-01/F-02 fixed — gate test with markTestSkipped + comment until owner approves FR strings)",
+      "Assert PII NOT over-shared (NO payment card, NO full address)",
+      "Assert ResetPassword Mailable subject + body contains 6-digit PIN, NO URL (L7.3 design contract)",
+      "Assert NotificationAlert default SwitchBox::OFF — no email sent if seeder default",
+      "Assert kiosk source=10 excluded from customer mail (OrderMailNotificationBuilder.php:33 contract)"
+    ],
+    "implementation_status": "Outline + skeleton ready (writing requires owner sign-off on FR strings before subject assertions can be locked)"
+  },
+
+  "verdict": "PARTIAL — NOT V1 SHIP BLOCKER but PRODUCTION-CUTOVER BLOCKER on F-05",
+  "verdict_reasoning": "Email subsystem is FUNCTIONAL for the narrow path it covers (admin gets new-order alert, customer with email gets status update IF operator flips switches ON), but has 5 P1 issues that collectively make it unsafe for production day-1: (1) F-01 + F-02 entire flow English on French site — brand damage + spam-filter signal — fixable with i18n keys + owner-gate French copy, (2) F-03 + F-04 sync send with swallowed errors — emails silently dropped on SMTP failure — fixable by adding ShouldQueue + removing try/catch swallow, (3) F-05 no provider picked + default MAIL_FROM_ADDRESS=hello@example.com — emails will hard-bounce day-1 — REQUIRES OWNER-GATE PROVIDER DECISION + DNS coordination 24-48h before cutover. The 4 P2 findings (F-06 bounce handling, F-07 RGPD footer, F-08 locale switch, MISSING-03 refund email) are valuable hardening but not cutover blockers. The 3 P3 findings (F-09 varchar truncation, F-10 subject reuse, F-11 test infra) are polish. V1 LOCAL Le Cayenne can ship WITHOUT email cutover if owner accepts: (a) no customer email confirmations, (b) admin-side new-order alerts off (uses POS/KDS realtime instead), (c) password reset relies on PIN flow that owner verbally walks user through. The CURRENT default state (all 11 NotificationAlert switches OFF + no provider configured) is FAIL-CLOSED — no email is sent, no bounce, no damage — which is the right V1 posture pending provider decision. Going from FAIL-CLOSED to ACTIVE = F-05 owner-gate + F-01..F-04 hardening pass.",
+
+  "production_gate_items_summary": [
+    "OWNER PICK email provider — recommend Mailgun (already half-wired) or Brevo (FR/RGPD-friendly)",
+    "DNS publish SPF + DKIM + DMARC 24-48h before cutover (provider-specific records)",
+    "Set MAIL_FROM_ADDRESS = noreply@<lecayenne-domain> in production .env",
+    "Set MAIL_USERNAME / MAIL_PASSWORD or MAILGUN_SECRET in production .env",
+    "Add AppServiceProvider boot guard: refuse to boot if MAIL_FROM_ADDRESS contains 'example.com' (mirror L7.2 MAIL_HOST guard pattern)",
+    "Add ShouldQueue to 5 Mail classes (F-03) — prerequisite for clean failure mode under provider hiccups",
+    "Remove try/catch swallow from 4 listeners + 3 builders (F-04) OR upgrade Log::info → Log::error + alert event",
+    "Add lang/fr/emails.php + lang/en/emails.php; refactor subjects + blade templates (F-01 + F-02) — owner-gate French copy",
+    "Add MailWebhookController for bounce + spam-complaint handling (F-06) — provider-specific HMAC signature verification",
+    "Wire mailpit or alternative dev mail-sink (F-11)",
+    "Add tests/Feature/Mail/EmailFlowSentinel.php once subjects/copy finalized",
+    "Smoke-test artisan command `php artisan mail:smoke <addr>` for ops verification post-cutover"
+  ],
+
+  "files_inspected": [
+    "app/Services/MailService.php",
+    "app/Mail/OrderMail.php",
+    "app/Mail/OrderGotMail.php",
+    "app/Mail/ResetPassword.php",
+    "app/Mail/VerifyEmail.php",
+    "app/Mail/SubscriberMail.php",
+    "app/Listeners/SendOrderMailNotification.php",
+    "app/Listeners/SendOrderGotMailNotification.php",
+    "app/Listeners/SendOrderDeliveryBoyMailNotification.php",
+    "app/Listeners/SendResetPasswordNotification.php",
+    "app/Services/OrderMailNotificationBuilder.php",
+    "app/Services/OrderGotMailNotificationBuilder.php",
+    "app/Services/OrderDeliveryBoyMailNotificationBuilder.php",
+    "app/Listeners/NotifyStockLowOnStockLevelChanged.php",
+    "app/Http/Controllers/Auth/ForgotPasswordController.php",
+    "app/Events/SendOrderMail.php",
+    "app/Events/SendOrderGotMail.php",
+    "app/Providers/EventServiceProvider.php (listen map)",
+    "app/Providers/AppServiceProvider.php (boot guards — MAIL_HOST guard at :441)",
+    "config/mail.php",
+    "config/queue.php",
+    "config/services.php (Mailgun block)",
+    "config/app.php (locale=fr)",
+    ".env.example (MAIL_* + QUEUE_* sections)",
+    "resources/views/emails/order.blade.php",
+    "resources/views/emails/orderGot.blade.php",
+    "resources/views/emails/password.blade.php",
+    "resources/views/emails/verify.blade.php",
+    "resources/views/emails/subscriber.blade.php",
+    "database/seeders/NotificationAlertTableSeeder.php",
+    "database/migrations/2023_03_27_140107_create_notification_alerts_table.php",
+    "tests/Feature/Security/MailHostAllowlistSentinelTest.php"
+  ],
+
+  "cross_references": [
+    "L2-HEAL-04 — mentioned in task prelude as source of MailService context",
+    "L7.2 SSRF — MAIL_HOST allowlist sentinel ALREADY shipped",
+    "L7.3 header-injection — PIN-only password reset is intrinsic Host-injection defense, CONFIRMED here",
+    "L9.5 (sibling task) — i18n FR-only mandate VIOLATED by F-01 + F-02"
+  ]
+}
