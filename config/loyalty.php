@@ -49,21 +49,27 @@ return [
         | Legacy plaintext acceptance window
         |------------------------------------------------------------------
         |
-        | Until the mobile app ships the signed-QR client (deferred to
-        | mobile cycle V1.0.X), the server MUST still accept raw
-        | `FK:<loyalty_code>` and bare `<loyalty_code>` strings to avoid
-        | breaking already-deployed mobile clients.
+        | [GOAL-J2-HEAL-03 2026-05-24] Phase J-ADV-1 ADV1-V01 P1:
+        | Default was TRUE which allowed attacker with 8-char loyalty_code
+        | to POST /api/frontend/loyalty/scan and harvest customer_token +
+        | display_name + loyalty_balance_points (PII leak). Flipped to FALSE
+        | for security-by-default. Legacy clients can explicitly opt back
+        | in via LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT=true during transition,
+        | or migrate to signed QR via account self-service.
         |
-        | When the mobile cycle ships and field roll-out confirms zero
-        | plaintext volume in `loyalty.qr.legacy_plaintext` logs, set
-        | LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT=false in production to
-        | disable the legacy path and refuse plaintext scans.
+        | Historical note (pre-flip): the legacy raw `FK:<loyalty_code>`
+        | and bare `<loyalty_code>` paths were kept enabled by default to
+        | avoid breaking already-deployed mobile clients while the
+        | signed-QR mobile cycle (V1.0.X) shipped. The mobile cycle has
+        | since landed; defaulting to FALSE here closes the harvest
+        | vector without preventing opt-in for environments still
+        | running pre-signed-QR clients.
         */
         'accept_legacy_plaintext' => filter_var(
-            env('LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT', true),
+            env('LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT', false),
             FILTER_VALIDATE_BOOLEAN,
             FILTER_NULL_ON_FAILURE
-        ) ?? true,
+        ) ?? false,
     ],
 
     /*

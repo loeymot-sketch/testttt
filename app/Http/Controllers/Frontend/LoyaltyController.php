@@ -700,9 +700,27 @@ class LoyaltyController extends Controller
             }
 
             // -- Token opaque éphémère (pas d'id exposé) ------------------
-            // Préfixé 'lt_' + sha256(user_id + session_random). Server-only
-            // usage (loyalty/balance ou pricing/preview le ré-acceptent).
-            $customerToken = 'lt_'.substr(hash('sha256', $target->id.'|'.now()->timestamp.'|'.(string) config('app.key')), 0, 32);
+            // Préfixé 'lt_' + HMAC-SHA256(user_id | unix_ts | random_bytes(16)).
+            // Server-only usage (loyalty/balance ou pricing/preview le ré-acceptent).
+            //
+            // [GOAL-J2-HEAL-03 2026-05-24] Phase J-ADV-7 HC-003 P0:
+            // Customer token previously used SHA256(user_id|unix_timestamp|APP_KEY)
+            // truncated to 128 bits — NO HMAC despite LOYALTY_QR_SECRET existing
+            // for QR signing elsewhere. Second-resolution timestamp = predictable
+            // window enabling enumeration.
+            //
+            // Fix: HMAC-SHA256 using LOYALTY_QR_SECRET (matches QR signing
+            // pattern, mirrors LoyaltyQrSigner). random_bytes(16) defeats
+            // timestamp-prediction attacks. Output full 256-bit (64 hex chars)
+            // for stronger entropy. `lt_` prefix preserved (contract).
+            //
+            // Use `?:` fallback (not config() default arg) because
+            // LOYALTY_QR_SECRET defaults to '' (config/loyalty.php:32) — the
+            // key is present-but-empty in dev/test, so config()'s default arg
+            // would never trigger. Production boot guard refuses empty.
+            $secret = config('loyalty.qr.secret') ?: (string) config('app.key');
+            $payload = $target->id.'|'.now()->timestamp.'|'.bin2hex(random_bytes(16));
+            $customerToken = 'lt_'.hash_hmac('sha256', $payload, $secret);
 
             $displayName = (string) ($target->name ?: '');
             $firstName = trim(explode(' ', $displayName)[0] ?? '');
