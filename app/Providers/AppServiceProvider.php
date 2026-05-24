@@ -8,6 +8,8 @@ use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\ZReport;
+use App\Services\Fiscal\AuditLogService;
 use App\Services\Hardware\PrinterTransport\NullPrinterTransport;
 use App\Services\Hardware\PrinterTransport\PrinterTransportInterface;
 use App\Services\Hardware\PrinterTransport\TcpPrinterTransport;
@@ -15,6 +17,7 @@ use App\Services\Observability\SyncMetricsRecorder;
 use App\Observers\ItemObserver;
 use App\Observers\SoftDeleteAuditObserver;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 
@@ -70,6 +73,83 @@ class AppServiceProvider extends ServiceProvider
         Branch::observe($audit);
         Item::observe(ItemObserver::class);
         ItemCategory::observe($audit);
+
+        // [GOAL-K2-HEAL-06 2026-05-24] Phase K.7 K7-FIND-2 P2:
+        // Z-close did NOT write any audit_logs HMAC anchor entry — only
+        // logged to file channel 'fiscal'. NF525 chain has Z-chain
+        // (z_reports.signature) AND audit_logs chain but no cross-chain
+        // anchor binding the two. Forensic concern: a Z-close had no
+        // audit_logs row, so an audit_logs walk alone could not detect
+        // Z-close existence.
+        //
+        // Fix: ZReport::updated hook gated by `wasChanged('status')` and
+        // status === STATUS_CLOSED + non-null signature writes an audit
+        // entry 'z_report.closed' with sequence_no + signature + prev_hash.
+        // Cross-chain anchor: forensic walker on audit_logs sees Z-close
+        // events + can cross-reference z_reports table.
+        //
+        // ZReportService.php is FROZEN §7 — NOT modified. Hook applied at
+        // the Eloquent model layer (ZReport.php, not frozen) wrapping the
+        // frozen service without touching it.
+        //
+        // Why `updated` not `created`: open() calls ZReport::create() with
+        // status=OPEN and no signature, while close() reuses the same row
+        // via $open->forceFill(...)->save(), so the close event is an
+        // UPDATE on the existing OPEN row. wasChanged('status') confirms
+        // the transition fired in this save. The signature non-null guard
+        // is belt-and-suspenders against a future save path that flips to
+        // CLOSED without a signature.
+        //
+        // Best-effort wrap matches CashDrawerService::writeAuditLog: a
+        // cache outage failing the audit append MUST NOT abort the Z
+        // close itself — the Z-chain via z_reports.signature is still
+        // valid; the cross-chain anchor is forensic-only.
+        ZReport::updated(function (ZReport $zReport): void {
+            try {
+                if (! $zReport->wasChanged('status')) {
+                    return;
+                }
+                if ($zReport->status !== ZReport::STATUS_CLOSED) {
+                    return;
+                }
+                if (empty($zReport->signature)) {
+                    return;
+                }
+
+                app(AuditLogService::class)->write([
+                    'branch_id'   => (int) $zReport->branch_id,
+                    'action'      => 'z_report.closed',
+                    'resource'    => 'z_report',
+                    'resource_id' => (int) $zReport->id,
+                    'payload'     => [
+                        'z_report_id' => (int) $zReport->id,
+                        'sequence_no' => (int) $zReport->sequence_no,
+                        'signature'   => (string) $zReport->signature,
+                        'prev_hash'   => $zReport->prev_hash !== null
+                            ? (string) $zReport->prev_hash
+                            : null,
+                        'closed_at'   => optional($zReport->closed_at)->toIso8601String(),
+                        'closed_by'   => $zReport->closed_by !== null
+                            ? (int) $zReport->closed_by
+                            : null,
+                        'total_ttc'   => (float) $zReport->total_ttc,
+                        'order_count' => (int) $zReport->order_count,
+                    ],
+                ]);
+            } catch (\Throwable $e) {
+                // Cross-chain anchor missing = forensic limitation, NOT a
+                // fiscal break. The Z-chain (z_reports.signature) remains
+                // valid via its own HMAC. Surface the failure but do not
+                // abort the Z close transaction.
+                Log::warning('[GOAL-K2-HEAL-06] z_report.closed audit_logs anchor failed', [
+                    'z_report_id' => $zReport->id,
+                    'branch_id'   => $zReport->branch_id,
+                    'sequence_no' => $zReport->sequence_no,
+                    'exception'   => get_class($e),
+                    'message'     => $e->getMessage(),
+                ]);
+            }
+        });
 
         // SQLite (tests CI / phpunit.xml :memory:) n'implémente pas REGEXP par défaut.
         // OrderService / FrontendOrderService filtrent queue_number avec REGEXP '^A[0-9]+$'.
