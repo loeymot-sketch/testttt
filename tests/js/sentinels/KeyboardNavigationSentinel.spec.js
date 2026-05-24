@@ -131,6 +131,35 @@ describe('Keyboard navigation — Kiosk payment + cart (FK-L5.3-001)', () => {
     });
 });
 
+describe('Keyboard navigation — POS counter-collect modal (FK-M-POS-2-001)', () => {
+    const ccModal = read('resources/js/components/admin/pos/PosCounterCollectModal.vue');
+
+    it('PosCounterCollectModal binds @keyup.enter on receivedInput (cashier types → Enter to confirm)', () => {
+        expect(ccModal).toMatch(/@keyup\.enter="onConfirm"/);
+    });
+
+    it('PosCounterCollectModal installs Escape-to-close on document keydown (mirror KdsHistoryDrawer pattern)', () => {
+        expect(ccModal).toMatch(/document\.addEventListener\(\s*['"]keydown['"]\s*,\s*this\._onEsc\)/);
+        expect(ccModal).toMatch(/document\.removeEventListener\(\s*['"]keydown['"]\s*,\s*this\._onEsc\)/);
+        expect(ccModal).toMatch(/e\.key\s*===\s*['"]Escape['"]/);
+    });
+
+    it('PosCounterCollectModal _onEsc handler is guarded by visibility + submitting (no-op when idle or mid-POST)', () => {
+        // Handler must check visible AND submitting before triggering onCancel,
+        // otherwise an Escape press while another modal is foregrounded would
+        // accidentally emit cancel.
+        expect(ccModal).toMatch(/if\s*\(\s*!this\.visible\s*\|\|\s*this\.submitting\s*\)\s*return/);
+    });
+
+    it('PosCounterCollectModal auto-focuses receivedInput on order watcher fire (one-tap-then-Enter cashier flow)', () => {
+        // Auto-focus must be wrapped in $nextTick because cc-cash-section
+        // is v-if="selectedMode==='CASH'" — receivedInput ref does not
+        // exist before selectedMode is CASH AND the DOM updates.
+        expect(ccModal).toMatch(/this\.\$nextTick\(\s*\(\s*\)\s*=>/);
+        expect(ccModal).toMatch(/this\.\$refs\.receivedInput\??\.focus\(\)/);
+    });
+});
+
 describe('Keyboard navigation — POS grid + delivery autocomplete (FK-L5.3-001)', () => {
     const posItem = read('resources/js/components/admin/pos/ItemComponent.vue');
     const pos = read('resources/js/components/admin/pos/PosComponent.vue');

@@ -110,6 +110,7 @@
             class="cc-input cc-tabular"
             v-on:keypress="onlyFloat"
             @input="onReceivedInput"
+            @keyup.enter="onConfirm"
             :value="cashReceivedRaw"
             :disabled="submitting"
             data-testid="pos-counter-collect-received-input"
@@ -300,9 +301,33 @@ export default {
           this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
           this.selectedMode = 'CASH';
           this.submitting = false;
+          // [GOAL-M-POS-2 2026-05-24] Auto-focus receivedInput on modal
+          // open so the cashier can type-then-Enter without a mouse hop.
+          // $nextTick defers until the cc-cash-section v-if mounts the
+          // input (receivedInput ref does not exist before selectedMode
+          // is CASH AND the DOM updates). Mirrors L5.3-F-02 recommendation.
+          this.$nextTick(() => {
+            if (this.$refs.receivedInput) {
+              this.$refs.receivedInput.focus();
+              this.$refs.receivedInput.select();
+            }
+          });
         }
       },
     },
+  },
+  // [GOAL-M-POS-2 2026-05-24] Escape-to-close keyboard contract.
+  // Mirrors KdsHistoryDrawer.vue:189-204 pattern: document-level
+  // keydown listener installed in mounted(), removed in beforeUnmount().
+  // The component itself is always in the DOM (parent always renders
+  // <PosCounterCollectModal>); only the inner overlay toggles via
+  // v-if="visible". The visibility + submitting guards inside _onEsc
+  // ensure the handler is a no-op when no order is being collected.
+  mounted() {
+    document.addEventListener('keydown', this._onEsc);
+  },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this._onEsc);
   },
   methods: {
     setMode(modeId) {
@@ -354,6 +379,18 @@ export default {
     onCancel() {
       if (this.submitting) return;
       this.$emit('cancel');
+    },
+    // [GOAL-M-POS-2 2026-05-24] Document-level Escape handler. Guarded by
+    // visibility (modal is permanently mounted by parent) + submitting
+    // flag (don't fire mid-POST or while a 200/409 is in flight).
+    // Stored as an arrow-function-style property so the listener
+    // reference matches across add/remove (avoids the lost-reference
+    // bug with method-bound handlers).
+    _onEsc(e) {
+      if (!this.visible || this.submitting) return;
+      if (e.key === 'Escape') {
+        this.onCancel();
+      }
     },
     async onConfirm() {
       if (!this.order || this.submitting || !this.canConfirm) return;

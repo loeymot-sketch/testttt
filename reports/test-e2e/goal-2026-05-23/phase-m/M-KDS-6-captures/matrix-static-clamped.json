@@ -1,0 +1,1522 @@
+{
+  "cells": [
+    {
+      "n": 5,
+      "depth": "short",
+      "evidence_method": "static_css_repro_clamped",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/clamped-N5-short.png",
+      "timestamp_iso": "2026-05-24T12:54:23.901Z",
+      "dom": {
+        "viewport": {
+          "w": 1920,
+          "h": 1080
+        },
+        "page_scroll": {
+          "scrollHeight": 1080,
+          "clientHeight": 1080,
+          "overflows": false
+        },
+        "grid": {
+          "top": 197,
+          "bottom": 1080,
+          "height": 883,
+          "computed_cols": "460px 460px 460px 460px",
+          "computed_rows": "417.5px 417.5px"
+        },
+        "cards_rendered": 5,
+        "cards_visible_bbox": [
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          }
+        ],
+        "ctas": [
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          }
+        ],
+        "ctas_below_fold": 0,
+        "ctas_partially_clipped": 0,
+        "ctas_fully_above_fold": 5,
+        "cards_with_inner_scroll_count": 0,
+        "cards_with_inner_scroll_indexes": [],
+        "overflow_chip_present": false,
+        "silent_drop_count": 0
+      }
+    },
+    {
+      "n": 6,
+      "depth": "short",
+      "evidence_method": "static_css_repro_clamped",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/clamped-N6-short.png",
+      "timestamp_iso": "2026-05-24T12:54:24.076Z",
+      "dom": {
+        "viewport": {
+          "w": 1920,
+          "h": 1080
+        },
+        "page_scroll": {
+          "scrollHeight": 1080,
+          "clientHeight": 1080,
+          "overflows": false
+        },
+        "grid": {
+          "top": 197,
+          "bottom": 1080,
+          "height": 883,
+          "computed_cols": "460px 460px 460px 460px",
+          "computed_rows": "417.5px 417.5px"
+        },
+        "cards_rendered": 6,
+        "cards_visible_bbox": [
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          }
+        ],
+        "ctas": [
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          }
+        ],
+        "ctas_below_fold": 0,
+        "ctas_partially_clipped": 0,
+        "ctas_fully_above_fold": 6,
+        "cards_with_inner_scroll_count": 0,
+        "cards_with_inner_scroll_indexes": [],
+        "overflow_chip_present": false,
+        "silent_drop_count": 0
+      }
+    },
+    {
+      "n": 7,
+      "depth": "short",
+      "evidence_method": "static_css_repro_clamped",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/clamped-N7-short.png",
+      "timestamp_iso": "2026-05-24T12:54:24.251Z",
+      "dom": {
+        "viewport": {
+          "w": 1920,
+          "h": 1080
+        },
+        "page_scroll": {
+          "scrollHeight": 1080,
+          "clientHeight": 1080,
+          "overflows": false
+        },
+        "grid": {
+          "top": 197,
+          "bottom": 1080,
+          "height": 883,
+          "computed_cols": "460px 460px 460px 460px",
+          "computed_rows": "417.5px 417.5px"
+        },
+        "cards_rendered": 7,
+        "cards_visible_bbox": [
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          }
+        ],
+        "ctas": [
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          }
+        ],
+        "ctas_below_fold": 0,
+        "ctas_partially_clipped": 0,
+        "ctas_fully_above_fold": 7,
+        "cards_with_inner_scroll_count": 0,
+        "cards_with_inner_scroll_indexes": [],
+        "overflow_chip_present": false,
+        "silent_drop_count": 0
+      }
+    },
+    {
+      "n": 8,
+      "depth": "short",
+      "evidence_method": "static_css_repro_clamped",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/clamped-N8-short.png",
+      "timestamp_iso": "2026-05-24T12:54:24.417Z",
+      "dom": {
+        "viewport": {
+          "w": 1920,
+          "h": 1080
+        },
+        "page_scroll": {
+          "scrollHeight": 1080,
+          "clientHeight": 1080,
+          "overflows": false
+        },
+        "grid": {
+          "top": 197,
+          "bottom": 1080,
+          "height": 883,
+          "computed_cols": "460px 460px 460px 460px",
+          "computed_rows": "417.5px 417.5px"
+        },
+        "cards_rendered": 8,
+        "cards_visible_bbox": [
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          }
+        ],
+        "ctas": [
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          }
+        ],
+        "ctas_below_fold": 0,
+        "ctas_partially_clipped": 0,
+        "ctas_fully_above_fold": 8,
+        "cards_with_inner_scroll_count": 0,
+        "cards_with_inner_scroll_indexes": [],
+        "overflow_chip_present": false,
+        "silent_drop_count": 0
+      }
+    },
+    {
+      "n": 9,
+      "depth": "short",
+      "evidence_method": "static_css_repro_clamped",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/clamped-N9-short.png",
+      "timestamp_iso": "2026-05-24T12:54:24.584Z",
+      "dom": {
+        "viewport": {
+          "w": 1920,
+          "h": 1080
+        },
+        "page_scroll": {
+          "scrollHeight": 1080,
+          "clientHeight": 1080,
+          "overflows": false
+        },
+        "grid": {
+          "top": 197,
+          "bottom": 1080,
+          "height": 883,
+          "computed_cols": "460px 460px 460px 460px",
+          "computed_rows": "417.5px 417.5px"
+        },
+        "cards_rendered": 8,
+        "cards_visible_bbox": [
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          }
+        ],
+        "ctas": [
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          }
+        ],
+        "ctas_below_fold": 0,
+        "ctas_partially_clipped": 0,
+        "ctas_fully_above_fold": 8,
+        "cards_with_inner_scroll_count": 0,
+        "cards_with_inner_scroll_indexes": [],
+        "overflow_chip_present": false,
+        "silent_drop_count": 1
+      }
+    },
+    {
+      "n": 12,
+      "depth": "short",
+      "evidence_method": "static_css_repro_clamped",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/clamped-N12-short.png",
+      "timestamp_iso": "2026-05-24T12:54:24.750Z",
+      "dom": {
+        "viewport": {
+          "w": 1920,
+          "h": 1080
+        },
+        "page_scroll": {
+          "scrollHeight": 1080,
+          "clientHeight": 1080,
+          "overflows": false
+        },
+        "grid": {
+          "top": 197,
+          "bottom": 1080,
+          "height": 883,
+          "computed_cols": "460px 460px 460px 460px",
+          "computed_rows": "417.5px 417.5px"
+        },
+        "cards_rendered": 8,
+        "cards_visible_bbox": [
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          }
+        ],
+        "ctas": [
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          }
+        ],
+        "ctas_below_fold": 0,
+        "ctas_partially_clipped": 0,
+        "ctas_fully_above_fold": 8,
+        "cards_with_inner_scroll_count": 0,
+        "cards_with_inner_scroll_indexes": [],
+        "overflow_chip_present": false,
+        "silent_drop_count": 4
+      }
+    },
+    {
+      "n": 5,
+      "depth": "realistic",
+      "evidence_method": "static_css_repro_clamped",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/clamped-N5-realistic.png",
+      "timestamp_iso": "2026-05-24T12:54:24.929Z",
+      "dom": {
+        "viewport": {
+          "w": 1920,
+          "h": 1080
+        },
+        "page_scroll": {
+          "scrollHeight": 1080,
+          "clientHeight": 1080,
+          "overflows": false
+        },
+        "grid": {
+          "top": 197,
+          "bottom": 1080,
+          "height": 883,
+          "computed_cols": "460px 460px 460px 460px",
+          "computed_rows": "417.5px 417.5px"
+        },
+        "cards_rendered": 5,
+        "cards_visible_bbox": [
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          }
+        ],
+        "ctas": [
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          }
+        ],
+        "ctas_below_fold": 0,
+        "ctas_partially_clipped": 0,
+        "ctas_fully_above_fold": 5,
+        "cards_with_inner_scroll_count": 0,
+        "cards_with_inner_scroll_indexes": [],
+        "overflow_chip_present": false,
+        "silent_drop_count": 0
+      }
+    },
+    {
+      "n": 6,
+      "depth": "realistic",
+      "evidence_method": "static_css_repro_clamped",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/clamped-N6-realistic.png",
+      "timestamp_iso": "2026-05-24T12:54:25.105Z",
+      "dom": {
+        "viewport": {
+          "w": 1920,
+          "h": 1080
+        },
+        "page_scroll": {
+          "scrollHeight": 1080,
+          "clientHeight": 1080,
+          "overflows": false
+        },
+        "grid": {
+          "top": 197,
+          "bottom": 1080,
+          "height": 883,
+          "computed_cols": "460px 460px 460px 460px",
+          "computed_rows": "417.5px 417.5px"
+        },
+        "cards_rendered": 6,
+        "cards_visible_bbox": [
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          }
+        ],
+        "ctas": [
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          }
+        ],
+        "ctas_below_fold": 0,
+        "ctas_partially_clipped": 0,
+        "ctas_fully_above_fold": 6,
+        "cards_with_inner_scroll_count": 0,
+        "cards_with_inner_scroll_indexes": [],
+        "overflow_chip_present": false,
+        "silent_drop_count": 0
+      }
+    },
+    {
+      "n": 7,
+      "depth": "realistic",
+      "evidence_method": "static_css_repro_clamped",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/clamped-N7-realistic.png",
+      "timestamp_iso": "2026-05-24T12:54:25.288Z",
+      "dom": {
+        "viewport": {
+          "w": 1920,
+          "h": 1080
+        },
+        "page_scroll": {
+          "scrollHeight": 1080,
+          "clientHeight": 1080,
+          "overflows": false
+        },
+        "grid": {
+          "top": 197,
+          "bottom": 1080,
+          "height": 883,
+          "computed_cols": "460px 460px 460px 460px",
+          "computed_rows": "417.5px 417.5px"
+        },
+        "cards_rendered": 7,
+        "cards_visible_bbox": [
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          }
+        ],
+        "ctas": [
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          }
+        ],
+        "ctas_below_fold": 0,
+        "ctas_partially_clipped": 0,
+        "ctas_fully_above_fold": 7,
+        "cards_with_inner_scroll_count": 0,
+        "cards_with_inner_scroll_indexes": [],
+        "overflow_chip_present": false,
+        "silent_drop_count": 0
+      }
+    },
+    {
+      "n": 8,
+      "depth": "realistic",
+      "evidence_method": "static_css_repro_clamped",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/clamped-N8-realistic.png",
+      "timestamp_iso": "2026-05-24T12:54:25.471Z",
+      "dom": {
+        "viewport": {
+          "w": 1920,
+          "h": 1080
+        },
+        "page_scroll": {
+          "scrollHeight": 1080,
+          "clientHeight": 1080,
+          "overflows": false
+        },
+        "grid": {
+          "top": 197,
+          "bottom": 1080,
+          "height": 883,
+          "computed_cols": "460px 460px 460px 460px",
+          "computed_rows": "417.5px 417.5px"
+        },
+        "cards_rendered": 8,
+        "cards_visible_bbox": [
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          }
+        ],
+        "ctas": [
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          }
+        ],
+        "ctas_below_fold": 0,
+        "ctas_partially_clipped": 0,
+        "ctas_fully_above_fold": 8,
+        "cards_with_inner_scroll_count": 0,
+        "cards_with_inner_scroll_indexes": [],
+        "overflow_chip_present": false,
+        "silent_drop_count": 0
+      }
+    },
+    {
+      "n": 5,
+      "depth": "long",
+      "evidence_method": "static_css_repro_clamped",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/clamped-N5-long.png",
+      "timestamp_iso": "2026-05-24T12:54:25.655Z",
+      "dom": {
+        "viewport": {
+          "w": 1920,
+          "h": 1080
+        },
+        "page_scroll": {
+          "scrollHeight": 1080,
+          "clientHeight": 1080,
+          "overflows": false
+        },
+        "grid": {
+          "top": 197,
+          "bottom": 1080,
+          "height": 883,
+          "computed_cols": "460px 460px 460px 460px",
+          "computed_rows": "417.5px 417.5px"
+        },
+        "cards_rendered": 5,
+        "cards_visible_bbox": [
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          }
+        ],
+        "ctas": [
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          }
+        ],
+        "ctas_below_fold": 0,
+        "ctas_partially_clipped": 0,
+        "ctas_fully_above_fold": 5,
+        "cards_with_inner_scroll_count": 5,
+        "cards_with_inner_scroll_indexes": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "overflow_chip_present": false,
+        "silent_drop_count": 0
+      }
+    },
+    {
+      "n": 6,
+      "depth": "long",
+      "evidence_method": "static_css_repro_clamped",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/clamped-N6-long.png",
+      "timestamp_iso": "2026-05-24T12:54:25.838Z",
+      "dom": {
+        "viewport": {
+          "w": 1920,
+          "h": 1080
+        },
+        "page_scroll": {
+          "scrollHeight": 1080,
+          "clientHeight": 1080,
+          "overflows": false
+        },
+        "grid": {
+          "top": 197,
+          "bottom": 1080,
+          "height": 883,
+          "computed_cols": "460px 460px 460px 460px",
+          "computed_rows": "417.5px 417.5px"
+        },
+        "cards_rendered": 6,
+        "cards_visible_bbox": [
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          }
+        ],
+        "ctas": [
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          }
+        ],
+        "ctas_below_fold": 0,
+        "ctas_partially_clipped": 0,
+        "ctas_fully_above_fold": 6,
+        "cards_with_inner_scroll_count": 6,
+        "cards_with_inner_scroll_indexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "overflow_chip_present": false,
+        "silent_drop_count": 0
+      }
+    },
+    {
+      "n": 8,
+      "depth": "long",
+      "evidence_method": "static_css_repro_clamped",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "screenshot": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/clamped-N8-long.png",
+      "timestamp_iso": "2026-05-24T12:54:26.022Z",
+      "dom": {
+        "viewport": {
+          "w": 1920,
+          "h": 1080
+        },
+        "page_scroll": {
+          "scrollHeight": 1080,
+          "clientHeight": 1080,
+          "overflows": false
+        },
+        "grid": {
+          "top": 197,
+          "bottom": 1080,
+          "height": 883,
+          "computed_cols": "460px 460px 460px 460px",
+          "computed_rows": "417.5px 417.5px"
+        },
+        "cards_rendered": 8,
+        "cards_visible_bbox": [
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 213,
+            "bottom": 631,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          },
+          {
+            "top": 647,
+            "bottom": 1064,
+            "height": 418
+          }
+        ],
+        "ctas": [
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 571,
+            "bottom": 623,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          },
+          {
+            "text": "✓ Prêt",
+            "top": 1004,
+            "bottom": 1056,
+            "height": 52
+          }
+        ],
+        "ctas_below_fold": 0,
+        "ctas_partially_clipped": 0,
+        "ctas_fully_above_fold": 8,
+        "cards_with_inner_scroll_count": 8,
+        "cards_with_inner_scroll_indexes": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "overflow_chip_present": false,
+        "silent_drop_count": 0
+      }
+    }
+  ],
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "started_at_iso": "2026-05-24T12:54:22.923Z",
+  "method": "static_css_repro_clamped"
+}
