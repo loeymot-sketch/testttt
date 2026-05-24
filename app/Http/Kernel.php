@@ -138,5 +138,11 @@ class Kernel extends HttpKernel
         // [F-VERIFY-09-02 / PLAN_P11] HTTP-level idempotency guard. Opt-in
         // per-route via routes/api.php; flag-gated via IDEMPOTENCY_MIDDLEWARE_ENABLED.
         'idempotency' => \App\Http\Middleware\IdempotencyKeyMiddleware::class,
+        // [GOAL-J2-HEAL-02 2026-05-24] Phase J-ADV-6 PATH-1 RED P0 closer.
+        // Blocks Sanctum tokens carrying the kiosk:order ability from reaching
+        // /api/admin/* routes regardless of the underlying user's Spatie
+        // permissions. Applied to both admin route groups in routes/api.php.
+        // See BlockKioskTokenFromAdminRoutes::handle() for full rationale.
+        'block_kiosk_token_admin' => \App\Http\Middleware\BlockKioskTokenFromAdminRoutes::class,
     ];
 }

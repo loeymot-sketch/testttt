@@ -259,7 +259,11 @@ Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', '
 // (MENU_AVAILABILITY_RATE_LIMIT). Local dev raises to 1000/min to absorb
 // bulk-86 fan-out from StockRuptureDashboard (manager toggling many items
 // at once during rush). NF525 chain unaffected — no fiscal write here.
-Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:menu-availability'])->group(function () {
+// [GOAL-J2-HEAL-02 2026-05-24] block_kiosk_token_admin inserted right after
+// auth:sanctum (token user resolved) and BEFORE localization + throttle so a
+// stolen kiosk token never pollutes the admin-mutation rate bucket. Closes
+// J-ADV-6 PATH-1 RED P0 (empirically verified — see middleware docblock).
+Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'block_kiosk_token_admin', 'localization', 'throttle:menu-availability'])->group(function () {
     Route::post('/menu/availability/toggle', [AvailabilityController::class, 'toggle'])
         ->name('menu.availability.toggle');
 
@@ -273,7 +277,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->name('menu.availability.variation.toggle');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:admin-mutation'])->group(function () {
+// [GOAL-J2-HEAL-02 2026-05-24] block_kiosk_token_admin — same rationale as the
+// menu-availability group above. This is the BIG /api/admin/* group (POS,
+// catalog, settings, customers, cash drawer, etc.) and is the primary blast
+// radius of the J-ADV-6 PATH-1 RED P0 escalation. Order matters: after
+// auth:sanctum so $request->user() and currentAccessToken() are populated;
+// before localization so blocked kiosk requests don't consume admin-mutation
+// throttle quota.
+Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'block_kiosk_token_admin', 'localization', 'throttle:admin-mutation'])->group(function () {
     Route::prefix('default-access')->name('default-access.')->group(function () {
         Route::get('/', [DefaultAccessController::class, 'index']);
         Route::post('/', [DefaultAccessController::class, 'storeOrUpdate']);
