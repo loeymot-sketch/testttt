@@ -1,11 +1,11 @@
-# GOAL ULTRA-FINAL — Complete Cycle Synthesis (Phases A → L)
+# GOAL ULTRA-FINAL — Complete Cycle Synthesis (Phases A → N)
 
-**Date** : 2026-05-24
+**Date** : 2026-05-24 (Wave N appended same-day)
 **Branch** : `heal/cms-pr1-quickwins-2026-05-18`
 **Pre-cycle HEAD** : `d601fdd34` (Wave Final 7-system convergence, 2026-05-23)
-**Post-cycle HEAD** : `041c98b2a` (Phase L convergence doc, 2026-05-24)
-**Orchestrator** : Claude Opus 4.7 (1M context) — Phase L Meta-Agent
-**Cycle duration** : ~36 hours wall-clock (2026-05-23 morning → 2026-05-24 noon)
+**Post-cycle HEAD** : `5e646503b` (Wave N N-HEAL-01 KdsV2Grid +N chip, 2026-05-24)
+**Orchestrator** : Claude Opus 4.7 (1M context) — Phase L Meta-Agent + Wave M Deep + Wave N Final
+**Cycle duration** : ~36+ hours wall-clock (2026-05-23 morning → 2026-05-24 evening)
 
 ---
 
@@ -15,10 +15,11 @@
 
 This is the meta-synthesis of an autonomous multi-phase audit-and-heal cycle covering 12 sub-cycle phases (Wave Final → Phase B → Phase F + F2 → Phase G + G2 → Phase H + H2 → Phase I + I2 → Phase J + J2 → Phase K + K2 → Phase L + L2). Over ~36 hours, **~175 sub-agents** were dispatched massively in parallel single-message bursts, producing **61 commits**, **293 NEW sentinels GREEN** (cited cumulative), and **94+ frozen-zone PROPOSAL docs** authored without a single line of frozen-zone code changed.
 
-**Empirically verified at HEAD `041c98b2a`** :
+**Empirically verified at HEAD `5e646503b` (post-Wave-N, 2026-05-24 evening)** :
 - NF525 chain integrity : `php artisan fiscal:verify-chain --all` → **CHAIN OK on every active branch (1 total)**
-- Frozen-zone diff : **0 LOC** across all 14 §7 protected files (verified via `git diff --stat d601fdd34..HEAD` per-file, returned empty)
-- Commits since baseline : **61** (verified via `git log --oneline d601fdd34..HEAD | wc -l`)
+- Frozen-zone diff : **0 LOC** across all 14 §7 protected files (verified via `git diff --stat d601fdd34..HEAD` per-file, returned empty — 14/14 files)
+- Commits since baseline : **67** (verified via `git log --oneline d601fdd34..HEAD | wc -l`)
+- Wave N increment: 4 heals (N-HEAL-01..04) + 17 new sentinel cases (3 PHPUnit + 14 Vitest)
 
 **Highest-value heals shipped** (filtered from convergence docs) :
 - **3 CRITICAL** customer-facing bugs (Firebase JSON publicly-fetchable + cross-user idempotency leak + loyalty TTC tax double-count overcharge)
@@ -35,15 +36,15 @@ This is the meta-synthesis of an autonomous multi-phase audit-and-heal cycle cov
 
 ---
 
-## 2. Cycle Metrics
+## 2. Cycle Metrics (Updated Wave N 2026-05-24 evening)
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| Total commits since baseline `d601fdd34` | **61** | Empirical `git log --oneline d601fdd34..HEAD` |
-| Fix / feat commits | 42 | Empirical grep `fix\|feat` |
-| Docs / convergence commits | 17 | Empirical grep `docs` |
-| Total sub-agents dispatched (cumulative) | **~175** | Cited Phase L §12 |
-| Total NEW sentinels GREEN | **293** | Cited Phase L §9 (33+57+28+18+18+24+29+86 = 293 ✓) |
+| Total commits since baseline `d601fdd34` | **67** | Empirical `git log --oneline d601fdd34..HEAD` post-Wave-N |
+| Fix / feat / heal commits | 56 | Empirical grep |
+| Docs / convergence commits | 19 | Empirical grep |
+| Total sub-agents dispatched (cumulative incl. Wave M + N) | **~194** | Phase L §12 ~175 + Wave M 13 + Wave N 6 |
+| Total NEW sentinels GREEN (cumulative cases) | **310** | Phases A-L 293 + Wave N 17 = 310 ✓ |
 | Frozen-zone PROPOSAL docs | **94+** | Phase B + Phase L addendums in `proposals/` |
 | CRITICAL bugs caught + healed | **3** | Firebase + cross-user idempotency + loyalty TTC double-count |
 | RED P0 caught + healed | **4** | User.php id===1 + kiosk-token escalation + customer-token weak hash + LanguageService RCE |
@@ -81,6 +82,8 @@ This is the meta-synthesis of an autonomous multi-phase audit-and-heal cycle cov
 | **Phase K + K2** Intersection matrix | 2026-05-24 | 17 (10 K intersection + 7 K2 heal) | 7 (PosCounterCollect 409 + OrderService lockForUpdate + Refund loyalty try/catch + Stripe charge.refunded + stranded CPN drain cron + Z-close audit cross-chain anchor + Refund cash_movement) | 29 | ✅ GREEN |
 | **Phase L + L2 Waves A/B** Pre-cloud security depth | 2026-05-24 | 19 (12 wave-L audit + 7 L2 heal) | 7 (LanguageService P0 RCE + file upload bundle + Printer SSRF + Mail SSRF + STRIPE webhook boot guard + SENANGPAY webhook boot guard + Z-open companion cron) | 86 | ✅ GREEN |
 | **Phase L Wave L-C** (a11y + browser quirks) | 2026-05-24 | DISPATCHED, NOT COMPLETED | — | TaskList #72-81 pending/in_progress | ⚠️ DEFERRED |
+| **Wave M** POS + KDS deep audits | 2026-05-24 | 13 (12 deep + 1 synth) | 1 (M-POS-2 PosCounterCollect keyboard L5.3 inline 12 LOC) + 6 candidate heals identified for Wave N | (Wave M sentinel deltas folded into individual phase tallies) | ✅ GREEN audits, 6 candidates fed to Wave N |
+| **Wave N** M-Heals + Final Sweep | 2026-05-24 | 6 | **4 heals** (N-HEAL-01 KdsV2Grid +N chip + N-HEAL-02 OrderDetails+KDSOrderDetails fields + N-HEAL-03 PosComponent timer/audio cleanup + N-HEAL-04 PosComponent polling self-recursive) | **17** (OrderResourceCompletenessSentinelTest 3 + KdsV2GridOverflowChipSentinel 6 + posKioskPollingCadenceSentinel +8) | ✅ GREEN, 1 pre-existing failure incidentally resolved (kdsBundleFreshnessSentinel via N-HEAL-04 bundle rebuild) |
 
 ---
 
@@ -232,4 +235,79 @@ If all 14 pass to owner satisfaction → V1 LOCAL ready to operate.
 
 ---
 
-*Generated 2026-05-24 by Phase L Meta-Agent (Claude Opus 4.7 1M context) · 12 sub-cycle phase convergence docs synthesized · 61 cumulative commits · 293 NEW sentinels GREEN · 94+ frozen-zone PROPOSAL docs · ~175 cumulative sub-agents · NF525 chain bit-identical preserved + cross-chain anchor + Z-loop complete · frozen-zone diff = 0 LOC across 14 §7 files · 3 CRITICAL + 4 RED P0 + 8 P1 cascade/race healed · V1 LOCAL Le Cayenne PRODUCTION-READY within envelope.*
+## 9. Wave M — POS + KDS Deep Audits (2026-05-24 afternoon)
+
+**13 agents** (12 deep audit + 1 synthesis) dispatched parallel single-message :
+
+POS depth (6 agents) :
+- **M-POS-1** PaymentComponent (FROZEN) — 19 prior PROPOSALs verified + 5 NEW concerns + 5-LOCK consolidation recommendation
+- **M-POS-2** PosCounterCollectModal — surgical 12-LOC L5.3 keyboard heal applied inline (Enter + Escape + autoFocus), 41/41 sentinel GREEN
+- **M-POS-3** V5 split-tranche — 47-cell exhaustive matrix, 85/85 sentinel GREEN, overpay tolerance P3→P1 escalation
+- **M-POS-4** PosComponent + Q10 panel — 3 NEW V1.0.X memory leak candidates (`deliveryAcTimer` + `audioCtx` + `setInterval` cadence) → fed to Wave N as N-HEAL-03 + N-HEAL-04
+- **M-POS-5** Refund + DUPLICATA + REMBOURSEMENT — 24-step cascade traced, all 7 prior heals VERIFIED-LIVE at HEAD
+- **M-POS-6** Cash drawer session — 6-phase lifecycle GREEN code, AMBER operational (ZReportCashEnrichment zero callers V1.0.2)
+
+KDS depth (6 agents) :
+- **M-KDS-1** KdsBoardComponent + Grid — NEW root cause uncovered: hardcoded `height:462px` in KdsOrderCard.vue:295 (not just grid CSS)
+- **M-KDS-2** KdsOrderCard rendering — 6 status states all GREEN, composition_snapshot 100% complete, J2-HEAL-04 reconfirmed
+- **M-KDS-3** Multi-bump race — concurrency tests verify bump-deduplication
+- **M-KDS-4** Historique drawer — F-01: KDSOrderDetailsResource missing `updated_at` → bumped-at empty → fed to Wave N as N-HEAL-02
+- **M-KDS-5** Allergen badges — coverage verification across surfaces
+- **M-KDS-6** Chef-rush empirical — F1: overflow visibility safety net required → fed to Wave N as N-HEAL-01 +N chip
+
+Wave M shipped 1 inline heal (M-POS-2) and authored 6 candidate heals consumed by Wave N.
+
+---
+
+## 10. Wave N — M-Heals + Final Sweep (2026-05-24 evening)
+
+**6 agents** (4 heal implementers + 1 sweep + 1 synthesis) :
+
+**4 heals shipped** :
+- **N-HEAL-03** `5ef37bd94` — PosComponent timer + AudioContext cleanup (M-POS-4 G-001 + G-002 P3). `beforeUnmount` adds `clearTimeout(_deliveryAcTimer)` + `_audioCtx.close()` closing 2 latent memory-leak handles over long 5h+ cashier shifts.
+- **N-HEAL-02** `ef619bfb8` — Expose `updated_at` + `parent_order_serial_no` (M-KDS-4 F-01 P1 + K.5 NEW-1 P2). KDSOrderDetailsResource adds `updated_at` ISO8601 (KdsHistoryDrawer bumped-at `<time>` rendered empty otherwise). OrderDetailsResource adds `parent_order_serial_no` (ReceiptRemboursementMarker trace-back line). NEW OrderResourceCompletenessSentinelTest 3 cases.
+- **N-HEAL-04** `385f77288` — PosComponent polling self-recursive setTimeout (M-POS-4 G-003 P2). `_startKioskPolling` refactored from `setInterval` to self-recursive `setTimeout` so `_kioskPollingInterval()` re-evaluates each tick — cadence downshifts to 5s on Echo silent failure instead of staying stuck at 60s for the life of the timer. Bundle rebuilt incidentally (admin-kds.js + pos-app.js + pos-shell.js).
+- **N-HEAL-01** `5e646503b` — KdsV2Grid +N en attente chip (M-KDS-6 F1 P0 chef-rush). `activeOrders.length > 8` triggers Cayenne-red `#F4501E` pulse pill top-right (role=status, aria-live=polite, prefers-reduced-motion respected). NEW i18n key `label.kds_orders_waiting_more` fr+en+ar. Also fixes the OrderResourceCompletenessSentinel file rename so phpunit.xml Feature suite Test.php suffix actually picks it up.
+
+**Wave N sentinel increment** : **+17 new cases, all PASS** :
+- `tests/Feature/Resources/OrderResourceCompletenessSentinelTest.php` — 3 PASS
+- `tests/js/sentinels/KdsV2GridOverflowChipSentinel.spec.js` — 6 PASS
+- `tests/js/sentinels/posKioskPollingCadenceSentinel.spec.js` — +8 PASS (12 → 20 total)
+
+**Final sweep** (HEAD `5e646503b`) :
+- PHPUnit heal-adjacent (`OrderResourceCompletenessSentinelTest|PosCounterCollect|RefundWithCounterEntry|KdsOrderDetails|OrderDetailsResource`) — **OK 11/11 GREEN**
+- Vitest sentinels (`tests/js/sentinels/`) — 41/42 files PASS, 330/332 tests PASS
+- Frozen-zone diff `d601fdd34..5e646503b` — **0 LOC across all 14 §7 files**
+- NF525 `fiscal:verify-chain --all` — **SWEEP COMPLETE CHAIN OK**
+
+**1 pre-existing failure incidentally resolved by Wave N** : `kdsBundleFreshnessSentinel.spec.js`
+was failing because admin-kds.js mtime (2026-05-23 13:55) predated fr.json mtime (2026-05-23 20:32).
+N-HEAL-04 rebuilt the bundle as a side-effect → freshness back to GREEN.
+
+**2 pre-existing failures persist (NOT introduced by Wave N)** :
+- `tests/js/sentinels/f004KioskCancelReasonSent.spec.js` × 2 cases — regex expects backticked
+  template-literal change-status URL pattern that doesn't match current PaymentComponent +
+  Waiting source. Both Vue files + the sentinel have 0 commits in `d601fdd34..HEAD`.
+- `Tests\Feature\Sentinels\TpeSimulationDepthSentinelTest::reconcile_path_amount_echo_still_fires_under_pos_simulation_hardware`
+  — expected 200, actual 405; route registration drift suspected. Recorded by pre-heal N-SWEEP
+  agent at `N-SWEEP-findings-pre-heals.json`.
+
+All three failures inherited from prior phases, tracked V1.0.X backlog.
+
+**Wave N closes 6 M-Wave findings** : M-KDS-4 F-01 + M-KDS-6 F1 + M-POS-4 G-001 + G-002 + G-003 + K.5 NEW-1.
+
+**Wave N verdict** : ✅ **GREEN** — 4/4 heals shipped, +17 sentinels GREEN, 0 NEW regressions,
+0 frozen-zone diff, NF525 CHAIN OK.
+
+Full Wave N convergence doc : `reports/test-e2e/goal-2026-05-23/phase-n/CONVERGENCE_PHASE_N.md`.
+
+---
+
+*Generated 2026-05-24 by Phase L Meta-Agent + Wave M Deep Agents + Wave N Final Agent
+(Claude Opus 4.7 1M context) · 13 sub-cycle phase convergence docs synthesized
+(Wave Final + A → N) · 67 cumulative commits · 310 NEW sentinels GREEN cited
+(293 prior + 17 Wave N) · 94+ frozen-zone PROPOSAL docs · ~194 cumulative sub-agents ·
+NF525 chain bit-identical preserved + cross-chain anchor + Z-loop complete ·
+frozen-zone diff = 0 LOC across 14 §7 files · 3 CRITICAL + 4 RED P0 + 8 P1 cascade/race healed ·
+Wave N closes 6 M-Wave findings · V1 LOCAL Le Cayenne PRODUCTION-READY within envelope ·
+5 owner-gates remaining (down from 9-12).*
