@@ -1,0 +1,284 @@
+{
+  "agent": "K.7 Z-CLOSE CASCADE DEEP",
+  "phase": "K — Intersection matrix deep audits (K.7 leg)",
+  "mission": "Read-only deep cascade trace of NF525 Z-close across fiscal / admin / archive / sync surfaces. 12 sub-scenarios K.7.1-K.7.12 walked left-to-right with file:line citations on the actual HEAD code (NOT spec recitation). Re-verifies G.6 + F.10 + J2-HEAL-06 + G2-HEAL-06 + I2-HEAL-01 + I.4 + B.5 + S7-MEGA-F1 against current HEAD.",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_sha": "beb1e15eb",
+  "scope": "K.7.1 trigger surface, K.7.2 service cascade, K.7.3 per-branch isolation, K.7.4 cancel/loyalty post-I2-HEAL-01, K.7.5 composition_snapshot post-J2-HEAL-06, K.7.6 empty-day, K.7.7 admin dashboard widget, K.7.8 backup cascade, K.7.9 fiscal archive cron, K.7.10 mid-cascade failure recovery, K.7.11 double-close blocking, K.7.12 sync cascade after close.",
+  "method": "Code-static read-only. Grep + Read tool over app/Services/Fiscal/*, app/Console/{Kernel.php,Commands/Fiscal*,Commands/Backup/*}, app/Http/Controllers/Admin/Fiscal/ZReportController.php, app/Models/ZReport.php, app/Providers/EventServiceProvider.php, app/Services/LoyaltyService.php, app/Listeners/ClawbackLoyaltyPointsOnRefund.php, database/migrations/2026_05_24_040211_add_composition_snapshot_immutability_trigger.php, resources/js/components/admin/dashboard/LastZReportWidget.vue, routes/api.php, scripts/deploy/CRONTAB_PROD.md. Cross-referenced against phase-g/G6-cashdrawer-zclose-findings.json and phase-i/I4-listener-ordering-findings.json. No code modified.",
+
+  "files_examined": [
+    "app/Services/Fiscal/ZReportService.php (HEAD, 727 lines)",
+    "app/Services/Fiscal/ZReportCashEnrichmentService.php (HEAD, 587 lines)",
+    "app/Services/Fiscal/AuditLogService.php (HEAD)",
+    "app/Services/Fiscal/FiscalChainValidator.php (HEAD)",
+    "app/Services/Fiscal/FiscalSequenceService.php (HEAD)",
+    "app/Services/Fiscal/FiscalSealingService.php (HEAD)",
+    "app/Services/Fiscal/XReportService.php (HEAD)",
+    "app/Services/Order/SealedOrderGuard.php (HEAD)",
+    "app/Services/LoyaltyService.php (HEAD)",
+    "app/Listeners/ClawbackLoyaltyPointsOnRefund.php (HEAD)",
+    "app/Events/OrderCanceled.php (HEAD)",
+    "app/Console/Kernel.php (HEAD, 367 lines)",
+    "app/Console/Commands/FiscalCloseAllActiveBranchesCommand.php (HEAD, 164 lines)",
+    "app/Console/Commands/FiscalArchiveCommand.php (HEAD, 363 lines)",
+    "app/Console/Commands/FiscalVerifyChainCommand.php (HEAD)",
+    "app/Console/Commands/Backup/RunDailyBackup.php (HEAD, 441 lines)",
+    "app/Http/Controllers/Admin/Fiscal/ZReportController.php (HEAD, 132 lines)",
+    "app/Models/ZReport.php (HEAD)",
+    "app/Providers/EventServiceProvider.php (HEAD)",
+    "database/migrations/2026_05_24_040211_add_composition_snapshot_immutability_trigger.php",
+    "resources/js/components/admin/dashboard/LastZReportWidget.vue (HEAD)",
+    "routes/api.php (lines 1144-1166 fiscal Z routes)",
+    "scripts/deploy/CRONTAB_PROD.md (453 lines, 18-lane cron map)",
+    "reports/test-e2e/goal-2026-05-23/phase-g/G6-cashdrawer-zclose-findings.json (cross-ref)",
+    "reports/test-e2e/goal-2026-05-23/phase-i/I4-listener-ordering-findings.json (cross-ref)"
+  ],
+
+  "edge_cases_audited": [
+    {
+      "id": "K7.1",
+      "name": "Z-close trigger surface — cashier vs safety-net cron vs auto-open gap",
+      "verdict": "AMBER — UNHEALED AUTO-OPEN GAP",
+      "evidence": "Three sources of close trigger verified at HEAD beb1e15eb: (1) ZReportController::close at app/Http/Controllers/Admin/Fiscal/ZReportController.php:53-61 — POST /api/admin/fiscal/z-report/close, auth:sanctum + pos-manage-fiscal permission, resolveBranchId requires user.branch_id>0 else 422; (2) FiscalCloseAllActiveBranchesCommand 'fiscal:close-all-active-branches' at app/Console/Commands/FiscalCloseAllActiveBranchesCommand.php:55-162 scheduled by Kernel.php:310-317 dailyAt('23:55')->timezone('Europe/Paris')->onOneServer->withoutOverlapping->runInBackground (G2-HEAL-06 commit c98e94459); (3) artisan ad-hoc via tinker or composer-script. NO UI button exists (grep over resources/js for 'fiscal/z-report/close' → 0 hits; LastZReportWidget.vue:96 only GETs '/admin/fiscal/z-report' for display, never POSTs close). HEALED vs G.6-S2 'manual-only path' P1: cron now exists, dailyAt('23:55') < midnight Paris preserving same business_date. CRITICAL UNHEALED GAP: the safety-net only fires close on branches that ALREADY HAVE an OPEN Z (pre-check FiscalCloseAllActiveBranchesCommand.php:100-103 `where status STATUS_OPEN exists` → if none, skipped with z_close.safety_net.skip + reason 'no_open_z'). ZReport::open() has exactly ONE production caller in the codebase (verified grep: ZReportController.php:48), no auto-open at 00:00, no first-order-of-day open, no scheduled open lane in Kernel.php. For a branch where the cashier never manually presses 'Ouvrir Z' (no UI button exists either — same grep), the safety-net cron is effectively a no-op forever. P0 risk surfaces only IF (a) orders accrue without an OPEN Z, then (b) someone manually opens days later, then (c) the close aggregates an arbitrary multi-day window. Today's aggregate window `(opened_at, closed_at]` will silently span the gap with no warning surface beyond `warnOnOrphanedPaidOrders` (fiscal_sequence_no is allocated at order create for kiosk-paid + at close for POS cash, so most rows will be present — the window is just wider than expected).",
+      "severity": "P1",
+      "remediation_recommended": "Either (a) ship a 'Ouvrir Z' Vue button + complementary auto-open scheduler lane (Kernel.php dailyAt('00:00') open if no OPEN Z exists for branch with activity), or (b) auto-open inside FiscalCloseAllActiveBranchesCommand when no OPEN Z + activity in last 24h (re-uses the canonical activeBranchIds helper + warns if window > 36h). Owner-gate per G6-OG-1 still pending."
+    },
+    {
+      "id": "K7.2",
+      "name": "ZReportService.close cascade — pre-flight + aggregate + sign + persist + log",
+      "verdict": "AMBER — AUDIT_LOGS CHAIN ENTRY MISSING",
+      "evidence": "ZReportService::close at app/Services/Fiscal/ZReportService.php:180-286 cascade re-walked at HEAD: (1) Cache::lock('z_report_b{n}', 10s).block(4s) :191-195 — concurrency primary; (2) DB::transaction wraps body :203-268 — atomicity; (3) `STATUS_OPEN`-row fetched with `lockForUpdate` :204-208 — defense vs interleaved close; (4) `verifyChain($branchId)` :201 — Phase 1 chain integrity (Z-only, legacy), CALLED but NOT strict by default on local (config('fiscal.verify_chain_strict')); (5) `assertChainIntegrity` via lazy FiscalChainValidator IS NOT CALLED inside close() — only inside open() at :95. Asymmetry confirmed by re-grep. This was Phase B.5 brief assertion 'asserts BEFORE extending'; verified only HALF holds — open() asserts both chains, close() asserts only Z-chain in non-strict mode; (6) `warnOnOrphanedPaidOrders` :229 — kiosk-paid orders missing fiscal_sequence_no in window are LOGGED as warn (`fiscal.z_report.orphan_paid_in_window`), correctly EXCLUDED from aggregate; (7) `aggregate(branchId, opened_at, closedAt)` :231 — half-open `(from, to]` window, fiscal_sequence_no IS NOT NULL filter, payment_status != UNPAID filter, BranchScope bypassed via `withoutGlobalScope`, `withTrashed()` per P0-FIX-1/2; (8) `prevHash` read from latest STATUS_CLOSED row of branch ordered by sequence_no desc :233-237; (9) `sign(branchId, prevHash, sequence_no, aggregates, closedAt)` :239 → FiscalSealingService::signZReport — HMAC-SHA256 chained via ksort(aggregates) + UTC ISO-8601 closed_at canonicalisation (POS-9-H.2.7 / F-B4 timezone-stable); (10) `forceFill + save` :241-247 persists aggregates + prev_hash + signature + status='closed'; (11) `Log::channel('fiscal')->info('z_report.close', [...])` :253-265 — file-channel structured log. GAP: NO call to `AuditLogService::write(['action' => 'z_report.closed', ...])` inside ZReportService::close. Verified by grep: `grep audit_logs|AuditLogService app/Services/Fiscal/ZReportService.php` returns only a comment at :91 mentioning audit_logs validation, NEVER a write. ZReport model app/Models/ZReport.php has NO observer (verified by grep User::observe pattern only). EventServiceProvider.php has NO ZReport-related event listener. So `audit_logs` HMAC chain does NOT contain a 'z_report.closed' row per Z; the spec K.7.2 line is aspirational. Fiscal integrity remains intact (z_reports has its OWN HMAC chain independent of audit_logs), but cross-chain forensic correlation (e.g. 'which audit_logs cash.session.* events were sealed in Z #N') has no direct anchor.",
+      "severity": "P2",
+      "remediation_recommended": "Inside ZReportService::close, after the forceFill+save at line 247 (still inside DB::transaction so it shares atomicity), add `app(AuditLogService::class)->write(['branch_id' => $branchId, 'action' => 'z_report.closed', 'resource' => 'z_report', 'resource_id' => $open->id, 'payload' => ['sequence_no' => $open->sequence_no, 'total_ttc' => (float) $aggregates['total_ttc'], 'order_count' => (int) $aggregates['order_count'], 'cancel_count' => (int) $aggregates['cancel_count'], 'refund_count' => (int) $aggregates['refund_count'], 'signature_prefix' => substr($signature, 0, 12)]])`. Touches FROZEN file — owner LOCK_FISCAL required. ≤1h effort + 1 new sentinel test."
+    },
+    {
+      "id": "K7.3",
+      "name": "Per-branch independent close — Cache::lock + sequence_no monotonic",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Per-branch isolation guaranteed at three layers: (a) lock key `z_report_b{branchId}` at ZReportService.php:191 — distinct branches acquire distinct Redis locks, never contend; (b) STATUS_OPEN query keyed by `branch_id` at :205, `lockForUpdate` is a row-level pessimistic lock on the open Z of THAT branch only; (c) `sequence_no` allocation at open uses `ZReport::where('branch_id', $branchId)->max('sequence_no') + 1` at :112-114 — strictly per-branch monotonic. CRITICAL CONFIRMATION: NO global Cache::lock across branches, NO global sequence. Branch 1 close in flight does NOT block branch 2 close — exactly the desired multi-tenant behavior. V1 single-branch (Le Cayenne id=1) hits this code with the same primitives, so the V2 multi-branch SaaS uplift requires no refactor in this layer. FiscalCloseAllActiveBranchesCommand.php:88-147 iterates `Kernel::activeBranchIds()` sequentially in PHP — per-branch try/catch envelope :124-146 isolates failure (one branch crash sets $failed++, continues loop, command exits SUCCESS unless any failed). Mirror pattern in `fiscal-chain-monitor-all-branches` at Kernel.php:211-245. WAVE 2d FISCAL-ADV3C-01 helper `Kernel::activeBranchIds()` at :358-365 uses `whereIn('status', [Status::ACTIVE, 1])` — accepts both pre- and post-migration sentinels, no silent skip.",
+      "severity": "INFO"
+    },
+    {
+      "id": "K7.4",
+      "name": "Z-close post I2-HEAL-01 OrderCanceled cascade — cancel & loyalty clawback in Z totals",
+      "verdict": "VERIFIED + SPEC FRAMING CORRECTION",
+      "evidence": "(a) CANCEL counting: ZReportService::aggregate at :337-409 splits into TWO buckets — `$preZCancelCount` :377-379 (orders created+canceled inside the window — CANCELED, REJECTED, RETURNED), and post-Z adjustment :386-402 (orders created BEFORE window, canceled inside window via `created_at <= $from AND updated_at > $from AND updated_at <= $to`). Post-Z cancels apply NEGATIVE delta to totals via `applyOrderToTotals(o, -1, ...)` at :400. Cancel_count = preZ + postZ counts at :404; refund_count = preZ RETURNED + postZ RETURNED at :405. Cancel cascades via OrderCanceled event (app/Events/OrderCanceled.php) → ReleaseStockOnOrderCanceled + ReleaseAvailabilityOnOrderCanceled (EventServiceProvider.php:170-173) — NEITHER touches z_reports or audit_logs. So a cancel reflects in Z via the orders.status flip + the aggregate window logic alone, NOT via any side-channel. VERIFIED correct counting. (b) LOYALTY CLAWBACK: spec K.7.4 phrasing 'Loyalty clawback events count in audit_logs delta correctly' rests on a WRONG ASSUMPTION. Verified: LoyaltyService::clawbackEarnedPoints at app/Services/LoyaltyService.php:141-199 writes (i) `loyalty_transactions` row type='manual_deduct', (ii) `users.loyalty_points` decremented to new_balance, (iii) `Log::info('[Loyalty] Earned points clawed back on refund', ...)`. NO call to AuditLogService::write anywhere in LoyaltyService.php (verified grep). Z aggregation reads ONLY `orders.total`, `orders.total_ht`, `orders.total_tax`, `orders.pos_payment_method` in applyOrderToTotals at :630-638 — NEVER joins loyalty_transactions or audit_logs. Loyalty points are NOT revenue (€ value of points stays customer-owned debt, not booked sales) — they DO NOT enter Z totals. So clawback does not need a 'delta' in audit_logs; the spec phrasing conflates two independent chains. Cancel reflects in Z via the orders.status state machine alone (post-Z adjustment window in aggregate). Loyalty clawback reflects in user-balance only, fully INDEPENDENT of Z aggregate.",
+      "severity": "INFO",
+      "spec_correction": "K.7.4 'Loyalty clawback events count in audit_logs delta correctly' should read 'Loyalty clawback events DO NOT enter Z totals (points are not revenue). They are recorded in loyalty_transactions + Log channel only.' The audit_logs chain has no loyalty entries today; this is by design."
+    },
+    {
+      "id": "K7.5",
+      "name": "Z-close post J2-HEAL-06 composition_snapshot trigger — immutability honored",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Migration 2026_05_24_040211_add_composition_snapshot_immutability_trigger.php verified at HEAD: MySQL trigger `order_items_composition_snapshot_no_update` BEFORE UPDATE SIGNALs SQLSTATE 45000 when NEW.composition_snapshot != OLD.composition_snapshot and both NON-NULL, also SIGNALs when NULL replaces a non-null (lines 86-101). SQLite parity branch at :107-133 uses two triggers (`_no_update` + `_no_null`) with WHEN clauses + RAISE(ABORT). down() refuses execution in production at :139-142. Cross-impact on Z-close cascade: Z aggregate reads composition_snapshot indirectly via taxBreakdownForOrders at :645-668 — `SELECT tax_rate, SUM(tax_amount) FROM order_items WHERE order_id IN (...) AND tax_rate IS NOT NULL GROUP BY tax_rate`. NEVER reads `composition_snapshot` directly. So the trigger HARDENS the upstream immutability that Z aggregation does NOT consume; it protects against a future drift where someone tries to alter snapshots POST-Z (the row stays sealed via SealedOrderGuard app/Services/Order/SealedOrderGuard.php:34-64 + the DB trigger as belt-and-braces). Pre-J2-HEAL-06 the only protection was the Eloquent-layer SealedOrderGuard; now DB-level enforcement covers raw SQL UPDATE bypass + compromised insider scenarios. Z totals match because the snapshot byte-for-byte is now DB-locked once non-null. NF525 fiscal integrity hardened, no functional regression.",
+      "severity": "INFO"
+    },
+    {
+      "id": "K7.6",
+      "name": "Empty-day Z-close — two distinct present-state behaviors",
+      "verdict": "VERIFIED — TWO PATHS, BOTH SAFE",
+      "evidence": "Path A (cashier opened Z at 09:00, zero orders all day): safety-net 23:55 finds STATUS_OPEN exists → bypasses skip pre-check → enters `try { $service->close($branchId); } catch ...` at FiscalCloseAllActiveBranchesCommand.php:124-146 → ZReportService::close inside transaction → aggregate returns `['total_ttc' => 0.00, 'total_ht' => 0.00, 'total_tva' => 0.00, 'total_by_method' => [], 'total_by_tax_rate' => [], 'order_count' => 0, 'cancel_count' => 0, 'refund_count' => 0]` (verified at ZReportService::aggregate :355-358 collection is empty, the foreach loop at :366-369 simply doesn't iterate). Then signature = HMAC(secret, branchId|prevHash|sequence_no|{ksorted-empty-aggregates}|UTC closed_at) — deterministic on the same inputs, signs a 'witness' Z that proves nothing happened that day. Row INSERTed with sequence_no monotonic, prev_hash chained. NF525 chain extends correctly, audit_logs unaffected (per K.7.2 no audit_logs entry written today). Path B (cashier NEVER opened Z): safety-net pre-check at :100-103 `where status STATUS_OPEN exists` → false → skip with `z_close.safety_net.skip` info-log + reason 'no_open_z' → continues to next branch. NO row created in z_reports. NO chain advancement. This is the K.7.1 gap surfacing here: a dark day genuinely produces no Z row at all. CONSEQUENCE: a 7-day vacation closure where cashier never opens Z produces ZERO Z rows during that window. The chain's sequence_no will jump from N (last day pre-vacation) to N+1 (first day post-vacation) — but `verifyChain` at :463-572 uses `$expectedSequenceNo = $previousSequenceNo + 1` at :541, which is satisfied because there was no intermediate row to skip. The dark-day skip is INVISIBLE to verifyChain. Both paths are NF525-safe at the chain layer; only operational visibility differs.",
+      "severity": "INFO",
+      "operational_note": "Empty-day Z row (Path A) creates a signed witness — useful for audit ('we were open, no sales'). Dark-day skip (Path B) leaves no trace beyond fiscal-channel log — auditors must read logs to know branch was inactive."
+    },
+    {
+      "id": "K7.7",
+      "name": "Admin dashboard widget update post-close — LastZReportWidget refresh semantics",
+      "verdict": "VERIFIED — POLL-ON-MOUNT, NO REALTIME REFRESH",
+      "evidence": "LastZReportWidget.vue at resources/js/components/admin/dashboard/LastZReportWidget.vue verified: (a) `mounted()` :62-74 calls `fetchReports()` ONCE on mount (gated by `canFetchReports()` permission check `transactions` URL/access aligned with transactionRoutes.js); (b) `fetchReports()` :91-110 does `axios.get('admin/fiscal/z-report')` → backend ZReportController::index at :22-41 returns top 100 ordered by sequence_no desc, scoped by `resolveBranchIdForRead` (admin sees all, staff sees own branch — Wave T R1 F1 P0 2026-05-20); (c) widget displays first `status === 'closed'` row OR `rows[0]` :102-103. NO Echo subscription, NO setInterval, NO router-aware refresh. Consequence: when safety-net cron closes Z at 23:55, the widget will NOT reflect until next page-load / route-mount. S7-MEGA-F1 finding mentioned 'V1.0.2 backlog FiscalChainStatusWidget' — verified that widget does NOT exist in resources/js at HEAD (no FiscalChainStatusWidget.vue). NF525 critical surface (chain status, last verify timestamp, errors count) is NOT visualized today. Per G.6 + S7 prior agents: widget displays last Z basic info only (sequence_no, status, closed_at, opened_at fallback). The dashboard component DashboardComponent.vue mounts the widget but does not pipe Echo events into it. P2 stale-display risk during long admin sessions left open across midnight (admin will see yesterday's Z until they refresh the page).",
+      "severity": "P2",
+      "remediation_recommended": "(a) Subscribe LastZReportWidget to Echo private-branch.{id} channel + listen for ZReportClosed event (would require creating the event class, see K.7.12); OR (b) Add a setInterval(60s) poll inside mounted/beforeUnmount lifecycle; OR (c) Listen to outbox-driven CatalogChanged/SettingsUpdated and re-fetch as a coarse signal. Owner gate."
+    },
+    {
+      "id": "K7.8",
+      "name": "Backup cascade after Z-close — schedule ordering + restore drill PASS",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Schedule timing verified at Kernel.php: (a) Z-close safety-net 23:55 Paris :310-317 — CLOSES the Z; (b) `foodking-fiscal-archive-daily` 02:00 :253-283 — produces signed ZIP+JSON archive for yesterday (`subDay()->format('Y-m-d')`), runs AFTER the close so the previous business_date sees a closed Z in the archive; (c) `foodking-backup-daily` 03:00 :105-110 — RunDailyBackup.php mysqldump --single-transaction snapshot of full DB INCLUDING z_reports + audit_logs (--routines --triggers --events flags at :246, --set-gtid-purged=OFF at same line). The 4-hour gap between Z-close (23:55) + archive (02:00) + backup (03:00) is INTENTIONAL — `withoutOverlapping` plus distinct lane numbers (#17/#16/#8 in CRONTAB_PROD.md table). Quarterly snapshot rotation at RunDailyBackup.php:330-363 copies daily-YYYY-MM-DD.sql.gz → quarterly-YYYY-QN.sql.gz on Jan/Apr/Jul/Oct day-1, 24-quarter (6-year NF525) retention enforced at :378. RESTORE DRILL: scripts/db/RESTORE_DRILL_2026-05-21.md verified at HEAD — drill verdict PASS, source row counts captured (audit_logs / z_reports / orders / order_items), gunzip + mysql restore + count verify procedure documented. bit-identical attestation per Q14 + G.12. CRITICAL: backup runs INSIDE mysqldump --single-transaction (InnoDB snapshot-consistent, no locks) so even if a manual Z-close happens DURING the 03:00 backup window, the dump sees a consistent snapshot of either pre-close or post-close state (never partial). NF525 6y retention satisfied.",
+      "severity": "INFO"
+    },
+    {
+      "id": "K7.9",
+      "name": "Fiscal archive cron at 02:00 — signed ZIP+JSON, lock TOCTOU mitigation",
+      "verdict": "VERIFIED CITED",
+      "evidence": "FiscalArchiveCommand.php verified at HEAD: signature `foodking:fiscal:archive {branch_id} --from --to --no-verify` at :50-54. Schedule Kernel.php:253-283 iterates `Kernel::activeBranchIds()` (canonical helper accepts status=1 OR Status::ACTIVE per Wave 2d FISCAL-ADV3C-01), passes `--from=yesterday --to=yesterday` so the archive covers J-1 in full (FIX-4 endOfDay normalization at :92-94). Cascade: (a) `Cache::lock('z_report_b{n}', 600s).block(30s)` :126-129 — SAME lock key as ZReportService::open()/close(), eliminates TOCTOU between verifyChain snapshot + streaming export; (b) verifyChain non-strict :142 — fails archive if chain invalid (CRITICAL log + ABORT, no bundle produced — W9.A defense-in-depth); (c) streamToJson lazy cursor :296-321 — bounded memory O(single-row) regardless of window via lazy(CURSOR_CHUNK=500); (d) ZipArchive::CREATE | ZipArchive::OVERWRITE :261, addFile (not addFromString) :270-273; (e) manifest.json with `z_chain_verified` boolean + `z_chain_verify_meta` block (schema_version=3) :247-253. Order query `withTrashed()` at :343 mirrors ZReportService canonical NF525 pattern. Storage disk `config('fiscal.archive_disk', 'local')` :208, path `fiscal/{branchId}/{period}.zip` :213. 6-year retention via `fiscal.archive_retention_years` in manifest :237. EXISTS: per-day archive emitted nightly. GAP per G12-F-03 V1.0.X backlog: monthly+quarterly aggregated archives NOT yet emitted (only per-day exists). Per RETURN field of K.7.9 brief: matches present-state.",
+      "severity": "INFO"
+    },
+    {
+      "id": "K7.10",
+      "name": "Failure recovery — Z-close mid-cascade error path",
+      "verdict": "VERIFIED CITED — DB::transaction atomicity holds",
+      "evidence": "ZReportService::close at :180-286 wrapped in DB::transaction at :203-268 — closure body atomicity guaranteed. Failure modes audited: (a) verifyChain at :201 throws if chain broken AND strict mode (Config::get('fiscal.verify_chain_strict') default=production-true): RuntimeException at :562, NEVER enters DB::transaction → no row mutated. (b) lockForUpdate fails (rare — DB deadlock): QueryException bubbles up → ROLLBACK → outer try/catch at :275-285 logs 'failure' on stack channel, rethrows. (c) `assertNoPendingClose` at :147-174 — disabled until STATUS_CLOSING constant is defined (verified ZReport.php:15-16 only STATUS_OPEN + STATUS_CLOSED defined). Currently a NO-OP. (d) Aggregate query crashes (e.g. corrupt order row): exception bubbles up inside DB::transaction → ROLLBACK → STATUS_OPEN row STAYS OPEN, sequence_no NOT advanced. Retry-safe. (e) sign() failure (FiscalSealingService secret rotation mid-call): same path, ROLLBACK. (f) forceFill+save fails (DB constraint): ROLLBACK. (g) Log::channel('fiscal')->info :253 succeeds after save — non-critical; even if log fails (try/catch at outer-finally :281-284), the save commit already happened. CRITICAL: there is NO `audit_logs` write inside the transaction (K.7.2 gap), so the 'audit_logs guard refuses appending without valid prev_hash' phrase from the brief is moot — no append happens at Z-close in current code. AuditLogService::write IS invoked elsewhere (cash drawer ops, item availability, etc.) and DOES refuse via UNIQUE(branch_id, prev_hash) violations + retry-once pattern at :60-65 of audit-chain idempotent recovery. If a hypothetical future K.7.2 patch wires a z_report.closed audit row, it would inherit that defense-in-depth.",
+      "severity": "INFO"
+    },
+    {
+      "id": "K7.11",
+      "name": "Double-close blocked — idempotent via STATUS_OPEN pre-check",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Three layers of double-close defense verified at HEAD: (a) FiscalCloseAllActiveBranchesCommand.php:100-113 — pre-check `where status STATUS_OPEN exists` BEFORE calling service.close; if no OPEN Z (because cashier already closed earlier), skips with info-log 'z_close.safety_net.skip' + reason 'no_open_z'. NO error pager, NO exception. (b) ZReportService::close :204-212 — inside DB::transaction with `lockForUpdate`: if no STATUS_OPEN row found, throws RuntimeException 'no open Z report to close for branch {N}'. So a manual + cron race where BOTH find OPEN, BOTH acquire Cache::lock sequentially (Cache::lock is exclusive per key) → first wins, second enters transaction with STATUS_OPEN row absent → throws. (c) Cache::lock('z_report_b{n}', 10s).block(4s) :191-195 — outermost serialization: even if pre-check passes for both, only one acquires the lock; the other blocks 4s, then RuntimeException 'cannot acquire'. Pattern is idempotent in the cashier+cron-co-fire scenario by design. F.10 verified 13/13 invariants including double-close blocked. NO regression at HEAD. CRON misfire scenarios (double-trigger) safe: `onOneServer + withoutOverlapping` at Kernel.php:315-316 + the three layers above.",
+      "severity": "INFO"
+    },
+    {
+      "id": "K7.12",
+      "name": "Sync cascade after Z-close — Echo broadcast & cross-surface notification",
+      "verdict": "AMBER — NO ZReportClosed EVENT, NO BROADCAST",
+      "evidence": "Verified exhaustively: (a) `ZReportClosed` event class DOES NOT EXIST in app/Events/ (grep app/Events/ → list shows OrderCanceled, OrderCreated, OrderPaidAtCounter, OrderPaymentStatusChanged, OrderStatusChanged, OrderTableChanged, RefundCreated, BranchStatusChanged, CatalogChanged, CategoryCreated/Updated/Deleted, ItemCreated/Updated/Deleted, ItemAvailabilityChanged, ItemExtraAvailabilityChanged, ItemVariationAvailabilityChanged, IngredientAvailabilityChanged, ComposerProfileChanged, CouponChanged, StockLevelChanged, SettingsUpdated, OutboxBroadcastSwallowedEvent, Send* notifications. NO ZReport*). Confirmed by I.4 finding I4-listener-ordering: ZReport produces no events. (b) ZReportCashEnrichmentService.php:286-290 docblock acknowledges 'no ZReportClosed event in the codebase yet, so no listener is wired'. (c) EventServiceProvider.php has NO ZReport entry in `$listen` array. (d) ZReportService::close only writes Log::channel('fiscal')->info('z_report.close', ...) at :253. (e) FiscalCloseAllActiveBranchesCommand writes Log::channel('fiscal')->info('z_close.safety_net.success', ...) at :128-133 — file channel, NOT a domain event. CONSEQUENCE: POS / KDS / Kiosk / Mobile / Web do NOT receive any realtime signal that Z was closed. Cross-surface notification of close is invisible until next axios poll (LastZReportWidget mounts page-reload — see K.7.7). For V1 single-cashier Le Cayenne single-branch this is operationally acceptable (cashier IS the trigger so they know already), but multi-cashier V2 SaaS will need this. CRITICAL FOR K.7.7: even if widget refresh existed, there is no event to subscribe to. ZReportCashEnrichmentService::persistForClosedReport at :235-267 is the ONE place a 'post-close enrichment' would naturally hook, but verified by grep: ZERO production callers (only mentioned in proposals/, reports/, and itself). The cash enrichment is dead-code in production — z_reports.cash_opening_amount + cash_closing_amount + cash_variance + cash_movements_count remain NULL today, and the dashboard widget never displays them.",
+      "severity": "P2",
+      "remediation_recommended": "(a) Create app/Events/ZReportClosed event class (with branch_id, z_report_id, sequence_no, signature_prefix); (b) Dispatch from ZReportService::close after save (still inside transaction via DispatchableAfterCommit); (c) Wire ZReportCashEnrichmentService::persistForClosedReport as a listener on ZReportClosed (closes the dead-code gap K.7.12 surfaces); (d) Optionally broadcast on private-branch.{id} so LastZReportWidget can refresh. Touches FROZEN ZReportService — owner LOCK_FISCAL required. ≤4h effort + sentinel + visual test."
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "K7-FIND-1",
+      "severity": "P1",
+      "category": "operational completeness",
+      "title": "Z-close safety-net cron only HALF-closes the operational gap — auto-open is missing",
+      "evidence_path": "app/Console/Commands/FiscalCloseAllActiveBranchesCommand.php:100-113 (STATUS_OPEN pre-check skips if no open Z) + grep ZReport::open over app/ shows only 1 production caller (ZReportController.php:48) + zero scheduled open lane in Kernel.php",
+      "impact": "If a cashier forgets to manually 'Ouvrir Z' (and there is no UI button to do so), the safety-net cron skips every night with 'no_open_z'. Orders without an OPEN Z still get fiscal_sequence_no allocated at create (kiosk-paid) but accumulate in a phantom non-window. When someone eventually opens AND closes manually days later, the aggregate window covers a wide multi-day span. Chain integrity holds, but operational expectation of 'one Z per day' is broken.",
+      "recommendation": "Ship 'Ouvrir Z' Vue button PLUS auto-open cron at Kernel.php dailyAt('00:01') Europe/Paris that opens a fresh Z if (no STATUS_OPEN exists for branch AND activity in last 24h via orders.created_at > yesterday). Pattern mirrors FiscalCloseAllActiveBranchesCommand. Effort ≤3h."
+    },
+    {
+      "id": "K7-FIND-2",
+      "severity": "P2",
+      "category": "audit chain forensic correlation",
+      "title": "Z-close does NOT write an audit_logs HMAC chain entry",
+      "evidence_path": "app/Services/Fiscal/ZReportService.php:253-265 only writes Log::channel('fiscal') file-channel info, NO AuditLogService::write call. ZReport model has no observer. EventServiceProvider has no ZReport listener.",
+      "impact": "z_reports has its OWN HMAC chain (chain integrity GREEN), but cross-chain forensic correlation between 'which cash.session.* / order.refunded / item.unavailable rows were sealed in Z #N' is missing. Auditor querying audit_logs cannot find a 'z_report.closed' anchor row. Spec K.7.2 phrasing 'audit_logs entry z_report.closed' was aspirational, not present-state.",
+      "recommendation": "Add AuditLogService::write call inside ZReportService::close DB::transaction after the forceFill+save (still inside frozen file; owner LOCK_FISCAL required). Payload: branch_id, action='z_report.closed', resource='z_report', resource_id=z.id, payload={sequence_no, total_ttc, order_count, cancel_count, refund_count, signature_prefix}. ≤1h + 1 sentinel test."
+    },
+    {
+      "id": "K7-FIND-3",
+      "severity": "P2",
+      "category": "dead-code in production",
+      "title": "ZReportCashEnrichmentService::persistForClosedReport has ZERO production callers",
+      "evidence_path": "grep persistForClosedReport across app/ + routes/ + jobs/ + observers/ + listeners/ + EventServiceProvider returns ONLY the service definition itself + 2 docblock references + test files + proposals. NO production code invokes it.",
+      "impact": "z_reports.cash_opening_amount + cash_closing_amount + cash_variance + cash_movements_count are NEVER populated in production today. The decorator pattern works but is never invoked. Owner / G.6-S3 assumption that cash enrichment populates these columns is wrong at HEAD. LastZReportWidget would have nothing to display even if it queried them.",
+      "recommendation": "Wire persistForClosedReport as a listener on a new ZReportClosed event (K.7-FIND-5), OR call it synchronously at end of ZReportService::close (frozen — owner LOCK required). The simpler V1 patch is end-of-close synchronous call inside the transaction. ≤2h."
+    },
+    {
+      "id": "K7-FIND-4",
+      "severity": "P2",
+      "category": "admin UI staleness",
+      "title": "LastZReportWidget polls once on mount — no realtime refresh after Z-close",
+      "evidence_path": "resources/js/components/admin/dashboard/LastZReportWidget.vue:62-74 mounted() → fetchReports() called ONCE. No Echo subscribe, no setInterval, no router refresh.",
+      "impact": "Admin sessions left open across midnight (or simply across the safety-net cron firing) display yesterday's Z status. The widget shows stale data with no visible indication. S7-MEGA-F1 already flagged FiscalChainStatusWidget as V1.0.2 backlog; this is the lesser sibling that affects an existing surface.",
+      "recommendation": "Add 60s setInterval poll in mounted() + clearInterval in beforeUnmount(). OR subscribe to Echo when K.7-FIND-5 ZReportClosed event lands. ≤1h."
+    },
+    {
+      "id": "K7-FIND-5",
+      "severity": "P2",
+      "category": "cross-surface sync",
+      "title": "No ZReportClosed domain event — POS / KDS / Kiosk / Mobile / Web receive no realtime signal of Z-close",
+      "evidence_path": "grep app/Events/ZReportClosed* + grep ZReportClosed across app/ returns ONLY the ZReportCashEnrichmentService docblock at line 288 explicitly acknowledging absence.",
+      "impact": "No surface knows in realtime that a Z was closed. Operationally acceptable for V1 single-cashier (cashier IS the trigger), but blocks K.7-FIND-3 wiring (cash enrichment listener) and K.7-FIND-4 widget realtime. Multi-cashier V2 SaaS critical gap.",
+      "recommendation": "Create app/Events/ZReportClosed with (branch_id, z_report_id, sequence_no, signature_prefix). Dispatch from ZReportService::close after save via DispatchableAfterCommit trait. Wire 2 listeners: (1) persistForClosedReport (K.7-FIND-3), (2) PersistZReportClosedToOutbox for broadcast. ≤4h."
+    },
+    {
+      "id": "K7-FIND-6",
+      "severity": "INFO",
+      "category": "spec accuracy correction",
+      "title": "K.7.4 spec phrasing 'Loyalty clawback events count in audit_logs delta correctly' rests on wrong assumption",
+      "evidence_path": "app/Services/LoyaltyService.php:141-199 (clawbackEarnedPoints writes loyalty_transactions + users + Log, NEVER audit_logs) + app/Services/Fiscal/ZReportService.php:630-638 (applyOrderToTotals reads orders.total/total_ht/total_tax/pos_payment_method only, never loyalty_transactions or audit_logs)",
+      "impact": "Documentation drift. Loyalty points are not revenue; clawback does not affect Z totals. Brief should clarify: 'cancellation reflects in Z via the orders.status state machine alone (post-Z adjustment window in aggregate at :386-402). Loyalty clawback reflects in user-balance and loyalty_transactions ledger only.'",
+      "recommendation": "Update GOAL brief language. No code change."
+    }
+  ],
+
+  "frozen_zone_compliance": {
+    "ZReportService_php": "READ-ONLY",
+    "AuditLogService_php": "READ-ONLY",
+    "FiscalSequenceService_php": "READ-ONLY",
+    "FiscalChainValidator_php": "READ-ONLY",
+    "FiscalSealingService_php": "READ-ONLY",
+    "z_reports_migrations": "READ-ONLY",
+    "audit_logs_migrations": "READ-ONLY",
+    "PaymentComponent_vue": "NOT TOUCHED",
+    "PosV5TrancheRow_vue": "NOT TOUCHED",
+    "pos_wizard_js": "NOT TOUCHED",
+    "frozen_zone_diff_lines": 0
+  },
+
+  "nf525_chain_attestation": {
+    "z_reports_chain_data_layer": "GREEN",
+    "z_reports_chain_integrity_primitives_verified": [
+      "Cache::lock('z_report_b{n}', 10s).block(4s) at ZReportService::open :79 + ZReportService::close :191",
+      "DB::transaction wrapping body atomicity at :100, :203",
+      "lockForUpdate on STATUS_OPEN row at :207",
+      "verifyChain on open + close (Z-chain only, non-strict default local) at :88, :201",
+      "assertChainIntegrity via FiscalChainValidator at open only at :95 (not called at close — asymmetric but defensible since prev_hash is read just before sign)",
+      "HMAC SHA-256 chained prev_hash -> signature via FiscalSealingService::signZReport :627",
+      "ksort($aggregates) for deterministic payload at :626",
+      "UTC ISO-8601 canonicalisation of closed_at (POS-9-H.2.7 / F-B4 timezone-stable)",
+      "BEFORE DELETE trigger on z_reports (per migrations 2026_05_09_160000), DELETE GRANT REVOKE at deploy (CVP0-1)",
+      "withTrashed() + withoutGlobalScope(BranchScope) for NF525 fiscal continuity (P0-FIX-1/2)",
+      "half-open (from, to] window strict>$from, inclusive<=$to (POS-9-H.2.6 / F-B3)",
+      "post-Z adjustment window for cancels/refunds discovered after close (M-08 policy)",
+      "fiscal_sequence_no IS NOT NULL filter excludes orphans (POS-9-H.2.4 / F-C4) + warnOnOrphanedPaidOrders observability at :586-616"
+    ],
+    "z_reports_chain_operational_layer": "AMBER",
+    "operational_layer_gaps": [
+      "Auto-open missing (K7-FIND-1 P1) — safety-net cron half-closes the loop",
+      "audit_logs cross-chain anchor entry missing (K7-FIND-2 P2)",
+      "Cash enrichment dead in production (K7-FIND-3 P2)",
+      "Widget refresh stale (K7-FIND-4 P2)",
+      "No ZReportClosed event (K7-FIND-5 P2)"
+    ],
+    "audit_logs_chain_data_layer": "GREEN (independent of Z-close — append-only HMAC chain validated by I.1 + I.4 + Phase B prior agents; NF525 chain bit-identical per CONVERGENCE 2026-05-21 audit_logs 62→62)",
+    "verdict_summary": "NF525 fiscal integrity at the chain-data layer is GREEN. Operational completeness is AMBER (5 P1/P2 findings). V1 LOCAL Le Cayenne single-branch single-cashier remains shippable (cashier presence makes the auto-open + widget gaps tolerable); V2 SaaS multi-branch multi-cashier requires the 5 findings closed."
+  },
+
+  "safety_net_cron_status": {
+    "lane_name": "foodking-z-close-safety-net",
+    "kernel_php_lines": "310-317",
+    "schedule": "dailyAt('23:55')->timezone('Europe/Paris')->onOneServer->withoutOverlapping->runInBackground",
+    "command": "fiscal:close-all-active-branches",
+    "command_class": "app/Console/Commands/FiscalCloseAllActiveBranchesCommand.php",
+    "lines_of_code": 164,
+    "added_by_commit": "c98e94459 (G2-HEAL-06 2026-05-23)",
+    "double_close_safe": true,
+    "double_close_defense_layers": ["pre-check STATUS_OPEN exists at FiscalCloseAllActiveBranchesCommand.php:100-103", "ZReportService::close raises if no STATUS_OPEN at :211", "Cache::lock z_report_b{n} mutual exclusion at :191-195"],
+    "per_branch_isolation": "VERIFIED (try/catch envelope at :124-146 + Kernel::activeBranchIds() canonical helper accepts status 1 OR Status::ACTIVE)",
+    "dry_run_mode": "available via --dry-run flag at :115-122",
+    "single_branch_override": "available via --branch=N flag at :70-82",
+    "exit_code_policy": "FAILURE if any branch failed (paginates ops); SUCCESS if all closed/skipped",
+    "operational_completeness_caveat": "Only HALF-closes the operational loop (P1 K7-FIND-1) — does not auto-open"
+  },
+
+  "verdict": "AMBER",
+  "verdict_rationale": "NF525 fiscal chain integrity at the data layer is GREEN — Cache::lock + DB::transaction + lockForUpdate + verifyChain + HMAC SHA-256 chained signature + UTC canonicalisation + BEFORE DELETE trigger + REVOKE on GRANT all in place. Operational layer is AMBER — 1 P1 (auto-open missing) + 4 P2 (audit_logs anchor missing / cash enrichment dead / widget stale / no ZReportClosed event) + 1 INFO spec correction. V1 LOCAL single-branch single-cashier shippable; V2 SaaS multi-branch multi-cashier requires the 5 findings closed. Frozen-zone diff = 0 (read-only audit).",
+
+  "factual_corrections_to_brief": [
+    {
+      "brief_line": "K.7.2 'audit_logs entry z_report.closed'",
+      "actual_state": "Not present at HEAD. ZReportService::close writes Log::channel('fiscal')->info('z_report.close') file-channel only. NO audit_logs HMAC chain entry. ZReport model has no observer. EventServiceProvider has no ZReport listener.",
+      "finding_id": "K7-FIND-2"
+    },
+    {
+      "brief_line": "K.7.2 'assertChainIntegrity called BEFORE extending (refuses extending broken chain per Phase B.5 verified)'",
+      "actual_state": "assertChainIntegrity is called inside ZReportService::open() at line 95 (verified) — NOT inside close(). Close() only calls verifyChain (Z-chain only, non-strict on non-production) at line 201. The Phase B.5 invariant holds at open but is ASYMMETRIC at close.",
+      "finding_id": "K7.2 evidence"
+    },
+    {
+      "brief_line": "K.7.4 'Loyalty clawback events count in audit_logs delta correctly'",
+      "actual_state": "Loyalty clawback writes loyalty_transactions + users + Log channel, NEVER audit_logs. Z aggregation never reads loyalty_transactions or audit_logs. Loyalty is not revenue; clawback does not enter Z totals at all. Brief framing rests on wrong assumption.",
+      "finding_id": "K7-FIND-6"
+    },
+    {
+      "brief_line": "K.7.6 'skips per safety-net cron with dry-run option G2-HEAL-06: scanned=5 dark/skipped'",
+      "actual_state": "Two distinct empty-day behaviors: Path A (cashier opened Z, zero orders) → safety-net CLOSES with all-zero aggregates + valid signature + chain extends. Path B (cashier never opened) → safety-net SKIPS with 'no_open_z'. Only Path B produces no row. K.7.6 is correct that dry-run reports skip but the present-state has TWO paths to document.",
+      "finding_id": "K7.6 evidence"
+    },
+    {
+      "brief_line": "K.7.7 'widget may not show chain status (S7-MEGA-F1 V1.0.2 backlog FiscalChainStatusWidget)'",
+      "actual_state": "Verified — FiscalChainStatusWidget does NOT exist at HEAD (grep resources/js). LastZReportWidget displays only sequence_no + status + closed_at. Polls once on mount, no realtime refresh.",
+      "finding_id": "K7-FIND-4"
+    },
+    {
+      "brief_line": "K.7.12 'ZReportClosed event mentioned in spec but doesn't exist per I.4 finding'",
+      "actual_state": "VERIFIED CORRECT — I.4 finding stands. No ZReportClosed event, no listener, no broadcast. Only Log::channel('fiscal') file-channel entry. Cross-surface notification of close is invisible until next poll/page-load.",
+      "finding_id": "K7-FIND-5"
+    }
+  ]
+}
