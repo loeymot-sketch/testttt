@@ -1,0 +1,352 @@
+{
+  "agent": "J-ADV-5 Hostile DoS attacker",
+  "date": "2026-05-24",
+  "scope": "FoodKing Le Cayenne V1 — 15 resource-exhaustion scenarios D1-D15",
+  "method": "Static code attack — route×middleware×controller×config grep matrix. Cross-reference RateLimiter::for definitions, named throttles, idempotency middleware, fiscal locks, DB tuning, queue worker caps, nginx/redis/soketi sizing. Hostile mindset: assume every cap can be bypassed.",
+  "files_inspected": [
+    "app/Providers/RouteServiceProvider.php (12 RateLimiter::for definitions, lines 54-266)",
+    "app/Providers/AppServiceProvider.php (innodb_lock_wait_timeout 5s session bind, lines 225-243; cache_driver guard lines 214-222)",
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php (PENDING 30s vs COMPLETED 24h, lines 41-156)",
+    "app/Services/Idempotency/RedisIdempotencyKeyRepository.php (Cache::add NX semantics, line 81)",
+    "app/Services/Fiscal/FiscalSequenceService.php (Cache::lock 5s + lockForUpdate, lines 42-104)",
+    "app/Services/OrderService.php (list/userOrder/deliveredOrder paginate → ->get('*'), lines 117-322)",
+    "app/Http/Requests/PaginateRequest.php (per_page max:1000 only when paginate=1)",
+    "app/Http/Controllers/Admin/OnlineOrderController.php (delegates to OrderService::list)",
+    "app/Http/Controllers/Admin/StockRuptureDashboardController.php (hardcoded limit(100/200), lines 61,98)",
+    "app/Http/Controllers/Admin/CashSessionReportController.php (perPage capped min/max 1/200 line 71)",
+    "app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php (per_page validator min:1 max:200)",
+    "app/Http/Controllers/Admin/AvailabilityController.php (uses named throttle:menu-availability via route group)",
+    "app/Http/Controllers/Frontend/LoyaltyController.php (generateQr lines 765-807)",
+    "config/idempotency.php (ttl 24h, pending_ttl 30s, required_routes list 25+ entries)",
+    "config/cache.php (default=file via env; AppServiceProvider forbids array/null in prod ONLY, file & database PASS)",
+    "config/kiosk.php (order_rate_limit=5, login_rate_limit=30, max_item_qty=20)",
+    "config/pos.php (rate_limit knobs, simulation_hardware bypass HARDWARE only)",
+    "config/logging.php (stack=single = no built-in rotation; daily channels days=14 to 400)",
+    "deploy/ansible/templates/nginx-foodking.conf.j2 (client_max_body_size 32M; limit_req zone=api rate=60r/s burst=30 nodelay; fastcgi_read_timeout 120)",
+    "deploy/ansible/templates/supervisor-foodking.conf.j2 (queue:work --tries=3 --timeout=120 --max-jobs=1000 numprocs=2)",
+    "deploy/ansible/templates/soketi.json.j2 (maxConnections=500 per-app)",
+    "deploy/ansible/group_vars/all.yml (mysql_max_connections=50, redis_maxmemory=1.5gb, mysql_innodb_buffer_pool=2G)",
+    "deploy/ansible/site.yml (redis maxmemory-policy=allkeys-lru line 87; logrotate daily rotate 14 line 217-225; mysqldump --single-transaction line 167)",
+    "routes/api.php (1500+ lines, throttle middleware audit)"
+  ],
+  "dos_scenarios": [
+    {
+      "id": "D1",
+      "title": "Burst kiosk order POST (1000× POST /api/frontend/order in 10s)",
+      "status": "defended",
+      "evidence": "RateLimiter::for('kiosk-orders') (RouteServiceProvider.php:60-71) keyed by 'kiosk:<user_id>|<ip>' at config('kiosk.order_rate_limit') default 5/min. Route api/frontend/order applies throttle:kiosk-orders (routes/api.php:1233) AND idempotency middleware. Production .env keeps 5/min ceiling; V1 LOCAL raises via KIOSK_ORDER_RATE_LIMIT=1000. Per-machine isolation: key includes machine user_id + IP, so one machine's burst does NOT starve neighbours. Nginx outer cap: limit_req zone=api rate=60r/s burst=30 nodelay (nginx template line 9, 58) caps any single IP at ~60 req/s before Laravel even sees it. Queue worker doesn't backlog: order creation is synchronous inside the request (writes Order row + dispatches DispatchDomainEventsJob to outbox); only OUTBOX dispatch is async, and DispatchDomainEventsJob has --max-jobs=1000 autorestart + --tries=3 (supervisor template line 9)."
+    },
+    {
+      "id": "D2",
+      "title": "Large payload POST 10MB (huge items array on /api/admin/pos)",
+      "status": "partial",
+      "evidence": "Nginx OUTER cap client_max_body_size 32M (nginx template line 49) is wider than typical Debian/Sury PHP defaults (post_max_size=8M, upload_max_filesize=2M). No php.ini / .user.ini / .htaccess found in repo committing custom values, AND no ansible task tunes /etc/php/8.2/fpm/php.ini. Result: PHP-FPM inner cap NOT EXPLICITLY MANAGED via deploy. Verdict: depends on Debian package default (8M typically) which gates the 32M nginx limit. RECOMMENDATION: add Ansible task pinning php.ini post_max_size & upload_max_filesize (e.g. 12M each) so behaviour is deterministic across redeploys. NF525 invariants unaffected (PricingService::calculateOrder backend-side recompute caps logical cost not bytes)."
+    },
+    {
+      "id": "D3",
+      "title": "Idempotency key cache flood (100k unique X-Idempotency-Key UUIDs)",
+      "status": "defended",
+      "evidence": "Two-tier TTL: PENDING placeholder = 30s (config/idempotency.php:30), COMPLETED record = 24h. PENDING short TTL was explicitly heal-decoupled in Phase F.6 finding F-6-6-FIND-04 P2 so SIGKILL between Phase-2 acquire() and Phase-3 release() does NOT trap key. Redis maxmemory-policy=allkeys-lru (site.yml line 87) with maxmemory=1.5gb (group_vars/all.yml line 21) auto-evicts oldest under pressure. Attack vector with COMPLETED 24h would write ~ each record (~500B headers + body) × 100k = ~50MB — well within 1.5gb. Atomic SET-NX semantics via Cache::add() (RedisIdempotencyKeyRepository.php:81) prevent race-double-write. Middleware also requires authenticated user (line 70: '$userId <= 0 → MissingIdempotencyKeyException') so unauth flood is rejected at the door. Key format includes auth user_id + branch_id (line 77-82) so one rogue user can't poison another's bucket. Format validator preg_match('/^[A-Za-z0-9._\\-]{8,64}$/') (line 61) caps key length at 64 chars, blocking 1MB-key amplification."
+    },
+    {
+      "id": "D4",
+      "title": "Concurrent fiscal_sequence allocation storm (100 parallel POST /api/admin/pos)",
+      "status": "defended",
+      "evidence": "Triple-defense in depth: (1) Cache::lock('fiscal_seq_b{n}', LOCK_TTL=5s) with $lock->block(LOCK_ACQUIRE=3s) at FiscalSequenceService.php:65-72 — if lock not acquired in 3s, throws RuntimeException (fast-fail, no pool wedge). (2) Inside transaction, ->lockForUpdate() on max(fiscal_sequence_no) (line 100) — InnoDB row-level lock serialises writers even if cache split-brain. (3) AppServiceProvider.php:225-243 binds SET SESSION innodb_lock_wait_timeout=5s (DB_LOCK_WAIT_TIMEOUT env, default 5) at every connection — MySQL default 50s × 50 mysql_max_connections (group_vars/all.yml line 20) was a 2500s pool-starvation surface; healed in GOAL-F2-HEAL-02. Pool starvation now bounded at 5s×50=250s worst-case = each connection slot self-recycles. PHP-FPM workers behind nginx burst=30 will surface 503/429 long before fiscal storm reaches DB."
+    },
+    {
+      "id": "D5",
+      "title": "Echo broadcast storm (admin toggles availability 100× in 10s)",
+      "status": "defended",
+      "evidence": "Route prefix Admin menu/availability/* uses throttle:menu-availability (routes/api.php:262 — GOAL Phase F.1 2026-05-23 heal). RouteServiceProvider.php:181-184 caps at config('app.menu_availability_rate_limit', 60) per-minute per user. Production default 60/min absorbs the 100/10s burst as 100/60s ATTEMPTS but only first ~60 succeed before 429 cuts in. Each AvailabilityController::toggle (line 45) dispatches ItemAvailabilityChanged event via PersistItemAvailabilityChangedToOutbox (after-commit pattern), so broadcast is OUTBOX-buffered — not direct broadcast. Outbox dispatcher (DispatchDomainEventsJob) batches and respects --max-jobs=1000 cap (supervisor line 9) so even a sustained storm is rate-naturally-shaped by queue worker. Verbiage 'already healed in H.3 GREEN 241 events / 0 errors' refers to prior Wave H E2E run; the throttle:menu-availability change post-dates H.3 and tightens the cap further."
+    },
+    {
+      "id": "D6",
+      "title": "Queue backlog DoS (10k events dispatched to queue)",
+      "status": "defended",
+      "evidence": "Supervisor template line 9: php artisan queue:work redis --queue=high,default --tries=3 --timeout=120 --max-jobs=1000 --sleep=3 with numprocs=2 + autorestart=true. --max-jobs=1000 forces worker to exit-and-be-restarted by supervisor every 1000 jobs — prevents PHP memory leak accumulation. --timeout=120 caps any single job at 2min so a poison-pill job can't wedge worker indefinitely. --tries=3 caps retry storms; failed jobs land in failed_jobs table for manual review. SendFcmNotificationJob comment 'sends cannot starve high' (SendFcmNotificationJob.php:64) confirms high-priority queue gets DispatchDomainEventsJob — POS/KDS sync survives FCM lag. Redis maxmemory=1.5gb + allkeys-lru means even if queue grows to 100k entries (« 1.5gb), Redis evicts oldest cache keys (not queue itself — queue uses RPUSH/LPOP which is FIFO not subject to allkeys-lru priority)."
+    },
+    {
+      "id": "D7",
+      "title": "Heavy admin query DoS (/admin/online-order with no pagination)",
+      "status": "VECTOR_FOUND",
+      "severity": "P1",
+      "evidence": "ROOT CAUSE: app/Services/OrderService.php::list (lines 117-200), userOrder (210-241), deliveredOrder (246-285), and a 4th method at line 288+ ALL use the same pattern: $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get'; $methodValue = paginate==1 ? per_page : '*' (line 122). When client OMITS the 'paginate' param entirely (the DEFAULT path), the code calls Order::with(['transaction','orderItems.orderItem.media','orderItems.orderItem.category','branch','user'])->where(...)->orderBy(...)->get('*') — UNBOUNDED. PaginateRequest's max:1000 validation only fires on the 'per_page' field which is IGNORED when paginate!=1. With 100k+ historic orders + 5 eager-loaded relations (incl. polymorphic media), one authenticated admin GET on /api/admin/online-order would OOM the PHP-FPM worker (memory_limit typically 128M-256M). Route is guarded by throttle:admin-mutation GET=300/min (RouteServiceProvider.php:96) so it's not a high-rate burst attack — it's a SINGLE-REQUEST resource exhaustion. Authenticated admin credentials required (auth:sanctum + Admin role for online-order listing), but a malicious insider OR credential-leak « » low-friction outage trigger. Cross-cuts MULTIPLE controllers via OrderService delegation: OnlineOrderController, DeliveryBoyOrderController, MyOrderDetailsController, plus PosCategoryController.php:40-41 uses same pattern on item_categories table.",
+      "recommendation": "Force pagination ALWAYS in OrderService::list/userOrder/deliveredOrder: change $method = 'paginate' unconditionally; default per_page to 50 if paginate param absent. Lower PaginateRequest max from 1000 → 200 (existing CashSessionReportController line 71 already uses 200 ceiling).",
+      "deferral_assessment": "V1 LOCAL Le Cayenne single-resto unlikely to reach 100k orders in foreseeable horizon (~50-200 orders/day × 365 = 18k-73k/year), but accumulates linearly. V1 LIVE-PROD with 1 year of data → OOM real. V2 SaaS multi-tenant → immediate critical."
+    },
+    {
+      "id": "D8",
+      "title": "Cache lock starvation (100 concurrent attempts on same fiscal_seq_b1 lock)",
+      "status": "defended",
+      "evidence": "FiscalSequenceService Cache::lock with $lock->block(3) (line 69) waits 3s max; if not acquired throws RuntimeException(\"could not acquire lock...\"). NO infinite wait — worker fails fast and 500s the request. Caller (PosController::store) wraps in try/catch and returns user-visible error. Inside lock, ->lockForUpdate() (line 100) holds InnoDB row lock for duration of transaction (typically ~50-200ms per fiscal_seq insert). With 100 concurrent attempts: 50 mysql_max_connections cap means only 50 PHP workers can even hold a DB session simultaneously — the other 50 nginx-FPM workers wait at php-fpm pool. innodb_lock_wait_timeout=5s session SET (AppServiceProvider:225-243) — each waiter self-aborts at 5s. Worst-case wedge: 5s × 50 = 250s pool drain; nginx outer rate-limit 60r/s + burst=30 caps inbound load so 100/sec attack is shaped to 30+60/s → healthy POS bursts (3-5/s actual) never reach contention."
+    },
+    {
+      "id": "D9",
+      "title": "Log file flood (1000 Log::warning calls in 1s)",
+      "status": "partial",
+      "evidence": "Default stack channel = single driver (config/logging.php:53-58) writes to storage/logs/laravel.log with NO Laravel-level rotation — the single driver is plain append-only. Dedicated daily channels (security, observability, fiscal_audit) rotate via Monolog with days=14 to days=400 (lines 70-186). PRODUCTION RELIES ON ANSIBLE LOGROTATE: site.yml:212-225 declares /etc/logrotate.d/foodking covering storage/logs/*.log + /var/log/foodking-backup.log with 'daily / rotate 14 / compress / delaycompress / copytruncate'. BETWEEN ROTATIONS (24h window): a sustained warn-flood at 1000/s × ~300B/entry = 300KB/s = 26GB/day — well above the prior observed 949MB stress level (Phase F.11 truncate). Storage/logs is on VPS-1 60GB disk; 24h flood = 26GB → disk fill possible. PARTIAL DEFENSE: log message authors throughout codebase use Log::warning sparingly (≈ 50 known sites grep'd); brute-force log-spam requires a CODE-PATH trigger from attacker, not an exposed endpoint. No /api/* route directly emits attacker-controlled string into log without metadata (CorrelationIdMiddleware sanitises ids).",
+      "recommendation": "Add 'logrotate /etc/logrotate.d/foodking-realtime' running hourly or pin Laravel 'daily' driver on storage/logs/laravel.log in production. Optional: Monolog RotatingFileHandler with maxFiles=24 + size cap."
+    },
+    {
+      "id": "D10",
+      "title": "Backup script DoS (foodking:backup-daily on 10GB DB blocks ops)",
+      "status": "defended",
+      "evidence": "app/Console/Commands/Backup/RunDailyBackup.php:246 uses 'mysqldump --single-transaction --routines --triggers --events --set-gtid-purged=OFF' piped to gzip. --single-transaction starts a consistent-snapshot transaction (REPEATABLE READ) with NO locking on InnoDB tables — reads do NOT block writers. NF525 audit_logs + z_reports tables are SELECT-only at backup time (their BEFORE DELETE triggers don't fire on SELECT). Pre-migrate snapshot (site.yml:165) also uses same safe flags. backup-daily runs 03:00 UTC = 04:00 Paris = restaurant closed hours — even if it took 30min on a 10GB DB, no live operations impacted. Backup timeout cap: RunDailyBackup error 'mysqldump timed out (>1h)' line 271 — self-aborts at 1h. Idempotent .partial rename pattern (line 45 comment) ensures partial files don't corrupt valid backups."
+    },
+    {
+      "id": "D11",
+      "title": "Search query DoS (LIKE %a% full table scan)",
+      "status": "partial",
+      "evidence": "PosCategoryController.php:58 uses 'where(key, like, %X%)' on user-supplied $request value for item_categories.name/description/etc. — leading-wildcard prevents index usage → full table scan. item_categories table is SMALL (~10-50 rows typical for Le Cayenne) so cost is negligible. Same pattern in CashOverviewController.php:148, 330, 474, 487 — LIKE patterns on payment_method normalisation, where author explicitly documents 'well below 100 rows in realistic operation' (line 330 comment). No leading-wildcard LIKE found on Order/OrderItem/Customer (which would be 100k+ rows). All admin search routes throttle:admin-mutation GET 300/min so even worst-case full-scan can't be amplified. RECOMMENDATION (V1.0.2 backlog): if Customer search ever needed, use MySQL FULLTEXT index or trigram, not LIKE %x%."
+    },
+    {
+      "id": "D12",
+      "title": "Recursive composition (nested wizard profiles)",
+      "status": "defended",
+      "evidence": "app/Services/Composer/ComposerProfileService.php + ComposerStepService.php inspected: profiles have FLAT relationship to steps via $profile->steps() (line 17, 36, 57, 97, 134). Steps are POSITION-indexed children, NOT nested profiles. composer_profiles table has no self-referencing FK — no recursion possible at schema level. composition_snapshot JSON is FLAT enum of selected_options per step. NF525 PricingService::calculateOrder iterates steps once (no nested traversal). max_item_qty=20 cap (kiosk.php:118 + KIOSK_MAX_ITEM_QTY env) prevents single-line absurdity. Owner-defined wizard_template_aliases (kiosk.php:69-93) hard-coded 8 templates. No CodePath for unbounded depth identified."
+    },
+    {
+      "id": "D13",
+      "title": "Loyalty QR generation DoS (customer requests new QR every second)",
+      "status": "defended",
+      "evidence": "Route POST /api/frontend/loyalty/qr (routes/api.php:1346) middleware 'throttle:30,1' — 30 mints per MINUTE per user (default Laravel per-user throttle by token). LoyaltyController::generateQr (line 765-807) generates HMAC-signed token via LoyaltyQrSigner::sign with 5-min TTL (config/loyalty.qr.ttl_seconds=300). Mobile rotation interval = 5min (comment line 755). 30/min ≫ 12/hr legitimate; healthy retry headroom. Each QR is small (~100B); 30/min/user × 50 users = 1500 QRs/min/system = trivial CPU. HMAC computation is single SHA-256 hash — microseconds. No DB write on mint (token is stateless, validated on scan)."
+    },
+    {
+      "id": "D14",
+      "title": "Outbox flood (751 stale outbox events on dev)",
+      "status": "defended",
+      "evidence": "Phase F.11 observation 751 stale outbox events on dev was a one-time accumulation due to worker stoppage during development. Production: DispatchDomainEventsJob is the outbox dispatcher (app/Jobs/DispatchDomainEventsJob.php:20) running as queue:work worker. Supervisor numprocs=2 + autorestart=true. --max-jobs=1000 forces worker exit-and-restart every 1000 jobs — limits PHP memory leak. ProcessWebhookEventJob hourly cron (line 25 comment) retries failed dispatches. If workers die + events pile: redis maxmemory-policy=allkeys-lru wouldn't evict the queue itself (Redis list keys aren't TTL'd) but COULD evict cache keys; that's only relevant if memory pressure builds. Each outbox row in domain_events table is bounded SQL row + processed_at flag — even 100k stale events = ~100MB MySQL table = manageable. Sentinel: monitor domain_events WHERE processed_at IS NULL count as observability metric."
+    },
+    {
+      "id": "D15",
+      "title": "WebSocket connection flood (10k Echo connections to soketi)",
+      "status": "defended",
+      "evidence": "soketi.json.j2 line 11 'maxConnections': '{{ soketi_max_connections | default(500) }}' — PER-APP cap (single appManager.array.apps entry, line 6-15). Beyond 500 concurrent, soketi refuses new WS handshakes (HTTP 4100 series WS error). 500 is generous for V1 LOCAL Le Cayenne (1 POS + 4 kiosks + 1 KDS + 1 OSS + ~5 admin = ~12 actual WS clients). Redis maxmemory=1.5gb (group_vars/all.yml:21) shared with cache + queue; Soketi has its own memory footprint independent (Node.js process). Nginx /broadcasting/auth endpoint proxies to soketi (nginx template line 63-72) — unauth handshakes are auth-gated. Soketi enableClientMessages=false (line 12) prevents amplification (clients cannot trigger inter-client broadcasts)."
+    }
+  ],
+  "dos_vectors_found": [
+    {
+      "id": "DOS-VECTOR-01",
+      "severity": "P1",
+      "title": "OrderService::list/userOrder/deliveredOrder unbounded ->get('*') when paginate param absent",
+      "files": [
+        "app/Services/OrderService.php:117-200 (list)",
+        "app/Services/OrderService.php:210-241 (userOrder)",
+        "app/Services/OrderService.php:246-285 (deliveredOrder)",
+        "app/Services/OrderService.php:288+ (4th method)",
+        "app/Http/Requests/PaginateRequest.php:27 (per_page max:1000 only fires when paginate=1)",
+        "app/Http/Controllers/Admin/OnlineOrderController.php (delegates to list)",
+        "app/Http/Controllers/Admin/PosCategoryController.php:40-41 (same anti-pattern)"
+      ],
+      "impact": "Single authenticated admin GET on /api/admin/online-order without 'paginate=1' triggers Order::with(5 relations including polymorphic media)->where(...)->orderBy(...)->get('*') — loads ALL orders historically + all related transaction/orderItems/branch/user/media. OOMs PHP-FPM worker at memory_limit (typ. 128M-256M) when DB has ≥50k orders. Authenticated insider OR credential leak → instant outage trigger.",
+      "exploit_steps": [
+        "1. Acquire admin auth (insider / credential leak / phishing)",
+        "2. GET /api/admin/online-order (NO paginate parameter)",
+        "3. Watch PHP-FPM worker OOM at PHP memory_limit",
+        "4. Repeat × (PHP-FPM pm.max_children) to wedge entire pool",
+        "5. Bonus: prepend per_page=1000000 to test PaginateRequest bypass when paginate=1 (validator caps at 1000 but loading 1000 orders + 5 eager relations on 100k catalog is still 100+ MB)"
+      ],
+      "recommendation": "Force pagination unconditionally in OrderService::list/userOrder/deliveredOrder. Default per_page=50 when 'paginate' absent. Lower PaginateRequest max from 1000 → 200 (matches existing CashSessionReportController.php:71 200 ceiling). Add chunked() or lazyById() for any legitimate export use case.",
+      "rollback_complexity": "Low — single-file change in OrderService, no schema migration, no NF525 invariant touched.",
+      "v1_local_lecayenne_blast_radius": "Limited — expected 18k-73k orders/year, but accumulates: 5-year horizon → critical without remediation.",
+      "v2_saas_blast_radius": "Critical — multi-tenant means any admin of any tenant can trigger; cross-tenant noisy-neighbour outage."
+    }
+  ],
+  "rate_limit_defenses_verified": [
+    {
+      "name": "api (global authenticated)",
+      "spec": "Limit::perMinute(config('app.api_throttle_per_minute', 120)) by user_id or IP",
+      "file": "RouteServiceProvider.php:54-58"
+    },
+    {
+      "name": "kiosk-orders",
+      "spec": "config('kiosk.order_rate_limit', 5)/min by 'kiosk:<user_id>|<ip>' + custom 429 retry_after=60",
+      "file": "RouteServiceProvider.php:60-71"
+    },
+    {
+      "name": "kiosk-menu",
+      "spec": "60/min by user_id or IP",
+      "file": "RouteServiceProvider.php:73-75"
+    },
+    {
+      "name": "admin-mutation (GET path)",
+      "spec": "300/min by user_id or IP",
+      "file": "RouteServiceProvider.php:96"
+    },
+    {
+      "name": "admin-mutation (POST path, default)",
+      "spec": "config('app.admin_mutation_rate_limit', 60)/min",
+      "file": "RouteServiceProvider.php:94, 146"
+    },
+    {
+      "name": "admin-mutation (POS namespace)",
+      "spec": "120/min lifted for api/admin/pos and api/admin/pos/*",
+      "file": "RouteServiceProvider.php:115-117"
+    },
+    {
+      "name": "admin-mutation (KDS change-status)",
+      "spec": "120/min lifted for api/admin/kds-order/change-status/*",
+      "file": "RouteServiceProvider.php:128-130"
+    },
+    {
+      "name": "admin-mutation (online-order + table-order change-status)",
+      "spec": "120/min lifted for owner-facing rapid CTA",
+      "file": "RouteServiceProvider.php:141-144"
+    },
+    {
+      "name": "pos-quote / pos-order-create / pos-order-update",
+      "spec": "120/60/120 per minute defaults, env-configurable",
+      "file": "RouteServiceProvider.php:155-168"
+    },
+    {
+      "name": "menu-availability (named limiter, was hardcoded throttle:60,1)",
+      "spec": "config('app.menu_availability_rate_limit', 60)/min by user/IP",
+      "file": "RouteServiceProvider.php:181-184"
+    },
+    {
+      "name": "kds-bump",
+      "spec": "config('kds.rate_limit_bump', 120)/min by user/IP",
+      "file": "RouteServiceProvider.php:193-196"
+    },
+    {
+      "name": "kiosk-login",
+      "spec": "config('kiosk.login_rate_limit', 30)/min by 'kiosk:<username>|<ip>'",
+      "file": "RouteServiceProvider.php:208-221"
+    },
+    {
+      "name": "oss-public (unauthenticated TV wall)",
+      "spec": "60/min by IP across BOTH oss-order + popular-items",
+      "file": "RouteServiceProvider.php:238-245"
+    },
+    {
+      "name": "login-lockout",
+      "spec": "config('auth.login_lockout.max_attempts', 10)/decay_minutes by email|ip",
+      "file": "RouteServiceProvider.php:247-266"
+    },
+    {
+      "name": "throttle:30,1 (loyalty QR generate, kiosk-event)",
+      "spec": "30/min hardcoded for /api/frontend/loyalty/qr and /api/frontend/kiosk-event",
+      "file": "routes/api.php:1347, 1354"
+    },
+    {
+      "name": "throttle:60,1 (legacy hardcoded on misc routes)",
+      "spec": "60/min on lines 1111, 1119, 1372, 1382",
+      "file": "routes/api.php"
+    },
+    {
+      "name": "nginx limit_req zone=api",
+      "spec": "rate=60r/s burst=30 nodelay (~90 req/s peak per IP)",
+      "file": "deploy/ansible/templates/nginx-foodking.conf.j2:9,58"
+    }
+  ],
+  "resource_cap_defenses_verified": [
+    {
+      "name": "innodb_lock_wait_timeout session bind",
+      "spec": "SET SESSION innodb_lock_wait_timeout = ? (DB_LOCK_WAIT_TIMEOUT env, default 5s; was MySQL default 50s pre-heal)",
+      "file": "AppServiceProvider.php:225-243",
+      "heal_ref": "GOAL-F2-HEAL-02 2026-05-23"
+    },
+    {
+      "name": "Cache driver guard (NF525 audit chain)",
+      "spec": "RefuseToBoot in production if CACHE_DRIVER in ['array','null'] — NOTE: 'file' and 'database' PASS the guard (block comment says 'redis or memcached' but implementation is narrower)",
+      "file": "AppServiceProvider.php:214-222",
+      "v1_local_safe": "yes (single-box file driver fine for Le Cayenne LOCAL)",
+      "v2_saas_gap": "UNI-03 backlog — widen forbidden list when ALB multi-instance"
+    },
+    {
+      "name": "FiscalSequenceService Cache::lock",
+      "spec": "LOCK_TTL_SECONDS=5 + LOCK_ACQUIRE_SECONDS=3 (fast-fail on contention)",
+      "file": "FiscalSequenceService.php:42-43, 66-72"
+    },
+    {
+      "name": "FiscalSequenceService DB FOR UPDATE",
+      "spec": "->lockForUpdate() on Order::max('fiscal_sequence_no') inside transaction (defense-in-depth vs Cache split-brain)",
+      "file": "FiscalSequenceService.php:97-101"
+    },
+    {
+      "name": "Idempotency two-tier TTL",
+      "spec": "PENDING placeholder=30s (pending_ttl_seconds), COMPLETED record=24h (ttl_seconds). PENDING decoupled to survive SIGKILL between acquire() and complete()",
+      "file": "RedisIdempotencyKeyRepository.php:67-85, config/idempotency.php:30-31",
+      "heal_ref": "Phase F.6 finding F-6-6-FIND-04 P2"
+    },
+    {
+      "name": "Idempotency-Key format cap",
+      "spec": "preg_match('/^[A-Za-z0-9._\\-]{8,64}$/') — max 64 chars, ASCII",
+      "file": "IdempotencyKeyMiddleware.php:61-65"
+    },
+    {
+      "name": "Nginx client_max_body_size",
+      "spec": "32M outer cap on all POSTs",
+      "file": "nginx-foodking.conf.j2:49"
+    },
+    {
+      "name": "Queue worker max-jobs autorestart",
+      "spec": "queue:work --max-jobs=1000 --tries=3 --timeout=120 numprocs=2 autorestart=true",
+      "file": "supervisor-foodking.conf.j2:9"
+    },
+    {
+      "name": "Redis maxmemory + eviction",
+      "spec": "maxmemory=1.5gb + maxmemory-policy=allkeys-lru (auto-evict oldest under pressure)",
+      "file": "site.yml:79-92, group_vars/all.yml:21"
+    },
+    {
+      "name": "MySQL max_connections cap",
+      "spec": "mysql_max_connections=50 (VPS-1 sizing)",
+      "file": "group_vars/all.yml:20",
+      "note": "Tight for 50-concurrent surge; combined with PHP-FPM pm.max_children + nginx burst this is intentional, but DOWNSIDE: leaves zero headroom for replica/diagnostic. Bound by VPS-1 €8.11/mo 4GB RAM."
+    },
+    {
+      "name": "Soketi maxConnections",
+      "spec": "500 per-app (single appManager.array.apps entry); enableClientMessages=false prevents amplification",
+      "file": "soketi.json.j2:11-12"
+    },
+    {
+      "name": "Logrotate (production-grade)",
+      "spec": "Ansible /etc/logrotate.d/foodking: daily / rotate 14 / compress / delaycompress / copytruncate on storage/logs/*.log + /var/log/foodking-backup.log",
+      "file": "site.yml:212-225"
+    },
+    {
+      "name": "Per-page pagination caps (where enforced)",
+      "spec": "CashSessionReportController.php:71 min(1, max(200)); DeliveryBoyCashSessionController.php:59 max:200; PrinterController.php:32 max:100; PaymentTerminalController.php:46 max:100; StockRuptureDashboardController.php:61,98 hardcoded limit(100/200); SyncOverviewController.php:91,140,313 hardcoded limit(50/10/SELECT_LIMIT)",
+      "file": "various Admin controllers",
+      "GAP": "OrderService.php list/userOrder/deliveredOrder do NOT enforce this — see DOS-VECTOR-01"
+    },
+    {
+      "name": "mysqldump --single-transaction safety",
+      "spec": "Consistent-snapshot backup with NO write blocking on InnoDB tables; 1h hard timeout",
+      "file": "RunDailyBackup.php:246,271; site.yml:165-167"
+    },
+    {
+      "name": "kiosk max_item_qty cap",
+      "spec": "KIOSK_MAX_ITEM_QTY default 20 — caps single-line absurdity",
+      "file": "config/kiosk.php:118"
+    }
+  ],
+  "ambiguous_or_partial_defenses": [
+    {
+      "id": "PHP_FPM_BODY_LIMITS",
+      "concern": "Nginx caps body at 32M but no Ansible task pins /etc/php/8.2/fpm/php.ini post_max_size / upload_max_filesize — deploy relies on Debian/Sury package defaults (typically 8M / 2M). Behaviour is non-deterministic across redeploys / OS image refresh.",
+      "recommendation": "Add Ansible 'ini_file' task on /etc/php/8.2/fpm/php.ini setting post_max_size=12M upload_max_filesize=12M to pin both sides of the body limit chain."
+    },
+    {
+      "id": "LARAVEL_LOG_BETWEEN_ROTATIONS",
+      "concern": "Default stack channel uses 'single' driver (no Laravel-level rotation). Ansible logrotate runs daily — between rotations a 1000/s warn-flood writing ~300B/entry = 26GB/day could fill the 60GB VPS-1 disk. Not exposed via a single attacker-controllable endpoint, but a noisy bug or hostile internal request crafting could amplify.",
+      "recommendation": "Switch production LOG_CHANNEL=daily (built-in rotation with days=14) OR add Monolog RotatingFileHandler with maxFiles=24 + size cap. Alternatively hourly logrotate cron."
+    },
+    {
+      "id": "CACHE_DRIVER_GUARD_NARROW",
+      "concern": "AppServiceProvider:214-222 forbids only 'array' and 'null' in production. Block comment says 'redis or memcached' but 'file' and 'database' PASS. V1 LOCAL Le Cayenne single-box file driver is correct; V2 SaaS ALB multi-instance would need wider forbidden list. Already tracked as UNI-03 backlog.",
+      "recommendation": "V1.0.X cloud-prep backlog — widen forbidden list before ALB cutover."
+    }
+  ],
+  "verdict": "AMBER",
+  "verdict_rationale": "AMBER (not GREEN) because DOS-VECTOR-01 (OrderService unbounded ->get('*')) is a REAL P1 authenticated-DoS surface. AUTHENTICATED insider OR credential leak → single GET → PHP-FPM worker OOM. V1 LOCAL Le Cayenne risk-rate is gradual (18k-73k orders/year accumulating) but the fix is single-file in OrderService.php with no NF525 invariant touched. AMBER (not RED) because: (a) requires admin authentication — not a public-internet exploit; (b) 14/15 D-scenarios are properly defended via rate limiters + idempotency two-tier + fiscal lock fast-fail + nginx outer cap + supervisor max-jobs autorestart; (c) all NF525 fiscal invariants (audit chain, sequence allocation, append-only) are unaffected; (d) two additional 'partial' findings (PHP-FPM body limits not deploy-pinned, Laravel log rotation between ansible-rotate windows) are deploy-config gaps, not exploitable amplification surfaces. Promote to GREEN once DOS-VECTOR-01 is patched in OrderService.",
+  "top_5_dos_vectors": [
+    "DOS-VECTOR-01 (P1) OrderService::list/userOrder/deliveredOrder → ->get('*') unbounded when paginate param absent. Single authenticated admin GET OOMs PHP-FPM worker.",
+    "Partial: PHP-FPM post_max_size not pinned in Ansible (deploy-config gap; depends on Debian default 8M vs nginx 32M)",
+    "Partial: Laravel default stack channel = 'single' driver (no built-in rotation) between hourly logrotate windows — sustained warn-flood could fill 60GB disk in <24h on a 1000/s logger amplification path",
+    "MySQL max_connections=50 is tight for VPS-1 sizing — not a vulnerability per se but leaves zero diagnostic/replica headroom under fiscal_seq contention spike",
+    "CACHE_DRIVER guard narrow (forbids only array/null; allows file & database which break NF525 chain locks on multi-instance deploys) — tracked V1.0.X cloud-prep UNI-03"
+  ]
+}

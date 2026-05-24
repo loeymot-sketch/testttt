@@ -1,0 +1,347 @@
+{
+  "agent": "J-ADV-7 Counter-engineer hostile",
+  "date": "2026-05-24",
+  "scope": "FoodKing Le Cayenne V1 — hostile counter-audit of Phase B/F/G/H/I declared-GREEN verdicts",
+  "method": "Hostile-mindset re-read of 5 convergence reports + empirical grep matrix against codebase HEAD (48402969c) + cross-validation of quantified BRAIN claims + smoking-gun search for confessed-pattern repetitions",
+  "baseline_commit": "d601fdd34",
+  "head_commit": "48402969c90deb1131de82a3acb67f4f7b127cda",
+
+  "weak_spot_patterns_hunted": [
+    "W1 happy-path-only sentinels",
+    "W2 fixture-vs-production divergence",
+    "W3 environmental assumptions",
+    "W4 over-permissive convergence rules",
+    "W5 unknown unknowns (sentinel locks current, not retroactive)",
+    "W6 production-only failures (SQLite/array/sync vs MySQL/Redis/queue)",
+    "W7 time-based test brittleness",
+    "W8 numeric precision (decimal vs float vs cents)",
+    "W9 UTF-8 byte handling (substr mid-character)",
+    "W10 concurrency assumptions"
+  ],
+
+  "todos_fixmes_found": 10,
+  "todos_fixmes_evidence": [
+    {
+      "file_line": "app/Http/PaymentGateways/Gateways/Senangpay.php:219",
+      "context": "V1.0.2 TODO: refactor `webhook()` to expose a private",
+      "why_still_dangerous": "PAYMENT GATEWAY code with confessed refactor debt. Webhook idempotency may rely on monolithic method shape."
+    },
+    {
+      "file_line": "app/Http/PaymentGateways/Gateways/Stripe.php:355",
+      "context": "V1.0.2 TODO: refactor handleWebhook() into a thin parser",
+      "why_still_dangerous": "Same as Senangpay — webhook handler monolith. If Stripe ever changes payload schema, fix scope balloons."
+    },
+    {
+      "file_line": "app/Services/KdsSyncService.php:168",
+      "context": "TODO(F-03 / Phase 3 dette technique D-03bis): when the planned",
+      "why_still_dangerous": "KDS sync logic admits planned refactor that never landed. Cycle declared S3 KDS layout as 'architectural choice' but the SYNC layer also carries debt."
+    },
+    {
+      "file_line": "app/Services/Menu/PosMenuProjection.php:98",
+      "context": "TODO (Codex — task 2.2 of plan)",
+      "why_still_dangerous": "POS menu projection (the data layer feeding the wizard) carries Codex-TODO never closed. If projection logic is incomplete, POS may show stale or wrong items."
+    },
+    {
+      "file_line": "resources/js/composables/useCatalogChangeNotifier.js:24",
+      "context": "STUB — Skeleton only. Implementation TODO under plan task 1.3.",
+      "why_still_dangerous": "STUB code shipped to production. If a kiosk subscribes to catalog change, the composable does NOTHING."
+    },
+    {
+      "file_line": "resources/js/components/frontend/kiosk/CatalogChangeToastComponent.vue:17",
+      "context": "Status : SKELETON — implementation TODO Codex.",
+      "why_still_dangerous": "Kiosk UI component is a SKELETON. The I.3 heal (I2-HEAL-02 ItemUpdated event) FIRES but if the receiver is a skeleton, the toast never appears for the cashier/customer."
+    },
+    {
+      "file_line": "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue:335",
+      "context": "TODO Sprint 1B: whitelist `variance_reason` dans",
+      "why_still_dangerous": "CASH DRAWER variance_reason not whitelisted in FormRequest → either silently dropped or accepted without validation. Cash reconciliation = NF525-adjacent."
+    },
+    {
+      "file_line": "resources/js/components/admin/items/wizard/ProductCreateWizardComponent.vue:18+145",
+      "context": "Status : SKELETON — implementation TODO Codex. + TODO Codex (plan task 2.9)",
+      "why_still_dangerous": "Product creation wizard SKELETON. Admin clicks 'create product' wizard → may do nothing or partial commit."
+    },
+    {
+      "file_line": "resources/js/store/modules/kioskCart.js:496",
+      "context": "@deprecated Use startEditingCartItem to preserve the line during wizard reopen.",
+      "why_still_dangerous": "Deprecated method still callable. If old code paths still invoke it, kiosk cart edit may lose line state."
+    }
+  ],
+
+  "debug_code_in_prod": [
+    {
+      "file_line": "app/Services/Fiscal/ZReportService.php:135,273",
+      "code": "try { $lock->release(); } catch (\\Throwable $e) {}",
+      "severity": "P2",
+      "why_dangerous": "Empty catch in FROZEN-ZONE NF525 service. If lock release fails silently, the next Z-close may collide on lock. Cycle declared ZReportService 0 NF525-CRITICAL violations but did NOT flag silent catch."
+    },
+    {
+      "file_line": "resources/js/composables/useKioskTheme.js (8 occurrences)",
+      "code": "try { ... } catch (_) {}",
+      "severity": "P3",
+      "why_dangerous": "8 empty catches in theme composable. localStorage failures, store.dispatch failures all silenced — kiosk may render with wrong theme + no signal to operator."
+    },
+    {
+      "file_line": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue (12+ empty catches)",
+      "code": "try { ... } catch (_) {}",
+      "severity": "P1",
+      "why_dangerous": "KIOSK PAYMENT COMPONENT has 12+ silent catches. If kioskAnalytics.track fails (e.g. blocked Adblock), no signal. If clearInterval fails on reconcileInterval, silent leak. PAYMENT path = customer money = must be loud-fail."
+    },
+    {
+      "file_line": "Multiple kiosk Vue components",
+      "code": "// [P13_LOG_HYGIENE] console.log(...)",
+      "severity": "P3",
+      "why_dangerous": "Commented-out debug logs document P13 hygiene pass but if reverted accidentally, kiosk console floods. Active console.error remains in 8 production paths (ItemPreviewComponent, ItemComponent, CashSessionReportList, ProductComposerEditor, CashOverview, ErrorBoundary, KitchenDisplaySystem)."
+    }
+  ],
+
+  "hardcoded_assumptions": [
+    {
+      "id": "HC-001",
+      "severity": "P0 SECURITY",
+      "file_line": "app/Models/User.php:126",
+      "code": "if ($user->id === 1) { $user->status = Status::ACTIVE; }",
+      "why_dangerous": "USER ID 1 IS HARDCODED TO ALWAYS BE ACTIVE on every save. If admin user happens to be id=1 (typical), they CANNOT BE DISABLED — any update reactivates them. Bypass of disablement. In V2 multi-tenant SaaS this is a tenant-wide super-admin backdoor.",
+      "exploit": "1. Admin gets compromised, owner disables user_id=1. 2. ANY subsequent update on that user (timezone change, name change, password reset triggered) resets status=ACTIVE. 3. Compromised credentials remain usable."
+    },
+    {
+      "id": "HC-002",
+      "severity": "P1",
+      "file_line": "app/Services/LanguageService.php:112",
+      "code": "if (!env('DEMO') && $language->id !== 1) {",
+      "why_dangerous": "Language id=1 is hardcoded as undeletable. If a future migration changes seed order, deletes id=1, or DemoSeed reseeds with different IDs, language tooling breaks silently."
+    },
+    {
+      "id": "HC-003",
+      "severity": "P0 PREDICTABLE TOKEN",
+      "file_line": "app/Http/Controllers/Frontend/LoyaltyController.php:705",
+      "code": "$customerToken = 'lt_'.substr(hash('sha256', $target->id.'|'.now()->timestamp.'|'.(string) config('app.key')), 0, 32);",
+      "why_dangerous": "Customer loyalty token = SHA256(user_id | unix_timestamp | APP_KEY) truncated to 32 hex chars (128 bits). NO HMAC despite LOYALTY_QR_SECRET being declared elsewhere in the codebase for QR signing. Timestamp is SECOND-RESOLUTION → if attacker observes account creation time (visible in many UIs) AND knows user_id (sequential), they can brute-force the 1-second window. SHA256(known)+128 bit truncation = NOT collision-safe over 6-year horizon if collision-finding becomes cheaper."
+    },
+    {
+      "id": "HC-004",
+      "severity": "P3",
+      "file_line": "app/Services/Kiosk/KioskPromoService.php:98",
+      "code": "((int) ($coupon->discount_type ?? 0) == 1)",
+      "why_dangerous": "Coupon discount_type magic number 1 hardcoded instead of named enum. If enum values change, silent miscalculation."
+    }
+  ],
+
+  "phase_verdict_challenges": [
+    {
+      "phase": "Phase B.5 D2 frozen-zone PROPOSALS = 'PROPOSAL ONLY 0 frozen-zone edits'",
+      "claimed_verdict": "GREEN",
+      "challenge": "94 PROPOSAL docs INCLUDE 5 PricingService P0 NF525 audit-chain drift entries (PROP-PricingService-001..005). The PROPOSAL doc is on disk but NO sentinel locks the actual P0 from regressing further before owner gates the LOCK. Sentinel coverage gap = the P0 can DEEPEN silently.",
+      "evidence_path_or_grep": "grep -rn 'P0' proposals/ | grep PricingService",
+      "severity": "P1"
+    },
+    {
+      "phase": "Phase F.2 soak CONFESSED partial — replaced by G.1 'true soak 200 orders 13.3 min'",
+      "claimed_verdict": "GREEN (G.1 replacement)",
+      "challenge": "G1-OBS-03 explicitly notes kiosk PENDING orders DO NOT trigger fiscal_alloc. The 200 orders/13.3 min soak therefore NEVER exercised Cache::lock('fiscal_seq_*') contention — the EXACT layer F.2 was meant to stress (per FiscalSequenceService.php:66 + ZReportService.php:79 + AuditLogService.php:101 = 3 separate Cache::lock surfaces). Cycle declared the F.2 gap closed but the actual contention surface was unmeasured.",
+      "evidence_path_or_grep": "grep -rn 'Cache::lock' app/Services/Fiscal/ → 3 lock surfaces. G.1 = UNPAID kiosk = 0 alloc.",
+      "severity": "P1"
+    },
+    {
+      "phase": "Phase G.10 TZ drift healed for DashboardService + OrderService + OSS",
+      "claimed_verdict": "GREEN",
+      "challenge": "G10-C2 DST spring-forward skip on dailyAt('02:00') cron flagged as P1 V1.0.1 — DEFERRED, not healed. Next occurrence: 2026-03-29 (~10 months out). Z-close safety-net (G2-HEAL-06) runs at 23:55 Paris = safe BUT sanctum:prune-expired added by I2-HEAL-04 at 04:30 Paris — UNVERIFIED for DST behavior, may double-run or skip on 2026-03-29.",
+      "evidence_path_or_grep": "Phase G.10 + I.7 cron 04:30",
+      "severity": "P1 V1.0.1"
+    },
+    {
+      "phase": "Phase H.3 sustained 15min = 241 events / 16.07 req/min",
+      "claimed_verdict": "GREEN ('strongest production-grade NF525-under-load evidence')",
+      "challenge": "16 req/min is BELOW F.1 owner-pain rate (cashier rush = 36+ req/min/user from polling alone + interactive load). 241 events / 5 streams = ~3 req/min per stream — leisurely. Real Friday-night rush at Le Cayenne could realistically hit 80+ req/min sustained. H.3 did NOT stress that envelope.",
+      "evidence_path_or_grep": "Phase H.3 + F.1 rate-limit math",
+      "severity": "P2"
+    },
+    {
+      "phase": "Phase H.5 loyalty TTC tax double-count HEALED via PosRedemptionTtcTaxDoubleCountSentinel",
+      "claimed_verdict": "GREEN",
+      "challenge": "The sentinel covers ONE scenario. The BROADER PosLoyaltyRedeemTest.php STILL uses 'total_tax' => 0.00 fixtures (lines 100, 305) — the EXACT pattern that masked the bug for so long. 30+ test files across tests/Feature/Fiscal/ + tests/Feature/Pos/ + tests/Feature/Reconciliation/ use total_tax=0 fixtures. If a SIMILAR tax-arithmetic bug is added in a sibling service, these tests will NOT catch it.",
+      "evidence_path_or_grep": "grep -rn 'total_tax.*0' tests/ → 30+ hits",
+      "severity": "P1"
+    },
+    {
+      "phase": "Phase I.6 RBAC GREEN — 'BRAIN §9 claim 8 tokenCan was stale, actual = 13 broader+stronger'",
+      "claimed_verdict": "GREEN",
+      "challenge": "ACTUAL count is 21 not 13. grep -rn tokenCan app/ → 21 hits (controllers + requests + resources + services). I.6 ALSO has a stale count. Pattern: if Phase I.6 mis-counts tokenCan, what other quantified Phase I claims are wrong? Notably I.8 '14 dangerous env() outside config' — empirical count = 28 env() calls outside config/ (per I.8 own report) but only 14 flagged dangerous. The split criteria is opaque and unsentinel-locked. I.8 RECOMMENDED EnvCallsOutsideConfigSentinelTest BUT IT DOES NOT EXIST IN tests/ — recommendation made, never implemented.",
+      "evidence_path_or_grep": "grep -rn tokenCan app/ → 21 hits; find tests/ -name '*EnvCalls*' → empty",
+      "severity": "P1"
+    },
+    {
+      "phase": "Phase I.5 session leak GREEN — '0 mutable singletons, full isolation attested'",
+      "claimed_verdict": "GREEN",
+      "challenge": "Verdict based on code-static analysis. NO empirical concurrent-tenant proof in production-like environment (PHP-FPM + Redis session). The 'mutable singleton' check assumes container bindings are exhaustive. If a future composer dump-autoload changes resolution order, attestation breaks silently. Sentinel I.5 does not exist as a regression test.",
+      "evidence_path_or_grep": "find tests/Feature/Sentinels -name '*Session*' or '*Singleton*' → check coverage",
+      "severity": "P2"
+    },
+    {
+      "phase": "Phase A telemetry allowlist substring-match bug + heal",
+      "claimed_verdict": "GREEN",
+      "challenge": "This is exactly the W2 pattern (fixture vs production divergence): the original allowlist used '/api/frontend/kiosk/event' paths but axios strips '/api' baseURL. The 8-test sentinel locks the substring-match logic, but if ANOTHER axios path strips a different prefix (e.g. '/v2'), same bug pattern recurs in NEW endpoints. Sentinel is endpoint-specific, not pattern-class-locked.",
+      "evidence_path_or_grep": "Phase A self-heal commit f28688675",
+      "severity": "P2"
+    }
+  ],
+
+  "missed_test_surfaces": [
+    {
+      "id": "MTS-01",
+      "severity": "P1",
+      "surface": "BranchScopeCoverageSentinelTest is COUNT-BASED (10 exempted baseline)",
+      "why_missed": "Sentinel allows new models to be added WITH BranchScope (good) but does NOT detect a new model ADDED WITHOUT branch_id column when the model SHOULD be branch-scoped. False-clean: developer adds NotificationPreference model, forgets branch_id column entirely, sentinel passes because column doesn't exist. V2 SaaS: cross-tenant leak via the new model is invisible.",
+      "evidence": "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php iterates only on models WITH branch_id column"
+    },
+    {
+      "id": "MTS-02",
+      "severity": "P0",
+      "surface": "User.php boot::updating hardcode id===1 has NO sentinel",
+      "why_missed": "No regression test enforces the documented behavior (force-active for super-admin) NOR detects the bug pattern (super-admin un-disable-able). If someone fixes HC-001 carelessly, no signal.",
+      "evidence": "grep -rn 'forceActive\\|status === ACTIVE' tests/ → no relevant sentinel"
+    },
+    {
+      "id": "MTS-03",
+      "severity": "P1",
+      "surface": "EnvCallsOutsideConfigSentinelTest WAS RECOMMENDED IN I.8, NOT IMPLEMENTED",
+      "why_missed": "14+ env() calls outside config/ are 'dangerous after config:cache' per I.8. AppLibrary.php has 12 env() calls for currency/date format — if production runs config:cache (recommended for perf), AppLibrary returns NULL → all currency renders break. The cycle recommended a sentinel + closed Phase I without writing it.",
+      "evidence": "find tests/ -name '*EnvCalls*' → empty; grep -rn env\\(  app/Libraries/AppLibrary.php → 12 hits"
+    },
+    {
+      "id": "MTS-04",
+      "severity": "P1",
+      "surface": "Empty catch block sentinel — only I.1 cataloged 22 silent-swallow callsites in V1.0.2 backlog, NOT BLOCKED",
+      "why_missed": "Phase I.1 deferred to V1.0.2. But ZReportService:135,273 are inside FROZEN-ZONE NF525 service. If lock release error masks a deeper lock-state issue, NF525 next-close may fail in unrecoverable way. NF525 errors are PRISON-LEVEL not 'P1 V1.0.2 cataloged'.",
+      "evidence": "app/Services/Fiscal/ZReportService.php:135,273 + I.1 22-callsite catalog"
+    },
+    {
+      "id": "MTS-05",
+      "severity": "P1",
+      "surface": "tax_inclusive_prices coverage in tests = 15 hits across ALL of tests/",
+      "why_missed": "config('pricing.tax_inclusive_prices') is used in 12+ branches across OrderService + FrontendOrderService. Only 15 test instances exercise this config. Default in test env is FALSE (legacy HT mode) but PRODUCTION default is TRUE (TTC). The PHPUnit suite RUNS ENTIRELY IN HT MODE for most tests, then GREEN convergence is declared.",
+      "evidence": "grep -rn tax_inclusive_prices tests/ → 15 hits; grep -rn 'config(.pricing' app/Services/ → 24+ hits"
+    },
+    {
+      "id": "MTS-06",
+      "severity": "P2",
+      "surface": "FOR UPDATE missing on Item::is_available (RACE-G3-AMBER-01 V1.0.1 deferred)",
+      "why_missed": "G.3 documented 1-5ms TOCTOU window. Phase G declared 'V1 single-resto LOW risk'. But at Friday-night rush with 2 kiosks + 1 POS, the 1-5ms window matches kiosk POST inter-arrival times empirically. Single-resto is NOT immune to multi-surface TOCTOU."
+    },
+    {
+      "id": "MTS-07",
+      "severity": "P1",
+      "surface": "Frozen-zone PaymentComponent.vue and PosV5TrancheRow.vue have 19+14 PROPOSAL docs but NO regression sentinels",
+      "why_missed": "PROPOSAL docs document the bug surface but if owner counterign is delayed (PaymentComponent D3 LOCK 'pending 10+ days'), no test catches if the underlying behavior degrades further. Sentinel-without-LOCK = the LOCK becomes the only signal."
+    },
+    {
+      "id": "MTS-08",
+      "severity": "P1",
+      "surface": "Cron 04:30 sanctum:prune-expired (I2-HEAL-04) has DST untested",
+      "why_missed": "Cron at 04:30 Paris during DST transition (2026-10-25 fall-back) WILL RUN TWICE — 04:30 CEST then 04:30 CET. SanctumPruneExpiredScheduledTest verifies cron expression but does NOT test DST."
+    },
+    {
+      "id": "MTS-09",
+      "severity": "P0 LATENT",
+      "surface": "Skeleton/STUB code shipped to production (5+ files)",
+      "why_missed": "useCatalogChangeNotifier.js + CatalogChangeToastComponent.vue + ProductCreateWizardComponent.vue all declare 'SKELETON — implementation TODO Codex'. I.3's heal (I2-HEAL-02 ItemUpdated event) WIRES the event but the receiver is a STUB. Backend fires the event, frontend skeleton swallows — operator sees no signal that admin changed an item."
+    },
+    {
+      "id": "MTS-10",
+      "severity": "P1",
+      "surface": "TTC mode loyalty redemption — only NEW sentinel covers (subtotal=50, redeem=50) full redemption",
+      "why_missed": "H.5 fix sentinel `PosRedemptionTtcTaxDoubleCountSentinelTest` covers 3 tests. Partial-redemption edge case + multi-rate tax cart + redemption-applied-after-discount untested. Customer overcharge bug shape can recur on any path not covered by the 3-test sentinel."
+    }
+  ],
+
+  "fixture_pattern_masked_bugs": {
+    "pattern": "total_tax = 0 in test fixtures (H.5 confessed lesson)",
+    "occurrences_in_tests": 30,
+    "files_at_risk": [
+      "tests/Feature/Pos/PosLoyaltyRedeemTest.php:100,305",
+      "tests/Feature/Pos/PosCashTrailTest.php:291,332",
+      "tests/Feature/Pos/TerminalIdWireInTest.php:221",
+      "tests/Feature/Fiscal/NF525ComplianceE2ETest.php:134,332",
+      "tests/Feature/Fiscal/RefundPostZTest.php:30,42",
+      "tests/Feature/Fiscal/RefundPreZTest.php:27",
+      "tests/Feature/Fiscal/VoidPreZTest.php:27",
+      "tests/Feature/Fiscal/ZReportTerminalBreakdownTest.php:286",
+      "tests/Feature/Fiscal/FiscalArchiveMemoryBoundedTest.php:72",
+      "tests/Feature/Fiscal/SealedOrderMutationGuardTest.php:51",
+      "tests/Feature/Fiscal/FiscalAllocOrphanRetryTest.php:166",
+      "tests/Feature/Fiscal/ZAggregationKioskRoutingTest.php:97,133",
+      "tests/Feature/Cash/PaymentServiceCashHookTest.php:68,131",
+      "tests/Feature/Admin/CashOverviewControllerTest.php:87",
+      "tests/Feature/Reconciliation/ReconciliationFlowsE2ETest.php:228",
+      "tests/Feature/Sync/FinalizePaidKioskOrderBroadcastFreshnessTest.php:129",
+      "tests/Feature/ProdLike/ProdLikeConcurrencyTest.php:210",
+      "tests/Feature/Sentinels/F003CashReconciliationSentinelTest.php:107,141",
+      "tests/Feature/Sentinels/RefundCounterEntryRequiresSealedParentSentinelTest.php:49",
+      "tests/Feature/Sentinels/PosReorderHistoricalPricingSentinelTest.php:69"
+    ],
+    "implication": "Any tax-arithmetic bug in OrderService / RefundService / Z-aggregation / Reconciliation would NOT be caught by these regression tests. The H.5 fix is a single-scenario patch; the broader masking pattern remains."
+  },
+
+  "brain_md_stale_quantified_claims": [
+    {
+      "claim": "CLAUDE.md §9 'tokenCan(kiosk:order) checks in 8 controllers (verified WI-7)'",
+      "actual_count_today": "21 hits across app/ (5 controllers + 6 FormRequests + 2 Resources + 1 Service + comments)",
+      "drift": "+13 since WI-7. BRAIN out of date — and Phase I.6 corrected to 13 but ALSO wrong; actual is 21."
+    },
+    {
+      "claim": "CLAUDE.md §9 '20 models with BranchScope (baseline locked by sentinel)'",
+      "actual_count_today": "21 models (sentinel BranchScopeCoverageSentinelTest iterates 21 .php files in app/Models with addGlobalScope+BranchScope)",
+      "drift": "+1 since baseline. Worth double-checking which model got added without sentinel review."
+    },
+    {
+      "claim": "CLAUDE.md §9 'BUILD-6 reduced FormRequest return-true count to 69; verified actual 2026-05-21 = 66'",
+      "actual_count_today": "Likely still ~66 (not re-verified this audit — admitted gap)",
+      "drift": "Sentinel ceiling baseline 69, actual reported 66 — 3-count slack means new violations can be added silently without sentinel firing."
+    }
+  ],
+
+  "advisor_consulted": true,
+  "advisor_priorities_addressed": [
+    "F.2 vs G.1 Cache::lock contention exposure gap → captured in phase_verdict_challenges[2]",
+    "H.5 fixture pattern repetition → captured in fixture_pattern_masked_bugs",
+    "BRAIN §9 stale tokenCan count → captured in brain_md_stale_quantified_claims",
+    "Frozen-zone empirical verification → CONFIRMED 0 LOC via git diff",
+    "I.8 env() count + missing sentinel → captured in missed_test_surfaces[2]",
+    "H.3 16 req/min not sustained pressure → captured in phase_verdict_challenges[3]"
+  ],
+
+  "frozen_zone_empirical_verification": {
+    "method": "git diff d601fdd34..HEAD --stat -- <14 frozen files>",
+    "result": "0 LOC diff confirmed (no output from diff command on both frontend and backend file lists)",
+    "verdict": "CONVERGENCE_FINAL claim of 0 frozen-zone violations EMPIRICALLY TRUE"
+  },
+
+  "top_10_missed_or_glossed_weaknesses": [
+    "P0 HC-001: User.php:126 hardcode id===1 → ACTIVE on every save (super-admin un-disable bug)",
+    "P0 HC-003: LoyaltyController.php:705 customer token = SHA256(predictable) truncated 128 bits + NO HMAC (bypasses LOYALTY_QR_SECRET pattern that EXISTS elsewhere)",
+    "P0 LATENT MTS-09: SKELETON code shipped to production (5 files including I.3's cache-invalidation receiver)",
+    "P1 fixture_pattern: 30+ tests use total_tax=0 — exact pattern H.5 confessed had masked the loyalty TTC bug; same shape would mask future bugs",
+    "P1 MTS-03: EnvCallsOutsideConfigSentinelTest recommended by I.8 was never implemented; AppLibrary 12 env() calls would return NULL after config:cache (currency render breaks)",
+    "P1 Phase F.2 gap: Cache::lock contention NEVER exercised under sustained PAID flow (G.1 substitution is UNPAID kiosk = 0 fiscal alloc)",
+    "P1 MTS-05: tax_inclusive_prices test coverage = 15 hits across ALL tests, default test env is FALSE (HT) but production is TRUE (TTC) — most PHPUnit GREEN proves HT mode only",
+    "P1 BRAIN drift cascade: I.6 corrected §9 from 8→13 tokenCan but actual is 21; if I.6 mis-counts, what else is wrong",
+    "P1 MTS-10: H.5 loyalty sentinel only covers 3 scenarios; partial-redemption + multi-rate + post-discount paths uncovered",
+    "P1 MTS-07: PaymentComponent.vue + PosV5TrancheRow.vue have 19+14 PROPOSAL docs but NO sentinels — if owner LOCK countersign delays further (10+ days), no test detects further degradation"
+  ],
+
+  "hostile_counter_recommendations": [
+    "BEFORE V1 SHIP: write `UserBootHookHardcodeSentinelTest` that explicitly forbids id===1 fast-path; OR rewrite to use role-based check (any user with role 'Admin' AND active flag pinned by policy not hardcoded ID)",
+    "BEFORE V1 SHIP: refactor `LoyaltyController.php:705` to use `hash_hmac('sha256', $payload, config('loyalty.qr.secret'))` — same secret already used for QR signing; OR generate via Sanctum personal_access_token API (32+ random bytes)",
+    "BEFORE V1 SHIP: enumerate the 5+ SKELETON Vue/JS files; either ship them OR rip them out — STUB code in production = lying behavior. Critical: `CatalogChangeToastComponent.vue` is consumer of I2-HEAL-02 event chain",
+    "BEFORE V1 SHIP: write `EnvCallsOutsideConfigSentinelTest` per I.8 recommendation; fail-fast on AppLibrary env() drift before config:cache breaks production currency rendering",
+    "BEFORE V1 SHIP: write `ZReportLockReleaseFailureSentinelTest` that exercises the empty-catch path at ZReportService.php:135,273 — empty catches in NF525 frozen zone are unacceptable",
+    "BEFORE V1 SHIP: enrich PosLoyaltyRedeemTest with `tax_inclusive_prices=true` scenarios at lines 100 and 305; the H.5 sentinel covers a NEW path but the regression net stays in HT mode",
+    "V1.0.1: re-run F.2 soak with PAID kiosk path (kiosk-cash with cashier confirm) to actually exercise Cache::lock contention; G.1 is INSUFFICIENT replacement",
+    "V1.0.1: write production-canary that grep counts `tokenCan` + `addGlobalScope(BranchScope)` at boot and fails-fast if numbers don't match BRAIN §9 — kills BRAIN drift",
+    "V1.0.1: add `FormRequestReturnTrueDriftSentinel` ceiling enforcement TIGHTENING — current baseline 69, actual 66 → lower baseline to 66 to prevent silent regression of 3 slots",
+    "V1.0.1: DST sentinel — verify sanctum:prune-expired 04:30 Paris cron on Oct 25 2026 fall-back AND dailyAt('02:00') on Mar 29 2026 spring-forward"
+  ],
+
+  "verdict": "AMBER",
+  "verdict_justification": "Cycle's frozen-zone discipline is BIT-IDENTICAL TRUE (empirically verified). NF525 chain integrity preserved. 154 NEW sentinels GREEN is real evidence. HOWEVER: 2 confessed P0 hardcoded assumptions (User.php id===1 + LoyaltyController predictable token) are NOT IN ANY PROPOSAL DOC and NOT in the owner-gate queue. The H.5 'critical bug healed' pattern (fixture masked) recurs in 30+ regression tests unaddressed. Phase I.6 corrected BRAIN §9 from stale 8 to stale 13 (actual 21) — BRAIN drift cascades. Phase F.2 PAID-flow Cache::lock contention substituted by UNPAID kiosk soak is methodological dilution. 5+ SKELETON files in production. V1 LOCAL Le Cayenne ship verdict GREEN holds for the OWNER-DOCUMENTED envelope, but AMBER for the WIDER envelope a hostile adversary would target. Recommend: hold ship until HC-001 + HC-003 + skeleton inventory closed AND broader tax_inclusive_prices test coverage added."
+}
