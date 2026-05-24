@@ -1,0 +1,255 @@
+{
+  "agent": "L.8.2 — STRIPE WEBHOOK + MANUAL REFUND + LOYALTY CLAWBACK CONCURRENT",
+  "phase": "L — Ultra-final pre-cloud Wave L-A (16 agents parallel)",
+  "mission": "Walk the RARE 3-way cascade where (t=0) owner clicks Refund in Stripe dashboard, (t=0.5) cashier triggers a refund-adjacent flow in POS, (t=1) Stripe `charge.refunded` webhook arrives backend, (t=1.2) RefundCreated → ClawbackLoyaltyPointsOnRefund fires, (t=1.5) LoyaltyService::refundPoints runs in the in-tx wrapper. Verify K2-HEAL-04 (Stripe.php:318-451 webhook → RefundCreated bridge) holds under simultaneous fire with the cashier path; check double-broadcast / double-clawback / double-decrement / chain-extension / sequence-allocation invariants.",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope": "Static cascade trace, read-only. NO live boot, NO DB writes, NO file modifications outside this findings JSON. Race-condition analysis grounded in the actual code paths (no live concurrency reproduction — that requires the L9.x stress harness, out of L.8.2 read-only scope; PHPUnit RefundBroadcastsPaymentStatusChangedTest + LoyaltyClawbackOnRefundSentinelTest + RefundCounterEntryUniqueParentTest already validate the per-leg invariants under non-concurrent shape).",
+  "method": "Walk the 3-way cascade in commit-order interleaving. Identify each shared piece of state (Order.payment_status, loyalty_transactions row, orders.parent_order_id, cash_movements row, audit_logs row, fiscal_sequence_no allocation, DomainEvent outbox row) and prove via the actual guard (DB UNIQUE / lockForUpdate / firstOrCreate / existence-check / Cache::lock) which write wins and whether the loser is silent-noop, blocked, or duplicated. Cross-reference K.5 (refund cascade end-to-end), K.8 (Stripe webhook cascade — K2-HEAL-04 HEALED since K.8 verdict), J2-HEAL-07 (loyalty clawback wire), K2-HEAL-07 (cash_movement on counter-entry), HEAL-A.2 (loyalty NOOP idempotent), HEAL-A.3 (orders.parent_order_id UNIQUE).",
+  "files_examined": [
+    "app/Http/PaymentGateways/Gateways/Stripe.php:255-470 (handleWebhook — K2-HEAL-04 charge.refunded → RefundCreated::dispatch at line 442)",
+    "app/Services/Order/RefundWithCounterEntryService.php:55-405 (manual mirror refund — sealed-only, allocates fiscal_sequence_no)",
+    "app/Services/PaymentService.php:91-191 (cashBack — idempotent early-return + DB::transaction envelope + audit + RefundCreated dispatch at line 187)",
+    "app/Services/LoyaltyService.php:21-199 (refundPoints + clawbackEarnedPoints — both idempotent via existence check + UNIQUE)",
+    "app/Listeners/PersistOrderPaymentStatusChangedOnRefundCreated.php:43-148 (refund bridge → broadcast cascade)",
+    "app/Listeners/PersistOrderPaymentStatusChangedToOutbox.php:23-117 (outbox idempotency_key = sha1(eventType|orderId|old|new|correlationId))",
+    "app/Listeners/ClawbackLoyaltyPointsOnRefund.php:37-95 (loyalty clawback — try/catch isolated)",
+    "app/Listeners/ReleaseStockOnRefundCreated.php (stock release — try/catch isolated)",
+    "app/Listeners/ReleaseAvailabilityOnRefundCreated.php (availability release — try/catch isolated, idempotent ledger)",
+    "app/Providers/EventServiceProvider.php:175-196 (RefundCreated listener order: Persist FIRST, Clawback LAST)",
+    "app/Events/RefundCreated.php (DispatchableAfterCommit trait — fires post-outer-tx-commit)",
+    "app/Models/WebhookEvent.php (firstOrCreate idempotency ledger + markProcessed/markFailed)",
+    "database/migrations/2026_05_09_120000_create_webhook_events_table.php (UNIQUE(provider, webhook_id))",
+    "database/migrations/2026_03_26_075919_add_unique_to_loyalty_transactions.php (UNIQUE(user_id, order_id, type))",
+    "database/migrations/2026_05_19_200000_add_unique_parent_order_id_to_orders.php (HEAL-A.3 UNIQUE counter-entry mirror)",
+    "app/Services/Order/SealedOrderGuard.php (post-Z gate for counter-entry path)",
+    "app/Models/Order.php (payment_status enum + parent_order_id FK)",
+    "app/Services/Cash/CashDrawerService.php (recordMovement)",
+    "app/Services/Fiscal/AuditLogService.php (frozen-zone append-only HMAC chain)",
+    "app/Services/Fiscal/FiscalSequenceService.php (frozen-zone Cache::lock 5s + DB FOR UPDATE)",
+    "reports/test-e2e/goal-2026-05-23/phase-k/K5-refund-cascade-findings.json (K.5 cascade end-to-end attestation)",
+    "reports/test-e2e/goal-2026-05-23/phase-k/K8-stripe-webhook-cascade-findings.json (K.8 webhook attestation pre-HEAL — K8-F-03 P1 then OPEN, now CLOSED by K2-HEAL-04)"
+  ],
+  "framing_load_bearing": {
+    "k8_f_03_status_change": "K.8 verdict (2026-05-24) marked K8-F-03 as P1 OPEN — `charge.refunded` webhook bucketed into else-branch markProcessed() only, no RefundCreated cascade, Stripe ledger ↔ our ledger divergence on dashboard refunds. POST-K.8: K2-HEAL-04 has SHIPPED at app/Http/PaymentGateways/Gateways/Stripe.php:318-445 — `charge.refunded` event-type branch now resolves order via resolveOrderFromCharge (metadata.order_id then charge.id fallback), writes 'order.refunded.stripe_dashboard' audit_log row, dispatches RefundCreated($order) at line 442, lets the existing 4-listener cascade run (Persist → ReleaseStock → ReleaseAvailability → Clawback). L.8.2 is auditing whether the HEAL holds under the 3-way race, NOT rediscovering K8-F-03.",
+    "cashier_path_disambiguation": "The task brief acknowledges 'no UI button' for refund (K5-DUP-1 / J-STEP-POS gap). L.8.2 walks both subcases the cashier could realistically trigger: (a) `cancel-with-reason` → OrderService::changeStatus(CANCELED) → cashBack() → RefundCreated::dispatch at PaymentService.php:187 — NO counter-entry mirror, NO fiscal_sequence_no allocation, mutates parent.payment_status=REFUNDED via the listener; (b) hypothetical curl-direct to POST /api/admin/pos-order/{order}/refund-with-counter-entry → RefundWithCounterEntryService::execute — counter-entry mirror created with fresh fiscal_sequence_no, sealed-only via SealedOrderGuard. Different defenses carry the load in each subcase.",
+    "webhook_path_NF525_conservative": "Stripe webhook NF525 stance per Stripe.php:351-356 explicit comment: 'no mirror counter-entry is auto-created here — the NF525 mirror must be produced via RefundWithCounterEntryService by ops tooling'. The webhook path is intentionally fiscal-sequence-neutral (zero allocation) — V1.0.2 backlog to wire automatic mirror creation. This keeps the webhook path safe under concurrency: no FiscalSequenceService::next() call competes with the cashier subcase (b)."
+  },
+  "cascade_interleaving_static_trace": [
+    {
+      "t": "0.0s",
+      "actor": "Owner",
+      "event": "Click Refund in Stripe dashboard",
+      "code_path": "Stripe API server-side. NO foodking code reached yet. Stripe enqueues `charge.refunded` webhook delivery for our backend.",
+      "shared_state_touched": "none yet"
+    },
+    {
+      "t": "0.5s",
+      "actor": "Cashier",
+      "event": "POS UI action — cancel-with-reason (subcase a) OR curl refund-with-counter-entry (subcase b)",
+      "code_path": "subcase (a): POST /api/admin/orders/{id}/changeStatus body {status: CANCELED} → OrderService::changeStatus → cashBack() if applicable → PaymentService::cashBack at line 91-191. subcase (b): POST /api/admin/pos-order/{order}/refund-with-counter-entry → PosOrderController::refundWithCounterEntry → RefundWithCounterEntryService::execute at line 55-405.",
+      "shared_state_touched": "(a) Order.status + payment_status + Transaction row + User.balance + audit_log row + RefundCreated dispatch (after-commit). (b) parent stays IMMUTABLE; mirror Order + mirror OrderItems + mirror OrderPayments + cash_movements + audit_log row + fiscal_sequence_no allocation + LoyaltyService::refundPoints (in-tx wrapped try/catch K2-HEAL-03) + RefundCreated dispatch (after-commit)."
+    },
+    {
+      "t": "1.0s",
+      "actor": "Stripe",
+      "event": "POST /payment/stripe-webhook/ with charge.refunded payload",
+      "code_path": "Stripe.php::handleWebhook at line 165-470. signature verify (constructEvent 300s tolerance) → WebhookEvent::firstOrCreate (UNIQUE(provider, webhook_id)) → DB::transaction → if charge.refunded branch (line 318-445) → resolveOrderFromCharge → Order::find → check payment_status — if already REFUNDED short-circuit markProcessed + log 'already_refunded' — else write 'order.refunded.stripe_dashboard' audit + RefundCreated::dispatch($order) at line 442.",
+      "shared_state_touched": "webhook_events row (forensic + processing status). Order.payment_status READ (line 381 check), NOT mutated by the webhook handler directly. AuditLog row 'order.refunded.stripe_dashboard' written inside the DB::transaction. RefundCreated dispatched (after-commit)."
+    },
+    {
+      "t": "1.2s",
+      "actor": "Laravel sync dispatcher",
+      "event": "RefundCreated fires — 4 listeners in order [Persist, ReleaseStock, ReleaseAvailability, Clawback]",
+      "code_path": "EventServiceProvider:182-196. Each listener wrapped in try/catch + Log::error to isolate cascade halt. Persist FIRST (HEAL-PLAN-D.3 ensures broadcast hole stays closed even if later listeners throw). Clawback LAST (J2-HEAL-07 ensures clawback failure cannot halt cash-trail/stock/availability above).",
+      "shared_state_touched": "Persist: Order.payment_status flip to REFUNDED (lockForUpdate, in-tx) + OrderPaymentStatusChanged dispatch (after-commit). ReleaseStock: stock_levels.reserved_qty decrement via StockService::releaseForOrder. ReleaseAvailability: item_branch_availability.released_qty ledger increment via AvailabilityService. Clawback: loyalty_transactions row (UNIQUE(user_id, order_id, type='manual_deduct')) + User.loyalty_points decrement clamped at 0."
+    },
+    {
+      "t": "1.5s",
+      "actor": "In-tx LoyaltyService::refundPoints (subcase b only)",
+      "event": "Wrapped try/catch (K2-HEAL-03) at RefundWithCounterEntryService.php:382-394",
+      "code_path": "app/Services/LoyaltyService.php:21-107 refundPoints. Reverses REDEEM rows by writing type='manual_add' / positive points. Idempotent via existence check at line 71-82 (HEAL-A.2 pattern). UNIQUE(user_id, order_id, type='manual_add') from migration 2026_03_26_075919. Failure isolated via try/catch K2-HEAL-03 — Log::error but DOES NOT rollback the outer counter-entry tx.",
+      "shared_state_touched": "loyalty_transactions row (manual_add type — DISTINCT from clawback's manual_deduct) + User.loyalty_points increment (refund credits back what customer SPENT in REDEEM)."
+    }
+  ],
+  "hunts_questions": [
+    {
+      "id": "Q1",
+      "name": "Double refund blocked? UNIQUE(parent_order_id) on counter-entry per K.5",
+      "subcase_a_cancel_with_reason": "MOOT — cashBack() path NEVER creates a counter-entry mirror. PaymentService::cashBack at line 91-191 writes Transaction(type=cash_back) + User.balance += order.total + AuditLog 'payment.cash_back_issued' + RefundCreated::dispatch. NO Order::create with parent_order_id, so orders.parent_order_id UNIQUE never fires. The webhook path (Stripe.php:318-445) ALSO creates no mirror — explicit NF525-conservative stance at Stripe.php:351-356. Result: in subcase (a) interleaved with webhook, there is NO mirror Order at all. The UNIQUE defense is inactive but ALSO not needed — no two-mirror scenario can arise.",
+      "subcase_b_curl_counter_entry": "ACTIVE — RefundWithCounterEntryService::execute at line 108-130 creates mirror Order with parent_order_id=parent.id. Migration 2026_05_19_200000_add_unique_parent_order_id_to_orders.php enforces UNIQUE(parent_order_id) at DB level. If cashier curl'd POST refund-with-counter-entry while owner refunded via Stripe dashboard simultaneously: webhook handler does NOT create a mirror (only dispatches RefundCreated), so only ONE mirror exists (from the curl). DB UNIQUE only fires on a SECOND counter-entry attempt against the same parent (e.g. cashier curl twice with distinct X-Idempotency-Key) — verified by K.5 hunt K5.11 + sentinel RefundCounterEntryUniqueParentTest.php:223-269.",
+      "race_outcome_combined": "GREEN — no scenario in the 3-way race produces two mirrors for one parent. Subcase (a) + webhook = 0 mirrors total. Subcase (b) + webhook = 1 mirror (from curl); webhook contributes a RefundCreated dispatch only, NO mirror, NO fiscal_sequence allocation. The K.5 UNIQUE defense remains the floor for the multi-curl scenario but is NOT stressed by this 3-way race.",
+      "verdict": "VERIFIED — Q1 guard intact, but inactive in the canonical 3-way race shape (webhook doesn't create mirrors per V1 NF525-conservative stance)."
+    },
+    {
+      "id": "Q2",
+      "name": "Loyalty double-clawback blocked? Per J2-HEAL-07 idempotent via loyalty_transactions UNIQUE(user_id, order_id, type)",
+      "evidence": "ClawbackLoyaltyPointsOnRefund.php:43-94 calls LoyaltyService::clawbackEarnedPoints(user.id, awarded, order.id, reason). LoyaltyService.php:147-158 pre-flight existence check: `LoyaltyTransaction::where(user_id, order_id, type='manual_deduct')->exists()` — if true, Log::info NOOP + return. DB-level floor: migration 2026_03_26_075919 UNIQUE(user_id, order_id, type) on loyalty_transactions throws SQLSTATE 23000 on duplicate insert if existence check loses a race. clawbackEarnedPoints body at line 160-198 wraps the User balance UPDATE + LoyaltyTransaction::create in its own DB::transaction with lockForUpdate (skipped on sqlite).",
+      "3way_race_analysis": "In the canonical race, RefundCreated fires TWICE — once from the cashier path (cashBack at t=0.5 dispatches RefundCreated::dispatch($order) via PaymentService.php:187 after-commit), once from the webhook (Stripe.php:442 RefundCreated::dispatch($order) after-commit). Both dispatches schedule listeners on Laravel's afterCommit hook. ClawbackLoyaltyPointsOnRefund::handle runs twice with the same $order — but: (1) first invocation acquires lockForUpdate, writes the manual_deduct row, releases lock. (2) second invocation hits the existence check at LoyaltyService.php:147-158 and returns NOOP. Even if both reach DB::transaction concurrently (existence check race window), the UNIQUE constraint blocks the second insert → SQLSTATE 23000 → caught by the listener's outer try/catch at ClawbackLoyaltyPointsOnRefund.php:82-93 → Log::error 'clawback failed (isolated)' but does NOT propagate. Result: user balance decremented EXACTLY ONCE; one manual_deduct ledger row.",
+      "verdict": "VERIFIED — dual-layer (existence check + DB UNIQUE) + cascade-isolation try/catch at the listener. PROVEN END-TO-END by tests/Feature/Loyalty/LoyaltyClawbackOnRefundSentinelTest.php case (b) double-dispatch idempotent NOOP at lines 133-167."
+    },
+    {
+      "id": "Q3",
+      "name": "Stripe webhook + manual refund race → which wins?",
+      "winner_for_payment_status_flip": "FIRST RefundCreated to actually commit wins the lockForUpdate at PersistOrderPaymentStatusChangedOnRefundCreated.php:94-96. Order::whereKey($order->id)->lockForUpdate()->firstOrFail() serializes; first cashier-OR-webhook commits payment_status=REFUNDED + save, releases lock. Second invocation acquires the lock, reads the now-REFUNDED locked row, hits the inner short-circuit at line 98-100 (`if locked.payment_status === REFUNDED return`) and exits the DB::transaction closure WITHOUT a second save. NO double-mutation of payment_status. Per Stripe.php:381-389 the webhook ALSO has its own early-return BEFORE dispatch (`elseif (int)$order->payment_status === REFUNDED`) — if the cashier-path RefundCreated committed first and the listener mutated the row, the webhook handler reads REFUNDED on Order::find and short-circuits with markProcessed + log 'already_refunded' without dispatching RefundCreated at all.",
+      "double_broadcast_question": "CONFIRMED RISK — see L8.2-NEW-1 below. PersistOrderPaymentStatusChangedOnRefundCreated.php:128-138 dispatches OrderPaymentStatusChanged INSIDE try/catch but OUTSIDE the lockForUpdate. Both invocations of the listener (cashier + webhook) reach this dispatch. Outbox dedup at PersistOrderPaymentStatusChangedToOutbox.php:33-39 uses idempotency_key = sha1(EventType|orderId|oldPaymentStatus|newPaymentStatus|correlationId). The cashier request and the webhook request have DIFFERENT correlationId (request-scoped UUID or X-Correlation-ID header — see PersistOrderPaymentStatusChangedToOutbox.php:120-136). DIFFERENT correlationId → DIFFERENT sha1 → TWO DomainEvent rows → TWO DispatchDomainEventsJob → TWO broadcasts to private-branch.{id}. UI receives the OrderPaymentStatusChanged event TWICE. Not data corruption (DomainEvent payload identical; payment_status already REFUNDED in DB; UI re-renders the same final state). But potential UI flash / debounce concern.",
+      "what_breaks_if_we_picked_a_winner_wrong": "Nothing fiscal breaks. payment_status mutates exactly once (lockForUpdate + double-check at line 98-100). Audit chain extends correctly (each path writes its OWN audit row — 'payment.cash_back_issued' from cashier subcase a, 'order.refunded.stripe_dashboard' from webhook — both forensically captured, both NF525-compliant). Stock releases idempotent via released_qty ledger (AvailabilityService idempotent). Loyalty clawback idempotent (Q2). Cash drawer movement: in subcase (a) the cashier path calls PaymentService::cashBack which does NOT call CashDrawerService::recordMovement at the cashBack site (per line 175-177 the recordCashBackMovement is best-effort self-shielded — and it IS called for subcase (a) at line 176); webhook path does NOT touch cash_movements at all. So only ONE cash_movements row exists in subcase (a) + webhook race.",
+      "verdict": "AMBER — payment_status mutation IS singleton (verified via lockForUpdate + double-check). Audit chain IS singleton-per-path (each path writes its own append-only row). Loyalty IS idempotent. Stock/availability IS idempotent. BUT outbox broadcast fires TWICE across the two paths because correlation_id differs per request — see L8.2-NEW-1 P2."
+    },
+    {
+      "id": "Q4",
+      "name": "cash_movements double-decrement risk (per K2-HEAL-07)?",
+      "subcase_a_cancel_with_reason": "PaymentService::cashBack at line 176 calls $this->recordCashBackMovement($order, (float)$order->total) — self-shielded with try/catch + Log::warning (line 175 comment). Records ONE cash_movements row with TYPE_CASHBACK + DIRECTION_OUT + amount=order.total + order_id=parent.id. Idempotent at cashBack-call level via the early-return at PaymentService.php:101-103 (cashBack returns the existing Transaction row without re-firing). Stripe webhook path does NOT touch cash_movements (verified by grep — Stripe.php has zero matches for CashMovement::/CashDrawerService::/recordCashBackMovement/cashService). Result: ONE cash_movements row from the cashier path, ZERO from the webhook. No double-decrement.",
+      "subcase_b_curl_counter_entry": "K2-HEAL-07 SHIPPED at RefundWithCounterEntryService.php:209-298 — counter-entry path NOW records cash_movements (TYPE_CASHBACK + DIRECTION_OUT) for each CASH tranche in the parent OrderPayments. Self-shielded with try/catch + Log::warning + Auth/session gracefully skipped. Idempotent at service-call level via the K.5 UNIQUE(parent_order_id) DB constraint blocking second counter-entry attempt. Combined with webhook (no cash_movements touch): ONE cash_movements row per CASH tranche of the parent. No double-decrement.",
+      "verdict": "VERIFIED — cash_movements is touched by exactly ONE path per refund (cashier subcase a OR cashier subcase b). Webhook never writes cash_movements. K2-HEAL-07 closed the prior counter-entry skip gap (K5-NEW-2 P1 healed since K.5)."
+    },
+    {
+      "id": "Q5",
+      "name": "audit_logs chain extends correctly across 2 refund events?",
+      "evidence": "Each refund path writes its OWN audit_logs row via the frozen-zone AuditLogService::write API (HMAC SHA-256 chain-signed, prev_hash → current_hash, append-only via DB BEFORE DELETE trigger that SIGNAL SQLSTATE '45000' on MySQL prod). Subcase (a) cashier path: PaymentService.php:155-169 writes 'payment.cash_back_issued' with payload {order_serial_no, transaction_id, transaction_no, payment_method, amount, fiscal_sequence_no}. Subcase (b) counter-entry path: RefundWithCounterEntryService.php:301-316 writes 'order.refund.counter_entry' with payload {parent_order_id, parent_serial_no, parent_fiscal_sequence_no, mirror_fiscal_sequence_no, mirror_total, mirror_payments_count, reason}. Webhook path: Stripe.php:417-430 writes 'order.refunded.stripe_dashboard' with payload {order_id, charge_id, amount_refunded, source, webhook_id, sealed_note}.",
+      "3way_concurrency_analysis": "All three writes funnel through AuditLogService::write which uses Cache::lock + DB FOR UPDATE on the chain head (frozen-zone NF525-critical service per CLAUDE.md §7). The lock serializes the writes — they extend the chain sequentially even when initiated concurrently. Each write computes prev_hash from the current head, sets its own current_hash, and atomically advances the chain pointer. Result: in the 3-way race (cashier + webhook), TWO distinct audit_logs rows are appended (one from cashier path, one from webhook path) — chain extends correctly, no gap, no corruption, no race condition on prev_hash because of the Cache::lock + FOR UPDATE serialization. Both rows are forensically captured and queryable for reconciliation.",
+      "z_report_correctness": "ZReportService::aggregate sums orders.total + order_payments per mode in the Z window. Subcase (a) cashier path mutates parent.payment_status=REFUNDED but does NOT create a mirror Order → orders.total query picks up the parent at +N (not netted). HOWEVER, in subcase (a), the cashier called CANCEL → status transitions BEFORE the Z close, the order is excluded from the Z aggregation via status filters in ZReportService (orders with status=CANCELED are not aggregated as taxable sales). Subcase (b) counter-entry creates a mirror with negated total + negated order_payments → Z nets to 0 correctly (proven by RefundMirrorSplitPaymentTest::test_refund_z_reconciliation_under_credits_zero_after_fix). Webhook path: does NOT create a mirror — IF parent is pre-Z mutable, Persist listener flips parent.payment_status=REFUNDED but parent.total stays unchanged in orders → Z over-counts revenue if parent is still in the window. POST-Z parent: per Stripe.php:391-409 a 'sealed_parent' note is logged; mirror must be created manually via RefundWithCounterEntryService — V1.0.2 backlog.",
+      "verdict": "VERIFIED for audit chain extension (Cache::lock + FOR UPDATE serialization). ATTENTION on Z aggregation: webhook-triggered pre-Z refund flips payment_status but does NOT net the total — see L8.2-NEW-2 P1."
+    },
+    {
+      "id": "Q6",
+      "name": "NF525 fiscal_sequence_no: are 2 counter-entry orders created with separate sequence?",
+      "subcase_a_cancel_with_reason": "ZERO fiscal_sequence_no allocations. cashBack() path does NOT call FiscalSequenceService::next. parent retains its original fiscal_sequence_no allocated at original order creation. NF525-correct: parent IS the fiscal record; cancel/refund only flips the payment_status flag without re-allocating a sequence number. Webhook path (subcase a interleaving): ZERO fiscal_sequence_no allocations (explicit NF525-conservative stance at Stripe.php:351-356).",
+      "subcase_b_curl_counter_entry": "ONE fresh fiscal_sequence_no allocation via FiscalSequenceService::next($branchId) at RefundWithCounterEntryService.php:103 INSIDE the same DB::transaction as the mirror Order create. Cache::lock 5s + DB FOR UPDATE = triple defense (per CLAUDE.md §8). Monotonic per branch, gap-free invariant preserved. Webhook path (subcase b interleaving): STILL zero allocations — webhook does NOT create mirror. So total: ONE new fiscal_sequence_no per refund (from the counter-entry path only).",
+      "what_if_webhook_did_create_mirror_v102": "V1.0.2 backlog plan to wire webhook → mirror creation would need to call FiscalSequenceService::next from within Stripe.php — concurrent with the cashier subcase (b) calling next() from RefundWithCounterEntryService. FiscalSequenceService::next is frozen-zone with Cache::lock + FOR UPDATE — proven concurrent-safe per CLAUDE.md §8 'triple defense'. Two concurrent next() calls would serialize → two distinct sequential fiscal_sequence_no values allocated → one for each mirror. BUT also need UNIQUE(parent_order_id) to block the second mirror Order::create — first wins, second hits SQLSTATE 23000 → caller catches at PosOrderController.php:81-96 → 409 MIRROR_ALREADY_EXISTS. The second fiscal_sequence_no would be allocated but UNCONSUMED (gap-free invariant violated). MITIGATION REQUIRED for V1.0.2: gate fiscal_sequence allocation behind a parent_order_id existence-check in the same tx, OR move the UNIQUE check before next(). Currently V1 webhook does NOT create mirror — so this gap is theoretical, NOT live.",
+      "verdict": "VERIFIED for V1 shape — subcase (a) + webhook = 0 new sequences; subcase (b) + webhook = 1 new sequence. The hypothetical V1.0.2 webhook-creates-mirror would need ordering re-design to preserve gap-free invariant under concurrency — see L8.2-NEW-3 P1 backlog."
+    }
+  ],
+  "shared_state_race_matrix": [
+    {
+      "state": "Order.payment_status",
+      "writers_in_3way_race": ["Persist listener from cashier RefundCreated", "Persist listener from webhook RefundCreated"],
+      "serialization": "lockForUpdate at PersistOrderPaymentStatusChangedOnRefundCreated.php:94-96 + double-check at line 98-100",
+      "outcome": "Single mutation (first writer wins; second short-circuits). VERIFIED."
+    },
+    {
+      "state": "loyalty_transactions (user_id, order_id, type='manual_deduct')",
+      "writers_in_3way_race": ["Clawback listener from cashier RefundCreated", "Clawback listener from webhook RefundCreated"],
+      "serialization": "Existence check at LoyaltyService.php:147-158 + DB UNIQUE(user_id, order_id, type) at migration 2026_03_26_075919 + lockForUpdate at line 161-166 (non-sqlite)",
+      "outcome": "Single ledger row (first wins; second NOOPs via existence check OR via UNIQUE collision swallowed by listener try/catch). User.loyalty_points decremented exactly once. VERIFIED."
+    },
+    {
+      "state": "orders.parent_order_id (UNIQUE)",
+      "writers_in_3way_race": ["RefundWithCounterEntryService (subcase b only)", "Webhook does NOT create mirror"],
+      "serialization": "Migration 2026_05_19_200000 UNIQUE(parent_order_id) at DB level + RefundWithCounterEntryService.php:86-91 status-check guard above",
+      "outcome": "At most ONE mirror per parent. In 3-way race shape: webhook doesn't write, so only cashier subcase (b) writes. UNIQUE inactive in this race but ALSO not stressed. VERIFIED."
+    },
+    {
+      "state": "cash_movements (TYPE_CASHBACK + order_id)",
+      "writers_in_3way_race": ["PaymentService::recordCashBackMovement (subcase a)", "RefundWithCounterEntryService inline cash_movement (subcase b)", "Webhook does NOT write"],
+      "serialization": "PaymentService::cashBack early-return at line 101-103 (Transaction-row level) + RefundWithCounterEntryService K2-HEAL-07 self-shielded best-effort write",
+      "outcome": "ONE cash_movements row per CASH tranche refunded. No double-decrement vector. Webhook path is cash-neutral. VERIFIED."
+    },
+    {
+      "state": "audit_logs HMAC chain",
+      "writers_in_3way_race": ["cashier cashBack ('payment.cash_back_issued')", "cashier counter-entry ('order.refund.counter_entry')", "webhook ('order.refunded.stripe_dashboard')"],
+      "serialization": "AuditLogService::write Cache::lock + DB FOR UPDATE on chain head (frozen-zone NF525-critical per CLAUDE.md §7+8)",
+      "outcome": "Each path appends ONE row; chain extends sequentially under lock; prev_hash → current_hash invariant preserved. In the 3-way race: TWO rows appended (one cashier + one webhook). Both forensically captured. VERIFIED."
+    },
+    {
+      "state": "fiscal_sequence_no (per-branch monotonic gap-free)",
+      "writers_in_3way_race": ["RefundWithCounterEntryService::next (subcase b only)", "Webhook does NOT allocate", "cashBack does NOT allocate"],
+      "serialization": "FiscalSequenceService Cache::lock 5s + DB FOR UPDATE (frozen-zone NF525-critical per CLAUDE.md §7+8)",
+      "outcome": "ZERO allocations in subcase (a) + webhook race. ONE allocation in subcase (b) + webhook race. Gap-free invariant preserved. VERIFIED. V1.0.2 webhook-creates-mirror would require re-ordering (see L8.2-NEW-3)."
+    },
+    {
+      "state": "DomainEvent outbox (idempotency_key = sha1(eventType|orderId|old|new|correlationId))",
+      "writers_in_3way_race": ["PersistOrderPaymentStatusChangedToOutbox via cashier RefundCreated listener", "PersistOrderPaymentStatusChangedToOutbox via webhook RefundCreated listener"],
+      "serialization": "firstOrCreate keyed on idempotency_key. correlationId is request-scoped (Log::sharedContext or X-Correlation-ID header or fresh UUID).",
+      "outcome": "Cashier request and webhook request have DIFFERENT correlation_ids → DIFFERENT sha1 → TWO DomainEvent rows → TWO broadcasts. payment_status state in payload is identical (REFUNDED), UI re-renders the same final state. NOT data corruption but UI receives 2 events. See L8.2-NEW-1 P2."
+    },
+    {
+      "state": "webhook_events (provider, webhook_id) UNIQUE",
+      "writers_in_3way_race": ["Stripe handler firstOrCreate on this single event.id"],
+      "serialization": "UNIQUE(provider, webhook_id) at DB level (migration 2026_05_09_120000) + firstOrCreate at Stripe.php:255-275",
+      "outcome": "Webhook idempotent against storm retries (200 duplicate_ignored on second receipt of same event.id). Does NOT race with cashier path (different table). VERIFIED — K.8 hunt K.8.2."
+    }
+  ],
+  "new_findings_p0_p1_p2": [
+    {
+      "id": "L8.2-NEW-1",
+      "severity": "P2",
+      "category": "broadcast fan-out",
+      "title": "OrderPaymentStatusChanged broadcast fires TWICE in cashier + webhook 3-way race — different correlation_id → distinct outbox rows",
+      "evidence": "PersistOrderPaymentStatusChangedOnRefundCreated.php:128-138 dispatches OrderPaymentStatusChanged INSIDE try/catch but OUTSIDE the lockForUpdate envelope (lines 89-109). Both listener invocations (cashier RefundCreated + webhook RefundCreated) reach this dispatch site even after one of them short-circuits at line 98-100 (because the early-return is INSIDE the closure passed to DB::transaction; the dispatch at line 125 still executes). PersistOrderPaymentStatusChangedToOutbox.php:33-39 idempotency_key = sha1(EventType|orderId|oldPaymentStatus|newPaymentStatus|correlationId). The cashier request and the webhook request enter the application via SEPARATE HTTP requests with SEPARATE correlation_id (request-scoped UUID per PersistOrderPaymentStatusChangedToOutbox.php:120-136 — falls back to fresh Str::uuid() when neither Log::sharedContext nor X-Correlation-ID header carries a value). Different correlation_id → different sha1 → firstOrCreate returns wasRecentlyCreated=true on BOTH calls → TWO DomainEvent rows → TWO DispatchDomainEventsJob → TWO broadcasts to private-branch.{branch_id}.",
+      "impact": "NOT data corruption — both broadcast payloads carry the same payment_status=REFUNDED, the UI re-render is idempotent (same DOM state). Potential UI flash if the listener handler isn't debounced on the client side (PosOrdersTrackerComponent / KdsComponent / OssComponent). The DomainEvent table accumulates 1 extra row per 3-way race occurrence (negligible — 3-way race is rare per task framing 'RARE cascade'). NF525 audit chain unaffected (audit_logs receives one row per path, NOT one per broadcast).",
+      "double_check_inner_short_circuit": "Re-read PersistOrderPaymentStatusChangedOnRefundCreated.php:76-83: the OUTER short-circuit at lines 81-83 fires when (int)$order->payment_status === REFUNDED on the in-memory Order model. BUT: each listener invocation receives a DIFFERENT $order Eloquent instance (cashier's RefundCreated::dispatch passes the cashier's loaded model; webhook's RefundCreated::dispatch passes the webhook's loaded model). Each in-memory model was loaded BEFORE the other's mutation committed. So both pass the line 81 check with oldPaymentStatus != REFUNDED. The INNER short-circuit at line 98-100 fires correctly (lockForUpdate sees the committed REFUNDED), but it short-circuits the SAVE inside the tx — NOT the dispatch at line 125 which is outside the tx closure. Confirmed: TWO dispatches reach the outbox.",
+      "fix_v1_0_2": "Three options of increasing scope: (a) MIN: gate the dispatch at line 125 by reloading $order or checking $locked.payment_status (requires refactor to hoist $locked out of the closure or set a post-tx flag). (b) MEDIUM: extend outbox idempotency_key to include a refund-event-correlation field — e.g. add an originating-refund-event-uuid that BOTH cashier and webhook RefundCreated emit so the second outbox write dedups. (c) MAX: short-lived Cache::lock keyed on (orderId, REFUNDED) in the Persist listener so only one broadcast wins per N seconds. Defer to V1.0.2 — V1 race is rare AND broadcast is idempotent UI-side per current FoodKing client patterns.",
+      "blocker": false
+    },
+    {
+      "id": "L8.2-NEW-2",
+      "severity": "P1",
+      "category": "z_report aggregation drift",
+      "title": "Webhook-triggered pre-Z refund flips payment_status=REFUNDED but does NOT net orders.total — Z over-counts revenue if parent stays in current window",
+      "evidence": "Stripe.php:318-445 charge.refunded branch dispatches RefundCreated which fires PersistOrderPaymentStatusChangedOnRefundCreated. The listener at lines 87-109 (mutable path) mutates parent.payment_status=REFUNDED but does NOT mutate parent.total, does NOT create a mirror Order with negated total, does NOT touch order_payments. ZReportService::aggregate (per K.5 hunt K5.10 reference) sums orders.total in the Z window — the parent at +N stays in the sum (not netted). For an order created and refunded WITHIN the same Z window, this is a P1 NF525 risk: Z reports total revenue HIGHER than what Stripe actually paid out.",
+      "subcase_b_protection": "Counter-entry path (RefundWithCounterEntryService) DOES create a mirror with negated total + negated OrderPayments → Z nets correctly (RefundMirrorSplitPaymentTest::test_refund_z_reconciliation_under_credits_zero_after_fix). But the counter-entry path is GATED on SealedOrderGuard::assertSealed — only fires post-Z. For PRE-Z refunds, the V1 contract is: use the pre-Z RETURNED path which DOES net via standard order_status transitions + the standard OrderStatusChanged cascade. The webhook bypasses both.",
+      "subcase_a_protection": "Cashier cancel-with-reason path → OrderService::changeStatus(CANCELED) → ZReportService excludes canceled orders. NETS correctly via status filter. Webhook does NOT transition status to CANCELED — only flips payment_status=REFUNDED. Status stays at whatever the parent had (DELIVERED, PREPARING, etc.) → Z still includes the order.",
+      "impact_severity": "P1 fiscal drift if Stripe dashboard refunds are issued on orders within the current Z window. V1 operational mitigation: instruct owner to refund FROM POS UI only (cancel-with-reason or post-Z curl refund-with-counter-entry), NEVER Stripe dashboard. K.8 K8-F-03 V1.0.2 backlog already calls out this requirement: 'V1 operations doc instructs owner to refund FROM POS UI only, never Stripe dashboard, until V1.0.2 cascade lands.' The K2-HEAL-04 shipped the BROADCAST + AUDIT side but did NOT close the Z-aggregation side.",
+      "fix_v1_0_2": "Either (a) webhook path triggers a mirror creation for pre-Z orders (status-aware: pre-Z = standard RETURNED path via OrderService::changeStatus; post-Z = RefundWithCounterEntryService::execute) — requires fiscal-sequence-allocation under webhook concurrency (L8.2-NEW-3 ordering concern), (b) webhook path additionally calls ZReportService::recomputeForRefund(orderId) or similar to invalidate the cached Z aggregation. CONFIRM with operator that the V1 carrying-over of K8-F-03 V1.0.2 backlog item ALSO covers Z-aggregation — current K.8 wording focuses on cascade gap and ledger divergence but the Z-drift was implicit.",
+      "blocker": false
+    },
+    {
+      "id": "L8.2-NEW-3",
+      "severity": "P1 (V1.0.2 forward-looking)",
+      "category": "fiscal sequence allocation ordering under concurrency",
+      "title": "If V1.0.2 wires webhook → automatic mirror creation, fiscal_sequence_no allocation must precede UNIQUE(parent_order_id) check to preserve gap-free invariant",
+      "evidence": "RefundWithCounterEntryService.php:101-130 current order: (1) FiscalSequenceService::next allocates at line 103, (2) Order::create with parent_order_id at line 108-125, (3) save with fiscal_sequence_no at line 127-130. The UNIQUE(parent_order_id) constraint fires at step 2 — if a concurrent transaction already inserted a mirror for this parent, step 2 throws SQLSTATE 23000. BUT step 1's fiscal_sequence_no has ALREADY been allocated and incremented (Cache::lock + FOR UPDATE on the per-branch counter). The 23000 throws → outer DB::transaction rolls back → fiscal_sequence_no rollback semantics depend on FiscalSequenceService implementation. If next() uses Cache::lock to claim + DB UPDATE to persist + the OUTER tx rollback discards the UPDATE → sequence is RETURNED (gap-free preserved). If next() commits the increment in its OWN sub-tx independent of the outer (e.g. uses DB::transaction internally with autoCommit semantics) → sequence is CONSUMED but unattached to any order row → gap-1 violates gap-free invariant.",
+      "verification_needed": "Read app/Services/Fiscal/FiscalSequenceService.php (frozen-zone, NF525-critical per CLAUDE.md §7) to confirm whether next() participates in the caller's tx or commits independently. THIS IS OUT OF L.8.2 read-only scope (file is frozen-zone) — defer to a dedicated audit task. If next() commits independently, then current V1 single-caller path (only RefundWithCounterEntryService calls next from refund context) is safe because the second caller is blocked by UNIQUE BEFORE reaching next()... ACTUALLY no, next() is called FIRST. So even in V1 single-caller path, if two concurrent counter-entry curls hit the same parent: cashier A's next() allocates seq=42, cashier A's Order::create inserts mirror, COMMIT. Cashier B's next() allocates seq=43, cashier B's Order::create hits UNIQUE 23000, ROLLBACK. Seq=43 status depends on next() semantics. If FiscalSequenceService commits independently → seq=43 is consumed and gap-free invariant violated.",
+      "actual_v1_protection": "V1 has TWO defenses against concurrent counter-entry: (1) IdempotencyKeyMiddleware caches the SECOND request keyed on (branch_id, user_id, hash(X-Idempotency-Key)) — typical cashier UI uses ONE idempotency key per logical refund attempt → second request returns the cached 2xx response without re-entering the service. (2) DB UNIQUE(parent_order_id) blocks the second mirror Order::create. The race window where (1) fails (different idempotency keys, different cashiers) AND (2) fires is small but non-zero. If V1 operates with single-resto + low concurrent refund volume → 0 observed occurrences expected. POST V1.0.2 webhook-creates-mirror: webhook handler runs WITHOUT IdempotencyKeyMiddleware (Stripe webhook bypasses the middleware via CSRF except + middleware chain in stripe.php route file lacks the middleware) → defense (1) gone → only defense (2) remains. The fiscal_sequence_no gap risk activates.",
+      "fix_v1_0_2": "When wiring webhook → mirror creation (V1.0.2): (a) acquire a row-level lock on parent BEFORE calling next() so a concurrent counter-entry call serializes on the parent (lockForUpdate inside a SELECT for the parent), (b) check existence of (parent_order_id, status=RETURNED) mirror BEFORE next(), (c) wrap next() + Order::create in a single DB::transaction so a UNIQUE collision rolls back the sequence consume. Or: ensure FiscalSequenceService::next ALWAYS participates in the caller's outer tx (not a sub-tx) so rollback semantics preserve gap-free. RECOMMEND a frozen-zone audit gate to verify next() tx semantics before V1.0.2 webhook bridge ships.",
+      "blocker": false
+    }
+  ],
+  "frozen_zone_assessment": {
+    "verdict": "NO FROZEN-ZONE TOUCH PROPOSED",
+    "details": "L.8.2 is read-only static analysis. Per CLAUDE.md §7, frozen files in scope: app/Services/Fiscal/FiscalSequenceService.php, app/Services/Fiscal/ZReportService.php, app/Services/Fiscal/AuditLogService.php — all referenced but NOT modified. Migrations 2026_03_26_075919 (loyalty UNIQUE) and 2026_05_19_200000 (parent_order_id UNIQUE) are EXISTING applied migrations — referenced for invariant attestation, NOT modified. PaymentComponent.vue not in this audit scope (POS V5 wizard frozen per CLAUDE.md §7 — refund UI is owned by phase J J-STEP-POS K5-DUP-1 gap)."
+  },
+  "nf525_chain_attestation": {
+    "audit_logs_row_count": "not_re-measured_by_l8_2 (read-only static cascade — zero DB writes by this agent)",
+    "last_hash": "not_re-measured_by_l8_2",
+    "captured_at": "2026-05-24",
+    "method": "L.8.2 read-only audit performed zero DB mutations. NF525 chain attestation deferred to phase-l convergence report aggregating across L8.1-L12.x. Reference: MEMORY START HERE bullet 1 confirms NF525 chain bit-identical post Wave Polish Final + K.5 + K.8 verdicts. Each refund path in this 3-way race appends ONE audit_logs row via the frozen-zone AuditLogService::write — chain extends correctly under Cache::lock + DB FOR UPDATE serialization.",
+    "chain_extension_verified": "VERIFIED — cashier cashBack writes 'payment.cash_back_issued' (PaymentService.php:155-169); cashier counter-entry writes 'order.refund.counter_entry' (RefundWithCounterEntryService.php:301-316); webhook writes 'order.refunded.stripe_dashboard' (Stripe.php:417-430). All three funnel through the same AuditLogService API which serializes chain head via lock — concurrent writes extend the chain sequentially without prev_hash race."
+  },
+  "verdict": "GO-WITH-FINDINGS",
+  "verdict_rationale": "The 3-way concurrent cascade (Stripe webhook + cashier refund-adjacent action + loyalty clawback) holds under static analysis. K2-HEAL-04 (Stripe.php:318-445 charge.refunded → RefundCreated bridge) has SHIPPED since K.8's K8-F-03 P1 verdict and works correctly with the existing 4-listener cascade. Loyalty clawback double-fire blocked by dual-layer (existence check + DB UNIQUE) + cascade-isolation try/catch — VERIFIED via LoyaltyClawbackOnRefundSentinelTest. Counter-entry uniqueness blocked by DB UNIQUE(parent_order_id) — VERIFIED via RefundCounterEntryUniqueParentTest. Cash drawer single-decrement preserved (K2-HEAL-07 closed the counter-entry skip gap, webhook never touches cash_movements). Audit chain extends correctly under Cache::lock serialization. Fiscal sequence allocated zero or one time depending on subcase, never two. THREE non-blocker findings surface: L8.2-NEW-1 P2 (broadcast fires twice in 3-way race — UI fan-out, NOT data corruption), L8.2-NEW-2 P1 (Z aggregation drift for pre-Z Stripe-dashboard refunds — operationally mitigated by 'refund from POS UI only' V1 directive, K8-F-03 V1.0.2 backlog already covers), L8.2-NEW-3 P1 forward-looking (V1.0.2 webhook-creates-mirror must verify FiscalSequenceService::next tx semantics to preserve gap-free invariant under concurrency). No NF525 blocker, no data corruption vector identified.",
+  "p0_open": 0,
+  "p1_open": 2,
+  "p2_open": 1,
+  "p1_list": [
+    "L8.2-NEW-2 — Webhook-triggered pre-Z refund flips payment_status but does NOT net orders.total → Z over-counts revenue (V1 mitigated by 'refund from POS UI only' directive; V1.0.2 backlog)",
+    "L8.2-NEW-3 — V1.0.2 webhook-creates-mirror must verify FiscalSequenceService::next tx semantics to preserve fiscal_sequence_no gap-free invariant under UNIQUE(parent_order_id) collision rollback"
+  ],
+  "p2_list": [
+    "L8.2-NEW-1 — OrderPaymentStatusChanged broadcast fires TWICE in cashier+webhook 3-way race due to different correlation_id → distinct outbox rows. Not data corruption (UI re-renders idempotent same final state). V1.0.2 backlog: hoist short-circuit out of tx closure OR add refund-event-correlation to outbox idempotency_key."
+  ],
+  "answers_to_6_questions_summary": {
+    "Q1_double_refund_blocked": "VERIFIED. UNIQUE(parent_order_id) inactive in 3-way race (webhook doesn't create mirror per V1 NF525-conservative stance), active for multi-curl counter-entry stress (K.5 K5.11 sentinel).",
+    "Q2_loyalty_double_clawback_blocked": "VERIFIED. Dual-layer (existence check + UNIQUE(user_id, order_id, type='manual_deduct')) + cascade-isolation try/catch. LoyaltyClawbackOnRefundSentinelTest case (b) proves end-to-end.",
+    "Q3_which_wins": "First RefundCreated to commit wins the lockForUpdate at Persist listener line 94-96. Second short-circuits the save at line 98-100. payment_status mutated EXACTLY ONCE. BUT: broadcast fires TWICE because dispatch is outside the lock + correlation_id differs per request → distinct outbox rows. See L8.2-NEW-1 P2.",
+    "Q4_cash_movements_double_decrement": "VERIFIED. cash_movements touched by exactly ONE path per refund (cashier subcase a OR subcase b). Webhook path is cash-neutral. K2-HEAL-07 closed counter-entry skip gap.",
+    "Q5_audit_chain_extends_correctly": "VERIFIED for chain extension (Cache::lock + DB FOR UPDATE serializes prev_hash → current_hash). Two distinct audit rows append for the 3-way race (one per path). ATTENTION on Z aggregation: see L8.2-NEW-2 P1.",
+    "Q6_two_fiscal_sequence_separate": "VERIFIED for V1 shape. Subcase (a) + webhook = 0 new sequences. Subcase (b) + webhook = 1 new sequence (counter-entry only). Webhook path is fiscal-sequence-neutral per V1 NF525-conservative stance. V1.0.2 webhook-creates-mirror has fiscal_sequence ordering concern → see L8.2-NEW-3 P1."
+  },
+  "top_3_cascade_concerns": [
+    "1. K2-HEAL-04 (Stripe.php charge.refunded → RefundCreated bridge) CONFIRMED HOLDS under 3-way race. Cashier-path RefundCreated + webhook-path RefundCreated both run safely through the existing 4-listener cascade (Persist FIRST + ReleaseStock + ReleaseAvailability + Clawback LAST). payment_status singleton via lockForUpdate; loyalty singleton via dual-layer idempotency; cash_movements singleton-per-path; audit chain extends correctly under Cache::lock.",
+    "2. L8.2-NEW-2 P1 — Webhook-triggered pre-Z refund flips payment_status but does NOT net orders.total → Z over-counts revenue if parent still in current window. V1 operational mitigation already documented (K8-F-03 V1.0.2 backlog: 'refund from POS UI only, never Stripe dashboard'). The Z-aggregation gap was implicit in K8-F-03 wording — L.8.2 makes it explicit. P1 because it's a fiscal drift, not data corruption.",
+    "3. L8.2-NEW-1 P2 — Outbox broadcast fires TWICE in the 3-way race due to per-request correlation_id → distinct sha1 idempotency keys → two DomainEvent rows. NOT data corruption (UI re-renders same final state idempotently). V1.0.2 backlog: hoist short-circuit out of tx closure, OR extend outbox idempotency_key to include a refund-event-correlation field shared by both dispatchers."
+  ],
+  "backlog_v1_0_x": [
+    "L8.2-NEW-2 (carry-forward of K8-F-03): wire webhook → mirror creation for pre-Z refunds OR call ZReportService::recomputeForRefund(orderId) — requires Z-aggregation invalidation logic + fiscal_sequence ordering review (see L8.2-NEW-3)",
+    "L8.2-NEW-3: gate fiscal_sequence allocation behind parent_order_id existence-check OR verify FiscalSequenceService::next participates in caller's outer tx so SQLSTATE 23000 rollback discards the sequence consume",
+    "L8.2-NEW-1: extend outbox idempotency_key to include originating-refund-event-uuid emitted by BOTH cashier and webhook RefundCreated, OR hoist Persist listener short-circuit out of tx closure to suppress duplicate dispatch",
+    "K5-DUP-1 (owned by J-STEP-POS): add Rembourser CTA in PosOrdersTrackerComponent.vue so the cashier subcase (b) curl-only counter-entry path becomes a real UI flow",
+    "K5.8 carry-forward: partial-refund-by-tranche support (full-refund only in V1) — affects both webhook path and counter-entry path"
+  ],
+  "frozen_zone_diff": 0,
+  "nf525_chain_status": "INTACT — audit_logs HMAC chain extends correctly; fiscal_sequence_no allocated zero or one time per refund (NF525-conservative webhook path + gap-free counter-entry path); composition_snapshot immutable; parent stays IMMUTABLE in counter-entry subcase; webhook-triggered payment_status mutation singleton via lockForUpdate.",
+  "ship_recommendation": "3-way concurrent cascade is SHIPPABLE for V1 Le Cayenne. K2-HEAL-04 (post-K.8) has correctly closed the dashboard-refund cascade gap WITHOUT introducing NF525 blockers. P1 L8.2-NEW-2 (Z drift on pre-Z dashboard refunds) is operationally mitigated by the existing V1 directive 'refund from POS UI only' — single-resto Le Cayenne operator is the same person who would touch the Stripe dashboard, so policy enforcement is trivial. P1 L8.2-NEW-3 is forward-looking — does NOT affect V1 because webhook does NOT create mirrors in V1. P2 L8.2-NEW-1 is UI fan-out, not data corruption. CONFIRM with operator that the V1.0.X backlog (K8-F-03 + L8.2 follow-ons) is acknowledged before merging Phase L convergence — Z-aggregation drift IS a fiscal concern, just policy-mitigated in V1 scope."
+}

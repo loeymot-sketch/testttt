@@ -1,0 +1,330 @@
+{
+  "agent": "L3 long-soak architect",
+  "phase": "L",
+  "scope": "Plan + ship the 4h+ true soak infrastructure that owner can run overnight. F.2 (5min), G.1 (13min), H.3 (15min) were all too short to detect slow-burn signatures (memory leaks across PHP-FPM workers, Redis cache eviction patterns, outbox p99 over a representative sample, fiscal chain integrity across an entire operating day). This agent's deliverable is INFRASTRUCTURE — the artisan command + monitor script + runbook are production-grade, reusable, and smoke-tested. The actual 4h+ run is owner-executed.",
+  "generated_at": "2026-05-24T11:50:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_at_write_time": "needs git rev-parse HEAD at commit time",
+  "verdict": "AMBER",
+  "verdict_rationale": "Three deliverables shipped + smoke-tested. INFRASTRUCTURE IS PROVEN. End-to-end LOAD DISPATCH was NOT demonstrated against this dev DB because Spatie roles are not seeded (only the 'Admin' role exists; 'POS Operator' role missing). The artisan command's preflight quote-mint check (added post-advisor-review) correctly catches this in ~5 seconds and aborts with remediation guidance — converting what would have been a 4-hour fail-late into a 30-second fail-fast. Honest AMBER (per advisor): GREEN would require a demonstrated successful round-trip; AMBER reflects 'infrastructure proven to bootstrap, gates work, preflight fails honestly when env can't run it'. Owner should: (a) seed roles via `php artisan db:seed --class=PermissionTableSeeder` OR use the H.3 provisioning script in storage/logs/h3-provision-fixtures.php to seed POS Operator + Admin roles; (b) re-run smoke `--hours=0.01 --skip-queue-worker-check` to confirm end-to-end round-trip in ~36s; (c) launch the 4h soak per runbook. Three deliverables: (1) app/Console/Commands/E2ESoakCommand.php — new artisan command `foodking:e2e:soak --hours=N` that auto-registers via the existing $this->load(__DIR__.'/Commands') pattern, validated by `php artisan list | grep foodking:e2e:soak`. Lifts the H.3 event-loop pattern (storage/logs/h3-mixed-runner.php) into a production-grade reusable command with: durable JSONL output, per-tick Redis stats, queue-worker precondition assertion, PHP-S latency caveat warning, fiscal-contiguity post-check, outbox dispatch latency percentile computation, cache hit-ratio measurement, 7 enumerated stop-conditions, 7 acceptance criteria with pass/fail evaluator, verdict computation, preflight quote-mint sanity check, php-fpm worker RSS aggregation (sums all children — not just master). (2) scripts/monitor/soak-tick.sh — standalone background monitor with JSONL output (vs h3-monitor.sh printf), 300s default tick (vs H.3 60s — appropriate for 4h), 7-criterion alarm evaluator, LC_ALL=C locale guard (caught and fixed mid-development — FR locale produced 0,7 instead of 0.7 invalid JSON), php-fpm child RSS aggregation. Smoke-tested: 7/7 valid JSON output lines, alarm correctly fires when queue:work missing. (3) Owner runbook embedded below in OWNER_RUNBOOK field. Four constraints surfaced explicitly: (a) queue:work --queue=high precondition hard-asserted in artisan command (skippable with --skip-queue-worker-check) — H3-DEV-01 lineage; (b) PHP -S latency caveat warned at command start, p99 marked INFORMATIVE-ONLY when detected — H3-DEV-02/03 lineage; (c) Vue browser memory deferred (Playwright maintained 4h is fragile per task explicit note); (d) preflight role-seed sanity check — added per advisor blocker, fails ~5s if Spatie roles unseeded with actionable remediation. ZERO frozen-zone touch. ZERO production code modified — only new files in non-frozen paths.",
+
+  "test_script_path": "app/Console/Commands/E2ESoakCommand.php",
+  "test_script_invocation": "php artisan foodking:e2e:soak --hours=4",
+  "test_script_lines_loc": 645,
+  "test_script_auto_registered": true,
+  "test_script_smoke_test_evidence": {
+    "command": "php artisan foodking:e2e:soak --hours=0.005 --warmup-s=2 --checkpoint-s=5 --monitor-tick-s=60 --skip-queue-worker-check",
+    "duration_s_actual": 5,
+    "result": "Bootstrap OK; queue:work pre-flight gate skipped correctly per flag; PHP-S warning emitted (php artisan serve detected); fixtures provisioned (cashier_id=6, kiosk_id=7, branch_id=1); PREFLIGHT QUOTE-MINT CHECK FIRED: POS=FAIL Kiosk=FAIL, exit code 1, abort with remediation guidance + copy-paste curl reproducer. ROOT CAUSE on this dev DB: only 'Admin' role exists in Spatie roles table — 'POS Operator' role missing means cashier created without proper role assignment gets 403 on /api/admin/pos/quote. The preflight catches this in ~5 seconds instead of letting a 4h soak fail silently with all streams skipping forever.",
+    "files_produced_during_smoke_with_preflight_fail": [
+      "storage/logs/soak-20260524-114920/baseline.json (written before preflight fired)"
+    ],
+    "earlier_smoke_no_preflight_30s_run": {
+      "command": "php artisan foodking:e2e:soak --hours=0.008 --warmup-s=5 --checkpoint-s=10 --monitor-tick-s=60 --skip-queue-worker-check",
+      "result": "Pre-preflight-fix version ran 36s; all streams skipped due to quote endpoint 403; events.jsonl contained only 1 S5 admin-toggle 403 entry; verdict-incomplete because end-to-end load was never proven. This run was the empirical evidence that motivated the preflight gate.",
+      "files_produced": [
+        "storage/logs/soak-20260524-113929/baseline.json",
+        "storage/logs/soak-20260524-113929/events.jsonl",
+        "storage/logs/soak-20260524-113929/monitor.jsonl"
+      ]
+    }
+  },
+
+  "monitor_script_path": "scripts/monitor/soak-tick.sh",
+  "monitor_script_invocation": "DURATION_S=14400 ./scripts/monitor/soak-tick.sh > storage/logs/soak-monitor.jsonl",
+  "monitor_script_lines_loc": 215,
+  "monitor_script_smoke_test_evidence": {
+    "command": "DURATION_S=12 TICK_S=4 OUTPUT=/tmp/soak-smoke-monitor.jsonl scripts/monitor/soak-tick.sh",
+    "result": "7/7 emitted lines validated as parseable JSON via python3 json.loads. Alarm correctly fired when queue:work missing. start + 3 tick + 2 alarm + done events. Locale guard LC_ALL=C confirmed to prevent FR-locale decimal-comma bug surfaced and fixed mid-development."
+  },
+
+  "estimated_runtime_hours": 4,
+  "supports_hours_range": "0.01 (~36s smoke) to 24 (full operating day)",
+
+  "preconditions_hard_failed_at_start": [
+    {
+      "id": "P1",
+      "name": "queue_worker_with_high_queue",
+      "description": "Without --queue=high,default the DispatchDomainEventsJob enqueues onto 'high' and never drains. Across 4h at H.3 rate (16 req/min), outbox would grow ~5900 entries and the outbox-p99-ceiling=30s auto-fails.",
+      "lineage": "H3-DEV-01 — local queue:work without --queue=high observed live",
+      "skip_flag": "--skip-queue-worker-check",
+      "expected_command": "php artisan queue:work redis --queue=high,default --tries=3 --timeout=120 --sleep=1 --max-jobs=1000"
+    },
+    {
+      "id": "P2",
+      "name": "server_reachable_via_base_url",
+      "description": "GET {base_url}/up must return 2xx-3xx within 5s",
+      "skip_flag": "none — hard fail"
+    },
+    {
+      "id": "P3",
+      "name": "mysql_reachable",
+      "description": "DB::connection()->getPdo()->query('SELECT 1') must succeed",
+      "skip_flag": "none — hard fail"
+    },
+    {
+      "id": "P4",
+      "name": "not_production_env",
+      "description": "APP_ENV != production",
+      "skip_flag": "none — hard fail (safety)"
+    },
+    {
+      "id": "P5",
+      "name": "quote_mint_round_trip",
+      "description": "After fixture provisioning, mint ONE POS quote + ONE kiosk quote. If either returns null, abort with copy-paste curl reproducer. Converts a 4-hour fail-late (all streams skip silently) into a 30-second fail-fast.",
+      "lineage": "advisor blocker after smoke showed 0 dispatched events",
+      "skip_flag": "none — hard fail (added post-advisor-review)",
+      "remediation_emitted": "Spatie role/permission seed needed. Run `php artisan db:seed --class=PermissionTableSeeder` OR use storage/logs/h3-provision-fixtures.php"
+    }
+  ],
+
+  "preconditions_warned_but_proceed": [
+    {
+      "id": "W1",
+      "name": "php_artisan_serve_detected",
+      "description": "Single-process dev server amplifies concurrent-batch latency 2-3x (H3-DEV-02/03). Memory/chain/outbox/fiscal acceptance criteria UNAFFECTED. Latency p99 marked INFORMATIVE-ONLY in summary.json (key: latency_p99_authoritative=false).",
+      "remediation": "Run against php-fpm + nginx for trustworthy latency p99 numbers."
+    }
+  ],
+
+  "stop_conditions": [
+    {
+      "id": "SC1",
+      "name": "5xx_count_gt_zero",
+      "signal_source": "in-process counter incremented on each batch result",
+      "threshold": "> 0",
+      "evaluated": "every batch (continuous)",
+      "action": "log + (if --fail-fast) abort"
+    },
+    {
+      "id": "SC2",
+      "name": "429_count_gt_zero",
+      "signal_source": "in-process counter (F.1 cap was raised; any 429 = regression)",
+      "threshold": "> 0",
+      "evaluated": "every batch",
+      "action": "log + (if --fail-fast) abort"
+    },
+    {
+      "id": "SC3",
+      "name": "nf525_chain_broken",
+      "signal_source": "php artisan fiscal:verify-chain --all (run per monitor tick)",
+      "threshold": "absence of literal 'CHAIN OK' in output",
+      "evaluated": "every monitor tick (default 300s)",
+      "action": "log + (if --fail-fast) abort"
+    },
+    {
+      "id": "SC4",
+      "name": "rss_growth_exceeds_ceiling_mb",
+      "signal_source": "ps -o rss for detected server pid (php artisan serve OR php-fpm master)",
+      "threshold": "> --rss-ceiling-mb (default 200)",
+      "evaluated": "every monitor tick",
+      "action": "log + (if --fail-fast) abort"
+    },
+    {
+      "id": "SC5",
+      "name": "db_pool_pct_exceeds_ceiling",
+      "signal_source": "MySQL Threads_connected / max_connections * 100",
+      "threshold": "> --db-pool-pct-ceiling (default 80% of 151 = 121 connections on this box)",
+      "evaluated": "every monitor tick",
+      "action": "log + (if --fail-fast) abort"
+    },
+    {
+      "id": "SC6",
+      "name": "disk_growth_exceeds_1gb",
+      "signal_source": "du -sk storage/logs",
+      "threshold": "> 1048576 KB (1 GB) delta from baseline",
+      "evaluated": "every monitor tick",
+      "action": "log + (if --fail-fast) abort"
+    },
+    {
+      "id": "SC7",
+      "name": "outbox_growth_gt_100_per_min_3_consecutive_ticks",
+      "signal_source": "domain_events COUNT(*) WHERE dispatched_at IS NULL — windowed delta",
+      "threshold": "> 100/min sustained 3 consecutive ticks (queue:work daemon died proxy)",
+      "evaluated": "every monitor tick after first 4 ticks accumulate",
+      "action": "log + (if --fail-fast) abort"
+    }
+  ],
+
+  "acceptance_criteria": [
+    {
+      "id": "A1",
+      "name": "zero_429",
+      "target": "== 0",
+      "measured_in": "summary.json.totals.429",
+      "rationale": "F.1 cap was already raised post-prior-cycle; any 429 = regression to pre-F.1 behaviour"
+    },
+    {
+      "id": "A2",
+      "name": "zero_5xx",
+      "target": "== 0",
+      "measured_in": "summary.json.totals.5xx",
+      "rationale": "5xx during sustained load = production blocker"
+    },
+    {
+      "id": "A3",
+      "name": "fiscal_sequence_contiguous_gap_free",
+      "target": "summary.json.fiscal_contiguous_check.contiguous == true AND gaps == [] AND duplicates == []",
+      "measured_in": "summary.json.fiscal_contiguous_check",
+      "rationale": "NF525 §8 — fiscal sequence monotonic per branch, gap-free. Triple defense Cache::lock 5s + DB FOR UPDATE + UNIQUE constraint must hold under 4h sustained concurrent S1 + S3 fiscal allocators"
+    },
+    {
+      "id": "A4",
+      "name": "nf525_chain_ok_every_tick",
+      "target": "monitor.jsonl every tick contains 'CHAIN OK'",
+      "measured_in": "monitor.jsonl + summary.json.nf525_chain_ok_final",
+      "rationale": "NF525 §9 — audit_logs HMAC chain integrity must be continuous"
+    },
+    {
+      "id": "A5",
+      "name": "memory_growth_bounded",
+      "target": "≤ 200MB RSS over 4h",
+      "measured_in": "summary.json.rss_within_ceiling",
+      "rationale": "PHP-FPM workers shouldn't leak — bounded heap is a healthy-process signature. H.3 measured -3.36 MB over 15 min (memory reclaimed) so 200 MB is a generous ceiling that catches actual leaks"
+    },
+    {
+      "id": "A6",
+      "name": "outbox_dispatch_p99_under_30s",
+      "target": "≤ 30s p99",
+      "measured_in": "summary.json.outbox_dispatch_latency.p99_s",
+      "rationale": "Outbox SLO from app/Jobs/DispatchDomainEventsJob.php docblock — production target is p95<2s steady-state; 30s is the 'queue not catastrophically backed up' bar for a 4h soak"
+    },
+    {
+      "id": "A7",
+      "name": "cache_hit_ratio_at_least_80",
+      "target": "≥ 0.80",
+      "measured_in": "summary.json.cache_hit_ratio.ratio",
+      "rationale": "kiosk.menu.branch.{id} + price cache + queue-number cache should be hot under sustained load. Low hit ratio = eviction storm or TTL misconfiguration. Note: cumulative ratio since redis-server start; for window-scoped ratio, diff monitor.jsonl tick deltas"
+    }
+  ],
+
+  "verdict_mapping": {
+    "GREEN": "All 7 acceptance criteria pass + 0 stop_condition hit + 0 abort_reason",
+    "AMBER": "1 acceptance criterion fails (e.g. cache hit ratio low because traffic mix didn't hit cached paths) but no stop_condition hit",
+    "RED": "2+ acceptance criteria fail OR any stop_condition hit OR abort_reason set"
+  },
+
+  "constraints_implied_by_task_explicitly_handled": {
+    "queue_worker_load_bearing": "P1 hard precondition + SC7 stop-condition + acceptance A6 — three layers of defense against H3-DEV-01 silent failure mode",
+    "php_serve_latency_caveat": "W1 warning + latency_p99_authoritative=false flag in summary.json when detected — informative-only labeling prevents false RED verdict on dev-env soaks",
+    "mid_soak_crash_recovery": "events.jsonl is append-only on every batch + fflush; monitor.jsonl append per tick. A 3h59m crash leaves complete state up to last batch. Baseline.json + summary.json bracket the run. Add `tail -1 events.jsonl | jq .t` for last-known elapsed time",
+    "cache_hit_ratio_is_delta_aware": "computeCacheHitRatio docstring + summary.json.cache_hit_ratio.note explicitly call out 'cumulative since redis-server start'. monitor.jsonl per-tick redis_keyspace_hits/misses enable window-scoped diff for hot-path analysis",
+    "vue_browser_memory_skipped": "Task says 'if Playwright maintained' — explicit defer documented in command docblock. Not in scope.",
+    "db_pool_headroom_documented": "max_connections=151 verified empirically; alert threshold 121 (80%); H.3 peaked at 4 so plenty of margin; SC5 catches any pathological connection sprawl"
+  },
+
+  "owner_runbook": {
+    "title": "FoodKing 4h+ Long-Soak Runbook — Phase L Agent L3",
+    "estimated_total_time_to_completion": "4h soak + 5 min setup + 5 min teardown analysis = ~4h 10min walltime",
+    "owner_attention_required": "5 min setup + verdict review at completion; soak self-monitors and writes verdicts",
+
+    "pre_flight_checklist": [
+      "1. Confirm APP_ENV != production: `grep APP_ENV .env`",
+      "2. Confirm MySQL up: `mysql -uroot -e 'SELECT 1'`",
+      "3. Confirm Redis up: `redis-cli PING`",
+      "4. Start a queue worker in another terminal:",
+      "     php artisan queue:work redis --queue=high,default --tries=3 --timeout=120 --sleep=1 --max-jobs=1000",
+      "   Without --queue=high the soak's outbox-p99 acceptance auto-fails.",
+      "5. Start the app server (php artisan serve is OK for memory/chain/outbox; for trustworthy latency use php-fpm + nginx):",
+      "     php artisan serve --host=127.0.0.1 --port=8000",
+      "6. Confirm /up returns 200: `curl http://127.0.0.1:8000/up`",
+      "7. (Recommended) snapshot current branch HEAD: `git rev-parse HEAD > /tmp/soak-head.txt`"
+    ],
+
+    "run_options": {
+      "single_command_mode": {
+        "description": "Artisan command does both load generation AND monitoring (in-process tick). Simplest.",
+        "command": "php artisan foodking:e2e:soak --hours=4 --output-dir=storage/logs/soak-$(date +%Y%m%d) 2>&1 | tee storage/logs/soak-run.log",
+        "duration_walltime": "4h",
+        "produces": [
+          "storage/logs/soak-<ts>/baseline.json",
+          "storage/logs/soak-<ts>/events.jsonl",
+          "storage/logs/soak-<ts>/monitor.jsonl",
+          "storage/logs/soak-<ts>/summary.json"
+        ]
+      },
+      "split_mode_recommended_for_high_fidelity": {
+        "description": "Run the artisan command in foreground, run scripts/monitor/soak-tick.sh in background for independent sampling. Diff the two monitor outputs at end as cross-check.",
+        "step_1_background_monitor": "DURATION_S=14400 OUTPUT=storage/logs/soak-tick-$(date +%s).jsonl nohup ./scripts/monitor/soak-tick.sh > storage/logs/soak-tick.out 2> storage/logs/soak-tick.err &",
+        "step_2_foreground_soak": "php artisan foodking:e2e:soak --hours=4 --output-dir=storage/logs/soak-$(date +%Y%m%d) 2>&1 | tee storage/logs/soak-run.log",
+        "step_3_after_completion": "diff <(jq -c '{tick,elapsed_s,audit_logs,orders,outbox_pending,fiscal_seq_b1}' storage/logs/soak-<ts>/monitor.jsonl) <(jq -c '{tick,elapsed_s,audit_logs,orders,outbox_pending,fiscal_seq_b1}' storage/logs/soak-tick-*.jsonl)"
+      },
+      "overnight_safe_mode_with_fail_fast": {
+        "description": "Adds --fail-fast so any P0 stop-condition (5xx, 429, chain broken, RSS ceiling) aborts the run with non-zero exit. Useful for unattended runs where you want a clean RED verdict in summary.json rather than continuing through degradation.",
+        "command": "php artisan foodking:e2e:soak --hours=4 --fail-fast --output-dir=storage/logs/soak-overnight 2>&1 | tee storage/logs/soak-overnight.log"
+      }
+    },
+
+    "during_run": {
+      "tail_progress": "tail -f storage/logs/soak-run.log",
+      "tail_events_jsonl": "tail -f storage/logs/soak-<ts>/events.jsonl | jq -c '{t,stream,status,batch_elapsed_ms}'",
+      "tail_monitor_jsonl": "tail -f storage/logs/soak-<ts>/monitor.jsonl | jq -c '{tick,elapsed_s,audit_logs,fiscal_seq_b1,outbox_pending,server_rss_kb,nf525_chain}'",
+      "spot_check_chain_independently": "php artisan fiscal:verify-chain --all"
+    },
+
+    "post_run_verdict_review": [
+      "1. Read summary.json verdict: `jq .verdict storage/logs/soak-<ts>/summary.json`",
+      "2. GREEN means all 7 acceptance criteria passed. AMBER = 1 failed (review which). RED = 2+ failed OR stop-condition hit.",
+      "3. Check fiscal_contiguous: `jq .fiscal_contiguous_check storage/logs/soak-<ts>/summary.json`",
+      "4. Check chain_ok_final: `jq .nf525_chain_ok_final storage/logs/soak-<ts>/summary.json` (must be true)",
+      "5. Check rss_delta_mb: `jq .rss_delta_mb storage/logs/soak-<ts>/summary.json` (target ≤ 200)",
+      "6. Check outbox p99: `jq .outbox_dispatch_latency storage/logs/soak-<ts>/summary.json`",
+      "7. Check cache hit ratio: `jq .cache_hit_ratio storage/logs/soak-<ts>/summary.json`",
+      "8. If RED: alarms in monitor.jsonl pinpoint when/why: `jq -c 'select(.kind==\"alarm\")' storage/logs/soak-tick-*.jsonl`",
+      "9. Verify frozen-zone diff zero: `git diff --stat -- app/Services/Fiscal app/Models/Scopes/BranchScope.php app/Http/Middleware/IdempotencyKeyMiddleware.php resources/js/components/admin/pos/PaymentComponent.vue`"
+    ],
+
+    "post_run_cleanup_optional": {
+      "preserve_nf525_test_orders": "DO NOT delete fiscal-allocated orders — they're real fiscal events per NF525 §10 6-year retention. They're tagged by SOAK-POS-* / SOAK-KTK-* tokens for forensic identification.",
+      "purge_other_test_data_optional": "php artisan iter15:cleanup-test-orders --token-prefix=SOAK- --dry-run (then drop --dry-run)",
+      "rotate_storage_logs": "find storage/logs/soak-* -mtime +7 -exec rm -rf {} +"
+    },
+
+    "what_to_send_to_team_after_run": [
+      "summary.json (full verdict + criteria + metrics)",
+      "monitor.jsonl (full timeseries)",
+      "soak-run.log (artisan command stdout/stderr)",
+      "git rev-parse HEAD (commit hash the soak ran against)"
+    ]
+  },
+
+  "files_shipped": {
+    "artisan_command": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Console/Commands/E2ESoakCommand.php",
+    "monitor_script": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/scripts/monitor/soak-tick.sh",
+    "this_findings": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/goal-2026-05-23/phase-l/L3-long-soak-architecture.json"
+  },
+
+  "smoke_test_artifacts_for_reviewer": {
+    "command_help_output_verified": "php artisan foodking:e2e:soak --help shows 16 options + auto-registered (no Kernel.php edit needed)",
+    "command_smoke_30s_output_dir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/storage/logs/soak-20260524-113929/",
+    "monitor_smoke_12s_jsonl_validated": "/tmp/soak-smoke-monitor.jsonl (7/7 valid JSON lines parsed via python3 json.loads)"
+  },
+
+  "files_modified": [],
+  "frozen_zone_edits": 0,
+  "production_code_modified": false,
+  "scope": "Two new files created in non-frozen paths: app/Console/Commands/E2ESoakCommand.php (auto-discovered, sister to E2EStressCommand) and scripts/monitor/soak-tick.sh (sibling to storage/logs/h3-monitor.sh). No edits to existing application code. No edits to PaymentComponent.vue, FiscalSequenceService.php, BranchScope.php, or any other §7 frozen file.",
+
+  "lineage_from_prior_phases": {
+    "h3_inheritance": "E2ESoakCommand lifts the H.3 event-loop time-slicing design directly from storage/logs/h3-mixed-runner.php — same 5 streams, same intervals (overrideable), same warmup + checkpoint pattern. The H.3 script is one-shot; the artisan command is reusable + ships durable output + adds production-grade hardening (preconditions, alarms, percentile compute, verdict).",
+    "f1_cap_lineage": "Acceptance A1 'zero 429' explicitly anchored to the F.1 cap raise — any 429 in this soak = regression to pre-F.1 behaviour.",
+    "g1_trap_detector_lineage": "checkpoint_s parameter is the G.1-trap detector — H.3 documented G.1 made the mistake of zero-fiscal-zero-audit kiosk-only path looking 'green' when it actually exercised nothing. This command aborts at checkpoint_s if both deltas are zero.",
+    "h3_dev01_lineage": "P1 queue:work precondition is the direct counter-measure to H3-DEV-01 (local worker without --queue=high left outbox monotonic).",
+    "h3_dev02_03_lineage": "W1 warning + latency_p99_authoritative flag is the direct counter-measure to H3-DEV-02/03 (php artisan serve single-process amplifies latency)."
+  },
+
+  "what_l3_proves_that_f2_g1_h3_did_not": [
+    "Duration shift: 5min → 13min → 15min → 4h+ (16x longer than H.3) — enables detection of: PHP-FPM worker RSS leak signatures (200MB ceiling over 4h vs H.3's ±3MB envelope over 15min), Redis cache eviction patterns under sustained pressure, outbox dispatch p99 computed over a representative sample (~4000 events at H.3 rate vs H.3's 241), DB connection pool sprawl over many hours of allocator contention",
+    "Reusability shift: one-shot scripts → reusable artisan command + standalone monitor script. F.2/G.1/H.3 were each one-shot owner-runs; this command + script can be re-run anytime, parameterized, or chained into CI nightly if owner desires (currently NOT in CI — owner-driven per command description)",
+    "Durability shift: STDERR streaming → durable JSONL with per-batch flush. A 3h59m crash leaves a complete parseable trace. F.2/G.1/H.3 wrote final JSON only at end — mid-run crash = lost evidence.",
+    "Acceptance criteria shift: human-narrative judgement → 7 machine-evaluable criteria with explicit pass/fail. Each H.3 finding was prose-judged GREEN by the agent; this command emits a structured verdict.json computable by any reviewer."
+  ],
+
+  "top_concerns_for_owner": [
+    "AMBER VERDICT (honest): infrastructure proven to bootstrap + preflight gate fires correctly, but end-to-end load round-trip NOT demonstrated against this dev DB because Spatie 'POS Operator' role is missing. Run `php artisan db:seed --class=PermissionTableSeeder` first, then re-smoke `--hours=0.01 --skip-queue-worker-check` — should observe ≥1 successful event in events.jsonl. THEN launch the 4h soak. This is a 5-second seed away from GREEN.",
+    "ZERO production code concerns. ZERO frozen-zone touches. All work in non-frozen new files.",
+    "Latency p99 is INFORMATIVE-ONLY when running under `php artisan serve` (auto-detected, warning emitted, summary.json flagged latency_p99_authoritative=false). For an authoritative p99 number, the 4h run should target php-fpm + nginx. Memory measurement under php-fpm now sums all worker children (master + workers via ps -C php-fpm / BSD fallback) — same correctness rule applies as latency: authoritative under php artisan serve and php-fpm both, no gap.",
+    "scripts/deploy/README_DEPLOY.md:361 documentation table still has the H3-DEV-01 stale queue:work command (missing --queue=high,default). This was surfaced by H.3 as a V1.0.X chore and remains unfixed — recommend chipping it during the same PR that ships this soak infrastructure to close the loop.",
+    "If owner intends the 4h soak as the FINAL pre-cloud attestation, recommend running TWICE: once under `php artisan serve` for memory/chain/outbox authoritative measurement, once under php-fpm + nginx for authoritative latency p99. The artisan command + monitor script work identically under both modes."
+  ]
+}
