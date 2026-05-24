@@ -25,6 +25,37 @@ class OrderItem extends Model
         // Existing access via `$order->orderItems()` is unchanged because Order
         // already enforces the same scope on its parent query.
         static::addGlobalScope(new BranchScope());
+
+        // [GOAL-J2-HEAL-06 2026-05-24] Phase J-ADV-2 FV-F5-1 P1 NF525.
+        //
+        // Application-layer guard preventing composition_snapshot mutation
+        // post-insert. The DB BEFORE UPDATE trigger added by migration
+        // 2026_05_24_040211_add_composition_snapshot_immutability_trigger is
+        // the runtime defence (catches raw SQL UPDATE bypassing Eloquent);
+        // this `updating()` hook is the tests-time + grep-time + IDE-time
+        // visibility layer (catches at Eloquent layer with a stack trace
+        // pointing at the offending caller, rather than a generic
+        // QueryException from the trigger).
+        //
+        // Behaviour:
+        //   - INSERT: untouched (this hook fires on UPDATE only).
+        //   - UPDATE where composition_snapshot is NOT dirty: pass.
+        //   - UPDATE where composition_snapshot is dirty AND original was
+        //     null: pass (legacy backfill scenario).
+        //   - UPDATE where composition_snapshot is dirty AND original was
+        //     non-null: throw RuntimeException.
+        //
+        // This mirrors the StockMovement::booted() append-only guard
+        // (cf. app/Models/StockMovement.php) and AuditLog immutability pattern.
+        static::updating(function (OrderItem $orderItem) {
+            if ($orderItem->isDirty('composition_snapshot')
+                && $orderItem->getOriginal('composition_snapshot') !== null) {
+                throw new \RuntimeException(
+                    'NF525: composition_snapshot is immutable after creation. '
+                    . 'Attempted mutation on OrderItem #' . ($orderItem->id ?? 'unsaved')
+                );
+            }
+        });
     }
 
     protected $table = "order_items";
