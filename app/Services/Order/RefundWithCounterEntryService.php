@@ -250,7 +250,54 @@ class RefundWithCounterEntryService
             // with the mirror order + mirror payments + audit row. A failure
             // in any leg rolls them all back together — same atomicity
             // guarantee as the pre-Z cash refund path.
-            app(\App\Services\LoyaltyService::class)->refundPoints($parent, 'pos');
+            //
+            // [GOAL-K2-HEAL-03 2026-05-24] Phase K.10 K10-NEW-01 P2 RED:
+            // refundPoints() was called IN-TX with NO try/catch wrapper. The
+            // HEAL-A.2 NOOP at LoyaltyService.php:56+ handled only the
+            // alreadyRefunded duplicate case and the customer-deleted
+            // silent-return case (line 47-54); any OTHER throw (DB blip
+            // during increment, UNIQUE collision race, lockForUpdate timeout,
+            // etc.) cascaded and rolled back the ENTIRE mirror refund
+            // INCLUDING the fiscal_sequence_no allocation reserved at line
+            // 100 via $this->sequence->next($branchId). Fail-closed UX:
+            // cashier sees error → MUST retry → meanwhile customer waits.
+            //
+            // Fix: wrap in try/catch + Log::error tier matching the
+            // ClawbackLoyaltyPointsOnRefund.php:82-93 cascade-isolation
+            // pattern (HEAL-A.2 / I2-HEAL-01). Loyalty side-effect failures
+            // MUST NOT halt the fiscal refund. If loyalty rollback fails,
+            // admin can manually adjust the user balance post-incident
+            // (loyalty is non-fiscal; only NF525 chain integrity is
+            // criminally-binding).
+            //
+            // Spec deviation note: GOAL-K2-HEAL-03 task description also
+            // proposed dispatching OutboxBroadcastSwallowedEvent. That event
+            // is NF525 pager-grade — it routes through
+            // EscalateOutboxBroadcastSwallowed to Log::critical on the
+            // `fiscal` channel (the operator's nightly grep stream, 400d
+            // retention). Loyalty hiccups are non-fiscal; mis-routing them
+            // there would generate false pager alarms AND breach the
+            // OutboxBroadcastSwallowedListenerTest payload-shape invariant
+            // (the event's 7 required readonly props are outbox-specific:
+            // domainEventId / eventType / aggregateId / branchId / listener /
+            // errorMessage / failedAt). Following the spec's explicitly-
+            // referenced sibling pattern (ClawbackLoyaltyPointsOnRefund
+            // :82-93) which is Log-only. If typed loyalty observability is
+            // wanted later, introduce a dedicated LoyaltyRefundSwallowedEvent
+            // — deferred V1.0.2 backlog.
+            try {
+                app(\App\Services\LoyaltyService::class)->refundPoints($parent, 'pos');
+            } catch (\Throwable $loyaltyException) {
+                Log::error('[RefundWithCounterEntryService] loyalty refundPoints failed (isolated, fiscal refund preserved)', [
+                    'gate'             => 'GOAL-K2-HEAL-03',
+                    'parent_order_id'  => $parent->id,
+                    'mirror_order_id'  => $mirror->id,
+                    'branch_id'        => $branchId,
+                    'user_id'          => $userId,
+                    'error'            => $loyaltyException->getMessage(),
+                    'exception'        => $loyaltyException,
+                ]);
+            }
 
             // [REFUND-EVENT-WIRE] Fire RefundCreated for stock + availability release.
             // Pass PARENT (positive qty) — listeners iterate $order->orderItems and use
