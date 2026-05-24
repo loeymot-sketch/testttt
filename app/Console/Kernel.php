@@ -140,6 +140,25 @@ class Kernel extends ConsoleKernel
             ->onOneServer()
             ->runInBackground();
 
+        // [GOAL-I2-HEAL-04 2026-05-24] Phase I.7 R6 P2: vendor command
+        // sanctum:prune-expired was NEVER scheduled. Compound risk: relogin-
+        // revoke only touches the active token name, so expired rows of all
+        // OTHER token names accumulate forever. Over NF525 6-year horizon =
+        // storage bloat.
+        //
+        // Schedule daily 04:30 (after backup 03:00, archive 02:00, chain
+        // monitor 03:30, parked-orders purge 03:15, outbox-prune 04:00,
+        // webhook-prune 04:15 — see CRONTAB_PROD.md). Retention --hours=24
+        // = keep expired-tokens for 24h grace period before delete (allows
+        // forensic if needed).
+        $schedule->command('sanctum:prune-expired', ['--hours=24'])
+            ->dailyAt('04:30')
+            ->timezone('Europe/Paris')
+            ->onOneServer()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/sanctum-prune-expired.log'));
+
         $schedule->job(new SloEvaluatorJob())
             ->everyFiveMinutes()
             ->withoutOverlapping(5)

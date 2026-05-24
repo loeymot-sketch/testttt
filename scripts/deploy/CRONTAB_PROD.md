@@ -48,9 +48,10 @@ sudo -u lecayenne -- bash -lc 'cd /var/www/lecayenne && php artisan schedule:lis
 
 ### Lanes currently registered (cross-reference)
 
-Source of truth: `app/Console/Kernel.php` lines 22–265. Verified
-2026-05-23. **Do not duplicate these in /etc/cron.d/** — they are
-driven by `schedule:run`.
+Source of truth: `app/Console/Kernel.php` lines 22–317. Verified
+2026-05-24 (lane #18 sanctum:prune-expired added by I2-HEAL-04).
+**Do not duplicate these in /etc/cron.d/** — they are driven by
+`schedule:run`.
 
 | # | Lane (name)                              | Cadence              | Kernel.php line | Notes                                                                 |
 |---|------------------------------------------|----------------------|-----------------|-----------------------------------------------------------------------|
@@ -64,13 +65,14 @@ driven by `schedule:run`.
 | 8 | **`foodking-backup-daily`**              | **daily 03:00**      | **105–110**     | **NF525 DB backup (see §2)**                                          |
 | 9 | `outbox-prune --older-than-days=90`      | daily 04:00          | 119–125         | Prevents domain_events unbounded growth                               |
 | 10| `webhook-prune --older-than-days=180`    | daily 04:15          | 135–141         | PCI dispute window                                                    |
-| 11| `SloEvaluatorJob`                        | every 5 min          | 143–146         | Observability SLO eval                                                |
-| 12| `stock-scan-rupture`                     | every 5 min (gated)  | 148–153         | Only if `catalog_v15.auto_86_preventive_cron.enabled=true`            |
-| 13| `foodking-fiscal-retry-alloc`            | every minute         | 161–165         | NF525 sequence-alloc retry for orphan kiosk orders                    |
-| 14| `availability-reset-stale-quota`         | daily 00:05          | 174–178         | Quota counters reset for low-traffic branches                         |
-| 15| **`fiscal-chain-monitor-all-branches`**  | **daily 03:30**      | **192–226**     | **NF525 dual-chain verify per active branch (see §6)**                |
-| 16| **`foodking-fiscal-archive-daily`**      | **daily 02:00**      | **234–264**     | **NF525 signed ZIP+JSON per active branch**                           |
-| 17| **`foodking-z-close-safety-net`**        | **daily 23:55 Paris**| **272–293**     | **NF525 Z-close safety-net per active branch (G2-HEAL-06, 2026-05-23)**|
+| 11| `SloEvaluatorJob`                        | every 5 min          | 162–165         | Observability SLO eval                                                |
+| 12| `stock-scan-rupture`                     | every 5 min (gated)  | 167–172         | Only if `catalog_v15.auto_86_preventive_cron.enabled=true`            |
+| 13| `foodking-fiscal-retry-alloc`            | every minute         | 180–184         | NF525 sequence-alloc retry for orphan kiosk orders                    |
+| 14| `availability-reset-stale-quota`         | daily 00:05          | 193–197         | Quota counters reset for low-traffic branches                         |
+| 15| **`fiscal-chain-monitor-all-branches`**  | **daily 03:30**      | **211–245**     | **NF525 dual-chain verify per active branch (see §6)**                |
+| 16| **`foodking-fiscal-archive-daily`**      | **daily 02:00**      | **253–283**     | **NF525 signed ZIP+JSON per active branch**                           |
+| 17| **`foodking-z-close-safety-net`**        | **daily 23:55 Paris**| **310–317**     | **NF525 Z-close safety-net per active branch (G2-HEAL-06, 2026-05-23)**|
+| 18| `sanctum:prune-expired --hours=24`       | daily 04:30 Paris    | 154–160         | Prune expired Sanctum tokens with 24h forensic grace (I2-HEAL-04, 2026-05-24) |
 
 Lanes #8/#15/#16/#17 are the **NF525 compliance quartet** — they MUST run
 nightly and any non-zero exit pages the on-call.
@@ -263,7 +265,7 @@ EOF
 Lane #15 in §1 — `fiscal:verify-chain` runs daily 03:30 per active
 branch and logs to the `fiscal` channel. **Do not add this to
 /etc/cron.d/** — it is already in `Kernel.php`. Verified
-2026-05-23 against `app/Console/Kernel.php:192-226`.
+2026-05-24 against `app/Console/Kernel.php:211-245`.
 
 ### 4.3 — Disk + RAM threshold (lightweight)
 
@@ -445,18 +447,19 @@ sudo -u lecayenne /usr/local/bin/lecayenne-health-check
 
 ---
 
-## Appendix B — Cross-reference matrix (Kernel.php verified 2026-05-23)
+## Appendix B — Cross-reference matrix (Kernel.php verified 2026-05-24)
 
 | Section claim                              | Kernel.php evidence                  |
 |--------------------------------------------|--------------------------------------|
 | Daily backup 03:00 NF525 6y retention      | Lines 105–110 `dailyAt('03:00')`     |
-| Fiscal archive 02:00 per active branch     | Lines 234–264 `dailyAt('02:00')`     |
-| Fiscal chain verify 03:30 per active branch| Lines 192–226 `dailyAt('03:30')`     |
-| Z-close safety-net 23:55 Paris per branch  | Lines 272–293 `dailyAt('23:55')`     |
+| Fiscal archive 02:00 per active branch     | Lines 253–283 `dailyAt('02:00')`     |
+| Fiscal chain verify 03:30 per active branch| Lines 211–245 `dailyAt('03:30')`     |
+| Z-close safety-net 23:55 Paris per branch  | Lines 310–317 `dailyAt('23:55')`     |
+| Sanctum prune 04:30 Paris (I2-HEAL-04)     | Lines 154–160 `dailyAt('04:30')`     |
 | Outbox prune 04:00, 90d retention          | Lines 119–125                        |
 | Webhook prune 04:15, 180d retention        | Lines 135–141                        |
 | POS parked-order purge 03:15 (24h TTL)     | Lines 89–92                          |
-| `activeBranchIds()` covers status 1 + 5    | Lines 333–340                        |
+| `activeBranchIds()` covers status 1 + 5    | Lines 358–365                        |
 | `onOneServer()` declared on all daily lanes| Verified per lane                    |
 | `withoutOverlapping()` on every long lane  | Verified per lane                    |
 
@@ -465,4 +468,4 @@ If `Kernel.php` changes, regenerate Section 1 table.
 
 ---
 
-*Last verified: 2026-05-23 (G2-HEAL-06 added lane #17). Kernel.php HEAD: branch `heal/cms-pr1-quickwins-2026-05-18`.*
+*Last verified: 2026-05-24 (I2-HEAL-04 added lane #18 sanctum:prune-expired). Kernel.php HEAD: branch `heal/cms-pr1-quickwins-2026-05-18`.*
