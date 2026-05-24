@@ -178,17 +178,88 @@ class LanguageService
     }
 
 
+    /**
+     * [GOAL-L2-HEAL-01 2026-05-24] Phase L7-2-F-03 P0 — Stream-wrapper containment.
+     *
+     * Was: include($path) + fopen/file_get_contents/file_put_contents accepted
+     * arbitrary stream wrappers (http://, php://, data://, file://, phar://)
+     * — full RCE + SSRF + arbitrary file read/write gadget gated only by
+     * permission:settings (cf. LanguageController.php:23-27).
+     *
+     * Containment (defence-in-depth):
+     *   1. realpath() resolves the path — stream-wrapper URIs (http://, php://,
+     *      data://, file://, phar://, ...) all return false because they are not
+     *      local files on disk.
+     *   2. The resolved real path MUST live under one of the two legitimate
+     *      language directories: base_path('lang/') for PHP translation files,
+     *      or base_path('resources/js/languages/') for the JS i18n JSON files.
+     *      Defeats ../ traversal because realpath() canonicalises first.
+     *   3. The resolved file extension MUST be .php or .json.
+     *
+     * Returns the resolved real path on success, throws RuntimeException on any
+     * violation. Caller MUST use the returned path (NOT the original $path) for
+     * the downstream include/read/write to avoid TOCTOU drift.
+     *
+     * @throws \RuntimeException
+     */
+    private function validateLangFilePath(?string $path): string
+    {
+        if (!is_string($path) || $path === '') {
+            throw new \RuntimeException('Invalid language file path');
+        }
+
+        $resolvedPath = realpath($path);
+        if ($resolvedPath === false) {
+            // realpath() returns false for stream wrappers (http://, php://,
+            // data://, file://, phar://) AND for non-existent files.
+            throw new \RuntimeException('Invalid language file path');
+        }
+
+        $allowedBases = array_filter([
+            realpath(base_path('lang')),
+            realpath(base_path('resources/js/languages')),
+        ]);
+
+        $under = false;
+        foreach ($allowedBases as $base) {
+            if (str_starts_with($resolvedPath, $base . DIRECTORY_SEPARATOR)) {
+                $under = true;
+                break;
+            }
+        }
+        if (!$under) {
+            throw new \RuntimeException('Language file path outside allowed directory');
+        }
+
+        $ext = pathinfo($resolvedPath, PATHINFO_EXTENSION);
+        if (!in_array(strtolower($ext), ['php', 'json'], true)) {
+            throw new \RuntimeException('Language file extension not allowed');
+        }
+
+        return $resolvedPath;
+    }
+
+    /**
+     * @throws Exception
+     */
     public function fileText(LanguageFileTextGetRequest $request)
     {
-        if (file_exists($request->path)) {
+        try {
+            // [GOAL-L2-HEAL-01 2026-05-24] Phase L7-2-F-03 P0: validate path
+            // before include() — see validateLangFilePath() docblock.
+            $resolvedPath = $this->validateLangFilePath($request->path);
+
             $explodeName = explode('.', $request->name);
             if ($explodeName > 0) {
                 if ($explodeName[1] == 'json') {
-                    include($request->path);
+                    include($resolvedPath);
                 } else {
-                    return include($request->path);
+                    return include($resolvedPath);
                 }
             }
+        } catch (\RuntimeException $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception($exception->getMessage(), 422);
         }
     }
 
@@ -198,8 +269,13 @@ class LanguageService
     public function fileTextStore(Request $request): void
     {
         try {
-            $file        = fopen($request->x_language_file_path, "rw");
-            $fileContent = file_get_contents($request->x_language_file_path);
+            // [GOAL-L2-HEAL-01 2026-05-24] Phase L7-2-F-03 P0: validate path
+            // before fopen/file_get_contents/file_put_contents — see
+            // validateLangFilePath() docblock.
+            $resolvedPath = $this->validateLangFilePath($request->x_language_file_path);
+
+            $file        = fopen($resolvedPath, "rw");
+            $fileContent = file_get_contents($resolvedPath);
             foreach ($request->all() as $key => $value) {
                 if ($key != 'x_language_file_path' && $key != 'x_language_file_name') {
                     $key = str_replace('_', ' ', $key);
@@ -211,7 +287,7 @@ class LanguageService
                 }
             }
 
-            file_put_contents($request->x_language_file_path, $fileContent);
+            file_put_contents($resolvedPath, $fileContent);
             fclose($file);
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
