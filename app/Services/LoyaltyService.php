@@ -105,4 +105,96 @@ class LoyaltyService
             'new_balance' => $balanceAfter,
         ]);
     }
+
+    /**
+     * [GOAL-J2-HEAL-07 2026-05-24] Phase J-ADV-3 L3 P1 CONFIRMED:
+     * Subtract previously-awarded loyalty points from user balance on refund.
+     *
+     * Pre-heal gap: LoyaltyService::refundPoints reverses REDEEM rows only;
+     * no path decremented user.loyalty_points by orders.loyalty_points_awarded
+     * after a refund. With 10 pts/€ default rate, a 30€ refunded-but-DELIVERED
+     * order left 300 pts (= 3€ free) on the customer balance — repeatable
+     * cash + points double-dip exploit.
+     *
+     * Mirrors {@see AwardLoyaltyPointsOnDelivery} pattern in inverse:
+     *   - Earn writes type='earn' / positive points.
+     *   - Clawback writes type='manual_deduct' / negative points.
+     *
+     * Note on type choice: loyalty_transactions.type ENUM (migration
+     * 2026_03_26_075918) is fixed to ['earn','redeem','manual_add',
+     * 'manual_deduct','expire']. 'clawback' would violate the column
+     * constraint on MySQL prod, so 'manual_deduct' — the exact inverse
+     * of the 'manual_add' already used by refundPoints — is the
+     * semantically correct enum value. The 'reason' string is preserved
+     * verbatim in the description field for the audit trail.
+     *
+     * Idempotency: enforced by the (user_id, order_id, type) UNIQUE index
+     * (migration 2026_03_26_075919) plus a pre-flight existence check
+     * mirroring refundPoints HEAL-A.2 pattern — a duplicate event silently
+     * NOOPs instead of throwing SQLSTATE 23000 (which would cascade-fail
+     * the outer DispatchableAfterCommit dispatcher).
+     *
+     * Balance is clamped at 0 — never negative — to protect against
+     * race conditions where partial redemptions / expirations might
+     * have already drawn the balance below the awarded amount.
+     */
+    public function clawbackEarnedPoints(int $userId, int $amount, int $orderId, string $reason): void
+    {
+        if ($amount <= 0) {
+            return;
+        }
+
+        $existing = LoyaltyTransaction::where('user_id', $userId)
+            ->where('order_id', $orderId)
+            ->where('type', 'manual_deduct')
+            ->exists();
+        if ($existing) {
+            Log::info('[Loyalty] Clawback already processed — idempotent NOOP', [
+                'order_id' => $orderId,
+                'user_id' => $userId,
+                'points_attempted' => $amount,
+            ]);
+            return;
+        }
+
+        DB::transaction(function () use ($userId, $amount, $orderId, $reason) {
+            $query = User::where('id', $userId)
+                ->where('status', \App\Enums\Status::ACTIVE);
+            if (DB::connection()->getDriverName() !== 'sqlite') {
+                $query->lockForUpdate();
+            }
+            $user = $query->first();
+            if (!$user) {
+                return;
+            }
+
+            $currentBalance = (int) ($user->loyalty_points ?? 0);
+            $newBalance = max(0, $currentBalance - $amount);
+            $actualDeducted = $currentBalance - $newBalance;
+
+            DB::table('users')
+                ->where('id', $userId)
+                ->update(['loyalty_points' => $newBalance]);
+
+            LoyaltyTransaction::create([
+                'user_id' => $userId,
+                'loyalty_code' => $user->loyalty_code,
+                'order_id' => $orderId,
+                'type' => 'manual_deduct',
+                'points' => -$actualDeducted,
+                'balance_after' => $newBalance,
+                'source_surface' => 'refund',
+                'description' => $reason . ' — commande #' . $orderId,
+            ]);
+
+            Log::info('[Loyalty] Earned points clawed back on refund', [
+                'order_id' => $orderId,
+                'user_id' => $userId,
+                'points_attempted' => $amount,
+                'points_actually_deducted' => $actualDeducted,
+                'new_balance' => $newBalance,
+                'reason' => $reason,
+            ]);
+        });
+    }
 }

@@ -44,6 +44,8 @@ use App\Listeners\SendOrderDeliveryBoyMailNotification;
 use App\Listeners\SendOrderDeliveryBoyPushNotification;
 use App\Listeners\SendOrderDeliveryBoySmsNotification;
 use App\Listeners\AwardLoyaltyPointsOnDelivery;
+// [GOAL-J2-HEAL-07 2026-05-24] Phase J-ADV-3 L3 P1 — clawback earned points on refund.
+use App\Listeners\ClawbackLoyaltyPointsOnRefund;
 use App\Listeners\BumpMenuSnapshotOnItemAvailabilityChanged;
 // [HEAL B.2 2026-05-19] Pager-grade escalator for outbox broadcast swallows.
 use App\Listeners\EscalateOutboxBroadcastSwallowed;
@@ -184,6 +186,13 @@ class EventServiceProvider extends ServiceProvider
             PersistOrderPaymentStatusChangedOnRefundCreated::class,
             ReleaseStockOnRefundCreated::class,
             ReleaseAvailabilityOnRefundCreated::class,
+            // [GOAL-J2-HEAL-07 2026-05-24] Phase J-ADV-3 L3 P1 CONFIRMED:
+            // Earned loyalty points were never decremented after a refund —
+            // 10 pts/€ default × 30€ order = 300 pts (= 3€) left on customer
+            // balance, repeatable cash + points double-dip. Appended LAST so
+            // a clawback failure (try/catch isolated) cannot halt the cash-
+            // trail / stock / availability cascade above.
+            ClawbackLoyaltyPointsOnRefund::class,
         ],
         // [F-02] Floorplan transfer / occupy → KDS gets a non-disruptive update.
         OrderTableChanged::class => [
