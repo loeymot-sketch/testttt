@@ -72,12 +72,19 @@ lane #19 stripe-drain-stranded-cpn added by K2-HEAL-05).
 | 14| `availability-reset-stale-quota`         | daily 00:05          | 193–197         | Quota counters reset for low-traffic branches                         |
 | 15| **`fiscal-chain-monitor-all-branches`**  | **daily 03:30**      | **211–245**     | **NF525 dual-chain verify per active branch (see §6)**                |
 | 16| **`foodking-fiscal-archive-daily`**      | **daily 02:00**      | **253–283**     | **NF525 signed ZIP+JSON per active branch**                           |
-| 17| **`foodking-z-close-safety-net`**        | **daily 23:55 Paris**| **310–317**     | **NF525 Z-close safety-net per active branch (G2-HEAL-06, 2026-05-23)**|
+| 17| **`foodking-z-close-safety-net`**        | **daily 23:55 Paris**| **339–347**     | **NF525 Z-close safety-net per active branch (G2-HEAL-06, 2026-05-23 ; appendOutputTo added L2-HEAL-07 2026-05-24)**|
 | 18| `sanctum:prune-expired --hours=24`       | daily 04:30 Paris    | 154–160         | Prune expired Sanctum tokens with 24h forensic grace (I2-HEAL-04, 2026-05-24) |
 | 19| `stripe-drain-stranded-cpn`              | every 5 min Paris    | 169–186         | Drain stranded Stripe CPN rows (browser-death window) (K2-HEAL-05 K.8 K8-F-01 P1, 2026-05-24) |
+| 20| **`foodking-z-open-safety-net`**         | **daily 00:05 Paris**| **381–389**     | **NF525 Z-open safety-net per active branch — companion to lane #17 (L2-HEAL-07 L11.1 P0-03 + K.7 FIND-1, 2026-05-24)**|
 
-Lanes #8/#15/#16/#17 are the **NF525 compliance quartet** — they MUST run
-nightly and any non-zero exit pages the on-call.
+Lanes #8/#15/#16/#17/#20 are the **NF525 compliance quintet** — they MUST
+run nightly and any non-zero exit pages the on-call. Lanes #17 + #20 form
+the **Z chain extension loop**: #17 closes the day's Z just before
+midnight (23:55 Paris, same `business_date` as the transactions); #20
+opens the new Z just after midnight (00:05 Paris) so the new business
+day starts with an OPEN Z ready to absorb morning-shift transactions.
+Without #20, an absent cashier post-midnight = silent skip = chain
+freezes until the next manual open.
 
 > **Lane #17 background (Phase G.6 audit, P1 operational).** Z-close had
 > NO production trigger pre-2026-05-23 — no UI button, no cron, no
@@ -91,6 +98,23 @@ nightly and any non-zero exit pages the on-call.
 > one branch crash never halts the rest. The UI button is V1.0.X
 > owner-gate (see `proposals/PROPOSAL_ZCLOSE_VUE_UI_BUTTON.md`); this
 > cron is the V1 LOCAL operational floor until the button ships.
+
+> **Lane #20 background (Phase L11.1 P0-03 + K.7 FIND-1, P0/P1
+> operational).** G2-HEAL-06 (lane #17) closed the night-end Z reliably,
+> but the cron-miss recovery audit found NO companion Z-OPEN trigger.
+> If a cashier never manually re-opens the next Z after the 23:55 close,
+> every business day after = silent skip = the chain stops extending,
+> and any transaction recorded post-midnight has nowhere to land except
+> via the `fiscal_alloc_error_at` flag + retry cron (degraded path,
+> requires manual ops monitoring). The safety-net runs at 00:05 Paris
+> (10 min after the 23:55 close — enough room for the close to finish
+> its Cache::lock + chain verify + audit write) and is **idempotent**:
+> the command pre-checks `ZReport::STATUS_OPEN` per branch and
+> `info`-logs (not error) when a Z is already open, so a cashier who
+> opened the new day early (or this cron already ran today) never
+> triggers a false-alarm pager. Mirrors lane #17 exactly so the
+> close + open pair stays symmetric. Together, lanes #17 + #20 guarantee
+> the Z chain extends every night even if no human ever touches the POS.
 
 ---
 
@@ -458,7 +482,8 @@ sudo -u lecayenne /usr/local/bin/lecayenne-health-check
 | Daily backup 03:00 NF525 6y retention      | Lines 105–110 `dailyAt('03:00')`     |
 | Fiscal archive 02:00 per active branch     | Lines 253–283 `dailyAt('02:00')`     |
 | Fiscal chain verify 03:30 per active branch| Lines 211–245 `dailyAt('03:30')`     |
-| Z-close safety-net 23:55 Paris per branch  | Lines 310–317 `dailyAt('23:55')`     |
+| Z-close safety-net 23:55 Paris per branch  | Lines 339–347 `dailyAt('23:55')`     |
+| Z-open safety-net 00:05 Paris per branch   | Lines 381–389 `dailyAt('00:05')`     |
 | Sanctum prune 04:30 Paris (I2-HEAL-04)     | Lines 154–160 `dailyAt('04:30')`     |
 | Stripe CPN drain every 5 min (K2-HEAL-05)  | Lines 169–186 `everyFiveMinutes()`   |
 | Outbox prune 04:00, 90d retention          | Lines 119–125                        |
@@ -473,4 +498,4 @@ If `Kernel.php` changes, regenerate Section 1 table.
 
 ---
 
-*Last verified: 2026-05-24 (K2-HEAL-05 added lane #19 stripe-drain-stranded-cpn — Phase K.8 K8-F-01 P1 browser-death drain). Kernel.php HEAD: branch `heal/cms-pr1-quickwins-2026-05-18`.*
+*Last verified: 2026-05-24 (L2-HEAL-07 added lane #20 foodking-z-open-safety-net 00:05 Paris — Phase L11.1 P0-03 + K.7 FIND-1, Z chain extension loop completed). Kernel.php HEAD: branch `heal/cms-pr1-quickwins-2026-05-18`.*

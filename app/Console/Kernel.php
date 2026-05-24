@@ -343,7 +343,50 @@ class Kernel extends ConsoleKernel
             ->description('NF525 Z-close safety-net per active branch (before midnight Paris)')
             ->onOneServer()
             ->withoutOverlapping()
-            ->runInBackground();
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/fiscal-close-safety-net.log'));
+
+        // [GOAL-L2-HEAL-07 2026-05-24] NF525 Z-OPEN safety-net at 00:05 Paris.
+        //
+        // Phase L11.1 P0-03 + K.7 FIND-1 (cron miss recovery audit) confirmed
+        // a missing companion to lane #17 above: G2-HEAL-06 added the
+        // Z-CLOSE safety-net at 23:55 Paris but no Z-OPEN cron. If a cashier
+        // never manually opens the next Z after the midnight close, every
+        // business day after that = silent skip = the Z chain is no longer
+        // extended. NF525 segregation breaks (any transaction recorded after
+        // the silent close has nowhere to land except via the
+        // `fiscal_alloc_error_at` flag + retry cron, which is a degraded
+        // path that owners must monitor by hand).
+        //
+        // 00:05 Paris = a few minutes AFTER the 23:55 close so the new
+        // business_date starts with an OPEN Z ready to absorb morning-shift
+        // transactions. The 10-minute gap also leaves room for the close
+        // command to fully finish (Cache::lock + chain verify + audit
+        // logging are all O(seconds), well under 10 min). Same timezone
+        // as the close lane to keep operational/audit semantics aligned.
+        //
+        // Idempotent: the command does a STATUS_OPEN pre-check per branch
+        // and `info`-logs (not error) when a Z is already open. So a
+        // cashier who opened manually for the early shift never triggers
+        // a false-alarm pager. Per-branch isolation: one branch crash
+        // never halts the rest. Mirrors lane #17 G2-HEAL-06 pattern
+        // exactly so the close + open pair stays symmetric.
+        //
+        // ZReportService FROZEN §7 — this lane only CALLS service.open(),
+        // it does not modify the service. Frozen-zone diff = 0.
+        //
+        // Loop: 23:55 close (lane #17) + 00:05 open (this lane) = continuous
+        // Z chain extension even if the cashier is absent (V1 LOCAL Le
+        // Cayenne operational floor until the optional UI button ships).
+        $schedule->command('fiscal:open-all-active-branches')
+            ->dailyAt('00:05')
+            ->timezone('Europe/Paris')
+            ->name('foodking-z-open-safety-net')
+            ->description('NF525 Z-open safety-net per active branch (just after midnight Paris)')
+            ->onOneServer()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/fiscal-open-safety-net.log'));
     }
 
     /**
