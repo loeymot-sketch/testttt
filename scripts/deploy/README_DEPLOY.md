@@ -618,6 +618,36 @@ V1 baseline = logs locaux + cron alerting via mail. V1.0.X recommandation :
 
 Décision owner. Pour V1 minimum : UptimeRobot + Hetzner Backups suffisent.
 
+### 8.5 Generate LOYALTY_QR_SECRET (per GOAL-I2-HEAL-03 — I.8 P1 I8-E-001)
+
+Generate `LOYALTY_QR_SECRET` via `openssl rand -hex 32` + put in production
+`.env` BEFORE first deploy. `AppServiceProvider:161` boot guard REFUSES to
+start in production when this is empty — without this step the app crashes
+immediately at boot with `RuntimeException: LOYALTY_QR_SECRET must be set
+in production (LCS-S-001)`.
+
+```bash
+ssh root@<server-ip>
+cd /var/www/lecayenne
+NEW_SECRET=$(openssl rand -hex 32)
+# Append to production .env (DO NOT commit to git):
+echo "" | sudo tee -a .env
+echo "# Loyalty QR HMAC signing secret (LCS-S-001 / GOAL-I2-HEAL-03)" | sudo tee -a .env
+echo "LOYALTY_QR_SECRET=${NEW_SECRET}" | sudo tee -a .env
+sudo -u deploy php artisan config:cache
+sudo supervisorctl restart lecayenne-worker:*
+```
+
+Rules:
+- MUST be ≥ 32 chars / 256 bits (the boot guard rejects shorter values).
+- MUST be unique per environment (never reuse staging value in prod).
+- MUST NEVER be committed to git — treat as a secret like
+  `FISCAL_AUDIT_SECRET` / `FISCAL_Z_REPORT_SECRET`.
+- Rotation: see `config/loyalty.php` header docblock. Old plaintext path
+  remains accepted during the transition window (legacy `FK:<code>` mobile
+  clients) — set `LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT=false` only when
+  field roll-out confirms zero plaintext traffic.
+
 ---
 
 ## Section 9 — Rollback runbook
@@ -798,10 +828,11 @@ Cocher avant déclarer prod ouverte :
 - [ ] Section 8.1 → AWS demo keys rotated (si applicable)
 - [ ] Section 8.2 → Firebase Admin JSON uploaded via Settings
 - [ ] Section 8.4 → monitoring choisi (UptimeRobot minimum)
+- [ ] Section 8.5 → `LOYALTY_QR_SECRET` généré (`openssl rand -hex 32`) + écrit dans prod `.env` + `config:cache` (BLOQUE le boot sinon)
 - [ ] Section 10.1 → `fiscal:verify-chain` final pré-ouverture caisse
 - [ ] Section 10.3 → date prochain restore drill (J+90) calendarisée
 
-**Si 24/24 cochés** → prod ouverte. Owner peut ouvrir Z première caisse.
+**Si 25/25 cochés** → prod ouverte. Owner peut ouvrir Z première caisse.
 
 **Si l'un échoue** → ne PAS ouvrir prod. Loop fix → re-vérif (CLAUDE.md §5
 étape 7 self-correct discipline).
