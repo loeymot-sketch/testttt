@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\NoDangerousFileExtension;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ItemPhotoUploadRequest extends FormRequest
@@ -14,7 +15,10 @@ class ItemPhotoUploadRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            // [GOAL-L2-HEAL-02 2026-05-24] Phase L7.1-V1: NoDangerousFileExtension
+            // blocks .pht / double-extension polyglot attacks. Field is `photo`
+            // (not `image`) and accepts webp — both unaffected by the new rule.
+            'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096', new NoDangerousFileExtension()],
         ];
     }
 

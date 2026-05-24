@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\NoDangerousFileExtension;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -33,7 +34,9 @@ class SliderRequest extends FormRequest
             ],
             'description' => ['nullable'],
             'status'      => ['required', 'numeric'],
-            'image'       => $this->route('slider.id') ? ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'] : ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            // [GOAL-L2-HEAL-02 2026-05-24] Phase L7.1-V1: NoDangerousFileExtension
+            // blocks .pht / double-extension polyglot attacks.
+            'image'       => $this->route('slider.id') ? ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048', new NoDangerousFileExtension()] : ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048', new NoDangerousFileExtension()],
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\NoDangerousFileExtension;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ChangeImageRequest extends FormRequest
@@ -24,7 +25,9 @@ class ChangeImageRequest extends FormRequest
     public function rules()
     {
         return [
-            'image' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048']
+            // [GOAL-L2-HEAL-02 2026-05-24] Phase L7.1-V1: NoDangerousFileExtension
+            // blocks .pht / double-extension polyglot attacks.
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048', new NoDangerousFileExtension()]
         ];
     }
 

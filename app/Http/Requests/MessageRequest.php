@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\NoDangerousFileExtension;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -29,7 +30,9 @@ class MessageRequest extends FormRequest
             'user_id'   => ['required', 'numeric'],
             'is_read'   => ['required', 'numeric'],
             'text'      => ['nullable', 'max:5000'],
-            'image'     => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048']
+            // [GOAL-L2-HEAL-02 2026-05-24] Phase L7.1-V1: NoDangerousFileExtension
+            // blocks .pht / double-extension polyglot attacks.
+            'image'     => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048', new NoDangerousFileExtension()]
         ];
     }
 }

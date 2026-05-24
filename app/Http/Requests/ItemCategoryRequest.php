@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\NoDangerousFileExtension;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -41,7 +42,9 @@ class ItemCategoryRequest extends FormRequest
             ])),
             'description'        => ['nullable', 'string', 'max:900'],
             'status'             => ['required', 'numeric', 'max:24'],
-            'image'              => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            // [GOAL-L2-HEAL-02 2026-05-24] Phase L7.1-V1: NoDangerousFileExtension
+            // blocks .pht / double-extension polyglot attacks.
+            'image'              => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048', new NoDangerousFileExtension()],
             'wizard_template'    => ['nullable', 'string', 'in:simple,tacos,sandwich,burger,assiette,salade,omelette,snacking'],
             'has_menu'           => ['nullable', 'boolean'],
             'default_menu_kiosk' => ['nullable', 'boolean'],

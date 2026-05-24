@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\DiscountType;
 use App\Enums\Status;
+use App\Rules\NoDangerousFileExtension;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -54,7 +55,9 @@ class CouponRequest extends FormRequest
             'minimum_order'    => ['required', 'numeric', 'min:0'],
             'maximum_discount' => ['required', 'numeric', 'min:0'],
             'limit_per_user'   => ['nullable', 'numeric', 'min:0'],
-            'image'            => $this->route('coupon.id') ? ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'] : ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            // [GOAL-L2-HEAL-02 2026-05-24] Phase L7.1-V1: NoDangerousFileExtension
+            // blocks .pht / double-extension polyglot attacks.
+            'image'            => $this->route('coupon.id') ? ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048', new NoDangerousFileExtension()] : ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048', new NoDangerousFileExtension()],
 
             // [PROMO-DASH-2026-05-06] Advanced scoping fields
             'valid_days_of_week'   => ['nullable', 'array'],
