@@ -300,6 +300,157 @@ class AppServiceProvider extends ServiceProvider
                     . 'Set CACHE_DRIVER=redis (recommended) or CACHE_DRIVER=memcached in your .env file.'
                 );
             }
+
+            // [GOAL-L2-HEAL-05 2026-05-24] Phase K.8 F-07 P2:
+            // STRIPE_WEBHOOK_SECRET required for signature verification of
+            // Stripe webhooks. Previously runtime soft-guard at Stripe.php
+            // line 204-213 returned HTTP 500 'misconfigured' lazily on first
+            // webhook hit; now refuses boot in production for fail-fast
+            // surfacing (mirrors LOYALTY_QR_SECRET / FISCAL_*_SECRET pattern).
+            //
+            // Only enforced if the Stripe payment gateway is enabled in the
+            // payment_gateways table (slug='stripe', status=Activity::ENABLE=5)
+            // — same predicate Stripe.php:113 uses for its `paymentRequest()`
+            // entry point. Config-driven (not env-driven) because Stripe is a
+            // V1.0.X cloud-prep path and a fresh local install ships Stripe
+            // disabled — boot-time refusal would break dev/test/seed flow.
+            //
+            // Try/catch guards against fresh-install windows where the
+            // payment_gateways table is not yet migrated. In that state we
+            // treat Stripe as disabled (safe: there is no gateway row that
+            // could route a webhook), so the missing secret is not yet a
+            // production hazard.
+            try {
+                $stripeEnabled = \DB::table('payment_gateways')
+                    ->where('slug', 'stripe')
+                    ->where('status', \App\Enums\Activity::ENABLE)
+                    ->exists();
+            } catch (\Throwable $e) {
+                $stripeEnabled = false; // table not ready (fresh install / migration)
+            }
+            if ($stripeEnabled && empty(env('STRIPE_WEBHOOK_SECRET'))) {
+                throw new \RuntimeException(
+                    'STRIPE_WEBHOOK_SECRET must be set in production while the Stripe '
+                    . 'payment gateway is enabled. Webhook signature verification at '
+                    . '/payment/stripe-webhook/ returns HTTP 500 misconfigured when the '
+                    . 'secret is empty. Configure the secret in Stripe Dashboard → '
+                    . 'Developers → Webhooks, then set STRIPE_WEBHOOK_SECRET=<whsec_...> '
+                    . 'in your .env file and run `php artisan config:cache`. To disable '
+                    . 'the boot guard, deactivate the Stripe gateway in admin.'
+                );
+            }
+
+            // [GOAL-L2-HEAL-06 2026-05-24] Phase L1.1 F-002 — SenangPay webhook
+            // secret boot guard. Parity with LOYALTY_QR_SECRET above and with
+            // L2-HEAL-05 (STRIPE_WEBHOOK_SECRET) immediately above.
+            //
+            // Why: Senangpay::webhook() (app/Http/PaymentGateways/Gateways/Senangpay.php:96-104)
+            // verifies inbound HMAC-SHA-256 signatures with `senangpay_secret_key`.
+            // If the operator activates the SenangPay gateway (payment_gateways
+            // slug='senangpay', status=Activity::ENABLE=5) without configuring
+            // the secret, EVERY webhook hit returns HTTP 500 'misconfigured' —
+            // payments silently fail to capture and SenangPay enters its retry
+            // storm (any non-200 is retried per the spec doc-block in
+            // Senangpay.php line 24).
+            //
+            // Refuse-to-boot is the correct failure mode (vs. lazy 500): an
+            // operator who can ssh + restart is far more likely to notice a
+            // boot crash with a clear pointer than to scan webhook logs.
+            //
+            // Storage note (differs from Stripe): SenangPay's secret lives in
+            // `gateway_options` (polymorphic morph rows under PaymentGateway),
+            // NOT in env. We mirror the same lookup Senangpay::webhook performs
+            // at line 94-95. The boot guard query is a single JOIN:
+            //
+            //   SELECT go.value
+            //   FROM payment_gateways pg
+            //   JOIN gateway_options go
+            //     ON go.model_id = pg.id
+            //    AND go.model_type = 'App\\Models\\PaymentGateway'
+            //   WHERE pg.slug = 'senangpay'
+            //     AND pg.status = 5  -- Activity::ENABLE
+            //     AND go.option = 'senangpay_secret_key'
+            //
+            // Try/catch guards against fresh-install windows where the
+            // payment_gateways / gateway_options tables are not yet migrated.
+            // In that state we treat SenangPay as disabled (safe: there is no
+            // gateway row that could route a webhook), so the missing secret
+            // is not yet a production hazard. Matches the Stripe block's
+            // soft-degrade.
+            try {
+                $senangpayEnabled = \DB::table('payment_gateways')
+                    ->where('slug', 'senangpay')
+                    ->where('status', \App\Enums\Activity::ENABLE)
+                    ->exists();
+            } catch (\Throwable $e) {
+                $senangpayEnabled = false; // table not ready (fresh install / migration)
+            }
+            if ($senangpayEnabled) {
+                try {
+                    $senangpaySecret = (string) \DB::table('payment_gateways')
+                        ->join('gateway_options', function ($join) {
+                            $join->on('gateway_options.model_id', '=', 'payment_gateways.id')
+                                ->where('gateway_options.model_type', '=', \App\Models\PaymentGateway::class);
+                        })
+                        ->where('payment_gateways.slug', 'senangpay')
+                        ->where('payment_gateways.status', \App\Enums\Activity::ENABLE)
+                        ->where('gateway_options.option', 'senangpay_secret_key')
+                        ->value('gateway_options.value');
+                } catch (\Throwable $e) {
+                    // gateway_options table not ready — same soft-degrade as
+                    // the existence probe above.
+                    $senangpaySecret = '';
+                }
+                if ($senangpaySecret === '') {
+                    throw new \RuntimeException(
+                        'SENANGPAY_SECRET_KEY must be set in production while the SenangPay '
+                        . 'payment gateway is enabled. Webhook signature verification at '
+                        . '/senangpay-webhook returns HTTP 500 misconfigured when the '
+                        . '`senangpay_secret_key` option is empty — payments silently fail '
+                        . 'to capture and SenangPay enters a retry storm. Configure the '
+                        . 'secret via Admin → Payment Gateway → SenangPay → Secret Key '
+                        . '(stored as gateway_options.option=\'senangpay_secret_key\' under '
+                        . 'payment_gateways.slug=\'senangpay\' status=5). To disable the boot '
+                        . 'guard, deactivate the SenangPay gateway in admin.'
+                    );
+                }
+            }
+
+            // [GOAL-L2-HEAL-04 2026-05-24] L7.2 F-02 P1:
+            // Production refuses to boot if MAIL_HOST resolves to a forbidden
+            // IP range (loopback / link-local / RFC1918 / cloud-metadata).
+            // Defends against an owner-self-target SSRF where the admin-UI
+            // .env writer (MailService::update) had previously set
+            // MAIL_HOST=169.254.169.254 or 192.168.x.x — any subsequent
+            // Mail::send (password reset, order confirmation, invoice email)
+            // would open TCP to that host, providing an internal-VPC probe
+            // primitive post AWS cutover. Mirrors the
+            // POS_SIMULATION_HARDWARE / APP_DEBUG / IDEMPOTENCY / APP_URL
+            // / BROADCAST_DRIVER / CACHE_DRIVER prod-boot-guard pattern.
+            //
+            // Reads config('mail.mailers.smtp.host') (canonical Laravel 9+
+            // path) with env('MAIL_HOST') fallback for the rare config-not-
+            // booted edge case.
+            //
+            // Empty / unset MAIL_HOST is INTENTIONALLY NOT a fail-closed
+            // condition — that is a config-completeness concern outside the
+            // SSRF threat model and would otherwise brick boot on a fresh
+            // install before the admin has configured mail. Garbage (non-
+            // IP-literal) values also PASS — Mail::send fails downstream
+            // anyway and we do not want to brick boot on parseable junk.
+            $mailHost = config('mail.mailers.smtp.host') ?? env('MAIL_HOST');
+            if (is_string($mailHost) && $mailHost !== '') {
+                $rule = new \App\Rules\SafeRemoteHost();
+                if (!$rule->passes('mail_host', $mailHost)) {
+                    throw new \RuntimeException(
+                        'MAIL_HOST is in a forbidden IP range in production '
+                        . '(loopback / link-local / RFC1918 / cloud-metadata). '
+                        . 'Set MAIL_HOST to a public mail server hostname (e.g. '
+                        . 'smtp.mailgun.org, smtp.sendgrid.net, smtp.gmail.com), '
+                        . 'then run `php artisan config:cache`. Configured value: ' . $mailHost
+                    );
+                }
+            }
         }
 
         // [GOAL-F2-HEAL-02 2026-05-23] Per-session innodb_lock_wait_timeout
