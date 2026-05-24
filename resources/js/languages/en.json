@@ -1211,6 +1211,7 @@
         "kds_toast_bumped": "Order #{n} marked ready",
         "kds_empty_state": "No orders pending",
         "kds_empty_state_sub": "Incoming orders will appear here",
+        "kds_orders_waiting_more": "waiting",
         "kds_recently_served": "Recently served",
         "kds_history_button": "History",
         "kds_history_button_aria": "Open today's order history",

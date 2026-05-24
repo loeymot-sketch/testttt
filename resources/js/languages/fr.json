@@ -726,6 +726,7 @@
         "kds_toast_bumped": "Commande N°{n} marquée prête",
         "kds_empty_state": "Aucune commande en cours",
         "kds_empty_state_sub": "Les nouvelles commandes apparaîtront ici",
+        "kds_orders_waiting_more": "en attente",
         "kds_recently_served": "Récemment servies",
         "kds_history_button": "Historique",
         "kds_history_button_aria": "Ouvrir l'historique des commandes du jour",

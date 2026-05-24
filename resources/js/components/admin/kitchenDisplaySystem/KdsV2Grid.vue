@@ -67,6 +67,26 @@
       ></div>
     </div>
 
+    <!-- [Wave N M-KDS-6 F1 P0 2026-05-24] Overflow chip — chef visibility safety net.
+         Wave M empirical finding: KdsV2Grid:55 slice(0,8) silently dropped orders 9+
+         from the rendered FIFO grid. No chip, no count, no [I]–… keyboard shortcut
+         beyond [H]. Owner verbatim mandate « chef qui pourrait sortir une commande
+         incomplète » = operational safety risk: if chef thinks the board fully shows
+         the queue, orders 9+ silently age past SLA. This chip is the independent
+         operational safety net BEFORE the full S3 PROPOSAL Option A/B/C layout
+         redesign (owner-gate). Trigger = activeOrders.length > 8 (the partition the
+         grid actually slices — NOT total feed length, which would falsely count
+         recently-served PREPARED orders in the bottom strip). -->
+    <div
+      v-if="overflowActiveCount > 0"
+      class="kds-overflow-chip"
+      role="status"
+      aria-live="polite"
+    >
+      <span class="kds-overflow-chip__icon" aria-hidden="true">!</span>
+      <span class="kds-overflow-chip__text">+{{ overflowActiveCount }} {{ $t('label.kds_orders_waiting_more') }}</span>
+    </div>
+
     <!-- [Wave U 2026-05-21] Récemment servies — compact archive strip.
          Renders the 4 most recently PREPARED orders with elapsed-since-served.
          Small footprint (60px row) so it never steals space from the active grid. -->
@@ -196,6 +216,14 @@ export default {
                 return tb - ta;
             });
             return prepared.slice(0, 4);
+        },
+        // [Wave N M-KDS-6 F1 P0 2026-05-24] Overflow count for the chef-visibility
+        // safety chip. Counts ACTIVE orders (ACCEPT|PREPARING) beyond the 8 slots
+        // the FIFO grid actually renders — recentlyServed (PREPARED) orders are
+        // NOT counted (they live in the bottom strip and are not "waiting"). Stays
+        // 0 when the queue fits the grid (overflow chip stays hidden via v-if).
+        overflowActiveCount() {
+            return Math.max(0, this.activeOrders.length - 8);
         },
     },
     watch: {
@@ -371,6 +399,44 @@ export default {
     border: 2px dashed #E5E7EB;
     border-radius: 12px;
     min-height: 200px;
+}
+
+/* [Wave N M-KDS-6 F1 P0 2026-05-24] Overflow chip — chef visibility safety net.
+   Cayenne red (#F4501E) high-contrast pill, absolute top-right of .kds-v2
+   (which is position:relative). z-index:100 keeps it above grid cards but the
+   parent .kds-v2 stacking context contains the chip below any modal overlay.
+   Pulse keyframe pulls peripheral attention; the `prefers-reduced-motion`
+   media query disables animation for vestibular-sensitive operators. */
+.kds-overflow-chip {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    padding: 8px 16px;
+    background: #F4501E;
+    color: white;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    animation: kds-overflow-pulse 2s ease-in-out infinite;
+    z-index: 100;
+}
+.kds-overflow-chip__icon {
+    font-size: 18px;
+    line-height: 1;
+    font-weight: 900;
+}
+@keyframes kds-overflow-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .kds-overflow-chip {
+        animation: none;
+    }
 }
 
 /* [Wave U 2026-05-21] Récemment servies — compact archive strip.

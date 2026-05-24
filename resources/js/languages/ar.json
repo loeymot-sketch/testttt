@@ -1059,6 +1059,7 @@
         "kds_toast_bumped": "الطلب رقم {n} تم تجهيزه",
         "kds_empty_state": "لا توجد طلبات",
         "kds_empty_state_sub": "ستظهر الطلبات الجديدة هنا",
+        "kds_orders_waiting_more": "في الانتظار",
         "kds_recently_served": "تم تقديمها مؤخراً",
         "kds_history_button": "السجل",
         "kds_history_button_aria": "فتح سجل طلبات اليوم",
