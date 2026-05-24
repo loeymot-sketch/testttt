@@ -40,4 +40,32 @@ return [
             report-uri /api/frontend/csp-report;
         ")),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Security — SafeRemoteHost allowlist (SSRF defense override)
+    |--------------------------------------------------------------------------
+    |
+    | [GOAL-L2-HEAL-03 2026-05-24] L7.2 L7-2-F-01 P1 / L7-2-F-02 P1.
+    |
+    | App\Rules\SafeRemoteHost blocks RFC1918 / loopback / link-local
+    | (incl. cloud metadata 169.254.169.254) / multicast / reserved IPv4 +
+    | IPv6 loopback / link-local / unique-local. Used by PrinterRequest
+    | (TcpPrinterTransport host) and MailRequest (mail_host).
+    |
+    | V1 LOCAL Le Cayenne: empty by default. Owner opts in via .env if a
+    | legit LAN-hosted printer needs allowlisting:
+    |
+    |     SAFE_REMOTE_HOST_ALLOWLIST=192.168.1.0/24
+    |
+    | Multiple subnets are comma-separated:
+    |
+    |     SAFE_REMOTE_HOST_ALLOWLIST=192.168.1.0/24,10.10.0.0/16
+    |
+    | Each entry must be an IPv4 CIDR (a.b.c.d/n) or bare IPv4. IPv6 ranges
+    | are not supported by the allowlist (V1 LOCAL = IPv4-only printer LAN).
+    */
+    'safe_remote_host_allowlist' => env('SAFE_REMOTE_HOST_ALLOWLIST', '')
+        ? array_values(array_filter(array_map('trim', explode(',', env('SAFE_REMOTE_HOST_ALLOWLIST', '')))))
+        : [],
 ];

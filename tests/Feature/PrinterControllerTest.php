@@ -22,6 +22,18 @@ class PrinterControllerTest extends TestCase
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
 
+        // [GOAL-L2-HEAL-03 2026-05-24] SafeRemoteHost now blocks RFC1918 +
+        // loopback on PrinterRequest::host. Pre-existing happy-path cases
+        // in this suite use 192.168.x and 127.0.0.1 (representative of a
+        // real LAN-hosted ESC/POS printer), so we allowlist those ranges
+        // for THIS test class only. Production .env stays closed by default.
+        // The dedicated security sentinel (PrinterHostAllowlistSentinelTest)
+        // verifies the blocklist with a *cleared* allowlist.
+        config(['security.safe_remote_host_allowlist' => [
+            '127.0.0.0/8',
+            '192.168.0.0/16',
+        ]]);
+
         $this->branch = Branch::factory()->create();
         $this->user = User::factory()->create([
             'branch_id' => $this->branch->id,
