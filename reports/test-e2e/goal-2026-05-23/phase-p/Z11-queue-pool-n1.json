@@ -1,0 +1,247 @@
+{
+  "agent": "Z11 Queue/pool/N+1",
+  "phase": "P",
+  "goal": "2026-05-23",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "audit_date": "2026-05-24",
+  "queue_driver": "redis",
+  "queue_driver_source": ".env:QUEUE_CONNECTION=redis (config/queue.php:16 default fallback=sync)",
+  "redis_client": "predis",
+  "redis_host": "127.0.0.1:6379",
+  "queue_lanes": ["high", "default", "notifications"],
+  "high_lane_events": [
+    {
+      "job": "DispatchDomainEventsJob",
+      "file": "app/Jobs/DispatchDomainEventsJob.php",
+      "line": 46,
+      "onQueue_assignment": "constructor SSOT (Audit Claude NEW-03 B7)",
+      "tries": 6,
+      "backoff": [1, 5, 15, 60, 300],
+      "carries": "NF525 outbox events (OrderCreated, OrderStatusChanged, OrderPaymentStatusChanged, CatalogChanged, BranchStatusChanged, ItemAvailability*, Coupon*, OrderTable*, SettingsUpdated, OrderPaidAtCounter — 14 listener types via DomainEvent ID)"
+    }
+  ],
+  "notifications_lane_events": [
+    {
+      "job": "SendFcmNotificationJob",
+      "file": "app/Jobs/SendFcmNotificationJob.php",
+      "line": 67,
+      "rationale": "isolates slow FCM sends from `high` so DispatchDomainEventsJob (NF525 POS/KDS sync) cannot starve"
+    }
+  ],
+  "default_lane_events": "everything else (SendOrderMail/Sms/Push, OrderCanceled stock release, etc.) — no explicit onQueue chain anywhere",
+  "queue_lane_discipline": {
+    "verdict": "CLEAN",
+    "evidence": [
+      "All 14 outbox listeners + 3 console commands + HasDomainEvents trait + SyncOverviewController dispatch via bare DispatchDomainEventsJob::dispatch() — zero ->onQueue chains anywhere",
+      "PersistOrderTableChangedToOutbox.php:91 carries the SSOT pattern comment 'queue lane is encoded in the job constructor (SSOT). Do NOT chain ->onQueue(...) here'",
+      "SSOT model holds: per-job constructor sets lane, dispatch sites stay lane-agnostic"
+    ]
+  },
+  "n1_candidates": [
+    {
+      "file": "app/Services/KitchenDisplaySystemOrderService.php",
+      "line": 70,
+      "snippet": "Order::with(['orderItems', 'address', 'user'])",
+      "issue": "Nested orderItems.orderItem MISSING — KDSOrderDetailsResource:50 then does loadMissing('orderItem') per Order in the collection. KDS list with 50 orders = 50 extra queries to fetch Item parents.",
+      "severity": "P1",
+      "fix": "Order::with(['orderItems.orderItem', 'address', 'user'])"
+    },
+    {
+      "file": "app/Services/KdsSyncService.php",
+      "line": 96,
+      "snippet": "Order::with(['orderItems', 'address', 'user'])",
+      "issue": "Same N+1 as KitchenDisplaySystemOrderService — sync-delta endpoint runs every poll cycle (5-60s windowed), so per-second cost is recurring not one-off.",
+      "severity": "P1",
+      "fix": "Order::with(['orderItems.orderItem', 'address', 'user'])"
+    },
+    {
+      "file": "app/Services/OrderService.php",
+      "line": 219,
+      "snippet": "Order::with('transaction', 'orderItems', 'branch', 'user')",
+      "issue": "Missing nested .orderItem — admin delivery-boy orders list. Asymmetric vs :126 (Order::list correctly uses 'orderItems.orderItem.media' + '.category').",
+      "severity": "P2",
+      "fix": "Order::with('transaction', 'orderItems.orderItem', 'branch', 'user')"
+    },
+    {
+      "file": "app/Services/OrderService.php",
+      "line": 255,
+      "snippet": "Order::with('transaction', 'orderItems', 'branch', 'user')",
+      "issue": "Same as :219 — driver-route delivery-boy own-orders list.",
+      "severity": "P2",
+      "fix": "Order::with('transaction', 'orderItems.orderItem', 'branch', 'user')"
+    },
+    {
+      "file": "app/Services/OrderService.php",
+      "line": 2524,
+      "snippet": "Order::with('transaction', 'orderItems')",
+      "issue": "Missing nested .orderItem on bulk-export path",
+      "severity": "P3"
+    },
+    {
+      "file": "app/Http/Resources/OrderDetailsResource.php",
+      "line": 76,
+      "snippet": "$this->user?->load('roles', 'media')",
+      "issue": "Lazy load inside resource — if collection() called over N orders, N×2 queries (roles + media per user). Acceptable for single-order detail endpoint but risky if collection-wrapped.",
+      "severity": "P3"
+    },
+    {
+      "file": "app/Http/Resources/OrderDetailsResource.php",
+      "line": 79,
+      "snippet": "$this->deliveryBoy?->load('roles', 'media')",
+      "issue": "Same pattern as :76 for delivery-boy.",
+      "severity": "P3"
+    },
+    {
+      "file": "app/Http/Resources/NormalItemResource.php",
+      "line": 108,
+      "snippet": "addons->load('addonItem', 'addonItem.variations', 'addonItem.offer', 'item')",
+      "issue": "4-deep lazy load inside resource — catalog endpoint via menu/category fetch lazy-loads addonItem chain per Item. If upstream doesn't eager-load, N items × 4 relations.",
+      "severity": "P2"
+    },
+    {
+      "file": "app/Http/Resources/NormalItemResource.php",
+      "line": 107,
+      "snippet": "filteredExtras->load('item')",
+      "issue": "Lazy load on each Item's extras inside resource collection.",
+      "severity": "P3"
+    },
+    {
+      "file": "app/Http/Resources/ItemCategoryMenuResource.php",
+      "line": 26,
+      "snippet": "$this->items->load('offer','category')",
+      "issue": "Menu category resource lazy-loads offer+category per Item collection — runs on every menu fetch.",
+      "severity": "P2"
+    }
+  ],
+  "n1_summary": {
+    "total_candidates": 10,
+    "p1_kds_hot_path": 2,
+    "p2_admin_list_or_resource": 3,
+    "p3_low_freq": 5,
+    "hot_path_recurring_cost": "KDS list 50 orders @ poll cadence 5-60s = up to 600+ queries/min/branch in worst-case avoidable"
+  },
+  "eager_load_coverage_controllers": {
+    "total_controllers": 141,
+    "with_eager_load_count": 9,
+    "files": [
+      "app/Http/Controllers/Frontend/RootController.php",
+      "app/Http/Controllers/Frontend/ItemController.php",
+      "app/Http/Controllers/Frontend/PaymentController.php",
+      "app/Http/Controllers/Admin/PosCategoryController.php",
+      "app/Http/Controllers/Admin/CashSessionReportController.php",
+      "app/Http/Controllers/Admin/StockRuptureDashboardController.php",
+      "app/Http/Controllers/Admin/CashOverviewController.php",
+      "app/Http/Controllers/Admin/AdminPosV4Controller.php",
+      "app/Http/Controllers/Admin/ItemController.php"
+    ],
+    "note": "Most eager-loading lives in Service layer (OrderService, KitchenDisplaySystemOrderService, KdsSyncService) not controllers — pattern is service-mediated, so controller-count low. Discipline is in services."
+  },
+  "db_pool_config": {
+    "max_connections_observed_default": 151,
+    "source": "performance_schema.global_variables (queried by E2ESoakCommand:570)",
+    "innodb_lock_wait_timeout_session": 5,
+    "innodb_lock_wait_timeout_source": "app/Providers/AppServiceProvider.php:463-474 (F2-HEAL-02 — per-session enforced on every boot, env override DB_LOCK_WAIT_TIMEOUT)",
+    "phpfpm_pool_size_estimate": "not configured in repo (V1 LOCAL Le Cayenne — single-box default per nginx/php-fpm package)",
+    "estimated_concurrent_max": "151 connections - reserved superuser slots ≈ 145 usable; per-request PDO + queue worker draw ≈ 1 connection each",
+    "soak_pool_pct_ceiling_default": 80,
+    "soak_pool_check_source": "E2ESoakCommand:86 (--db-pool-pct-ceiling=80), :698 (alarm if exceeded)",
+    "v1_local_verdict": "OK for single-box Le Cayenne. Cloud-prep (multi-instance ALB) requires re-evaluation when scaling out."
+  },
+  "lock_for_update_sites": [
+    {"file": "app/Services/Fiscal/FiscalSequenceService.php", "line": 100, "scope": "tight — inside Cache::lock + DB::transaction, computes MAX + 1, releases. NF525 critical."},
+    {"file": "app/Services/OrderService.php", "line": 1684, "scope": "tight — DB::transaction at :1683, K2-HEAL-02 style. Notifications + broadcast post-commit at :1828-1837."},
+    {"file": "app/Services/OrderService.php", "line": 1872, "scope": "tight — self-cancel race fix (iter13 P1). Broadcast post-commit at :1909."},
+    {"file": "app/Services/OrderService.php", "line": 1947, "scope": "tight — K2-HEAL-02 changeStatus lockForUpdate. Sealed-Z guard + audit_log INSIDE tx, broadcast at :2078-2087 OUTSIDE tx."},
+    {"file": "app/Services/OrderService.php", "line": 2126, "scope": "tight — changePaymentStatus closure."},
+    {"file": "app/Services/PaymentService.php", "line": 222, "scope": "tight — DB::transaction at :219, payment write + cashier-attribution race protection. NF525 critical (PaymentAlreadyCollectedException race)."},
+    {"file": "app/Domain/Order/OrderStateMachine.php", "line": 210, "scope": "tight — recordTransition closure."},
+    {"file": "app/Listeners/PersistOrderPaymentStatusChangedOnRefundCreated.php", "line": 95, "scope": "tight — F-010 PK-only whereKey."},
+    {"file": "app/Jobs/DispatchDomainEventsJob.php", "line": 67, "scope": "tight — claim-under-lock pattern, mutation only, broadcast OUTSIDE in Phase 2."},
+    {"file": "app/Http/Controllers/Frontend/LoyaltyController.php", "line": 277, "scope": "tight — ATOMIC redeem race."},
+    {"file": "app/Http/Controllers/Frontend/OrderController.php", "line": 161, "scope": "tight — frontend order claim."},
+    {"file": "app/Http/Controllers/Frontend/PaymentReconcileController.php", "line": 196, "scope": "tight — PAID promotion race."},
+    {"file": "app/Http/Controllers/Auth/KioskMachineLoginController.php", "line": 91, "scope": "tight — kiosk machine claim."},
+    {"file": "app/Http/Controllers/Admin/AvailabilityController.php", "line": 79, "scope": "tight — availability mutation."},
+    {"file": "app/Jobs/CleanupStalePendingKioskOrders.php", "line": 49, "scope": "tight — kiosk PENDING cleanup."}
+  ],
+  "lock_for_update_summary": {
+    "total_sites": 15,
+    "verdict": "CLEAN — all scoped tight (inside DB::transaction closure), no HTTP/broadcast call observed inside any lockForUpdate scope. innodb_lock_wait_timeout=5s caps worst-case worker stall."
+  },
+  "cache_lock_sites": [
+    {"file": "app/Services/Fiscal/FiscalSequenceService.php", "line": 66, "key": "fiscal_seq_b{branch}", "ttl_seconds": 5, "block_seconds": 3, "nf525_critical": true},
+    {"file": "app/Services/Fiscal/AuditLogService.php", "line": 101, "key": "audit_chain_b{n}", "ttl_seconds": "self::CHAIN_LOCK_TTL", "nf525_critical": true},
+    {"file": "app/Services/Fiscal/ZReportService.php", "line": 79, "key": "z_report_b{n}", "ttl_seconds": "self::LOCK_TTL_SECONDS", "nf525_critical": true},
+    {"file": "app/Services/Fiscal/ZReportService.php", "line": 192, "key": "z_report_b{n}", "ttl_seconds": "self::LOCK_TTL_SECONDS", "nf525_critical": true},
+    {"file": "app/Services/OrderService.php", "line": 636, "key": "order idempotency", "rationale": "AUDIT-F-006 Option A — parité POS↔Kiosk on idempotency key"},
+    {"file": "app/Services/OrderService.php", "line": 2716, "key": "lockKey", "ttl_seconds": 30},
+    {"file": "app/Services/FrontendOrderService.php", "line": 157, "key": "idempotency", "rationale": "parité POS↔Kiosk"},
+    {"file": "app/Services/FrontendOrderService.php", "line": 983, "key": "lockKey", "ttl_seconds": 30},
+    {"file": "app/Services/Cash/CashDrawerService.php", "line": 78, "key": "branch:{n}:user:{m}", "ttl_seconds": 5, "block_seconds": 3, "rationale": "cash drawer open race"},
+    {"file": "app/Services/Delivery/DeliveryBoyCashSessionService.php", "line": 82, "key": "branch:{n}:livreur:{m}", "ttl_seconds": 5, "block_seconds": 3, "rationale": "delivery-boy cash session race"},
+    {"file": "app/Console/Commands/OutboxRetryFailedCommand.php", "line": 71, "key": "outbox.retry-failed.lock", "ttl_seconds": 300, "rationale": "Wave 3b — prevent double-dispatch on concurrent cron+admin"},
+    {"file": "app/Console/Commands/FiscalArchiveCommand.php", "line": 126, "key": "archive lock", "ttl_seconds": "self::ARCHIVE_LOCK_TTL"},
+    {"file": "app/Http/Controllers/Frontend/PaymentReconcileController.php", "line": 165, "key": "per-entry reconcile", "ttl_seconds": 10}
+  ],
+  "cache_lock_summary": {
+    "total_sites": 13,
+    "ttl_discipline": "CLEAN — short TTLs (5-30s) for hot paths, 300s (OutboxRetryFailed) only on cron-bounded BATCH_CAP=500 lane",
+    "verdict": "All Cache::lock sites pair with DB::transaction defense-in-depth. NF525 fiscal lanes (FiscalSequence/AuditLog/ZReport) have triple defense: Cache::lock + DB::transaction + lockForUpdate + DB UNIQUE."
+  },
+  "transaction_with_http_in_scope": [
+    {
+      "search_result": "NONE FOUND",
+      "evidence": "OrderService.php broadcast/dispatch calls verified at :583, :1187, :1511, :1828, :1834, :1909, :2078, :2084, :2093 — all OUTSIDE DB::transaction closures",
+      "events_inside_tx_but_safe": [
+        "OrderCreated::dispatch at OrderService:583, :1187, :1511 — uses App\\Events\\Concerns\\DispatchableAfterCommit trait so dispatch fires post-commit (transactionLevel()>0 → afterCommit). Wave M heal lock-in: tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest."
+      ]
+    }
+  ],
+  "transaction_scope_verdict": "CLEAN — every observed HTTP/broadcast call sits outside DB::transaction scope. OrderCreated uses DispatchableAfterCommit so even when called inside tx the actual broadcast defers to commit.",
+  "adversarial_findings": [
+    {
+      "id": "ADV-Z11-01",
+      "finding": "failed_jobs table grows unbounded — no janitor cron",
+      "severity": "P1",
+      "evidence": "grep 'queue:prune-failed|queue:flush-failed|failed_jobs' app/Console/Kernel.php → 0 matches. Outbox has prune (90d, line 119), webhook has prune (180d, line 135), audit/Z-reports have retention, but failed_jobs table has zero scheduled cleanup. Over weeks/months in production the table grows linearly with every job-final-failure (contract_violation short-circuit at DispatchDomainEventsJob:184 lands every malformed payload here).",
+      "fix": "Add to app/Console/Kernel.php: $schedule->command('queue:prune-failed', ['--hours=336'])->dailyAt('04:30')->name('queue-prune-failed')->onOneServer()->withoutOverlapping(); — 14d retention matches webhook/outbox janitor cadence and stays well past Horizon recent_failed window (10080 min = 7d)."
+    },
+    {
+      "id": "ADV-Z11-02",
+      "finding": "Queue worker crash mid-job — retry within 90s lease window",
+      "severity": "INFO",
+      "evidence": "queue.php:41 database/redis 'retry_after' = 90s default (Laravel). DispatchDomainEventsJob $tries=6 + $backoff=[1,5,15,60,300] = up to 6.4min total retry window per claim. Combined with Phase 1 lockForUpdate + dispatched_at guard (DispatchDomainEventsJob:65-86), a crashed worker leaves the row claimed (dispatched_at set) BUT Phase 3b at :161-166 forceFills dispatched_at=null on exception — so an OOM/SIGKILL between :86 (commit) and :116 (broadcast) would leave a 'silent gap' (event marked dispatched, no broadcast). Mitigated by ws:heartbeat cache + SyncOverview probeHealth heuristic (90s window).",
+      "fix": "None required for V1 LOCAL. Phase E cloud-prep should consider a 'dispatched_at older than retry_after AND no broadcast log' rescue lane."
+    },
+    {
+      "id": "ADV-Z11-03",
+      "finding": "Job timeout 120s + slow Stripe API → leftover in flight",
+      "severity": "INFO",
+      "evidence": "E2ESoakCommand:152 recommends timeout=120s. Horizon supervisor-high timeout=90s. DispatchDomainEventsJob itself does NOT call Stripe — Stripe sits in PaymentService (sync path). Side-effect job SendOrderMail/Sms/Push has no Stripe call. No in-flight risk observed on outbox lane.",
+      "fix": "N/A — outbox lane is broadcast-only."
+    },
+    {
+      "id": "ADV-Z11-04",
+      "finding": "100 concurrent kiosk submits + 5 cashiers + 3 chefs → DB pool exhaust",
+      "severity": "INFO",
+      "evidence": "MySQL default max_connections=151. Each HTTP request = 1 PDO connection (PHP-FPM per-request). Worst-case 100+5+3=108 + 8 high workers + 4 default workers + 1 cron = ~121 connections, under 151 default. innodb_lock_wait_timeout=5s caps worst-case stall under hot-row contention (fiscal_seq alloc, OrderStateMachine lockForUpdate). E2ESoakCommand:86 db-pool-pct-ceiling=80% (≈120 connections) aligns.",
+      "fix": "V1 LOCAL safe. Cloud-prep (multi-instance ALB): tune max_connections + add proxysql/PgBouncer-equivalent for MySQL once worker count exceeds single-host capacity."
+    }
+  ],
+  "verdict": "AMBER",
+  "verdict_rationale": "Queue lane discipline is clean (SSOT in job constructor, no drift across 14 listeners + 3 commands). Transaction scope is clean (broadcasts all outside tx, OrderCreated uses afterCommit trait). NF525-critical Cache::lock sites have triple defense (Cache::lock + DB::transaction + lockForUpdate + DB UNIQUE). HOWEVER: (1) Two P1 N+1 sites on KDS hot path (KitchenDisplaySystemOrderService:70 + KdsSyncService:96 missing nested orderItems.orderItem) accumulate cost at poll cadence 5-60s — 50 orders × ~30 polls/min = up to 1500 avoidable queries/min/branch in worst case; (2) failed_jobs table grows unbounded — operational risk under chronic outbox failures. Neither blocks V1 ship for single-box Le Cayenne, but both should be backlog P1 before production scale-out.",
+  "p0_count": 0,
+  "p1_count": 3,
+  "p2_count": 4,
+  "p3_count": 4,
+  "info_count": 3,
+  "v1_ship_blocker": false,
+  "v1_local_ok": true,
+  "cloud_prep_concerns": ["max_connections re-tune for multi-instance", "ProxySQL or equivalent for connection pooling at scale", "failed_jobs prune lane mandatory"],
+  "recommended_v1_0_2_backlog": [
+    {"id": "Z11-P1-01", "task": "Add 'orderItems.orderItem' nested eager-load to KitchenDisplaySystemOrderService:70 + KdsSyncService:96", "estimated_effort": "30min", "risk": "low — pure additive"},
+    {"id": "Z11-P1-02", "task": "Add queue:prune-failed cron to Console/Kernel.php (14d retention, dailyAt 04:30, onOneServer + withoutOverlapping)", "estimated_effort": "20min", "risk": "low — janitor only"},
+    {"id": "Z11-P2-01", "task": "Symmetric fix for OrderService:219+:255 (admin delivery-boy lists) to match :126 pattern with 'orderItems.orderItem' nested", "estimated_effort": "20min", "risk": "low"},
+    {"id": "Z11-P2-02", "task": "Audit NormalItemResource:108 + ItemCategoryMenuResource:26 — refactor lazy-load chains to upstream service eager-load", "estimated_effort": "1h", "risk": "medium — touches catalog hot path"}
+  ]
+}

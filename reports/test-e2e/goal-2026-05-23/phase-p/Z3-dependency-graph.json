@@ -1,0 +1,227 @@
+{
+  "agent": "Z3 Dependency graph + cycles",
+  "timestamp_utc": "2026-05-24T18:30:00Z",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "methodology": "bulk grep + awk extraction + python DFS cycle detection on /tmp/service_deps.txt. Constructor injection parsed from `function __construct(...)` block. No file modified.",
+
+  "controllers_total": 141,
+  "services_total": 152,
+  "repository_files_total": 2,
+
+  "controllers_god_class_500_loc": [
+    { "file": "app/Http/Controllers/Frontend/LoyaltyController.php", "line_count": 900, "methods": 10, "eloquent_direct_call_lines": 14 },
+    { "file": "app/Http/Controllers/Admin/StockRuptureDashboardController.php", "line_count": 642, "methods": 0, "eloquent_direct_call_lines": 15 },
+    { "file": "app/Http/Controllers/Admin/Observability/SyncOverviewController.php", "line_count": 567, "methods": 0, "eloquent_direct_call_lines": 0 }
+  ],
+  "god_controllers_over_500_loc_count": 3,
+
+  "controllers_over_20_methods": [],
+  "controllers_over_20_methods_count": 0,
+  "top_method_count_controllers": [
+    { "file": "app/Http/Controllers/Admin/DashboardController.php", "methods": 15, "line_count": 186 },
+    { "file": "app/Http/Controllers/Admin/ItemController.php", "methods": 12, "line_count": 324 },
+    { "file": "app/Http/Controllers/Installer/InstallerController.php", "methods": 11, "line_count": 141 },
+    { "file": "app/Http/Controllers/Admin/ComposerProfileController.php", "methods": 11, "line_count": 200 },
+    { "file": "app/Http/Controllers/Frontend/LoyaltyController.php", "methods": 10, "line_count": 900 }
+  ],
+
+  "controllers_eloquent_direct": [
+    { "file": "app/Http/Controllers/Admin/StockRuptureDashboardController.php", "line_count": 642, "sample_line": 55, "sample": "ItemBranchAvailability::query()" },
+    { "file": "app/Http/Controllers/Frontend/LoyaltyController.php", "line_count": 900, "sample_line": 75, "sample": "User::where('loyalty_code', $input)->first()" },
+    { "file": "app/Http/Controllers/Admin/PosController.php", "line_count": 242, "sample_line": 236, "sample": "\\App\\Models\\Branch::find($branchId)" },
+    { "file": "app/Http/Controllers/Frontend/RootController.php", "line_count": null, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Frontend/MenuController.php", "line_count": 89, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Frontend/PricingPreviewController.php", "line_count": 80, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Frontend/PromoController.php", "line_count": 66, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Frontend/ItemController.php", "line_count": 141, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Frontend/OrderController.php", "line_count": 314, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Frontend/KioskEventController.php", "line_count": 290, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Frontend/UpsellController.php", "line_count": 124, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Frontend/PaymentReconcileController.php", "line_count": 317, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Auth/GuestSignupController.php", "line_count": 174, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Frontend/PaymentController.php", "line_count": 165, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Auth/SignupController.php", "line_count": null, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Auth/KioskMachineLoginController.php", "line_count": 131, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Auth/LoginController.php", "line_count": 255, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/PrinterController.php", "line_count": 97, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Frontend/OfferController.php", "line_count": null, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php", "line_count": 245, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Auth/DeactivateController.php", "line_count": null, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/PosCategoryController.php", "line_count": 244, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Auth/ForgotPasswordController.php", "line_count": 195, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/CashSessionReportController.php", "line_count": 156, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/SalesReportController.php", "line_count": null, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/CashOverviewController.php", "line_count": 491, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/AdminPosV4Controller.php", "line_count": null, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/AvailabilityController.php", "line_count": 250, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/ItemController.php", "line_count": 324, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/OnlineOrderController.php", "line_count": 125, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/OrderStatusScreenController.php", "line_count": 141, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/PaymentTerminalController.php", "line_count": null, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/Observability/SyncOverviewController.php", "line_count": 567, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/Pos/CustomerNfcLookupController.php", "line_count": null, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/ItemsReportController.php", "line_count": null, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/Fiscal/ZReportController.php", "line_count": 131, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php", "line_count": 105, "sample_line": null, "sample": null },
+    { "file": "app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php", "line_count": 339, "sample_line": null, "sample": null }
+  ],
+  "controllers_eloquent_direct_total_files": 38,
+  "controllers_eloquent_direct_pct": "27% (38/141) — repository/service bypass smell",
+
+  "cyclic_dependencies": [],
+  "cyclic_dependencies_note": "DFS run on adjacency graph of 13 service-to-service injection edges across 27 nodes. ZERO cycles detected. Laravel container would refuse to boot on circular constructor injection, so absence is structurally expected — confirmed empirically here.",
+
+  "service_to_service_adjacency_sample": [
+    "ItemCategoryService -> ItemCategoryHierarchyService",
+    "FrontendOrderService -> CouponService, DiscountCalculator, PricingService",
+    "RefundWithCounterEntryService -> AuditLogService, FiscalSequenceService",
+    "OrderQuoteService -> CouponService, DiscountCalculator, PricingService",
+    "SplitPaymentService -> AuditLogService, CashDrawerService",
+    "XReportService -> ZReportService",
+    "ComposerProfileService -> ComposerProfileProjection, ComposerStepService",
+    "PosRedemptionService -> CashDrawerService",
+    "PosMenuProjection -> MenuProjectionService",
+    "MenuSnapshot -> CacheRepository",
+    "DeliveryQuoteService -> DeliveryFeeService",
+    "PricingPreviewService -> PricingService",
+    "PricingService -> CompositionSnapshotBuilder, DiscountCalculator, TaxCalculator"
+  ],
+
+  "facade_usage_count": {
+    "in_services": {
+      "Auth": 109,
+      "DB": 214,
+      "Cache": 30,
+      "Log": 435,
+      "Storage": 0,
+      "Event": 0,
+      "Queue": 0,
+      "Schema": 3
+    },
+    "in_controllers": {
+      "Auth": 22,
+      "DB": 47,
+      "Cache": 6,
+      "Log": 46
+    },
+    "interpretation": "Auth:: appears 109× inside services — services should not query the auth subject; this couples business logic to request context. DB:: in services (214 hits) usually means raw transactions or query-builder bypass — acceptable for Fiscal/Pricing but a smell elsewhere. Log:: high count (435 svc + 46 ctrl) is healthy observability."
+  },
+
+  "form_requests_return_true_count": 66,
+  "form_requests_total_with_authorize": 95,
+  "form_requests_baseline_sentinel": 69,
+  "form_requests_drift_note": "VERIFIED count = 66 — matches BRAIN §9 'observed today' but baseline sentinel still set to 69 (count<baseline passes, so CI green). 29 FormRequests authorize() did NOT match `return true;` window (they either delegate to permission/can() or have empty/missing authorize). Ratchet opportunity: lower RETURN_TRUE_BASELINE constant to 66 to tighten ceiling.",
+
+  "repository_layer_presence": {
+    "present": [
+      "Idempotency (IdempotencyKeyRepository.php + RedisIdempotencyKeyRepository.php)"
+    ],
+    "absent": [
+      "Order (OrderService 2837 LOC + FrontendOrderService 1391 LOC use Eloquent direct)",
+      "Pricing (PricingService.php imports App\\Models directly)",
+      "Fiscal (FiscalSequenceService + ZReportService + AuditLogService all touch models)",
+      "Stock (StockService.php + ChoiceAvailabilityResolver.php)",
+      "Loyalty (PosRedemptionService.php direct model access)",
+      "Cash (CashDrawerService.php direct model access)",
+      "Menu (AvailabilityService 774 LOC + MenuProjectionService)",
+      "Kiosk (KioskMenuService.php)",
+      "Payments (PaymentService.php 800 LOC + SplitPaymentService.php)",
+      "Catalog (ItemService 756 LOC)",
+      "Composer",
+      "Delivery",
+      "Pos",
+      "Receipt",
+      "Hardware",
+      "Observability",
+      "Bypass",
+      "Ingredients"
+    ],
+    "interpretation": "18 of 19 service subdomains lack a repository layer. Services-to-models-direct count = 173 grep hits across app/Services/. This is the FoodKing architectural reality: Service IS the data access boundary; Eloquent IS the ORM. No abstraction. Repository pattern was never adopted except for idempotency keys (which need swappable DB/Redis backends). Honest verdict: documenting this as the chosen pattern is fine; converting to repositories is V2 SaaS-prep, not V1 production work."
+  },
+
+  "god_services_over_500_loc": [
+    { "file": "app/Services/OrderService.php", "line_count": 2837, "severity": "CRITICAL — 5.7× god-class threshold" },
+    { "file": "app/Services/FrontendOrderService.php", "line_count": 1391, "severity": "HIGH" },
+    { "file": "app/Services/Pricing/PricingService.php", "line_count": 814, "severity": "HIGH — but NF525 frozen (BRAIN §7)" },
+    { "file": "app/Services/PaymentService.php", "line_count": 800, "severity": "HIGH" },
+    { "file": "app/Services/Menu/AvailabilityService.php", "line_count": 774, "severity": "HIGH" },
+    { "file": "app/Services/ItemService.php", "line_count": 756, "severity": "HIGH" },
+    { "file": "app/Services/Fiscal/ZReportService.php", "line_count": 727, "severity": "HIGH — NF525 frozen (BRAIN §7)" },
+    { "file": "app/Services/Fiscal/ZReportCashEnrichmentService.php", "line_count": 587, "severity": "MEDIUM" },
+    { "file": "app/Services/Order/OrderQuoteService.php", "line_count": 574, "severity": "MEDIUM" },
+    { "file": "app/Services/DashboardService.php", "line_count": 550, "severity": "MEDIUM" },
+    { "file": "app/Services/Cash/CashDrawerService.php", "line_count": 549, "severity": "MEDIUM" },
+    { "file": "app/Services/Kiosk/KioskMenuService.php", "line_count": 516, "severity": "MEDIUM" }
+  ],
+  "god_services_over_500_loc_count": 12,
+  "god_services_note": "Schema reserves slots only for controllers; surfaced here as adversarial-grade because OrderService at 2837 LOC is the single largest architectural risk in the codebase. Frozen-zone constraint blocks decomposition of PricingService + ZReportService without LOCK; the V1.0.2 backlog is the right venue for OrderService split planning.",
+
+  "adversarial_findings": [
+    {
+      "id": "Z3-A1",
+      "severity": "HIGH",
+      "claim": "OrderService.php at 2837 LOC = single largest god-service in codebase, 5.7× the 500-LOC threshold. Touches Order creation, mutation, status transitions, fiscal allocation, refunds. Schema gives no slot — surfaced here.",
+      "file": "app/Services/OrderService.php",
+      "remediation": "V1.0.2 backlog: extract OrderCreationService + OrderMutationService + OrderStateTransitionService along OrderStateMachine boundary (BRAIN §7 freeze applies only to OrderStateMachine.php, not OrderService.php)."
+    },
+    {
+      "id": "Z3-A2",
+      "severity": "HIGH",
+      "claim": "Controller bypass smell: 27% of controllers (38/141) call Eloquent models directly, bypassing the service layer. Worst offenders LoyaltyController (14 hits), StockRuptureDashboardController (15 hits). Loyalty has User::where('loyalty_code',...) which means LoyaltyService doesn't own loyalty-code resolution.",
+      "files": [
+        "app/Http/Controllers/Frontend/LoyaltyController.php:75",
+        "app/Http/Controllers/Admin/StockRuptureDashboardController.php:55"
+      ],
+      "remediation": "Refactor LoyaltyController.lookup() → LoyaltyService::resolveByCode(). StockRuptureDashboardController is a read-only dashboard — direct query acceptable IF service-level alternative is over-engineering. Owner judgement call."
+    },
+    {
+      "id": "Z3-A3",
+      "severity": "MEDIUM",
+      "claim": "Auth:: facade used 109× inside services. Services should be context-free; auth subject should be passed in, not queried via facade. Couples business logic to HTTP request context, breaks queue/CLI invocations.",
+      "evidence": "grep -rn 'Auth::' app/Services/ | wc -l = 109",
+      "remediation": "Pass User|null explicitly into service methods. V1.0.2 chip-away."
+    },
+    {
+      "id": "Z3-A4",
+      "severity": "MEDIUM",
+      "claim": "Repository layer effectively absent (2 files, both Idempotency). 18 of 19 service subdomains query models directly. Service IS the persistence boundary in FoodKing — this is a design choice, not a bug, but should be documented in ARCHITECTURE.md so newcomers don't propose unnecessary repository introductions.",
+      "remediation": "Documentation update, not code change. NOT a V1 ship blocker."
+    },
+    {
+      "id": "Z3-A5",
+      "severity": "LOW",
+      "claim": "Zero cyclic dependencies in service constructor injection across 27 nodes / 13 edges. Confirms healthy DI hygiene. No remediation.",
+      "remediation": "none"
+    },
+    {
+      "id": "Z3-A6",
+      "severity": "LOW",
+      "claim": "Zero controllers exceed the 20-method threshold for split candidates. The 10-method ceiling reached by LoyaltyController + DashboardController is the practical max. Top method count = 15 (DashboardController).",
+      "remediation": "none"
+    },
+    {
+      "id": "Z3-A7",
+      "severity": "INFO",
+      "claim": "No controller injects 10+ services — max dep count observed = 2. Orchestration smell ABSENT. Constructors are lean across the board.",
+      "evidence": "awk -F'|' '$4>=10' /tmp/controller_metrics.txt → empty",
+      "remediation": "none"
+    },
+    {
+      "id": "Z3-A8",
+      "severity": "INFO",
+      "claim": "No private mutable service state detected via grep heuristic — no obvious singleton-in-queue risk found in services. Caveat: heuristic is shallow; deeper review would inspect setters and trait-based state.",
+      "remediation": "none for V1; deeper review V1.0.2 if queue workloads grow."
+    },
+    {
+      "id": "Z3-A9",
+      "severity": "LOW",
+      "claim": "FormRequest return-true sentinel baseline (69) is now 3 above actual count (66). Lowering RETURN_TRUE_BASELINE to 66 ratchets the ceiling tighter and surfaces any regression immediately.",
+      "file": "tests/Feature/Security/FormRequestAuthzDriftSentinelTest.php (per BRAIN §9)",
+      "remediation": "1-line constant change. V1.0.2 quick-win."
+    }
+  ],
+
+  "verdict_rubric": "GREEN if no cycles AND no controller god-class >800 LOC AND FormRequest count stable. AMBER if cycles==0 but service god-class >2× threshold OR controller bypass smell >25%. RED if cycles>0 OR FormRequest count drifted UP from sentinel.",
+  "verdict": "AMBER",
+  "verdict_justification": "GREEN signals: zero cycles, zero controllers >20 methods, no controller orchestration smell (>=10 deps), FormRequest count drifted DOWN (66<69 baseline=safer). AMBER signals: OrderService.php at 2837 LOC is a real architectural risk, controller→model bypass at 27% (LoyaltyController 14 direct hits, StockRupture 15) means LoyaltyService/StockService don't fully own their domain. Frozen-zone constraint blocks immediate fix on Pricing/Fiscal god-services. NO V1 SHIP BLOCKER — all findings are V1.0.2 backlog. Verdict AMBER = ship V1 as-is, schedule chip-away in V1.0.2 wave."
+}
