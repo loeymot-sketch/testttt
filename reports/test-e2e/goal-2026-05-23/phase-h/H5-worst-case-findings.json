@@ -1,0 +1,156 @@
+{
+  "agent": "H.5 Worst-case order shapes",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "d601fdd34",
+  "captured_at": "2026-05-24",
+  "scope": "Code-static audit of validation, persistence, pricing, rendering paths for 8 extreme order shapes never previously tested.",
+  "discipline": "Code-static + sample API POST acceptable. No DB pollution (no 999-qty/30-item orders ringed up).",
+  "scenarios": [
+    {
+      "id": "H5.1",
+      "name": "Very long order (30 items)",
+      "verdict": "PASS-WITH-CONCERN",
+      "evidence": "ValidJsonOrder rule (app/Rules/ValidJsonOrder.php) only validates each entry has item_id>0 + quantity>0 + instruction<=500 chars. NO max items[] cap. PosOrderRequest.rules() line 115 only validates items as JSON string, no array sizing rule. PricingService::calculateOrder iterates requestItems with no upper bound, builds composition_snapshot per line. order_items table accepts 30 rows trivially (no constraint). composition_snapshot is per-row json column (MySQL ~4GB max). PHP memory_limit=128M, post_max_size=8M — a 30-item payload with full composer snapshots (~30 x ~50KB worst case = 1.5MB) fits comfortably.",
+      "rendering_paths": {
+        "receipt": "posReceiptBuilder.js iterates item_variations/item_extras/item_addons line-by-line — no truncation, ESC/POS will simply print multi-page ticket.",
+        "kds_card": "KdsOrderCard.vue body has overflow-y: auto + scrollbar-thin (line 574-585), so 30 items scroll inside the card. Wave U 2026-05-21 explicitly added darker scrollbar hint for long-item orders.",
+        "kds_line": "KdsOrderLine.vue clamps each item name to 2 lines (-webkit-line-clamp: 2), supplement to 2 lines."
+      },
+      "performance_concern": "No N+1 in PricingService — DB queries are batched (whereIn for variations/extras/addons), so 30 items = same query count as 3 items. Composition_snapshot json_encode per line is O(n). Acceptable.",
+      "concern": "No items[] count cap → DoS surface (a typo/bad client could POST 10k items). At ~50KB per snapshot the 8MB post_max_size hard-stops at ~160 items, but Laravel would return 413 silently. Suggest a soft cap (e.g. items.* max:80) for defense-in-depth."
+    },
+    {
+      "id": "H5.2",
+      "name": "Item with 50 ingredients (variations+extras+addons)",
+      "verdict": "PASS",
+      "evidence": "CompositionSnapshotBuilder::build (app/Services/Pricing/CompositionSnapshotBuilder.php:29-175) iterates item_variations / item_extras / item_addons unbounded; each becomes a structured array entry (~200B). 50 ingredients = ~10KB snapshot, well below MySQL JSON ~4GB. PricingService::assertVariationConstraints respects per-attribute min_select / max_select but no global ingredient ceiling.",
+      "rendering_paths": {
+        "receipt": "normalizeReceiptVariations / Extras / Addons (posReceiptBuilder.js:157-249) all return flat arrays. ESC/POS print spool unaffected.",
+        "kds_line": "Each variation rendered as separate line inside KdsOrderLine (-webkit-line-clamp:2). 50 lines = card scrolls. UX trade-off but no break."
+      },
+      "performance_concern": "Item attribute / extra / addon queries are still batched via whereIn — 50 ingredients on ONE item = 3 SELECT queries total. Negligible."
+    },
+    {
+      "id": "H5.3",
+      "name": "Very long item name (200 chars)",
+      "verdict": "AMBER",
+      "evidence": "ItemRequest.rules() (app/Http/Requests/ItemRequest.php:42-46) enforces 'name' max:190 via Laravel validation. Admin UI cannot post 200 chars. HOWEVER: items.name DB column is varchar(255) — a name seeded directly via tinker/import/migration could exceed 190. The 200-char value would survive in DB and propagate to receipt + KDS + tracker without explicit length-guard.",
+      "rendering_paths": {
+        "kds_line": "KdsOrderLine.vue line 163-166: -webkit-line-clamp:2 + overflow:hidden — 200-char name truncates visually to 2 lines (~120 chars at clamp(22px)). NO ellipsis explicitly set but webkit adds one.",
+        "receipt": "ReceiptComponent.vue / posReceiptBuilder.js use {{ item.item_name }} verbatim. 58mm thermal = ~32 chars/line, 80mm = ~48. A 200-char name will wrap to 4-7 lines on the printed ticket. Ugly but not broken.",
+        "cart": "PosComponent.vue cart-item uses default flex layout; 200-char name will wrap unless container has explicit truncate class."
+      },
+      "concern": "Idempotency-key generation does NOT include item.name — search OrderService::posOrderStore confirms name is read but not hashed into the X-Idempotency-Key path. So a long name does NOT change duplicate-detection behaviour. Safe."
+    },
+    {
+      "id": "H5.4",
+      "name": "Quantity = 999",
+      "verdict": "PASS-WITH-CONCERN",
+      "evidence": "ValidJsonOrder.php:60 only checks quantity > 0 (no upper bound). PosOrderRequest has no items.*.quantity rule. PricingService line 232: $verifiedQuantity = max(1, (int) ($item->quantity ?? 1)) — accepts 999. DB column order_items.quantity is signed INT (max 2,147,483,647). decimal(19,6) total_price holds up to 9.99 trillion. Cart UI PosComponent.vue:3441-3448 accepts any integer >0. Receipt prints '999 x ...'. NF525 sequence allocated regardless.",
+      "rendering_paths": {
+        "receipt": "qty printed as integer — '999×' fits the 7-char wide column (ReceiptComponent.vue:295 'w-7').",
+        "kds": "KdsOrderLine renders quantity badge; 3-digit fits common 56px qty bubble."
+      },
+      "stock_concern": "No stock_levels decrement overflow check observed. If branch stock < 999 the AvailabilityService::assertItemsOrderableForBranch should throw 422 (preview path uses non-locking read). For items not stock-tracked, no guard.",
+      "concern": "No per-line quantity cap → a typo could ring up a 99999€ order, NF525-sealed (cannot be deleted). Suggest hard cap items.*.quantity max:99 (UX) or max:999 (insurance) in PosOrderRequest + ValidJsonOrder."
+    },
+    {
+      "id": "H5.5",
+      "name": "Discount = 100% (free order, total=0€)",
+      "verdict": "PASS",
+      "evidence": "PricingService line 355: $finalTotal = $req->roundFinalOrderTotal ? round(max(0.0, $rawTotal), 2) : max(0.0, $rawTotal); — explicitly clamps total to >=0. OrderService::posOrderStore line 963/965 also wraps in max(0, ...). composition_snapshot per-line still records original unit_price / line_total (CompositionSnapshotBuilder lines 76-78, 99-101, 159-160) — NF525 immutable trace preserved. PosOrderRequest line 103 already permits total min:0 with explicit AUDIT-P50-BUG4 comment ('server allows total=0 for 100% loyalty redemption'). PaymentTerminal CARD breakdown.*.amount has min:0.01 — but CASH/CASH-only path with total=0 has no min check.",
+      "fiscal_path": "FiscalSequenceService::next(branchId) (app/Services/Fiscal/FiscalSequenceService.php:57) is unconditional — branchId>0 allocates next sequence regardless of total amount. Free order IS a fiscal event. Verified PASS.",
+      "audit_path": "AuditLogService::signEvent computes HMAC over payload, no amount-based skip. Order with total=0 still produces an audit_logs row."
+    },
+    {
+      "id": "H5.6",
+      "name": "Cart total > 1000€ (e.g. 1234.56€)",
+      "verdict": "PASS",
+      "evidence": "Frontend: helpers/formatPrice.js uses Intl.NumberFormat('fr-FR', {style:'currency', currency:'EUR'}). fr-FR locale natively produces '1 234,56 €' with NBSP (\\u202F narrow no-break space) thousands separator. Backend: AppLibrary::currencyAmountFormat (app/Libraries/AppLibrary.php:271-304) uses NumberFormatter::CURRENCY with fr_FR locale (G2-HEAL-02 fix 2026-05-23) — same FR-canonical output. Receipt + emails + reports converge bit-for-bit.",
+      "tpe_simulation": "POS_SIMULATION_HARDWARE bypass returns success without amount check (NF525 production boot guard at AppServiceProvider.php:78-145 forbids simulation in production). Simulation accepts any amount. Real TPE would have its own per-merchant cap (typically 1500-5000€ contactless, unlimited contact+PIN) — out of code scope.",
+      "rendering_paths": {
+        "receipt": "ESC/POS thermal line is 32-48 chars wide; '1 234,56 €' = 11 chars — fits trivially.",
+        "kds": "Total not shown on KDS card (kitchen-facing); irrelevant."
+      }
+    },
+    {
+      "id": "H5.7",
+      "name": "Cart total = 0.01€",
+      "verdict": "PASS-WITH-CONCERN",
+      "evidence": "PricingService and PosOrderRequest enforce min:0 NOT min:0.01 — so 0.01€ orders are accepted. payment_breakdown.*.amount has min:0.01 (PosOrderRequest:142) which is the lowest tranche allowed. Fiscal sequence allocated normally. audit_logs row written.",
+      "tpe_concern": "Real TPE hardware often rejects below 0.50€ (merchant config). Code does not pre-check this — a 0.01€ CARD order would fail at TPE physical level with no client-side guard. Acceptable for V1 LOCAL (cash) but flag for V2.",
+      "concern": "decimal(19,6) precision means 0.01€ stores as 0.010000 — round-trip safe. NumberFormat displays '0,01 €' correctly. No float precision issue at this magnitude."
+    },
+    {
+      "id": "H5.8",
+      "name": "Loyalty redeem covers full order (50€ redeem on 50€ subtotal)",
+      "verdict": "PASS",
+      "evidence": "PosRedemptionService::applyToOrder (app/Services/Loyalty/PosRedemptionService.php:131) guards: if ($discountEur > $subtotal) throw — STRICT >, so discount EQUAL to subtotal passes. Line 192-193: $newDiscount = round($currentDiscount + $discountEur, 2); $newTotal = round($subtotal - $newDiscount + $currentTax + $currentDelivery, 2).",
+      "tax_inclusive_interaction": "CRITICAL: config('pricing.tax_inclusive_prices')=true by DEFAULT (config/pricing.php:31, env PRICING_TAX_INCLUSIVE=true). When TTC mode: order.total = sum(TTC lines) + delivery - discount (NO tax added separately). PosRedemptionService line 193 adds $currentTax back in — but in TTC mode order.total_tax is the EXTRACTED tax (already inside subtotal). This would DOUBLE-COUNT tax in the recomputation: total = subtotal[TTC] - discount + tax[already in TTC] + delivery. RESULT: free order (50€ subtotal, 50€ redeem) would land at total = 50 - 50 + 5 + 0 = 5€ instead of 0€. INVESTIGATE.",
+      "composition_snapshot": "PASS — composition_snapshot is built at order CREATION (PricingService L266-291), BEFORE PosRedemptionService runs on existing order. Original unit_price / line_total per ingredient is sealed. Redemption only mutates order.discount + order.total. NF525 trace preserved.",
+      "receipt": "OrderDetailsResource exposes order.discount + order.loyalty_customer_code; ReceiptComponent.vue renders discount line. PASS.",
+      "fiscal_sequence": "Already allocated at order creation. Redemption mutates discount/total post-allocation — sequence_no untouched. PASS."
+    }
+  ],
+  "edge_failures": [
+    {
+      "id": "EDGE-1",
+      "scenario": "H5.4 quantity=999 with no business cap",
+      "severity": "P2",
+      "impact": "Cashier typo could ring up 99999€ order, fiscal-sealed, irreversible (only refund/avoir possible). Frozen-zone item composition_snapshot also bloats line.",
+      "recommendation": "Add 'items.*.quantity' => 'max:99' (or 999) in PosOrderRequest + extend ValidJsonOrder to enforce. UX: warn at qty>20."
+    },
+    {
+      "id": "EDGE-2",
+      "scenario": "H5.1 no items[] count cap",
+      "severity": "P2",
+      "impact": "Malicious/buggy client could POST 1000-item payload, exhaust 8MB post_max_size (silent 413), or worse — if PHP limits raised, allocate >128M memory on snapshot build, triggering OOM.",
+      "recommendation": "Extend ValidJsonOrder to enforce count(decoded) <= 80 (or config('orders.max_items_per_order')). Reject early with explicit message."
+    },
+    {
+      "id": "EDGE-3",
+      "scenario": "H5.8 PosRedemptionService::applyToOrder potentially double-counts tax in TTC mode",
+      "severity": "P1-INVESTIGATE",
+      "impact": "Free-order redemption (50€ subtotal, 50€ redeem) might recompute total=5€ instead of 0€ when tax_inclusive_prices=true (V1 default). Would mean: customer charged 5€ on a 100%-loyalty-paid order, NF525-sealed. Requires runtime verification with a real subtotal/total_tax pair.",
+      "recommendation": "Mirror PricingService L350-354 TTC branch inside PosRedemptionService::applyToOrder L193: if config('pricing.tax_inclusive_prices') then total = subtotal - newDiscount + delivery (NO tax). Add regression test PosRedemption_FreeOrder_TaxInclusive_Test."
+    },
+    {
+      "id": "EDGE-4",
+      "scenario": "H5.7 0.01€ orders accepted but real TPE may reject",
+      "severity": "P3",
+      "impact": "0.01€ CARD order fails at TPE hardware with no friendly client guard.",
+      "recommendation": "Optional V2: add config('payments.min_card_amount', 0.50) gate in PosOrderRequest withValidator."
+    },
+    {
+      "id": "EDGE-5",
+      "scenario": "H5.3 item name 200 chars surviving via direct DB seed/import",
+      "severity": "P3",
+      "impact": "Visual layout pressure on receipt (4-7 wrap lines). KDS clamps to 2 lines without explicit ellipsis fallback (relies on webkit). Cart could overflow.",
+      "recommendation": "Add DB-level constraint or model boot() validator to clamp to 190 chars on save. Add explicit text-overflow: ellipsis to KDS line as defense-in-depth."
+    }
+  ],
+  "performance_impact": [
+    "H.5.1 30 items: 1 batched query each for items+variations+extras+addons+attributes (5 SELECT total via whereIn). composition_snapshot built in PHP loop — O(n). Acceptable on Le Cayenne single-branch.",
+    "H.5.2 50 ingredients on 1 item: 0 additional DB queries (loaded inside the parent batched query). PASS.",
+    "H.5.4 qty=999: zero performance impact (single arithmetic mul).",
+    "H.5.6 >1000€: zero performance impact (decimal(19,6) precision native)."
+  ],
+  "non_blocking_observations": [
+    "PHP defaults observed locally: max_input_vars=1000 (irrelevant — items is JSON string), memory_limit=128M, post_max_size=8M. Le Cayenne LOCAL ship-ready unless 80+ extreme-composer items in a single order is a realistic flow (it isn't).",
+    "NumberFormatter (PHP ext-intl) is REQUIRED for canonical 1234.56€ -> '1 234,56 €' rendering on PHP side. AppLibrary line 291 has manual fallback. Verify ext-intl present in Le Cayenne prod box.",
+    "Loyalty redeem PosRedemptionService.php:131 strict > check is INCLUSIVE of equality — subtotal=50, discount=50 PASSES (the >= boundary case is safe)."
+  ],
+  "top_3_concerns_summary": [
+    "EDGE-3 P1-INVESTIGATE: PosRedemptionService may double-count tax in TTC mode when recomputing total after redemption — verify against a real {subtotal, total_tax} pair. If confirmed, a free-order redemption charges the customer the tax slice instead of 0€.",
+    "EDGE-1 P2: No quantity cap anywhere — items.*.quantity > 99 fiscal-sealed without prompt. Cashier-typo NF525-blast surface.",
+    "EDGE-2 P2: No items[] count cap — silent post_max_size 413 truncation, possible OOM if PHP limits raised. Suggest config-driven max:80."
+  ],
+  "recommended_caps": {
+    "items_count_per_order": 80,
+    "quantity_per_line": 99,
+    "instruction_length": 500,
+    "item_name_db_truncate": 190
+  },
+  "verdict": "AMBER",
+  "verdict_rationale": "All 8 scenarios technically functional under V1 LOCAL Le Cayenne single-branch use. PASS: H5.2, H5.5, H5.6. PASS-WITH-CONCERN: H5.1, H5.4, H5.7. AMBER: H5.3 (admin-form blocks at 190 but DB-direct seeds survive). PASS-with-LATENT-BUG: H5.8 (tax-inclusive recompute path needs runtime verification to confirm/deny the double-count). NF525 fiscal invariants survive every scenario (composition_snapshot sealed at creation, fiscal_sequence_no allocated unconditionally, audit_logs chain intact). Frontend rendering (KDS scroll, receipt iteration, currency format) all degrade gracefully. Three V1.0.2 backlog candidates surfaced: explicit items/quantity caps + PosRedemptionService TTC-aware total recompute."
+}

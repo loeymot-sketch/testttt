@@ -1,0 +1,149 @@
+{
+  "agent": "H.6 I18N + Char Encoding edge cases",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "eb03c96c2",
+  "scope": "FR accents (é à ç) + apostrophes + emoji + long names + Idempotency-Key URL encoding + JSON serialization + XSS escape + RTL + date/number FR locale across kiosk wizard / POS wizard (Vanilla JS) / cart / receipt / KDS card / audit_logs payload.",
+  "architecture_summary": "Item names + variation names + customer names enter the system via FormRequest::rules() (string, max:190 — NO HTML sanitization) → stored in MySQL utf8mb4_unicode_ci tables → exposed by JsonResource classes as plain strings. Rendering paths: (A) Vue mustache `{{ }}` auto-escapes (admin POS, ReceiptComponent, KDS, kiosk wizard) — SAFE. (B) POS Vanilla JS wizard `public/js/pos-wizard.js` (FROZEN, ~296KB) uses `innerHTML +=` with raw `entity.name` concatenation at 30+ sites — UNSAFE (XSS). (C) ESC/POS hardware path: `EscPosCommandBuilder::sanitize()` strips control chars but does NOT call `encodeForPrinter()` — accents will print as mojibake/`?` once anyone wires the receipt through ESC/POS (currently browser-driven per G5). (D) NF525 audit/Z chain uses `JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES` correctly → bit-identical chain across UTF-8 byte forms. (E) `composition_snapshot` JSON storage uses `json_encode()` with NO flags → stores `\\u00e9` for `é` (functionally fine, cosmetically inconsistent with audit chain).",
+  "verifications": [
+    {
+      "id": "H.6.1",
+      "title": "Apostrophe in item/variation names (`L'Algérienne`)",
+      "evidence": "DB query `SELECT name FROM items WHERE name LIKE \\\"%'%\\\"` returns 0 rows. Variation table: 5 rows named `Algérienne` (no apostrophe prefix). The owner's spec hypothesis `L'Algérienne` does NOT exist in current seed data — the canonical sauce name is `Algérienne` per WizardCayenneAndBolsCorrectionsSeeder L53. Hex-verified UTF-8 storage: `416c67c3a97269656e6e65` = `Alg` + `é` (c3 a9) + `rienne`.",
+      "rendering_paths_audited": [
+        "Vue mustache (ReceiptComponent L117 + KDS L151/385/569/741/910 + KDS-OrderCard L347): {{ item.item_name }} → auto-escaped, safe for any apostrophe/accent",
+        "POS Vanilla wizard pos-wizard.js: `h += '<span class=\\\"option-name\\\">' + sauce.name + '</span>'` (e.g., L1246, L1343, L1568, L1672, L1741, L1781, L1827) → raw concat, UNSAFE if name contains `<` or quote",
+        "composition_snapshot JSON: PricingService L291 `json_encode($compositionSnapshot)` (no flags) → would store `L\\u0027Alg\\u00e9rienne` for the hypothetical name; round-trips identically via PHP `json_decode`",
+        "audit_logs payload: AuditLogService::canonicalise L339 `json_encode(..., JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)` → stores raw UTF-8 `L'Algérienne` in chain HMAC input (deterministic via recursive ksort)"
+      ],
+      "verdict": "GREEN-with-caveat",
+      "caveat": "If a future seeder or owner-typed item EVER contains `'` (single quote), the POS Vanilla wizard will still render correctly (single quotes don't break HTML attribute=double-quote contexts), BUT if it contains `\"`, the L1701/L1801 `data-name=\"' + g.name + '\"` patterns would break attribute parsing — that is the attribute-context XSS already enumerated in LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17.md §1."
+    },
+    {
+      "id": "H.6.2",
+      "title": "French accents (é à ç) end-to-end",
+      "evidence": "DB collation verified: character_set_database=utf8mb4, collation_database=utf8mb4_unicode_ci. Per-table audit (items/item_variations/orders/order_items/audit_logs) all utf8mb4_unicode_ci. Real items with accents stored cleanly (hex-verified): `Suppléments`, `Sauce supplémentaire`, `Bol Mariné`, `Bol Gratiné`, `Légumes sautés`, `Fromage à raclette`, `Boule gratinée`. config/database.php L46-47 sets 'charset' => 'utf8mb4', 'collation' => 'utf8mb4_unicode_ci'. Content-Type charset: Laravel JsonResponse defaults to application/json (RFC 8259 implies UTF-8). URL routing for `/api/admin/items/{item}` uses numeric ID, not slug — no slug-encoding concern.",
+      "verdict": "GREEN",
+      "caveat": "ESC/POS hardware path (currently DEAD per G5-F-001) would print `?` for accents because `EscPosCommandBuilder::textLine()` calls `sanitize()` (only strips control chars) not `encodeForPrinter()` (which exists at L87 with iconv CP858 TRANSLIT, but is NEVER called anywhere in app/). Latent — see H.6 finding F-002 below."
+    },
+    {
+      "id": "H.6.3",
+      "title": "Emoji in item names (e.g., `🍔 Big Burger`)",
+      "evidence": "No current seeded item contains emoji (verified DB). Rendering paths: (1) Vue mustache → browsers render emoji natively. (2) POS Vanilla wizard `innerHTML +=` → browsers render emoji natively. (3) Browser print to thermal printer via window.print() → OS print spooler converts (often successful on macOS, mixed on Linux CUPS). (4) ESC/POS direct path → `encodeForPrinter()` would call `iconv('UTF-8', 'CP858//TRANSLIT//IGNORE', '🍔')` which strips the multibyte emoji silently (TRANSLIT has no Latin1 mapping for emoji); final fallback `preg_replace('/[^\\\\x20-\\\\x7E\\\\x0A\\\\x0D]/', '?', $text)` would render `?`. JSON serialization: PHP `json_encode` with default flags stores emoji as UTF-16 surrogate pair `\\ud83c\\udf54` for `🍔`; with `JSON_UNESCAPED_UNICODE` stores raw 4-byte UTF-8.",
+      "verdict": "GREEN-degradation-document",
+      "graceful_degradation": "Browser-driven receipt (current architecture): emoji renders if printer driver supports it; otherwise printer driver renders fallback glyph. ESC/POS direct (dead path): emoji deterministically becomes `?`. JSON storage: round-trips correctly via json_decode."
+    },
+    {
+      "id": "H.6.4",
+      "title": "Very long names with special chars (`Sandwich Spécial Édition Limitée Cayenne L'Algérienne 2026 - Édition Anniversaire`, 80+ chars)",
+      "evidence": "ItemRequest L42-47: `'name' => required|string|max:190` → 190-char cap enforced at validation. Receipt template uses `max-w-[200px]` (L123/131/142) with NO `truncate` Tailwind class → long names wrap to multi-line within the 200px-wide variations description column. KDS template `KitchenDisplaySystemComponent.vue` L151/385/569/741/910 uses `<h5 class=\\\"text-sm font-medium mb-1\\\">{{ item.item_name }}</h5>` with NO max-width constraint → long names expand the card width.",
+      "verdict": "GREEN-UX-note",
+      "ux_note": "190-char names will wrap (Receipt) or expand layout (KDS card). No truncation = no data loss. No overflow = no broken layout. Acceptable for V1 — defer 'card grid stability when names are 100+ chars' to V1.0.2 UX backlog."
+    },
+    {
+      "id": "H.6.5",
+      "title": "URL encoding in Idempotency-Key",
+      "evidence": "`IdempotencyKeyMiddleware::handle` L61: `if (! preg_match('/^[A-Za-z0-9._\\\\-]{8,64}$/', $key))` → throws `MissingIdempotencyKeyException` ('8-64 chars ASCII') for any header containing `+`, `%`, `=`, `/`, `&`, or non-ASCII. Key normalization further uses `hash('sha256', $key)` (L81) → no character-class issues survive into the cache key.",
+      "verdict": "GREEN",
+      "note": "Defensive validation pattern is correct. UUIDv4 generators (the documented client convention) emit `[0-9a-f\\-]{36}` which passes. Human-typed keys with URL specials get a clean 422 error."
+    },
+    {
+      "id": "H.6.6",
+      "title": "JSON injection / XSS in item names — CROSS-VALIDATION of existing P0",
+      "evidence": "ItemRequest L42 validates `'name' => required|string|max:190` — NO HTML sanitization, NO strip_tags. Trust boundary is fully open for admin-typed HTML. Rendering paths: (1) Vue mustache `{{ item.item_name }}` (ReceiptComponent L117, KDS L151/385/569/741/910, KDS-OrderCard L347) → auto-escaped, XSS-safe. (2) v-html: 4 callsites total (PageComponent L11-12, KsThemeToggle L21-22, PageShowComponent L20-21, table/page L11-12), ALL gated by `safeHtml()` DOMPurify wrapper — NONE render `item.name`. (3) POS Vanilla JS wizard `public/js/pos-wizard.js` (FROZEN): 30+ sites use `innerHTML +=` with raw `entity.name` concatenation including: L1195 viande.name, L1246/1343/1568/1672/1741/1781/1827/1924/1964/2020/2038/2912/3167 sauce.name, L1359/1375/1391 item.name, L1410/1419/1429 menuComplet.name, L1520/1524 boisson.name (text+attribute context!), L1592 pain.name, L1628 viande.name, L1701/1801 g.name (attribute=double-quote context!), L1855 addon.name, L2070/2086/2809 lastItemData.name + painItem.name, L3117 addon_item_name, L3180 instructionText (textarea reflection). NO `escapeHtml` helper exists in the file — grep returns 0 hits.",
+      "test_payload_simulated": "Item name `L'Algérienne Spéciale 🍔 <script>alert('x')</script>` (hex `4c27416c67c3a97269656e6e65205370c3a96369616c6520f09f8d94203c7363726970743e616c65727428277827293c2f7363726970743e`) would round-trip cleanly through ItemRequest → DB → JsonResource → POS wizard `h += '<span>' + item.name + '</span>'` → live DOM with executing `<script>` tag in cashier-authenticated origin (Sanctum + PCI-DSS scope).",
+      "verdict": "CROSS-VALIDATED-EXISTING-P0",
+      "this_finding_does_not_raise_a_new_p0": "The exploitable XSS is already documented in `plans/LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17.md` (authored 2026-05-17 by Wave 5G `155ddbde8`) and expanded in `plans/LOCK_POS_WIZARD_XSS_ADDENDUM_2026-05-23.md` (which added 2 NEW sinks at L3180 textarea + L3187 ticket-preview = total 13 confirmed innerHTML sinks + 15+ text-context + 2 attribute-context). Both LOCK plans are AWAITING OWNER COUNTERSIGN as of 2026-05-23 (6+ days). H.6.6 independently re-confirms the same finding from the i18n/encoding angle. Insight added: the chain-of-trust is broken at ItemRequest — current item names being clean is incidental, not protective."
+    },
+    {
+      "id": "H.6.7",
+      "title": "RTL strings (Arabic — defensive)",
+      "evidence": "i18n.js L23-32 sets `document.documentElement.dir = 'rtl'` + `lang = 'ar'` when locale=='ar'. Kiosk components have RTL-aware CSS: KioskCartComponent L1023, KioskOrderSummaryComponent L700, KioskIdleScreenComponent L735, KioskWizardComponent L3006/3011 (`[dir=\\\"rtl\\\"] .step-slide-*` rules). useKioskA11y.js L13 documents `dir=ltr|rtl`. CRITICAL CONSTRAINT: per ADR-007 (i18n.js L11-20), kiosk is FR-locked immutable at runtime; per Wave P R2 KDS-i18n (L46-50), admin surfaces (POS, KDS, OSS) are FR-locked. V1 Le Cayenne never activates `ar` in production.",
+      "verdict": "GREEN-defensive",
+      "note": "RTL plumbing exists, FR-lock prevents activation in V1. If V2 SaaS activates AR catalog, the RTL CSS rules + dir-flip work — but ReceiptComponent (POS) has no RTL CSS audit yet (out of scope V1)."
+    },
+    {
+      "id": "H.6.8",
+      "title": "Date/Number locale FR canonical",
+      "evidence": "JS path: formatPrice.js L44 uses `new Intl.NumberFormat('fr-FR', { ... }).format(amount)` → `19,00 €` (comma + NBSP + €). Verified at runtime via tinker: `AppLibrary::currencyAmountFormat(12.5)` returns `12,50 €` and `1234.5` returns `1 234,50 €` (NBSP + comma) — confirms G2-HEAL-02 (commit c98e94459+157de5e0c) has the FR canonical helper live. PaymentComponent + ReceiptComponent now agree post G2-HEAL-02. Date path: KioskOfflineConflictModal L88 `new Intl.DateTimeFormat('fr-FR', ...)`, KioskConfirmationComponent L255 `browserLocale = fr-FR` for FR, CashSessionReport + CashOverview both default `this.$i18n?.locale || 'fr-FR'`.",
+      "verdict": "GREEN"
+    }
+  ],
+  "code_paths_audited": [
+    "config/app.php L18-30 (locale=fr, fallback=en, faker=en_US)",
+    "config/database.php L46-47 (utf8mb4_unicode_ci)",
+    "MySQL SHOW VARIABLES + SHOW TABLE STATUS (items, item_variations, orders, order_items, audit_logs all utf8mb4_unicode_ci)",
+    "app/Http/Requests/ItemRequest.php L42-47 (name validation: required|string|max:190 — NO sanitization)",
+    "app/Http/Resources/OrderItemResource.php full read (item_name, item_addons, composition_snapshot, allergens_snapshot exposure)",
+    "app/Http/Resources/SimpleOrderResource.php L130 + SimpleDeliveryBoyOrderResource.php L65 (item_name exposure)",
+    "app/Services/Pricing/PricingService.php L289-291 (json_encode without flags for composition_snapshot)",
+    "app/Services/Pricing/CompositionSnapshotBuilder.php L1-180 (lines/addons/extras structure)",
+    "app/Services/Fiscal/FiscalSealingService.php full read (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE applied L31/L51 — correct)",
+    "app/Services/Fiscal/AuditLogService.php L335-352 canonicalise (JSON_UNESCAPED_UNICODE applied — correct)",
+    "app/Services/Hardware/EscPosCommandBuilder.php L60-139 (encodeForPrinter defined L87 but NEVER called — dead code; sanitize L130 only strips control chars)",
+    "app/Services/Hardware/EscPosPrinterService.php full read (testPrint uses no accents — latent issue dormant)",
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php L1-100 (regex /^[A-Za-z0-9._\\-]{8,64}$/ rejects all URL specials — correct)",
+    "public/js/pos-wizard.js — FROZEN, ~296KB, grep `innerHTML` + `\\.name` returns 30+ unsafe sinks, grep `escapeHtml` returns 0",
+    "resources/js/components/admin/pos/ReceiptComponent.vue L117/126/134 (Vue mustache — safe)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue L151/385/424/569/607/741/780/910/956/1047 (Vue mustache + aria-label — safe)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue L107/347 (Vue mustache — safe)",
+    "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue L909 (Vue mustache — safe)",
+    "resources/js/i18n.js L1-50 (setDocumentDirection RTL for ar, FR-lock for admin/kiosk)",
+    "resources/js/helpers/formatPrice.js L44 (Intl.NumberFormat fr-FR)",
+    "resources/js/composables/useKioskA11y.js L13 (RTL doc)",
+    "resources/js/components/frontend/kiosk/*.vue (4 components with [dir=\\\"rtl\\\"] CSS rules)",
+    "plans/LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17.md (parent LOCK — pending owner countersign)",
+    "plans/LOCK_POS_WIZARD_XSS_ADDENDUM_2026-05-23.md (addendum adds 2 sinks L3180+L3187 — pending owner countersign)"
+  ],
+  "findings": [
+    {
+      "id": "H6-F-001",
+      "title": "POS Vanilla wizard XSS via item.name (cross-validated existing P0)",
+      "severity": "P0",
+      "category": "XSS / cashier-authenticated origin / PCI-DSS scope",
+      "scope_ref": "H.6.6 + H.6.1",
+      "evidence": "ItemRequest L42 validates name as `string, max:190` with NO HTML sanitization. POS Vanilla wizard public/js/pos-wizard.js (FROZEN) has 30+ unescaped `entity.name` interpolations into `innerHTML` (text-context) + 2 attribute-context sinks at L1701/L1801 + 2 NEW sinks at L3180 textarea-reflection / L3187 ticket-preview. Grep `escapeHtml` in pos-wizard.js returns 0 — fix not yet applied.",
+      "impact": "Stored XSS in cashier-authenticated Sanctum origin. PCI-DSS scope compromise (PaymentComponent shares origin). Exploit path: admin user with `permission:items_create` enters item name `Tacos <script>...</script>` → cashier opens POS wizard for that item → script executes with Sanctum cookie access.",
+      "ownership": "ALREADY DOCUMENTED: parent plan `plans/LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17.md` (2026-05-17, Wave 5G commit 155ddbde8) + addendum `plans/LOCK_POS_WIZARD_XSS_ADDENDUM_2026-05-23.md` (adds L3180+L3187 = 32+ patch sites total). Both pending owner countersign for 6+ days. H.6.6 audit independently re-confirms — does NOT raise a new P0.",
+      "heal_recommendation": "Owner countersign LOCK plans → sub-agent applies `escapeHtml()` helper at every interpolation per OWASP XSS Prevention Cheat Sheet. Estimated wall-clock 1.0-1.2 working days per LOCK §2.",
+      "verification_recommended": "After heal: Vitest sentinel asserting `escapeHtml(\\\"<script>\\\")` returns `&lt;script&gt;`; Playwright spec seeding item with `<script>` in name and asserting no script execution in wizard."
+    },
+    {
+      "id": "H6-F-002",
+      "title": "ESC/POS encodeForPrinter is dead code — latent mojibake on accents",
+      "severity": "P2",
+      "category": "I18N / hardware encoding / latent",
+      "scope_ref": "H.6.2 + H.6.3",
+      "evidence": "EscPosCommandBuilder.php L87 defines `encodeForPrinter(string $text, string $encoding = 'CP858')` with iconv TRANSLIT+IGNORE fallback chain. Grep `encodeForPrinter` across app/ returns ZERO callers. `textLine()` L107 → `sanitize($text) . LF` where `sanitize` L130 only strips control chars `[\\x00-\\x08\\x0B-\\x1F\\x7F]`. UTF-8 multibyte chars pass through unchanged to the printer, which on CP858-default thermal hardware will render `é` (UTF-8 bytes c3 a9) as `Ã©` mojibake.",
+      "current_blast_radius": "ZERO — receipt printing is browser-driven via vue3-print-nb → window.print() (verified by G5 G.5.1 architecture summary). ESC/POS hardware path is currently only used for `testPrint` (admin diagnostic, hard-coded strings 'FOODKING POS' + 'Test print OK' + printer.name + date — no user-controlled UTF-8) and `openDrawer` (cash kick, no text).",
+      "activation_trigger": "G5-F-001 heal recommendation proposes wiring receipts through EscPosPrinterService for proper paper-out detection. The moment that wire-up lands, every accented item name (`Suppléments`, `Bol Mariné`, `Algérienne`) prints as `?` or `Ã©` mojibake on the customer ticket. Pre-empt by patching `textLine` + `centerLine` + `lineKV` to call `encodeForPrinter($text, $codePage)` BEFORE `sanitize()`.",
+      "heal_recommendation": "(A) Wire `encodeForPrinter` into `textLine`/`centerLine`/`lineKV` now (defensive). (B) Add Vitest/PHPUnit sentinel: `assertEquals(iconv('UTF-8','CP858','é'), EscPosCommandBuilder::textLineForTest('é'))`. ~15 LOC. Frozen-zone status: NOT frozen (EscPosCommandBuilder not in FROZEN_FILES per CLAUDE.md §7). V1.0.2 backlog.",
+      "verification_recommended": "PHPUnit: `EscPosCommandBuilder::textLine('Algérienne')` → assert bytes contain CP858-encoded `é` (single byte 0xE9), not UTF-8 (bytes c3 a9)."
+    },
+    {
+      "id": "H6-F-003",
+      "title": "composition_snapshot json_encode lacks JSON_UNESCAPED_UNICODE — cosmetic storage inconsistency",
+      "severity": "P3",
+      "category": "Cosmetic / storage format consistency",
+      "scope_ref": "H.6.1 + H.6.2",
+      "evidence": "PricingService L289-291: `'item_variations' => json_encode($item->item_variations ?? [])`, `'item_extras' => json_encode($item->item_extras ?? [])`, `'composition_snapshot' => json_encode($compositionSnapshot)` — all 3 use default flags. Test: `json_encode(['name' => 'Algérienne'])` → `{\\\"name\\\":\\\"Alg\\\\u00e9rienne\\\"}` (Unicode escape). Audit chain at AuditLogService L339-342 + FiscalSealingService L51 correctly use `JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES`.",
+      "impact": "ZERO functional defect. PHP `json_decode` reverses `\\u00e9` to `é` identically. Eloquent `array` cast round-trips correctly. OrderItemResource consumers (POS, KDS, ReceiptComponent) see decoded arrays — no string-level escape leak to UI. NF525 audit chain is unaffected (uses correct flags). Storage is bloated (3 bytes `\\u00e9` vs 2 bytes UTF-8 `é`) and harder to grep via raw SQL LIKE.",
+      "heal_recommendation": "Add `JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES` flags at PricingService L289-291. ~3 LOC. NF525 chain unchanged (chain HMAC is computed AFTER decode by AuditLogService, not on the stored JSON string). V1.0.2 cosmetic — defer.",
+      "verification_recommended": "PHPUnit: after PricingService::storeOrderItems with item containing accent → SELECT composition_snapshot FROM order_items LIKE '%Algérienne%' returns 1 row (currently returns 0 because storage uses `\\u00e9`)."
+    }
+  ],
+  "verdict": "GREEN-CONDITIONAL",
+  "verdict_reasoning": "H.6 audit surfaces ZERO new V1 ship-blockers. The most severe finding (H6-F-001 XSS) is already documented in 2 LOCK plans awaiting owner countersign and was counted in prior waves — H.6.6 contributes independent cross-validation from the i18n angle plus the insight that ItemRequest validation provides NO HTML sanitization (current data is incidentally clean, not protected by code). H6-F-002 is latent (ESC/POS path currently dead, would activate if G5-F-001 heal lands). H6-F-003 is pure cosmetic. NF525 audit/Z chain integrity verified UTF-8-safe via JSON_UNESCAPED_UNICODE in both FiscalSealingService + AuditLogService. utf8mb4_unicode_ci verified at DB + per-table level. FR canonical currency format verified live via tinker (G2-HEAL-02 lives). RTL plumbing exists but kiosk/POS/KDS are FR-locked in V1.",
+  "top_3_encoding_concerns": [
+    "H6-F-001 P0 (cross-validated): POS Vanilla wizard public/js/pos-wizard.js has 30+ innerHTML sinks interpolating raw `entity.name`. ItemRequest validation provides NO HTML sanitization (`string, max:190` only). The chain of trust is fully broken — current accented item names (`Suppléments`, `Algérienne`, etc.) being safe is INCIDENTAL, not protective. Existing LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17 + ADDENDUM_2026-05-23 documents the heal but awaits owner countersign 6+ days.",
+    "H6-F-002 P2: EscPosCommandBuilder::encodeForPrinter is defined but never called — `textLine()` passes UTF-8 directly to the printer, which on CP858 hardware renders `é` as `Ã©` mojibake. Currently latent (G5 confirmed receipts go through browser window.print()), but activates immediately if G5-F-001 heal wires receipts through ESC/POS.",
+    "H6-F-003 P3: PricingService stores composition_snapshot via `json_encode($snapshot)` with no flags → `\\u00e9` Unicode escapes instead of raw UTF-8. Functionally identical (round-trips via json_decode), but inconsistent with audit/Z chain which correctly uses JSON_UNESCAPED_UNICODE. Cosmetic; bloats storage 3 bytes vs 2 per accented char."
+  ],
+  "xss_escape_verification": {
+    "vue_mustache_callsites": "ALL safe — Vue auto-escapes `{{ ... }}`. Verified across ReceiptComponent L117/126/134, KitchenDisplaySystemComponent L151/385/424/569/607/741/780/910/956/1047, KdsOrderCard L107/347, PosOrdersTrackerComponent L909, ParkedOrdersComponent L147-149.",
+    "v_html_callsites": "ALL safe — only 4 callsites in entire admin/kiosk/frontend codebase (PageComponent L11-12, KsThemeToggle L21-22, PageShowComponent L20-21, table/page/PageComponent L11-12), ALL gated by `safeHtml()` DOMPurify wrapper, NONE render `item.name`/`customer.name`/`variation.name`.",
+    "pos_vanilla_wizard": "UNSAFE — 30+ raw concatenations of entity.name into innerHTML, NO escapeHtml helper exists. Documented and pending owner countersign per LOCK plans. H.6.6 confirms zero remediation has shipped to public/js/pos-wizard.js as of HEAD eb03c96c2 (2026-05-24).",
+    "kiosk_wizard_component": "Audited safe — KioskWizardComponent.vue (FROZEN) uses Vue mustache for entity names per visual audit pattern (no innerHTML/v-html observed in name-rendering paths)."
+  },
+  "ship_decision": "PROCEED — H.6 does not introduce a new V1 blocker. The XSS LOCK already exists on owner's gate. Recommend owner countersign LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17 + ADDENDUM_2026-05-23 BEFORE V1 LOCAL goes live (Sanctum + PCI scope risk is real even on single-tenant Le Cayenne). H6-F-002 + H6-F-003 are V1.0.2 backlog. NF525 chain integrity for accented names verified PASS (JSON_UNESCAPED_UNICODE in audit + Z signing paths).",
+  "frozen_zone_touch": "NONE required for H6-F-002 + H6-F-003 heals (EscPosCommandBuilder.php + PricingService.php not in FROZEN_FILES). H6-F-001 fix touches public/js/pos-wizard.js (FROZEN per CLAUDE.md §7) — that is precisely the LOCK gate already documented and pending owner countersign."
+}

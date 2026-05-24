@@ -1,0 +1,20 @@
+=== Drill 1: create_loyalty_qr_nonces_consumed_table ===
+  After up(): table exists = 1 (expect 1)
+  UNIQUE replay correctly rejected (msg=SQLSTATE[23000]: Integrity constraint violation: 1...)
+  After down(): table exists = 0 (expect 0)
+  After re-up(): table exists = 1 (expect 1)
+  Drill 1: PASS
+
+=== Drill 2: add_pos_session_id_to_loyalty_transactions ===
+  After up(): pos_session_id = 42 (expect 42)
+  SQLite version: 3.51.2
+  After down(): pos_session_id present = no (PASS)
+  Drill 2: PASS
+
+=== Drill 3: add_unique_parent_order_id_to_orders (UNIQUE add) ===
+  Double mirror on parent_id=1 rejected (msg=SQLSTATE[23000]: Integrity constraint violation: 1...)
+  Multiple NULLs preserved: 4 (expect 4: ids 1,2,5,6)
+  After down(): double mirror now accepted = PASS (constraint removed)
+  Drill 3: PASS
+
+All drills complete.
