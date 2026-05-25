@@ -37,8 +37,9 @@
                 <div class="py-3 px-4 flex items-center gap-3 border-t sm:border-t-0 border-b border-[#D9DBE9]">
                     <img v-if="user.image" class="flex-shrink-0 w-9 rounded" :src="user.image" alt="avatar">
                     <h4 class="text-sm font-medium leading-4 capitalize">{{ user.name }}
+                        <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT -->
                         <span class="block mt-2 text-xs font-normal leading-[14px] text-paragraph">{{
-                            user.phone && !String(user.phone).startsWith('PENDING_') ? user.phone : ''
+                            safePhone(user.phone)
                             }}</span>
                     </h4>
                 </div>
@@ -117,6 +118,8 @@ import PaginationSMBox from "../components/pagination/PaginationSMBox";
 import appService from "../../../services/appService";
 import TableLimitComponent from "../components/TableLimitComponent";
 import askEnum from "../../../enums/modules/askEnum";
+// [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
+import { safePhone } from "../../../helpers/phoneDisplay";
 
 
 export default {
@@ -189,6 +192,10 @@ export default {
         },
     },
     methods: {
+        // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
+        safePhone(phone) {
+            return safePhone(phone);
+        },
         floatNumber(e) {
             return appService.floatNumber(e);
         },

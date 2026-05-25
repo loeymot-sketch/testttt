@@ -1,31 +1,11 @@
 import axios from 'axios'
-
-/**
- * [UR4-002 V1.0.2 Wave A1] Strip `PENDING_CREATE_<hex>` / `PENDING_<id>` server
- * sentinel from a user payload before it lands in Vuex `authInfo`.
- *
- * Backend (PhoneDisplay::safe + Resource layer) already sanitizes API responses
- * post-commit `afc094091`, but vuex-persistedstate rehydrates `auth.authInfo`
- * from localStorage at boot BEFORE any API call — so legacy polluted storage
- * carries the sentinel forward. This helper is applied at every write boundary
- * inside the auth module; `getState` override in store/index.js handles
- * rehydrate of pre-existing polluted state.
- *
- * Mirrors the pattern used at:
- *   - resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:355
- *   - resources/js/components/admin/profile/ProfileEditProfileComponent.vue:114
- *   - app/Support/PhoneDisplay::safe (backend SSOT)
- */
-export function sanitizePendingPhone(user) {
-    if (!user || typeof user !== 'object') {
-        return user;
-    }
-    const phone = user.phone;
-    if (typeof phone === 'string' && phone.startsWith('PENDING_')) {
-        return { ...user, phone: null };
-    }
-    return user;
-}
+// [UR1-002 V1.0.2 Wave B1] Re-export sanitizePendingPhone from the SSOT
+// helper so callers that imported it from this module (e.g.
+// store/index.js getState rehydrate override) keep working unchanged.
+// SSOT lives at resources/js/helpers/phoneDisplay.js (mirrors
+// App\Support\PhoneDisplay::safe — backend afc094091).
+import { sanitizePendingPhone } from '../../helpers/phoneDisplay';
+export { sanitizePendingPhone };
 
 export const auth = {
     state: {

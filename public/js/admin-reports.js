@@ -830,8 +830,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_buttons_export_PrintComponent__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../components/buttons/export/PrintComponent */ "./resources/js/components/admin/components/buttons/export/PrintComponent.vue");
 /* harmony import */ var _components_buttons_export_ExcelComponent__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../components/buttons/export/ExcelComponent */ "./resources/js/components/admin/components/buttons/export/ExcelComponent.vue");
 /* harmony import */ var _vuepic_vue_datepicker_dist_main_css__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! @vuepic/vue-datepicker/dist/main.css */ "./node_modules/@vuepic/vue-datepicker/dist/main.css");
-/* harmony import */ var _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ../../../enums/modules/displayModeEnum */ "./resources/js/enums/modules/displayModeEnum.js");
-/* harmony import */ var _config_env__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../../../config/env */ "./resources/js/config/env.js");
+/* harmony import */ var _helpers_phoneDisplay__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ../../../helpers/phoneDisplay */ "./resources/js/helpers/phoneDisplay.js");
+/* harmony import */ var _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../../../enums/modules/displayModeEnum */ "./resources/js/enums/modules/displayModeEnum.js");
+/* harmony import */ var _config_env__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! ../../../config/env */ "./resources/js/config/env.js");
 
 
 
@@ -845,6 +846,8 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
+// [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
 
 
 
@@ -885,7 +888,7 @@ __webpack_require__.r(__webpack_exports__);
           branch_id: null
         }
       },
-      ENV: _config_env__WEBPACK_IMPORTED_MODULE_15__["default"]
+      ENV: _config_env__WEBPACK_IMPORTED_MODULE_16__["default"]
     };
   },
   mounted: function mounted() {
@@ -909,10 +912,14 @@ __webpack_require__.r(__webpack_exports__);
       return this.$store.getters["role/lists"];
     },
     direction: function direction() {
-      return this.$store.getters['frontendLanguage/show'].display_mode === _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_14__["default"].RTL ? 'rtl' : 'ltr';
+      return this.$store.getters['frontendLanguage/show'].display_mode === _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_15__["default"].RTL ? 'rtl' : 'ltr';
     }
   },
   methods: {
+    // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
+    safePhone: function safePhone(phone) {
+      return (0,_helpers_phoneDisplay__WEBPACK_IMPORTED_MODULE_14__.safePhone)(phone);
+    },
     phoneNumber: function phoneNumber(e) {
       return _services_appService__WEBPACK_IMPORTED_MODULE_6__["default"].phoneNumber(e);
     },
@@ -2614,7 +2621,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tr", {
       "class": "db-table-body-tr",
       key: user
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(user.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(user.email), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(user.phone && !String(user.phone).startsWith('PENDING_') ? user.country_code + '' + user.phone : ''), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(user.balance), 1 /* TEXT */)]);
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(user.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(user.email), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.safePhone(user.phone) ? user.country_code + '' + $options.safePhone(user.phone) : ''), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(user.balance), 1 /* TEXT */)]);
   }), 128 /* KEYED_FRAGMENT */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tbody", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", _hoisted_37, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_40, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "w-full h-full",
     src: $data.ENV.API_URL + '/images/default/not-found.png',

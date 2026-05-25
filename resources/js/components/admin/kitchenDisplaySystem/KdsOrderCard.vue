@@ -178,6 +178,8 @@ import {
     KDS_SOURCE_I18N_KEYS,
     kdsSourceFromSurface,
 } from '../../../helpers/kdsSource.js';
+// [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
+import { safePhone } from '../../../helpers/phoneDisplay.js';
 
 const AGE_HEADER_BG = {
     fresh: '#FFFFFF',
@@ -347,15 +349,13 @@ export default {
             return this.order?.customer?.name || '';
         },
         customerPhone() {
-            // [Sprint 5A Z9-P1-03] Hide Sprint 2B legacy sentinels from the
-            // tel: link / on-card display — `PENDING_<id>` / `PENDING_CREATE_*`
-            // are placeholders injected by User::creating for legacy paths
-            // and produce a broken `tel:PENDING_*` href otherwise.
-            const phone = this.order?.customer?.phone || '';
-            if (typeof phone === 'string' && phone.startsWith('PENDING_')) {
-                return '';
-            }
-            return phone;
+            // [Sprint 5A Z9-P1-03 + UR1-002 V1.0.2 Wave B1] Hide Sprint 2B
+            // legacy sentinels from the tel: link / on-card display.
+            // `PENDING_<id>` / `PENDING_CREATE_*` are placeholders injected
+            // by User::creating for legacy paths and produce a broken
+            // `tel:PENDING_*` href otherwise. Centralized via phoneDisplay
+            // SSOT (mirrors App\Support\PhoneDisplay::safe).
+            return safePhone(this.order?.customer?.phone);
         },
         // [Wave S-2 P-OWNER 2026-05-20] Cash-at-counter detection. Wire signal
         // `payment_pending_counter` comes from KDSOrderDetailsResource:44

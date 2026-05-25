@@ -124,7 +124,8 @@
                         <h3 :title="authInfo.name" class="font-medium text-sm leading-6 capitalize mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap max-w-[260px] mx-auto">{{ authInfo.name }}
                         </h3>
                         <p class="text-xs mb-0.5">{{ authInfo.email }}</p>
-                        <p dir="ltr" class="text-xs">{{ authInfo.phone && !String(authInfo.phone).startsWith('PENDING_') ? (authInfo.country_code || '') + authInfo.phone : '' }}</p>
+                        <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe -->
+                        <p dir="ltr" class="text-xs">{{ safePhone(authInfo.phone) ? (authInfo.country_code || '') + safePhone(authInfo.phone) : '' }}</p>
                         <h3 class="font-medium text-sm leading-6 capitalize mb-0.5">{{ authInfo.currency_balance }}</h3>
                     </div>
                     <nav>
@@ -189,6 +190,8 @@ import appService from "../../../services/appService";
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import axios from "axios";
+// [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
+import { safePhone } from "../../../helpers/phoneDisplay";
 
 export default {
     name: "BackendNavbarComponent",
@@ -344,6 +347,10 @@ export default {
         }, 5000);
     },
     methods: {
+        // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
+        safePhone(phone) {
+            return safePhone(phone);
+        },
         textShortener: function (text, number = 30) {
             return appService.textShortener(text, number);
         },

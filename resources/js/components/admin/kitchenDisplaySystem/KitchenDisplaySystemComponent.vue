@@ -352,13 +352,14 @@
                       <span aria-hidden="true">&#128100;</span>
                       <span>{{ dineinOrder.customer.name }}</span>
                     </p>
+                    <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT -->
                     <a
-                      v-if="dineinOrder.customer && dineinOrder.customer.phone && !String(dineinOrder.customer.phone).startsWith('PENDING_')"
-                      :href="`tel:${dineinOrder.customer.phone}`"
+                      v-if="dineinOrder.customer && safePhone(dineinOrder.customer.phone)"
+                      :href="`tel:${safePhone(dineinOrder.customer.phone)}`"
                       class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
                     >
                       <span aria-hidden="true">&#128241;</span>
-                      <span>{{ dineinOrder.customer.phone }}</span>
+                      <span>{{ safePhone(dineinOrder.customer.phone) }}</span>
                     </a>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] Chevron now exposes
@@ -540,13 +541,14 @@
                       <span aria-hidden="true">&#128100;</span>
                       <span>{{ onlineOrder.customer.name }}</span>
                     </p>
+                    <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT -->
                     <a
-                      v-if="onlineOrder.customer && onlineOrder.customer.phone && !String(onlineOrder.customer.phone).startsWith('PENDING_')"
-                      :href="`tel:${onlineOrder.customer.phone}`"
+                      v-if="onlineOrder.customer && safePhone(onlineOrder.customer.phone)"
+                      :href="`tel:${safePhone(onlineOrder.customer.phone)}`"
                       class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
                     >
                       <span aria-hidden="true">&#128241;</span>
-                      <span>{{ onlineOrder.customer.phone }}</span>
+                      <span>{{ safePhone(onlineOrder.customer.phone) }}</span>
                     </a>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. -->
@@ -713,13 +715,14 @@
                       <span aria-hidden="true">&#128100;</span>
                       <span>{{ takeawayOrder.customer.name }}</span>
                     </p>
+                    <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT -->
                     <a
-                      v-if="takeawayOrder.customer && takeawayOrder.customer.phone && !String(takeawayOrder.customer.phone).startsWith('PENDING_')"
-                      :href="`tel:${takeawayOrder.customer.phone}`"
+                      v-if="takeawayOrder.customer && safePhone(takeawayOrder.customer.phone)"
+                      :href="`tel:${safePhone(takeawayOrder.customer.phone)}`"
                       class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
                     >
                       <span aria-hidden="true">&#128241;</span>
-                      <span>{{ takeawayOrder.customer.phone }}</span>
+                      <span>{{ safePhone(takeawayOrder.customer.phone) }}</span>
                     </a>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. -->
@@ -882,13 +885,14 @@
                       <span aria-hidden="true">&#128100;</span>
                       <span>{{ kioskOrder.customer.name }}</span>
                     </p>
+                    <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT -->
                     <a
-                      v-if="kioskOrder.customer && kioskOrder.customer.phone && !String(kioskOrder.customer.phone).startsWith('PENDING_')"
-                      :href="`tel:${kioskOrder.customer.phone}`"
+                      v-if="kioskOrder.customer && safePhone(kioskOrder.customer.phone)"
+                      :href="`tel:${safePhone(kioskOrder.customer.phone)}`"
                       class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
                     >
                       <span aria-hidden="true">&#128241;</span>
-                      <span>{{ kioskOrder.customer.phone }}</span>
+                      <span>{{ safePhone(kioskOrder.customer.phone) }}</span>
                     </a>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. -->
@@ -1080,6 +1084,8 @@ import {
 import { kdsInstructionVisualClass } from "../../../helpers/kdsLineSemantics";
 import { orderHasAllergens as kdsOrderHasAllergens, sortedAllergens as kdsSortedAllergens } from "../../../helpers/kdsAllergens";
 import { ORDER_STATUS } from "../../../helpers/kdsState";
+// [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
+import { safePhone } from "../../../helpers/phoneDisplay";
 // [kds/sprint-2 V-5] V2 layout components — feature-flagged single FIFO 4×2 grid.
 import KdsV2Grid from "./KdsV2Grid.vue";
 // [Wave X3 2026-05-21] KDS Historique du jour — read-only day-history drawer.
@@ -1494,6 +1500,10 @@ export default {
     this._kdsSyncStampTimer = setInterval(() => { this.syncNowTick = Date.now(); }, 1000);
   },
   methods: {
+    // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
+    safePhone(phone) {
+      return safePhone(phone);
+    },
     // [2026-05-18 PR-C T2 reframe heal] JS-side filter for OrderStatusChanged.
     // Mirrors `KitchenReleaseRule::visibleStatuses` (ACCEPT / PREPARING /
     // PREPARED). A status change affects the KDS board when EITHER the
