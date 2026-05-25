@@ -85,6 +85,23 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // [GAP-HUNT 2026-05-25 Phase A.1 / OPS-GATE-1]
+        // Passive heartbeat lane. `healthz:check` mirrors `GET /api/healthz`
+        // and writes one line every 5 minutes to storage/logs/heartbeat.log.
+        // External uptime probe (UptimeRobot) is the primary paging path;
+        // this lane is the on-host fallback the owner can `tail -f` when
+        // debugging a cron lag with no internet. Exit 0 (ok+degraded) /
+        // 1 (fail) — matches command contract. See
+        // scripts/deploy/UPTIMEROBOT_SETUP.md for the external monitor
+        // setup instructions.
+        $schedule->command('healthz:check')
+            ->everyFiveMinutes()
+            ->name('healthz-heartbeat')
+            ->description('OPS-GATE-1: 5-min heartbeat → storage/logs/heartbeat.log')
+            ->appendOutputTo(storage_path('logs/heartbeat.log'))
+            ->onOneServer()
+            ->withoutOverlapping();
+
         // [MEGA 2.G / F-11] Purge POS parked-order snapshots older than 24h (TTL).
         $schedule->command('pos:purge-parked-orders --older-than-hours=24')
             ->dailyAt('03:15')

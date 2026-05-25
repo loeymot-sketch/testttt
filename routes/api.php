@@ -122,6 +122,7 @@ use App\Http\Controllers\Frontend\CountryCodeController as FrontendCountryCodeCo
 use App\Http\Controllers\Frontend\ItemCategoryController as FrontendItemCategoryController;
 use App\Http\Controllers\Frontend\DeliveryBoyOrderController as FrontendDeliveryBoyOrderController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\HealthzController;
 
 
 /*
@@ -139,6 +140,12 @@ use App\Http\Controllers\HealthController;
 Route::get('/health', [HealthController::class, 'full']);
 Route::get('/health/live', [HealthController::class, 'live']);
 Route::get('/health/ready', [HealthController::class, 'ready']);
+
+// [GAP-HUNT 2026-05-25 Phase A.1 / OPS-GATE-1] Public uptime probe.
+// Compact JSON for UptimeRobot / Cronitor / Better Stack. Separate from
+// /api/health because /healthz is owner-friendly contract (db|redis|ws|
+// fiscal|queue_pending) and never exposes /api/health's verbose subsystems.
+Route::get('/healthz', HealthzController::class);
 
 Route::match(['get', 'post'], '/login', function () {
     return response()->json(['errors' => 'unauthenticated'], 401);
