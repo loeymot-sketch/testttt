@@ -1,0 +1,58 @@
+{
+  "final_state": {
+    "final_url": "/admin/pos"
+  },
+  "mount_stats": {
+    "url": "/admin/pos",
+    "on_pos": true,
+    "visible_category_tabs": 12,
+    "category_names": [
+      "Toutes les catégories",
+      "Sandwich Cayenne",
+      "Galette",
+      "Sandwich Classique",
+      "Burgers",
+      "Tacos",
+      "Bols Gourmands",
+      "Frites",
+      "Boissons"
+    ],
+    "visible_product_buttons": 32,
+    "product_names": [
+      "Menu (Frites + Boisson), 2,50 €",
+      "Frites Seules, 2,50 €",
+      "Boisson Seule, 1,90 €",
+      "Sandwich Cayenne, 7,40 €",
+      "Galette Normale, 6,90 €",
+      "Galette Cayenne, 7,40 €",
+      "Sandwich Classique, 6,90 €",
+      "Tacos, 6,90 €",
+      "Big Tacos, 7,90 €",
+      "Petite Frites, 2,50 €",
+      "Grande Frites, 4,00 €",
+      "Big Cayenne, 9,40 €",
+      "Big Classique, 8,90 €",
+      "Chicken Burger, 4,90 €",
+      "Big Chicken, 6,90 €",
+      "Bowl Frites Poulet mariné, 6,90 €",
+      "Bowl Frites Poulet curry, 6,90 €",
+      "Bowl Frites Poulet tandoori, 6,90 €",
+      "Bowl Frites Poulet crispy, 6,90 €",
+      "Bowl Riz Poulet mariné, 6,90 €",
+      "Bowl Riz Poulet curry, 6,90 €",
+      "Bowl Riz Poulet tandoori, 6,90 €",
+      "Bowl Riz Poulet crispy, 6,90 €",
+      "Coca-Cola 33cl, 1,50 €",
+      "Coca-Cola Zero 33cl, 1,50 €",
+      "Fanta Orange 33cl, 1,50 €",
+      "Sprite 33cl, 1,50 €",
+      "Oasis Tropical 33cl, 1,50 €",
+      "Orangina 33cl, 1,50 €",
+      "Eau Plate 50cl, 1,00 €",
+      "Capri-Sun, 1,50 €",
+      "un client"
+    ],
+    "has_caisse_modal": false
+  },
+  "captured_at": "2026-05-25T10:33:14.649Z"
+}

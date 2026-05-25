@@ -1,0 +1,23 @@
+[
+  {
+    "url": "http://localhost:8000/api/frontend/order/quote",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779704653518
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/order",
+    "method": "POST",
+    "status": 201,
+    "duration_ms": null,
+    "ts": 1779704653695
+  },
+  {
+    "url": "http://localhost:8000/api/frontend/kiosk/event",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1779704653745
+  }
+]

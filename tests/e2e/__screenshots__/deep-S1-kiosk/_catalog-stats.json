@@ -1,0 +1,128 @@
+{
+  "categories_count": 11,
+  "items_per_category": [
+    {
+      "id": 1,
+      "name": "Sandwich Cayenne",
+      "item_count": 0
+    },
+    {
+      "id": 2,
+      "name": "Galette",
+      "item_count": 0
+    },
+    {
+      "id": 3,
+      "name": "Sandwich Classique",
+      "item_count": 0
+    },
+    {
+      "id": 4,
+      "name": "Burgers",
+      "item_count": 0
+    },
+    {
+      "id": 5,
+      "name": "Tacos",
+      "item_count": 0
+    },
+    {
+      "id": 6,
+      "name": "Bols Gourmands",
+      "item_count": 0
+    },
+    {
+      "id": 11,
+      "name": "Menu enfant",
+      "item_count": 0
+    },
+    {
+      "id": 7,
+      "name": "Frites",
+      "item_count": 0
+    },
+    {
+      "id": 8,
+      "name": "Suppléments",
+      "item_count": 0
+    },
+    {
+      "id": 9,
+      "name": "Desserts",
+      "item_count": 0
+    },
+    {
+      "id": 10,
+      "name": "Boissons",
+      "item_count": 0
+    }
+  ],
+  "availability": {
+    "total": 45,
+    "available": 45,
+    "unavailable": 0,
+    "with_composer_marker": 0
+  },
+  "sampled_prices_first_12": [
+    {
+      "id": 12,
+      "name": "Cheddar",
+      "price": 0.9
+    },
+    {
+      "id": 13,
+      "name": "Raclette",
+      "price": 0.9
+    },
+    {
+      "id": 14,
+      "name": "Emmental",
+      "price": 0.9
+    },
+    {
+      "id": 15,
+      "name": "Œuf",
+      "price": 0.9
+    },
+    {
+      "id": 17,
+      "name": "Légumes sautés",
+      "price": 0.9
+    },
+    {
+      "id": 18,
+      "name": "Jambon",
+      "price": 0.9
+    },
+    {
+      "id": 19,
+      "name": "Oignon frais",
+      "price": 0.9
+    },
+    {
+      "id": 20,
+      "name": "Champignons",
+      "price": 0.9
+    },
+    {
+      "id": 21,
+      "name": "Boule gratinée",
+      "price": 2
+    },
+    {
+      "id": 23,
+      "name": "Galette Normale",
+      "price": 6.9
+    },
+    {
+      "id": 24,
+      "name": "Galette Cayenne",
+      "price": 7.4
+    },
+    {
+      "id": 25,
+      "name": "Sandwich Classique",
+      "price": 6.9
+    }
+  ]
+}

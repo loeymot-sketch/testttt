@@ -1,0 +1,9 @@
+[
+  {
+    "url": "http://localhost:8000/api/admin/pos/cash-drawer/sessions/open",
+    "method": "POST",
+    "status": 201,
+    "duration_ms": null,
+    "ts": 1779705145379
+  }
+]
