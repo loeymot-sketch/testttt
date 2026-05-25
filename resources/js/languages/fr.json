@@ -1591,6 +1591,10 @@
             "preparing_hint": "Présentez-vous au comptoir lorsque votre numéro est appelé",
             "ready_hint": "Venez récupérer votre commande au comptoir 🙌"
         },
+        "rush": {
+            "active_title": "Cuisine en activité",
+            "subtitle": "Attente plus longue que d'habitude"
+        },
         "waiting_screen": {
             "cancel_order_btn": "Annuler ma commande",
             "network_lost": "Connexion interrompue — reconnexion en cours…",

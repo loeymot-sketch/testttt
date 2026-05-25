@@ -178,7 +178,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-waiting[data-v-0f435cc1] {\n  width: 100vw;\n  height: 100vh;\n  background: var(--kiosk-page-bg, var(--kiosk-bg));\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: space-between;\n  overflow: hidden;\n  position: relative;\n  transition: background 0.5s ease;\n}\n.kiosk-waiting.ready[data-v-0f435cc1] { background: var(--kiosk-page-bg, var(--kiosk-bg));\n}\n\n/* Fond animé */\n.kiosk-waiting-bg[data-v-0f435cc1] {\n  position: absolute;\n  inset: 0;\n  background: var(--kiosk-product-media-bg, transparent);\n  animation: bgPulse-0f435cc1 4s ease-in-out infinite;\n}\n.kiosk-waiting.ready .kiosk-waiting-bg[data-v-0f435cc1] {\n  background: radial-gradient(ellipse at center, rgba(46,204,113,0.14) 0%, transparent 70%);\n}\n@keyframes bgPulse-0f435cc1 {\n0%,100% { opacity: 0.5;\n}\n50% { opacity: 1;\n}\n}\n\n/* Contenu */\n.kiosk-waiting-content[data-v-0f435cc1] {\n  flex: 1;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  z-index: 1;\n  padding: 40px;\n  width: 100%;\n}\n\n/* Préparation */\n.kiosk-waiting-preparing[data-v-0f435cc1],\n.kiosk-waiting-ready[data-v-0f435cc1] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 28px;\n  text-align: center;\n  width: 100%;\n}\n\n/* Animation chef */\n.kiosk-waiting-anim[data-v-0f435cc1] {\n  position: relative;\n  width: 120px;\n  height: 120px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-chef-hat[data-v-0f435cc1] {\n  font-size: 64px;\n  z-index: 2;\n  animation: chefBounce-0f435cc1 1.5s ease-in-out infinite;\n}\n@keyframes chefBounce-0f435cc1 {\n0%,100% { transform: translateY(0) rotate(-5deg);\n}\n50%      { transform: translateY(-8px) rotate(5deg);\n}\n}\n.kiosk-wave-ring[data-v-0f435cc1] {\n  position: absolute;\n  inset: -10px;\n  border-radius: 50%;\n  border: 2px solid rgba(244, 80, 30,0.18);\n  animation: waveExpand-0f435cc1 2s ease-out infinite;\n}\n@keyframes waveExpand-0f435cc1 {\n0%   { transform: scale(0.8); opacity: 0.8;\n}\n100% { transform: scale(1.8); opacity: 0;\n}\n}\n.kiosk-waiting-title[data-v-0f435cc1] {\n  font-size: clamp(32px, 4vw, 48px);\n  font-weight: 900;\n  color: var(--kiosk-text);\n  margin: 0;\n  max-width: 500px;\n  line-height: 1.3;\n}\n\n/* Numéro commande */\n.kiosk-waiting-number-wrap[data-v-0f435cc1] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 4px;\n}\n.kiosk-waiting-number-label[data-v-0f435cc1] {\n  font-size: 16px;\n  font-weight: 900;\n  color: var(--kiosk-text-muted);\n  text-transform: uppercase;\n  letter-spacing: 2px;\n}\n.kiosk-waiting-number[data-v-0f435cc1] {\n  font-size: clamp(112px, 16vw, 180px);\n  font-weight: 900;\n  color: var(--kiosk-primary);\n  line-height: 1;\n  letter-spacing: -4px;\n  text-shadow: 0 6px 24px rgba(244, 80, 30,0.12);\n}\n.kiosk-waiting.ready .kiosk-waiting-number[data-v-0f435cc1] {\n  color: var(--kiosk-success);\n  text-shadow: 0 6px 24px rgba(46,204,113,0.12);\n}\n.kiosk-waiting-hint[data-v-0f435cc1], .kiosk-ready-hint[data-v-0f435cc1] {\n  font-size: 19px;\n  color: var(--kiosk-text-muted);\n  margin: 0;\n  max-width: 400px;\n  line-height: 1.5;\n}\n\n/* Barre progress */\n.kiosk-waiting-progress[data-v-0f435cc1] {\n  width: min(360px, 58vw);\n  height: 8px;\n  background: var(--kiosk-surface-alt);\n  border-radius: 999px;\n  overflow: hidden;\n}\n.kiosk-waiting-progress-bar[data-v-0f435cc1] {\n  height: 100%;\n  background: var(--kiosk-primary);\n  border-radius: 2px;\n  animation: progressSlide-0f435cc1 2s ease-in-out infinite;\n}\n@keyframes progressSlide-0f435cc1 {\n0%   { transform: translateX(-100%);\n}\n100% { transform: translateX(300%);\n}\n}\n\n/* Écran PRÊT */\n.kiosk-ready-icon[data-v-0f435cc1] {\n  position: relative;\n  width: 120px;\n  height: 120px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-ready-ring[data-v-0f435cc1] {\n  position: absolute;\n  inset: 0;\n  border-radius: 50%;\n  border: 3px solid rgba(46,204,113,0.22);\n  animation: readyRing-0f435cc1 1.5s ease-out infinite;\n}\n@keyframes readyRing-0f435cc1 {\nto { transform: scale(2); opacity: 0;\n}\n}\n.kiosk-ready-check[data-v-0f435cc1] {\n  width: 96px;\n  height: 96px;\n  border-radius: 50%;\n  background: var(--kiosk-success);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 48px;\n  color: white;\n  font-weight: 900;\n  box-shadow: 0 0 60px rgba(46,204,113,0.5);\n  animation: popIn-0f435cc1 0.4s cubic-bezier(0.34,1.56,0.64,1);\n}\n@keyframes popIn-0f435cc1 {\nfrom { transform: scale(0); opacity: 0;\n}\nto   { transform: scale(1); opacity: 1;\n}\n}\n.kiosk-ready-title[data-v-0f435cc1] {\n  font-size: clamp(42px, 6vw, 68px);\n  font-weight: 900;\n  color: var(--kiosk-success);\n  margin: 0;\n  animation: fadeInUp-0f435cc1 0.5s ease;\n}\n@keyframes fadeInUp-0f435cc1 {\nfrom { transform: translateY(20px); opacity: 0;\n}\nto   { transform: translateY(0); opacity: 1;\n}\n}\n\n/* Footer */\n.kiosk-waiting-footer[data-v-0f435cc1] {\n  padding: 20px 32px 40px;\n  width: 100%;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 10px;\n  z-index: 1;\n}\n.kiosk-waiting-new-order[data-v-0f435cc1] {\n  min-height: 76px;\n  padding: 18px 42px;\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border: none;\n  border-radius: 28px;\n  font-size: 22px;\n  font-weight: 900;\n  cursor: pointer;\n  box-shadow: 0 6px 24px rgba(244, 80, 30,0.2);\n  transition: all 0.15s ease;\n}\n.kiosk-waiting-new-order[data-v-0f435cc1]:active { transform: scale(0.97);\n}\n.kiosk-waiting-auto-reset[data-v-0f435cc1] {\n  font-size: 16px;\n  color: var(--kiosk-text-muted);\n  margin-top: 8px;\n}\n.kiosk-waiting-preparing-hint[data-v-0f435cc1] {\n  font-size: 18px;\n  color: var(--kiosk-text-muted);\n  font-style: italic;\n}\n\n/* Transitions */\n.fade-scale-enter-active[data-v-0f435cc1], .fade-scale-leave-active[data-v-0f435cc1] { transition: all 0.4s ease;\n}\n.fade-scale-enter-from[data-v-0f435cc1] { opacity: 0; transform: scale(0.95);\n}\n.fade-scale-leave-to[data-v-0f435cc1]   { opacity: 0; transform: scale(1.05);\n}\n\n/* Offline order state */\n.kiosk-waiting-offline[data-v-0f435cc1] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 20px;\n  text-align: center;\n}\n.kiosk-offline-icon[data-v-0f435cc1] {\n  font-size: 72px;\n  animation: chefBounce-0f435cc1 2s ease-in-out infinite;\n}\n.kiosk-offline-spinner[data-v-0f435cc1] {\n  width: 48px;\n  height: 48px;\n  border: 3px solid var(--kiosk-border);\n  border-top-color: var(--kiosk-primary);\n  border-radius: 50%;\n  animation: spin-0f435cc1 1s linear infinite;\n}\n@keyframes spin-0f435cc1 {\nto { transform: rotate(360deg);\n}\n}\n\n/* Cancel button */\n.kiosk-waiting-cancel-btn[data-v-0f435cc1] {\n  margin-top: 12px;\n  background: none;\n  border: 1px solid rgba(255,100,100,0.4);\n  border-radius: 12px;\n  color: rgba(255,100,100,0.7);\n  padding: 10px 24px;\n  font-size: 14px;\n  cursor: pointer;\n  transition: all 0.2s;\n  display: block;\n}\n.kiosk-waiting-cancel-btn[data-v-0f435cc1]:hover { border-color: rgba(255,100,100,0.7); color: #ff6464;\n}\n\n/* Cancel confirm overlay */\n.kiosk-cancel-overlay[data-v-0f435cc1] {\n  position: fixed;\n  inset: 0;\n  background: var(--kiosk-overlay-modal);\n  backdrop-filter: blur(6px);\n  z-index: 1000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-cancel-modal[data-v-0f435cc1] {\n  background: var(--kiosk-surface);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 22px;\n  padding: 2.5rem 2rem;\n  max-width: 440px;\n  width: 90%;\n  text-align: center;\n  color: var(--kiosk-text);\n}\n.kiosk-cancel-icon[data-v-0f435cc1]  { font-size: 3rem; margin-bottom: 0.75rem;\n}\n.kiosk-cancel-modal h2[data-v-0f435cc1] { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.5rem;\n}\n.kiosk-cancel-modal p[data-v-0f435cc1]  { color: var(--kiosk-text-muted); font-size: 0.95rem; margin: 0 0 1.5rem;\n}\n.kiosk-cancel-actions[data-v-0f435cc1]  { display: flex; gap: 1rem;\n}\n.kiosk-cancel-yes[data-v-0f435cc1] {\n  flex: 1;\n  background: var(--kiosk-primary-soft);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 14px;\n  color: var(--kiosk-primary);\n  padding: 0.9rem;\n  font-size: 1rem;\n  font-weight: 600;\n  cursor: pointer;\n}\n.kiosk-cancel-no[data-v-0f435cc1] {\n  flex: 1;\n  background: var(--kiosk-surface-alt);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 14px;\n  color: var(--kiosk-text);\n  padding: 0.9rem;\n  font-size: 1rem;\n  font-weight: 600;\n  cursor: pointer;\n}\n.kiosk-cancel-yes[data-v-0f435cc1]:active { background: rgba(220,38,38,0.4);\n}\n.kiosk-cancel-no[data-v-0f435cc1]:active  { background: rgba(255,255,255,0.15);\n}\n.kiosk-cancel-error-msg[data-v-0f435cc1] {\n  color: #ff6b6b;\n  font-size: 1rem;\n  margin: 0.5rem 0;\n}\n.kiosk-spinner-sm[data-v-0f435cc1] {\n  display: inline-block;\n  width: 18px; height: 18px;\n  border: 2.5px solid rgba(215,38,61,0.15);\n  border-top-color: #d7263d;\n  border-radius: 50%;\n  animation: spin-sm-0f435cc1 0.7s linear infinite;\n  vertical-align: middle;\n}\n@keyframes spin-sm-0f435cc1 {\nto { transform: rotate(360deg);\n}\n}\n\n/* Network lost banner */\n.kiosk-network-banner[data-v-0f435cc1] {\n  position: fixed; top: 0; left: 0; right: 0; z-index: 200;\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  display: flex; align-items: center; justify-content: center; gap: 0.6rem;\n  padding: 0.65rem 1rem;\n  font-size: 0.95rem; font-weight: 600;\n}\n.kiosk-network-banner-icon[data-v-0f435cc1] { font-size: 1.2rem;\n}\n.slide-down-banner-enter-active[data-v-0f435cc1],\n.slide-down-banner-leave-active[data-v-0f435cc1] { transition: transform 0.35s ease, opacity 0.35s ease;\n}\n.slide-down-banner-enter-from[data-v-0f435cc1],\n.slide-down-banner-leave-to[data-v-0f435cc1] { transform: translateY(-100%); opacity: 0;\n}\n\n/* Audio indisponible — flash visuel 3s (WCAG 2.3.3 reduced motion) */\n.kiosk-waiting.kiosk-ready-flash[data-v-0f435cc1] {\n  animation: kioskReadyFlash-0f435cc1 3s ease-out 1;\n}\n@keyframes kioskReadyFlash-0f435cc1 {\n0% { box-shadow: inset 0 0 0 0 rgba(46, 204, 113, 0);\n}\n15% { box-shadow: inset 0 0 0 9999px rgba(46, 204, 113, 0.12);\n}\n100% { box-shadow: inset 0 0 0 0 rgba(46, 204, 113, 0);\n}\n}\n@media (prefers-reduced-motion: reduce) {\n.kiosk-waiting.kiosk-ready-flash[data-v-0f435cc1] {\n    animation: none;\n    box-shadow: inset 0 0 0 9999px rgba(46, 204, 113, 0.08);\n}\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-waiting[data-v-0f435cc1] {\n  width: 100vw;\n  height: 100vh;\n  background: var(--kiosk-page-bg, var(--kiosk-bg));\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: space-between;\n  overflow: hidden;\n  position: relative;\n  transition: background 0.5s ease;\n}\n.kiosk-waiting.ready[data-v-0f435cc1] { background: var(--kiosk-page-bg, var(--kiosk-bg));\n}\n\n/* Fond animé */\n.kiosk-waiting-bg[data-v-0f435cc1] {\n  position: absolute;\n  inset: 0;\n  background: var(--kiosk-product-media-bg, transparent);\n  animation: bgPulse-0f435cc1 4s ease-in-out infinite;\n}\n.kiosk-waiting.ready .kiosk-waiting-bg[data-v-0f435cc1] {\n  background: radial-gradient(ellipse at center, rgba(46,204,113,0.14) 0%, transparent 70%);\n}\n@keyframes bgPulse-0f435cc1 {\n0%,100% { opacity: 0.5;\n}\n50% { opacity: 1;\n}\n}\n\n/* Contenu */\n.kiosk-waiting-content[data-v-0f435cc1] {\n  flex: 1;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  z-index: 1;\n  padding: 40px;\n  width: 100%;\n}\n\n/* Préparation */\n.kiosk-waiting-preparing[data-v-0f435cc1],\n.kiosk-waiting-ready[data-v-0f435cc1] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 28px;\n  text-align: center;\n  width: 100%;\n}\n\n/* Animation chef */\n.kiosk-waiting-anim[data-v-0f435cc1] {\n  position: relative;\n  width: 120px;\n  height: 120px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-chef-hat[data-v-0f435cc1] {\n  font-size: 64px;\n  z-index: 2;\n  animation: chefBounce-0f435cc1 1.5s ease-in-out infinite;\n}\n@keyframes chefBounce-0f435cc1 {\n0%,100% { transform: translateY(0) rotate(-5deg);\n}\n50%      { transform: translateY(-8px) rotate(5deg);\n}\n}\n.kiosk-wave-ring[data-v-0f435cc1] {\n  position: absolute;\n  inset: -10px;\n  border-radius: 50%;\n  border: 2px solid rgba(244, 80, 30,0.18);\n  animation: waveExpand-0f435cc1 2s ease-out infinite;\n}\n@keyframes waveExpand-0f435cc1 {\n0%   { transform: scale(0.8); opacity: 0.8;\n}\n100% { transform: scale(1.8); opacity: 0;\n}\n}\n.kiosk-waiting-title[data-v-0f435cc1] {\n  font-size: clamp(32px, 4vw, 48px);\n  font-weight: 900;\n  color: var(--kiosk-text);\n  margin: 0;\n  max-width: 500px;\n  line-height: 1.3;\n}\n\n/* Numéro commande */\n.kiosk-waiting-number-wrap[data-v-0f435cc1] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 4px;\n}\n.kiosk-waiting-number-label[data-v-0f435cc1] {\n  font-size: 16px;\n  font-weight: 900;\n  color: var(--kiosk-text-muted);\n  text-transform: uppercase;\n  letter-spacing: 2px;\n}\n.kiosk-waiting-number[data-v-0f435cc1] {\n  font-size: clamp(112px, 16vw, 180px);\n  font-weight: 900;\n  color: var(--kiosk-primary);\n  line-height: 1;\n  letter-spacing: -4px;\n  text-shadow: 0 6px 24px rgba(244, 80, 30,0.12);\n}\n.kiosk-waiting.ready .kiosk-waiting-number[data-v-0f435cc1] {\n  color: var(--kiosk-success);\n  text-shadow: 0 6px 24px rgba(46,204,113,0.12);\n}\n.kiosk-waiting-hint[data-v-0f435cc1], .kiosk-ready-hint[data-v-0f435cc1] {\n  font-size: 19px;\n  color: var(--kiosk-text-muted);\n  margin: 0;\n  max-width: 400px;\n  line-height: 1.5;\n}\n\n/* Barre progress */\n.kiosk-waiting-progress[data-v-0f435cc1] {\n  width: min(360px, 58vw);\n  height: 8px;\n  background: var(--kiosk-surface-alt);\n  border-radius: 999px;\n  overflow: hidden;\n}\n.kiosk-waiting-progress-bar[data-v-0f435cc1] {\n  height: 100%;\n  background: var(--kiosk-primary);\n  border-radius: 2px;\n  animation: progressSlide-0f435cc1 2s ease-in-out infinite;\n}\n@keyframes progressSlide-0f435cc1 {\n0%   { transform: translateX(-100%);\n}\n100% { transform: translateX(300%);\n}\n}\n\n/* Écran PRÊT */\n.kiosk-ready-icon[data-v-0f435cc1] {\n  position: relative;\n  width: 120px;\n  height: 120px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-ready-ring[data-v-0f435cc1] {\n  position: absolute;\n  inset: 0;\n  border-radius: 50%;\n  border: 3px solid rgba(46,204,113,0.22);\n  animation: readyRing-0f435cc1 1.5s ease-out infinite;\n}\n@keyframes readyRing-0f435cc1 {\nto { transform: scale(2); opacity: 0;\n}\n}\n.kiosk-ready-check[data-v-0f435cc1] {\n  width: 96px;\n  height: 96px;\n  border-radius: 50%;\n  background: var(--kiosk-success);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 48px;\n  color: white;\n  font-weight: 900;\n  box-shadow: 0 0 60px rgba(46,204,113,0.5);\n  animation: popIn-0f435cc1 0.4s cubic-bezier(0.34,1.56,0.64,1);\n}\n@keyframes popIn-0f435cc1 {\nfrom { transform: scale(0); opacity: 0;\n}\nto   { transform: scale(1); opacity: 1;\n}\n}\n.kiosk-ready-title[data-v-0f435cc1] {\n  font-size: clamp(42px, 6vw, 68px);\n  font-weight: 900;\n  color: var(--kiosk-success);\n  margin: 0;\n  animation: fadeInUp-0f435cc1 0.5s ease;\n}\n@keyframes fadeInUp-0f435cc1 {\nfrom { transform: translateY(20px); opacity: 0;\n}\nto   { transform: translateY(0); opacity: 1;\n}\n}\n\n/* Footer */\n.kiosk-waiting-footer[data-v-0f435cc1] {\n  padding: 20px 32px 40px;\n  width: 100%;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 10px;\n  z-index: 1;\n}\n.kiosk-waiting-new-order[data-v-0f435cc1] {\n  min-height: 76px;\n  padding: 18px 42px;\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border: none;\n  border-radius: 28px;\n  font-size: 22px;\n  font-weight: 900;\n  cursor: pointer;\n  box-shadow: 0 6px 24px rgba(244, 80, 30,0.2);\n  transition: all 0.15s ease;\n}\n.kiosk-waiting-new-order[data-v-0f435cc1]:active { transform: scale(0.97);\n}\n.kiosk-waiting-auto-reset[data-v-0f435cc1] {\n  font-size: 16px;\n  color: var(--kiosk-text-muted);\n  margin-top: 8px;\n}\n.kiosk-waiting-preparing-hint[data-v-0f435cc1] {\n  font-size: 18px;\n  color: var(--kiosk-text-muted);\n  font-style: italic;\n}\n\n/* Transitions */\n.fade-scale-enter-active[data-v-0f435cc1], .fade-scale-leave-active[data-v-0f435cc1] { transition: all 0.4s ease;\n}\n.fade-scale-enter-from[data-v-0f435cc1] { opacity: 0; transform: scale(0.95);\n}\n.fade-scale-leave-to[data-v-0f435cc1]   { opacity: 0; transform: scale(1.05);\n}\n\n/* Offline order state */\n.kiosk-waiting-offline[data-v-0f435cc1] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 20px;\n  text-align: center;\n}\n.kiosk-offline-icon[data-v-0f435cc1] {\n  font-size: 72px;\n  animation: chefBounce-0f435cc1 2s ease-in-out infinite;\n}\n.kiosk-offline-spinner[data-v-0f435cc1] {\n  width: 48px;\n  height: 48px;\n  border: 3px solid var(--kiosk-border);\n  border-top-color: var(--kiosk-primary);\n  border-radius: 50%;\n  animation: spin-0f435cc1 1s linear infinite;\n}\n@keyframes spin-0f435cc1 {\nto { transform: rotate(360deg);\n}\n}\n\n/* Cancel button */\n.kiosk-waiting-cancel-btn[data-v-0f435cc1] {\n  margin-top: 12px;\n  background: none;\n  border: 1px solid rgba(255,100,100,0.4);\n  border-radius: 12px;\n  color: rgba(255,100,100,0.7);\n  padding: 10px 24px;\n  font-size: 14px;\n  cursor: pointer;\n  transition: all 0.2s;\n  display: block;\n}\n.kiosk-waiting-cancel-btn[data-v-0f435cc1]:hover { border-color: rgba(255,100,100,0.7); color: #ff6464;\n}\n\n/* Cancel confirm overlay */\n.kiosk-cancel-overlay[data-v-0f435cc1] {\n  position: fixed;\n  inset: 0;\n  background: var(--kiosk-overlay-modal);\n  backdrop-filter: blur(6px);\n  z-index: 1000;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n.kiosk-cancel-modal[data-v-0f435cc1] {\n  background: var(--kiosk-surface);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 22px;\n  padding: 2.5rem 2rem;\n  max-width: 440px;\n  width: 90%;\n  text-align: center;\n  color: var(--kiosk-text);\n}\n.kiosk-cancel-icon[data-v-0f435cc1]  { font-size: 3rem; margin-bottom: 0.75rem;\n}\n.kiosk-cancel-modal h2[data-v-0f435cc1] { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.5rem;\n}\n.kiosk-cancel-modal p[data-v-0f435cc1]  { color: var(--kiosk-text-muted); font-size: 0.95rem; margin: 0 0 1.5rem;\n}\n.kiosk-cancel-actions[data-v-0f435cc1]  { display: flex; gap: 1rem;\n}\n.kiosk-cancel-yes[data-v-0f435cc1] {\n  flex: 1;\n  background: var(--kiosk-primary-soft);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 14px;\n  color: var(--kiosk-primary);\n  padding: 0.9rem;\n  font-size: 1rem;\n  font-weight: 600;\n  cursor: pointer;\n}\n.kiosk-cancel-no[data-v-0f435cc1] {\n  flex: 1;\n  background: var(--kiosk-surface-alt);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 14px;\n  color: var(--kiosk-text);\n  padding: 0.9rem;\n  font-size: 1rem;\n  font-weight: 600;\n  cursor: pointer;\n}\n.kiosk-cancel-yes[data-v-0f435cc1]:active { background: rgba(220,38,38,0.4);\n}\n.kiosk-cancel-no[data-v-0f435cc1]:active  { background: rgba(255,255,255,0.15);\n}\n.kiosk-cancel-error-msg[data-v-0f435cc1] {\n  color: #ff6b6b;\n  font-size: 1rem;\n  margin: 0.5rem 0;\n}\n.kiosk-spinner-sm[data-v-0f435cc1] {\n  display: inline-block;\n  width: 18px; height: 18px;\n  border: 2.5px solid rgba(215,38,61,0.15);\n  border-top-color: #d7263d;\n  border-radius: 50%;\n  animation: spin-sm-0f435cc1 0.7s linear infinite;\n  vertical-align: middle;\n}\n@keyframes spin-sm-0f435cc1 {\nto { transform: rotate(360deg);\n}\n}\n\n/* [GAP-FIX-03] Rush banner — visible during preparing state when chef backlog detected. */\n.kiosk-rush-banner[data-v-0f435cc1] {\n  position: absolute;\n  top: 24px;\n  left: 50%;\n  transform: translateX(-50%);\n  z-index: 2;\n  display: inline-flex;\n  align-items: center;\n  gap: 12px;\n  padding: 12px 22px;\n  background: rgba(244, 80, 30, 0.10);\n  border: 1px solid rgba(244, 80, 30, 0.32);\n  border-radius: 999px;\n  max-width: 90vw;\n  box-shadow: 0 4px 16px rgba(244, 80, 30, 0.08);\n}\n.kiosk-rush-banner-icon[data-v-0f435cc1] { font-size: 22px;\n}\n.kiosk-rush-banner-text[data-v-0f435cc1] {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 2px;\n  color: var(--kiosk-text);\n  font-size: 15px;\n  line-height: 1.2;\n  text-align: left;\n}\n.kiosk-rush-banner-text strong[data-v-0f435cc1] { font-weight: 800;\n}\n.kiosk-rush-banner-subtitle[data-v-0f435cc1] {\n  font-size: 13px;\n  color: var(--kiosk-text-muted);\n  font-weight: 500;\n}\n\n/* Network lost banner */\n.kiosk-network-banner[data-v-0f435cc1] {\n  position: fixed; top: 0; left: 0; right: 0; z-index: 200;\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  display: flex; align-items: center; justify-content: center; gap: 0.6rem;\n  padding: 0.65rem 1rem;\n  font-size: 0.95rem; font-weight: 600;\n}\n.kiosk-network-banner-icon[data-v-0f435cc1] { font-size: 1.2rem;\n}\n.slide-down-banner-enter-active[data-v-0f435cc1],\n.slide-down-banner-leave-active[data-v-0f435cc1] { transition: transform 0.35s ease, opacity 0.35s ease;\n}\n.slide-down-banner-enter-from[data-v-0f435cc1],\n.slide-down-banner-leave-to[data-v-0f435cc1] { transform: translateY(-100%); opacity: 0;\n}\n\n/* Audio indisponible — flash visuel 3s (WCAG 2.3.3 reduced motion) */\n.kiosk-waiting.kiosk-ready-flash[data-v-0f435cc1] {\n  animation: kioskReadyFlash-0f435cc1 3s ease-out 1;\n}\n@keyframes kioskReadyFlash-0f435cc1 {\n0% { box-shadow: inset 0 0 0 0 rgba(46, 204, 113, 0);\n}\n15% { box-shadow: inset 0 0 0 9999px rgba(46, 204, 113, 0.12);\n}\n100% { box-shadow: inset 0 0 0 0 rgba(46, 204, 113, 0);\n}\n}\n@media (prefers-reduced-motion: reduce) {\n.kiosk-waiting.kiosk-ready-flash[data-v-0f435cc1] {\n    animation: none;\n    box-shadow: inset 0 0 0 9999px rgba(46, 204, 113, 0.08);\n}\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -3091,6 +3091,17 @@ var PAYMENT_PENDING_COUNTER = _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED
       preparingAutoRedirectTimer: null
     };
   },
+  computed: {
+    // [GAP-FIX-03] Consume is_rush server-driven flag from kioskMenu Vuex store.
+    // Backend signal: KioskMenuService::computeIsRush (checks config kiosk.rush_windows).
+    // Vuex storage: kioskMenu.branchFlags.is_rush (mutation SET_BRANCH_FLAGS).
+    // Banner shows on waiting screen post-confirmation so client renegotiates
+    // expectation BEFORE picking up.
+    isRush: function isRush() {
+      var flags = this.$store.getters['kioskMenu/kioskBranchFlags'];
+      return !!(flags && flags.is_rush);
+    }
+  },
   mounted: function mounted() {
     // If this is an offline-queued order, skip polling and show "syncing" state
     if (String(this.orderId).startsWith('offline_')) {
@@ -5941,88 +5952,101 @@ var _hoisted_6 = {
   "class": "kiosk-waiting-content"
 };
 var _hoisted_7 = {
+  key: 0,
+  "class": "kiosk-rush-banner",
+  role: "status",
+  "aria-live": "polite",
+  "data-testid": "kiosk-rush-banner"
+};
+var _hoisted_8 = {
+  "class": "kiosk-rush-banner-text"
+};
+var _hoisted_9 = {
+  "class": "kiosk-rush-banner-subtitle"
+};
+var _hoisted_10 = {
   key: "preparing",
   "class": "kiosk-waiting-preparing"
 };
-var _hoisted_8 = {
+var _hoisted_11 = {
   "class": "kiosk-waiting-anim"
 };
-var _hoisted_9 = {
+var _hoisted_12 = {
   "class": "kiosk-waiting-title"
 };
-var _hoisted_10 = {
+var _hoisted_13 = {
   "class": "kiosk-waiting-number-wrap"
 };
-var _hoisted_11 = {
+var _hoisted_14 = {
   "class": "kiosk-waiting-number-label"
 };
-var _hoisted_12 = {
+var _hoisted_15 = {
   "class": "kiosk-waiting-number"
 };
-var _hoisted_13 = {
+var _hoisted_16 = {
   "class": "kiosk-waiting-hint"
 };
-var _hoisted_14 = {
+var _hoisted_17 = {
   key: "ready",
   "class": "kiosk-waiting-ready"
 };
-var _hoisted_15 = {
+var _hoisted_18 = {
   "class": "kiosk-ready-title"
 };
-var _hoisted_16 = {
+var _hoisted_19 = {
   "class": "kiosk-waiting-number-wrap"
 };
-var _hoisted_17 = {
+var _hoisted_20 = {
   "class": "kiosk-waiting-number-label"
 };
-var _hoisted_18 = {
+var _hoisted_21 = {
   "class": "kiosk-waiting-number"
 };
-var _hoisted_19 = {
+var _hoisted_22 = {
   "class": "kiosk-ready-hint"
 };
-var _hoisted_20 = {
+var _hoisted_23 = {
   key: 2,
   "class": "kiosk-waiting-footer"
 };
-var _hoisted_21 = {
+var _hoisted_24 = {
   "class": "kiosk-waiting-footer"
 };
-var _hoisted_22 = {
+var _hoisted_25 = {
   "class": "kiosk-waiting-auto-reset"
 };
-var _hoisted_23 = {
+var _hoisted_26 = {
   "class": "kiosk-waiting-preparing-hint"
 };
-var _hoisted_24 = {
+var _hoisted_27 = {
   key: 0,
   "class": "kiosk-waiting-auto-reset"
 };
-var _hoisted_25 = {
+var _hoisted_28 = {
   key: 0,
   "class": "kiosk-network-banner"
 };
-var _hoisted_26 = {
+var _hoisted_29 = {
   "class": "kiosk-timeout-modal"
 };
-var _hoisted_27 = {
+var _hoisted_30 = {
   "class": "kiosk-cancel-modal"
 };
-var _hoisted_28 = {
+var _hoisted_31 = {
   key: 0
 };
-var _hoisted_29 = {
+var _hoisted_32 = {
   key: 1,
   "class": "kiosk-cancel-error-msg"
 };
-var _hoisted_30 = {
+var _hoisted_33 = {
   "class": "kiosk-cancel-actions"
 };
-var _hoisted_31 = ["disabled"];
-var _hoisted_32 = {
+var _hoisted_34 = ["disabled"];
+var _hoisted_35 = {
   key: 0
 };
-var _hoisted_33 = {
+var _hoisted_36 = {
   key: 1,
   "class": "kiosk-spinner-sm"
 };
@@ -6033,7 +6057,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       'kiosk-ready-flash': $data._readyFlashActive
     }]),
     "data-testid": "kiosk-waiting-root"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Fond animé "), _cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Fond animé "), _cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "kiosk-waiting-bg"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Offline order: queued locally, will sync when network returns "), $data.isOfflineOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "kiosk-offline-icon"
@@ -6041,12 +6065,15 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "kiosk-offline-spinner"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.offline_queue.activity')), 1 /* TEXT */)])])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Contenu principal "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" En préparation "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Contenu principal "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [GAP-FIX-03] Rush banner — is_rush signal consumer (source: KioskMenuService::computeIsRush) "), $options.isRush && !$data.isReady ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_7, [_cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "kiosk-rush-banner-icon",
+    "aria-hidden": "true"
+  }, "🔥", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.rush.active_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.rush.subtitle')), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" En préparation "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
     name: "fade-scale",
     mode: "out-in"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [!$data.isReady ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Animation cuisine "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [_cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      return [!$data.isReady ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Animation cuisine "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-chef-hat"
       }, "👨‍🍳", -1 /* CACHED */)), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(3, function (n) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
@@ -6056,20 +6083,20 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
             animationDelay: n * 0.4 + 's'
           })
         }, null, 4 /* STYLE */);
-      }), 64 /* STABLE_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Numéro commande — gros, visible de loin "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.number_label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.queueNumber), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.preparing_hint')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Barre de progression indéterminée "), _cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      }), 64 /* STABLE_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Numéro commande — gros, visible de loin "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.number_label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.queueNumber), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.preparing_hint')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Barre de progression indéterminée "), _cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-waiting-progress"
       }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-waiting-progress-bar"
-      })], -1 /* CACHED */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_14, [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      })], -1 /* CACHED */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_17, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-ready-icon"
       }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-ready-ring"
       }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-ready-check"
-      }, "✓")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.order_ready_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.number_label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.queueNumber), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.ready_hint')), 1 /* TEXT */)]))];
+      }, "✓")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.order_ready_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.number_label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.queueNumber), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.ready_hint')), 1 /* TEXT */)]))];
     }),
     _: 1 /* STABLE */
-  })])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Footer (offline) "), $data.isOfflineOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  })])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Footer (offline) "), $data.isOfflineOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_23, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kiosk-waiting-new-order",
     onClick: _cache[0] || (_cache[0] = function () {
@@ -6077,7 +6104,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     })
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.new_order')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 3
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Footer "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [$data.isReady ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Footer "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_24, [$data.isReady ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 0
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
@@ -6085,17 +6112,17 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[1] || (_cache[1] = function () {
       return $options.newOrder && $options.newOrder.apply($options, arguments);
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.new_order')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.auto_redirect', {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.new_order')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.auto_redirect', {
     n: $data.autoResetSeconds
   })), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_subtitle')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Owner 2026-05-21] Home button always visible during preparation +\n             auto-redirect 10s — owner instructed \"normalement ça redirige\n             après 10 secondes... bouton de retourner à l'accueil au bout de\n             10 secondes automatique\". Customer keeps their queue number on\n             KDS/OSS regardless of which screen they're on. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_subtitle')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Owner 2026-05-21] Home button always visible during preparation +\n             auto-redirect 10s — owner instructed \"normalement ça redirige\n             après 10 secondes... bouton de retourner à l'accueil au bout de\n             10 secondes automatique\". Customer keeps their queue number on\n             KDS/OSS regardless of which screen they're on. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kiosk-waiting-new-order",
     onClick: _cache[2] || (_cache[2] = function () {
       return $options.newOrder && $options.newOrder.apply($options, arguments);
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.new_order')), 1 /* TEXT */), $data.preparingAutoRedirectSeconds > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.auto_redirect', {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.new_order')), 1 /* TEXT */), $data.preparingAutoRedirectSeconds > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.auto_redirect', {
     n: $data.preparingAutoRedirectSeconds
   })), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Allow cancellation during preparation (before kitchen starts) "), $data.showCancelButton ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
     key: 1,
@@ -6108,7 +6135,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     name: "slide-down-banner"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [$data.networkLost ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_25, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      return [$data.networkLost ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_28, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
         "class": "kiosk-network-banner-icon"
       }, "📡", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.network_lost')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
     }),
@@ -6123,7 +6150,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: _cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
           return $options.dismissTimeoutAndResume && $options.dismissTimeoutAndResume.apply($options, arguments);
         }, ["self"]))
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-timeout-icon"
       }, "⏱️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.timeout_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.timeout_body_1')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.timeout_body_2')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         type: "button",
@@ -6144,9 +6171,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: _cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $data.showCancelConfirm = false;
         }, ["self"]))
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_27, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, [_cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-cancel-icon"
-      }, "⚠️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_modal_title')), 1 /* TEXT */), !$data.cancelError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_modal_body')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.cancelError), 1 /* TEXT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, [!$data.cancelError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      }, "⚠️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_modal_title')), 1 /* TEXT */), !$data.cancelError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_modal_body')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.cancelError), 1 /* TEXT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_33, [!$data.cancelError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 0,
         type: "button",
         "class": "kiosk-cancel-yes",
@@ -6154,7 +6181,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: _cache[6] || (_cache[6] = function () {
           return $options.cancelOrder && $options.cancelOrder.apply($options, arguments);
         })
-      }, [!$data.cancelLoading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_yes')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_33))], 8 /* PROPS */, _hoisted_31)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      }, [!$data.cancelLoading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_yes')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_36))], 8 /* PROPS */, _hoisted_34)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         type: "button",
         "class": "kiosk-cancel-no",
         onClick: _cache[7] || (_cache[7] = function () {

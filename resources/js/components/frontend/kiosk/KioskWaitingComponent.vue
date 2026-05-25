@@ -22,6 +22,21 @@
 
     <!-- Contenu principal -->
     <div v-else class="kiosk-waiting-content">
+      <!-- [GAP-FIX-03] Rush banner — is_rush signal consumer (source: KioskMenuService::computeIsRush) -->
+      <div
+        v-if="isRush && !isReady"
+        class="kiosk-rush-banner"
+        role="status"
+        aria-live="polite"
+        data-testid="kiosk-rush-banner"
+      >
+        <span class="kiosk-rush-banner-icon" aria-hidden="true">🔥</span>
+        <span class="kiosk-rush-banner-text">
+          <strong>{{ $t('kiosk.rush.active_title') }}</strong>
+          <span class="kiosk-rush-banner-subtitle">{{ $t('kiosk.rush.subtitle') }}</span>
+        </span>
+      </div>
+
       <!-- En préparation -->
       <transition name="fade-scale" mode="out-in">
         <div v-if="!isReady" key="preparing" class="kiosk-waiting-preparing">
@@ -214,6 +229,17 @@ export default {
       preparingAutoRedirectSeconds: PREPARING_AUTO_REDIRECT_SECONDS,
       preparingAutoRedirectTimer: null,
     };
+  },
+  computed: {
+    // [GAP-FIX-03] Consume is_rush server-driven flag from kioskMenu Vuex store.
+    // Backend signal: KioskMenuService::computeIsRush (checks config kiosk.rush_windows).
+    // Vuex storage: kioskMenu.branchFlags.is_rush (mutation SET_BRANCH_FLAGS).
+    // Banner shows on waiting screen post-confirmation so client renegotiates
+    // expectation BEFORE picking up.
+    isRush() {
+      const flags = this.$store.getters['kioskMenu/kioskBranchFlags'];
+      return !!(flags && flags.is_rush);
+    },
   },
   mounted() {
     // If this is an offline-queued order, skip polling and show "syncing" state
@@ -879,6 +905,41 @@ export default {
   vertical-align: middle;
 }
 @keyframes spin-sm { to { transform: rotate(360deg); } }
+
+/* [GAP-FIX-03] Rush banner — visible during preparing state when chef backlog detected. */
+.kiosk-rush-banner {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 22px;
+  background: rgba(244, 80, 30, 0.10);
+  border: 1px solid rgba(244, 80, 30, 0.32);
+  border-radius: 999px;
+  max-width: 90vw;
+  box-shadow: 0 4px 16px rgba(244, 80, 30, 0.08);
+}
+.kiosk-rush-banner-icon { font-size: 22px; }
+.kiosk-rush-banner-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  color: var(--kiosk-text);
+  font-size: 15px;
+  line-height: 1.2;
+  text-align: left;
+}
+.kiosk-rush-banner-text strong { font-weight: 800; }
+.kiosk-rush-banner-subtitle {
+  font-size: 13px;
+  color: var(--kiosk-text-muted);
+  font-weight: 500;
+}
 
 /* Network lost banner */
 .kiosk-network-banner {

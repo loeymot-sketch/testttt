@@ -1653,6 +1653,10 @@
             "preparing_hint": "Please come to the counter when your number is called",
             "ready_hint": "Pick up your order at the counter 🙌"
         },
+        "rush": {
+            "active_title": "Kitchen busy",
+            "subtitle": "Longer wait than usual"
+        },
         "waiting_screen": {
             "cancel_order_btn": "Cancel my order",
             "network_lost": "Connection lost — reconnecting…",
