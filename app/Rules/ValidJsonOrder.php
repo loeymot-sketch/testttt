@@ -48,6 +48,12 @@ class ValidJsonOrder implements Rule
             return false;
         }
 
+        // [Gap-Hunt 2026-05-25 A.2] DoS guard: cap order items at 50
+        if (count($decoded) > 50) {
+            $this->message = trans('validation.items_cap_exceeded');
+            return false;
+        }
+
         // [PLAN_03 D-004] Étape 3 : Vérifier chaque item
         foreach ($decoded as $index => $item) {
             // item_id obligatoire et numérique > 0

@@ -179,4 +179,6 @@ return [
 
     'attributes' => [],
 
+    'items_cap_exceeded' => 'Maximum 50 items per order',
+
 ];
