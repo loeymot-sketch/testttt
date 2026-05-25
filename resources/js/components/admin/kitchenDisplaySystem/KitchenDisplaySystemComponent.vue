@@ -353,7 +353,7 @@
                       <span>{{ dineinOrder.customer.name }}</span>
                     </p>
                     <a
-                      v-if="dineinOrder.customer && dineinOrder.customer.phone"
+                      v-if="dineinOrder.customer && dineinOrder.customer.phone && !String(dineinOrder.customer.phone).startsWith('PENDING_')"
                       :href="`tel:${dineinOrder.customer.phone}`"
                       class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
                     >
@@ -541,7 +541,7 @@
                       <span>{{ onlineOrder.customer.name }}</span>
                     </p>
                     <a
-                      v-if="onlineOrder.customer && onlineOrder.customer.phone"
+                      v-if="onlineOrder.customer && onlineOrder.customer.phone && !String(onlineOrder.customer.phone).startsWith('PENDING_')"
                       :href="`tel:${onlineOrder.customer.phone}`"
                       class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
                     >
@@ -714,7 +714,7 @@
                       <span>{{ takeawayOrder.customer.name }}</span>
                     </p>
                     <a
-                      v-if="takeawayOrder.customer && takeawayOrder.customer.phone"
+                      v-if="takeawayOrder.customer && takeawayOrder.customer.phone && !String(takeawayOrder.customer.phone).startsWith('PENDING_')"
                       :href="`tel:${takeawayOrder.customer.phone}`"
                       class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
                     >
@@ -883,7 +883,7 @@
                       <span>{{ kioskOrder.customer.name }}</span>
                     </p>
                     <a
-                      v-if="kioskOrder.customer && kioskOrder.customer.phone"
+                      v-if="kioskOrder.customer && kioskOrder.customer.phone && !String(kioskOrder.customer.phone).startsWith('PENDING_')"
                       :href="`tel:${kioskOrder.customer.phone}`"
                       class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
                     >
