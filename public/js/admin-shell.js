@@ -15194,7 +15194,7 @@ __webpack_require__.r(__webpack_exports__);
         _this.form.last_name = profile.last_name;
         _this.form.email = profile.email;
         _this.form.phone = profile.phone && !String(profile.phone).startsWith('PENDING_') ? profile.phone : '';
-        _this.form.country_code = profile.first_name;
+        _this.form.country_code = profile.country_code;
         _this.$store.dispatch('frontendCountryCode/show', res.data.data.company_country_code).then(function (res) {
           _this.flag = res.data.data.flag_emoji;
           _this.form.country_code = res.data.data.calling_code;

@@ -112,7 +112,7 @@ export default {
                 this.form.last_name = profile.last_name;
                 this.form.email = profile.email;
                 this.form.phone = profile.phone && !String(profile.phone).startsWith('PENDING_') ? profile.phone : '';
-                this.form.country_code = profile.first_name;
+                this.form.country_code = profile.country_code;
 
                 this.$store.dispatch('frontendCountryCode/show', res.data.data.company_country_code).then(res => {
                     this.flag = res.data.data.flag_emoji;

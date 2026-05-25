@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 
+use App\Support\PhoneDisplay;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class AdministratorResource extends JsonResource
@@ -20,7 +21,7 @@ class AdministratorResource extends JsonResource
             "name"         => $this->name,
             "username"     => $this->username,
             "email"        => $this->email,
-            "phone"        => $this->phone,
+            "phone"        => PhoneDisplay::safe($this->phone),
             "branch_id"    => $this->branch_id,
             "status"       => $this->status,
             "role_id"      => optional($this->roles[0])->id,

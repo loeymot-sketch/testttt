@@ -1,0 +1,103 @@
+{
+  "agent": "UR-1",
+  "specialty": "Architect + Tester",
+  "commits_reviewed": ["8904656fe", "ee7aef899"],
+  "verdict": "AMBER",
+  "rationale": "Fix is correct, minimal, mirrors established pattern at KdsOrderCard.vue:355, bundles are properly recompiled and contain the guard. However: (a) the same PENDING_CREATE leak persists on AT LEAST 5 OTHER admin surfaces displaying orderUser.phone / administrator.phone / deliveryBoy.phone — owner only patched what they personally saw in the navbar dropdown, not the systematic exposure surface; (b) the Q12 KDS bundle staleness sentinel is KDS-only and will NOT catch future regressions in admin-shell / admin-reports / pos-app bundles where 3 of the 4 fixed components live; (c) zero Vitest unit specs exist for any of the 4 fixed components — only manual visual proof via screenshot; (d) a pre-existing latent bug at ProfileEditProfileComponent.vue:115 (country_code = profile.first_name) sits literally on the line immediately after the new guard but was not noticed. None of these block the fix shipped — they extend its scope.",
+  "findings": [
+    {
+      "id": "UR1-001",
+      "severity": "P1",
+      "category": "architect",
+      "title": "5+ admin surfaces still leak PENDING_CREATE phone sentinel (incomplete patch surface)",
+      "evidence": "PosOrderShowComponent.vue:307 `orderUser.country_code + '' + orderUser.phone` (no guard); TableOrderShowComponent.vue:246 same; OnlineOrderShowComponent.vue:292 same; AdministratorShowComponent.vue:87-88 `administrator.phone ? administrator.country_code + '' + administrator.phone : ''` (truthy-check passes for PENDING_CREATE_xxx string); DeliveryBoyListComponent.vue:95-96 same truthy-only check. All 5 render User model rows where User::creating injects `PENDING_CREATE_<hex>` when phone is null (app/Models/User.php:106-119). The 4 fixed components covered Admin navbar + chat header + credit-balance table + profile-edit form, i.e. only the path the owner walked through visually. A Soak Cashier or Client Comptoir user with PENDING_CREATE injected phone WILL render the raw sentinel as soon as a POS/Table/Online order references them or an admin opens the Administrators / Delivery Boys list.",
+      "fix_suggested": "Apply the identical guard `phone && !String(phone).startsWith('PENDING_') ? country_code + phone : ''` to the 5 surfaces listed. Better: extract a tiny Vue mixin or global filter `displayPhone(user)` so the guard lives in ONE place (the inline ternary will continue to drift). The existing pattern at KdsOrderCard.vue:349 is already a computed property — that is the established right shape. Recommend a vue/composables/useDisplayPhone.js export both as a function for `<script>` and a global filter for templates."
+    },
+    {
+      "id": "UR1-002",
+      "severity": "P2",
+      "category": "architect",
+      "title": "Inline ternary duplicated 4× — refactor opportunity missed",
+      "evidence": "Identical pattern `xxx.phone && !String(xxx.phone).startsWith('PENDING_') ? ... : ''` now appears at BackendNavbarComponent.vue:127, MessageListComponent.vue:41, CreditBalanceReportComponent.vue:88, ProfileEditProfileComponent.vue:114, PLUS the long-form `customerPhone()` computed at KdsOrderCard.vue:349. Five surface copies of the same business rule = drift risk: if the sentinel format changes (e.g. PENDING_CREATE_ → PENDING_USER_), 5 sites must be updated and one will be forgotten.",
+      "fix_suggested": "Extract a `helpers/phoneDisplay.js` exporting `displayPhone(user)` returning '' when phone is missing or starts with `PENDING_`, and use it everywhere (already-fixed and UR1-001 surfaces). Single source of truth, testable in isolation with Vitest."
+    },
+    {
+      "id": "UR1-003",
+      "severity": "P1",
+      "category": "tester",
+      "title": "Q12 KDS bundle staleness sentinel does NOT cover admin-shell / admin-reports / pos-app bundles",
+      "evidence": "tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js:116 only watches `public/js/admin-kds.js` against KDS-specific Vue sources. 3 of the 4 fixed components compile into admin-shell.js (Navbar + Messages + Profile) and admin-reports.js (CreditBalance) — these bundles are NOT under any freshness sentinel. A future contributor editing BackendNavbarComponent.vue and forgetting `npx mix` would ship a stale admin-shell.js silently with no test failure.",
+      "fix_suggested": "Generalise the kdsBundleFreshnessSentinel.js helper (already exported on globalThis.__assertBundleFresh at line 112 of the spec, anticipating reuse) into siblings: adminShellBundleFreshnessSentinel.spec.js (watches resources/js/components/layouts/backend + resources/js/components/admin/messages + admin/profile + admin/dashboard against public/js/admin-shell.js), adminReportsBundleFreshnessSentinel.spec.js (watches credit-balance + sales-report + etc. against admin-reports.js), posAppBundleFreshnessSentinel.spec.js. The infra is ready — just stamp the pattern."
+    },
+    {
+      "id": "UR1-004",
+      "severity": "P2",
+      "category": "tester",
+      "title": "Zero Vitest unit coverage for the new guard — only manual screenshot proof",
+      "evidence": "`find tests/ -name '*BackendNavbar*' -o -name '*ProfileDropdown*' -o -name '*MessageList*' -o -name '*CreditBalance*' -o -name '*ProfileEditProfile*'` returns empty. The fix relies on a screenshot in tests/e2e/__screenshots__/fix-pending-create/02-profile-dropdown-open.png as its only proof. Edge cases unproven: phone=null, phone=undefined, phone=number (1234), phone='PENDING_' (no suffix), phone='pending_create_xyz' (lowercase — current code WILL show this because String.startsWith is case-sensitive).",
+      "fix_suggested": "Add `tests/js/unit/helpers/phoneDisplay.spec.js` (assuming the helper extracted per UR1-002). Cover the 7 edge cases enumerated in the brief: null/undefined/empty/real/PENDING_CREATE_xyz/PENDING_/lowercase. Owner must decide whether lowercase 'pending_create_xyz' should also be blocked — current sentinel injector at User.php:108 always uses UPPERCASE so realistically it cannot occur, but a stricter case-insensitive guard is one more `.toUpperCase()` away."
+    },
+    {
+      "id": "UR1-005",
+      "severity": "P3",
+      "category": "architect",
+      "title": "Pre-existing copy-paste bug on adjacent line ProfileEditProfileComponent.vue:115",
+      "evidence": "Line 115 `this.form.country_code = profile.first_name;` — `country_code` is being set to `first_name`. Bug NOT introduced by this commit (git blame: pre-existing). Mitigated by the immediate dispatch at line 117-119 which overwrites form.country_code with the real calling_code. Net effect: transient wrong value during the ~1-2 frames between line 115 and line 119 resolution. Worth fixing as a one-line drive-by (`this.form.country_code = profile.country_code || '';`) since the editor was already on this exact line for the new guard.",
+      "fix_suggested": "Replace line 115 with `this.form.country_code = profile.country_code || '';` to remove the misleading copy-paste artifact. Zero behavior change in steady state; cleaner audit trail."
+    },
+    {
+      "id": "UR1-006",
+      "severity": "P2",
+      "category": "tester",
+      "title": "BackendNavbarComponent guard string is 132 chars — exceeds 120-char soft cap for Vue templates in this codebase",
+      "evidence": "BackendNavbarComponent.vue:127 produces a single line `{{ authInfo.phone && !String(authInfo.phone).startsWith('PENDING_') ? (authInfo.country_code || '') + authInfo.phone : '' }}` — measured 132 characters in template. No .editorconfig at repo root setting max_line_length, so technically permitted, but adjacent template lines are all <100 chars. Slightly harder to scan during code review.",
+      "fix_suggested": "Either accept (no enforced rule) or extract to a computed property `displayAuthPhone` (preferred — matches the KdsOrderCard.vue:349 computed pattern, makes it Vitest-testable without spinning up the full Navbar component)."
+    },
+    {
+      "id": "UR1-007",
+      "severity": "INFO",
+      "category": "architect",
+      "title": "Pattern divergence — KdsOrderCard.vue uses computed property + early return, new fix uses inline ternary",
+      "evidence": "Established pattern at KdsOrderCard.vue:349-358 is a computed property `customerPhone()` with a multiline early-return. The new 4 fixes are inline ternaries. Both are functionally correct; the ternary form is shorter but loses the inline comment block citing Sprint 5A Z9-P1-03 + telephone link rationale that lives in the KdsOrderCard version. Future maintainers will see the inline ternary without the breadcrumb.",
+      "fix_suggested": "If extracting a shared helper per UR1-002, the comment lives once in helpers/phoneDisplay.js. If keeping inline, add a one-line comment `// [GOAL Phase A ADV-A-001 2026-05-25] Hide PENDING_CREATE sentinel injected by User::creating` above each ternary."
+    },
+    {
+      "id": "UR1-008",
+      "severity": "INFO",
+      "category": "tester",
+      "title": "Defensive coercion via String() is correct for non-string phone (numeric, BigInt)",
+      "evidence": "All 4 new ternaries use `String(phone).startsWith('PENDING_')` — handles phone=null (coerced 'null', NOT starting with PENDING_, kept), phone=undefined ('undefined', kept) BUT the outer `phone && ...` short-circuit converts null/undefined to falsy → returns ''. Net behavior is correct: null/undefined/'' → ''; number 1234 → '1234' rendered (no PENDING_ prefix); 'PENDING_CREATE_xyz' → '' (correct).",
+      "fix_suggested": "No action required — current implementation handles all numeric/null/undefined coercion gracefully. Document this in the unit test once extracted (UR1-004)."
+    }
+  ],
+  "architect_summary": "Fix is scope-minimal, follows the Sprint 5A Z9-P1-03 pattern, +4/-4 LOC across 4 Vue templates, frozen-zone diff = 0 verified. The patch is technically correct but TACTICALLY narrow: owner patched the surfaces they saw, not the underlying systemic exposure. At least 5 more admin Vue components render the same User.phone field without the guard (PosOrderShow, TableOrderShow, OnlineOrderShow, AdministratorShow, DeliveryBoyList). The duplication of the inline ternary (now 5 sites including KdsOrderCard) creates drift risk — a shared helper `displayPhone()` is the right architectural move. The line-115 country_code = first_name pre-existing copy-paste bug sits literally one line below the new guard and was missed during the touch.",
+  "tester_summary": "ZERO Vitest unit coverage for any of the 4 fixed components — proof rests on one Playwright screenshot for the navbar dropdown only. Edge cases unproven (null, undefined, lowercase 'pending_create_xyz', numeric, empty string). Bundle integrity empirically VERIFIED: `grep -c \"startsWith('PENDING_')\"` returns 1+ occurrences in admin-shell.js (2), admin-reports.js (1), pos-app.js (1), admin-kds.js (1), app.js (1) — all rebuilt. HOWEVER, the Q12 KDS bundle staleness sentinel ONLY watches admin-kds.js — admin-shell, admin-reports, pos-app are NOT under freshness lock, so a future Vue edit forgetting `npx mix` would ship stale bundles silently. This is the most consequential test-debt gap: the bundle pattern that owner mandated (Q12) is half-finished.",
+  "missed_surfaces": [
+    "resources/js/components/admin/posOrders/PosOrderShowComponent.vue:305-308 (orderUser.country_code + orderUser.phone)",
+    "resources/js/components/admin/tableOrders/TableOrderShowComponent.vue:243-246 (orderUser.country_code + orderUser.phone)",
+    "resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue:290-293 (orderUser.country_code + orderUser.phone)",
+    "resources/js/components/admin/administrators/AdministratorShowComponent.vue:87-88 (administrator.country_code + administrator.phone — truthy-only check, PENDING_CREATE is truthy)",
+    "resources/js/components/admin/deliveryBoys/DeliveryBoyListComponent.vue:95-96 (deliveryBoy.country_code + deliveryBoy.phone — truthy-only check)"
+  ],
+  "edge_case_gaps": [
+    "phone=null → covered by short-circuit (returns ''), untested",
+    "phone=undefined → covered by short-circuit (returns ''), untested",
+    "phone='' → covered by short-circuit, untested",
+    "phone='+33612345678' → renders correctly, untested",
+    "phone='PENDING_CREATE_xyz' → returns '', untested but visually proven",
+    "phone='PENDING_' (no suffix, exactly the prefix) → returns '', untested — unlikely in practice but edge",
+    "phone='pending_create_xyz' (lowercase) → WILL RENDER raw lowercase sentinel because startsWith is case-sensitive — owner decision needed (User.php:108 always uppercase so unreachable in practice)",
+    "phone=12345 (numeric) → String() coerces to '12345', renders correctly, untested"
+  ],
+  "bundle_integrity": {
+    "expected_bundles_with_guard": ["public/js/admin-shell.js", "public/js/admin-reports.js", "public/js/pos-app.js", "public/js/admin-kds.js", "public/js/app.js"],
+    "actual_bundles_with_guard": ["public/js/admin-shell.js (count=2)", "public/js/admin-reports.js (count=1)", "public/js/pos-app.js (count=1)", "public/js/admin-kds.js (count=1 — pre-existing Sprint 5A)", "public/js/app.js (count=1)"],
+    "verdict_compile_freshness": "PASS — all 5 bundles contain the compiled guard, public/js/vendor.js correctly contains 0 occurrences (vendor lib only)",
+    "verdict_sentinel_coverage": "FAIL — Q12 bundle freshness sentinel only locks admin-kds.js, the other 4 bundles ship with no staleness guard (UR1-003)"
+  },
+  "top_3_actionable": [
+    "UR1-001 P1 — Apply the same guard (or extracted helper) to the 5 missed admin surfaces (PosOrderShow / TableOrderShow / OnlineOrderShow / AdministratorShow / DeliveryBoyList). Current fix is owner-pathwalk only.",
+    "UR1-003 P1 — Generalise tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js into siblings for admin-shell / admin-reports / pos-app. The helper is already exported on globalThis for this exact reuse.",
+    "UR1-002 P2 — Extract resources/js/helpers/phoneDisplay.js exporting displayPhone(user) so the guard rule lives in ONE testable place. Mirrors KdsOrderCard.vue:349 computed pattern. Resolves UR1-002 + simplifies UR1-001 + enables UR1-004 unit tests."
+  ]
+}

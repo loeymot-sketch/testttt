@@ -1,0 +1,205 @@
+{
+  "agent": "UR-4",
+  "specialty": "RED-team adversarial",
+  "verdict": "RED",
+  "verdict_rationale": "Fix touches 4 surfaces but leaves AT LEAST 13 unguarded phone-display sites that consume the same PENDING_CREATE_<hex> values from the same User model (Customer extends User, DeliveryBoy/Waiter/Chef use the User model — they ALL inherit the User::creating sentinel injector). The convergence report's 'DOM grep returns false after fix' is true only on the 4 captured surfaces — it does NOT clear the codebase. Plus API/Vuex/localStorage leak the raw sentinel regardless of template guards.",
+  "scope_attacked": {
+    "commits": ["8904656fe", "ee7aef899"],
+    "diff_window": "bf1cc0382..ee7aef899"
+  },
+  "vectors_attempted": ["V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8"],
+  "vulnerabilities_found": [
+    {
+      "id": "UR4-001",
+      "severity": "P0",
+      "vector": "V2",
+      "title": "Customer/DeliveryBoy/Waiter/Chef Show+List components leak PENDING_CREATE phone (4 admin lists + 4 detail views + 4 edit pre-fills = 12 sites)",
+      "evidence": "resources/js/components/admin/customers/CustomerListComponent.vue:94, CustomerShowComponent.vue:89, DeliveryBoyListComponent.vue:95-96, DeliveryBoyShowComponent.vue:87, WaiterListComponent.vue:105, WaiterShowComponent.vue:89, ChefListComponent.vue:105, ChefShowComponent.vue:89 — all render `customer.phone ? customer.country_code + '' + customer.phone : ''` WITHOUT the startsWith('PENDING_') guard. Customer extends User (app/Models/Customer.php:9) so the User::creating event injects the same PENDING_CREATE_<hex> sentinel into customers/deliveryBoys/waiters/chefs created via factories, console, or admin pre-save validation failures. Owner navigates to /admin/customers → table column 'Phone' shows PENDING_CREATE_3e69b24b3b84 for any sentinel-polluted row.",
+      "reproducibility": "always",
+      "fix_complexity": "M — repeat the same template guard pattern across 8 list/show components; 30-60 LOC total"
+    },
+    {
+      "id": "UR4-002",
+      "severity": "P0",
+      "vector": "V2",
+      "title": "Order receipt printouts leak PENDING_CREATE phone on PAPER (NF525 fiscal archive document)",
+      "evidence": "resources/js/components/admin/onlineOrders/OnlineOrderReceiptComponent.vue:158-160, resources/js/components/frontend/account/myOrder/FrontendOrderReceiptComponent.vue:169-171 — printed receipts render `{{ orderUser.country_code + '' + orderUser.phone }}` inside the customer line item with no guard. If the customer was created via the kiosk fast-track or admin tooling without supplying a phone, the printed paper receipt (kept by the customer AND retained as NF525 archive for 6 years) literally has `PENDING_CREATE_xxxx` printed on it. This is worse than a DOM leak — it survives outside the system.",
+      "reproducibility": "always (given sentinel-polluted user creates an order; minority case but possible via Spatie role seeders / factories / failed signup)",
+      "fix_complexity": "S — 2-line edit per receipt component"
+    },
+    {
+      "id": "UR4-003",
+      "severity": "P0",
+      "vector": "V2",
+      "title": "KitchenDisplaySystemComponent renders PENDING_CREATE in 4 distinct order-type panels (dinein, online, takeaway, kiosk) — including clickable tel: links",
+      "evidence": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:356-361 (dinein), :545-549 (online), :717-722 (takeaway), :886-891 (kiosk). All four blocks render `<a :href=\"tel:${customer.phone}\"><span>{{ customer.phone }}</span></a>` WITHOUT the guard. The KdsOrderCard.vue helper (line 354) was fixed in Sprint 5A but the parent KDS dashboard view was missed by the current GOAL fix. Worse: the `tel:PENDING_CREATE_xxx` link is clickable — chef in the kitchen taps the phone icon to dial customer, OS dialer gets garbage string.",
+      "reproducibility": "always (when any KDS order's user has the sentinel — common for kiosk-fast-track if guest signup is bypassed)",
+      "fix_complexity": "M — 4 identical blocks need the same guard"
+    },
+    {
+      "id": "UR4-004",
+      "severity": "P1",
+      "vector": "V3",
+      "title": "Backend API Resources (UserResource, AdministratorResource, CreditBalanceUserResource, OrderUserResource, MessageResource) emit raw phone WITHOUT sentinel masking — DevTools Network tab and copy-paste from JSON viewer expose PENDING_CREATE_xxx regardless of template guard",
+      "evidence": "app/Http/Resources/UserResource.php:24, AdministratorResource.php:23, CreditBalanceUserResource.php:24, OrderUserResource.php:24 all emit `\"phone\" => $this->phone` raw. MessageResource.php:24 emits `\"user_phone\" => optional($this->user)->phone` and :42 captures phone into message history. A frontend-only fix CANNOT plug this leak; an admin opening DevTools or any tool consuming the API (Postman, Excel export, third-party integrations, audit_logs JSON dumps) sees the sentinel.",
+      "reproducibility": "always",
+      "fix_complexity": "S — add a centralised PhoneFormatter::display(string $raw): string helper that returns '' for PENDING_* prefix, used by ALL resources; ~15 LOC + grep-replace ~10 sites"
+    },
+    {
+      "id": "UR4-005",
+      "severity": "P1",
+      "vector": "V6",
+      "title": "Vuex state (`auth.authInfo.phone`) AND localStorage persist the sentinel — DevTools Application → Local Storage → vuex shows PENDING_CREATE_xxx",
+      "evidence": "resources/js/store/index.js:245-247 — `createPersistedState({ paths: [\"auth\", ...] })` mirrors the entire auth module (including `authInfo.phone`) to `localStorage[\"vuex\"]`. The template guard hides the value at render but the underlying state contains the sentinel. Any shared admin workstation, screen-share, password-reset session, or sourcemap inspection exposes it. Workaround: sanitise the payload before commit OR mask the field in the API.",
+      "reproducibility": "always (admin login = persisted sentinel)",
+      "fix_complexity": "S — sanitise inside auth.js mutation `authLogin`/`authInfo` before commit, OR fix at API layer (UR4-004)"
+    },
+    {
+      "id": "UR4-006",
+      "severity": "P1",
+      "vector": "V2",
+      "title": "Edit modal pre-fills inject the sentinel into the EDITABLE phone field — admin saves WITHOUT changing → backend rejects (ValidPhone catches PENDING_) but user-facing error msg is generic",
+      "evidence": "resources/js/components/admin/customers/CustomerListComponent.vue (edit handler), WaiterListComponent.vue:332, ChefListComponent.vue:332, DeliveryBoyListComponent.vue — all do `phone: customer.phone` when opening the edit modal. Admin sees `PENDING_CREATE_xxxx` in the phone input. If they hit Save without editing, ValidPhone rejects with 'The phone is a legacy placeholder.' but they don't necessarily know what that means. Friction + bad UX.",
+      "reproducibility": "always",
+      "fix_complexity": "S — mirror the ProfileEditProfileComponent fix on each list's edit-prefill"
+    },
+    {
+      "id": "UR4-007",
+      "severity": "P1",
+      "vector": "V5",
+      "title": "Bundle freshness sentinel covers ONLY admin-kds.js — admin-shell.js, admin-reports.js, pos-app.js, app.js are NOT watched",
+      "evidence": "tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js:116 — bundlePath hardcoded to `public/js/admin-kds.js`. The CURRENT fix recompiled 5 bundles but a future Vue edit to BackendNavbarComponent.vue / ProfileEditProfileComponent.vue / CreditBalanceReportComponent.vue / MessageListComponent.vue that skips `npx mix` will ship stale. Vitest passes, owner sees old DOM. The fix commit's own bundle change demonstrates this gap — 5 bundles touched, 1 sentinel.",
+      "reproducibility": "always (any future Vue edit + missed mix)",
+      "fix_complexity": "M — extract the kdsBundleFreshnessSentinel pattern into a generic helper (already exported on globalThis.__assertBundleFresh), then add 4 new sibling specs for admin-shell / admin-reports / pos-app / app bundles"
+    },
+    {
+      "id": "UR4-008",
+      "severity": "P1",
+      "vector": "V7",
+      "title": "NF525 chain TAMPER at audit_logs.id=34 STILL UNRESOLVED at commit ee7aef899 — `php artisan fiscal:verify-chain` reports breach NOW; no automatic deploy guard",
+      "evidence": "Live verify (just ran): `TAMPER detected (branch=1, breaches=1)  - audit_logs.id=34`. Commit message says 'production deploy = fresh DB snapshot'. There is NO `deploy.sh` (file does not exist), NO migration that aborts on broken chain, NO pre-flight script that compares prod state. If ops emergency-imports dev → prod (common during cutover or backup restore), the tamper row ships. Day 1 NF525 audit on the prod system fails for an EXISTING reason that the fix authors knew about.",
+      "reproducibility": "always (current DB state)",
+      "fix_complexity": "M — create `app/Console/Commands/Fiscal/AssertChainCleanBeforeDeployCommand.php` that exits non-zero on TAMPER, wire it into deploy script (which needs to be created), document SQL-only sanitisation procedure for the dev tamper row (cannot DELETE per append-only — must rebuild chain from id=34 forward; or scope a `purge_test_audit_logs_pre_deploy` migration with explicit guard)"
+    },
+    {
+      "id": "UR4-009",
+      "severity": "P2",
+      "vector": "V2",
+      "title": "PosOrderShowComponent + OnlineOrderShowComponent + TableOrderShowComponent leak PENDING_CREATE in order-detail customer panel",
+      "evidence": "PosOrderShowComponent.vue:305-308, OnlineOrderShowComponent.vue:290-294, TableOrderShowComponent.vue:243-246 — `v-if=\"orderUser.phone\"` is truthy for sentinel (non-empty string), then renders `orderUser.country_code + '' + orderUser.phone`. Admin viewing past order details sees the sentinel.",
+      "reproducibility": "always",
+      "fix_complexity": "S — repeat guard"
+    },
+    {
+      "id": "UR4-010",
+      "severity": "P3",
+      "vector": "V1",
+      "title": "Case-sensitive guard fails on lowercase sentinel (theoretical)",
+      "evidence": "User::creating uses `'PENDING_CREATE_' . bin2hex(random_bytes(6))` — uppercase prefix is hardcoded. Frontend guard `startsWith('PENDING_')` matches. BUT if a future ops emergency uses `UPDATE users SET phone = 'pending_xx' WHERE id=N` (case-mistyped) or DB dump from older fixture using lowercase, the guard misses. NOT currently exploitable but no defense-in-depth.",
+      "reproducibility": "theoretical",
+      "fix_complexity": "XS — toUpperCase() before startsWith, OR regex /^PENDING_/i"
+    },
+    {
+      "id": "UR4-011",
+      "severity": "P3",
+      "vector": "V8",
+      "title": "Empty `<p dir=\"ltr\">` element stays in DOM — minor a11y/CSS noise",
+      "evidence": "BackendNavbarComponent.vue:127 — when phone is filtered, `<p dir=\"ltr\" class=\"text-xs\">` renders with empty string inside. Screen reader announces an empty text element. Minor — should be `<p v-if=\"...has-real-phone\">`.",
+      "reproducibility": "always (for sentinel-polluted users)",
+      "fix_complexity": "XS"
+    }
+  ],
+  "missed_surfaces_found": [
+    "resources/js/components/admin/customers/CustomerListComponent.vue:94",
+    "resources/js/components/admin/customers/CustomerShowComponent.vue:89",
+    "resources/js/components/admin/customers/CustomerListComponent.vue (edit prefill)",
+    "resources/js/components/admin/deliveryBoys/DeliveryBoyListComponent.vue:95-96",
+    "resources/js/components/admin/deliveryBoys/DeliveryBoyShowComponent.vue:87",
+    "resources/js/components/admin/deliveryBoys/DeliveryBoyListComponent.vue (edit prefill)",
+    "resources/js/components/admin/waiters/WaiterListComponent.vue:105",
+    "resources/js/components/admin/waiters/WaiterShowComponent.vue:89",
+    "resources/js/components/admin/waiters/WaiterListComponent.vue:332 (edit prefill)",
+    "resources/js/components/admin/chefs/ChefListComponent.vue:105",
+    "resources/js/components/admin/chefs/ChefShowComponent.vue:89",
+    "resources/js/components/admin/chefs/ChefListComponent.vue:332 (edit prefill)",
+    "resources/js/components/admin/posOrders/PosOrderShowComponent.vue:305-308",
+    "resources/js/components/admin/onlineOrders/OnlineOrderShowComponent.vue:290-294",
+    "resources/js/components/admin/tableOrders/TableOrderShowComponent.vue:243-246",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:356-361 (dinein)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:545-549 (online)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:717-722 (takeaway)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:886-891 (kiosk)",
+    "resources/js/components/admin/onlineOrders/OnlineOrderReceiptComponent.vue:158-160 (PAPER RECEIPT — fiscal)",
+    "resources/js/components/frontend/account/myOrder/FrontendOrderReceiptComponent.vue:169-171 (PAPER RECEIPT — fiscal)"
+  ],
+  "api_leak_found": true,
+  "api_leak_endpoints": [
+    "GET /api/admin/users → UserResource — phone raw",
+    "GET /api/admin/profile → ProfileResource → AdministratorResource — phone raw",
+    "GET /api/auth/me / login response → User payload (consumed by store/modules/auth.js mutation `authLogin`) — phone raw",
+    "GET /api/admin/credit-balance-report → CreditBalanceUserResource — phone raw",
+    "GET /api/admin/online-orders/{id} → OrderUserResource — phone raw",
+    "GET /api/admin/messages → MessageResource — `user_phone` field raw"
+  ],
+  "frozen_zone_clean": true,
+  "frozen_zone_evidence": "git diff bf1cc0382 ee7aef899 --name-only | grep -E 'PaymentComponent|PosV5Tranche|kiosk.*\\.vue|pos-wizard|Fiscal|BranchScope|IdempotencyKey|PricingService|OrderStateMachine' → 0 matches. Only resources/js/components/admin/{profile,messages,creditBalanceReport}/... and resources/js/components/layouts/backend/BackendNavbarComponent.vue + bundle artefacts.",
+  "bundle_sentinel_coverage_gaps": [
+    "public/js/admin-shell.js (BackendNavbarComponent + ProfileEditProfileComponent + MessageListComponent imports)",
+    "public/js/admin-reports.js (CreditBalanceReportComponent)",
+    "public/js/pos-app.js (any POS-loaded admin shell pieces)",
+    "public/js/app.js (catch-all)",
+    "public/js/admin-kds.js → COVERED",
+    "public/js/admin-oss.js → NOT COVERED",
+    "public/js/kiosk.js / kiosk-wizard.js → NOT COVERED (kiosk wizard is V1 PROD critical)"
+  ],
+  "nf525_chain_breach_risk_to_prod": "HIGH-IF-NOT-DOCUMENTED. `fiscal:verify-chain` returns TAMPER at audit_logs.id=34 RIGHT NOW on the dev DB at HEAD ee7aef899. The fix authors' mitigation is 'production deploy starts with fresh DB snapshot' — but (a) no deploy.sh / deploy guard exists yet that aborts on tamper, (b) common emergency ops procedure of `mysqldump --opt prod_seed` from dev would ship the tamper row, (c) the test fixture that injected the row was a parallel adversarial agent — no clean-up was committed. A `php artisan fiscal:assert-chain-clean --exit-1` pre-deploy check is mandatory before any cutover work. The chain CORRECTLY DETECTED the breach (audit-chain working as designed), but the response to the breach was 'document it, defer cleanup' rather than 'create the cleanup script'. If cloud cutover is initiated in the next 30 days without this gate, NF525 day-1 audit fails.",
+  "vuex_persistence_leak": {
+    "found": true,
+    "evidence": "resources/js/store/index.js:245-247 paths includes 'auth' → entire auth module mirrored to localStorage['vuex'] → DevTools Application → Local Storage exposes authInfo.phone = PENDING_CREATE_xxx for the logged-in user.",
+    "mitigation": "Either sanitize in auth.js authLogin mutation (template guard becomes moot for THIS surface) OR fix at API resource layer (one fix kills 6+ surfaces — preferable)."
+  },
+  "regression_risk": {
+    "frontend_only_change": true,
+    "no_test_changed": true,
+    "no_backend_invariant_changed": true,
+    "low_risk_assessment": "The 4-LOC fix itself is safe — pure ternary expression, idempotent, defensive. Low regression chance. The danger is the FALSE SENSE OF COMPLETION the convergence report communicates."
+  },
+  "honest_top_5_attack_vectors_attempted": [
+    "V2 — Grep all .phone displays across Vue/Blade/Resources",
+    "V3 — Inspect API Resources for raw phone serialization",
+    "V6 — Trace Vuex state mutations + persistence to localStorage",
+    "V5 — Audit bundle freshness sentinel coverage vs. modified bundles",
+    "V7 — Run fiscal:verify-chain live to confirm or refute the breach status"
+  ],
+  "p0_count": 3,
+  "p1_count": 5,
+  "p2_count": 1,
+  "p3_count": 2,
+  "top_3_fixes_to_ship_next": [
+    {
+      "rank": 1,
+      "title": "Backend phone sanitization at API Resource layer (fixes 10+ leaks in ONE place)",
+      "scope": "Create app/Support/PhoneDisplay.php helper with `public static function safe(?string $raw): string` returning '' if startsWith PENDING_, else raw. Apply to UserResource, AdministratorResource, CreditBalanceUserResource, OrderUserResource, MessageResource, and audit grep -rn 'phone.*=>.*\\$this->phone' app/Http/Resources/ for any missed. Frontend templates can be simplified to `{{ user.phone }}` after this. Effort: 1-2h.",
+      "kills_findings": ["UR4-001", "UR4-002", "UR4-003", "UR4-004", "UR4-005", "UR4-006", "UR4-009"]
+    },
+    {
+      "rank": 2,
+      "title": "NF525 chain pre-deploy guard + dev-cleanup script",
+      "scope": "Create `php artisan fiscal:assert-chain-clean` command (exit non-zero on TAMPER), document the test-fixture tamper-row in a `tests/fixtures/nf525_known_tamper_rows.md`, AND ship a `php artisan fiscal:purge-test-tampers --dry-run` command that only deletes rows matching `action LIKE 'tamper.%'` (NEVER touches real audit events). Wire into deploy.sh (which also needs to be created — see task #48 pending in MEMORY.md). Effort: 2-3h.",
+      "kills_findings": ["UR4-008"]
+    },
+    {
+      "rank": 3,
+      "title": "Bundle freshness sentinel — extend pattern to admin-shell/admin-reports/admin-oss/pos-app/app/kiosk*",
+      "scope": "Use the already-exported `globalThis.__assertBundleFresh` helper from kdsBundleFreshnessSentinel.spec.js to create 5-6 sibling spec files. Each watches its bundle's source dir + i18n triplet + cross-bundle modules. Locks against silent stale-ship on any future Vue edit. Effort: 1h.",
+      "kills_findings": ["UR4-007"]
+    }
+  ],
+  "what_the_convergence_report_misrepresents": [
+    "Claim: 'DOM grep /PENDING_CREATE/i returns false after fix' — true ONLY for the 4 captured surfaces (admin-dashboard, profile-dropdown, profile-edit-form, phone-input). The grep was not run on /admin/customers, /admin/delivery-boys, /admin/waiters, /admin/chefs, /admin/online-orders/{id}, /admin/kds (with a sentinel-customer order live), or on a printed receipt.",
+    "Claim: '4 admin surfaces were rendering raw PENDING_CREATE' — there are at least 13-17 surfaces in the codebase. The 4 fixed are only the ones the owner happened to encounter.",
+    "Claim: 'NF525 untouched — fix is pure display-layer' — TRUE for the fix itself, but the chain WAS BROKEN at id=34 BEFORE the fix and remained broken AFTER. The convergence report buries this in a paragraph instead of opening a TICKET. Convergence GREEN should not include 'pre-existing breach acknowledged' without an OPEN action item.",
+    "Claim: 'Visual proof: tests/e2e/__screenshots__/fix-pending-create/ 02-profile-dropdown-open.png — empty phone line' — visual proof of the SUCCESS of THIS fix is fine. But there is no visual proof that /admin/customers/show/{N} or /admin/online-orders/{N} do NOT show the sentinel — because they DO."
+  ],
+  "honest_verdict_one_line": "Fix is correctly implemented in scope, but the scope was 4/17 surfaces — the convergence GREEN is misleading. RED until UR4-001 + UR4-002 + UR4-003 + UR4-008 are shipped."
+}
