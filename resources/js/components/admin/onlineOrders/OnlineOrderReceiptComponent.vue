@@ -155,7 +155,10 @@
                                 <td class="pt-1 pb-1 pr-1">{{ $t('label.customer') }}:</td>
                                 <td class="pt-1 pb-1">{{ orderUser.name }}</td>
                             </tr>
-                            <tr v-if="orderUser.phone">
+                            <!-- [V1.0.2 Wave A3 UR4-008] Hide sentinel-phone (User::creating bootstrap
+                                 placeholder) from NF525 paper-receipt 6-year fiscal archive.
+                                 See app/Support/PhoneDisplay.php for the policy. -->
+                            <tr v-if="orderUser.phone && !String(orderUser.phone).startsWith('PENDING_')">
                                 <td class="pt-1 pb-1 pr-1">{{ $t('label.phone') }}:</td>
                                 <td class="pt-1 pb-1">{{ orderUser.country_code + '' + orderUser.phone }}</td>
                             </tr>
