@@ -514,34 +514,62 @@ class DashboardService
     public function auditTrail()
     {
         try {
-            // [POS-9.1.4 + POS-9-H.1.3] Scope audit trail to the authenticated user's branch.
+            // [GAP-FIX-02 2026-05-25] Switch source from non-hash-chained
+            // App\Models\ActionLog to NF525 hash-chained App\Models\AuditLog.
+            // The widget previously misled inspectors by labelling generic
+            // ActionLog rows (no prev_hash/current_hash, mutable) as the
+            // "audit trail". AuditLog is the INSERT-only fiscal evidence
+            // table; exposing its `current_hash` short prefix lets the
+            // dashboard double as a chain-integrity smoke proof.
+            //
+            // Branch scoping note: AuditLog is in the BranchScopeCoverageSentinel
+            // EXEMPTED_MODELS list (V1.0.2 backlog C-P0-D — fiscal model,
+            // manual scope today). We MUST still filter manually here, same
+            // discipline as the previous ActionLog implementation:
             //   - Admin (branch_id = 0) sees every branch.
-            //   - Branch staff sees ONLY their own branch. Previously `orWhereNull('branch_id')`
-            //     leaked every cross-tenant "system/admin" row to every branch (F-A3).
-            //   - Any legacy row with branch_id = NULL is considered stale/system-only and
-            //     must be surfaced exclusively to Admin. Branch managers should never see it.
+            //   - Branch staff sees ONLY their own branch.
+            //   - Legacy branch_id = NULL rows are admin-only (system events).
             $actor = auth()->user();
             $actorBranchId = (int) ($actor?->branch_id ?? 0);
 
-            $query = \App\Models\ActionLog::with('user');
+            $query = \App\Models\AuditLog::query();
             if ($actorBranchId > 0) {
                 $query->where('branch_id', $actorBranchId);
             }
 
-            return $query->orderBy('created_at', 'desc')
+            $rows = $query->orderBy('id', 'desc')
                 ->limit(50)
-                ->get()
-                ->map(function ($log) {
-                    return [
-                        'id' => $log->id,
-                        'user_name' => $log->user ? $log->user->name : 'Système',
-                        'branch_id' => $log->branch_id,
-                        'action' => $log->action,
-                        'resource' => $log->resource,
-                        'details' => $log->details,
-                        'time' => $log->created_at->diffForHumans(),
-                    ];
-                });
+                ->get();
+
+            // Resolve user names in one round-trip. AuditLog has no `user()`
+            // relation declared (we intentionally keep the NF525 model file
+            // minimal and behavioral hooks-only — see app/Models/AuditLog.php
+            // booted() guard). Service-side lookup keeps the fiscal model
+            // surface untouched.
+            $userIds = $rows->pluck('user_id')->filter()->unique()->all();
+            $users = $userIds
+                ? User::whereIn('id', $userIds)->get(['id', 'name'])->keyBy('id')
+                : collect();
+
+            return $rows->map(function ($log) use ($users) {
+                $payload = (array) ($log->payload ?? []);
+                $resourceRef = $log->resource_id !== null
+                    ? ($log->resource . '#' . $log->resource_id)
+                    : $log->resource;
+
+                return [
+                    'id' => $log->id,
+                    'user_name' => $log->user_id && isset($users[$log->user_id])
+                        ? $users[$log->user_id]->name
+                        : 'Système',
+                    'branch_id' => $log->branch_id,
+                    'action' => $log->action,
+                    'resource' => $resourceRef,
+                    'hash_prefix' => substr((string) $log->current_hash, 0, 8),
+                    'payload_keys' => array_slice(array_keys($payload), 0, 5),
+                    'time' => $log->created_at?->diffForHumans(),
+                ];
+            });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
