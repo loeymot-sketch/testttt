@@ -1,0 +1,114 @@
+{
+  "auditor": "Bad-mood AUDIT-4 NF525 reconcile",
+  "auditor_role": "Hostile supervisor — verify NF525 chain has not been wiped/restarted",
+  "timestamp_utc": "2026-05-25T12:21:54Z",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "db_connection": "mysql (foodking)",
+
+  "audit_logs_count": 23,
+  "z_reports_count": 0,
+  "orders_count": 2,
+  "orders_with_fiscal_seq": 0,
+
+  "first_audit_id": 1,
+  "first_audit_hash_prefix": "b067f76785040cbf",
+  "first_audit_created": "2026-05-24 10:57:07",
+  "last_audit_id": 23,
+  "last_audit_hash_prefix": "1b24c65081807dd6",
+  "last_audit_created": "2026-05-25 12:21:54",
+
+  "audit_logs_growth_by_day": {
+    "2026-05-24": 11,
+    "2026-05-25": 12
+  },
+  "audit_logs_action_distribution": {
+    "user.login": 22,
+    "payment.method_restricted": 1
+  },
+
+  "fiscal_seq_count": 0,
+  "fiscal_seq_gaps": 0,
+  "fiscal_seq_monotonic": "OK (vacuously — 0 sequences allocated yet)",
+
+  "verifyChain_result": "CHAIN OK",
+  "verifyChain_branch_1_raw": {"ok": true, "count": 23, "last_hash": "1b24c65081807dd61b1f6f29f1f9b6c0a... (truncated)"},
+  "cli_verify_chain": "CHAIN OK — SWEEP COMPLETE on every active branch (1 total)",
+
+  "orphan_orders_last_7d": 0,
+  "orphan_orders_note": "0 orphans because 0 orders have fiscal_sequence_no allocated AND 0 z_reports closed — vacuously consistent. Owner has not run Z close yet (expected V1 pre-live state).",
+
+  "audit_logs_triggers": [
+    {"name": "audit_logs_no_update", "table": "audit_logs", "event": "UPDATE", "timing": "BEFORE"},
+    {"name": "audit_logs_no_delete", "table": "audit_logs", "event": "DELETE", "timing": "BEFORE"}
+  ],
+  "z_reports_triggers": [
+    {"name": "z_reports_no_delete", "table": "z_reports", "event": "DELETE", "timing": "BEFORE"}
+  ],
+  "triggers_verdict": "DELETE+UPDATE forbidden at DB-trigger layer (MySQL). Append-only enforced.",
+
+  "cross_chain_anchor_z_close_audit_entries": 0,
+  "cross_chain_anchor_closed_z_reports": 0,
+  "cross_chain_anchor": "OK (vacuously — both 0, anchor invariant `audit >= z` holds)",
+
+  "wipe_restart_check": {
+    "verdict": "NO WIPE DETECTED",
+    "evidence": [
+      "First audit_log id=1 created 2026-05-24 10:57:07 — natural starting point for V1 LOCAL pre-live testing",
+      "Growth pattern across 2 days (11 then 12) shows organic accumulation, not a single-shot reseed",
+      "23 contiguous IDs (1..23), no gaps",
+      "Action distribution dominated by user.login (22/23) consistent with development/testing activity",
+      "DELETE/UPDATE triggers present on audit_logs — would have blocked any wipe-and-restart attempt at SQL layer"
+    ]
+  },
+
+  "cross_reference_prior_reports": {
+    "SUPER3_NF525_EDGES_2026-05-25": "Baseline reported `php artisan fiscal:verify-chain` → CHAIN OK (audit_logs + z_reports) (branch=1). Confirmed identically in this audit.",
+    "MEMORY_count_26_last_hash_ca4ac1fdc208dae1": "MEMORY.md cites prior cycle (Wave 5D-5I, 2026-05-17→18) chain state count=26 / last_hash=ca4ac1fdc208dae1. Current DB shows count=23 / last_hash=1b24c65081807dd6 — DIFFERENT.",
+    "discrepancy_explanation": "Counts and hashes differ from prior MEMORY.md snapshot. This is either (a) a different DB instance/seed reset between cycles, or (b) MEMORY.md snapshot was from a different worktree. The CURRENT DB chain is internally consistent and verifies CHAIN OK end-to-end via both verifyChain(1) and CLI sweep. No silent corruption detected — but the count regression from 26→23 vs prior memory warrants flagging in the verdict."
+  },
+
+  "claim_bit_identical_assessment": {
+    "claim_verbatim": "NF525 chain bit-identical",
+    "interpretation": "Within the current DB instance, chain is bit-identical-verifiable (HMAC SHA-256 chain re-walks cleanly start-to-end).",
+    "caveat": "Claim CANNOT be interpreted as 'identical to a previously-snapshotted chain state across sessions'. The MEMORY.md snapshot (count=26, last_hash=ca4ac1fdc208dae1) differs from current (count=23, last_hash=1b24c65081807dd6). If 'bit-identical' meant 'unchanged since last cycle', that claim is FALSE — the chain has evolved (or been on a different DB).",
+    "honest_verdict": "Chain is INTERNALLY CONSISTENT and CRYPTOGRAPHICALLY VERIFIED, not bit-identical to prior snapshots."
+  },
+
+  "overall_verdict": "NF525-COMPLIANT (with caveat)",
+  "verdict_rationale": [
+    "CHAIN OK confirmed by both verifyChain(branch=1) service call AND CLI fiscal:verify-chain --all sweep",
+    "DELETE and UPDATE triggers present on audit_logs (append-only enforced at DB layer)",
+    "DELETE trigger present on z_reports (append-only enforced at DB layer)",
+    "No fiscal_sequence_no gaps (0 sequences allocated, vacuously monotonic — V1 pre-live state)",
+    "No orphan orders with fiscal_seq outside Z windows (vacuously 0)",
+    "Cross-chain anchor: audit-Z anchor invariant holds (0 >= 0)",
+    "Growth pattern over 2 days shows organic accumulation, not wipe-and-restart",
+    "23 contiguous audit_log IDs starting at id=1 (no holes)",
+    "CAVEAT: Chain count regressed from prior MEMORY.md snapshot (count=26 → count=23). Likely separate DB instance/seed reset between cycles. Owner must confirm this is expected (V1 LOCAL pre-live, no production fiscal data yet) — if not, the 'bit-identical' claim is suspect and needs operator investigation."
+  ],
+
+  "risk_signals": [
+    {
+      "signal": "z_reports_count = 0",
+      "severity": "INFO",
+      "interpretation": "Owner has not run a Z close yet — expected for V1 LOCAL pre-live testing. NOT a defect. Will become non-trivial once first Z is closed in production."
+    },
+    {
+      "signal": "orders_with_fiscal_seq = 0 (out of 2 total orders)",
+      "severity": "INFO",
+      "interpretation": "No paid/closed orders have triggered FiscalSequenceService allocation yet. Expected pre-live state."
+    },
+    {
+      "signal": "MEMORY.md prior cycle count=26 vs current count=23",
+      "severity": "AMBER",
+      "interpretation": "Chain count is LOWER than prior memory snapshot. Possible explanations: (a) different DB instance (worktree/branch swap), (b) migrate:fresh in development, (c) silent corruption (UNLIKELY — would have failed CHAIN OK verify). Owner should confirm DB lineage. If `migrate:fresh` was used in dev, this is benign — but the orchestrator's claim 'bit-identical' is technically misleading."
+    }
+  ],
+
+  "operator_actions_recommended": [
+    "Confirm with owner whether current DB (count=23, last_hash=1b24c65081807dd6) is the canonical V1 LOCAL instance, or whether MEMORY.md prior snapshot (count=26, last_hash=ca4ac1fdc208dae1) was from a different DB/worktree",
+    "Before production cutover: run `mysqldump audit_logs z_reports` as immutable baseline, then re-verify CHAIN OK post-restore",
+    "Confirm GRANT-level REVOKE on audit_logs/z_reports applied via Ansible deploy/ansible/site.yml:59-71 (CVP0-1) before cutover — current LOCAL dev may have full GRANT",
+    "Validate first Z close end-to-end (orders → fiscal_seq alloc → z_report close → audit_log z_report.closed entry → cross-chain anchor populated)"
+  ]
+}

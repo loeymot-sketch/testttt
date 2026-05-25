@@ -1,0 +1,7 @@
+[
+  {
+    "status": 401,
+    "url": "http://localhost:8000/api/login",
+    "method": "GET"
+  }
+]

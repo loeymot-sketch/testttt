@@ -1,0 +1,279 @@
+{
+  "auditor": "Bad-mood AUDIT-2 full test suite",
+  "run_at_utc": "2026-05-25",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "cycle_cutoff": "2026-05-23",
+  "cycle_baseline_sha": "d601fdd34",
+
+  "phpunit": {
+    "total": 2701,
+    "passed": 2661,
+    "failed": 8,
+    "errors": 0,
+    "skipped": 29,
+    "incomplete": 2,
+    "risky": 1,
+    "assertions": 12529,
+    "duration_seconds": 414,
+    "duration_human": "06:53.890",
+    "failure_list": [
+      {
+        "file": "tests/Feature/ActionLogBranchIsolationTest.php",
+        "test_name": "test_audit_trail_scoped_to_actor_branch",
+        "line": 86,
+        "message": "Failed asserting that an array contains 'A.1'."
+      },
+      {
+        "file": "tests/Feature/ActionLogBranchIsolationTest.php",
+        "test_name": "test_audit_trail_admin_sees_null_branch_legacy_rows",
+        "line": 105,
+        "message": "Admin must still see legacy NULL-branch rows. Failed asserting that an array contains 'LEGACY.1'."
+      },
+      {
+        "file": "tests/Feature/ActionLogBranchIsolationTest.php",
+        "test_name": "test_audit_trail_admin_sees_every_branch",
+        "line": 137,
+        "message": "Failed asserting that an array contains 'A.1'."
+      },
+      {
+        "file": "tests/Feature/Composer/ComposerAuthzMinimalTest.php",
+        "test_name": "test_branch_admin_cannot_update_foreign_profile_by_forging_payload_scope",
+        "line": 114,
+        "message": "Expected response status code [403] but received 404."
+      },
+      {
+        "file": "tests/Feature/Composer/ComposerAuthzMinimalTest.php",
+        "test_name": "test_show_defaults_to_actor_branch_and_does_not_leak_foreign_latest_profile",
+        "line": 139,
+        "message": "Expected response status code [403] but received 404."
+      },
+      {
+        "file": "tests/Feature/Composer/ComposerAuthzMinimalTest.php",
+        "test_name": "test_branch_admin_cannot_mutate_composer_steps_for_other_branch",
+        "line": 237,
+        "message": "Expected response status code [403] but received 404."
+      },
+      {
+        "file": "tests/Feature/Menu/CatalogStockCentralSyncEndToEndTest.php",
+        "test_name": "test_central_stock_toggle_syncs_to_kiosk_pos_and_order_guard",
+        "line": 100,
+        "message": "Expected response status code [200] but received 403."
+      },
+      {
+        "file": "tests/Feature/Sentinels/TpeSimulationDepthSentinelTest.php",
+        "test_name": "test_reconcile_path_amount_echo_still_fires_under_pos_simulation_hardware",
+        "line": 148,
+        "message": "Expected response status code [200] but received 405."
+      }
+    ],
+    "risky_list": [
+      {
+        "file": "tests/Feature/Sentinels/TpeSimulationDepthSentinelTest.php",
+        "test_name": "test_exact_amount_still_accepted_under_pos_simulation_hardware",
+        "line": 98,
+        "message": "This test did not perform any assertions"
+      }
+    ]
+  },
+
+  "vitest": {
+    "total_files": 261,
+    "passed_files": 254,
+    "failed_files": 7,
+    "total_tests": 1796,
+    "passed": 1781,
+    "failed": 12,
+    "skipped": 3,
+    "duration_seconds": 16.82,
+    "failure_list": [
+      {
+        "file": "tests/js/KioskCartRestyle.spec.js",
+        "test_name": "order-type bar : role=radiogroup + aria-checked aligns with state",
+        "message": "Cannot call attributes on an empty DOMWrapper"
+      },
+      {
+        "file": "tests/js/kioskCounterPaymentFlow.spec.js",
+        "test_name": "B5b kiosk cash-at-counter flow > uses the dedicated POS counter collection endpoints",
+        "message": "Source-text regex match failed: expected match /admin/pos/counter-collect/\\${order.id}/confirm/ — received raw <template> string (regex hitting unbuilt SFC text)"
+      },
+      {
+        "file": "tests/js/kioskOfflineQueueV2.spec.js",
+        "test_name": "renders the conflict modal entries and emits cancel/force events",
+        "message": "TypeError: _ctx.$t is not a function (KioskOfflineConflictModalComponent.vue:4)"
+      },
+      {
+        "file": "tests/js/kioskOfflineQueueV2.spec.js",
+        "test_name": "keeps focus trapped inside the conflict modal",
+        "message": "TypeError: _ctx.$t is not a function"
+      },
+      {
+        "file": "tests/js/kioskOfflineQueueV2.spec.js",
+        "test_name": "is accessible to axe when opened",
+        "message": "TypeError: _ctx.$t is not a function"
+      },
+      {
+        "file": "tests/js/kioskOfflineQueueV2.spec.js",
+        "test_name": "shows an empty state when there are no conflict entries",
+        "message": "TypeError: _ctx.$t is not a function"
+      },
+      {
+        "file": "tests/js/kioskOfflineQueueV2.spec.js",
+        "test_name": "tracks modal opening via the emitted hook",
+        "message": "TypeError: _ctx.$t is not a function"
+      },
+      {
+        "file": "tests/js/posWizardComposerProfile.spec.js",
+        "test_name": "POS wizard composer profile runtime contract > keeps POS item grids consuming the item payload without a separate heuristic layer",
+        "message": "Source-text assertion: expected ':items=\"items\"' substring — received raw <template> SFC string"
+      },
+      {
+        "file": "tests/js/sidebarV1Cleanup.spec.js",
+        "test_name": "V1 admin sidebar cleanup > renders dashboard + POS + V1 primary band",
+        "message": "Expected sidebar items length 7, got 9 (drift — sidebar grew but baseline not updated)"
+      },
+      {
+        "file": "tests/js/sentinels/f004KioskCancelReasonSent.spec.js",
+        "test_name": "F-004 > KioskPaymentComponent never posts cancel-status without reason key",
+        "message": "Regex /reason\\s*:/ did not match cancel-status payload in source text"
+      },
+      {
+        "file": "tests/js/sentinels/f004KioskCancelReasonSent.spec.js",
+        "test_name": "F-004 > KioskWaitingComponent customer cancel sends customer_request reason",
+        "message": "Regex /change-status\\/\\${...}.../reason:\\s*'customer_request'/ did not match — KioskWaitingComponent source contains <template> markup"
+      },
+      {
+        "file": "tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js",
+        "test_name": "Build integrity > admin-kds.js bundle is not stale relative to KDS sources or i18n catalogs",
+        "message": "KDS bundle stale: resources/js/languages/ar.json (mtime 2026-05-25T07:27:28Z) newer than public/js/admin-kds.js (mtime 2026-05-24T17:04:15Z). Run 'npm run development' or 'npm run production' to rebuild."
+      }
+    ]
+  },
+
+  "lint_pint": {
+    "clean": false,
+    "files_scanned": 1985,
+    "errors": 1,
+    "style_issues": 1584,
+    "note": "1584 style issues + 1 error across 1985 files — pre-existing tech debt, not introduced by this cycle (no pint --fix gate runs in CI). NOT a release blocker."
+  },
+
+  "lint_eslint": {
+    "clean": null,
+    "errors": null,
+    "warnings": null,
+    "note": "ESLint 10.1.0 requires eslint.config.js (flat config) — project still uses legacy .eslintrc — lint cannot run. Pre-existing migration gap, not introduced this cycle."
+  },
+
+  "nf525_chain": "CHAIN OK",
+  "nf525_chain_detail": "SWEEP COMPLETE — CHAIN OK on every active branch (1 total). branch=1 CHAIN OK.",
+
+  "frozen_zone_violations": [],
+  "frozen_zone_detail": "All 14 frozen files (5 Vue components, pos-wizard.js, pos-wizard.css, 4 NF525 services + migrations, BranchScope, IdempotencyKeyMiddleware, PricingService, OrderStateMachine) verified zero LOC diff vs cycle baseline d601fdd34.",
+
+  "introduced_this_cycle": [
+    {
+      "file": "tests/Feature/Sentinels/TpeSimulationDepthSentinelTest.php",
+      "failures": 1,
+      "risky": 1,
+      "source_commit": "9b98b2455 (docs(gap-hunt-final))",
+      "loc_added": 190,
+      "diagnosis": "Brand-new sentinel created this cycle. test_reconcile_path returns 405 (method not allowed) — sentinel asserts behavior that controller does not yet implement, OR route method mismatch (POST vs GET). test_exact_amount risky = no assertions. Tighten or remove."
+    },
+    {
+      "file": "tests/js/sentinels/kdsBundleFreshnessSentinel.spec.js",
+      "failures": 1,
+      "diagnosis": "Bundle staleness check. resources/js/languages/ar.json mtime is 2026-05-25T07:27:28Z (today) but public/js/admin-kds.js is 2026-05-24T17:04:15Z (yesterday). Need to run 'npm run development' to rebuild. NOT a code defect — build artifact lag. Sentinel correctly catching CI hygiene gap."
+    }
+  ],
+
+  "pre_existing": [
+    {
+      "file": "tests/Feature/ActionLogBranchIsolationTest.php",
+      "failures": 3,
+      "last_touched": "99679aaba fix(pos/phase-9-h.1.3): close cross-tenant leak in dashboard audit trail (F-A3)",
+      "note": "Pre-existing — pre-2026-05-23 cutoff. Branch scope on ActionLog not enforced as test expects."
+    },
+    {
+      "file": "tests/Feature/Composer/ComposerAuthzMinimalTest.php",
+      "failures": 3,
+      "last_touched": "9730b18e7 (well before cycle)",
+      "note": "Pre-existing — 404 vs expected 403. Composer routes return 404 on missing rows BEFORE authz fires. Authz still applies if row exists."
+    },
+    {
+      "file": "tests/Feature/Menu/CatalogStockCentralSyncEndToEndTest.php",
+      "failures": 1,
+      "last_touched": "6a975dfff (well before cycle)",
+      "note": "Pre-existing — 403 instead of 200. Likely RBAC permission gap for actor role in test fixture."
+    },
+    {
+      "file": "tests/js/KioskCartRestyle.spec.js",
+      "failures": 1,
+      "note": "Pre-existing — Cannot call attributes on empty DOMWrapper. KioskCart restyle markup drift."
+    },
+    {
+      "file": "tests/js/kioskCounterPaymentFlow.spec.js",
+      "failures": 1,
+      "note": "Pre-existing — source-text regex mismatch. KioskWaitingComponent body not consumed as plain JS by sentinel."
+    },
+    {
+      "file": "tests/js/kioskOfflineQueueV2.spec.js",
+      "failures": 5,
+      "note": "Pre-existing — $t not stubbed in mount({global.mocks.$t}). 5 tests on KioskOfflineConflictModalComponent.vue."
+    },
+    {
+      "file": "tests/js/posWizardComposerProfile.spec.js",
+      "failures": 1,
+      "note": "Pre-existing — same source-text regex mismatch pattern as kioskCounter."
+    },
+    {
+      "file": "tests/js/sidebarV1Cleanup.spec.js",
+      "failures": 1,
+      "note": "Pre-existing — sidebar baseline 7 expected, got 9 (drift since baseline)."
+    },
+    {
+      "file": "tests/js/sentinels/f004KioskCancelReasonSent.spec.js",
+      "failures": 2,
+      "note": "Pre-existing — source-text regex /reason:/ vs received raw <template>. Same SFC-source-as-string pattern."
+    }
+  ],
+
+  "overall_verdict": "TEST-DEBT",
+  "verdict_rationale": [
+    "PRODUCTION-PERFECT? NO — claim '19/19 sentinels GREEN, 0 regressions' is technically TRUE for the 19 named sentinels but DISHONEST as headline. Full PHPUnit: 8 failed (2 introduced this cycle via Tpe sentinel). Full Vitest: 12 failed (1 introduced this cycle via kdsBundleFreshnessSentinel, build artifact lag).",
+    "CRITICAL-FAIL? NO — NF525 chain OK, frozen-zone diff = 0, no errors (just failures), no migration breakage, payment + audit chain pristine.",
+    "TEST-DEBT verdict: 2701 PHP + 1796 JS = 4497 tests, 20 failed total = 0.44% failure rate. Pre-existing failures (15) are baseline tech debt. Introduced-this-cycle failures (5 = 1 PHP + 1 PHP risky + 1 JS bundle-stale + counted via 2 sentinel files) include the kdsBundleFreshnessSentinel which is a BUILD ARTIFACT issue (needs npm run development), not a code regression. The TpeSimulationDepthSentinelTest brought in this cycle is INCOMPLETE — its assertions don't match controller routes (405). This new sentinel should be either fixed-in-implementation or backed out.",
+    "Ship gate: V1 LOCAL Le Cayenne PRODUCTION-READY status preserved (NF525 + frozen-zone + audit chain all green). Test debt is not blocking but the cycle's CLAIM of '0 regressions' is wrong by 2 newly-introduced failures.",
+    "Severity per claim vs reality: claim said '19/19 sentinels GREEN', reality is at least 1 sentinel in this cycle (Tpe) is RED. Headline must be revised to: '19 named sentinels GREEN; 1 new sentinel (Tpe) introduced this cycle is RED; 1 build-freshness sentinel (KDS) RED due to ar.json mtime change without rebuild'."
+  ],
+
+  "remediation_priorities": [
+    {
+      "p": 0,
+      "action": "Run 'npm run development' to rebuild public/js/admin-kds.js so kdsBundleFreshnessSentinel goes green. Or, if no source change actually flowed into the KDS bundle from ar.json, downgrade the sentinel to allow same-day mtime + a hash-check."
+    },
+    {
+      "p": 0,
+      "action": "Fix or back out tests/Feature/Sentinels/TpeSimulationDepthSentinelTest.php — test_reconcile_path returns 405 (route method mismatch) and test_exact_amount is risky (no assertions). New sentinel introduced this cycle should not ship RED."
+    },
+    {
+      "p": 1,
+      "action": "Triage ActionLogBranchIsolationTest 3 failures — branch scope on action_logs not behaving as expected. Pre-existing but should be on V1.0.1 backlog."
+    },
+    {
+      "p": 2,
+      "action": "Triage ComposerAuthzMinimalTest 3 failures — 404 vs 403. Likely pre-route-lookup not running scope. Defer V1.0.2."
+    },
+    {
+      "p": 2,
+      "action": "Fix kioskOfflineQueueV2 5 failures — stub $t in mount() global.mocks. Trivial test fix."
+    },
+    {
+      "p": 3,
+      "action": "ESLint flat-config migration. Pre-existing pre-cycle gap."
+    },
+    {
+      "p": 3,
+      "action": "Pint cleanup 1584 style issues. Pre-existing tech debt."
+    }
+  ]
+}
