@@ -53,7 +53,7 @@
                                     </button>
                                 </div>
                                 <input class="pl-2 text-sm w-full h-full" v-model="form.phone"
-                                    v-on:keypress="phoneNumber($event)" type="text" id="phone" />
+                                    v-on:keypress="phoneNumber($event)" type="text" id="phone" placeholder="+33 6 12 34 56 78" />
                             </div>
                             <small class="db-field-alert" v-if="errors.phone">
                                 {{ errors.phone[0] }}
