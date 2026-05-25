@@ -1,5 +1,31 @@
 import axios from 'axios'
 
+/**
+ * [UR4-002 V1.0.2 Wave A1] Strip `PENDING_CREATE_<hex>` / `PENDING_<id>` server
+ * sentinel from a user payload before it lands in Vuex `authInfo`.
+ *
+ * Backend (PhoneDisplay::safe + Resource layer) already sanitizes API responses
+ * post-commit `afc094091`, but vuex-persistedstate rehydrates `auth.authInfo`
+ * from localStorage at boot BEFORE any API call — so legacy polluted storage
+ * carries the sentinel forward. This helper is applied at every write boundary
+ * inside the auth module; `getState` override in store/index.js handles
+ * rehydrate of pre-existing polluted state.
+ *
+ * Mirrors the pattern used at:
+ *   - resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:355
+ *   - resources/js/components/admin/profile/ProfileEditProfileComponent.vue:114
+ *   - app/Support/PhoneDisplay::safe (backend SSOT)
+ */
+export function sanitizePendingPhone(user) {
+    if (!user || typeof user !== 'object') {
+        return user;
+    }
+    const phone = user.phone;
+    if (typeof phone === 'string' && phone.startsWith('PENDING_')) {
+        return { ...user, phone: null };
+    }
+    return user;
+}
 
 export const auth = {
     state: {
@@ -142,7 +168,8 @@ export const auth = {
             state.authStatus = true;
             state.authToken = payload.token;
             state.authBranchId = payload.branch_id;
-            state.authInfo = payload.user;
+            // [UR4-002 V1.0.2 Wave A1] strip PENDING_ sentinel before persistence.
+            state.authInfo = sanitizePendingPhone(payload.user);
             state.authMenu = payload.menu;
             state.authPermission = payload.permission;
             state.authDefaultPermission = payload.defaultPermission;
@@ -183,11 +210,13 @@ export const auth = {
             }
         },
         authInfo: function (state, payload) {
-            state.authInfo = payload;
+            // [UR4-002 V1.0.2 Wave A1] strip PENDING_ sentinel before persistence.
+            state.authInfo = sanitizePendingPhone(payload);
         },
         authRefresh: function (state, payload) {
             state.authBranchId = payload.branch_id;
-            state.authInfo = payload.user;
+            // [UR4-002 V1.0.2 Wave A1] strip PENDING_ sentinel before persistence.
+            state.authInfo = sanitizePendingPhone(payload.user);
             state.authMenu = payload.menu;
             state.authPermission = payload.permission;
             state.authDefaultPermission = payload.defaultPermission;
