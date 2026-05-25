@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <!-- REQUIRED META TAGS -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    
+
+    <!-- FONTS — Inter pour le kiosk (Splash DNA) + existing fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    
+            <link
+            href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&display=swap"
+            rel="stylesheet"
+        >
+    
+    <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/fonts/fontawesome/fontawesome.css">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/fonts/lab/lab.css">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/fonts/typography/public/public.css">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/fonts/typography/rubik/rubik.css">
+
+    <!-- CUSTOM STYLE -->
+    <link rel="stylesheet" href="http://127.0.0.1:8000/themes/default/css/custom.css">
+    <link rel="stylesheet" href="/css/app.css?id=f14e90d2ab37c5fb06483614ab04925c">
+    <link rel="stylesheet" href="http://127.0.0.1:8000/css/pos-wizard.css?v=2-1779738531">
+    <!-- PAGE TITLE -->
+    <title>Le Cayenne</title>
+
+    <!-- FAV ICON -->
+    <link rel="icon" type="image" href="http://127.0.0.1:8000/images/theme/theme-favicon-logo.png">
+
+
+    </head>
+
+<body>
+    
+    <div id="app">
+                    <router-view />
+            </div>
+
+    
+    
+        <script>
+        window.foodkingConfig = {
+            baseUrl: "http:\/\/localhost:8000",
+            apiKey: "b6d68vy2-m7g5-20r0-5275-h103w73453q120",
+            googleMapKey: "",
+            demo: false,
+            // [2026-05-18 PR-B P0 heal] Machine creds gated by IP allowlist +
+            // APP_ENV=local. See @php block above. Public unauth requests now
+            // get `null` even on /kiosk/* paths.
+            kioskAutoLogin: {"username":"kiosk-lecayenne","password":"kiosk123"},
+            // Langue UI borne : fr | ar | en (défaut fr) — évite anglais si le navigateur / localStorage était en "en"
+            kioskDefaultLocale: "fr",
+            // [ADR-007 / Sprint 3D 2026-05-16] Kiosk runtime FR-immutable en V1.
+            // `false` ferme le UI picker locale (KsA11ySettings) ET désactive la
+            // persistance de `kioskSettings.locale` dans localStorage. Voir
+            // docs/adr/ADR-007-kiosk-fr-lock.md pour relax post-V1.
+            kioskLocaleSwitchAllowed: false,
+            kioskMenuPricing: {"full_ratio":1,"fries_ratio":0.6,"drink_ratio":0.4},
+            // Borne : une catégorie « Nos Sandwichs » en base, deux lignes sidebar (signatures / froid)
+            kioskSandwichSplit: {"parent_category_slug":null,"cold_item_slugs":[],"cold_sidebar_label":"Sandwich froid"},
+            maxItemQty: 20,
+            kioskConfirmationAutoReturnSeconds: 30,
+            ossFallbackPolling: {
+                enabled: true,
+                intervalMsWhenConnected: 60000,
+                // [test-e2e round-2 cluster-6 D-002 2026-05-10] Fallback aligned
+                // with catalog_v15.php (2000ms) so the polling cadence meets the
+                // SYNC-2 8s budget when WS is down.
+                intervalMsWhenDisconnected: 2000,
+            },
+            kdsFallbackPolling: {
+                highActivityBaseMs: 3000,
+                highActivityJitterMs: 1000,
+                degradedBaseMs: 2000,
+                degradedJitterMs: 500,
+                disconnectedBaseMs: 4000,
+                disconnectedJitterMs: 1000,
+            },
+            // [STAFF-ONLY-V1] Feature flags for surface restructuring
+            staffOnlyMode: true,
+            kioskUsePosWizard: true,
+            // [iter15-mega-fix C-003/A-003 2026-05-10] Expose APP_ENV so the SPA
+            // can suppress the "Connexion temps réel perdue" banner in dev/local
+            // environments where Pusher/Soketi is not running. Production keeps
+            // the banner — it's still useful messaging during real outages.
+            appEnv: "local",
+            // [Wave T R1 F3 WT-B-R1-007 2026-05-20] Expose branch count so the
+            // admin SPA can hide messaging that only makes sense in a multi-
+            // branch deployment (e.g. KDS "Compte central multi-succursales"
+            // polling hint). Single-branch installs like Le Cayenne render
+            // branch_count=1 and the KDS computes kdsIsCentralAdmin=false so
+            // the misleading banner is suppressed. Cached 5min to avoid a
+            // SELECT COUNT(*) on every SPA boot. NF525-irrelevant query.
+            branchCount: 1,
+            features: {
+                wizard_per_item_demo: false,
+            },
+            // [BYPASS-P1 + AUDIT-HEAL B8] E2E flow validation flags exposed to SPA.
+            // Frontend uses these to render visible "MODE TEST" markers. Production guard
+            // in AppServiceProvider::boot() prevents activation in APP_ENV=production.
+            // RED-AUDIT B8 trouvé: HTML disclosure mineure → on conditionne l'injection
+            // sur !production pour ne JAMAIS leak la clé en prod (même si false).
+                        bypassMode: {
+                payment: true,
+                printing: true,
+                printingScreenMarker: "\ud83d\udd27 MODE TEST \u2014 IMPRESSION BYPASS\u00c9E",
+            },
+                    };
+        // [Sprint H1 K-003 2026-05-17] Externalize FRITES_INCLUDED_CATS so DB
+        // renumber/menu reset doesn't silently break wizard fries-inclusion logic.
+        // Consumed by KioskWizardComponent.vue:1029 (shouldAskStep frites_style).
+        window.FK_KIOSK_FRITES_CATS = [309,310,311,314];
+        // [Sprint H1 K-004 2026-05-17] Wizard template aliases (Owner G3 Option B):
+        // owner-curated substring → canonical template map, consulted first by
+        // KioskWizardComponent.vue:907 detectTemplateFromName so admin renames
+        // don't silently break wizard template routing.
+        window.FK_KIOSK_WIZARD_TEMPLATE_ALIASES = {"cayenne":"sandwich","galette":"sandwich","classique":"sandwich","royal":"sandwich","tacos":"tacos","big tacos":"tacos","burger":"burger","cheeseburger":"burger","assiette":"assiette","omelette":"omelette","ojja":"omelette","salade":"salade","nugget":"snacking","tenders":"snacking","goujon":"snacking"};
+        // [Sprint H4 Z3-NEW-006 2026-05-17] KDS V2 org-wide kill-switch. Defaults
+        // true (V2 is the rollout default per Wave Z 5C). Operators can rollback
+        // all devices via KDS_V2_DEFAULT_ENABLED=false in .env instead of
+        // per-tab localStorage flipping. Consumed by
+        // KitchenDisplaySystemComponent.vue::useV2Layout (config layer between
+        // localStorage and hardcoded fallback).
+        window.FK_KDS_V2_DEFAULT_ENABLED = true;
+        // [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle
+        // [GAP-32-6] Use config() instead of env() — env() returns null after config:cache in production
+        window.__FOODKING_RUNTIME__ = {
+            demo: false ? {
+                adminEmail:          "admin@lecayenne.fr",
+                adminPassword:       "123456",
+                customerEmail:       "walkingcustomer@example.com",
+                customerPassword:    "123456",
+                branchManagerEmail:  "branchmanager@example.com",
+                branchManagerPassword: "123456",
+                posOperatorEmail:    "pos@lecayenne.fr",
+                posOperatorPassword: "123456",
+                chefEmail:           "chef@example.com",
+                chefPassword:        "123456",
+            } : null,
+        };
+    </script>
+
+    
+    
+    
+    <script src="/js/manifest.js?id=6ef4009a40f250662227149f6928fc8e"></script>
+    <script src="/js/vendor.js?id=0700986e06877b444d68a7add07dcb75"></script>
+    <script src="/js/app.js?id=f90407b528fe4d2af02ab0648b457f14"></script>
+    <script src="http://127.0.0.1:8000/themes/default/js/drawer.js"></script>
+    <script src="http://127.0.0.1:8000/themes/default/js/modal.js"></script>
+    <script src="http://127.0.0.1:8000/themes/default/js/customScript.js"></script>
+    <script src="http://127.0.0.1:8000/themes/default/js/tabs.js"></script>
+    <script src="http://127.0.0.1:8000/themes/default/js/dropdown.js"></script>
+    
+    <script>
+        window.POS_WIZARD_CONFIG = {
+            sauceExtraPrice:   0.5,
+            viandeSupplPrice:  2.5,
+            fritesGrandePrice: 1,
+            fritesCheddarPrice: 1
+        };
+    </script>
+    <script src="http://127.0.0.1:8000/js/pos-wizard.js?v=9-1779738531"></script>
+
+    <!-- Masquer Dine-In dans le POS : uniquement Emporter et Livraison -->
+    <style>
+        label[for="dinein"] {
+            display: none !important;
+        }
+
+        #dine {
+            display: none !important;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Auto-sélectionner Takeaway au lieu de Dine-In
+            var checkInterval = setInterval(function () {
+                var takeawayBtn = document.querySelector('label[for="takeway"]');
+                var dineinBtn = document.querySelector('label[for="dinein"]');
+                if (takeawayBtn) {
+                    // Retirer active de Dine-In, ajouter à Takeaway
+                    if (dineinBtn) dineinBtn.classList.remove('active');
+                    takeawayBtn.classList.add('active');
+                    var takeawayInput = document.getElementById('takeway');
+                    if (takeawayInput) {
+                        takeawayInput.checked = true;
+                        takeawayInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        takeawayInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    clearInterval(checkInterval);
+                }
+            }, 500);
+            // Stop checking after 10s
+            setTimeout(function () { clearInterval(checkInterval); }, 10000);
+        });
+    </script>
+</body>
+
+</html>

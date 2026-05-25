@@ -1,0 +1,187 @@
+{
+  "agent": "B2-P3",
+  "surface": "POS /admin/pos",
+  "persona": "Caissier-multitask",
+  "persona_reframe": "Un caissier sous pression jongle 5 actions tangentes au flow vente direct (rembourser ticket précédent, mettre la caisse en pause pour aller pisser, transférer une commande à un collègue, consulter l'historique du client, ajouter une note à la transaction). Quelles features sont effectivement implémentées côté UI vs. seulement backend-ready vs. complètement absentes ?",
+  "timestamp": "2026-05-25T22:10:00+02:00",
+  "server": "http://127.0.0.1:8000",
+  "git_branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "git_head": "9450dcd54",
+  "merge_base_main": "b8b4fb76b",
+  "discipline": {
+    "DM3_quartet_captures": "PARTIAL — state-1 HTML curl-captured (HTTP 200, 10173 bytes, /tmp/pos-state1.html). States 2-5 sont du raisonnement code-driven (lecture PosOrderShowComponent.vue 716 LOC + PosOrdersTrackerComponent.vue 1785 LOC + PosComponent.vue 4000+ LOC + ParkedOrdersComponent.vue + ReceiptRemboursementMarker.vue + PLAN_P3_REFUND_HANDOFF.md + LOCK_PAY_PaymentComponent_currency_2026-05-23.md + LOCK_pos_wizard_historical_diff_pos_a4.md + git diff numstat vs merge-base main). PAS de captures browser-driven (Playwright MCP non utilisé en sub-agent). DM8: signalé honnêtement.",
+    "DM5_adversarial_inline": "OUI — paragraphe dédié infra",
+    "DM6_NF525_readonly": "RESPECTÉ — zéro INSERT audit_logs/z_reports, zéro migration touch, zéro touch fichier RefundWithCounterEntryService.php. Lecture seule frontend Vue + routes/api.php + plans LOCK docs.",
+    "DM8_honest_reporting": "OUI — clarifie que PaymentComponent.vue + PosV5TrancheRow.vue ont DES diffs massifs vs main (1351/352 LOC) mais GOUVERNÉS par LOCK docs owner-approved (D3 currency 2026-05-23 + POS-A4 retrospective 2026-05-17). Distinction `unmodified` vs `frozen-but-locked` faite explicite."
+  },
+  "states_audited": [
+    {
+      "id": 1,
+      "name": "POS /admin/pos load — initial state authenticated",
+      "evidence": "/tmp/pos-state1.html (10173 bytes, HTTP 200, Content-Type text/html)",
+      "route": "GET /admin/pos (SPA shell sans auth → Laravel redirect ou Vue route guard, mais shell HTML 200)",
+      "render_mode": "SPA Laravel + Vue mount client-side",
+      "cashier_relevance": "Page POS principale. C'est ici qu'on attend les boutons multi-tâches (refund, pause, transfer, customer history, note). État: la page charge bien (HTTP 200) — l'UX vente directe + parked orders est solide, mais 4/5 features owner-implicit absentes côté UI.",
+      "observations": [
+        "Shell HTML 200 OK avec auth admin (curl sans cookie a quand même rendu un shell minimal — SPA logic gère redirect côté Vue Router)",
+        "Le shell de l'admin POS est petit (~10 KB) car tout le rendering reactive arrive en JS via PosComponent.vue (4000+ LOC) — Mix-compiled dans public/js/pos-shell.js + public/js/manifest.js",
+        "Aucun marqueur HTML inline pour des features absentes — il faut lire les Vue components"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "PosOrderShowComponent.vue + PosOrdersTrackerComponent.vue — refund UI hunt",
+      "evidence": "PosOrderShowComponent.vue:79 + 156-181 + 451-466 (716 LOC total) ; PosOrdersTrackerComponent.vue:221-280 (1785 LOC total)",
+      "render_mode": "Vue components admin",
+      "cashier_relevance": "C'est ICI qu'on cherche le bouton 'Rembourser'. Verdict: ABSENT en tant que CTA explicite — seul un sub-cas (status transition vers RETURNED) le simule pseudo-fiscalement.",
+      "observations": [
+        "PosOrderShowComponent.vue:451 — `orderStatusObject` contient `{ name: 'label.returned', value: orderStatusEnum.RETURNED }` (ligne 465). Donc l'UI EXPOSE un dropdown 'Changer le statut' incluant 'Returned' (line 162 `@click=orderStatus(status.value)`). MAIS ce bouton appelle changeOrderStatus, qui appelle backend orderService::changeStatus — il N'INVOQUE PAS le bon service NF525 RefundWithCounterEntryService.",
+        "PosOrderShowComponent.vue:79 — Le menu d'actions disparait pour status REJECTED ou CANCELED, mais reste actif pour DELIVERED, ce qui permet le pseudo-refund via status RETURNED. Cette UI N'EST PAS le 'refund with counter-entry' button — c'est un status flip légacy qui contourne la chain HMAC NF525.",
+        "PosOrdersTrackerComponent.vue:221-280 actions sur orders ready: 1) `openEncaissement` (encaisser), 2) `requestReprint` (reprint), 3) `openCancelDialog` (cancel), 4) `markDelivered`. ZÉRO bouton refund. Aucun `@click=refund` ni `@click=refundWithCounterEntry` dans 1785 LOC.",
+        "ReceiptRemboursementMarker.vue existe (104 LOC) — c'est le marqueur visuel REMBOURSEMENT sur le ticket — donc le BACKEND sait imprimer un ticket remboursement (NF525 mirror counter-entry). Mais le déclenchement de cette mirror counter-entry depuis l'UI POS est ABSENT.",
+        "PLAN_P3_REFUND_HANDOFF.md confirme explicite: 'Remboursement partiel (ligne ou montant) | Backlog — pas de table order_refund_lines' + 'Reliquat P3 (phases) — Remboursement partiel + Permission Spatie + Statut REFUNDED + Cas tender disparu après Z'. Donc P3 acte la backlog côté UI."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Refund UI hits grep — empty by design",
+      "evidence": "grep -rn 'refundWithCounterEntry' resources/ → 1 hit unique dans ReceiptRemboursementMarker.vue:21 (commentaire doc 'RefundWithCounterEntryService → status=22 / payment_status=20'). Zéro hit pour 'refund' ou 'remboursement' lié à un @click handler ou méthode invoquable depuis l'UI POS.",
+      "route": "N/A — frontend code-search",
+      "render_mode": "N/A",
+      "cashier_relevance": "ÉTAT VÉRIFIÉ: Le service backend `RefundWithCounterEntryService` (app/Services/Order/RefundWithCounterEntryService.php:40) ET la route `POST /api/admin/pos-orders/{order}/refund-with-counter-entry` (routes/api.php:961-963 → PosOrderController::refundWithCounterEntry) existent ET sont opérationnels (NF525 mirror counter-entry implementé selon BL2-LOC2026-05-13 + audit `order.returned`). MAIS la route N'EST CÂBLÉE PAR AUCUN bouton UI Vue. Gap UI-only.",
+      "observations": [
+        "Single grep hit: ReceiptRemboursementMarker.vue:21 (comment doc only)",
+        "Routes: routes/api.php:961-963 OK, backend service: RefundWithCounterEntryService.php OK, PosOrderController::refundWithCounterEntry OK",
+        "Frontend invocation: zéro axios.post vers `refund-with-counter-entry` dans resources/js — la route est dormante côté UI",
+        "Gap CONFIRMÉ: backend production-ready + UI absente = exactement le statut PROPOSAL POS_REFUND_UI dont parle le mission brief"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Frozen-zone diff verification — PaymentComponent.vue + PosV5TrancheRow.vue",
+      "evidence": "git diff (merge-base main..HEAD) --numstat: PaymentComponent.vue = 1351 adds / 164 dels (CLAUDE.md frozen-zone), PosV5TrancheRow.vue = 352 adds / 0 dels (NEW file v5 architecture). Total +1703 LOC -164 LOC.",
+      "route": "N/A — git diff",
+      "render_mode": "N/A",
+      "cashier_relevance": "CRITICAL: Le mission brief demande 'frozen file diff = 0 LOC'. Verdict EMPIRIQUE: les fichiers N'ONT PAS un diff de 0 LOC. MAIS ces modifications sont GOUVERNÉES par 2 LOCK docs owner-countersigned: LOCK_PAY_PaymentComponent_currency_2026-05-23.md (D3 owner decision lock-fix via goal.html owner choices) + LOCK_pos_wizard_historical_diff_pos_a4.md (POS-A4 retrospective LOCK V1.0.1 H5.10, owner countersign pending).",
+      "observations": [
+        "git log -- PaymentComponent.vue: 10 commits depuis a99de069 (CV1-POS-AUDIT-MASSIVE-001) à 9450dcd5 (WAVE 3 PR-A V1 GO-LIVE blocker terminal_id UI for CARD path)",
+        "git log -- PosV5TrancheRow.vue: 1 unique commit a99de069 (CV1-POS-AUDIT-MASSIVE-001 Cycle 6 — Split Payment frontend) — file CREATED, ne précède pas le main fork",
+        "LOCK_PAY_PaymentComponent_currency_2026-05-23.md: Sujet D3 FR currency format (4,90 € au lieu de 4.90€). Owner approved via goal.html. SCOPE LIMITÉ à currencyFormat output. PAS un LOCK qui couvre 1515 LOC ajoutés — il couvre un fix précis ; le reste de l'historique est ANTÉRIEUR à la mise sous frozen-zone explicite (CLAUDE.md §7 BRAIN §2 ne date PAS le moment exact où PaymentComponent.vue a été déclaré frozen)",
+        "POS-A4 retrospective LOCK couvre `public/js/pos-wizard.js` + `resources/views/admin-pos-v4.blade.php` (POS Vanilla JS wizard) — PAS PaymentComponent.vue. Ce LOCK NE COUVRE PAS PaymentComponent.vue.",
+        "DRIFT POTENTIEL: PaymentComponent.vue a accumulé 1351/164 LOC de modifications sur 10 commits, dont la plupart ANTÉRIEURS à la déclaration explicite frozen-zone CLAUDE.md §7. Une LOCK rétrospective façon POS-A4 H5.10 (pos-wizard.js + admin-pos-v4.blade.php) DEVRAIT exister pour PaymentComponent.vue mais N'EXISTE PAS. Seul LOCK_PAY_currency_2026-05-23 couvre un fix scope-minimal.",
+        "PosV5TrancheRow.vue: déclaré frozen-zone dans CLAUDE.md §7, mais file CREATED dans le commit a99de069 du Wave POS-AUDIT — son existence MÊME précède la déclaration frozen-zone. Aucune LOCK ne couvre sa création."
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Adversarial + scores — 5 owner-implicit gaps",
+      "evidence": "Compilation des states 1-4 + grep cross-references",
+      "route": "N/A — synthèse",
+      "render_mode": "N/A",
+      "cashier_relevance": "Verdict consolidé sur 5 features owner-implicit",
+      "observations": [
+        "GAP 1 REFUND UI: ABSENT. Backend OK (RefundWithCounterEntryService + route POST /api/admin/pos-orders/{order}/refund-with-counter-entry). UI: 0 button. Workaround actuel = status flip vers RETURNED qui CONTOURNE le service NF525 mirror counter-entry. → Risk fiscal: caissier qui rembourse via 'changement statut RETURNED' ne crée PAS l'order mirror NF525 → chain HMAC ok mais Z-report refund_count ne reflète QUE les pseudo-refunds (status RETURNED) sans les mirror counter-entries propres. → Mitigation actuelle V1: backend ready + ops manuel via tinker/RefundWithCounterEntryService::execute(). Risk P0 fiscalité opérationnelle.",
+        "GAP 2 PAUSE CAISSE: ABSENT. Aucun grep hit 'pause' ou 'shift end' ou 'cashier_pause' dans resources/js/components/admin/pos/PosComponent.vue. PosCashDrawerSessionDialog.vue gère OPEN/CLOSE/RECONCILE session, mais pas PAUSE/RESUME. Caissier qui veut aller aux toilettes → aucune action UI sauf 'fermer la session' (drastique, force reconcile) ou laisser la session ouverte (risk vol cash si quelqu'un d'autre encaisse pendant son absence sur sa session). Risk P1 opérationnel.",
+        "GAP 3 TRANSFER COMMANDE: PARTIEL. Transfert ENTRE TABLES via FloorplanComponent.vue:247 transferTable(table) → POST posFloorplan/transfer. MAIS V1 dine-in désactivé (feedback_v1_dine_in_disabled_2026-05-06) → ce path est INACCESSIBLE en V1. Transfert ENTRE CAISSIERS (user_id réassignation) ABSENT (zéro hit `transfer.*cashier` ou `reassign.*staff` dans app/, routes/, resources/). Parked orders agit comme workaround approximatif (caissier A park → caissier B resume), mais ne réassigne pas formellement l'ownership. Risk P2.",
+        "GAP 4 CUSTOMER HISTORY: PARTIEL. PosComponent.vue:3892-3917 fetch /frontend/loyalty/balance qui retourne points loyalty + code mais PAS l'historique de commandes. Aucun grep hit `customer.history` ou `past_orders` ou `customer_orders` dans resources/js/components/admin/pos/. PosLoyaltyRedeemModal.vue:276 gère redeem only, pas history. → Caissier qui veut savoir 'ce client a-t-il commandé ici avant ?' n'a aucune UI dédiée. Risk P2 UX (pas critique opérationnel).",
+        "GAP 5 NOTE TRANSACTION: PARTIEL. PosComponent.vue:1564 + 3225 expose `pos_payment_note` (champ form de paiement) propagé jusqu'à backend create order. Donc une NOTE GLOBALE de paiement EXISTE côté data. MAIS pas de UI prominent pour la SAISIR depuis l'écran principal POS — uniquement via la modale paiement (où pos_payment_note est probablement consommé par PaymentComponent ou PosV5TrancheRow, hors frozen-zone read scope du sub-agent). Le format 'note libre par ligne' (item.instruction visible PosComponent.vue:1230-1232 dans contexte 'kiosk-cash-order-detail-line') existe via le wizard pour les items, hérité du flow client. Risk P3.",
+        "ADVERSARIAL: Le bilan honnête est que 1 GAP P0 fiscal (refund UI) + 1 GAP P1 opérationnel (pause caisse) + 3 GAPs P2/P3 (transfer cashier / customer history / note global UI). Mais le bilan VERY UGLY caché est state 4: le claim 'PaymentComponent.vue + PosV5TrancheRow.vue diff = 0 LOC' demandé par le mission brief est FAUX EMPIRIQUEMENT — +1703 LOC -164 LOC vs main, dont la majorité non couverts par LOCK docs spécifiques. CLAUDE.md §7 dit 'frozen per BRAIN §2 (V1 untouched protected file)' mais V1 n'EST PAS UNTOUCHED — il y a un DRIFT de gouvernance frozen-zone à régulariser."
+      ]
+    }
+  ],
+  "owner_implicit_gaps_verifications": [
+    {
+      "gap": "1_refund_ui",
+      "status": "ABSENT_UI_ONLY",
+      "file_line_evidence": [
+        "resources/js/components/admin/pos/ReceiptRemboursementMarker.vue:21 (single grep hit, doc comment only)",
+        "resources/js/components/admin/posOrders/PosOrderShowComponent.vue:465 (workaround: status RETURNED via dropdown — bypass NF525 mirror counter-entry)",
+        "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:221-280 (4 actions: encaisser/reprint/cancel/delivered, ZÉRO refund)",
+        "routes/api.php:961-963 + app/Services/Order/RefundWithCounterEntryService.php:40 (backend ready, route dormante côté UI)",
+        "plans/PLAN_P3_REFUND_HANDOFF.md (handoff doc confirme refund partiel/UI = BACKLOG)"
+      ],
+      "verdict": "Gap CONFIRMÉ — backend production-ready, UI absente. Risk P0 NF525 opérationnel (status RETURNED workaround ne crée pas mirror counter-entry)."
+    },
+    {
+      "gap": "2_pause_caisse",
+      "status": "ABSENT_TOTAL",
+      "file_line_evidence": [
+        "resources/js/components/admin/pos/PosComponent.vue: zéro grep hit `pause` ou `Pause`",
+        "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue:336 (session OPEN/CLOSE/RECONCILE only, pas PAUSE)",
+        "app/Console/Kernel.php:340 (cashier shift end concept existe mais en cron daily 23:55, pas UI action)"
+      ],
+      "verdict": "Gap CONFIRMÉ — zéro implementation backend OU UI. Risk P1 opérationnel (caissier pause toilettes → force close session = drastique)."
+    },
+    {
+      "gap": "3_transfer_commande",
+      "status": "PARTIEL_TABLE_ONLY_V1_DISABLED",
+      "file_line_evidence": [
+        "resources/js/components/admin/pos/FloorplanComponent.vue:247-270 (transferTable via posFloorplan/transfer)",
+        "feedback_v1_dine_in_disabled_2026-05-06 (V1 dine-in OFF → floorplan inaccessible)",
+        "Aucun grep `transfer.*cashier` / `reassign.*staff` dans app/ routes/ resources/"
+      ],
+      "verdict": "Gap PARTIEL — Transfer table existe mais désactivé V1. Transfer cashier ABSENT totalement. Parked orders = workaround approximatif. Risk P2."
+    },
+    {
+      "gap": "4_customer_history",
+      "status": "PARTIEL_LOYALTY_ONLY",
+      "file_line_evidence": [
+        "resources/js/components/admin/pos/PosComponent.vue:3892-3917 (fetch /frontend/loyalty/balance → points + code, pas history)",
+        "resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue:276 (redeem only)",
+        "Aucun grep `customer.history` / `past_orders` / `customer_orders` dans resources/js/components/admin/pos/"
+      ],
+      "verdict": "Gap PARTIEL — loyalty balance OK mais historique commandes du client ABSENT côté UI POS. Risk P2 UX."
+    },
+    {
+      "gap": "5_note_transaction",
+      "status": "PARTIEL_PAYMENT_NOTE_HIDDEN",
+      "file_line_evidence": [
+        "resources/js/components/admin/pos/PosComponent.vue:1564 (data: pos_payment_note: '')",
+        "resources/js/components/admin/pos/PosComponent.vue:3225 (payload: pos_payment_note included in create order)",
+        "resources/js/components/admin/pos/PosComponent.vue:3261 (reset: pos_payment_note: null)",
+        "resources/js/components/admin/pos/PosComponent.vue:3348 (restore from savedForm)",
+        "resources/js/components/admin/pos/PosComponent.vue:1230-1232 (item.instruction par-ligne via wizard)"
+      ],
+      "verdict": "Gap PARTIEL — pos_payment_note CHAMP DATA présent + propagé backend, mais saisie UI invisible depuis écran principal POS (probablement uniquement dans modale PaymentComponent.vue, hors scope read sub-agent frozen). Per-line item.instruction OK via wizard. Risk P3."
+    }
+  ],
+  "critical_findings": [
+    {
+      "id": "B2-P3-CF-01",
+      "severity": "P0",
+      "title": "Frozen-zone DRIFT non-LOCK couvert sur PaymentComponent.vue + PosV5TrancheRow.vue",
+      "evidence": "git diff (merge-base main..HEAD) --numstat: PaymentComponent.vue +1351/-164 LOC, PosV5TrancheRow.vue +352/0 LOC (NEW file). LOCK_PAY_PaymentComponent_currency_2026-05-23.md couvre UNIQUEMENT le fix D3 currency format (scope-minimal). LOCK_pos_wizard_historical_diff_pos_a4.md couvre `public/js/pos-wizard.js` + `resources/views/admin-pos-v4.blade.php`, PAS PaymentComponent.vue ni PosV5TrancheRow.vue. CLAUDE.md §7 déclare ces 2 fichiers 'frozen per BRAIN §2 (V1 untouched protected file)' mais l'historique git montre 10 commits + création file.",
+      "verdict": "DRIFT de gouvernance. La règle frozen-zone est violée empiriquement. SOIT créer un LOCK rétrospectif `LOCK_PAY_PaymentComponent_historical_drift_2026-05-25.md` à la manière de POS-A4 H5.10 pour régulariser, SOIT mettre à jour CLAUDE.md §7 pour clarifier 'V1 frozen depuis date X' et confirmer que le drift pré-X est légitime.",
+      "action": "Owner gate: décider entre (a) LOCK rétrospectif, (b) clarification CLAUDE.md datée, (c) freeze actuel = baseline avec règle strict-no-touch désormais."
+    },
+    {
+      "id": "B2-P3-CF-02",
+      "severity": "P0",
+      "title": "Refund UI complete absence enables NF525 status-flip workaround bypass",
+      "evidence": "PosOrderShowComponent.vue:162-466 expose `orderStatus(status.value)` button qui inclut `orderStatusEnum.RETURNED` (statut 22) parmi les options. Cette UI EXISTE et EST FONCTIONNELLE. Mais elle invoque backend OrderService::changeStatus qui ne crée PAS le mirror counter-entry NF525-compliant via RefundWithCounterEntryService. Donc un caissier qui clique 'Returned' dans le dropdown fait un pseudo-refund non-NF525 qui s'incrémente dans Z-report.refund_count (per PLAN_P3_REFUND_HANDOFF) mais sans le mirror order propre.",
+      "verdict": "Gap NF525 opérationnel CONFIRMÉ. Soit (a) câbler le bouton 'Returned' au POST /api/admin/pos-orders/{order}/refund-with-counter-entry (route déjà existe), soit (b) retirer 'Returned' du orderStatusObject (PosOrderShowComponent.vue:465) en attendant le proper Refund UI button. Tant que l'option Returned est exposée sans câblage NF525, le risk fiscal opérationnel persiste.",
+      "action": "P0 V1: décision binaire UI heal — câblage RefundWithCounterEntryService OU retrait option Returned du dropdown."
+    },
+    {
+      "id": "B2-P3-CF-03",
+      "severity": "P1",
+      "title": "PAUSE CAISSE totalement absente — risk vol cash session ouverte non-monitorée",
+      "evidence": "Zéro grep hit `pause` / `cashier_break` / `shift.*pause` dans app/ routes/ resources/. PosCashDrawerSessionDialog.vue gère uniquement OPEN/CLOSE/RECONCILE (session lifecycle binaire). Caissier qui veut quitter physiquement le poste 5 minutes a 2 options: (a) laisser session ouverte → si un collègue encaisse pendant, transactions s'attribueront sous le user_id du caissier absent → audit log incorrect ; (b) fermer la session → force reconcile drastique + ouverture nouvelle session au retour avec snapshot cash recount.",
+      "verdict": "Gap PRODUIT opérationnel V1. En V1 single-resto Le Cayenne le risk est limité (1 caissier visible, équipe restreinte). Mais en V2 SaaS multi-tenant ce sera un gap production-critical. V1.0.X backlog item recommandé: PAUSE session avec marker `paused_at` + `paused_until` + bouton 'Resume' qui ne force pas reconcile.",
+      "action": "P1 V1.0.X backlog — implémenter Pause/Resume session avec audit trail (qui a paused, quand, durée)."
+    }
+  ],
+  "scoring": {
+    "ui_completeness_owner_implicit_features": "3/10 — 1/5 partiellement OK (note transaction hidden), 2/5 partiel inaccessible (transfer table V1 OFF + customer history loyalty-only), 2/5 absents (refund UI button + pause caisse)",
+    "frozen_zone_governance_discipline": "5/10 — LOCK docs existent pour D3 currency + POS-A4 wizard, mais drift global non-LOCK couvert sur PaymentComponent.vue (+1351 LOC) + PosV5TrancheRow.vue (+352 LOC NEW file)",
+    "nf525_refund_fiscal_safety_via_ui": "4/10 — backend safe (RefundWithCounterEntryService + chain HMAC OK), UI workaround unsafe (status RETURNED dropdown bypass mirror counter-entry)",
+    "overall_pos_caissier_multitask_readiness_v1": "5/10 — encaissement direct + parked orders solides, mais features tangentes (refund/pause/transfer/history/note) toutes incomplètes côté UI"
+  },
+  "next_actions_recommended": [
+    "P0 immédiat: décider câblage RefundWithCounterEntryService vers UI OU retirer option Returned du orderStatusObject (PosOrderShowComponent.vue:465) en attendant l'implémentation propre du Refund UI button",
+    "P0 frozen-zone hygiene: créer LOCK_PAY_PaymentComponent_historical_drift_2026-05-25.md (similaire POS-A4 H5.10) OU mettre à jour CLAUDE.md §7 avec date frozen explicite et reconnaître le drift pré-date comme légitime",
+    "P1 V1.0.X backlog: implémenter Pause/Resume session caissier avec marker `paused_at` + `paused_until` + audit trail",
+    "P2 V1.0.X backlog: customer history mini-modal accessible depuis le selector customer (3 dernières commandes + total spent lifetime)",
+    "P3 V1.0.X backlog: rendre pos_payment_note saisissable depuis écran principal POS (toggle 'Ajouter note' visible) plutôt que masqué dans modale paiement"
+  ]
+}

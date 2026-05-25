@@ -1,0 +1,171 @@
+{
+  "agent": "B1-P1",
+  "surface": "Borne kiosk /kiosk/idle",
+  "persona": "Chef-rush",
+  "persona_reframe": "Pendant un coup de feu, qu'est-ce que la borne (côté client) ferait pour aider/handicaper le chef en cuisine ? Quelles données du flow client borne se rendent — ou ne se rendent PAS — sur la ligne KDS du chef ?",
+  "timestamp": "2026-05-25T21:50:00+02:00",
+  "server": "http://127.0.0.1:8000",
+  "git_branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "discipline": {
+    "DM3_quartet_captures": "PARTIAL — state-1 HTML capturé via curl (10408 bytes, HTTP 200). States 2-6 sont du raisonnement code-driven (lecture KioskIdleScreenComponent.vue 840 LOC + KioskAppComponent.vue 1576 LOC + KioskCartComponent.vue + KioskPaymentComponent.vue + kioskCart.js store). PAS de captures browser-driven (Playwright MCP non utilisé en sub-agent). DM8: signalé honnêtement.",
+    "DM5_adversarial_inline": "OUI — paragraphe dédié infra",
+    "DM6_NF525_readonly": "RESPECTÉ — zéro INSERT audit_logs/z_reports/migration. Lecture seule de fichiers frontend (resources/js/) + routes/api.php + curl HTML.",
+    "DM8_honest_reporting": "OUI — states 2-6 reasoned-not-captured, API kiosk/categories returns SPA HTML shell (Laravel catchall), idle-only scoring rigoureux + flow-wider scoring limité"
+  },
+  "states_audited": [
+    {
+      "id": 1,
+      "name": "Idle screen — welcome + order type chooser",
+      "evidence": "captures/B1-P1/state-1.html (10408 bytes, HTTP 200)",
+      "route": "GET /kiosk/idle",
+      "render_mode": "SPA shell — Vue mounts <router-view /> client-side",
+      "chef_relevance": "Aucune donnée chef émise à ce stade. Mais : exposition window.foodkingConfig.bypassMode.printing=true en HTML inline (state-1.html ligne ~109) — un kiosk en MODE TEST ne déclenchera PAS l'impression du ticket cuisine. Le chef ne le verra pas — il ne saura que rien n'a été imprimé qu'au moment où il s'attend à un ticket et que rien ne vient.",
+      "observations": [
+        "kioskAutoLogin {username=kiosk-lecayenne,password=kiosk123} exposé en HTML pour APP_ENV=local — bien noté gated par IP allowlist + APP_ENV (commit 2026-05-18 PR-B P0). En prod ce sera null. OK.",
+        "branchCount=1 — kiosk câblé single-branch (Le Cayenne)",
+        "Locale FR-immutable runtime (kioskLocaleSwitchAllowed=false) — ADR-007. Chef voit le ticket en FR, attendu."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Order-type choice (Sur place / À emporter)",
+      "evidence": "KioskIdleScreenComponent.vue lines 108-160 (template) + selectOrderTypeAndStart line 257 + dineInEnabled computed line 218",
+      "render_mode": "Client-side button — emits start-order(orderType) to KioskAppComponent",
+      "chef_relevance": "Critique — l'order_type (10=TAKEAWAY / 25=KIOSK sur place) atterrit sur la commande KDS. dineInEnabled DEFAULTS FALSE (V1 mandate feedback_v1_dine_in_disabled_2026-05-06). Chef verra à priori uniquement des tickets 'À emporter' en V1.",
+      "observations": [
+        "Garde-fou typeof contre pos_dine_in_enabled mal typé (line 218-224) — chef ne verra pas de tickets sur place tant que setting flag non flippé",
+        "Pas de choix 'pour combien de personnes' ni 'délai souhaité' — chef ne sait pas si le client mange tout-de-suite ou dans 20 min"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Categories navigation + Item wizard composition",
+      "evidence": "Component map: KioskCategoriesComponent → KioskWizardComponent / KioskPosWizardComponent (frozen V1.x). API curl /api/kiosk/categories renvoie SPA HTML shell 10173 bytes (auth-gated kiosk:order token).",
+      "render_mode": "SPA client-side après login machine",
+      "chef_relevance": "Composition wizard (sauce/viande/crudité/frites/boisson) — payload sanitizeKioskOrderItem (kioskCart.js:98-112) ship UNIQUEMENT item_id + quantity + item_variations + item_extras + item_addons + instruction. Le chef reçoit donc une ligne sandwich avec ses options sélectionnées — c'est l'essentiel. MAIS le mapping affichable à l'écran KDS dépend de l'enrichissement backend (composition_snapshot NF525-locked à creation order).",
+      "observations": [
+        "instruction (per-line note client) → ARRIVE bien au backend (kioskCart.js:101). Chef peut donc voir 'sans oignon' / 'bien cuit' SI le KDS adapter affiche `item.instruction`.",
+        "ZÉRO order-level note channel — pas de boîte 'message à la cuisine' globale. Si client a une consigne globale ('je suis pressé', 'allergie X'), il doit la mettre sur 1 ligne au hasard.",
+        "Allergens : KsAllergenBadge affiche client-side les overlaps customerProfile.declared_allergens ↔ item.allergens (KioskCartComponent.vue:163-171). MAIS ZÉRO `customer_declared_allergens` ou `customer_allergen_warning` dans le payload sanitizeKioskOrderItem ou buildKioskQuotePayload (kioskCart.js:142-158). Donc le chef voit les allergènes intrinsèques de l'item (via item_id backend enrichment) mais NE SAIT PAS qu'il sert un client qui s'est déclaré allergique. Affichage cuisine perd un signal de sécurité — un client peanut-allergic qui commande involontairement un item contenant des arachides ne déclenche AUCUNE alerte côté chef."
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Cart review",
+      "evidence": "KioskCartComponent.vue:140-181 (template), customerAllergenCodes computed line 437-441",
+      "render_mode": "SPA client-side",
+      "chef_relevance": "Cart affiche tout au client — le chef ne voit pas cet écran. MAIS : composition de la cart est ce qui partira au KDS. Si client édite ligne (editingCartIndex pattern P-MEGA-05) le chef ne sait jamais qu'il y a eu hésitation — bien, c'est attendu.",
+      "observations": [
+        "Tier de service : pas de bouton 'urgent' / 'lent' pour le chef — chef traite tout en FIFO sans signal de priorité borne",
+        "Pas de timestamp d'envoi à la borne affiché — chef ne sait pas combien de temps un client a passé à composer (un client qui hésite 5min puis valide = chef pense que c'est une commande fraîche)"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Payment + order submit",
+      "evidence": "KioskPaymentComponent.vue:374 submitOrder({paymentMethod, orderType, quote}) + buildKioskOrderPayload kioskCart.js:160-180",
+      "render_mode": "SPA → POST /api/frontend/order (idempotency middleware + throttle:kiosk-orders)",
+      "chef_relevance": "C'est le moment où la commande devient visible KDS. Payload final = quote_token + quote_signature + payment_method + items (JSON.stringify). Le KDS reçoit l'order via channel/polling — la borne ne contrôle pas le ticket_number côté chef.",
+      "observations": [
+        "bypassMode.payment=true en local — paiement bypass. Si jamais ce flag fuit en prod (improbable, AppServiceProvider boot guard refuse), aucune trace côté chef qu'on est en MODE TEST.",
+        "bypassMode.printing=true en local — IMPRESSION TICKET CHEF BYPASSÉE. Le chef en prod (avec flag à false) imprime. Le chef en MODE TEST (flag true) ne reçoit rien à imprimer — découvre 'je n'ai pas de ticket' au moment de préparer. Pas d'overlay visible côté chef indiquant 'MODE TEST en cours sur borne X'.",
+        "Pas de pré-confirmation client 'voulez-vous être appelé par votre nom ?' — handoff = ticket_number/queueNumber uniquement"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Confirmation + queueNumber display",
+      "evidence": "KioskConfirmationComponent.vue (mentioned in code: line 145 'snapshot localStorage pour survie F5 du ticket', line 267 'persistance localStorage recharge items/total/queueNumber'), KioskAppComponent.vue:33-39 (init overlay)",
+      "render_mode": "SPA après POST order success",
+      "chef_relevance": "queueNumber est le SEUL identifiant partagé client↔chef. Si l'audio d'appel cuisine ne fonctionne pas, ou si le client n'entend pas, ou si le numéro est mal lu — le chef ne peut pas connecter une assiette à un humain (pas de nom client en V1 kiosk anonymous).",
+      "observations": [
+        "kioskConfirmationAutoReturnSeconds=30 — le client a 30s pour mémoriser son numéro avant que la borne revienne idle pour le client suivant",
+        "Survie F5 du ticket : localStorage snapshot persisté — robuste si client refresh la page sans le vouloir",
+        "AUCUN nom client demandé — V1 walk-up anonyme. Acceptable pour V1 mais : en coup de feu réel avec 8 clients dont 6 portent 'numéro 3-4-5', le chef doit hurler les numéros forts. Risque mineur de confusion."
+      ]
+    }
+  ],
+  "chef_rush_workflow_map": {
+    "step_1_client_taps_borne": "Idle screen → choix order_type (TAKEAWAY uniquement V1)",
+    "step_2_client_compose": "Categories → Wizard → instruction per-line possible, no global note",
+    "step_3_client_pays": "Payment component → POST order (avec quote signature SSOT)",
+    "step_4_kds_receives": "KDS poll/channel reçoit order avec composition_snapshot NF525-locked",
+    "step_5_chef_prepares": "Chef voit ticket avec : item_id enrichi (allergens intrinsèques OK), instruction per-line OK, queueNumber OK. NE VOIT PAS : nom client, customer-declared allergens (signal recipient-side perdu), priorité, temps passé à la borne, mode TEST flag",
+    "step_6_chef_appelle": "queueNumber via audio + écran OSS"
+  },
+  "findings_top_3": [
+    {
+      "id": "B1-P1-F01",
+      "severity": "P1",
+      "title": "Customer-declared allergens cross-check perdu en route vers KDS",
+      "category": "safety / data-flow",
+      "evidence_file": "resources/js/store/modules/kioskCart.js:98-112 (sanitizeKioskOrderItem) + KioskCartComponent.vue:163-171 (KsAllergenBadge client-side only)",
+      "description": "Le client peut déclarer ses allergènes (kioskSettings.customerProfile.declared_allergens). Ces données SONT utilisées pour highlighter en rouge dans la cart côté borne (KsAllergenBadge). MAIS aucune trace de ces déclarations ne traverse le payload sanitizeKioskOrderItem (item_id, instruction, quantity, item_variations, item_extras, item_addons — c'est tout) ni buildKioskQuotePayload (order_type, loyalty_code, kiosk_promo_code, source, payment_method, items). Le chef côté KDS voit donc UNIQUEMENT les allergènes intrinsèques de l'item (via composition_snapshot backend), mais ne sait JAMAIS qu'un client allergique aux arachides a quand même validé une commande contenant des arachides. Le signal de sécurité s'arrête à l'écran borne client.",
+      "chef_impact": "Coup de feu : un client peanut-allergic distrait valide. La cart highlight rouge ne l'a pas arrêté (rare, mais existe). Chef prépare l'assiette sans alerte. Risque incident allergique cuisine. En prod restauration FR, ça peut être catastrophe.",
+      "v1_blocker": false,
+      "recommendation": "Ajouter `customer_declared_allergens: state.customerProfile?.declared_allergens || []` au buildKioskQuotePayload (kioskCart.js:147-157). KDS adapter (chef view) affiche un badge rouge top-level 'ALLERGIE DÉCLARÉE: peanut, gluten' au-dessus du ticket. Pas un blocker V1 strict (workflow anonyme accepté), mais V1.0.1 P1 sécurité.",
+      "estimated_fix": "1 hour — 1 champ ajouté dans sanitizeKioskOrderItem côté store + 1 ligne backend (FrontendOrderController) pour persister + 1 sélecteur KDS pour afficher"
+    },
+    {
+      "id": "B1-P1-F02",
+      "severity": "P2",
+      "title": "MODE TEST printing bypass invisible côté chef",
+      "category": "ops / observability",
+      "evidence_file": "state-1.html lines 107-115 (bypassMode.printing=true) + KioskPaymentComponent flow",
+      "description": "bypassMode.printing=true en APP_ENV=local empêche l'impression du ticket cuisine. Le flag est exposé en HTML inline (kioskPrintingScreenMarker '🔧 MODE TEST — IMPRESSION BYPASSÉE'). MAIS ce marker s'affiche côté borne uniquement. Le chef côté KDS ne reçoit aucun overlay 'BORNE 1 en MODE TEST — aucun ticket papier ne sera imprimé pour cette commande'. AppServiceProvider boot guard refuse en prod (NF525-irrelevant mais cohérent), donc en prod c'est non-applicable. En local/staging, opérateur qui teste peut ne pas réaliser que le ticket chef n'a pas été imprimé jusqu'au moment du service.",
+      "chef_impact": "Coup de feu en local/staging test : commande envoyée, chef voit le ticket KDS écran mais pas de ticket papier. Pense imprimante en panne. Perd 30s à debug. En prod : inappliqué (guard).",
+      "v1_blocker": false,
+      "recommendation": "Si bypassMode.printing=true ET order vient d'une borne dans ce mode, KDS adapter pousse un badge 'BYPASS-PRINT' visible chef. Tracé via event log frontend/kiosk-event existant. V1.0.2 backlog (pas prod blocker).",
+      "estimated_fix": "30 min — propager flag dans payload metadata + KDS badge"
+    },
+    {
+      "id": "B1-P1-F03",
+      "severity": "P3",
+      "title": "Pas d'order-level note 'message cuisine' — instructions globales forcées sur 1 ligne au hasard",
+      "category": "UX / workflow",
+      "evidence_file": "KioskCartComponent.vue (cart screen — no global note input visible) + sanitizeKioskOrderItem ne ship que `instruction` per-line",
+      "description": "Le client peut écrire une note par ligne (item.instruction → ship OK). Mais aucun champ global au niveau ORDER pour 'je suis pressé', 'commande pour bureau', 'allergie générale'. Si client veut une instruction globale, il doit la coller sur 1 ligne d'item au hasard. Chef voit cette note attachée à un sandwich isolé alors qu'elle concerne toute la commande.",
+      "chef_impact": "Coup de feu : note 'TRÈS PRESSÉ' apparaît sur un seul item. Chef peut traiter cet item rapidement et oublier la priorité sur les 3 autres lignes du même ticket. Confusion potentielle.",
+      "v1_blocker": false,
+      "recommendation": "Champ optionnel order-level dans cart → backend persiste sur orders.customer_note → KDS affiche en bannière top du ticket. Petit travail, gros gain UX chef.",
+      "estimated_fix": "2 hours — 1 input cart + 1 colonne (déjà existe peut-être) + 1 affichage KDS"
+    }
+  ],
+  "adversarial_paragraph": "Worst case I see is : un client allergique aux arachides arrive en coup de feu samedi midi. Il déclare son allergie dans le profil (KsA11ySettings → KsAllergenBadge), compose un sandwich, l'option 'Sauce arachide' apparaît rouge dans le KsAllergenBadge côté borne. Distrait, klaxon dans l'arrière-boutique, il tape 'Valider commande'. Le payload (sanitizeKioskOrderItem kioskCart.js:98-112) part avec item_id + instruction + quantity + modifiers — mais ZÉRO trace de sa déclaration peanut-allergic. Backend FrontendOrderController persiste la commande, fiscal sequence allouée NF525-OK, KDS chef reçoit le ticket. Chef voit le sandwich avec allergens intrinsèques (peanut sauce → allergen badge per-item via composition_snapshot) MAIS ce signal est noyé visuellement parmi 6 autres tickets simultanés. Pas de overlay top-ticket 'ALLERGIE PEANUT DÉCLARÉE'. Le chef prépare. Le client mange. Risque réel d'incident — pas hypothétique. La sécurité a été pensée client-side (good cart highlight), mais l'évidence est INTERROMPUE au moment du handoff vers le KDS. Le client a fait son job (déclarer), la borne a fait son job (highlighter), mais le pipeline jette l'information avant le chef. Second worst case : kiosk en MODE TEST local oublié activé sur un device staging à l'occasion d'une journée portes ouvertes — clients passent commandes 'réelles', tickets KDS apparaissent, chef prépare, MAIS aucun ticket papier ne sort (bypassMode.printing=true). Chef en cuisine ne voit l'écran KDS que latéralement, comptait sur les tickets papier comme source primaire. Service ralentit, frustration, owner appelle Claude pour comprendre. Ces deux scénarios sont des défauts pipeline (data dropped silencieusement) — pas des défauts UI. La borne est belle, accessible, polished — mais ce qu'elle CHOISIT de transmettre au chef montre que l'optique a été conçue 'client-first' sans demander 'qu'est-ce que le chef a besoin de savoir ?'.",
+  "scores": {
+    "scope_note": "Idle screen scoring rigoureux (read KioskIdleScreenComponent.vue 840 LOC). Flow-wider scores limités au passage code-read (no Playwright capture).",
+    "idle_screen": {
+      "UX": 9,
+      "perf": 8,
+      "a11y": 9,
+      "i18n": 8,
+      "polish": 9,
+      "rationale": "Bold Appétissant V2.B refonte impeccable. Tokens design system présents (kiosk-bold-*). aria-pressed, aria-label, role=group, focus-visible outlines, reduced-motion media query, touch-min 48px, RTL support, KsA11ySettings drawer (AAA contrast/PMR/audio). i18n FR/EN/AR détecté mais FR-immutable runtime V1 (ADR-007). Video bg + fallback warm gradient. SVG icons inlined (perf OK). 1 point déduit sur i18n: locale switcher rendu mais désactivé — confusion possible client (UI suggère choix qui n'existe pas). 1 point déduit sur perf : 3 keyframe animations + video autoplay + pulse rings sur idle = consommation CPU continue jusqu'au touch."
+    },
+    "flow_wider_idle_to_kds": {
+      "UX": 7,
+      "perf": null,
+      "a11y": null,
+      "i18n": null,
+      "polish": 7,
+      "rationale": "UX flow : composition wizard solide (frozen V1.x), cart review clair, payment+confirmation robuste avec localStorage F5-survival. MAIS : pas de message global cuisine, pas de tier de priorité, pas de demande nom client. Polish : KsAllergenBadge bien fait côté borne MAIS perd signal vers KDS. Scores perf/a11y/i18n du flow complet non attribués — nécessitent capture Playwright pour mesurer (DM8 honest)."
+    }
+  },
+  "verdict": "AMBER",
+  "verdict_rationale": "Idle screen seul = GREEN (excellent design + a11y + polish). Mais reframe Chef-rush expose 3 trous dans le pipeline de données client → chef : (1) allergens declarations perdus, (2) MODE TEST printing bypass invisible chef, (3) pas de note ordre-level. Aucun n'est V1 blocker mais (1) est P1 safety à porter au V1.0.1. La borne fait son métier client-side de manière exemplaire ; le défaut est l'asymétrie de respect entre l'écran client (riche, accessible, bienveillant) et l'écran chef (qui ne reçoit qu'un sous-ensemble des intentions exprimées).",
+  "captures_paths": [
+    "reports/test-e2e/master-plan-2026-05-25/captures/B1-P1/state-1.html",
+    "reports/test-e2e/master-plan-2026-05-25/captures/B1-P1/state-1-idle-shell.html",
+    "reports/test-e2e/master-plan-2026-05-25/captures/B1-P1/categories.json"
+  ],
+  "files_read": [
+    "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue (840 LOC)",
+    "resources/js/components/frontend/kiosk/KioskAppComponent.vue (1576 LOC — partial)",
+    "resources/js/components/frontend/kiosk/KioskCartComponent.vue (partial)",
+    "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue (partial)",
+    "resources/js/store/modules/kioskCart.js (partial)",
+    "routes/api.php (partial kiosk routes section)"
+  ],
+  "frozen_zone_touch": "NONE — read-only inspection only",
+  "nf525_touch": "NONE — DM6 respected"
+}

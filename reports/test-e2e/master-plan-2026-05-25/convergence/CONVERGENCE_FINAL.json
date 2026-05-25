@@ -1,0 +1,281 @@
+{
+  "meta": {
+    "synthesizer": "PHASE-H aggregator",
+    "cycle_id": "master-plan-test-e2e-2026-05-25",
+    "cycle_start": "2026-05-25T21:48:00+02:00",
+    "cycle_end": "2026-05-25T22:55:00+02:00",
+    "wall_clock_hours": 1.12,
+    "branch": "heal/cms-pr1-quickwins-2026-05-18",
+    "baseline_head": "a6ed32807",
+    "current_head": "a6ed32807",
+    "working_tree_modifications_uncommitted": [
+      "resources/views/pdf/sales_report.blade.php (orchestrator heal scope-minimal)",
+      "resources/views/pdf/items_report.blade.php (orchestrator heal scope-minimal)"
+    ]
+  },
+  "executive_summary": {
+    "total_agents_dispatched": 22,
+    "agents_breakdown": {
+      "B1_borne": 6,
+      "B2_pos": 6,
+      "B3_kds": 6,
+      "B4_oss_consolidated_6personas": 1,
+      "B5_cash_consolidated_6personas": 1,
+      "B6_stock": 0,
+      "B7_admin_consolidated_6personas": 1,
+      "F_visual_capture": 1
+    },
+    "persona_surface_intersections_covered": 30,
+    "persona_surface_intersections_missing": 6,
+    "missing_intersections_reason": "B.6 Stock socket-closed mid-dispatch — honest gap",
+    "headline_verdict": "AMBER",
+    "headline_verdict_rationale": "V1 LOCAL Le Cayenne PRODUCTION-READY UNCHANGED. No new ship blocker. Owner-night reporting layer AMBER (3-agent triangulated dashboard drift). V1.0.1/V1.0.2 backlog grew ~20 items."
+  },
+  "phase_verdicts": [
+    {"phase": "B.1 Borne kiosk", "agents": 6, "verdict": "AMBER-mix", "p0": 1, "p1": 4, "p2": 3, "p3": 4},
+    {"phase": "B.2 POS caisse", "agents": 6, "verdict": "AMBER-mix", "p0": 3, "p1": 5, "p2": 5, "p3": 2},
+    {"phase": "B.3 KDS", "agents": 6, "verdict": "AMBER-lean-GREEN", "p0": 1, "p1": 4, "p2": 5, "p3": 1},
+    {"phase": "B.4 OSS", "agents": "6_combined", "verdict": "AMBER", "p0": 0, "p1": 0, "p2": 2, "p3": 1},
+    {"phase": "B.5 Cash drawer", "agents": "6_combined", "verdict": "AMBER-to-GREEN-post-Z-reopen", "p0": 0, "p1": 1, "p2": 1, "p3": 1},
+    {"phase": "B.6 Stock", "agents": 0, "verdict": "NOT_DELIVERED", "p0": null, "p1": null, "p2": null, "p3": null, "honest_caveat": "socket-closed mid-dispatch"},
+    {"phase": "B.7 Admin backoffice", "agents": "6_combined", "verdict": "AMBER", "p0": 0, "p1": 2, "p2": 1, "p3": 1},
+    {"phase": "F Visual capture", "agents": 1, "verdict": "GREEN", "p0": 0, "p1": 0, "p2": 0, "p3": 0, "captures": 3, "surfaces": ["kiosk/idle", "login", "admin/dashboard"]}
+  ],
+  "aggregate_findings_count": {
+    "P0": 4,
+    "P1": 16,
+    "P2": 17,
+    "P3": 9,
+    "total": 46
+  },
+  "top_5_critical": [
+    {
+      "rank": 1,
+      "id": "B2-P3-CF-02",
+      "severity": "P0",
+      "title": "Refund UI absent enables NF525 bypass via Returned dropdown",
+      "source_agent": "B2-P3",
+      "source_file": "resources/js/components/admin/posOrders/PosOrderShowComponent.vue:162-466",
+      "v1_ship_blocker": false,
+      "owner_decision_required": "Binary heal — wire button to RefundWithCounterEntryService route OR remove Returned from orderStatusObject"
+    },
+    {
+      "rank": 2,
+      "id": "B3-P1-F01",
+      "severity": "P0",
+      "title": "KDS undo owner mandate UNHEALED V1 (revert PREPARED to PREPARING)",
+      "source_agent": "B3-P1",
+      "source_files": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue:8-11",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue:138-142",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:148-160",
+        "app/Domain/Order/OrderStateMachine.php:54"
+      ],
+      "owner_mandate_verbatim": "ecran de cuisine, je peux pas y acceder aux archives parce que je peux par exemple avoir fait valider une commande par erreur avec rapidite, je vais revenir pour la corriger",
+      "status": "ABSENT_UNHEALED_V1",
+      "v1_ship_blocker": false,
+      "owner_decision_required": "Confirm V1.0.2 backlog acceptance OR cycle dedicated LOCK plan now"
+    },
+    {
+      "rank": 3,
+      "id": "B2-P6-F01",
+      "severity": "P0",
+      "title": "cancelKioskCashOrder one-click no confirm (newbie footgun)",
+      "source_agent": "B2-P6",
+      "source_file": "resources/js/components/admin/pos/PosComponent.vue:1275 + 3156-3183",
+      "v1_ship_blocker": false,
+      "fix_proposal": "Reuse PosCounterCollectModal-style confirmation OR tracker cancel dialog with reason >= 3"
+    },
+    {
+      "rank": 4,
+      "id": "DASHBOARD-DRIFT-3-AGENT",
+      "severity": "P1",
+      "title": "Dashboard sales/orders under-report drift (sales=0EUR vs DB=7.80EUR)",
+      "source_agents": ["B1-P4", "B2-P4", "B7-Admin"],
+      "convergence": "3-agent triangulation, 3 independent curl rounds (22:00, 22:30, 22:55) STABLE",
+      "root_cause": "sales-summary + total-orders filter by payment_status=15 (settled) AND status in delivered set, excluding order #63 (status=4 accepted, kiosk)",
+      "v1_ship_blocker": false
+    },
+    {
+      "rank": 5,
+      "id": "B2-P4-F01",
+      "severity": "P1",
+      "title": "PDF EOD report broken company_name undefined",
+      "source_agents": ["B2-P4", "B7-Admin"],
+      "orchestrator_heal_status": "IN_PROGRESS_WORKING_TREE",
+      "files_modified_uncommitted": [
+        "resources/views/pdf/sales_report.blade.php (added ?? Le Cayenne fallback)",
+        "resources/views/pdf/items_report.blade.php (same pattern)"
+      ],
+      "extension_recommended": "Apply same fix to resources/views/pdf/online_orders.blade.php"
+    }
+  ],
+  "convergence_3_plus_agents": [
+    {
+      "id": "dashboard_under_report",
+      "agents": ["B1-P4", "B2-P4", "B7-Admin"],
+      "finding": "sales-summary returns 0EUR while realtime-report.daily_orders=1 + order-statistics.total_order=1 + DB orders.total=7.80EUR",
+      "stability": "3 independent curl rounds 22:00 / 22:30 / 22:55 - STABLE not transient"
+    },
+    {
+      "id": "heal_02_verified_live",
+      "agents": ["B2-P4", "B7-Admin"],
+      "finding": "DashboardService.auditTrail uses AuditLog NF525 hash-chained, hash_prefix 8-char on 50/50 rows, AuditTrailComponent.vue Hash column emerald monospace pill",
+      "sentinel": "AuditTrailUsesAuditLogSentinelTest GREEN 3/3 19 assertions"
+    },
+    {
+      "id": "heal_01_overflow_chip_kds",
+      "agents": ["B3-P1", "B3-P2"],
+      "finding": "KdsV2Grid.vue:70-87 +N en attente chip LIVE with computed correctness anchor on activeOrders.length, OSS does NOT have equivalent (auto-scroll only)",
+      "commit": "5e646503b feat(n-heal-01)"
+    },
+    {
+      "id": "frozen_zone_zero_this_cycle",
+      "agents": ["B1-P5", "B2-P5", "B3-P5", "B5-Cash"],
+      "finding": "git diff HEAD~50..HEAD on CLAUDE.md sect7 fiscal+pricing files = 0 LOC introduced this cycle, cumulative diff governed by prior LOCK docs"
+    },
+    {
+      "id": "allergen_cross_surface_channel_absent",
+      "agents": ["B1-P1", "B2-P1"],
+      "finding": "Borne declared_allergens dropped at sanitizeKioskOrderItem payload, POS offers ZERO UI capture, backend grep customer_declared_allergens returns ZERO"
+    },
+    {
+      "id": "owner_night_analytics_data_captured_surface_absent",
+      "agents": ["B1-P4", "B2-P4", "B3-P4", "B7-Admin"],
+      "finding": "Pattern systemic V1 - order_status_transitions table populated 40 days but no dashboard JOIN, Gap-Hunt cluster (Compare J vs J-1, Note incident, Top items chart, Anomaly auto-detect) all absent",
+      "estimated_v1_0_2_effort": "6-9 hours"
+    }
+  ],
+  "nf525_chain_state": {
+    "baseline_count": 67,
+    "b1_p5_count": 67,
+    "b5_count": 73,
+    "final_count": 75,
+    "delta_explanation": "+8 user.login churn from concurrent agent inspections, non-fiscal",
+    "last_hash_baseline": "a59e47cbe474f799",
+    "last_hash_b5": "8ab3ed351165fe4e",
+    "last_hash_final": "f5e46c2b6bca7f76",
+    "z_reports_count": 1,
+    "z_open_count": 0,
+    "tamper_known_id": 34,
+    "tamper_baseline_decision": "Option B (live with tamper, production = fresh DB)",
+    "verify_chain_exit": 1,
+    "assert_chain_clean_wave_c1_exit": 1,
+    "assert_chain_clean_behavior": "Correctly refuses deploy pending baseline waiver - exemplary deploy-gate discipline",
+    "cross_chain_anchor_K2_HEAL_06": {
+      "status": "VERIFIED_LIVE",
+      "evidence": "audit_logs.id=31 z_report.closed payload carries sequence_no=1, signature=504a44c0e17b71dd..., closed_at, total_ttc, order_count"
+    },
+    "cross_chain_anchor_K2_HEAL_07": {
+      "status": "VERIFIED_IN_CODE",
+      "evidence": "RefundWithCounterEntryService.php:277-285 calls CashDrawerService.recordMovement TYPE_CASHBACK DIRECTION_OUT inside DB transaction",
+      "runtime_observation_pending": "Zero refunds in DB - sister agent recommended to drive refund flow for empirical verification"
+    },
+    "frozen_zone_diff_introduced_this_cycle": 0,
+    "frozen_zone_files_inspected_ro": [
+      "FiscalSequenceService.php",
+      "ZReportService.php",
+      "AuditLogService.php",
+      "PricingService.php",
+      "BranchScope.php",
+      "IdempotencyKeyMiddleware.php",
+      "OrderStateMachine.php"
+    ]
+  },
+  "heals_shipped_by_orchestrator": {
+    "pdf_blade_guards": {
+      "status": "WORKING_TREE_UNCOMMITTED",
+      "files": [
+        "resources/views/pdf/sales_report.blade.php",
+        "resources/views/pdf/items_report.blade.php"
+      ],
+      "pattern_applied": "$company['company_name'] ?? 'Le Cayenne' + $company['company_address'] ?? ''",
+      "closes": "B2-P4-F01 P1 finding",
+      "extension_pending": "online_orders.blade.php should receive same treatment"
+    },
+    "z_reopen_attempt": {
+      "command": "php artisan fiscal:open-all-active-branches",
+      "result": "scanned=1 opened=0 skipped=0 failed=1",
+      "interpretation": "Likely lock contention with foodking:fiscal:retry-alloc cron or permission gate",
+      "auto_recovery_path": "Every-minute retry-alloc cron + 00:01 daily Paris cron will resolve",
+      "v1_blocker": false
+    }
+  },
+  "owner_physical_actions_remaining": {
+    "from_prior_verdict": [
+      "Hardware connection POS_SIMULATION_HARDWARE=false at production cut",
+      "Real network connectivity testing",
+      "Fresh DB deploy Option B baseline"
+    ],
+    "g1_x_manual_verifies_v1_0_2_other_session": "5 steps documented in reports/test-e2e/wave-polish-final-2026-05-21/CONVERGENCE_FINAL.md section 7",
+    "new_this_cycle": [
+      "Decision on B2-P3-CF-02 refund UI binary heal",
+      "Decision on B2-P3-CF-01 PaymentComponent retrospective LOCK",
+      "Decision on B3-P1-F01 KDS undo mandate (V1.0.2 backlog confirm OR cycle dedicated LOCK now)",
+      "PDF heal commit review + extension to online_orders.blade.php"
+    ],
+    "auto_handled": [
+      "Z reopen: 00:01 Paris cron OR every-minute retry-alloc cron resolves B1-P5-F-001 / B5-F-A1"
+    ]
+  },
+  "v1_ship_verdict": {
+    "production_ready": true,
+    "status": "UNCHANGED_FROM_BASELINE",
+    "rationale": "Frozen-zone diff introduced this cycle = 0 LOC. NF525 chain growth +8 user.login churn. No P0 surfaces NEW ship blocker. All V1.0.2 Wave Polish Final attestations intact (Q1-Q14 delivered, Q9-S1 sync 1s, stress 50/3 PASS, backup auto + restore drill PASS, NF525 bit-identical).",
+    "v1_0_1_backlog_grew_by": 20
+  },
+  "cycle_total_post_master_plan": {
+    "commits_since_baseline_d601fdd34": 103,
+    "baseline_commit_date": "2026-05-19",
+    "latest_commit": "a6ed32807",
+    "latest_commit_message": "docs(v1-0-2-hardening) ULTRA_PLAN + CONVERGENCE_FINAL 4 waves 8/8 findings closed",
+    "sub_agents_cumulative_estimate": "250-280 across Wave Polish Final + Wave Z + V1.0.2 + this cycle",
+    "sentinels_green": [
+      "AuditTrailUsesAuditLogSentinelTest 3/3 19 assertions",
+      "FormRequestAuthzDriftSentinelTest 1/1 3 assertions",
+      "BranchScopeCoverageSentinelTest",
+      "bundle-staleness-sentinels Wave B2"
+    ],
+    "sentinels_correctly_failing": [
+      "fiscal:verify-chain --all exit 1 (id=34 known baseline - sentinel WORKS)",
+      "fiscal:assert-chain-clean exit 1 (correctly refuses deploy gate pending waiver)"
+    ]
+  },
+  "honest_caveats": [
+    "B.6 Stock not delivered - socket-closed mid-dispatch. Stock surface persona coverage incomplete this cycle.",
+    "All sub-agents read-only DM6 NF525 RO discipline - no runtime end-to-end POS encaisser flow exercised (DB post-restore has orders_with_fiscal=0). Code-level defense verified, runtime smoke recommended post-deploy.",
+    "Visual capture Phase F only 3 surfaces captured (kiosk-idle, login, admin-dashboard). Full 7-surface capture from V1 mandate not completed.",
+    "B2-P3-CF-01 frozen-zone retrospective LOCK question is genuine owner-gate, not synthesizable by orchestrator.",
+    "Z reopen attempt returned failed=1, auto-cron will handle - no manual bypass attempted (DM6 RO at orchestrator level)."
+  ],
+  "deliverable_paths": {
+    "convergence_md": "reports/test-e2e/master-plan-2026-05-25/convergence/CONVERGENCE_FINAL.md",
+    "convergence_json": "reports/test-e2e/master-plan-2026-05-25/convergence/CONVERGENCE_FINAL.json",
+    "baseline_txt": "reports/test-e2e/master-plan-2026-05-25/baseline.txt",
+    "agents_dir": "reports/test-e2e/master-plan-2026-05-25/agents/",
+    "captures_dir": "reports/test-e2e/master-plan-2026-05-25/captures/",
+    "agent_findings_files": [
+      "B1-P1-findings.json",
+      "B1-P2-findings.json",
+      "B1-P3-findings.json",
+      "B1-P4-findings.json",
+      "B1-P5-findings.json",
+      "B1-P6-findings.json",
+      "B2-P1-findings.json",
+      "B2-P2-findings.json",
+      "B2-P3-findings.json",
+      "B2-P4-findings.json",
+      "B2-P5-findings.json",
+      "B2-P6-findings.json",
+      "B3-P1-findings.json",
+      "B3-P2-findings.json",
+      "B3-P3-findings.json",
+      "B3-P4-findings.json",
+      "B3-P5-findings.json",
+      "B3-P6-findings.json",
+      "B4-OSS-6personas-combined.json",
+      "B5-Cash-6personas-combined.json",
+      "B7-Admin-6personas-combined.json"
+    ]
+  }
+}

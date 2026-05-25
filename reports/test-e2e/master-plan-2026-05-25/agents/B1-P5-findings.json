@@ -1,0 +1,211 @@
+{
+  "agent_id": "B1-P5",
+  "role": "Borne × Inspecteur fiscal NF525 (read-only)",
+  "discipline": ["DM6 RO (NF525 read-only ABSOLU)", "DM3", "DM5", "DM8"],
+  "mission": "Verify NF525 fiscal traceability for borne (kiosk) orders — receipts, fiscal_sequence_no, composition_snapshot, audit_logs, Pricing SSOT V2 HEAL.",
+  "server": "http://127.0.0.1:8000",
+  "timestamp_local": "2026-05-25T21:53:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_commit": "a6ed32807",
+  "evidence": {
+    "healthz": {
+      "status": "degraded",
+      "checks": {
+        "db": "ok",
+        "redis": "ok",
+        "websocket": "ok",
+        "fiscal_chain": "fail",
+        "queue_pending": 0
+      },
+      "fiscal_chain_fail_reason": "Known E2E-13 dev tamper at audit_logs.id=34 (action=tamper.attempt, current_hash=FAKE_HASH). Baseline.txt acknowledges this as expected sentinel proof — NOT a new finding."
+    },
+    "verify_chain_all": "TAMPER detected (branch=1, breaches=1) — audit_logs.id=34. SWEEP COMPLETE — exec_errors=0. Single branch active.",
+    "audit_logs": {
+      "count": 67,
+      "min_id": 1,
+      "max_id": 67,
+      "last_hash_prefix16": "a59e47cbe474f799",
+      "distinct_branches": [1],
+      "tamper_known": {
+        "id": 34,
+        "action": "tamper.attempt",
+        "current_hash": "FAKE_HASH",
+        "prev_hash": "",
+        "verdict": "EXPECTED — sentinel works; baseline cleared (Option B = live with tamper, production = fresh DB)"
+      },
+      "chain_continuity_outside_tamper": "Verified by sampling first 5 + last 5 rows: prev_hash[n] == current_hash[n-1] across non-tamper transitions. id=2..33 + id=35..67 expected clean (verify-chain reports only 1 breach)."
+    },
+    "z_reports": {
+      "count": 1,
+      "rows": [
+        {
+          "id": 1,
+          "branch_id": 1,
+          "sequence_no": 1,
+          "status": "closed",
+          "opened_at": "2026-05-25 12:49:29",
+          "closed_at": "2026-05-25 12:49:39",
+          "total_ttc": "0.00",
+          "order_count": 0
+        }
+      ],
+      "open_z_branch_1_at_inspection": false,
+      "next_auto_open_cron": "fiscal:open-all-active-branches daily 00:01 (verified via schedule:list)",
+      "retry_cron_active": "foodking:fiscal:retry-alloc every minute (verified via schedule:list, Next Due 31s)"
+    },
+    "orders": {
+      "total": 2,
+      "orders_with_fiscal_seq": 0,
+      "orders_with_fiscal_alloc_error": 0,
+      "by_source_surface": {
+        "kiosk": 1,
+        "delivery": 1
+      },
+      "kiosk_order_sample": {
+        "id": 1,
+        "source_surface": "kiosk",
+        "status": 5,
+        "payment_status": 10,
+        "payment_status_decoded": "UNPAID (PaymentStatus::UNPAID=10)",
+        "fiscal_sequence_no": null,
+        "fiscal_alloc_error_at": null,
+        "branch_id": 1,
+        "created_at": "2026-05-24 10:57:07",
+        "verdict": "Not paid → fiscal allocation NOT yet due. Correct invariant behavior (no NF525 violation)."
+      },
+      "delivery_order_sample": {
+        "id": 63,
+        "source_surface": "delivery",
+        "status": 4,
+        "payment_status": 15,
+        "payment_status_decoded": "PENDING_COUNTER (PaymentStatus::PENDING_COUNTER=15)",
+        "fiscal_sequence_no": null,
+        "fiscal_alloc_error_at": null,
+        "verdict": "Not paid → fiscal allocation deferred to POS close. Correct."
+      },
+      "order_items_total": 2,
+      "order_items_for_kiosk_order_1": 0,
+      "composition_snapshot_check": "orders table has NO composition_snapshot column (per DESCRIBE orders); snapshots live on order_items.composition_snapshot (JSON). Kiosk order id=1 has 0 order_items rows (empty shell). Order id=63 has 2 order_items rows. Cannot verify snapshot integrity from current data — insufficient kiosk-paid sample."
+    },
+    "frozen_zone_diff_working_tree": {
+      "files_inspected": [
+        "app/Services/Fiscal/FiscalSequenceService.php",
+        "app/Services/Fiscal/ZReportService.php",
+        "app/Services/Fiscal/AuditLogService.php",
+        "app/Services/Pricing/PricingService.php",
+        "app/Models/Scopes/BranchScope.php",
+        "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+        "app/Domain/Order/OrderStateMachine.php"
+      ],
+      "git_status_clean": true,
+      "diff_loc_last_5_commits": 0,
+      "diff_loc_last_50_commits": 0,
+      "verdict": "Current cycle frozen-zone discipline INTACT. (Cumulative diff vs main is +2071/-214 across 7 files but accumulated under prior LOCK docs — LOCK_FISCAL_WGS_Z6_P1, LOCK_FISCAL_TEST_ANON, LOCK_PRICING_W2/W5, F-003.5 decorator pattern, etc. Sister-agent work is gated — not a regression.)"
+    },
+    "production_boot_guards": {
+      "POS_SIMULATION_HARDWARE": "Forbidden=true (false in prod) — guard at AppServiceProvider:78-145, commits 2477a2d05, dafb6b3c4",
+      "IDEMPOTENCY_MIDDLEWARE_ENABLED": "Required=true — guard armed",
+      "APP_DEBUG": "Forbidden=true in prod — guard armed",
+      "CACHE_DRIVER": "Forbidden in [array,null] — note: file/database PASS (UNI-03 V1.0.X backlog, narrower than block comment)",
+      "verified_per": "CLAUDE.md §8 + reports/audit-verify-other-session-2026-05-21.md Claim 1"
+    },
+    "pricing_ssot_v2_heal": {
+      "scope_inspected": "PricingService.php diff vs main = +610 LOC (cumulative across waves). Current working tree clean.",
+      "key_invariants_confirmed_via_code_grep": {
+        "FrontendOrderService_writes_alloc_error_flag_outside_tx": "Verified at line 1304: raw DB::table('orders')->where('id',$id)->update(['fiscal_alloc_error_at'=>now()]); — Wave M Z5 P1-C pattern, wrapped in try/catch with fiscal log channel, cannot silently swallow failure",
+        "alloc_error_flag_writers": [
+          "app/Models/FrontendOrder.php (cast)",
+          "app/Models/Order.php (cast)",
+          "app/Http/Controllers/Frontend/OrderController.php:261 (comment doc)",
+          "app/Services/FrontendOrderService.php:1304 (raw update writer)",
+          "app/Console/Commands/RetryFiscalAllocCommand.php (clearer on retry success)"
+        ]
+      }
+    },
+    "receipt_persistence_check": {
+      "scan_pattern": "SHOW TABLES filtered on /receipt|ticket|print|invoice/",
+      "matches_found": ["printers (0 rows)"],
+      "verdict": "NO receipt/ticket/invoice persistence table in schema. Receipts are transient print artifacts — emitted to physical printer (or simulation) at order completion, NOT stored in DB. NF525 archival relies on audit_logs HMAC chain + z_reports + composition_snapshot on order_items (the legal trail), not on receipt copies. This matches CLAUDE.md §8 scope. Verdict: cannot count receipts per borne order; rely on audit_logs.action chain entries as proof of fiscal event capture.",
+      "implication_for_mission_question_receipt_printed_per_borne_order": "Question is structurally unanswerable from RO DB inspection. Recommend: (a) a sister agent inspect Printer model + last-print logs / queue, OR (b) reframe to: every PAID kiosk order MUST produce an audit_logs row referencing the order — that becomes the NF525-defensible proof in lieu of a persisted receipt."
+    },
+    "order_status_anomaly_observed_not_blocking": {
+      "kiosk_order_id_1_status": 5,
+      "OrderStatus_enum_canonical_values": [1, 4, 7, 8, 10, 13, 16, 19, 22],
+      "verdict": "status=5 is NOT in App\\Enums\\OrderStatus (which jumps 4→7). Could be (a) data drift from a deprecated enum value, (b) a legacy seed, or (c) a transitional state introduced by a later wave but not in the enum yet. Order id=1 dates 2026-05-24 10:57:07 — pre-Wave-Polish-Final. NOT a P-finding (single legacy row, not a regression in current code), but noted for orchestrator awareness — if any prod sentinel enforces enum coverage, this row would surface."
+    }
+  },
+  "findings": [
+    {
+      "id": "B1-P5-F-001",
+      "priority": "P1",
+      "title": "Z report is CLOSED on the only active branch — borne order paid right now cannot allocate fiscal_sequence_no until either retry-alloc cron picks it up or fiscal:open-all-active-branches runs at 00:01",
+      "evidence": {
+        "z_reports": "1 row, branch_id=1, sequence_no=1, status=closed, closed_at=2026-05-25 12:49:39 (~9h before inspection time 21:53)",
+        "open_z_count_active_branch": 0,
+        "kiosk_order_id_1": "payment_status=10 (UNPAID), so allocation NOT yet due — no current breach in DB, but a paid kiosk order arriving NOW would hit the closed-Z path",
+        "retry_cron_present": "foodking:fiscal:retry-alloc scheduled every minute → defense-in-depth IF FrontendOrderService writes fiscal_alloc_error_at on alloc fail",
+        "alloc_error_flag_writer_confirmed": "FrontendOrderService.php:1304 raw update outside parent tx + try/catch on flag write itself (Wave M Z5 P1-C pattern)"
+      },
+      "expected": "Per NF525, every kiosk-paid order must EITHER receive a fiscal_sequence_no during creation OR be flagged fiscal_alloc_error_at for cron retry — never silent gap.",
+      "actual": "Defense path EXISTS in code, but DB state at inspection cannot prove it works end-to-end because (a) no kiosk-paid orders exist (count=0 with fiscal_seq, count=0 with alloc_error flag), and (b) the only Z is closed — meaning any production-load kiosk paid right now would trigger the degraded path immediately. Recommend Z-open posture be re-evaluated for borne operating hours (closed at 12:49 mid-day suggests test-induced close, not 23:59 cron — investigate if Z was closed by an E2E run and never re-opened).",
+      "recommendation": "Run `php artisan fiscal:open-all-active-branches` (safety-net command) to re-open Z for branch=1 BEFORE any borne traffic resumes. Add health check: alert if active_branch has closed_at on its latest Z AND now() < tomorrow's 00:01 cron tick.",
+      "blocking_for_v1_ship": false,
+      "blocking_for_borne_traffic_tonight": true
+    },
+    {
+      "id": "B1-P5-F-002",
+      "priority": "P2",
+      "title": "Insufficient kiosk-paid sample in current DB to prove receipt + composition_snapshot end-to-end traceability — orders.count=2, kiosk.count=1 (UNPAID), order_items rows for kiosk order=0",
+      "evidence": {
+        "orders_total": 2,
+        "kiosk_orders": 1,
+        "kiosk_orders_paid": 0,
+        "order_items_for_kiosk_order_id_1": 0,
+        "composition_snapshot_column_location": "order_items.composition_snapshot (JSON) — NOT on orders table (DESCRIBE orders confirms no such column)",
+        "audit_logs_kiosk_relevant_actions": "Sampled rows 1-67: actions={payment.method_restricted, user.login}. No kiosk.* actions observed — chain has not seen a paid kiosk flow yet."
+      },
+      "expected": "Per CLAUDE.md §8: composition_snapshot frozen at order creation, audit_logs entry per borne order action (placement, payment, alloc, status transitions).",
+      "actual": "Cannot verify with current DB sample. Code-level defense reads as correct (FrontendOrderService observed_pattern + fiscal log channel + retry cron + Wave M Z5 P1-C separated raw flag writer), but EMPIRICAL coverage is zero. RO discipline forbids creating an order to test — recommend a sister agent (POS payment flow or kiosk-flow stress agent) drive a real kiosk-paid order to allow this inspector to re-verify next round.",
+      "recommendation": "Schedule a follow-up B1-P5 round AFTER a kiosk-paid order is created (by stress, smoke, or live traffic). Then verify: (a) fiscal_sequence_no allocated and monotonic, (b) composition_snapshot present and frozen, (c) ≥1 kiosk.* audit_log entry chained from prev_hash, (d) PricingService SSOT used (price/total_price match backend recalc).",
+      "blocking_for_v1_ship": false
+    },
+    {
+      "id": "B1-P5-F-003",
+      "priority": "P3-info",
+      "title": "Adversarial 'could a borne order escape the fiscal chain?' — NO observed escape path in code; one residual edge (out-of-tx flag-write failure) is bounded to log-only degradation",
+      "evidence": {
+        "exception_safety_path": "FrontendOrderService:1283-1320 — alloc failure inside DB::transaction sets $allocFailed=true via control flow, transaction rolls back the alloc attempt, THEN outside the closed tx the flag is written via raw DB::table()->update() wrapped in try/catch (Wave M Z5 P1-C pattern). If the flag write itself fails (e.g., DB outage between tx and raw update), error is logged to fiscal channel with explicit event=kiosk.fiscal_alloc_error_flag_write_failed — does NOT propagate to caller, but DOES surface in fiscal log.",
+        "residual_edge_case": "Order would be persisted with fiscal_sequence_no=NULL AND fiscal_alloc_error_at=NULL if BOTH alloc AND flag-write fail back-to-back AND the operator does not inspect fiscal logs. The retry-alloc cron would NOT pick it up (filter is `fiscal_alloc_error_at IS NOT NULL` per RetryFiscalAllocCommand.php:22).",
+        "mitigation_strength": "P3-info because: (a) two-stage failure requires DB-level outage, (b) fiscal log channel is dedicated (commit 9638a3d81 feat(pos/phase-9-h.3.2)), (c) ZReportService cannot close a branch with detected alloc errors per pre-close gates (commit 3150992a7 GATE-FZH-ALLOC), (d) NF525 verify-chain command will not detect this gap because it walks audit_logs/z_reports HMAC, not orders.fiscal_sequence_no allocation completeness.",
+        "frozen_file_integrity_today": "git diff HEAD~50..HEAD -- §7 fiscal+pricing files = 0 LOC. Working tree clean. Cumulative branch diff is large but documented under prior LOCK exceptions.",
+        "production_boot_guards_armed": "POS_SIMULATION_HARDWARE+IDEMPOTENCY_MIDDLEWARE_ENABLED+APP_DEBUG+CACHE_DRIVER guards confirmed via CLAUDE.md §8 and reports/audit-verify-other-session-2026-05-21.md."
+      },
+      "verdict": "Chain is structurally sound. The two-stage degraded-path edge case is improbable but should be hardened by a complementary sentinel: a periodic SELECT of orders WHERE source_surface IN (kiosk, takeaway) AND payment_status=PaymentStatus::PAID(5) AND fiscal_sequence_no IS NULL AND fiscal_alloc_error_at IS NULL — should always be zero. Recommend filing as V1.0.X backlog (NOT a V1 LOCAL Le Cayenne blocker since fiscal log monitoring is in place).",
+      "recommendation": "Add `tests/Feature/Fiscal/KioskPaidNoFiscalSeqOrFlagSentinelTest` that asserts the SELECT above returns zero. Also recommend the orchestrator confirm with owner whether Z-auto-reopen on first paid kiosk should be enforced (currently relies on 00:01 cron OR manual command).",
+      "blocking_for_v1_ship": false
+    }
+  ],
+  "chain_integrity_verdict": "CHAIN HMAC: 1 known/cleared tamper at audit_logs.id=34 (sentinel proof, action=tamper.attempt, hash=FAKE_HASH). All 66 OTHER rows expected continuous (verify-chain reports breaches=1, not more). Working-tree frozen-zone diff = 0 LOC. Production boot guards armed per CLAUDE.md §8.",
+  "frozen_file_compliance": {
+    "FiscalSequenceService.php": "git diff HEAD~50..HEAD = 0 LOC",
+    "ZReportService.php": "git diff HEAD~50..HEAD = 0 LOC",
+    "AuditLogService.php": "git diff HEAD~50..HEAD = 0 LOC",
+    "PricingService.php": "git diff HEAD~50..HEAD = 0 LOC",
+    "BranchScope.php": "git diff HEAD~50..HEAD = 0 LOC",
+    "IdempotencyKeyMiddleware.php": "git diff HEAD~50..HEAD = 0 LOC",
+    "OrderStateMachine.php": "git diff HEAD~50..HEAD = 0 LOC"
+  },
+  "mission_status": "COMPLETE — read-only, no INSERT/UPDATE on fiscal tables, no order creation. 5 tasks executed with CLI commands only.",
+  "tasks_executed": {
+    "1_healthz_curl": "DONE — degraded due to known tamper",
+    "2_fiscal_verify_chain": "DONE — TAMPER detected at id=34 (expected)",
+    "3_tinker_readonly_db_inspection": "DONE — audit_logs 67, z_reports 1, kiosk orders 1 (UNPAID, 0 fiscal seq, 0 alloc error)",
+    "4_frozen_files_unchanged_check": "DONE — git diff HEAD~50..HEAD = 0 LOC across §7+§8 files",
+    "5_adversarial_could_borne_order_escape_chain": "DONE — see F-003"
+  },
+  "summary_3_findings": [
+    "B1-P5-F-001 P1: Z is CLOSED on active branch — borne-traffic-blocking until 00:01 cron or manual fiscal:open-all-active-branches",
+    "B1-P5-F-002 P2: Insufficient kiosk-paid sample in DB to empirically prove receipt + composition_snapshot — recommend re-run after a kiosk-paid order exists",
+    "B1-P5-F-003 P3-info: No structural chain-escape path; one improbable two-stage failure edge case (alloc fail + flag-write fail) — add sentinel test as V1.0.X backlog"
+  ]
+}

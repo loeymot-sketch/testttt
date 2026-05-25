@@ -1,0 +1,261 @@
+{
+  "agent": "B3-P2",
+  "mission": "KDS × Client-impatient — perspective client. KDS visible from where? Does kitchen state propagate to customer? OSS shows PRÉPARATION/PRÊT? ETA from KDS bumped → OSS visible to client? KDS allergens visible to chef so client safe?",
+  "discipline": "DM6 RO + DM3 + DM5 + DM8",
+  "server": "http://127.0.0.1:8000",
+  "executed_at": "2026-05-25T22:45:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "a6ed32807",
+  "auth": {
+    "method": "Read-only static source audit (DM6 RO) + 2 unauthenticated HTTP GETs on /admin/order-status-screen + /admin/kitchen-display-system; both returned HTTP 200 text/html 10173 bytes (SPA shell)."
+  },
+  "states": [
+    {
+      "n": 1,
+      "title": "Curl OSS + KDS endpoints — does the customer have ANY route to see kitchen state?",
+      "evidence": {
+        "oss_endpoint": {
+          "url": "GET http://127.0.0.1:8000/admin/order-status-screen",
+          "http": "200",
+          "content_type": "text/html; charset=UTF-8",
+          "size_bytes": 10173,
+          "shape": "SPA shell — actual data fetched client-side via store dispatch 'orderStatusScreenOrder/lists'"
+        },
+        "oss_public_data_route": {
+          "name": "OrderStatusScreenController::publicIndex",
+          "location": "app/Http/Controllers/Admin/OrderStatusScreenController.php:80-105",
+          "auth": "PUBLIC (no auth:sanctum) — mounted under frontend group (installed + apiKey + localization) per iter15-mega-fix C-016 2026-05-10",
+          "rationale_quote_from_source": "The customer screen is mounted on a public TV/wall. It is NOT an admin dashboard — yet its only data source historically was GET /api/admin/oss-order which is auth-gated by auth:sanctum + permission:order-status-screen. Result on an unauthenticated wall: the XHR returns 401, the component swallows the error, and both PRÉPARATION/PRÊT columns render empty. (lines 56-61)",
+          "resource_used": "CDSOrderDetailsResource (PII-free: id, order_serial_no, token, queue_number, order_type, status only)",
+          "branch_resolution": "?branch_id query param > 0, else first ACTIVE branch (Branch::where('status', Status::ACTIVE)->orderBy('id')->first())"
+        },
+        "kds_endpoint": {
+          "url": "GET http://127.0.0.1:8000/admin/kitchen-display-system",
+          "http": "200",
+          "content_type": "text/html; charset=UTF-8",
+          "size_bytes": 10173,
+          "shape": "Same SPA shell — Vue router resolves to KitchenDisplaySystemComponent; data fetched via authenticated /api/admin/kds-orders + /api/admin/kds-sync endpoints",
+          "client_visibility": "ZERO — KDS is an admin/chef interface. permission:kitchen-display-system gate. A customer NEVER sees KDS directly. The ONLY customer-visible kitchen state is OSS."
+        }
+      },
+      "owner_q_answered": "KDS visible from where pour le client ? — JAMAIS. KDS est un écran chef admin-gated (permission:kitchen-display-system). Le seul pont KDS→client est OSS. OSS a un endpoint PUBLIC `frontend/oss-order` qui retourne CDSOrderDetailsResource PII-free, permettant l'affichage sur une borne TV publique sans session admin. Donc le client perçoit l'état cuisine UNIQUEMENT via les 2 colonnes PRÉPARATION/PRÊT — pas via timing, pas via détails."
+    },
+    {
+      "n": 2,
+      "title": "OrderStatusScreenComponent + PreparingAndReadyComponent — KDS→OSS sync mechanism",
+      "files_inspected": [
+        "resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue (69 LOC)",
+        "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue (489 LOC)",
+        "app/Http/Resources/CDSOrderDetailsResource.php (25 LOC)",
+        "app/Http/Resources/PosShortcutOrderResource.php (45 LOC — auth POS widget variant)"
+      ],
+      "evidence": {
+        "oss_layout_post_wave_q3": {
+          "comment_quote": "[Wave Q-3 P-OWNER 2026-05-20] PopularItemComponent ('Articles à préparer' sidebar) removed from OSS layout per owner directive — the customer status screen must show ONLY two columns: EN PRÉPARATION (orange/red) and PRÊT (green). Grid collapsed from md:grid-cols-4 (popular=2 + columns=2) to md:grid-cols-2 (preparing=1 + ready=1).",
+          "two_columns": "EN PRÉPARATION (#B0004D bg, white text, label.preparing) | PRÊT (#1AB759 bg, dark text, label.ready)",
+          "typography_post_wave_s3": "text-[40px] header + text-[56px] order tokens for TV ≥3m readability (Wave S-3 TV-optim 2026-05-20)"
+        },
+        "kds_to_oss_sync_chain": {
+          "primary_channel_websocket": {
+            "event": "OrderStatusChanged (broadcast)",
+            "subscribe_location": "PreparingAndReadyComponent.vue:257-290 subscribeEcho()",
+            "branch_scope_gate": "if (branchId <= 0) return; — public wall (authBranchId=0) does NOT subscribe to Echo, falls back to ossSyncService polling",
+            "handler": "When event.payload.new_status === orderStatusEnum.PREPARED → _markNewReady(oid) + this.list() to refresh; OrderCreated → this.list() refresh",
+            "audit_p1_dedup": "_echoMarkedReady Set to prevent double chime/flash if Echo + list() race"
+          },
+          "secondary_channel_polling": {
+            "service": "ossSyncService (resources/js/services/OssSyncService.js)",
+            "wire_location": "PreparingAndReadyComponent.vue:234-248 startOssSync()",
+            "events_subscribed": "['sync', 'ws_state']",
+            "purpose": "Fallback when WS is disconnected — TV walls without auth still pull deltas via REST polling so the two columns stay live"
+          },
+          "tertiary_channel_dom_event": {
+            "event": "realtime-order-update (window-level)",
+            "wire": "window.addEventListener('realtime-order-update', this.list) — mounted() line 112",
+            "purpose": "Cross-component bus for SPA route changes / external triggers"
+          }
+        },
+        "kds_chef_action_to_oss_propagation": {
+          "step_1_chef_bumps_in_kds": "KdsV2Grid bump action → POST /admin/kds-orders/{order}/transition → OrderService::transitionStatus(PREPARING|PREPARED)",
+          "step_2_backend_broadcasts": "Order model status update fires OrderStatusChanged event (app/Events/OrderStatusChanged.php) — broadcastOn branch.{branchId} private channel; PersistOrderStatusChangedToOutbox listener writes to outbox (resilient delivery)",
+          "step_3_oss_receives": "PreparingAndReadyComponent Echo subscriber catches → _markNewReady (sound+flash) + this.list() refetches /api/frontend/oss-order or /api/admin/oss-order",
+          "step_4_visual": "Column refresh — order token migrates from PRÉPARATION → PRÊT with oss-pop transition (cubic-bezier scale 0.6→1) + 4s column-flash + 6s per-card pulse (.oss-pulse-ready) totaling 10s attention window per Wave S-3"
+        }
+      },
+      "owner_q_answered": "OSS shows PRÉPARATION / PRÊT ? — OUI. Wave Q-3 a verrouillé le layout customer wall à STRICTEMENT 2 colonnes brand-colored. Le pont KDS→OSS est triple-canal : (1) WebSocket Echo OrderStatusChanged event sur branch.{N} privé (operator-attended), (2) ossSyncService polling REST (public wall fallback), (3) window event realtime-order-update (SPA bus). Le client voit son token/queue_number passer de gauche (rouge) à droite (vert) avec transition pop + flash + pulse 10s."
+    },
+    {
+      "n": 3,
+      "title": "HEAL-01 cross-surface — N-HEAL-01 KdsV2Grid +N en attente chip + OSS parity check",
+      "evidence": {
+        "heal_01_provenance": {
+          "id": "N-HEAL-01",
+          "source_finding": "M-KDS-6 F1 P0",
+          "source_artifact": "reports/test-e2e/goal-2026-05-23/RAPPORT_COMPLET_CYCLE.md:130 + phase-m/M-KDS-6-chef-rush-empirical.json",
+          "empirical_repro": "Static repro at N=9/12 short-depth = 8 cards rendered + 1 (resp. 4) silent_drop_count, overflow_chip_present:false PRE-HEAL → chef sees the FIFO grid clamp at 8 with NO visual cue, orders 9+ silently age past SLA"
+        },
+        "kds_chip_implemented": {
+          "file": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:70-87",
+          "comment_quote": "[Wave N M-KDS-6 F1 P0 2026-05-24] Overflow chip — chef visibility safety net. from the rendered FIFO grid. No chip, no count, no [I]–… keyboard shortcut. the queue, orders 9+ silently age past SLA. This chip is the independent",
+          "render": "v-if overflowActiveCount > 0 → <span class='kds-overflow-chip'><span class='kds-overflow-chip__icon'>!</span> +{{ overflowActiveCount }} {{ $t('label.kds_orders_waiting_more') }}</span>",
+          "computed_logic": "lines 220-228 — Counts ACTIVE orders (ACCEPT|PREPARING) beyond the 8 slots; returns 0 when the queue fits the grid",
+          "kds_top_level_overflow_meta": "KitchenDisplaySystemComponent.vue:1964 + 2002 — this.kdsOverflowDetected = res?.data?.meta?.overflow === true (additional top-level 'kds_see_more' hint button at line 114)"
+        },
+        "oss_chip_cross_surface_check": {
+          "preparing_column_overflow_handler": "PreparingAndReadyComponent.vue:32-33 — preparingItems.length > 8 ? 'oss-autoscroll' : '' (CSS keyframe oss-scroll-loop 30s linear infinite — pure-CSS vertical translateY -50% pause 2s start)",
+          "ready_column_overflow_handler": "Lines 54-55 — preparedItems.length > 8 ? 'oss-autoscroll' : ''",
+          "overflow_count_visible_to_client": "NO — there is NO chip, NO count badge, NO '+N en attente' rendered anywhere in PreparingAndReadyComponent. The auto-scroll loop hides the rest of the list from view at any given moment, but the customer has no idea HOW MANY orders are ahead in the queue.",
+          "label_search_negative": "grep 'overflow_chip|kds_more|+N|moreCount|hasMore|en_attente_chip' in PreparingAndReadyComponent.vue → ZERO matches",
+          "cross_surface_parity_verdict": "ASYMMETRIC — KDS has the +N chef-rush chip per N-HEAL-01 (Wave N 2026-05-24); OSS keeps the auto-scroll-only approach (Wave S-3 TV-optim 2026-05-20). The two healing waves shipped in different directions for the same underlying overflow phenomenon (queue >8)."
+        }
+      },
+      "owner_q_answered": "Verify HEAL-01 +N chip cross-surface ? — IMPLÉMENTÉ SEULEMENT CÔTÉ KDS (KdsV2Grid + KitchenDisplaySystemComponent meta.overflow). OSS PreparingAndReadyComponent traite le même phénomène N>8 mais via .oss-autoscroll CSS keyframe (pas de chip/badge avec count). C'est un GAP de parité cross-surface : le chef VOIT '+N en attente' grâce au heal N-HEAL-01, mais le client devant le TV wall ne voit JAMAIS combien d'orders sont devant le sien — la liste défile silencieusement. Le client impatient n'a aucun signal quantitatif d'attente."
+    },
+    {
+      "n": 4,
+      "title": "ETA propagation chain KDS → backend → OSS",
+      "evidence": {
+        "kds_eta_inputs": {
+          "search_pattern": "grep 'eta|ETA|estimated|prep_time|prepTime|preparation_time' resources/js/components/admin/orderStatusScreen/",
+          "hits": "ZERO — OSS components have no ETA field reference anywhere"
+        },
+        "cds_resource_payload_exposed_to_client": {
+          "file": "app/Http/Resources/CDSOrderDetailsResource.php (full file inspected)",
+          "exposed_keys": ["id", "order_serial_no", "token", "queue_number", "order_type", "status"],
+          "eta_field": "ABSENT — no preparation_eta, no prep_time, no estimated_ready_at, no countdown timer",
+          "rationale_from_class_doc": "No PII (customer name/phone/address/total) — minimal payload by design"
+        },
+        "pos_shortcut_variant": {
+          "file": "app/Http/Resources/PosShortcutOrderResource.php",
+          "extra_keys_beyond_cds": "+total (round float, 2 decimals)",
+          "rationale": "Authenticated POS dashboard widget (pos-shortcuts-ready) needs total for cashier handover; PUBLIC OSS wall stays PII-free → no total leak on TV screen",
+          "eta_status": "Still no ETA"
+        },
+        "kds_order_resource_check": {
+          "file": "app/Http/Resources/KDSOrderItemsResource.php",
+          "exposed_keys": ["item_id", "item_name", "quantity", "item_variations", "item_extras", "item_addons", "instruction", "allergens_snapshot"],
+          "eta_status": "Also absent from KDS items contract"
+        },
+        "broadcast_payload": {
+          "event": "OrderStatusChanged (app/Events/OrderStatusChanged.php)",
+          "payload_inspection": "Carries order_id + new_status (+ old_status for delta) — NO ETA recompute, NO countdown push",
+          "implication": "Even if KDS chef 'bumps' the status to PREPARED, NO numeric ETA is recomputed or pushed to OSS. OSS purely reacts to status state-machine transitions (PREPARING → PREPARED column migration)."
+        },
+        "client_visible_timing_signal": {
+          "queue_number_only": "OSS renders 'N°{queue_number}' or fallback 'token' — the client infers position from FIFO queue order (oldest tokens left side of PRÉPARATION column, oldest READY tokens left side of PRÊT column)",
+          "no_countdown": "No 'Prêt dans ~3 min' label, no progress bar, no SLA tier indication",
+          "no_age_based_urgency": "Unlike KDS where SLA tiers color-code by age (per CLAUDE.md memory of past KDS audits + Phase M/N findings), OSS makes no use of order age for the customer view"
+        }
+      },
+      "owner_q_answered": "ETA from KDS bumped → OSS visible to client ? — NON. Aucun ETA n'est calculé/propagé/rendu. Le bump KDS produit un event OrderStatusChanged qui transporte (order_id, new_status) — pas de prep_time recompute. CDSOrderDetailsResource expose UNIQUEMENT 6 clés (id, order_serial_no, token, queue_number, order_type, status). Le client perçoit le timing UNIQUEMENT par position FIFO dans la colonne et par la transition PRÉPARATION→PRÊT. Aucun countdown, aucune projection 'prêt dans X min', aucun SLA tier visible côté client. Discipline V1 = minimal-payload PII-free, mais résulte en zéro information temporelle pour le client impatient."
+    },
+    {
+      "n": 5,
+      "title": "Adversarial — KDS allergens chef visibility + scoring",
+      "evidence": {
+        "kds_allergen_chain": {
+          "backend_resource": {
+            "file": "app/Http/Resources/KDSOrderItemsResource.php:39",
+            "field": "allergens_snapshot",
+            "comment_quote": "[PK-3 Wave 1 Intersection POS×KDS 2026-05-18] Confirms Z-1 KDS deeper-audit finding: items-board endpoint was allergen-blind while today-orders cards (via KDSOrderDetailsResource → OrderItemResource:37) already exposed allergens_snapshot. KitchenDisplaySystemOrderService::orderItems() (lines 297-326) already splits merged KDS lines by allergen-hash for food safety; the data WAS present in the model row but dropped at serialization, breaking contract parity between the two KDS surfaces.",
+            "model_cast": "OrderItem.php:76 — allergens_snapshot cast to 'array'",
+            "decode_resilience": "safeJsonDecodeArray handles both already-decoded array and legacy JSON-string shapes",
+            "sentinel": "tests/Feature/KDS/KdsOrderItemsResourceAllergenExposureTest.php"
+          },
+          "kds_frontend_visibility": {
+            "kds_main_component_badges": "KitchenDisplaySystemComponent.vue:307, 497, 669, 847 — 4x kds-allergens-badge buttons with role + :aria-label='label.kds_allergens_badge_aria' rendering '⚠ {{ label.kds_allergens_badge }}'",
+            "items_array_card_render": "Lines 940-943 — v-if=Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0 → flex flex-wrap gap-1 of v-for allergens chips",
+            "kds_card_component": "KdsOrderCard.vue:32-55 — meta row exposes 'kds-card__allergen-pill' OR 'kds-card__allergen-spacer' (keeps layout stable when no allergens)",
+            "kds_line_component": "KdsOrderLine.vue:19-25 (header allergen-icon ⚠ if hasAllergen) + lines 75-80 (allergen codes block role='alert' with translated codes via 'allergens.${code}' or raw fallback)",
+            "allergen_label_translation": "KdsOrderLine.vue:104-115 — allergenLabel() returns $t('label.kds_allergen_warning_prefix'); each code resolved via i18n key allergens.{code}",
+            "splitting_for_safety": "KitchenDisplaySystemOrderService::orderItems():297-326 (per Z-1 KDS deeper-audit) splits merged KDS lines by allergen-hash → chef never sees a single line whose allergen profile is ambiguous"
+          },
+          "client_visibility_oss": {
+            "search_grep": "grep 'allergen' resources/js/components/admin/orderStatusScreen/ → ZERO matches",
+            "rationale": "OSS contract CDSOrderDetailsResource exposes ONLY (id, order_serial_no, token, queue_number, order_type, status) — no items breakdown reaches the customer wall. Allergens are a CHEF-only signal."
+          }
+        },
+        "adversarial_challenges": [
+          {
+            "challenge": "Can a client see the kitchen state without an admin account?",
+            "answer": "YES via OSS public endpoint (publicIndex line 80-105) — PII-free 2-column wall display works without auth. KDS itself remains permission-gated."
+          },
+          {
+            "challenge": "When the chef bumps an order on KDS, does the client see ETA tick down?",
+            "answer": "NO — there is no ETA propagated. The client sees the order token migrate from PRÉPARATION (red) to PRÊT (green) in real-time (Echo branch.{N} private channel or 5s ossSyncService polling fallback), with oss-pop transition + 4s column flash + 6s per-card pulse (10s window) + optional 3-tone chime (operator-attended branches only). Pure binary state, no countdown."
+          },
+          {
+            "challenge": "What about an impatient client wondering 'how many before me'?",
+            "answer": "ZERO COUNT VISIBLE. OSS auto-scrolls the column if length > 8 (oss-autoscroll keyframe), HIDING the rest off-screen. No '+N en attente' chip cross-surface (HEAL-01 N-HEAL-01 KDS-only). Client cannot estimate queue depth — gap vs KDS chef who now sees the chip."
+          },
+          {
+            "challenge": "Is the chef equipped to keep the client safe from allergens?",
+            "answer": "YES — robust. Backend exposes allergens_snapshot via KDSOrderItemsResource (sentinel-protected). Frontend: 4x kds-allergens-badge in KitchenDisplaySystemComponent + kds-card__allergen-pill + kds-line__allergen-block (role='alert') + i18n-translated codes + allergen-hash splitting in service layer so merged lines never mix profiles. Wave PK-3 (2026-05-18) closed parity gap items-board vs today-orders. NF525-grade discipline."
+          },
+          {
+            "challenge": "Will an unauthenticated wall miss the audio chime when an order is ready?",
+            "answer": "BY DESIGN — yes. _playReadySound() early-returns if authBranchId() <= 0 (line 338, GOAL Round 2 Impl C 2026-05-18 P0-OSS-01 heal). The public wall has no operator gesture so AudioContext stays locked; chime is structurally inaudible. Visual signals (4s column flash + per-card bounce + 10s pulse) remain the sole client feedback. The pointerdown/keydown audio-unlock listeners are skipped on public surfaces (lines 139-144)."
+          },
+          {
+            "challenge": "Will the screen sleep on the TV wall during slow lunch lulls?",
+            "answer": "NO — Wave R4 V1.0.2 RED-team heal acquires navigator.wakeLock.request('screen') on mount + re-acquires on visibilitychange (lines 197-208). Released on unmount. Graceful degrade on browsers without the API (Safari iOS <16.4); flag foodkingConfig.ossWakeLockEnabled (default true)."
+          }
+        ],
+        "scoring": {
+          "completeness": "5/5 states executed",
+          "owner_questions_answered": "3/3 mission questions answered with evidence pointers + 1 bonus (KDS allergen visibility)",
+          "evidence_strength": "HIGH — every claim references file:line; 6 source files Read end-to-end (PreparingAndReadyComponent.vue + OrderStatusScreenComponent.vue + OrderStatusScreenController.php + CDSOrderDetailsResource.php + PosShortcutOrderResource.php + KDSOrderItemsResource.php); 4 cross-grep validations",
+          "P0_blockers_found": 0,
+          "P1_findings": 1,
+          "P2_findings": 2,
+          "verdict": "YELLOW-LEAN-GREEN — KDS allergen safety chain GREEN (chef has every signal: badge + pill + line-block + role=alert + i18n codes + service-layer splitting). KDS→OSS sync chain GREEN (3-channel triple-redundant: Echo + ossSyncService polling + DOM event bus + 10s attention window + WakeLock TV-resilient). Client perception gaps PATCHY: no ETA propagation by design (CDSOrderDetailsResource PII-free), no +N chip cross-surface (HEAL-01 KDS-only), no audio chime on public wall (by design heal P0-OSS-01)."
+        }
+      },
+      "owner_q_answered": "KDS allergens visible to chef so client safe ? — OUI, ROBUSTE. Pile complète : KDSOrderItemsResource.allergens_snapshot exposé (sentinel-protected) → KitchenDisplaySystemComponent rend 4 kds-allergens-badge + array de chips dans items.allergens_snapshot → KdsOrderCard meta row pill/spacer → KdsOrderLine header ⚠ icon + allergen codes block role='alert' + i18n traduit codes. Service-layer KitchenDisplaySystemOrderService::orderItems() splitte par allergen-hash pour empêcher la fusion de profils contradictoires sur une même line. Wave PK-3 2026-05-18 a fermé le gap items-board vs today-orders. NIVEAU NF525-grade. Côté client OSS, les allergènes ne sont JAMAIS exposés (par design PII-free) — le client doit faire confiance au chef."
+    }
+  ],
+  "verdict": "YELLOW-LEAN-GREEN",
+  "findings": [
+    {
+      "id": "B3-P2-F01",
+      "severity": "P1",
+      "category": "ux-parity-gap",
+      "title": "Le client impatient n'a aucun signal quantitatif d'attente — OSS auto-scrolle silencieusement quand queue > 8, pas de chip '+N en attente' cross-surface vs KDS",
+      "details": "N-HEAL-01 (M-KDS-6 F1 P0, livré Wave N 2026-05-24) a ajouté un overflow chip '⚠ +N {{ label.kds_orders_waiting_more }}' dans KdsV2Grid.vue:70-87 pour donner au chef une visibilité de la queue au-delà des 8 slots FIFO du grid. Côté client (PreparingAndReadyComponent.vue:32-33 et 54-55), le même phénomène 'queue length > 8' déclenche UNIQUEMENT l'auto-scroll CSS .oss-autoscroll (keyframe oss-scroll-loop 30s linear infinite, translateY -50% avec 2s pause). RÉSULTAT : pendant les 28s de scroll, le client voit défiler des tokens mais n'a aucune idée du NOMBRE total devant lui. grep '+N|moreCount|hasMore|overflow_chip|en_attente_chip' dans PreparingAndReadyComponent → ZERO matches. KDS a refactorisé pour MONTRER explicitement le count chef-rush, OSS a refactorisé pour CACHER élégamment l'overflow client. Les deux waves ont shippé en directions opposées pour le même underlying phenomenon.",
+      "evidence": "State 3 oss_chip_cross_surface_check + KdsV2Grid.vue:70-87 + PreparingAndReadyComponent.vue:32-33 + RAPPORT_COMPLET_CYCLE.md:130 (N-HEAL-01) + phase-m/M-KDS-6-chef-rush-empirical.json (empirical N=9..12 reproduction)",
+      "impact": "Client impatient devant TV wall pendant rush déjeuner ne peut pas estimer son temps d'attente — voit son token (ou pas, s'il est >8 dans la liste pendant la phase scroll-down). Friction perceptuelle qui empire avec la longueur de queue. Côté chef la même information est désormais GREEN (chip visible), côté client elle reste invisible. Asymétrie de transparence cross-surface.",
+      "fix_hint": "V1.0.X UX backlog Option A (recommandée) : ajouter un compteur header type 'En préparation : {{ preparingItems.length }}' / 'Prêts : {{ preparedItems.length }}' dans l'oss-column-header existant (text-[40px]) sans ajouter de chip flottant — respecte la doctrine TV-readable. Option B : footer subtil 'Position dans la file' calculé via la liste pleine quand le client se reconnaît (impossible sans identifier le client = privacy concern, donc Option A reste plus simple). Aucune modif backend nécessaire — preparingItems.length / preparedItems.length sont déjà calculés dans le component."
+    },
+    {
+      "id": "B3-P2-F02",
+      "severity": "P2",
+      "category": "data-contract-gap",
+      "title": "Aucun ETA ne se propage du KDS vers OSS — le client n'a pas de countdown / projection temporelle",
+      "details": "CDSOrderDetailsResource (full file inspected) expose strictement (id, order_serial_no, token, queue_number, order_type, status) — pas de preparation_eta, pas de prep_time, pas de estimated_ready_at, pas de countdown. KDSOrderItemsResource expose allergens_snapshot mais aussi pas d'ETA. L'event broadcast OrderStatusChanged (app/Events/OrderStatusChanged.php) transporte (order_id, new_status, old_status delta) — pas de recompute ETA quand chef bumps PREPARING→PREPARED. RÉSULTAT : le client perçoit le timing UNIQUEMENT par position FIFO dans la colonne et par la transition PRÉPARATION→PRÊT. Aucun 'Prêt dans ~3 min', aucun progress bar, aucun SLA tier. Discipline V1 = minimal-payload PII-free volontaire (motivée par la doctrine wall-display sans PII), mais résulte en ZERO information temporelle pour le client impatient.",
+      "evidence": "State 4 — cds_resource_payload_exposed_to_client + broadcast_payload + client_visible_timing_signal; grep 'eta|ETA|prep_time' dans orderStatusScreen/ retourne ZERO match",
+      "impact": "Client impatient devant TV n'a aucune indication de temps restant. Doit attendre la transition status pour savoir que son order est prêt. Friction perceptuelle pour les longues compositions (bowls multi-étapes, ingrédients complexes). Concurrents type Toast affichent typiquement un mini-countdown 'Estimated 4 min remaining' alimenté par recipe.prep_time_minutes côté backend.",
+      "fix_hint": "V1.0.X backlog NON-V1 (consciemment): si owner décide d'ajouter ETA, étape 1 = enrichir CDSOrderDetailsResource avec estimated_ready_at (ISO8601, nullable) calculé à partir de Order::accepted_at + sum(item.prep_time_minutes) ; étape 2 = recompute event OrderEtaRecalculated quand chef bump status ou ajoute item ; étape 3 = render PreparingAndReadyComponent côté <li> avec countdown component qui tick toutes les 30s. ATTENTION : créer un nouveau computed côté backend = NF525-adjacent? Non, c'est juste un projection — pas de fiscal impact. Mais cela ajoute un point d'attaque PII si la projection révèle indirectement la composition. À évaluer."
+    },
+    {
+      "id": "B3-P2-F03",
+      "severity": "P2",
+      "category": "client-vs-chef-information-asymmetry",
+      "title": "Le chime audio 'ready' est désactivé sur la TV publique par design — visual-only feedback channel sur la seule surface qui en aurait le plus besoin",
+      "details": "PreparingAndReadyComponent.vue:329-368 _playReadySound() early-returns si authBranchId() <= 0 (ligne 338, heal P0-OSS-01 GOAL Round 2 Impl C 2026-05-18). Le rationale documenté : la TV wall publique n'a pas d'opérateur, donc pas de pointerdown/keydown user gesture, donc AudioContext reste verrouillé par browser autoplay policy → la chime AudioContext serait silencieuse de toute façon, mais elle floodait la console des warnings Chrome 'AudioContext was not allowed to start'. Heal = skip propre côté public, opérateur garde le chime. Mais l'ironie : la TV publique est PRÉCISÉMENT la surface où un chime serait le plus utile pour attirer l'attention d'un client qui ne regarde pas l'écran en continu. Visual signals (.oss-ready-flash 0.8s ease 2 + .oss-new-ready 0.6s bounce 2 + .oss-pulse-ready 1.6s ease infinite pendant 10s) sont robustes mais 100% visuels — un client qui regarde son téléphone ne sera pas alerté.",
+      "evidence": "State 5 adversarial challenge 5 + PreparingAndReadyComponent.vue:329-368 + comment_quote lines 330-338",
+      "impact": "Friction client : un client distrait (téléphone, conversation, lecture) ne sera alerté que par le coin de l'œil. Le 3-tone chime ascending (523/659/784/1047 Hz) qui existe côté code reste structurellement muet sur la TV. Wave S-3 a corrigé la portée visuelle (text-[56px] + 10s pulse + autoscroll) mais le canal audio reste off pour la cible principale.",
+      "fix_hint": "V1.0.X backlog UX : étudier un kiosk-style 'ding' déclenché côté serveur via un device dédié (Raspberry Pi connecté au TV avec speaker, écoutant un WebSocket dédié pour 'OrderReadyChime' event, ne dépendant pas du navigator AudioContext). Alternative plus simple : ajouter dans la TV wall un bouton 'Activer le son' (one-tap unlock) qui crée l'AudioContext via gesture utilisateur — un membre du staff l'appuie au démarrage de service. Ne nécessite pas de hardware additionnel. Modif scope-minimal côté PreparingAndReadyComponent template."
+    }
+  ],
+  "scores": {
+    "completeness": "5/5 states",
+    "owner_questions": "3/3 mission + 1 bonus (KDS allergen chef visibility)",
+    "evidence_strength": "HIGH — 6 source files Read end-to-end + 4 cross-grep validations, every claim source-cited",
+    "verdict_short": "YELLOW-LEAN-GREEN — KDS allergen chef chain NF525-grade GREEN; KDS→OSS sync chain triple-channel GREEN; client perception gaps 1 P1 (no +N cross-surface) + 2 P2 (no ETA + audio off on public wall)."
+  },
+  "top_3_findings_summary": [
+    "P1 B3-P2-F01: Pas de chip '+N en attente' côté OSS — KDS a shippé N-HEAL-01 Wave N 2026-05-24 pour chef visibility (KdsV2Grid.vue:70-87), OSS continue à auto-scroller silencieusement (PreparingAndReadyComponent.vue:32-33 .oss-autoscroll keyframe). Asymétrie de transparence : chef voit le count, client ne le voit pas. Fix : ajouter compteur header 'En préparation : N / Prêts : N' dans oss-column-header existant.",
+    "P2 B3-P2-F02: Aucun ETA ne se propage KDS→OSS — CDSOrderDetailsResource expose 6 clés (id, order_serial_no, token, queue_number, order_type, status), pas de preparation_eta. OrderStatusChanged event transporte (order_id, new_status) seulement. Client perçoit timing uniquement via position FIFO et transition status. V1 par design PII-free wall, mais zéro signal temporel pour client impatient. V1.0.X backlog non-V1.",
+    "P2 B3-P2-F03: Chime audio 'ready' désactivé sur TV publique par design (heal P0-OSS-01) — AudioContext browser-locked sans user gesture sur surface unattended. Visual signals robustes (.oss-ready-flash + bounce + pulse 10s + WakeLock screen) mais 100% visuels. Client distrait sur téléphone ne sera pas alerté. Fix V1.0.X : bouton 'Activer le son' one-tap unlock staff au démarrage de service ou hardware-dedicated speaker via WebSocket dédié."
+  ]
+}
