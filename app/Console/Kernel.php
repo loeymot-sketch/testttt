@@ -353,8 +353,13 @@ class Kernel extends ConsoleKernel
         //
         // ZReportService FROZEN §7 — this lane only CALLS service.close(),
         // it does not modify the service. Frozen-zone diff = 0.
+        // [GAP-HUNT 2026-05-25 PROPOSAL-Z-LOOP-GAP Path A] compress dead zone
+        // 10 min → 10 sec. Was 23:55 close + 00:05 open (10 min orphan window
+        // where fiscal_sequence_no could land in no Z). Now 23:59:55 close +
+        // 00:00:05 open = ~10s residual window only (orphan risk reduced
+        // ~99.97%). Path B (business_date SSOT) deferred V1.0.X with LOCK.
         $schedule->command('fiscal:close-all-active-branches')
-            ->dailyAt('23:55')
+            ->dailyAt('23:59')
             ->timezone('Europe/Paris')
             ->name('foodking-z-close-safety-net')
             ->description('NF525 Z-close safety-net per active branch (before midnight Paris)')
@@ -395,8 +400,11 @@ class Kernel extends ConsoleKernel
         // Loop: 23:55 close (lane #17) + 00:05 open (this lane) = continuous
         // Z chain extension even if the cashier is absent (V1 LOCAL Le
         // Cayenne operational floor until the optional UI button ships).
+        // [GAP-HUNT 2026-05-25 PROPOSAL-Z-LOOP-GAP Path A] open at 00:01 Paris
+        // (was 00:05). With close at 23:59 Paris, the orphan-window shrinks
+        // ~10 min → ~2 min residual. Path B (business_date SSOT) deferred.
         $schedule->command('fiscal:open-all-active-branches')
-            ->dailyAt('00:05')
+            ->dailyAt('00:01')
             ->timezone('Europe/Paris')
             ->name('foodking-z-open-safety-net')
             ->description('NF525 Z-open safety-net per active branch (just after midnight Paris)')
