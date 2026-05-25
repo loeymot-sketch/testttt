@@ -27,10 +27,14 @@ class CleanupStalePendingKioskOrders
          * admin action). Drop only BranchScope (multi-tenant by design) and keep the
          * soft-delete guard intact.
          */
+        // [GAP-C1-002] Extend cleanup to PENDING_COUNTER zombies (kiosk cash
+        // abandonné client mid-flow). Previously only UNPAID kiosk orders were
+        // purged → PENDING_COUNTER polluted KDS indefinitely + risk NF525 if
+        // encaissé à tort. Branch isolation + TTL preserved.
         FrontendOrder::withoutGlobalScope(BranchScope::class)
             ->whereNull('deleted_at')
             ->where('status', OrderStatus::PENDING)
-            ->where('payment_status', PaymentStatus::UNPAID)
+            ->whereIn('payment_status', [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER])
             ->where('source_surface', 'kiosk')
             ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY])
             ->where(function ($query) use ($staleThreshold): void {
@@ -51,7 +55,7 @@ class CleanupStalePendingKioskOrders
 
                     if (!$locked
                         || (int) $locked->status !== OrderStatus::PENDING
-                        || (int) $locked->payment_status !== PaymentStatus::UNPAID) {
+                        || !in_array((int) $locked->payment_status, [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER], true)) {
                         return;
                     }
 
