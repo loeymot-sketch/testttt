@@ -1,0 +1,245 @@
+{
+  "agent": "S3-P6 KDS x Staff-newbie",
+  "persona": "Chef nouveau ou stagiaire, 2-5 jours d'experience FoodKing Le Cayenne. Connaitre les bases cuisine mais pas le KDS. Tablette tactile en environnement bruyant. Doigts gras. Peut clic accidentel. Decouvre l'UI sans aucune formation prealable.",
+  "scope_audited": {
+    "frontend_components": [
+      "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (2768 LOC)",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (545 LOC, production default depuis 2026-05-16 Sprint 3C)",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue (752 LOC, single canonical card)",
+      "resources/js/store/modules/kds.js (per-item Vuex localStorage bump avec recall 60s, legacy 4-col SEULEMENT)"
+    ],
+    "i18n_keys_searched": [
+      "kds_help / kds_tutorial / kds_guide / kds_onboarding / kds_training / kds_workflow",
+      "kds_undo / kds_undo_bump / kds_recall / kds_recall_grace_expired",
+      "kds_bump_local_only_notice / kds_card_cash_pending"
+    ]
+  },
+  "perspective_baseline": {
+    "actions_irreversibles_du_chef": [
+      "Tap Pret CTA (kds-card__cta dans KdsOrderCard.vue:148-160) - emit ready - KdsV2Grid.vue:336 dispatch change-status - PATCH IMMEDIAT au backend",
+      "Touche clavier [A]-[H] dans KdsV2Grid.vue:269-289 - meme effet PATCH IMMEDIAT, AUCUNE confirmation",
+      "kdsBump (legacy 4-col seulement, KitchenDisplaySystemComponent.vue:1776) - pastille locale + si tous items bumpes -> orderStatus PATCH",
+      "orderStatus (KitchenDisplaySystemComponent.vue:2165) - PATCH backend changeStatus, alertService.successFlip toast, dispatch realtime-order-update event"
+    ],
+    "consequences_d_un_PATCH_PREPARED_errone": [
+      "OSS (Order Status Screen) annonce 'Pret: A00XX' au client - le client revient au comptoir alors que rien n'est pret",
+      "POS suivi caissier passe en 'PRET' - caissier peut clore le ticket avant que la nourriture soit finie",
+      "Si livraison: kiosk-status ecran client passe en PRET, livreur peut tenter de prendre la commande",
+      "audit_logs append-only NF525 enregistre la transition - bit-identical chain - aucun rollback silencieux possible",
+      "Recall legacy 60s ne reverse QUE la pastille locale (kds.js:66-85) - le statut serveur reste PREPARED - desync chef vs OSS vs POS"
+    ],
+    "documentation_chef_disponible_in_ui": "AUCUNE. Pas de tooltip d'aide, pas de tour onboarding, pas de mode entrainement, pas de section 'comment ca marche', pas de FAQ in-app. Seule indication: kds_bump_local_only_notice banner (dismissable) qui explique que les pastilles 'Pret' sont locales. Mais cela ne concerne que le legacy layout (KitchenDisplaySystemComponent.vue:117-128) - le V2 layout par defaut n'a aucune mention equivalente.",
+    "freins_techniques_sur_actions_dangereuses": [
+      "isCashPending gate (KdsOrderCard.vue:367) - badge passif au lieu de CTA si paiement comptoir non regle - PROTECTION qui marche",
+      "Keyboard [A]-[H] respecte aussi cash-pending gate (KdsV2Grid.vue:283)",
+      "Backend OrderStateMachine refuse les transitions invalides (409 conflict)",
+      "Tout le reste = clic = PATCH immediat"
+    ]
+  },
+  "gaps_identified": [
+    {
+      "id": "S3-P6-G1",
+      "severity": "P0",
+      "category": "confirmation_manquante_action_irreversible",
+      "title": "Aucune confirmation avant bump Pret final - newbie peut marquer PREPARED par mistake en touchant l'ecran tactile",
+      "evidence": [
+        "KdsOrderCard.vue:148-160 - CTA Pret single click no confirm",
+        "KdsV2Grid.vue:336-339 - emit change-status sans dialog",
+        "KitchenDisplaySystemComponent.vue:1552-1578 onV2ChangeStatus - dispatch direct vers store sans guard",
+        "Wave V 2026-05-21 commit comment KdsV2Grid.vue:108-115 'KdsUndoToast removed - chef Pret tap now PATCHes immediately' - owner mandate 'enleve cette securite' pour resoudre une race de serialization toast, MAIS le commit n'a PAS distingue 'chef experimente' vs 'newbie' - resultat: zero filet de securite pour stagiaire"
+      ],
+      "newbie_failure_mode": "Stagiaire 1ere journee, doigts gras, manipule cubitainer 5L huile. Frole l'ecran tactile par accident en posant un plat - tap detecte sur kds-card__cta zone 52px x ~280px (KdsOrderCard.vue:681 height:52px). PATCH PREPARED immediat. OSS annonce 'Pret: A0024' au client. Client revient au comptoir. Plat pas commence. Crise.",
+      "impact": "Client deplace inutilement, caissier confused, perte de confiance instantanee. Si NF525 + audit_logs append-only, la transition est gravee dans la chain - non rollback-able silencieusement. Le chef doit annuler via OSS ou intervention admin. En V1 LOCAL Le Cayenne single-resto, c'est de la friction operationnelle, mais en V2 SaaS multi-resto: support tickets en cascade.",
+      "files_concerned": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:148-160 (CTA Pret)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:324-346 (onCtaTap)",
+        "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1552-1578 (onV2ChangeStatus dispatch)"
+      ],
+      "fix_direction": "Option 1 (mode newbie opt-in): user.kds_safety_mode flag (table users) -> si true, double-tap requis OU mini-dialog 'Pret? OUI/NON' 2s timeout auto-cancel. Option 2 (universal): long-press 800ms au lieu du tap pour le step final PREPARING->PREPARED (CONFIRMÉE->PREPARING reste single-tap car bas-stake). Option 3: training_mode KDS qui logge actions sans PATCH backend - chef pratique sans casser le flow. Aucune de ces 3 options n'existe aujourd'hui.",
+      "owner_decision_required": true,
+      "rationale_owner_gate": "Owner Wave V 2026-05-21 a explicitement enleve l'undo car race condition entre serialization 3s + chained clicks. Toute re-introduction de safety doit prouver qu'elle ne reintroduit pas cette race (per-order independance via X-Idempotency-Key). Decision binaire: V1 LOCAL accepte l'absence de filet OU on cree un kds_safety_mode opt-in user-level."
+    },
+    {
+      "id": "S3-P6-G2",
+      "severity": "P0",
+      "category": "undo_recent_inexistant_chemin_par_defaut",
+      "title": "Aucun bouton 'Annuler la derniere action' apres un PATCH PREPARED sur le V2 layout (production default)",
+      "evidence": [
+        "i18n keys kds_undo_bump / kds_undo_bump_aria / kds_undo_done EXISTENT dans fr.json mais ne sont reference NULLE PART dans KdsV2Grid.vue ni KdsOrderCard.vue (verified via grep)",
+        "KdsUndoToast.vue (213 LOC) file existe sur disque mais import RETIRE de KdsV2Grid.vue (commit Wave V 2026-05-21, voir KdsV2Grid.vue:108-115)",
+        "Legacy 4-col kdsRecall (KitchenDisplaySystemComponent.vue:1789) appelle store kds.js:66-85 - mais cette action ne reverse QUE la pastille locale (clear bumpedByOrder[orderId][itemId]) - elle NE RAPPELLE PAS le backend pour reverser le orderStatus PATCH. Si le chef a bumpe le dernier item d'une commande, kdsBump:1779-1786 a deja dispatch orderStatus PATCH vers backend. Le recall affiche meme un succes (alertService) mais le serveur reste PREPARED. Desync silencieux.",
+        "Backend changeStatus POST route /admin/kds-order/change-status/{id} accepte les status backward (PREPARED -> PREPARING revert) si OrderStateMachine::allows le permet - mais aucun controle frontend ne l'expose dans le V2 layout"
+      ],
+      "newbie_failure_mode": "Stagiaire panique apres avoir compris qu'il a marque la commande #24 PRET trop tot. Cherche un bouton 'Annuler' / 'Retour' / 'Undo' - INTROUVABLE dans le V2 grid (default layout en production). Le ticket #24 disparait du grid et descend dans 'Recemment servies' strip - aucune action possible sur ce strip (read-only pills). Le stagiaire doit appeler le manager pour intervention DB ou admin.",
+      "impact": "Probleme bloquant operationnel pour newbie: pas d'auto-correction possible. Chaque erreur necessite escalade. Demoralise. Pour le V1 LOCAL Le Cayenne, c'est une friction quotidienne. Note interessante: la legacy 4-col layout (?v2=0) a un button kdsRecall qui apparait 60s mais il est TROMPEUR car il ne reverse PAS le backend status, juste le bump local. C'est pire que rien car cela donne une fausse impression de safety.",
+      "files_concerned": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (V2 layout, default since 2026-05-16) - aucun bouton undo",
+        "resources/js/store/modules/kds.js:66-85 - recallItem reverse uniquement localStorage, pas backend",
+        "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1789-1797 - kdsRecall ne dispatch jamais changeStatus backward"
+      ],
+      "fix_direction": "Option 1: re-introduire KdsUndoToast SANS la race condition - per-order Map<orderId, pendingTimeoutId> au lieu d'une seule pendingTimeoutId partagee (la cause du bug Wave V). Owner mandate 'enleve cette securite' refusait la SHARED race, pas l'undo en soi. Option 2: bouton 'Annuler derniere action' persistent au coin du grid - affiche pendant 60s apres chaque PATCH, revert via PATCH backward (statut -> PREPARING) si OrderStateMachine accepte. Option 3: documenter et rendre invisible l'illusion d'undo legacy (kdsRecall doit dispatcher la transition backward ou ne pas exister).",
+      "owner_decision_required": true,
+      "rationale_owner_gate": "Toute reintroduction d'undo doit etre re-verifiee contre la race Wave V 2026-05-21. Option 1 (per-order Map) est la plus chirurgicale. Reformer le code passe par RED-team challenge: chef chaine 3 'Annuler' clicks - chaque undo doit etre independant."
+    },
+    {
+      "id": "S3-P6-G3",
+      "severity": "P0",
+      "category": "aide_contextuelle_inexistante",
+      "title": "Aucune aide en ligne, tooltip onboarding, mode entrainement pour un chef nouveau",
+      "evidence": [
+        "Aucun match pour 'help / tutorial / guide / onboarding / training / nouveau.chef / tour / popover' dans les 2768 LOC de KitchenDisplaySystemComponent.vue",
+        "Aucune i18n key kds_help_*, kds_tutorial_*, kds_guide_*, kds_onboarding_* dans fr.json",
+        "Pas de feature flag kds.training_mode dans aucun fichier scanne",
+        "Seule self-doc UI = kds_bump_local_only_notice banner (dismissable) qui n'apparait QUE sur legacy 4-col layout (KitchenDisplaySystemComponent.vue:117-128)",
+        "Les keyboard shortcuts [A]-[H] sont docu seulement via tooltip on shortcut badge (KdsOrderCard.vue:34 :title=kds_bump_local_only_notice - MISLABELED, le tooltip dit 'pastilles Pret memorisees sur ce poste' alors que le shortcut [A]-[H] n'est pas une pastille locale mais un raccourci clavier)"
+      ],
+      "newbie_failure_mode": "Stagiaire jour 1 ouvre /kds. Voit une grille 4x2 avec des cartes #N°XX, un timer mm:ss, un bouton noir 'Pret'. Pas d'idee de quoi faire avec un ticket fraichement arrive (CONFIRMÉE status). Le chef experimente sait qu'il faut 'cliquer une fois pour preparer, une fois pour pret'. Le stagiaire ne le sait pas - il pourrait croire que clic = pret immediat (step ladder ACCEPT -> PREPARING -> PREPARED est implicit). Voit le badge [A] [B] [C] etc. - ignore qu'il s'agit de raccourcis clavier. Voit le 'Allergie' pill orange mais ne sait pas qu'il faut cliquer dessus pour voir les allergenes specifiques (modal pas evident). Voit 'EN ATTENTE ENCAISSEMENT' badge cash-pending mais n'a pas le contexte que c'est le caissier qui debloque.",
+      "impact": "Apprentissage par essai-erreur direct sur des commandes reelles client. Chaque erreur = client mecontent. Manager doit former oralement chaque newbie. Pas scalable pour V2 SaaS multi-resto. Pour Le Cayenne V1 LOCAL, c'est gerable mais inefficace. Risque NF525: stagiaire bypass cash-pending par mistake en cliquant le badge passif (test: cliquer le badge .kds-card__cash-pending - aucun handler, donc safe par default - PROTECTION technique presente, mais education absente).",
+      "files_concerned": [
+        "Aucun fichier d'aide/training/tutorial existe pour KDS",
+        "resources/js/components/admin/kitchenDisplaySystem/ contient 7 components mais aucun KdsHelpDrawer / KdsTutorial / KdsTrainingMode"
+      ],
+      "fix_direction": "Option 1 (minimal, V1 LOCAL): KdsHelpDrawer (mirror KdsHistoryDrawer pattern) avec 6-8 screens illustres: 1) qu'est-ce qu'une carte, 2) timer/buckets fresh/warning/critical, 3) etape unique vs double clic step ladder, 4) raccourcis clavier [A]-[H], 5) allergie pill cliquable, 6) cash-pending badge, 7) recently-served strip, 8) overflow chip si >8 commandes. Trigger = button '?' top-right du grid. Option 2 (forte): kds_training_mode flag user-level - quand actif, PATCH backend remplaces par PATCH ghost (no-op) + toast 'Action enregistree (mode formation)' - chef pratique sans casser le flow reel. Necessite eventuellement un endpoint /admin/kds-order/training-dispatch ou simulation cote frontend uniquement. Option 3: contextual tooltips on hover de chaque element actionnable (CTA, badge, shortcut) - first-time-user detect via localStorage flag user.${id}.kds_seen_v=1.",
+      "owner_decision_required": true,
+      "rationale_owner_gate": "L'ajout d'un mode entrainement implique soit (a) une simulation pure frontend qui risque de drift de la realite backend OrderStateMachine, soit (b) un nouveau endpoint backend qui doit traverser le frozen-zone NF525 audit chain. Decision owner: education = (1) drawer aide statique illustres, (2) tooltips first-time-user, ou (3) full training mode avec endpoint dedie ?"
+    },
+    {
+      "id": "S3-P6-G4",
+      "severity": "P1",
+      "category": "limite_securite_clavier_fat_finger",
+      "title": "Raccourci clavier [A]-[H] aucune protection fat-finger ni double-press detection - stagiaire qui pose la paume sur clavier USB peut declencher 8 PATCH PREPARED simultanes",
+      "evidence": [
+        "KdsV2Grid.vue:269-289 onKey - bind global keydown sans modifier key required, sans debounce, sans repeat detect",
+        "Si key event repeat=true (clavier maintenu), chaque repeat declenche un nouveau PATCH (e.preventDefault() seulement, pas de e.repeat check)",
+        "Aucun cap de frequence/throttle. Owner Wave V argument 'serialization etait le bug' mais une rafale clavier reste possible",
+        "Aucune confirmation si plusieurs touches simultanees (paume large sur clavier physique posee accidentellement)"
+      ],
+      "newbie_failure_mode": "Stagiaire pose les keys / le tablet sur le comptoir avec le clavier expose. Pose son avant-bras dessus en saisissant un plat chaud. 6 touches enfoncees simultanement (A, S, D, F, G, H). 6 PATCH PREPARED partent au backend. 6 commandes annoncees PRET au OSS. 6 clients reviennent au comptoir. Probleme operationnel pendant 10-15 min.",
+      "impact": "Probable en environnement cuisine rush avec clavier physique. Moins probable avec ecran tactile pure (tap multi-doigts gere par browser). Diminution de la confiance newbie envers le KDS. Note: backend OrderStateMachine est resilient (lockForUpdate per-order + idempotent), donc pas de corruption data, mais l'effet UI/business est reel.",
+      "files_concerned": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:269-289 onKey"
+      ],
+      "fix_direction": "Option 1: check e.repeat - if (e.repeat) return - empeche les rafales clavier maintenue. Option 2: short throttle 150ms entre keydown handle - assez court pour ne pas gener un chef rapide, assez long pour ignorer une paume posee. Option 3: require modifier key (Ctrl+A, Ctrl+B...) - protection forte mais friction sur le chef experimente. Option 4: detect simultaneous keys (>2 in 50ms) -> swal warning 'Touches multiples detectees, etes-vous sur ?' - lourd. Recommande: Option 1 + Option 2 (combine, 5 LOC).",
+      "owner_decision_required": false,
+      "rationale_no_gate": "Chirurgical (5 LOC, e.repeat + throttle 150ms), pas de frozen-zone, conserve l'experience clavier du chef rapide intact, n'affecte pas backend NF525. Inline-edit exception scope-minimal compatible per feedback_orchestrator_inline_edit_exception.md."
+    },
+    {
+      "id": "S3-P6-G5",
+      "severity": "P1",
+      "category": "absence_de_workflow_guide_step_ladder_implicit",
+      "title": "Step ladder ACCEPT -> PREPARING -> PREPARED demande 2 taps sur la meme CTA - le label CTA ne change PAS entre les 2 taps - newbie pense que c'est une seule action",
+      "evidence": [
+        "KdsOrderCard.vue:148-160 - le CTA affiche TOUJOURS 'Pret' (label.kds_card_cta_ready) quel que soit le status courant",
+        "Onclic, le code dispatch ACCEPT->PREPARING au 1er tap, PREPARING->PREPARED au 2eme tap (KdsV2Grid.vue:329-332 logique step ladder)",
+        "Aucun feedback visuel different entre les 2 taps si la card reste in-place avec timer qui continue",
+        "Wave Q-2 2026-05-20 owner override comment KitchenDisplaySystemComponent.vue:1190-1199 explique 'chef taps Pret twice on a fresh ticket' mais l'UI ne le dit pas au newbie"
+      ],
+      "newbie_failure_mode": "Stagiaire voit nouvelle commande CONFIRMÉE arriver. Tap Pret. Voit le state pill change CONFIRMÉE -> EN PRÉPARATION mais la CTA reste 'Pret' verte. Confused. Re-tap Pret pour 'confirmer' - et la commande passe PRET. Trop tot, le plat n'est meme pas demarre. Le chef pense que le second clic etait une confirmation, alors qu'il etait une transition irreversible vers PREPARED.",
+      "impact": "Source structurelle d'erreur newbie: l'UI cache la double semantique. Workaround pour chef experimente: il connait par convention. Workaround newbie: aucun, il faut le former oralement.",
+      "files_concerned": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:148-160 (CTA static label)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:324-346 (step ladder logic)"
+      ],
+      "fix_direction": "Option 1: CTA label dynamique - si status=ACCEPT (CONFIRMÉE) -> 'Demarrer' (orange #F4501E), si status=PREPARING -> 'Marquer Pret' (vert #1AB759). Symetrique avec ce que fait DEJA le legacy 4-col layout (KitchenDisplaySystemComponent.vue:455-465 - start_preparing puis mark_done). C'est juste que le V2 unified card a regresse sur ce point. Option 2: ajouter un state-aware sublabel sous le CTA: 'Etape 1/2' / 'Etape 2/2'. Option 3: garder le label statique mais changer la couleur CTA (orange phase 1, vert phase 2). Recommande: Option 1 (alignement avec legacy + clarte newbie + pas de gate owner car juste copie de la convention legacy existante).",
+      "owner_decision_required": false,
+      "rationale_no_gate": "Option 1 ramene la convention que le legacy 4-col layout utilise deja en production. Aucune regression de l'UX chef-experimente (les boutons sont au meme endroit, juste avec labels plus precis). Chirurgical: KdsOrderCard.vue computed ctaLabel + ctaColor, 15 LOC. Inline-edit exception compatible."
+    },
+    {
+      "id": "S3-P6-G6",
+      "severity": "P2",
+      "category": "shortcut_badge_titre_tooltip_misleading",
+      "title": "Tooltip du badge [A]-[H] sur la carte indique kds_bump_local_only_notice ('pastilles locales') au lieu d'expliquer le raccourci clavier",
+      "evidence": [
+        "KdsOrderCard.vue:34 - <span :title=\"$t('label.kds_bump_local_only_notice')\">[{{ shortcut }}]</span>",
+        "kds_bump_local_only_notice = 'Les pastilles Pret (bump) sont memorisees sur ce poste (navigateur) - elles ne se synchronisent pas entre plusieurs ecrans KDS.'",
+        "Cette explication concerne le bump per-item du LEGACY layout (kds.js localStorage), pas le shortcut [A]-[H] du V2 layout",
+        "Le newbie qui hover le badge [A] s'attend a apprendre 'appuie A pour ce ticket' - mais lit un message sur la persistence locale"
+      ],
+      "newbie_failure_mode": "Stagiaire decouvre le badge [A] en hovering. Lit le tooltip. Conclut a tort que c'est un identifiant de poste KDS local. Ignore le keyboard shortcut. Continue a tap manuellement chaque carte au lieu d'utiliser le clavier - perte de productivite mais pas dangerous.",
+      "impact": "Faible - friction d'apprentissage seulement. Mais c'est un raw label / drift entre legacy et V2 que la sentinel CLAUDE.md §6 visual test mandate aurait pu attraper.",
+      "files_concerned": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:34"
+      ],
+      "fix_direction": "Renommer la i18n key utilisee dans le tooltip: utiliser une key dediee genre 'kds_shortcut_badge_tooltip' = 'Raccourci clavier - appuie {key} pour avancer cette commande' (avec substitution). Ou utiliser :title=\"`Raccourci clavier ${shortcut}`\" simple sans i18n si c'est urgent.",
+      "owner_decision_required": false,
+      "rationale_no_gate": "Pure UI copy fix, scope-minimal, pas de frozen-zone. Inline-edit exception."
+    },
+    {
+      "id": "S3-P6-G7",
+      "severity": "P2",
+      "category": "empty_state_pas_d_orientation",
+      "title": "Empty state V2 layout affiche 'Aucune commande en cours' mais ne dit pas au newbie que faire (attendre? naviguer? appeler caissier?)",
+      "evidence": [
+        "KdsV2Grid.vue:31-46 - kds-v2__empty avec illustration + title + sub mais aucune indication d'action",
+        "kds_empty_state / kds_empty_state_sub i18n keys (existence presumee, pas verifiee dans le fichier)"
+      ],
+      "newbie_failure_mode": "Stagiaire 1ere journee, prend le poste a 8h avant rush. Aucune commande. Ecran vide. Ne sait pas si: (a) attendre que les commandes arrivent, (b) cliquer quelque part pour rafraichir, (c) configurer son poste (station filter), (d) appeler le caissier pour test. Reste 30 min a regarder l'ecran inactif.",
+      "impact": "Faible business mais friction onboarding. Pas critique en V1 LOCAL, mais signal d'absence de pedagogie systematique.",
+      "files_concerned": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:31-46"
+      ],
+      "fix_direction": "Ajouter sub-action dans l'empty state: 'Les commandes s'afficheront ici automatiquement.' + 'Configurer mon poste' (lien vers station filter) + 'Ouvrir l'aide' (vers KdsHelpDrawer si G3 implemente).",
+      "owner_decision_required": false,
+      "rationale_no_gate": "UI copy + 2 boutons, scope-minimal. Inline-edit exception."
+    },
+    {
+      "id": "S3-P6-G8",
+      "severity": "P2",
+      "category": "kdsRecall_legacy_layout_misleading",
+      "title": "Sur legacy 4-col layout, button 'Annuler' apparait 60s apres bump mais ne reverse QUE pastille locale - status backend reste PREPARED",
+      "evidence": [
+        "KitchenDisplaySystemComponent.vue:1789-1797 kdsRecall - dispatch store kds/recallItem - aucun axios PATCH backward",
+        "store/modules/kds.js:66-85 recallItem - manipule SEULEMENT localStorage bumpedByOrder map - aucune action backend",
+        "Mais kdsBump:1779-1786 a deja potentiellement dispatch orderStatus backend si tous les items etaient bumpes",
+        "kds_recall_grace_expired i18n key existe ('Rappel impossible : delai d'annulation (60 s) depasse.') - donne FAUX espoir au chef que 60s = window de revert backend"
+      ],
+      "newbie_failure_mode": "Stagiaire en legacy ?v2=0 mode (devrait etre rare en V1 mais possible si bookmark URL ou rollback). Bumpe le dernier item d'une commande. Voit 'Annuler' apparaitre 30s plus tard. Clique 'Annuler' pensant que cela revoit le client message OSS et permet de continuer la preparation. La pastille locale s'efface mais le client a deja recu le ping 'Pret' du OSS et est revenu au comptoir. Chaos.",
+      "impact": "Probleme rare car V2 est default depuis 2026-05-16 Sprint 3C. Mais ?v2=0 emergency rollback documente. Si le rollback est utilise post-bug-V2, ce piege se revele. Surtout dangerous pour stagiaire qui croit que recall = undo total.",
+      "files_concerned": [
+        "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1789-1797",
+        "resources/js/store/modules/kds.js:66-85"
+      ],
+      "fix_direction": "Option 1: kdsRecall doit aussi dispatcher changeStatus backward si l'order avait deja transitionne. Necessite verification OrderStateMachine accepte PREPARED->PREPARING (backward). Si non, refuse + log + toast 'Statut serveur deja avance, annulation locale seulement'. Option 2: renommer le i18n key + bouton 'Reset pastille locale' au lieu de 'Annuler' - moins trompeur. Option 3: deprecier le bouton kdsRecall dans le legacy (cohence avec V2 qui n'en a plus).",
+      "owner_decision_required": true,
+      "rationale_owner_gate": "Toute modification d'un comportement legacy ?v2=0 = canal de rollback emergency. Owner doit confirmer que cette correction ne casse pas un rollback critique. Decision: corriger maintenant ou attendre suppression du legacy."
+    }
+  ],
+  "top_3_gaps_priority": [
+    {
+      "rank": 1,
+      "id": "S3-P6-G1",
+      "severity": "P0",
+      "summary": "Aucune confirmation avant bump Pret final - newbie peut marquer PREPARED par mistake (fat finger / ecran tactile)",
+      "why_top": "Action irreversible (audit_logs NF525 append-only chain), impact business direct (client deplace, caissier confus), pas de filet de securite pour stagiaire. Owner-gate necessaire car Wave V 2026-05-21 a explicitement enleve l'undo."
+    },
+    {
+      "rank": 2,
+      "id": "S3-P6-G2",
+      "severity": "P0",
+      "summary": "Aucun bouton 'Annuler' sur le V2 layout production - newbie bloque sans auto-correction possible",
+      "why_top": "L'absence d'undo dans le default layout + l'undo legacy qui ne reverse PAS le backend = double piege. Pour le stagiaire, chaque erreur escalade obligatoire. Pour V1 LOCAL Le Cayenne, friction operationnelle quotidienne. La fix nominale (KdsUndoToast per-order Map au lieu de shared timeout) addresse aussi la race Wave V."
+    },
+    {
+      "rank": 3,
+      "id": "S3-P6-G3",
+      "severity": "P0",
+      "summary": "Zero aide en ligne / tutorial / training mode pour newbie - apprentissage uniquement par essai-erreur sur commandes reelles",
+      "why_top": "Absence systemique de pedagogie KDS - impact aggregue sur tout stagiaire embauche + signal de drift produit (le KDS est pense pour chef experimente seulement). Option 1 (KdsHelpDrawer mirror du KdsHistoryDrawer) est implementable en V1 LOCAL sans toucher backend - juste ajout d'un drawer UI."
+    }
+  ],
+  "verdict": {
+    "overall": "BLOCK_FOR_NEWBIE_USE - V1 LOCAL Le Cayenne (chef experimente connu) tolere les 3 P0 actuellement par convention orale + supervision proche owner. Mais des qu'un nouveau chef arrive (stagiaire, remplacant, weekend staff), le KDS V2 par defaut est dangereux car: (1) zero filet de securite avant action irreversible (G1), (2) zero auto-correction (G2), (3) zero pedagogie integree (G3). Le legacy ?v2=0 pretend offrir un undo (G8) qui est trompeur. Les P1/P2 (G4 fat-finger clavier, G5 step ladder implicit, G6 tooltip misleading, G7 empty state passive) aggravent la friction newbie sans la rendre critique.",
+    "blocking_ship_recommendation": "Pour V1 LOCAL Le Cayenne single-restaurant single-owner-supervision: SHIPPABLE avec runbook formation manuel obligatoire (max 2h walkthrough par newbie). Pour V2 SaaS multi-restaurant: NON SHIPPABLE tant que les 3 P0 ne sont pas adresses (au minimum G3 KdsHelpDrawer + G2 KdsUndoToast per-order Map). G1 confirmation reste owner-decision binaire (mode safety opt-in user-level vs status quo).",
+    "next_actions_recommended": [
+      "Inline (sans owner gate): G4 keyboard repeat/throttle (5 LOC), G5 step ladder CTA dynamic label (15 LOC alignment avec legacy), G6 tooltip rename (1 LOC), G7 empty state sub-actions (10 LOC). Total ~30 LOC chirurgical, frozen-zone safe, sentinel-safe.",
+      "Owner gate requis: G1 (introduire kds_safety_mode opt-in OU long-press 800ms), G2 (re-introduire KdsUndoToast avec per-order Map au lieu de shared timeout - addresse aussi la race Wave V), G3 (KdsHelpDrawer mirror pattern KdsHistoryDrawer - 6-8 screens illustres pedagogie newbie), G8 (corriger kdsRecall legacy ou deprecier).",
+      "Tests E2E necessaires apres heal: test-e2e KDS persona 'staff-newbie' avec scenarios: (a) fat-finger PATCH dans 100ms, (b) recherche bouton undo dans V2 layout, (c) ouverture KDS sans aucune formation prealable, (d) clavier maintenu A 2s."
+    ]
+  },
+  "constraints_respected": [
+    "Frozen zones §7 CLAUDE.md - aucune modification proposee touche app/Services/Fiscal/* ni audit_logs ni z_reports ni OrderStateMachine.php (les corrections sont toutes UI frontend)",
+    "NF525 §8 - aucune modification proposee impacte le fiscal_sequence_no ni l'audit chain HMAC. Les fixes proposees ajoutent des UI confirmations qui PROTEGENT la chain au lieu de la fragiliser.",
+    "Visual Test Mandate §6 - les 8 gaps identifies incluent 4 i18n / label drift qui auraient ete detectes par Read tool screenshot analysis (G3 absence, G5 static label, G6 wrong tooltip, G7 passive empty state)",
+    "Evidence Rules §13 - chaque gap reference fichier:ligne specifique (no fake certainty)"
+  ]
+}

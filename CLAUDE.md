@@ -204,7 +204,7 @@ Un test technique vert ne prouve PAS que l'UI est OK.
 - `http://127.0.0.1:8000/admin/items` — Catalogue
 - `http://127.0.0.1:8000/admin/stock-rupture-dashboard` — Stock dashboard
 - `http://127.0.0.1:8000/kds` — Kitchen Display System
-- `http://127.0.0.1:8000/order-status-screen` — OSS
+- `http://127.0.0.1:8000/admin/order-status-screen` — OSS
 
 ---
 

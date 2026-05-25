@@ -1,0 +1,124 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - link "Écran cuisine" [ref=e13] [cursor=pointer]:
+        - /url: /admin/kitchen-display-system
+        - generic [ref=e14]: Écran cuisine
+      - generic [ref=e15]:
+        - button "avatar Bonjour Admin " [ref=e16] [cursor=pointer]:
+          - img "avatar" [ref=e17]
+          - heading "Bonjour Admin" [level=3] [ref=e18]:
+            - text: Bonjour
+            - generic "Admin" [ref=e19]
+          - generic [ref=e20]: 
+        - generic:
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: PENDING_CREATE_3e69b24b3b84
+            - heading "0,00 €" [level=3]
+          - navigation:
+            - link " Modifier le profil":
+              - /url: /admin/profile/edit-profile
+              - generic: 
+              - generic: Modifier le profil
+            - link " Changer le mot de passe":
+              - /url: /admin/profile/change-password
+              - generic: 
+              - generic: Changer le mot de passe
+            - button " Déconnexion":
+              - generic: 
+              - generic: Déconnexion
+  - text:         
+  - button "Ouvrir l'historique des commandes du jour" [ref=e22] [cursor=pointer]:
+    - generic [ref=e23]: 📚
+    - generic [ref=e24]: Historique
+  - generic [ref=e25]:
+    - status [ref=e26]:
+      - generic [ref=e27]:
+        - img [ref=e29]
+        - generic [ref=e31]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=e32]: LOCAL
+    - region "Commande 810, source Borne, En cours, attente 0 minutes 5 secondes" [ref=e34]:
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e38]: "[A]"
+          - generic [ref=e39]:
+            - generic [ref=e40]: En cours
+            - generic [ref=e43]: Borne
+          - alert [ref=e44]: ⚠ Allergie
+        - generic [ref=e45]:
+          - generic [ref=e46]:
+            - generic [ref=e47]: N°
+            - text: "810"
+          - generic [ref=e48]:
+            - generic [ref=e49]: Attente
+            - generic [ref=e50]: 00:05
+      - region "Détails de la commande 810, défilable au clavier" [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e54]:
+            - generic [ref=e55]:
+              - text: "2"
+              - generic [ref=e56]: ×
+            - generic "Article contenant des allergènes" [ref=e57]: ⚠
+            - generic [ref=e58]: Sandwich Cayenne
+          - generic [ref=e60]:
+            - generic [ref=e61]: ·
+            - generic [ref=e62]: Allergie patient connu
+          - alert [ref=e64]:
+            - generic [ref=e65]: ⚠
+            - generic [ref=e66]: "Allergènes :"
+            - generic [ref=e67]: Gluten · Lait · Fruits a coque
+        - generic [ref=e68]:
+          - generic [ref=e70]:
+            - generic [ref=e71]:
+              - text: "1"
+              - generic [ref=e72]: ×
+            - generic "Article contenant des allergènes" [ref=e73]: ⚠
+            - generic [ref=e74]: Sandwich Cayenne
+          - generic [ref=e76]:
+            - generic [ref=e77]: ·
+            - generic [ref=e78]: Allergie patient connu
+          - alert [ref=e80]:
+            - generic [ref=e81]: ⚠
+            - generic [ref=e82]: "Allergènes :"
+            - generic [ref=e83]: Gluten · Lait · Fruits a coque
+        - generic [ref=e84]:
+          - generic [ref=e86]:
+            - generic [ref=e87]:
+              - text: "1"
+              - generic [ref=e88]: ×
+            - generic "Article contenant des allergènes" [ref=e89]: ⚠
+            - generic [ref=e90]: Sandwich Cayenne
+          - generic [ref=e92]:
+            - generic [ref=e93]: ·
+            - generic [ref=e94]: Allergie patient connu
+          - alert [ref=e96]:
+            - generic [ref=e97]: ⚠
+            - generic [ref=e98]: "Allergènes :"
+            - generic [ref=e99]: Gluten · Lait · Fruits a coque
+        - generic [ref=e100]:
+          - generic [ref=e102]:
+            - generic [ref=e103]:
+              - text: "2"
+              - generic [ref=e104]: ×
+            - generic "Article contenant des allergènes" [ref=e105]: ⚠
+            - generic [ref=e106]: Sandwich Cayenne
+          - generic [ref=e108]:
+            - generic [ref=e109]: ·
+            - generic [ref=e110]: Allergie patient connu
+          - alert [ref=e112]:
+            - generic [ref=e113]: ⚠
+            - generic [ref=e114]: "Allergènes :"
+            - generic [ref=e115]: Gluten · Lait · Fruits a coque
+      - button "Prêt" [ref=e116] [cursor=pointer]:
+        - img [ref=e117]
+        - generic [ref=e119]: Prêt

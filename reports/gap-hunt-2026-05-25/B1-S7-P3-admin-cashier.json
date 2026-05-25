@@ -1,0 +1,289 @@
+{
+  "agent": "S7-P3 Admin x Caissier",
+  "scope": "Admin dashboard + Spatie RBAC seen FROM THE CASHIER'S SHOES (POS Operator role). Files inspected: database/seeders/RoleTableSeeder.php + RolePermissionTableSeeder.php + LeCayenneRoleLandingUrlSeeder.php, resources/js/router/modules/*.js, resources/js/components/admin/{dashboard,customers,posOrders,pos,cashOverview,transactions}/*.vue, app/Models/Order.php, app/Models/CashMovement.php, app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php, routes/api.php, public/architecture-diagram.html. Cross-ref against S2-P3 (POS x Caissier-multitask) for non-duplication.",
+  "date": "2026-05-25",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+
+  "cashier_rbac_baseline": {
+    "role_name": "POS Operator",
+    "landing_url": "pos",
+    "permissions_granted": [
+      "dashboard",
+      "pos",
+      "pos-orders",
+      "pos-discount-up-to-10",
+      "pos.redeem-loyalty",
+      "kitchen-display-system",
+      "order-status-screen"
+    ],
+    "permissions_explicitly_DENIED_to_cashier": [
+      "customers (customer list/show/history)",
+      "customers_show (no customer detail page reachable)",
+      "transactions (no payment tx browser)",
+      "sales-report",
+      "cash-sessions-report (gates /admin/cash-sessions-report AND /admin/cash-overview AND /admin/cash-sessions-report — Wave O O4 + Wave X X4)",
+      "pos-manage-fiscal (Z-cycle close/open)",
+      "pos-reopen-z",
+      "pos-discount-over-10-requires-manager",
+      "cash.reconcile.variance.override",
+      "credit-balance-report",
+      "items (catalog studio)",
+      "ingredients_manage",
+      "online-orders / table-orders (order channels other than POS direct)",
+      "delivery-boys / waiters / chefs / employees / administrators",
+      "push-notifications / messages"
+    ],
+    "evidence": [
+      "database/seeders/RolePermissionTableSeeder.php:91-105 (whitelist for POS Operator role — only 5 perms) + lines 124-131 (extras: KDS + OSS)",
+      "database/seeders/LeCayenneRoleLandingUrlSeeder.php:25 ('POS Operator' => 'pos') — cashier never sees Dashboard landing",
+      "database/seeders/RolePermissionTableSeeder.php:76-84 (Branch Manager has cash-sessions-report + sales-report + transactions + customers — cashier does NOT)",
+      "Frontend route guards in resources/js/router/modules/{customerRoutes,cashSessionReportRoutes,cashOverviewRoutes,creditBalanceReportRoutes,salesReportRoutes}.js — all gated on permissions the cashier lacks"
+    ]
+  },
+
+  "owner_implicit_gaps_verified": {
+    "customer_history_visible_to_cashier": {
+      "status": "ABSENT_BY_RBAC",
+      "severity": "P1",
+      "title": "Customer history page EXISTS but is hidden from the cashier by Spatie permission gate",
+      "evidence_data_present": [
+        "resources/js/components/admin/customers/CustomerShowComponent.vue:60-65, 158-200 — 'My orders' tab embedded in CustomerShow, lists customer.orders with order_serial_no + status + date + total + see_details",
+        "resources/js/components/admin/customers/CustomerOrderDetailsComponent.vue — full order details reachable via router 'admin.customers.order.details'",
+        "resources/js/router/modules/customerRoutes.js:13-50 — all 3 routes require meta.permissionUrl='customers'"
+      ],
+      "evidence_gate_blocking_cashier": [
+        "database/seeders/RolePermissionTableSeeder.php:91-105 — POS Operator permission whitelist DOES NOT include 'customers' nor 'customers_show'",
+        "Result: cashier opens /admin/customers/show/<id> → router guard rejects, redirected to /admin/pos"
+      ],
+      "impact_daily": "When a regular Le Cayenne customer (small-merchant repeat-business pattern) walks in, the cashier has zero way to look up 'Mr. Dupont, last week ordered Le Cayenne sans oignons, allergy to peanut'. The data is in the system; the door is locked. Daily real friction at lunch-rush regulars."
+    },
+
+    "incident_journalier_note_rapide": {
+      "status": "ABSENT",
+      "severity": "P1",
+      "title": "No daily-incident note feature exists anywhere — cashier has no scratchpad",
+      "evidence": [
+        "grep -rn 'incident|daily_note|cashier_log|cashier_note|staff_note|internal_note' app/ database/migrations/ resources/js/ → 0 hits as a column or feature (only 1 narrative occurrence in FiscalVerifyChainCommand:53 docstring)",
+        "app/Models/CashMovement.php exposes TYPE_ADJUSTMENT with a `notes` column but NO controller route is wired for the cashier to POST one — only PaymentService / CashDrawerService internal hooks insert movements (recordMovement) automatically. There is no /api/admin/cash-movement create endpoint for arbitrary ad-hoc 'cash in / cash out / note'.",
+        "app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php:154-173 — only `variance_reason` field at CLOSE time, max 255 chars, one-shot. Not a rolling daily journal.",
+        "app/Models/Order.php fillable lines 20-66 — NO internal_note / staff_note / cashier_note column. pos_payment_note is constrained validation (last-4-digits-for-CARD / 200-char-terminal-TX-for-MOBILE), not free-form (cf. S2-P3 G-S2P3-05)."
+      ],
+      "impact_daily": "Cashier wants to log 'TPE bug at 13h45 — Senangpay rejette 2 fois, marche au 3e', 'M. Lefebvre commande tableservice mais pris en TAKEAWAY par erreur, refaire next visit', 'caisse à 13h refuse les pièces de 1€ depuis ce matin' → ZERO channel. Currently a paper notebook beside the POS. End-of-day Z-cycle cannot surface 'what went wrong today'. Branch Manager has zero handoff signal from cashier."
+    },
+
+    "quick_search_par_client_commande_telephone": {
+      "status": "PARTIAL_BUT_PHONE_MISSING",
+      "severity": "P1",
+      "title": "Search bar exists in 2 surfaces (PosOrdersTracker + PosOrderList) but neither searches by phone, and there is no global cross-entity search",
+      "evidence_partial": [
+        "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:30-44, 478-489 — filters.query searches haystack = queue_number + order_serial_no + user.name + user.first_name. Order-level + customer-name only. NO phone, NO email, NO loyalty code.",
+        "resources/js/components/admin/posOrders/PosOrderListComponent.vue:30-65, 264-281 — search fields = order_serial_no (input) + user_id (vue-select dropdown of customers) + status + date range. NO free-text phone search; customer picker requires loading the full customer list and scrolling.",
+        "resources/js/components/admin/customers/CustomerListComponent.vue:31-43 — Phone search EXISTS here as a column filter on the Customer list page — BUT cashier has no `customers` permission so they cannot reach this page."
+      ],
+      "evidence_absent": [
+        "grep -rn 'globalSearch|quickSearch|spotlight|cmd-k|command.*palette' resources/js/components/admin/ → 0 hits. No omni-search bar in admin shell topbar (BackendNavbarComponent.vue has only branch-switcher radio inputs).",
+        "Phone-number quick-search in cashier surfaces: 0 hits. The phone column is on customer model + customer-list page only."
+      ],
+      "impact_daily": "Customer calls '03-23-XX-XX-XX, j'ai commandé hier à 19h en livraison, ça n'est pas arrivé' → cashier cannot search by phone. Must ask customer name (which may be 'Marie' / 'Jean' / 'Sophie' — non-unique), or order serial number which the customer rarely remembers. The data exists (customers.phone column, indexed) — the UI just doesn't expose it where the cashier lives."
+    },
+
+    "filtre_transactions_du_jour": {
+      "status": "PARTIAL",
+      "severity": "P2",
+      "title": "Today-filter exists in PosOrderList (date range with 'Aujourd'hui' preset) and the PosOrdersTracker shows today's count — but the cashier cannot reach the full cross-channel cash overview that aggregates this in EUR",
+      "evidence_partial": [
+        "resources/js/components/admin/posOrders/PosOrderListComponent.vue:216-229 — `presetRanges = [{ label: 'Aujourd'hui', range: [new Date(), new Date()] }, ...]` — date-picker preset works.",
+        "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:25 — `<span>{{ stats.todayCount }} {{ $t('pos.tracker.today_total') }}</span>` — count only, no euros, no payment-method breakdown.",
+        "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:720-735 — backend call `_todayRange()` defaults the API call to today's date range automatically."
+      ],
+      "evidence_absent": [
+        "resources/js/components/admin/cashOverview/CashOverviewComponent.vue — full 'cash today' aggregation (opening + collected + expected_drawer + variance + cross-channel split POS direct / kiosk / livreur) EXISTS, defaults `from = today, to = today` (lines 297, 455). BUT route /admin/cash-overview is gated on `permissionUrl: 'cash-sessions-report'` (cashOverviewRoutes.js:17) which the cashier lacks.",
+        "Similarly /admin/cash-sessions-report (the daily session report Wave O O4) is permission-locked.",
+        "Result: cashier sees 'I rang 23 orders today' (count, in tracker) but cannot see 'I collected 487,20 € today, expected 480 €, +7,20 € unaccounted' — only the manager can."
+      ],
+      "impact_daily": "Branch Manager-only visibility of today's monetary aggregate is INTENDED policy (NF525 + small-merchant trust), so this is a P2 rather than P0. BUT a slim cashier-scoped 'today summary' chip (qty rung + cash-total-rough) would close the trust-but-verify gap that the manager doesn't catch every error."
+    },
+
+    "action_correctrice_rapide_refund_annulation": {
+      "status": "ABSENT_AT_UI_LEVEL_BACKEND_READY",
+      "severity": "P0",
+      "title": "Refund / Annulation correctrice = backend NF525-compliant route exists, no button in admin Vue layer (DUPLICATE of S2-P3 G-S2P3-01, here re-attested from RBAC + cashier-shoes angle)",
+      "evidence": [
+        "routes/api.php:961 — POST /api/admin/pos-order/{order}/refund-with-counter-entry (no permission middleware — relies on session auth only). Backend READY.",
+        "public/architecture-diagram.html:941 — 'POS cashier-initiated refund → refund-with-counter-entry' documented as cascade-path but UI button does NOT exist.",
+        "grep -rn 'refundWithCounterEntry|refund-with-counter-entry' resources/ → 0 hits in any Vue component.",
+        "resources/js/components/admin/posOrders/PosOrderShowComponent.vue:78-110 — shows delivery-boy assignment + status badges, but NO refund / cancel / annul button. Even though cashier has `pos-orders` permission so they CAN reach this page.",
+        "resources/js/components/admin/pos/ReceiptRemboursementMarker.vue — visual badge for already-mirrored refund orders only, NOT a creator button."
+      ],
+      "rbac_angle_new_vs_s2_p3": "Even if a button were added on PosOrderShow, it is currently un-gated by Spatie (route has no permission middleware). Should be gated 'pos-orders' OR a new 'pos-refund' permission so Branch Manager can grant/deny. Currently a refund button would be visible to every authenticated user with the page open — including Stuff role if they reach the page via deep-link (admin guard only).",
+      "impact_daily": "Cashier rings wrong item, customer paid by card, card has already cleared. Currently: cashier must call manager → manager opens DB or curl → patch order_payment status. Daily blocker at Le Cayenne (small merchant, no in-house dev). Cross-listed with S2-P3 G-S2P3-01."
+    }
+  },
+
+  "gaps_found": [
+    {
+      "id": "G-S7P3-01",
+      "owner_implicit": "action_correctrice_rapide",
+      "severity": "P0",
+      "title": "Refund UI button absent on PosOrderShow + no Spatie permission ring-fence for refund operation",
+      "files": [
+        "resources/js/components/admin/posOrders/PosOrderShowComponent.vue (no refund button)",
+        "routes/api.php:961 (POST refund-with-counter-entry has no `permission:` middleware — relies on session auth only)",
+        "database/seeders/RolePermissionTableSeeder.php (no `pos-refund` or `pos-cancel-order` permission exists in the system)"
+      ],
+      "blocker_for": "Daily refund operations at small merchant + RBAC governance (currently a refund button if added would not distinguish cashier vs manager — bad for NF525 audit trail attribution).",
+      "rbac_layer_recommendation": "Mint new `pos-refund` permission, assign to Branch Manager + Admin only at first (mirror Sprint 1D `cash.reconcile.variance.override`), then optionally grant to POS Operator with a daily-cap or with-manager-PIN. Add `->middleware('permission:pos-refund')` on the API route. Cross-list with S2-P3 G-S2P3-01."
+    },
+    {
+      "id": "G-S7P3-02",
+      "owner_implicit": "customer_history_visible_to_cashier",
+      "severity": "P1",
+      "title": "Customer history page is gated `customers` permission — POS Operator excluded, although the use-case is repeat-customer recognition AT the till",
+      "files": [
+        "resources/js/router/modules/customerRoutes.js:22 (permissionUrl='customers')",
+        "database/seeders/RolePermissionTableSeeder.php:91-105 (POS Operator permission whitelist) — `customers` permission absent",
+        "resources/js/components/admin/customers/CustomerShowComponent.vue:158-200 (the orders tab the cashier needs)"
+      ],
+      "blocker_for": "Repeat-customer intimacy. Le Cayenne is a small merchant where the cashier knows ~30% of clientele by face. With Spatie blocking customer-show, the digital memory is locked behind a permission designed for a privacy/RGPD posture.",
+      "recommendation": "Mint a narrow `customers_orders_read` permission (read-only orders list for a given customer.id) and grant to POS Operator. Embed a slim 'past 5 orders' panel in the POS checkout drawer when customer_id is set (cf. S2-P3 G-S2P3-04 same gap from POS-component angle)."
+    },
+    {
+      "id": "G-S7P3-03",
+      "owner_implicit": "incident_journalier_note_rapide",
+      "severity": "P1",
+      "title": "No daily-incident note infrastructure (no column, no endpoint, no UI). Cashier cannot record a free-form journal entry across orders.",
+      "files": [
+        "app/Models/Order.php:20-66 (Order fillable — no internal_note / staff_note column)",
+        "app/Models/CashMovement.php:36-44 (CashMovement has `notes` + TYPE_ADJUSTMENT but no controller exposes ad-hoc cashier-initiated movements — only PaymentService and CashDrawerService internal hooks call recordMovement)",
+        "routes/api.php (grep '0 hits for /cash-movement create or /cashier-log or /incident')",
+        "app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php:154-173 (`variance_reason` exists only at CLOSE time, single-shot, max 255 chars)"
+      ],
+      "blocker_for": "End-of-shift handoff narrative ('what went wrong today'), TPE issue trail, equipment-status notes, customer-issue flags. Currently a paper notebook beside the till. No structured signal to Branch Manager / no audit trail.",
+      "recommendation": "Add `incident_logs` table (id, branch_id, user_id, kind enum [tpe/equipment/customer/cash/other], note text, created_at) + simple POST /api/admin/pos/incident endpoint + slim 'Note du jour' chip in PosComponent header that opens a 1-textarea modal. Branch Manager dashboard surfaces today's incidents. Frozen-zone: zero — Order model untouched."
+    },
+    {
+      "id": "G-S7P3-04",
+      "owner_implicit": "quick_search_par_client_commande_telephone",
+      "severity": "P1",
+      "title": "Phone-number search missing in both cashier surfaces (PosOrdersTracker free-text search + PosOrderList structured filters)",
+      "files": [
+        "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:478-489 (haystack = queue_number + order_serial_no + user.name + user.first_name — no phone)",
+        "resources/js/components/admin/posOrders/PosOrderListComponent.vue:264-281 (search props = order_serial_no + user_id dropdown — no phone field)",
+        "resources/js/components/admin/customers/CustomerListComponent.vue:31-43 (phone search EXISTS HERE — but cashier blocked by `customers` permission cf. G-S7P3-02)"
+      ],
+      "blocker_for": "Customer call-in scenarios ('I ordered last night with phone X'). Currently cashier must escalate to manager or ask for non-unique customer name. This is the highest-friction daily lookup gap.",
+      "recommendation": "Add `phone` to PosOrdersTracker.filteredOrders haystack (join via user.phone or order.address.phone). Add a phone input to PosOrderListComponent search filter block. Backend already indexes customers.phone."
+    },
+    {
+      "id": "G-S7P3-05",
+      "owner_implicit": "filtre_transactions_du_jour",
+      "severity": "P2",
+      "title": "Cashier-scoped 'today summary' chip absent — only count visible, no euro total or my-orders filter",
+      "files": [
+        "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:25 (stats.todayCount only — no stats.todayCashCollected, no stats.myOrders)",
+        "resources/js/router/modules/cashOverviewRoutes.js:17 (cash-overview gated on `cash-sessions-report` permission cashier lacks)",
+        "database/seeders/RolePermissionTableSeeder.php:91-105 (cashier permission set excludes cash-sessions-report)"
+      ],
+      "blocker_for": "Cashier self-verification ('did I ring 23 or 24 orders today?'). NF525 / management policy says aggregate-cash visibility is manager-only, but a simple 'my-orders-today count + my-orders-today-paid-cash-only sum' would not violate that policy because it is just an aggregate of orders the same operator rang, with no cross-cashier or cross-branch leakage.",
+      "recommendation": "Add `stats.myOrdersToday` + `stats.myCashRungToday` to PosOrdersTrackerComponent. Filter by orders.creator_id === auth.id (H.1 P1 column shipped 2026-05-24, currently unused for analytics)."
+    },
+    {
+      "id": "G-S7P3-06",
+      "owner_implicit": null,
+      "severity": "P1",
+      "title": "BONUS — Refund API route has no Spatie permission middleware",
+      "files": [
+        "routes/api.php:961 (POST /api/admin/pos-order/{order}/refund-with-counter-entry — admin session auth only, no permission ring-fence)"
+      ],
+      "blocker_for": "RBAC governance + NF525 audit-trail attribution. Currently any authenticated admin user (including Stuff role) can hit the endpoint via curl or DevTools. The sealed-parent guard inside the service prevents post-Z mutation, but doesn't prevent unauthorized cashier-tier escalation.",
+      "recommendation": "Mint `pos-refund` permission + `->middleware('permission:pos-refund')` on the route. Grant to Admin + Branch Manager by default. Pair with G-S7P3-01 UI fix."
+    },
+    {
+      "id": "G-S7P3-07",
+      "owner_implicit": null,
+      "severity": "P2",
+      "title": "BONUS — No global cross-entity search (cmd-k / spotlight) in admin shell",
+      "files": [
+        "resources/js/components/layouts/backend/BackendNavbarComponent.vue (only branch-switcher radio inputs, no global search)",
+        "grep -rn 'globalSearch|quickSearch|spotlight|cmd-k|command.*palette' resources/js/components/admin/ → 0 hits"
+      ],
+      "blocker_for": "Power-user workflow (cmd-k 'Dupont' → matches customer + last 3 orders + active drawer). Especially useful for Branch Manager + Admin but ALSO for cashier on phone calls.",
+      "recommendation": "V1.0.2 nice-to-have. Adds a unified search service hitting customers + orders + items + drawer sessions. Not blocker for V1."
+    },
+    {
+      "id": "G-S7P3-08",
+      "owner_implicit": null,
+      "severity": "P2",
+      "title": "BONUS — Cashier landing URL = /admin/pos but the Dashboard with `LastZReportWidget` / `SlaAlertsComponent` / `RealtimeReportComponent` is never accessed",
+      "files": [
+        "database/seeders/LeCayenneRoleLandingUrlSeeder.php:25 ('POS Operator' => 'pos')",
+        "resources/js/components/admin/dashboard/DashboardComponent.vue:31-46 (rich dashboard widgets — cashier has `dashboard` permission but never lands there)"
+      ],
+      "blocker_for": "Visibility of SLA alerts (slow tickets, stock rupture, last Z anomaly) — currently only Branch Manager + Admin land on dashboard. Cashier blind to ops signals unless they navigate manually.",
+      "recommendation": "Either (a) reroute POS Operator landing to /admin/pos-orders-tracker (already best-fit cashier shell) and add a single 'alerts' chip in the tracker header, OR (b) embed a slim `SlaAlertsComponent` inside the PosOrdersTracker. Don't move them to Dashboard — Pos is the right home."
+    }
+  ],
+
+  "workflow_scenarios_tested": {
+    "scenario_regular_customer_recognized": {
+      "setup": "M. Dupont (loyalty member, 12 visits) walks in. Cashier wants to see his usual order + allergy + 'last week complained about sauce' note.",
+      "current_behavior": "Cashier selects customer_id in checkout drawer → sees LOYALTY BALANCE in PosLoyaltyRedeemModal → that's it. No past-orders panel, no allergy chip, no last-visit note. To see history, cashier would need to navigate to /admin/customers/show/<id> — but `customers` permission is denied for POS Operator. Door is locked.",
+      "gap_root_cause": "G-S7P3-02 (RBAC gate) + S2-P3 G-S2P3-04 (no embedded history panel)."
+    },
+    "scenario_phone_call_complaint": {
+      "setup": "Customer phones 'I ordered yesterday at 19h45, delivery did not arrive, my phone is 03-23-XX-XX-XX'.",
+      "current_behavior": "Cashier opens PosOrderList → cannot search by phone (only by order serial + customer dropdown + date range). Cashier asks customer name 'Marie' → 3 hits in dropdown → cannot disambiguate without manager. PosOrdersTracker free-text search also does not index phone.",
+      "gap_root_cause": "G-S7P3-04 (phone search absent everywhere cashier can reach)."
+    },
+    "scenario_tpe_buggy_log_entry": {
+      "setup": "TPE rejects 2 cards in a row at 13h30, third works. Cashier wants to log 'TPE problem 13h30 — check terminal X'.",
+      "current_behavior": "No incident note feature. Cashier writes on paper. Manager arrives at 18h, doesn't see the log. Tomorrow same problem reoccurs.",
+      "gap_root_cause": "G-S7P3-03 (no incident infrastructure)."
+    },
+    "scenario_wrong_item_card_paid": {
+      "setup": "Cashier rang 'Le Cayenne' instead of 'Big Burger'. Customer paid by card, transaction cleared, receipt printed.",
+      "current_behavior": "PosOrderShow displays the order detail with status badges but NO refund button. Cashier must call manager → manager runs curl POST /refund-with-counter-entry OR opens DB directly. No audit trail of who clicked what.",
+      "gap_root_cause": "G-S7P3-01 + G-S7P3-06 (UI + permission ring-fence both missing). Cross-listed with S2-P3 G-S2P3-01."
+    },
+    "scenario_self_verify_today": {
+      "setup": "Cashier wants to know 'did I ring 23 or 24 orders this morning before lunch?'",
+      "current_behavior": "PosOrdersTracker shows `stats.todayCount` = ALL today's orders branch-wide (cashier + manager + kiosk + online), not 'mine'. No my-orders-only filter. No cash-collected-by-me chip.",
+      "gap_root_cause": "G-S7P3-05 (cashier-scoped aggregate absent — but orders.creator_id column already exists)."
+    }
+  },
+
+  "top_3_blocker_daily": [
+    {
+      "rank": 1,
+      "id": "G-S7P3-01_AND_G-S7P3-06",
+      "title": "Refund UI button + Spatie permission ring-fence — cashier daily-blocker for wrong-item / card-cleared corrections",
+      "why_daily": "Le Cayenne fast-food has wrong-item rings + card declines + customer complaints DAILY. Currently every refund needs manager curl/DB intervention. Worse: the refund API route has no permission middleware so it could be misused by lower-tier roles via deep-link.",
+      "estimated_effort": "M — UI refund button on PosOrderShow + confirmation modal + reason input (≤30 lines Vue) + mint `pos-refund` permission + `->middleware('permission:pos-refund')` on api.php:961. Backend NF525 path already audited (sealed-parent guard, mirror order, audit chain APPEND). Frozen-zone: zero touch to PaymentComponent / posPaymentService / fiscal services."
+    },
+    {
+      "rank": 2,
+      "id": "G-S7P3-04",
+      "title": "Phone-number search missing in both cashier surfaces — daily highest-friction lookup",
+      "why_daily": "Phone-call complaints, callbacks, delivery issues — every single shift sees ~3-5 cases. Currently cashier escalates to manager or asks for non-unique customer name. Data exists (customers.phone indexed), UI doesn't expose it.",
+      "estimated_effort": "S — add `o.user?.phone` to PosOrdersTracker filteredOrders haystack (1 line) + add phone input to PosOrderListComponent search filter block (~10 lines Vue + 1 query field on backend search resource). Frozen-zone: zero."
+    },
+    {
+      "rank": 3,
+      "id": "G-S7P3-02_AND_G-S7P3-03",
+      "title": "Customer-history-at-the-till + incident-note channel — both visibility-and-memory gaps",
+      "why_daily": "Repeat-customer recognition (Le Cayenne small-merchant intimacy mandate) + cross-shift TPE/equipment trail. Currently both invisible to the cashier role. Customer history is a 1-permission flip (mint `customers_orders_read`); incident note is a small new table + endpoint + chip.",
+      "estimated_effort": "M — customer history: mint narrow `customers_orders_read` permission + slim past-orders panel in PosComponent checkout drawer (~50 lines Vue). Incident note: migration `incident_logs` + POST endpoint + 'Note du jour' chip in PosComponent header opening 1-textarea modal (~60 lines Vue, ~40 lines PHP). Both compatible with V1.0.X — no frozen-zone touch, no NF525 invariant impact."
+    }
+  ],
+
+  "frozen_zone_protection_observed": {
+    "pos_wizard_js_untouched": "public/js/pos-wizard.js — owner-frozen, audit READ-ONLY for this gap-hunt. None of the recommendations require touching the wizard popup.",
+    "payment_component_vue_untouched": "PaymentComponent.vue — V1 protected file, read-only inspection only. Refund button proposal targets PosOrderShowComponent (NOT frozen) instead.",
+    "fiscal_chain_unaffected": "All recommendations consume existing backend (refund-with-counter-entry route, recordMovement service, customer model). New table proposed (incident_logs) is brand-new and does not interact with audit_logs / z_reports / fiscal_sequence triggers. NF525 chain untouched.",
+    "branch_scope_invariant_preserved": "All UI fixes operate within current BranchScope discipline. Customer history permission flip respects multi-tenant isolation (CustomerShow already scoped). Incident logs would carry branch_id + user_id with BranchScope global."
+  },
+
+  "cross_ref_S2_P3": "G-S7P3-01 (refund) overlaps with S2-P3 G-S2P3-01 — DELIBERATELY attested twice from different angles (S2-P3 = POS component-side gap, S7-P3 = RBAC + permission ring-fence angle). G-S7P3-02 (customer history visible to cashier) overlaps with S2-P3 G-S2P3-04 — same gap, here re-attested as a Spatie permission denial layer rather than a missing embedded panel. G-S7P3-04 (phone search) is NEW (not in S2-P3). G-S7P3-03 (incident note) is RELATED to S2-P3 G-S2P3-05 (internal_note on order) but DIFFERENT scope — incident-note is order-INDEPENDENT (a daily journal), order-internal-note is order-SCOPED.",
+
+  "verdict": "5 owner-implicit gaps verified from admin/RBAC/cashier-shoes angle. P0 BLOCKER: refund UI button + Spatie permission ring-fence (G-S7P3-01 + G-S7P3-06 paired). P1 daily-pain: phone-search absent (G-S7P3-04) + customer-history RBAC-gated (G-S7P3-02) + incident-note infrastructure missing (G-S7P3-03). P2 nice-to-haves: cashier-scoped today summary chip (G-S7P3-05), global cmd-k search (G-S7P3-07), better cashier landing page (G-S7P3-08). The POS Operator role is currently HARDENED to only 7 permissions — defensible from NF525/RGPD posture but creates two real daily blockers: (a) no refund self-service, (b) no repeat-customer recognition. Recommend V1 patch wave shipping G-S7P3-01 + G-S7P3-04 + G-S7P3-02 (narrow `customers_orders_read` mint) before V1 cutover. G-S7P3-03 and G-S7P3-05 are V1.0.X candidates. Total: 5 owner-implicit + 3 bonus = 8 gaps documented, all backend infrastructure largely ready, no frozen-zone touch required."
+}

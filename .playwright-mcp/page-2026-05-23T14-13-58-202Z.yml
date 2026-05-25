@@ -1,0 +1,831 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=e420] [cursor=pointer]:
+            - generic [ref=e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=e421]:
+              - generic [ref=e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=e18]:
+          - button "flag" [ref=e423] [cursor=pointer]:
+            - img "flag" [ref=e424]
+          - link "POS" [ref=e19] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e20]: 
+      - button "Fermer" [ref=e21] [cursor=pointer]: 
+      - generic [ref=e22]:
+        - button "avatar Bonjour Admin Le Cayenne " [ref=e23] [cursor=pointer]:
+          - img "avatar" [ref=e24]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=e25]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=e26]
+          - generic [ref=e27]: 
+        - generic:
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "0.00€" [level=3]
+          - navigation:
+            - link " Modifier le profil":
+              - /url: /admin/profile/edit-profile
+              - generic: 
+              - generic: Modifier le profil
+            - link " Changer le mot de passe":
+              - /url: /admin/profile/change-password
+              - generic: 
+              - generic: Changer le mot de passe
+            - button " Déconnexion":
+              - generic: 
+              - generic: Déconnexion
+  - complementary [ref=e28]:
+    - text: 
+    - navigation [ref=e29]:
+      - list [ref=e30]:
+        - listitem [ref=e31]:
+          - link " Tableau de bord" [ref=e32] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e33]: 
+            - generic [ref=e34]: Tableau de bord
+      - list [ref=e35]:
+        - listitem [ref=e36]:
+          - link " POS" [ref=e37] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e38]: 
+            - generic [ref=e39]: POS
+      - list [ref=e40]:
+        - listitem [ref=e41]:
+          - link "Produits & Stock" [ref=e42] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=e43]: Produits & Stock
+      - list [ref=e44]:
+        - listitem [ref=e45]:
+          - link " Catalogue" [ref=e46] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=e47]: 
+            - generic [ref=e48]: Catalogue
+        - listitem [ref=e49]:
+          - link " Attribut d’articles" [ref=e50] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=e51]: 
+            - generic [ref=e52]: Attribut d’articles
+      - list [ref=e53]:
+        - listitem [ref=e54]:
+          - link " Ingrédients" [ref=e55] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=e56]: 
+            - generic [ref=e57]: Ingrédients
+      - list [ref=e58]:
+        - listitem [ref=e59]:
+          - link " Commandes caisse" [ref=e60] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=e61]: 
+            - generic [ref=e62]: Commandes caisse
+      - list [ref=e63]:
+        - listitem [ref=e64]:
+          - link " Vue caisse unifiée" [ref=e65] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=e66]: 
+            - generic [ref=e67]: Vue caisse unifiée
+      - list [ref=e68]:
+        - listitem [ref=e69]:
+          - link " Caisse livreur" [ref=e70] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=e71]: 
+            - generic [ref=e72]: Caisse livreur
+      - list [ref=e73]:
+        - listitem [ref=e74]:
+          - button "Caisse et commandes" [ref=e75] [cursor=pointer]
+        - listitem [ref=e76]:
+          - link " Écran cuisine" [ref=e77] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=e78]: 
+            - generic [ref=e79]: Écran cuisine
+        - listitem [ref=e80]:
+          - link " Suivi client" [ref=e81] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=e82]: 
+            - generic [ref=e83]: Suivi client
+      - list [ref=e84]:
+        - listitem [ref=e85]:
+          - button "Communications" [ref=e86] [cursor=pointer]
+        - listitem [ref=e87]:
+          - link " Notification pushs" [ref=e88] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=e89]: 
+            - generic [ref=e90]: Notification pushs
+        - listitem [ref=e91]:
+          - link " Messages" [ref=e92] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=e93]: 
+            - generic [ref=e94]: Messages
+        - listitem [ref=e95]:
+          - link " Abonnés" [ref=e96] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=e97]: 
+            - generic [ref=e98]: Abonnés
+      - list [ref=e99]:
+        - listitem [ref=e100]:
+          - button "Utilisateurs" [ref=e101] [cursor=pointer]
+        - listitem [ref=e102]:
+          - link " Administrateurs" [ref=e103] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=e104]: 
+            - generic [ref=e105]: Administrateurs
+        - listitem [ref=e106]:
+          - link " Employés" [ref=e107] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=e108]: 
+            - generic [ref=e109]: Employés
+        - listitem [ref=e110]:
+          - link " Chefs" [ref=e111] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=e112]: 
+            - generic [ref=e113]: Chefs
+      - list [ref=e114]:
+        - listitem [ref=e115]:
+          - button "Comptes" [ref=e116] [cursor=pointer]
+        - listitem [ref=e117]:
+          - link " Transactions" [ref=e118] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=e119]: 
+            - generic [ref=e120]: Transactions
+      - list [ref=e121]:
+        - listitem [ref=e122]:
+          - button "Rapports" [ref=e123] [cursor=pointer]
+        - listitem [ref=e124]:
+          - link " Rapport des ventes" [ref=e125] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=e126]: 
+            - generic [ref=e127]: Rapport des ventes
+        - listitem [ref=e128]:
+          - link " Rapport articles" [ref=e129] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=e130]: 
+            - generic [ref=e131]: Rapport articles
+      - list [ref=e132]:
+        - listitem [ref=e133]:
+          - button "Configuration" [ref=e134] [cursor=pointer]
+        - listitem [ref=e135]:
+          - link " Paramètres" [ref=e136] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=e137]: 
+            - generic [ref=e138]: Paramètres
+  - generic [ref=e139]:
+    - heading "Bon après-midi !" [level=3] [ref=e140]
+    - heading "Admin Le Cayenne" [level=4] [ref=e141]
+  - navigation "Accès rapides" [ref=e142]:
+    - heading "Accès rapides" [level=3] [ref=e143]
+    - generic [ref=e144]:
+      - link "POS" [ref=e145] [cursor=pointer]:
+        - /url: /admin/pos
+        - generic [ref=e146]: 
+        - generic [ref=e147]: POS
+      - link "Commandes caisse" [ref=e148] [cursor=pointer]:
+        - /url: /admin/pos-orders
+        - generic [ref=e149]: 
+        - generic [ref=e150]: Commandes caisse
+      - link "Suivi caisse (kanban)" [ref=e151] [cursor=pointer]:
+        - /url: /admin/pos-orders-tracker
+        - generic [ref=e152]: 
+        - generic [ref=e153]: Suivi caisse (kanban)
+      - link "Écran cuisine" [ref=e154] [cursor=pointer]:
+        - /url: /admin/kitchen-display-system
+        - generic [ref=e155]: 
+        - generic [ref=e156]: Écran cuisine
+      - link "Suivi client" [ref=e157] [cursor=pointer]:
+        - /url: /admin/order-status-screen
+        - generic [ref=e158]: 
+        - generic [ref=e159]: Suivi client
+      - link "Catalogue" [ref=e160] [cursor=pointer]:
+        - /url: /admin/items/studio
+        - generic [ref=e161]: 
+        - generic [ref=e162]: Catalogue
+      - link "Ingrédients" [ref=e163] [cursor=pointer]:
+        - /url: /admin/ingredients
+        - generic [ref=e164]: 
+        - generic [ref=e165]: Ingrédients
+      - link "Produits & Stock" [ref=e166] [cursor=pointer]:
+        - /url: /admin/stock/rupture
+        - generic [ref=e167]: Produits & Stock
+      - link "Rapport caisses quotidien" [ref=e168] [cursor=pointer]:
+        - /url: /admin/cash-sessions-report
+        - generic [ref=e169]: 
+        - generic [ref=e170]: Rapport caisses quotidien
+      - link "Vue caisse unifiée" [ref=e171] [cursor=pointer]:
+        - /url: /admin/cash-overview
+        - generic [ref=e172]: 
+        - generic [ref=e173]: Vue caisse unifiée
+  - generic [ref=e180]:
+    - heading "Vue d’ensemble" [level=4] [ref=e181]
+    - generic [ref=e182]:
+      - generic [ref=e184]:
+        - generic [ref=e186]: 
+        - generic [ref=e187]:
+          - heading "Total ventes" [level=3] [ref=e188]
+          - heading "1543.40€" [level=4] [ref=e425]
+      - generic [ref=e190]:
+        - generic [ref=e192]: 
+        - generic [ref=e193]:
+          - heading "Total commandes" [level=3] [ref=e194]
+          - heading "27" [level=4] [ref=e426]
+      - generic [ref=e196]:
+        - generic [ref=e198]: 
+        - generic [ref=e199]:
+          - heading "Total articles menu" [level=3] [ref=e200]
+          - heading "45" [level=4] [ref=e427]
+  - generic [ref=e201]:
+    - heading "Suivi en direct" [level=4] [ref=e202]
+    - generic [ref=e203]:
+      - generic [ref=e205]:
+        - heading "Chiffre d'Affaires du Jour" [level=3] [ref=e206]
+        - heading "0.00€" [level=4] [ref=e428]
+      - generic [ref=e209]:
+        - heading "Commandes du Jour" [level=3] [ref=e210]
+        - heading "2" [level=4] [ref=e429]
+      - generic [ref=e213]:
+        - heading "Ticket Moyen" [level=3] [ref=e214]
+        - heading "0.00€" [level=4] [ref=e430]
+  - generic [ref=e216]:
+    - generic [ref=e218]:
+      - generic [ref=e219]:
+        - heading "Alertes SLA (Cuisine > 15min)" [level=4] [ref=e220]: Alertes SLA (Cuisine > 15min)
+        - generic [ref=e221]: 12 Alerte(s)
+      - generic [ref=e434]:
+        - generic [ref=e436]:
+          - 'heading "Ticket #A0003 (20052671)" [level=5] [ref=e437]'
+          - paragraph [ref=e438]: En attente depuis 4013 minutes
+        - generic [ref=e441]:
+          - 'heading "Ticket #A0005 (20052673)" [level=5] [ref=e442]'
+          - paragraph [ref=e443]: En attente depuis 3966 minutes
+        - generic [ref=e446]:
+          - 'heading "Ticket #A0007 (20052675)" [level=5] [ref=e447]'
+          - paragraph [ref=e448]: En attente depuis 3934 minutes
+        - generic [ref=e451]:
+          - 'heading "Ticket #A0008 (20052676)" [level=5] [ref=e452]'
+          - paragraph [ref=e453]: En attente depuis 3932 minutes
+        - generic [ref=e456]:
+          - 'heading "Ticket #A0009 (20052677)" [level=5] [ref=e457]'
+          - paragraph [ref=e458]: En attente depuis 3922 minutes
+        - generic [ref=e461]:
+          - 'heading "Ticket #A0010 (20052678)" [level=5] [ref=e462]'
+          - paragraph [ref=e463]: En attente depuis 3915 minutes
+        - generic [ref=e466]:
+          - 'heading "Ticket #A0011 (20052679)" [level=5] [ref=e467]'
+          - paragraph [ref=e468]: En attente depuis 3912 minutes
+        - generic [ref=e471]:
+          - 'heading "Ticket #A0012 (20052680)" [level=5] [ref=e472]'
+          - paragraph [ref=e473]: En attente depuis 3909 minutes
+        - generic [ref=e476]:
+          - 'heading "Ticket #A0013 (20052681)" [level=5] [ref=e477]'
+          - paragraph [ref=e478]: En attente depuis 3906 minutes
+        - generic [ref=e481]:
+          - 'heading "Ticket #A0014 (20052682)" [level=5] [ref=e482]'
+          - paragraph [ref=e483]: En attente depuis 3903 minutes
+        - generic [ref=e486]:
+          - 'heading "Ticket #A0015 (20052683)" [level=5] [ref=e487]'
+          - paragraph [ref=e488]: En attente depuis 3903 minutes
+        - generic [ref=e491]:
+          - 'heading "Ticket #A0018 (210526288)" [level=5] [ref=e492]'
+          - paragraph [ref=e493]: En attente depuis 2525 minutes
+    - generic [ref=e225]:
+      - heading "Répartition par Canal (Aujourd'hui)" [level=4] [ref=e226]
+      - generic [ref=e495]:
+        - generic [ref=e497]:
+          - generic [ref=e498]: Web
+          - generic [ref=e499]: 0%
+        - generic [ref=e502]:
+          - generic [ref=e503]: Kiosk/App
+          - generic [ref=e504]: 100%
+        - generic [ref=e508]:
+          - generic [ref=e509]: POS
+          - generic [ref=e510]: 0%
+  - generic [ref=e228]:
+    - heading "Audit Trail (Historique des Actions)" [level=4] [ref=e229]: Audit Trail (Historique des Actions)
+    - table [ref=e231]:
+      - rowgroup [ref=e232]:
+        - row "Utilisateur Action Ressource Temps" [ref=e233]:
+          - columnheader "Utilisateur" [ref=e234]
+          - columnheader "Action" [ref=e235]
+          - columnheader "Ressource" [ref=e236]
+          - columnheader "Temps" [ref=e237]
+      - rowgroup [ref=e238]:
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 3 secondes" [ref=e512]':
+          - cell "Admin Le Cayenne" [ref=e513]
+          - 'cell "Kiosk event: hardware_health" [ref=e514]':
+            - generic [ref=e515]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e516]
+          - cell "il y a 3 secondes" [ref=e517]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 46 secondes" [ref=e518]':
+          - cell "Admin Le Cayenne" [ref=e519]
+          - 'cell "Kiosk event: hardware_health" [ref=e520]':
+            - generic [ref=e521]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e522]
+          - cell "il y a 46 secondes" [ref=e523]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 3 minutes" [ref=e524]':
+          - cell "Admin Le Cayenne" [ref=e525]
+          - 'cell "Kiosk event: hardware_health" [ref=e526]':
+            - generic [ref=e527]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e528]
+          - cell "il y a 3 minutes" [ref=e529]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 3 minutes" [ref=e530]':
+          - cell "Admin Le Cayenne" [ref=e531]
+          - 'cell "Kiosk event: hardware_health" [ref=e532]':
+            - generic [ref=e533]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e534]
+          - cell "il y a 3 minutes" [ref=e535]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 3 minutes" [ref=e536]':
+          - cell "Admin Le Cayenne" [ref=e537]
+          - 'cell "Kiosk event: hardware_health" [ref=e538]':
+            - generic [ref=e539]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e540]
+          - cell "il y a 3 minutes" [ref=e541]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 4 minutes" [ref=e542]':
+          - cell "Admin Le Cayenne" [ref=e543]
+          - 'cell "Kiosk event: hardware_health" [ref=e544]':
+            - generic [ref=e545]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e546]
+          - cell "il y a 4 minutes" [ref=e547]
+        - 'row "Admin Le Cayenne Changement de statut Commande #WAVE-FINAL-S2-READY-1779535831630 il y a 2 heures" [ref=e548]':
+          - cell "Admin Le Cayenne" [ref=e549]
+          - cell "Changement de statut" [ref=e550]:
+            - generic [ref=e551]: Changement de statut
+          - 'cell "Commande #WAVE-FINAL-S2-READY-1779535831630" [ref=e552]'
+          - cell "il y a 2 heures" [ref=e553]
+        - 'row "Admin Le Cayenne Changement de statut Commande #WAVE-FINAL-S2-READY-1779535750162 il y a 2 heures" [ref=e554]':
+          - cell "Admin Le Cayenne" [ref=e555]
+          - cell "Changement de statut" [ref=e556]:
+            - generic [ref=e557]: Changement de statut
+          - 'cell "Commande #WAVE-FINAL-S2-READY-1779535750162" [ref=e558]'
+          - cell "il y a 2 heures" [ref=e559]
+        - 'row "Admin Le Cayenne Changement de statut Commande #WAVE-FINAL-S2-READY-1779534888767 il y a 2 heures" [ref=e560]':
+          - cell "Admin Le Cayenne" [ref=e561]
+          - cell "Changement de statut" [ref=e562]:
+            - generic [ref=e563]: Changement de statut
+          - 'cell "Commande #WAVE-FINAL-S2-READY-1779534888767" [ref=e564]'
+          - cell "il y a 2 heures" [ref=e565]
+        - 'row "Admin Le Cayenne Changement de statut Commande #WAVE-FINAL-S2-READY-1779533743348 il y a 3 heures" [ref=e566]':
+          - cell "Admin Le Cayenne" [ref=e567]
+          - cell "Changement de statut" [ref=e568]:
+            - generic [ref=e569]: Changement de statut
+          - 'cell "Commande #WAVE-FINAL-S2-READY-1779533743348" [ref=e570]'
+          - cell "il y a 3 heures" [ref=e571]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 3 heures" [ref=e572]':
+          - cell "Admin Le Cayenne" [ref=e573]
+          - 'cell "Kiosk event: hardware_health" [ref=e574]':
+            - generic [ref=e575]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e576]
+          - cell "il y a 3 heures" [ref=e577]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 3 heures" [ref=e578]':
+          - cell "Admin Le Cayenne" [ref=e579]
+          - 'cell "Kiosk event: hardware_health" [ref=e580]':
+            - generic [ref=e581]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e582]
+          - cell "il y a 3 heures" [ref=e583]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 3 heures" [ref=e584]':
+          - cell "Admin Le Cayenne" [ref=e585]
+          - 'cell "Kiosk event: hardware_health" [ref=e586]':
+            - generic [ref=e587]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e588]
+          - cell "il y a 3 heures" [ref=e589]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 3 heures" [ref=e590]':
+          - cell "Admin Le Cayenne" [ref=e591]
+          - 'cell "Kiosk event: hardware_health" [ref=e592]':
+            - generic [ref=e593]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e594]
+          - cell "il y a 3 heures" [ref=e595]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 3 heures" [ref=e596]':
+          - cell "Admin Le Cayenne" [ref=e597]
+          - 'cell "Kiosk event: hardware_health" [ref=e598]':
+            - generic [ref=e599]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e600]
+          - cell "il y a 3 heures" [ref=e601]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 3 heures" [ref=e602]':
+          - cell "Admin Le Cayenne" [ref=e603]
+          - 'cell "Kiosk event: hardware_health" [ref=e604]':
+            - generic [ref=e605]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e606]
+          - cell "il y a 3 heures" [ref=e607]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 3 heures" [ref=e608]':
+          - cell "Admin Le Cayenne" [ref=e609]
+          - 'cell "Kiosk event: hardware_health" [ref=e610]':
+            - generic [ref=e611]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e612]
+          - cell "il y a 3 heures" [ref=e613]
+        - 'row "Admin Le Cayenne Nouvelle commande POS Commande #210526288 il y a 1 jour" [ref=e614]':
+          - cell "Admin Le Cayenne" [ref=e615]
+          - cell "Nouvelle commande POS" [ref=e616]:
+            - generic [ref=e617]: Nouvelle commande POS
+          - 'cell "Commande #210526288" [ref=e618]'
+          - cell "il y a 1 jour" [ref=e619]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e620]':
+          - cell "Admin Le Cayenne" [ref=e621]
+          - 'cell "Kiosk event: hardware_health" [ref=e622]':
+            - generic [ref=e623]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e624]
+          - cell "il y a 1 jour" [ref=e625]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e626]':
+          - cell "Admin Le Cayenne" [ref=e627]
+          - 'cell "Kiosk event: hardware_health" [ref=e628]':
+            - generic [ref=e629]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e630]
+          - cell "il y a 1 jour" [ref=e631]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e632]':
+          - cell "Admin Le Cayenne" [ref=e633]
+          - 'cell "Kiosk event: hardware_health" [ref=e634]':
+            - generic [ref=e635]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e636]
+          - cell "il y a 1 jour" [ref=e637]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e638]':
+          - cell "Admin Le Cayenne" [ref=e639]
+          - 'cell "Kiosk event: hardware_health" [ref=e640]':
+            - generic [ref=e641]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e642]
+          - cell "il y a 1 jour" [ref=e643]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e644]':
+          - cell "Admin Le Cayenne" [ref=e645]
+          - 'cell "Kiosk event: hardware_health" [ref=e646]':
+            - generic [ref=e647]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e648]
+          - cell "il y a 1 jour" [ref=e649]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e650]':
+          - cell "Admin Le Cayenne" [ref=e651]
+          - 'cell "Kiosk event: hardware_health" [ref=e652]':
+            - generic [ref=e653]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e654]
+          - cell "il y a 1 jour" [ref=e655]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e656]':
+          - cell "Admin Le Cayenne" [ref=e657]
+          - 'cell "Kiosk event: hardware_health" [ref=e658]':
+            - generic [ref=e659]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e660]
+          - cell "il y a 1 jour" [ref=e661]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e662]':
+          - cell "Admin Le Cayenne" [ref=e663]
+          - 'cell "Kiosk event: hardware_health" [ref=e664]':
+            - generic [ref=e665]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e666]
+          - cell "il y a 1 jour" [ref=e667]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e668]':
+          - cell "Admin Le Cayenne" [ref=e669]
+          - 'cell "Kiosk event: hardware_health" [ref=e670]':
+            - generic [ref=e671]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e672]
+          - cell "il y a 1 jour" [ref=e673]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e674]':
+          - cell "Admin Le Cayenne" [ref=e675]
+          - 'cell "Kiosk event: hardware_health" [ref=e676]':
+            - generic [ref=e677]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e678]
+          - cell "il y a 1 jour" [ref=e679]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e680]':
+          - cell "Admin Le Cayenne" [ref=e681]
+          - 'cell "Kiosk event: hardware_health" [ref=e682]':
+            - generic [ref=e683]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e684]
+          - cell "il y a 1 jour" [ref=e685]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e686]':
+          - cell "Admin Le Cayenne" [ref=e687]
+          - 'cell "Kiosk event: hardware_health" [ref=e688]':
+            - generic [ref=e689]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e690]
+          - cell "il y a 1 jour" [ref=e691]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e692]':
+          - cell "Admin Le Cayenne" [ref=e693]
+          - 'cell "Kiosk event: hardware_health" [ref=e694]':
+            - generic [ref=e695]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e696]
+          - cell "il y a 1 jour" [ref=e697]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e698]':
+          - cell "Admin Le Cayenne" [ref=e699]
+          - 'cell "Kiosk event: hardware_health" [ref=e700]':
+            - generic [ref=e701]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e702]
+          - cell "il y a 1 jour" [ref=e703]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e704]':
+          - cell "Admin Le Cayenne" [ref=e705]
+          - 'cell "Kiosk event: hardware_health" [ref=e706]':
+            - generic [ref=e707]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e708]
+          - cell "il y a 1 jour" [ref=e709]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e710]':
+          - cell "Admin Le Cayenne" [ref=e711]
+          - 'cell "Kiosk event: hardware_health" [ref=e712]':
+            - generic [ref=e713]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e714]
+          - cell "il y a 1 jour" [ref=e715]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e716]':
+          - cell "Admin Le Cayenne" [ref=e717]
+          - 'cell "Kiosk event: hardware_health" [ref=e718]':
+            - generic [ref=e719]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e720]
+          - cell "il y a 1 jour" [ref=e721]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e722]':
+          - cell "Admin Le Cayenne" [ref=e723]
+          - 'cell "Kiosk event: hardware_health" [ref=e724]':
+            - generic [ref=e725]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e726]
+          - cell "il y a 1 jour" [ref=e727]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e728]':
+          - cell "Admin Le Cayenne" [ref=e729]
+          - 'cell "Kiosk event: hardware_health" [ref=e730]':
+            - generic [ref=e731]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e732]
+          - cell "il y a 1 jour" [ref=e733]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e734]':
+          - cell "Admin Le Cayenne" [ref=e735]
+          - 'cell "Kiosk event: hardware_health" [ref=e736]':
+            - generic [ref=e737]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e738]
+          - cell "il y a 1 jour" [ref=e739]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e740]':
+          - cell "Admin Le Cayenne" [ref=e741]
+          - 'cell "Kiosk event: hardware_health" [ref=e742]':
+            - generic [ref=e743]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e744]
+          - cell "il y a 1 jour" [ref=e745]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e746]':
+          - cell "Admin Le Cayenne" [ref=e747]
+          - 'cell "Kiosk event: hardware_health" [ref=e748]':
+            - generic [ref=e749]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e750]
+          - cell "il y a 1 jour" [ref=e751]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e752]':
+          - cell "Admin Le Cayenne" [ref=e753]
+          - 'cell "Kiosk event: hardware_health" [ref=e754]':
+            - generic [ref=e755]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e756]
+          - cell "il y a 1 jour" [ref=e757]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e758]':
+          - cell "Admin Le Cayenne" [ref=e759]
+          - 'cell "Kiosk event: hardware_health" [ref=e760]':
+            - generic [ref=e761]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e762]
+          - cell "il y a 1 jour" [ref=e763]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e764]':
+          - cell "Admin Le Cayenne" [ref=e765]
+          - 'cell "Kiosk event: hardware_health" [ref=e766]':
+            - generic [ref=e767]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e768]
+          - cell "il y a 1 jour" [ref=e769]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 1 jour" [ref=e770]':
+          - cell "Admin Le Cayenne" [ref=e771]
+          - 'cell "Kiosk event: hardware_health" [ref=e772]':
+            - generic [ref=e773]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e774]
+          - cell "il y a 1 jour" [ref=e775]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 2 jours" [ref=e776]':
+          - cell "Admin Le Cayenne" [ref=e777]
+          - 'cell "Kiosk event: hardware_health" [ref=e778]':
+            - generic [ref=e779]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e780]
+          - cell "il y a 2 jours" [ref=e781]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 2 jours" [ref=e782]':
+          - cell "Admin Le Cayenne" [ref=e783]
+          - 'cell "Kiosk event: hardware_health" [ref=e784]':
+            - generic [ref=e785]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e786]
+          - cell "il y a 2 jours" [ref=e787]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 2 jours" [ref=e788]':
+          - cell "Admin Le Cayenne" [ref=e789]
+          - 'cell "Kiosk event: hardware_health" [ref=e790]':
+            - generic [ref=e791]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e792]
+          - cell "il y a 2 jours" [ref=e793]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 2 jours" [ref=e794]':
+          - cell "Admin Le Cayenne" [ref=e795]
+          - 'cell "Kiosk event: hardware_health" [ref=e796]':
+            - generic [ref=e797]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e798]
+          - cell "il y a 2 jours" [ref=e799]
+        - 'row "Admin Le Cayenne Kiosk event: hardware_health Borne il y a 2 jours" [ref=e800]':
+          - cell "Admin Le Cayenne" [ref=e801]
+          - 'cell "Kiosk event: hardware_health" [ref=e802]':
+            - generic [ref=e803]: "Kiosk event: hardware_health"
+          - cell "Borne" [ref=e804]
+          - cell "il y a 2 jours" [ref=e805]
+        - 'row "Admin Le Cayenne Nouvelle commande POS Commande #210526287 il y a 2 jours" [ref=e806]':
+          - cell "Admin Le Cayenne" [ref=e807]
+          - cell "Nouvelle commande POS" [ref=e808]:
+            - generic [ref=e809]: Nouvelle commande POS
+          - 'cell "Commande #210526287" [ref=e810]'
+          - cell "il y a 2 jours" [ref=e811]
+  - generic [ref=e247]:
+    - heading "Statistiques des commandes" [level=4] [ref=e248]
+    - generic [ref=e249] [cursor=pointer]:
+      - generic [ref=e250]: Date
+      - textbox "Date" [ref=e252]:
+        - generic [ref=e253]:
+          - textbox "Date" [ref=e254]:
+            - /placeholder: ""
+            - text: 05/23/2026 - 05/23/2026
+          - img [ref=e255]
+  - generic [ref=e258]:
+    - generic [ref=e260]:
+      - generic [ref=e262]: 
+      - generic [ref=e263]:
+        - heading "Total commandes" [level=3] [ref=e264]
+        - heading "2" [level=4] [ref=e812]
+    - generic [ref=e266]:
+      - generic [ref=e268]: 
+      - generic [ref=e269]:
+        - heading "En attente" [level=3] [ref=e270]
+        - heading "1" [level=4] [ref=e813]
+    - generic [ref=e272]:
+      - generic [ref=e274]: 
+      - generic [ref=e275]:
+        - heading "Accepter" [level=3] [ref=e276]
+        - heading "1" [level=4] [ref=e814]
+    - generic [ref=e278]:
+      - generic [ref=e280]: 
+      - generic [ref=e281]:
+        - heading "En préparation" [level=3] [ref=e282]
+        - heading "0" [level=4] [ref=e815]
+    - generic [ref=e284]:
+      - generic [ref=e286]: 
+      - generic [ref=e287]:
+        - heading "Préparée" [level=3] [ref=e288]
+        - heading "0" [level=4] [ref=e816]
+    - generic [ref=e290]:
+      - generic [ref=e292]: 
+      - generic [ref=e293]:
+        - heading "En livraison" [level=3] [ref=e294]
+        - heading "0" [level=4] [ref=e817]
+    - generic [ref=e296]:
+      - generic [ref=e298]: 
+      - generic [ref=e299]:
+        - heading "Livré" [level=3] [ref=e300]
+        - heading "0" [level=4] [ref=e818]
+    - generic [ref=e302]:
+      - generic [ref=e304]: 
+      - generic [ref=e305]:
+        - heading "Annulé" [level=3] [ref=e306]
+        - heading "0" [level=4] [ref=e819]
+    - generic [ref=e308]:
+      - generic [ref=e310]: 
+      - generic [ref=e311]:
+        - heading "Retournée" [level=3] [ref=e312]
+        - heading "0" [level=4] [ref=e820]
+    - generic [ref=e314]:
+      - generic [ref=e316]: 
+      - generic [ref=e317]:
+        - heading "Refusée" [level=3] [ref=e318]
+        - heading "0" [level=4] [ref=e821]
+  - generic [ref=e319]:
+    - generic [ref=e327]:
+      - generic [ref=e328]:
+        - heading "Résumé des ventes" [level=3] [ref=e329]
+        - generic [ref=e330] [cursor=pointer]:
+          - generic [ref=e331]: Date
+          - textbox "Date" [ref=e333]:
+            - generic [ref=e334]:
+              - textbox "Date" [ref=e335]:
+                - /placeholder: ""
+                - text: 05/01/2026 - 05/31/2026
+              - img [ref=e336]
+          - generic [ref=e339]: 
+      - generic [ref=e340]:
+        - list [ref=e341]:
+          - listitem [ref=e342]:
+            - generic [ref=e343]:
+              - generic [ref=e344]: 
+              - heading "1543.40€" [level=3] [ref=e822]
+            - paragraph [ref=e345]: Total ventes
+          - listitem [ref=e346]:
+            - generic [ref=e347]:
+              - generic [ref=e348]: 
+              - heading "51.45€" [level=3] [ref=e823]
+            - paragraph [ref=e349]: Ventes moyennes par jour
+        - generic [ref=e825]:
+          - img [ref=e826]:
+            - generic [ref=e833]:
+              - generic "1" [ref=e834]
+              - generic "2" [ref=e835]
+              - generic "3" [ref=e836]
+              - generic "4" [ref=e837]
+              - generic "5" [ref=e838]
+              - generic "6" [ref=e839]
+              - generic "7" [ref=e840]
+              - generic "8" [ref=e841]
+              - generic "9" [ref=e842]
+              - generic "10" [ref=e843]
+              - generic "11" [ref=e844]
+              - generic "12" [ref=e845]
+              - generic "13" [ref=e846]
+              - generic "14" [ref=e847]
+              - generic "15" [ref=e848]
+              - generic "16" [ref=e849]
+              - generic "17" [ref=e850]
+              - generic "18" [ref=e851]
+              - generic "19" [ref=e852]
+              - generic "20" [ref=e853]
+              - generic "21" [ref=e854]
+              - generic "22" [ref=e855]
+              - generic "23" [ref=e856]
+              - generic "24" [ref=e857]
+              - generic "25" [ref=e858]
+              - generic "26" [ref=e859]
+              - generic "27" [ref=e860]
+              - generic "28" [ref=e861]
+              - generic "29" [ref=e862]
+              - generic "30" [ref=e863]
+              - generic "31" [ref=e864]
+          - generic: ●
+    - generic [ref=e357]:
+      - generic [ref=e358]:
+        - heading "Résumé des commandes" [level=3] [ref=e359]
+        - generic [ref=e360] [cursor=pointer]:
+          - generic [ref=e361]: Date
+          - textbox "Date" [ref=e363]:
+            - generic [ref=e364]:
+              - textbox "Date" [ref=e365]:
+                - /placeholder: ""
+                - text: 05/01/2026 - 05/31/2026
+              - img [ref=e366]
+          - generic [ref=e369]: 
+      - generic [ref=e371]:
+        - img [ref=e867]:
+          - generic [ref=e885]:
+            - generic: Total
+            - generic: "54"
+        - list [ref=e372]:
+          - listitem [ref=e373]:
+            - generic [ref=e374]: Livré (54%)
+          - listitem [ref=e376]:
+            - generic [ref=e377]: Retournée (0%)
+          - listitem [ref=e379]:
+            - generic [ref=e380]: Annulé (0%)
+          - listitem [ref=e382]:
+            - generic [ref=e383]: Refusée (0%)
+    - generic [ref=e392]:
+      - heading "Dernier rapport Z" [level=3] [ref=e394]
+      - generic [ref=e395]:
+        - paragraph [ref=e886]: Aucune donnée
+        - link "Voir toutes" [ref=e397] [cursor=pointer]:
+          - /url: /admin/transactions
+    - generic [ref=e405]:
+      - generic [ref=e407]: Articles mis en avant
+      - list [ref=e887]:
+        - listitem [ref=e888]:
+          - img "product" [ref=e889]
+          - heading "Menu (Frites + Boisson)" [level=4] [ref=e890]
+        - listitem [ref=e891]:
+          - img "product" [ref=e892]
+          - heading "Boisson Seule" [level=4] [ref=e893]
+        - listitem [ref=e894]:
+          - img "product" [ref=e895]
+          - heading "Frites Seules" [level=4] [ref=e896]
+    - generic [ref=e416]:
+      - generic [ref=e418]: Articles les plus populaires
+      - list [ref=e897]:
+        - listitem [ref=e898]:
+          - img "product" [ref=e899]
+          - generic [ref=e900]:
+            - heading "Sandwich Cayenne" [level=4] [ref=e901]
+            - heading "Sandwich Cayenne" [level=5] [ref=e902]
+            - heading "7.40€" [level=6] [ref=e903]
+        - listitem [ref=e904]:
+          - img "product" [ref=e905]
+          - generic [ref=e906]:
+            - heading "Tacos" [level=4] [ref=e907]
+            - heading "Tacos" [level=5] [ref=e908]
+            - heading "6.90€" [level=6] [ref=e909]
+        - listitem [ref=e910]:
+          - img "product" [ref=e911]
+          - generic [ref=e912]:
+            - heading "Coca-Cola 33cl" [level=4] [ref=e913]
+            - heading "Boissons" [level=5] [ref=e914]
+            - heading "1.50€" [level=6] [ref=e915]
+        - listitem [ref=e916]:
+          - img "product" [ref=e917]
+          - generic [ref=e918]:
+            - heading "Menu (Frites + Boisson)" [level=4] [ref=e919]
+            - heading "Sandwich Cayenne" [level=5] [ref=e920]
+            - heading "2.50€" [level=6] [ref=e921]
+        - listitem [ref=e922]:
+          - img "product" [ref=e923]
+          - generic [ref=e924]:
+            - heading "Big Cayenne" [level=4] [ref=e925]
+            - heading "Sandwich Cayenne" [level=5] [ref=e926]
+            - heading "9.40€" [level=6] [ref=e927]
+        - listitem [ref=e928]:
+          - img "product" [ref=e929]
+          - generic [ref=e930]:
+            - heading "Petite Frites" [level=4] [ref=e931]
+            - heading "Frites" [level=5] [ref=e932]
+            - heading "2.50€" [level=6] [ref=e933]

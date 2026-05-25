@@ -1,0 +1,55 @@
+- generic [ref=e1]:
+  - generic [ref=e205]:
+    - generic [ref=e206]:
+      - button "Retour" [ref=e207] [cursor=pointer]:
+        - img [ref=e208]
+      - generic [ref=e210]:
+        - heading "Votre panier" [level=1] [ref=e211]
+        - paragraph [ref=e212]: 1 article
+      - button "Vider le panier" [ref=e213] [cursor=pointer]
+    - radiogroup "Type de commande" [ref=e214]:
+      - radio "À emporter" [checked] [ref=e215] [cursor=pointer]:
+        - generic [ref=e216]: 🥡
+        - generic [ref=e217]: À emporter
+    - generic [ref=e218]:
+      - list [ref=e219]:
+        - listitem [ref=e220]:
+          - generic [ref=e222]:
+            - generic [ref=e223]:
+              - heading "Eau Plate 50cl" [level=3] [ref=e224]
+              - button "Modifier cet article" [ref=e225] [cursor=pointer]:
+                - img [ref=e226]
+            - generic [ref=e228]: €1,00 par unité
+          - generic [ref=e229]:
+            - group "Quantité de Eau Plate 50cl" [ref=e230]:
+              - button "Diminuer la quantité" [ref=e231] [cursor=pointer]:
+                - img [ref=e232]
+              - generic [ref=e233]: "1"
+              - button "Augmenter la quantité" [ref=e234] [cursor=pointer]:
+                - img [ref=e235]
+            - button "Retirer" [ref=e237] [cursor=pointer]:
+              - img [ref=e238]
+            - generic [ref=e241]: €1,00
+      - region "Sous-total" [ref=e242]:
+        - generic [ref=e243]:
+          - generic [ref=e244]: Sous-total
+          - generic [ref=e245]: €1,00
+        - generic [ref=e246]:
+          - generic [ref=e247]: Total
+          - generic [ref=e248]: €1,00
+      - generic [ref=e250]:
+        - generic [ref=e251]: Code promo
+        - generic [ref=e252]:
+          - textbox "Code promo" [ref=e253]:
+            - /placeholder: Saisir un code promo…
+          - button "Appliquer" [disabled] [ref=e254]
+      - button "Avez-vous une carte fidélité ?" [ref=e255] [cursor=pointer]:
+        - generic [ref=e256]: ★
+        - generic [ref=e257]: Avez-vous une carte fidélité ?
+        - generic [ref=e258]: ›
+      - generic [ref=e259]:
+        - button "Valider ma commande €1,00" [ref=e260] [cursor=pointer]:
+          - generic [ref=e261]: Valider ma commande
+          - generic [ref=e262]: €1,00
+        - button "+ Ajouter des articles" [ref=e263] [cursor=pointer]
+  - status

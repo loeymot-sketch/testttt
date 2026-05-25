@@ -9,15 +9,19 @@
     "globalTimeout": 0,
     "grep": {},
     "grepInvert": null,
-    "maxFailures": 0,
-    "metadata": {},
+    "maxFailures": 20,
+    "metadata": {
+      "actualWorkers": 1
+    },
     "preserveOutput": "always",
     "projects": [
       {
         "outputDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/test-results",
         "repeatEach": 1,
-        "retries": 1,
-        "metadata": {},
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
         "id": "chromium",
         "name": "chromium",
         "testDir": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests",
@@ -58,57 +62,511 @@
   },
   "suites": [
     {
-      "title": "e2e/wave-z-stress-sync-3-kiosk.spec.js",
-      "file": "e2e/wave-z-stress-sync-3-kiosk.spec.js",
+      "title": "e2e/m-kds-6-static-repro-clamped.spec.js",
+      "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Wave Z (Q13) — Stress sync, 3 parallel kiosk contexts",
-          "file": "e2e/wave-z-stress-sync-3-kiosk.spec.js",
-          "line": 376,
-          "column": 15,
+          "title": "M-KDS-6 CLAMPED static CSS-faithful repro",
+          "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
+          "line": 234,
+          "column": 6,
           "specs": [
             {
-              "title": "3 contexts × ~17 orders each → 50 fiscal-allocated, gap-free, no dupes",
+              "title": "N=5 depth=short",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 900000,
+                  "timeout": 60000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 394,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[M-KDS-6-CLAMPED] N=5/short: cards=5, dropped=0, cta_below=0, inner_scroll=0, page_overflow=false, grid_h=883\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-24T12:54:22.912Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
                 }
               ],
-              "id": "812ea97b211318daf7d1-e0b53d185a7b8515bbc0",
-              "file": "e2e/wave-z-stress-sync-3-kiosk.spec.js",
-              "line": 441,
-              "column": 3
+              "id": "3d33e26c60f91e68bd2b-c41e344396bb03c46403",
+              "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
+              "line": 259,
+              "column": 9
             },
             {
-              "title": "network-drop resilience — 30s block on /frontend/order does not leave zombie row",
+              "title": "N=6 depth=short",
               "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 900000,
+                  "timeout": 60000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
-                  "results": [],
-                  "status": "skipped"
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 166,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[M-KDS-6-CLAMPED] N=6/short: cards=6, dropped=0, cta_below=0, inner_scroll=0, page_overflow=false, grid_h=883\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-24T12:54:23.951Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
                 }
               ],
-              "id": "812ea97b211318daf7d1-7997696b76a0c33f6801",
-              "file": "e2e/wave-z-stress-sync-3-kiosk.spec.js",
-              "line": 496,
-              "column": 3
+              "id": "3d33e26c60f91e68bd2b-9c3b633349b3a7a4b6f9",
+              "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
+              "line": 259,
+              "column": 9
+            },
+            {
+              "title": "N=7 depth=short",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 168,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[M-KDS-6-CLAMPED] N=7/short: cards=7, dropped=0, cta_below=0, inner_scroll=0, page_overflow=false, grid_h=883\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-24T12:54:24.123Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3d33e26c60f91e68bd2b-608fef2a2f1b79e6b020",
+              "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
+              "line": 259,
+              "column": 9
+            },
+            {
+              "title": "N=8 depth=short",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 160,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[M-KDS-6-CLAMPED] N=8/short: cards=8, dropped=0, cta_below=0, inner_scroll=0, page_overflow=false, grid_h=883\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-24T12:54:24.296Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3d33e26c60f91e68bd2b-66b6554e718990330f9a",
+              "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
+              "line": 259,
+              "column": 9
+            },
+            {
+              "title": "N=9 depth=short",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 161,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[M-KDS-6-CLAMPED] N=9/short: cards=8, dropped=1, cta_below=0, inner_scroll=0, page_overflow=false, grid_h=883\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-24T12:54:24.463Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3d33e26c60f91e68bd2b-2491a4c1fc5b5a4db952",
+              "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
+              "line": 259,
+              "column": 9
+            },
+            {
+              "title": "N=12 depth=short",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 163,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[M-KDS-6-CLAMPED] N=12/short: cards=8, dropped=4, cta_below=0, inner_scroll=0, page_overflow=false, grid_h=883\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-24T12:54:24.629Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3d33e26c60f91e68bd2b-bfaddf444a616485fcd6",
+              "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
+              "line": 259,
+              "column": 9
+            },
+            {
+              "title": "N=5 depth=realistic",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 172,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[M-KDS-6-CLAMPED] N=5/realistic: cards=5, dropped=0, cta_below=0, inner_scroll=0, page_overflow=false, grid_h=883\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-24T12:54:24.797Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3d33e26c60f91e68bd2b-34e98cbb7860f376dd1d",
+              "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
+              "line": 259,
+              "column": 9
+            },
+            {
+              "title": "N=6 depth=realistic",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 178,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[M-KDS-6-CLAMPED] N=6/realistic: cards=6, dropped=0, cta_below=0, inner_scroll=0, page_overflow=false, grid_h=883\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-24T12:54:24.975Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3d33e26c60f91e68bd2b-f1e9d2b26fb9e9ed7e1c",
+              "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
+              "line": 259,
+              "column": 9
+            },
+            {
+              "title": "N=7 depth=realistic",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 178,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[M-KDS-6-CLAMPED] N=7/realistic: cards=7, dropped=0, cta_below=0, inner_scroll=0, page_overflow=false, grid_h=883\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-24T12:54:25.159Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3d33e26c60f91e68bd2b-69e7fa3bb90c9f8d693e",
+              "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
+              "line": 259,
+              "column": 9
+            },
+            {
+              "title": "N=8 depth=realistic",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 178,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[M-KDS-6-CLAMPED] N=8/realistic: cards=8, dropped=0, cta_below=0, inner_scroll=0, page_overflow=false, grid_h=883\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-24T12:54:25.342Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3d33e26c60f91e68bd2b-4b814f72ca4616372462",
+              "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
+              "line": 259,
+              "column": 9
+            },
+            {
+              "title": "N=5 depth=long",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 178,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[M-KDS-6-CLAMPED] N=5/long: cards=5, dropped=0, cta_below=0, inner_scroll=5, page_overflow=false, grid_h=883\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-24T12:54:25.525Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3d33e26c60f91e68bd2b-621c6cfeeac706c42020",
+              "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
+              "line": 259,
+              "column": 9
+            },
+            {
+              "title": "N=6 depth=long",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 178,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[M-KDS-6-CLAMPED] N=6/long: cards=6, dropped=0, cta_below=0, inner_scroll=6, page_overflow=false, grid_h=883\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-24T12:54:25.709Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3d33e26c60f91e68bd2b-50ad810bbd48680797dd",
+              "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
+              "line": 259,
+              "column": 9
+            },
+            {
+              "title": "N=8 depth=long",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 177,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[M-KDS-6-CLAMPED] N=8/long: cards=8, dropped=0, cta_below=0, inner_scroll=8, page_overflow=false, grid_h=883\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-05-24T12:54:25.893Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3d33e26c60f91e68bd2b-a943e998c3ab782c043a",
+              "file": "e2e/m-kds-6-static-repro-clamped.spec.js",
+              "line": 259,
+              "column": 9
             }
           ]
         }
@@ -117,10 +575,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-05-21T04:50:16.547Z",
-    "duration": 200.80299999999988,
-    "expected": 0,
-    "skipped": 2,
+    "startTime": "2026-05-24T12:54:22.105Z",
+    "duration": 4003.321,
+    "expected": 13,
+    "skipped": 0,
     "unexpected": 0,
     "flaky": 0
   }

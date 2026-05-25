@@ -1,0 +1,150 @@
+{
+  "agent": "S3-P5",
+  "persona": "Inspecteur-fiscal NF525",
+  "surface": "KDS",
+  "date": "2026-05-25",
+  "scope": [
+    "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue",
+    "app/Http/Controllers/Admin/KitchenDisplaySystemController.php",
+    "app/Http/Resources/KDSOrderDetailsResource.php",
+    "app/Services/KitchenDisplaySystemOrderService.php (cross-ref)",
+    "app/Domain/Order/OrderStateMachine.php (cross-ref)",
+    "database/migrations/2026_04_15_230000_create_order_status_transitions_table.php (cross-ref)"
+  ],
+  "inspector_lens": "6-year audit trail, NF525 art. 88 — every fiscal-adjacent state transition must be traceable, immutable, integrity-signed, and reconstitutable years after the fact. KDS bumps are the link between sale (POS/Kiosk) and fulfillment (chef) — if an inspector asks 'show me, for order #4521 of 2026-04-12, who marked it PREPARED, when, from what station, and prove nothing in the chain has been altered', the system must answer.",
+  "gaps": [
+    {
+      "id": "S3-P5-G01",
+      "severity": "P0",
+      "title": "KDS status transitions NOT chained in NF525 audit_logs (HMAC) — only best-effort row in order_status_transitions",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "296-306",
+        "code": "$locked->status = $newStatus; $locked->save(); OrderStateMachine::recordTransition(Order::class, (int) $locked->id, $fromLocked, $newStatus, auth()->check() ? (int) auth()->id() : null, null);",
+        "cross_ref": "OrderStateMachine.php:132-159 — recordTransition() writes ONLY to order_status_transitions table (id, order_id, from_status, to_status, actor_id, occurred_at). NO HMAC, NO prev_hash, NO current_hash. NO call to AuditLogService::append()."
+      },
+      "inspector_question": "Prove order #X moved ACCEPT→PREPARING→PREPARED on 2026-04-12 at 14:23, and prove that row has not been silently UPDATEd or DELETEd between today and your retention horizon (6 years).",
+      "current_answer": "Impossible. order_status_transitions has no HMAC chain, no BEFORE DELETE trigger, no GRANT-level DELETE revocation (unlike audit_logs + z_reports per CLAUDE.md §8). Any DBA with write access can silently UPDATE from_status/to_status or DELETE rows; integrity cannot be proven.",
+      "impact": "NF525 art. 88 III — 'inaltérabilité' compromised for the fulfillment leg of the order lifecycle. Inspector cannot validate kitchen throughput timelines, contested bumps, or staff-action timelines beyond the trust placed in raw MySQL rows. Risk: chain claim 'NF525 chain bit-identical' (BRAIN §8) covers ONLY orders/payments, NOT KDS state — gap not declared to owner.",
+      "remediation_sketch": "Either (a) call AuditLogService::append() inside DB::transaction at line 297 with payload {order_id, from, to, actor_id, branch_id, source: 'kds'}, OR (b) add a BEFORE DELETE/UPDATE trigger + GRANT REVOKE on order_status_transitions matching the audit_logs hardening pattern (CLAUDE.md §8). Option (a) is preferred — it ties KDS into the SAME chain as fiscal events, so an inspector hash-walks ONE chain end-to-end."
+    },
+    {
+      "id": "S3-P5-G02",
+      "severity": "P0",
+      "title": "KdsHistoryDrawer reads `updated_at` as proxy for 'bumped at' — non-NF525-compliant timestamp (mutable, ambiguous, race-prone)",
+      "evidence": {
+        "file": "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue",
+        "lines": "113-115",
+        "code": "<time class=\"kds-history-drawer__time\" :datetime=\"order.updated_at\">{{ formatTime(order.updated_at) }}</time>",
+        "cross_ref": "KitchenDisplaySystemOrderService.php:185-217 — comment explicitly says 'closest proxy to bump time without adding a new bumped_at column'. KDSOrderDetailsResource.php:37 — 'updated_at' => $this->updated_at?->toIso8601String() exposed identically."
+      },
+      "inspector_question": "What was the EXACT moment chef bumped order #X to PREPARED on 2026-04-12 — and prove no later mutation (eg. address edit, status revert backlog, payment_pending_counter flip) shifted this displayed time.",
+      "current_answer": "updated_at is touched by EVERY Eloquent save() on the order row (composition_snapshot freeze, address eager-load mutation, payment status flip, fiscal_alloc_error_at retry, ...). Service comment admits 'closest proxy without adding bumped_at column'. After 1 hour, even a single subsequent save() invalidates the displayed time for forensic purposes.",
+      "impact": "Inspector reconciliation against order_status_transitions.occurred_at and audit_logs (when chained) will diverge. Customer-litigation case (customer claims 'I received cold food at 14:50' vs chef claims 'bumped at 14:23') becomes un-resolvable from the historique drawer alone — the displayed 14:23 may have shifted to 14:35 after a downstream save.",
+      "remediation_sketch": "Add `kds_bumped_at` (or use order_status_transitions.occurred_at filtered to to_status=PREPARED) as the authoritative timestamp in KDSOrderDetailsResource. Drawer should bind `order.kds_prepared_at` (server-derived, immutable post-write), not `order.updated_at`."
+    },
+    {
+      "id": "S3-P5-G03",
+      "severity": "P0",
+      "title": "Actor identity is RECORDED in transitions but NEVER EXPOSED in KDS history drawer — inspector cannot answer 'who bumped'",
+      "evidence": {
+        "file": "app/Http/Resources/KDSOrderDetailsResource.php",
+        "lines": "21-77",
+        "code": "Resource exposes id, order_serial_no, status, queue_number, items, customer (name + delivery-phone only), order_address. NO actor_id, NO chef name, NO station_id, NO terminal_id.",
+        "cross_ref": "KdsHistoryDrawer.vue:101-117 — `<header>` shows N°/status/time only. No 'Préparé par X' cell."
+      },
+      "inspector_question": "Identify the staff member responsible for the PREPARED transition of order #X — name, employee number, station, and login session.",
+      "current_answer": "actor_id is captured into order_status_transitions (OrderStateMachine.php:150) but the historyToday() service does NOT eager-load this relation, the Resource does NOT expose it, and the drawer Vue template does NOT render it. From the historique drawer, the inspector sees an anonymous bump.",
+      "impact": "Accountability gap — a contested transition (customer says food was bumped before being plated) cannot be traced to a specific chef. Combined with G01 (no HMAC chain), even the back-end forensic answer is weak: we have an actor_id but no integrity guarantee it wasn't UPDATEd post-hoc.",
+      "remediation_sketch": "Eager-load latest transition to PREPARED in historyToday(): `$query->with(['latestStatusTransition' => fn($q) => $q->where('to_status', PREPARED)->with('actor')])`. Add `bumped_by` to KDSOrderDetailsResource. Render in drawer as 'Préparé par: {{ order.bumped_by_name }}' with WCAG-compliant label."
+    },
+    {
+      "id": "S3-P5-G04",
+      "severity": "P1",
+      "title": "ZReport (daily clôture) does NOT include kitchen throughput KPIs — kitchen-side hole in fiscal day-end snapshot",
+      "evidence": {
+        "file": "app/Services/Fiscal/ZReportService.php (cross-ref)",
+        "lines": "grep result: NO 'kds' nor 'kitchen' references in ZReportService.php",
+        "code": "Z report aggregates orders by payment + fiscal sequence — there is no kds_bumped_count, no avg_prep_time, no station_throughput for the day.",
+        "cross_ref": "ZReportService is on the NF525 frozen list (CLAUDE.md §7); however, ADDING fields is forward-compatible if the chain hash recomputes deterministically."
+      },
+      "inspector_question": "For fiscal day 2026-04-12 in branch #3, how many orders were marked PREPARED, how many were marked OUT_FOR_DELIVERY, how many were marked DELIVERED — and reconcile against payment-closed count.",
+      "current_answer": "Z report shows the payment/order side ONLY. A divergence (eg. 142 orders paid in POS but only 138 marked PREPARED in KDS — 4 orders never reached the kitchen / chef forgot to bump) is INVISIBLE in the Z. The inspector must cross-query order_status_transitions manually, which (per G01) has no integrity guarantee.",
+      "impact": "Daily NF525 snapshot is incomplete for operational reconciliation. Audit defenders cannot 'one-stop' prove kitchen-completion alignment with sales — they must hand over two artefacts (Z + raw transition table) and explain why one is chained and the other is not.",
+      "remediation_sketch": "Add aggregated kitchen KPIs to ZReportService payload (kds_prepared_count, kds_avg_lead_seconds, kds_out_count, kds_delivered_count) — derived from order_status_transitions filtered to day-bounds before chain-signing. NO mutation of existing fields, only additive — chain compat preserved if append order remains stable."
+    },
+    {
+      "id": "S3-P5-G05",
+      "severity": "P1",
+      "title": "DELETED orders (cancellation post-bump) leave NO trace in KdsHistoryDrawer — inspector cannot prove revert-cancellation chain",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "217-246",
+        "code": "historyToday() filters whereIn('status', [PREPARED, OUT_FOR_DELIVERY, DELIVERED]) and whereBetween('updated_at', [todayStart, tomorrowStart]). If an order is CANCELED after being PREPARED (eg. customer no-show after bump), it disappears from the drawer.",
+        "cross_ref": "KdsHistoryDrawer.vue:139-142 — comment says 'revert PREPARED → PREPARING is intentionally NOT exposed here' (V1.0.2 backlog), but the issue extends to FORWARD-to-CANCELED post-bump, which IS allowed by OrderStateMachine."
+      },
+      "inspector_question": "Customer disputes a 2026-04-12 charge — claims they never received order #X even though it was bumped PREPARED. Show me the bumped-then-canceled trail in the KDS historique.",
+      "current_answer": "The order is filtered out because its current status is CANCELED, not PREPARED/OUT/DELIVERED. The chef has NO visibility from the drawer that the order WAS prepared then later cancelled. The full trail lives only in order_status_transitions (which is unsigned per G01).",
+      "impact": "Customer-dispute resolution from chef's view becomes impossible. Forces the dispute path through admin-only screens, defeating the owner mandate cited in the controller docblock: 'chef sees all PREPARED/OUT/DELIVERED orders today to verify content if a customer reports an error'.",
+      "remediation_sketch": "Extend historyToday() to include orders whose order_status_transitions table shows ANY transition to PREPARED today (regardless of current status). Display canceled-after-bump orders with a `is-canceled` border-left state in the drawer (mirror existing is-prepared/is-out/is-delivered pattern at KdsHistoryDrawer.vue:386-388)."
+    },
+    {
+      "id": "S3-P5-G06",
+      "severity": "P1",
+      "title": "No correlation_id surfaced in KDS history — multi-channel order tracing broken for audit reconstruction",
+      "evidence": {
+        "file": "app/Domain/Order/OrderStateMachine.php",
+        "lines": "153",
+        "code": "'correlation_id' => request()?->header('X-Correlation-ID'),",
+        "cross_ref": "KDSOrderDetailsResource.php:21-77 — correlation_id NOT exposed. KdsHistoryDrawer.vue — NOT rendered."
+      },
+      "inspector_question": "For order #X, reconstruct the full causal chain — POS submission → fiscal_seq allocation → KDS bump → ticket dispatch → customer notification — and prove these events are linked.",
+      "current_answer": "OrderStateMachine captures correlation_id PER TRANSITION (line 153) but it's never surfaced to KDS UI or KDS Resource. Audit reconstruction must JOIN order_status_transitions ↔ audit_logs ↔ webhook_events manually by correlation_id, only possible via DB direct access.",
+      "impact": "Slows audit response; in adversarial NF525 inspection, every minute of delay = penalty risk. Also a missed opportunity to surface correlation_id in the historique drawer for chef-side dispute resolution.",
+      "remediation_sketch": "Add `latest_transition_correlation_id` to KDSOrderDetailsResource (read from order_status_transitions for the most recent transition). Render as a small hidden-by-default 'tech details' affordance in the drawer item — invisible by default to chef, opens via keyboard shortcut for admin/inspector."
+    },
+    {
+      "id": "S3-P5-G07",
+      "severity": "P2",
+      "title": "Drawer limit hard-coded to 50 — inspector view truncates without warning",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "239-241",
+        "code": "return $query->orderByDesc('updated_at')->limit(50)->get();",
+        "cross_ref": "KdsHistoryDrawer.vue:43 — '({{ orders.length }})' just shows count, no overflow indicator. Compare to index() at controller:30-34 which DOES expose meta.overflow."
+      },
+      "inspector_question": "On a busy Saturday with 200 orders, prove the historique drawer shows ALL PREPARED today.",
+      "current_answer": "It doesn't — capped at 50, no UI signal that older PREPARED orders exist. Inspector or chef gets a silently-truncated view.",
+      "impact": "Same class of issue Wave T already fixed for index() (meta.overflow). Inconsistent gate handling between two sibling endpoints.",
+      "remediation_sketch": "Mirror the index() additional() meta pattern (`KitchenDisplaySystemController:30-34`): expose meta.overflow + meta.limit on the historyToday endpoint, render banner in drawer when overflow=true."
+    },
+    {
+      "id": "S3-P5-G08",
+      "severity": "P2",
+      "title": "No source_surface in drawer item — inspector cannot distinguish Borne/POS/Mobile origins post-bump",
+      "evidence": {
+        "file": "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue",
+        "lines": "101-117",
+        "code": "Header renders N° + status + time. NO source surface badge.",
+        "cross_ref": "KDSOrderDetailsResource.php:29 — source_surface IS in the payload ('kiosk' | 'pos' | 'web' | 'mobile' | 'admin'). Drawer just doesn't render it."
+      },
+      "inspector_question": "Of yesterday's 142 PREPARED orders, how many originated from the kiosk vs POS vs delivery app?",
+      "current_answer": "Drawer hides the source. The data IS in the payload (per the Wave T E-003 round-3 fix at Resource line 29), but the UI does not surface it.",
+      "impact": "Forces admin to cross-tab to OSS or admin/orders for a question already answerable from the drawer dataset. Minor — UX gap, not integrity gap.",
+      "remediation_sketch": "Add a small badge next to the queue number in KdsHistoryDrawer.vue:101-117: 'Borne' / 'Caisse' / 'Web' / 'Mobile' / 'Admin' from order.source_surface, with WCAG-AA color contrast."
+    }
+  ],
+  "summary": {
+    "p0_count": 3,
+    "p1_count": 3,
+    "p2_count": 2,
+    "total_count": 8,
+    "headline": "KDS state transitions sit OUTSIDE the NF525 HMAC chain (audit_logs + z_reports) — they're persisted to a best-effort, unsigned, deletable order_status_transitions table. Combined with the drawer's use of mutable `updated_at` as a 'bumped at' proxy and the absence of actor/correlation surfacing, an NF525 inspector cannot independently prove kitchen-throughput integrity over the 6-year retention horizon.",
+    "verdict": "FAIL_NF525_KITCHEN_LEG",
+    "top_3_for_caller": [
+      "S3-P5-G01: KDS transitions NOT in NF525 HMAC chain — order_status_transitions is unsigned, deletable, unprotected by DB trigger/GRANT-revoke unlike audit_logs/z_reports (CLAUDE.md §8).",
+      "S3-P5-G02: KdsHistoryDrawer uses mutable `updated_at` as 'bumped at' time — service code explicitly admits it's a proxy 'without adding a bumped_at column'; any subsequent save() invalidates forensic reconstruction.",
+      "S3-P5-G03: Actor identity captured in transitions table but never exposed in KDSOrderDetailsResource nor rendered in drawer — chef-bump is anonymous in the historique view."
+    ]
+  }
+}

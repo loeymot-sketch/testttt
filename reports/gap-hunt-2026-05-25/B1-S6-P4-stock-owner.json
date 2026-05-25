@@ -1,0 +1,201 @@
+{
+  "agent": "GAP-HUNTER S6-P4",
+  "domain": "Stock features × Owner end-of-day perspective",
+  "branch_at_audit": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_at_audit": "d601fdd34 (docs wave-final 2026-05-23 convergence)",
+  "scope": "FoodKing Le Cayenne V1 — owner-night closeout view of stock subsystem (rapport pertes du jour / COGS / réappro suggestion / historique conso graph / achat vs vente / alerte DLC)",
+  "mission": "Confirm whether owner-facing end-of-day stock features exist, partially exist, or are entirely absent. Cite primary-source files; do NOT propose new features without evidence baseline.",
+
+  "sources_inspected": [
+    "app/Services/Menu/AvailabilityService.php (775 lines, fully read)",
+    "app/Services/Stock/StockService.php (head 120 lines + reasons enum cross-checked)",
+    "app/Models/StockLevel.php (full read — columns: on_hand, reserved, threshold_low, manual_unavailable_reason, manual_unavailable_since)",
+    "app/Models/StockMovement.php (append-only audit, reasons ENUM)",
+    "app/Events/ItemUpdated.php (cache-invalidation marker, no business payload)",
+    "app/Events/ItemAvailabilityChanged.php, StockLevelChanged.php (existence verified)",
+    "app/Http/Controllers/Admin/StockRuptureDashboardController.php (full read — endpoints: lastSummary, lowAlerts, run, catalogOverview)",
+    "app/Http/Controllers/Admin/ItemsReportController.php (full read — sales-volume report, no cost data)",
+    "database/migrations/2026_04_27_143120_create_stock_levels_table.php (schema confirmed)",
+    "database/migrations/2026_04_27_143130_create_stock_movements_table.php (ENUM reasons confirmed)",
+    "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue (only stock Vue page that exists prod-side)",
+    "resources/js/components/admin/dashboard/StockLowAlertsWidget.vue (widget)",
+    "Exhaustive grep across app/ + database/ + resources/js/ for cost_price|unit_cost|purchase_price|cogs|wastage|spoilage|expiry|shelf_life|reorder|min_stock|supplier_order|loss_report|margin|profit"
+  ],
+
+  "baseline_summary": {
+    "what_exists": [
+      "Append-only StockMovement ledger (delta per order/refund) — supplies a consumption stream IF query endpoint built",
+      "StockLevel.threshold_low column (already drives 'lowAlerts' endpoint) — supplies a reorder-trigger primitive",
+      "ItemBranchAvailability.daily_consumed_qty + daily_reset_at — daily-quota counter resettable Paris-local midnight",
+      "StockRuptureDashboardController endpoints lastSummary + lowAlerts + run + catalogOverview (read-side only)",
+      "AvailabilityService.releaseForOrderItems (cancel/refund compensating release with ledger order_items.released_qty)"
+    ],
+    "what_is_definitively_absent": [
+      "ZERO cost_price / unit_cost / purchase_price columns anywhere in items / item_variations / item_extras / stock_levels (grep confirmed — domain has no cost vocabulary)",
+      "ZERO COGS / margin / profit fields in SalesReportOverviewResource or ItemReportResource (grep returned empty)",
+      "stock_movements.reason ENUM = ('order_created','order_canceled','refund','manual_in','manual_out','rupture_set') — NO 'waste' / 'spoilage' / 'shrinkage' / 'expiry' value; impossible to log a loss event without schema change",
+      "No PurchaseOrder / GoodsReceipt / Supplier entity (grep zero matches across app/ models)",
+      "No ConsumptionReport / LossReport / ExpiryAlert controller, service, or route",
+      "No DLC / shelf_life / expires_at column on any stock-adjacent table"
+    ]
+  },
+
+  "gaps": [
+    {
+      "id": "S6-P4-G1",
+      "feature": "Rapport pertes du jour (daily losses report)",
+      "severity": "P1",
+      "owner_pain": "À 23h le owner ne peut PAS dire 'aujourd'hui on a jeté 4 baguettes + 2 saladiers tomate'. Aucune trace.",
+      "existence_in_codebase": "ABSENT",
+      "evidence": [
+        "stock_movements.reason ENUM does not include any 'waste'/'spoilage'/'shrinkage' value (database/migrations/2026_04_27_143130_create_stock_movements_table.php L17 — five reasons listed, none represent loss)",
+        "No LossReport / WasteReport controller in app/Http/Controllers/Admin/",
+        "No 'pertes' / 'losses' string in resources/js/components/admin/* (grep)",
+        "StockService manual_out reason exists but is generic — not tagged as 'loss' vs 'transfer' vs 'tasting'"
+      ],
+      "blocker_for_owner_night": true,
+      "min_v1_remediation": "Add 'waste','expired' reason values to ENUM + manual_out controller flag; surface daily aggregate by reason in /admin/stock/daily-summary endpoint",
+      "estimated_cost_v1": "M (1-2 days backend + 0.5 day Vue)"
+    },
+    {
+      "id": "S6-P4-G2",
+      "feature": "COGS (cost of goods sold) calculation",
+      "severity": "P2",
+      "owner_pain": "Aucun pourcentage food-cost calculable. 'On vend pour 1200€ ce soir' mais ratio matière première = inconnu.",
+      "existence_in_codebase": "ABSENT — fundamental schema gap",
+      "evidence": [
+        "Zero cost_price / unit_cost / purchase_price column on Item, ItemExtra, ItemVariation (grep confirmed)",
+        "ItemReportResource does not project any cost field (controller fully read)",
+        "SalesReportOverviewResource does not project margin/profit (grep returned empty)",
+        "No journal d'achats (no PurchaseOrder model)"
+      ],
+      "blocker_for_owner_night": false,
+      "min_v1_remediation": "Add nullable cost_price decimal to items + item_variations + item_extras. Project SUM(qty * cost_price) per day. Surface food_cost_pct = COGS / revenue in Z-report widget. Caveat: cost_price must be backfilled — owner-input required.",
+      "estimated_cost_v1": "L (3-5 days incl. backfill UI + Z-report enrichment + acceptance with owner)"
+    },
+    {
+      "id": "S6-P4-G3",
+      "feature": "Suggestion de réapprovisionnement (replenishment suggestion)",
+      "severity": "P1",
+      "owner_pain": "À la fermeture, owner doit deviner ce qu'il faut commander pour demain. Pas de liste auto 'à recommander'.",
+      "existence_in_codebase": "PARTIAL (primitive present, surfacing absent)",
+      "evidence": [
+        "stock_levels.threshold_low column exists + lowAlerts endpoint already surfaces on_hand <= threshold_low (StockRuptureDashboardController L92-122)",
+        "BUT no 'reorder_quantity' / 'pack_size' / 'lead_time_days' field — owner can see 'low' but cannot see 'commander combien'",
+        "No supplier link / no PurchaseOrder draft generation"
+      ],
+      "blocker_for_owner_night": true,
+      "min_v1_remediation": "Add target_stock + reorder_qty columns; transform lowAlerts into a 'replenishment suggestion list' with computed need = target_stock - on_hand. Phase 2: supplier-grouped PDF/email export.",
+      "estimated_cost_v1": "S-M (1 day schema + 0.5 day endpoint + 0.5 day Vue list)"
+    },
+    {
+      "id": "S6-P4-G4",
+      "feature": "Historique consommation (graphique 7-30j)",
+      "severity": "P2",
+      "owner_pain": "Owner ne peut pas voir tendance: 'le bol thaï se vend deux fois plus le vendredi'. Pas de courbe.",
+      "existence_in_codebase": "ABSENT (raw data exists, aggregation+chart absent)",
+      "evidence": [
+        "stock_movements is append-only with branch_id + stockable + delta + created_at — raw data SUPPORTS time-series aggregation",
+        "BUT no /api/admin/stock/consumption?from=&to=&group_by=day endpoint exists (grep)",
+        "No chart Vue component in resources/js/components/admin/stock/ — only StockRuptureDashboardComponent.vue (rupture-table only)",
+        "ItemsReportListComponent.vue is a flat table sorted by qty — no time bucketing"
+      ],
+      "blocker_for_owner_night": false,
+      "min_v1_remediation": "Add /api/admin/stock/consumption endpoint (GROUP BY DATE(created_at), stockable_id) + Vue ChartComponent (existing Chart.js in vendor.js). Reuse stock_movements_branch_level_created_idx index.",
+      "estimated_cost_v1": "M (2-3 days backend + chart)"
+    },
+    {
+      "id": "S6-P4-G5",
+      "feature": "Comparaison achat vs vente (purchased qty vs sold qty)",
+      "severity": "P2",
+      "owner_pain": "Owner ne peut pas détecter écart 'j'ai acheté 10 kg de viande, j'en ai vendu 6, où sont les 4?' — fondamental pour repérer vol/perte/erreur portion.",
+      "existence_in_codebase": "ABSENT — no purchase side at all",
+      "evidence": [
+        "No PurchaseOrder / GoodsReceipt / Invoice-supplier model in app/Models/ (find returned only ItemsReportExport)",
+        "stock_movements has 'manual_in' reason but no concept of 'received from supplier X' — just a numeric increment",
+        "Owner reconciliation = impossible because purchase side does not exist as data"
+      ],
+      "blocker_for_owner_night": false,
+      "min_v1_remediation": "V1 dépasse scope. V1.0.X minimum: turn 'manual_in' into a sub-typed event with supplier_id + invoice_ref. V2 SaaS: full supplier+PO module.",
+      "estimated_cost_v1": "L+ (5+ days for honest V1.0.X supplier-tagged manual_in)"
+    },
+    {
+      "id": "S6-P4-G6",
+      "feature": "Alerte expiration (DLC — Date Limite Consommation)",
+      "severity": "P1",
+      "owner_pain": "Aucune notification 'ces 3 saladiers arrivent à DLC demain'. Critical pour fast-food avec produits frais (viande hachée, salades préparées). Risque sanitaire + perte économique.",
+      "existence_in_codebase": "ABSENT — no expiry vocabulary in schema",
+      "evidence": [
+        "No expires_at / dlc / shelf_life_days column on any stock-adjacent table (grep across all migrations)",
+        "stock_levels schema has on_hand/reserved/threshold_low only — no expiry dimension",
+        "No batch / lot / serial tracking — current model is a single integer on_hand per (branch, stockable), so two batches with different DLC are indistinguishable",
+        "No notification system for expiry (PushNotification model exists for orders, no expiry trigger)"
+      ],
+      "blocker_for_owner_night": true,
+      "min_v1_remediation": "Honest V1 path: add nullable expires_at + batch tracking table (stock_batches: branch_id, stockable_id, on_hand, expires_at). Daily cron flags 'expires_within_24h' batches; dashboard widget. CAVEAT: requires rework of stock_movements to be batch-aware — significant.",
+      "estimated_cost_v1": "L (4-6 days incl. batch model + cron + UI)"
+    }
+  ],
+
+  "verdict": {
+    "global": "RED — owner end-of-day stock perspective is essentially non-existent in V1",
+    "reasoning": "The codebase has a clean technical stock primitive (StockLevel + append-only StockMovement + AvailabilityService) but treats stock purely as an AVAILABILITY problem (is the item orderable? auto-86 yes/no?), NOT as an OWNER-NIGHT INVENTORY problem (what did I lose, what did I sell vs buy, what expires, what to reorder, what is my food cost). 6/6 owner-night questions land on either ABSENT (4) or PARTIAL primitive without surfacing (2). The schema has no cost vocabulary and no expiry/batch vocabulary — both are structural gaps requiring migration work, not just controller polish.",
+    "p0_count": 0,
+    "p1_count": 3,
+    "p2_count": 3,
+    "blockers_for_owner_night_count": 3,
+    "v1_recommendation": "ACCEPT V1 ships without these owner-night features IF owner has been told explicitly that V1 LOCAL Le Cayenne = 'stock = ne pas vendre ce qui manque' and NOT 'stock = clôture comptable matière'. If owner expectation is full inventory module, V1 is NOT shippable as 'production-ready for owner closeout'. Defer G2 + G5 to V2/SaaS; treat G1 + G3 + G6 as V1.0.1 candidates IF owner gates."
+  },
+
+  "top_3": [
+    {
+      "rank": 1,
+      "gap_id": "S6-P4-G1",
+      "label": "Rapport pertes du jour ABSENT — stock_movements.reason ENUM has zero loss vocabulary",
+      "why_top": "Highest owner-pain-to-fix-cost ratio. Schema change (add ENUM value + UI flag) is M-size but unlocks the closeout question 'qu'est-ce qu'on a perdu?' which is the most asked owner-night question in fast-food."
+    },
+    {
+      "rank": 2,
+      "gap_id": "S6-P4-G6",
+      "label": "Alerte DLC ABSENT — no expires_at / batch / shelf_life column anywhere",
+      "why_top": "Sanitary + economic compounded risk. Fast-food fresh products (viande hachée, salades, sauces ouvertes) need DLC tracking — this is also a HACCP-adjacent compliance gap, not just a UX gap."
+    },
+    {
+      "rank": 3,
+      "gap_id": "S6-P4-G3",
+      "label": "Suggestion de réappro PARTIAL — threshold_low exists but no reorder_qty / target_stock primitive",
+      "why_top": "Cheapest win of the six. Owner currently sees 'these items are low' but not 'commande ces quantités'. Adding target_stock + auto-suggest is S-M effort and converts an existing widget from informative to actionable."
+    }
+  ],
+
+  "evidence_files": {
+    "primary_source_paths": [
+      "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Menu/AvailabilityService.php",
+      "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Stock/StockService.php",
+      "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/StockLevel.php",
+      "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/StockMovement.php",
+      "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/StockRuptureDashboardController.php",
+      "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/ItemsReportController.php",
+      "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_04_27_143120_create_stock_levels_table.php",
+      "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_04_27_143130_create_stock_movements_table.php",
+      "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/stock/StockRuptureDashboardComponent.vue"
+    ]
+  },
+
+  "open_questions_for_owner": [
+    "Owner Q: V1 Le Cayenne ship-as-is sans rapport pertes / DLC / réappro suggestion — accepted ou bloquant?",
+    "Owner Q: Veux-tu introduire cost_price (G2 COGS) maintenant en V1.0.1 ou repousser V2 SaaS? Backfill = 70-150 SKUs à saisir manuellement.",
+    "Owner Q: Si DLC ajouté (G6), accepter rework du modèle stock vers batch-tracked (lot avec expires_at)? Sinon 'expiry approximative item-level' acceptable comme V1.0.1?"
+  ],
+
+  "out_of_scope_for_v1": [
+    "Full supplier + PurchaseOrder module (G5) — V2/SaaS",
+    "Multi-batch DLC with FIFO/LIFO consumption — V2",
+    "Predictive reorder via ML consumption forecast — V2",
+    "Auto-COGS recompute on recipe change — V2"
+  ],
+
+  "frozen_zone_touched": false,
+  "nf525_touched": false,
+  "self_check": "Read-only audit. No code modified. All paths absolute. Evidence-cited with file path or grep verdict."
+}

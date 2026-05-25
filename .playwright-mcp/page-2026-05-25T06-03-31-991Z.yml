@@ -1,0 +1,202 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - link "Écran cuisine" [ref=e13] [cursor=pointer]:
+        - /url: /admin/kitchen-display-system
+        - generic [ref=e14]: Écran cuisine
+      - generic [ref=e15]:
+        - button "avatar Bonjour Admin " [ref=e16] [cursor=pointer]:
+          - img "avatar" [ref=e17]
+          - heading "Bonjour Admin" [level=3] [ref=e18]:
+            - text: Bonjour
+            - generic "Admin" [ref=e19]
+          - generic [ref=e20]: 
+        - generic:
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: PENDING_CREATE_3e69b24b3b84
+            - heading "0,00 €" [level=3]
+          - navigation:
+            - link " Modifier le profil":
+              - /url: /admin/profile/edit-profile
+              - generic: 
+              - generic: Modifier le profil
+            - link " Changer le mot de passe":
+              - /url: /admin/profile/change-password
+              - generic: 
+              - generic: Changer le mot de passe
+            - button " Déconnexion":
+              - generic: 
+              - generic: Déconnexion
+  - text:         
+  - button "Ouvrir l'historique des commandes du jour" [ref=e22] [cursor=pointer]:
+    - generic [ref=e23]: 📚
+    - generic [ref=e24]: Historique
+  - generic [ref=e25]:
+    - status [ref=e26]:
+      - generic [ref=e27]:
+        - img [ref=e29]
+        - generic [ref=e31]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=e32]: LOCAL
+    - region "Commande 760, source Borne, En cours, attente 0 minutes 27 secondes" [ref=e47]:
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e51]: "[A]"
+          - generic [ref=e52]:
+            - generic [ref=e53]: En cours
+            - generic [ref=e56]: Borne
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - generic [ref=e59]: N°
+            - text: "760"
+          - generic [ref=e60]:
+            - generic [ref=e61]: Attente
+            - generic [ref=e62]: 00:27
+      - region "Détails de la commande 760, défilable au clavier" [ref=e63]:
+        - generic [ref=e64]:
+          - generic [ref=e66]:
+            - generic [ref=e67]:
+              - text: "3"
+              - generic [ref=e68]: ×
+            - generic [ref=e69]: Sandwich Cayenne
+          - generic [ref=e71]:
+            - generic [ref=e72]: ·
+            - generic [ref=e73]: Sauce blanche, sans oignon, bien cuit
+        - generic [ref=e74]:
+          - generic [ref=e76]:
+            - generic [ref=e77]:
+              - text: "1"
+              - generic [ref=e78]: ×
+            - generic [ref=e79]: Sandwich Cayenne
+          - generic [ref=e81]:
+            - generic [ref=e82]: ·
+            - generic [ref=e83]: Pas de sel, sans gluten
+        - generic [ref=e84]:
+          - generic [ref=e86]:
+            - generic [ref=e87]:
+              - text: "3"
+              - generic [ref=e88]: ×
+            - generic [ref=e89]: Sandwich Cayenne
+          - generic [ref=e91]:
+            - generic [ref=e92]: ·
+            - generic [ref=e93]: Cuisson medium, ajout cornichons
+        - generic [ref=e94]:
+          - generic [ref=e96]:
+            - generic [ref=e97]:
+              - text: "1"
+              - generic [ref=e98]: ×
+            - generic [ref=e99]: Sandwich Cayenne
+          - generic [ref=e101]:
+            - generic [ref=e102]: ·
+            - generic [ref=e103]: Avec piment frais, sans tomate
+        - generic [ref=e104]:
+          - generic [ref=e106]:
+            - generic [ref=e107]:
+              - text: "3"
+              - generic [ref=e108]: ×
+            - generic [ref=e109]: Sandwich Cayenne
+          - generic [ref=e111]:
+            - generic [ref=e112]: ·
+            - generic [ref=e113]: Sauce blanche, sans oignon, bien cuit
+        - generic [ref=e114]:
+          - generic [ref=e116]:
+            - generic [ref=e117]:
+              - text: "1"
+              - generic [ref=e118]: ×
+            - generic [ref=e119]: Sandwich Cayenne
+          - generic [ref=e121]:
+            - generic [ref=e122]: ·
+            - generic [ref=e123]: Pas de sel, sans gluten
+        - generic [ref=e124]:
+          - generic [ref=e126]:
+            - generic [ref=e127]:
+              - text: "3"
+              - generic [ref=e128]: ×
+            - generic [ref=e129]: Sandwich Cayenne
+          - generic [ref=e131]:
+            - generic [ref=e132]: ·
+            - generic [ref=e133]: Cuisson medium, ajout cornichons
+        - generic [ref=e134]:
+          - generic [ref=e136]:
+            - generic [ref=e137]:
+              - text: "1"
+              - generic [ref=e138]: ×
+            - generic [ref=e139]: Sandwich Cayenne
+          - generic [ref=e141]:
+            - generic [ref=e142]: ·
+            - generic [ref=e143]: Avec piment frais, sans tomate
+        - generic [ref=e144]:
+          - generic [ref=e146]:
+            - generic [ref=e147]:
+              - text: "3"
+              - generic [ref=e148]: ×
+            - generic [ref=e149]: Sandwich Cayenne
+          - generic [ref=e151]:
+            - generic [ref=e152]: ·
+            - generic [ref=e153]: Sauce blanche, sans oignon, bien cuit
+        - generic [ref=e154]:
+          - generic [ref=e156]:
+            - generic [ref=e157]:
+              - text: "1"
+              - generic [ref=e158]: ×
+            - generic [ref=e159]: Sandwich Cayenne
+          - generic [ref=e161]:
+            - generic [ref=e162]: ·
+            - generic [ref=e163]: Pas de sel, sans gluten
+        - generic [ref=e164]:
+          - generic [ref=e166]:
+            - generic [ref=e167]:
+              - text: "1"
+              - generic [ref=e168]: ×
+            - generic [ref=e169]: Sandwich Cayenne
+          - generic [ref=e171]:
+            - generic [ref=e172]: ·
+            - generic [ref=e173]: Cuisson medium, ajout cornichons
+        - generic [ref=e174]:
+          - generic [ref=e176]:
+            - generic [ref=e177]:
+              - text: "3"
+              - generic [ref=e178]: ×
+            - generic [ref=e179]: Sandwich Cayenne
+          - generic [ref=e181]:
+            - generic [ref=e182]: ·
+            - generic [ref=e183]: Avec piment frais, sans tomate
+        - generic [ref=e184]:
+          - generic [ref=e186]:
+            - generic [ref=e187]:
+              - text: "1"
+              - generic [ref=e188]: ×
+            - generic [ref=e189]: Sandwich Cayenne
+          - generic [ref=e191]:
+            - generic [ref=e192]: ·
+            - generic [ref=e193]: Sauce blanche, sans oignon, bien cuit
+        - generic [ref=e194]:
+          - generic [ref=e196]:
+            - generic [ref=e197]:
+              - text: "2"
+              - generic [ref=e198]: ×
+            - generic [ref=e199]: Sandwich Cayenne
+          - generic [ref=e201]:
+            - generic [ref=e202]: ·
+            - generic [ref=e203]: Pas de sel, sans gluten
+        - generic [ref=e204]:
+          - generic [ref=e206]:
+            - generic [ref=e207]:
+              - text: "2"
+              - generic [ref=e208]: ×
+            - generic [ref=e209]: Sandwich Cayenne
+          - generic [ref=e211]:
+            - generic [ref=e212]: ·
+            - generic [ref=e213]: Cuisson medium, ajout cornichons
+      - button "Prêt" [ref=e214] [cursor=pointer]:
+        - img [ref=e215]
+        - generic [ref=e217]: Prêt

@@ -1,0 +1,664 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - link "Écran cuisine" [ref=e13] [cursor=pointer]:
+        - /url: /admin/kitchen-display-system
+        - generic [ref=e14]: Écran cuisine
+      - generic [ref=e15]:
+        - button "avatar Bonjour Admin " [ref=e16] [cursor=pointer]:
+          - img "avatar" [ref=e17]
+          - heading "Bonjour Admin" [level=3] [ref=e18]:
+            - text: Bonjour
+            - generic "Admin" [ref=e19]
+          - generic [ref=e20]: 
+        - generic:
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: PENDING_CREATE_3e69b24b3b84
+            - heading "0,00 €" [level=3]
+          - navigation:
+            - link " Modifier le profil":
+              - /url: /admin/profile/edit-profile
+              - generic: 
+              - generic: Modifier le profil
+            - link " Changer le mot de passe":
+              - /url: /admin/profile/change-password
+              - generic: 
+              - generic: Changer le mot de passe
+            - button " Déconnexion":
+              - generic: 
+              - generic: Déconnexion
+  - text:         
+  - button "Ouvrir l'historique des commandes du jour" [ref=e22] [cursor=pointer]:
+    - generic [ref=e23]: 📚
+    - generic [ref=e24]: Historique
+  - generic [ref=e25]:
+    - status [ref=e26]:
+      - generic [ref=e27]:
+        - img [ref=e29]
+        - generic [ref=e31]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=e32]: LOCAL
+    - generic [ref=e33]:
+      - region "Commande 129, source Borne, En cours, attente 13 minutes 18 secondes" [ref=e731]:
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e38]: "[A]"
+            - generic [ref=e39]:
+              - generic [ref=e40]: En cours
+              - generic [ref=e43]: Borne
+          - generic [ref=e44]:
+            - generic [ref=e45]:
+              - generic [ref=e46]: N°
+              - text: "129"
+            - generic [ref=e47]:
+              - generic [ref=e48]: Attente
+              - generic [ref=e49]: 13:18
+        - region "Détails de la commande 129, défilable au clavier" [ref=e50]:
+          - generic [ref=e53]:
+            - generic [ref=e54]:
+              - text: "2"
+              - generic [ref=e55]: ×
+            - generic [ref=e56]: Sandwich Cayenne
+          - generic [ref=e57]:
+            - generic [ref=e59]:
+              - generic [ref=e60]:
+                - text: "2"
+                - generic [ref=e61]: ×
+              - generic [ref=e62]: Sandwich Cayenne
+            - generic [ref=e64]:
+              - generic [ref=e65]: ·
+              - generic [ref=e66]: Sauce blanche
+          - generic [ref=e67]:
+            - generic [ref=e69]:
+              - generic [ref=e70]:
+                - text: "1"
+                - generic [ref=e71]: ×
+              - generic [ref=e72]: Sandwich Cayenne
+            - generic [ref=e74]:
+              - generic [ref=e75]: ·
+              - generic [ref=e76]: Sans oignon
+          - generic [ref=e77]:
+            - generic [ref=e79]:
+              - generic [ref=e80]:
+                - text: "3"
+                - generic [ref=e81]: ×
+              - generic [ref=e82]: Sandwich Cayenne
+            - generic [ref=e84]:
+              - generic [ref=e85]: ·
+              - generic [ref=e86]: Bien cuit
+          - generic [ref=e87]:
+            - generic [ref=e89]:
+              - generic [ref=e90]:
+                - text: "2"
+                - generic [ref=e91]: ×
+              - generic [ref=e92]: Sandwich Cayenne
+            - generic [ref=e94]:
+              - generic [ref=e95]: ·
+              - generic [ref=e96]: À emporter
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - text: "3"
+              - generic [ref=e101]: ×
+            - generic [ref=e102]: Sandwich Cayenne
+          - generic [ref=e103]:
+            - generic [ref=e105]:
+              - generic [ref=e106]:
+                - text: "2"
+                - generic [ref=e107]: ×
+              - generic [ref=e108]: Sandwich Cayenne
+            - generic [ref=e110]:
+              - generic [ref=e111]: ·
+              - generic [ref=e112]: Sauce blanche
+          - generic [ref=e113]:
+            - generic [ref=e115]:
+              - generic [ref=e116]:
+                - text: "2"
+                - generic [ref=e117]: ×
+              - generic [ref=e118]: Sandwich Cayenne
+            - generic [ref=e120]:
+              - generic [ref=e121]: ·
+              - generic [ref=e122]: Sans oignon
+          - generic [ref=e123]:
+            - generic [ref=e125]:
+              - generic [ref=e126]:
+                - text: "3"
+                - generic [ref=e127]: ×
+              - generic [ref=e128]: Sandwich Cayenne
+            - generic [ref=e130]:
+              - generic [ref=e131]: ·
+              - generic [ref=e132]: Bien cuit
+        - button "Prêt" [ref=e133] [cursor=pointer]:
+          - img [ref=e134]
+          - generic [ref=e136]: Prêt
+      - region "Commande 333, source Borne, En cours, attente 13 minutes 13 secondes" [ref=e732]:
+        - generic [ref=e139]:
+          - generic [ref=e140]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e141]: "[B]"
+            - generic [ref=e142]:
+              - generic [ref=e143]: En cours
+              - generic [ref=e146]: Borne
+          - generic [ref=e147]:
+            - generic [ref=e148]:
+              - generic [ref=e149]: N°
+              - text: "333"
+            - generic [ref=e150]:
+              - generic [ref=e151]: Attente
+              - generic [ref=e152]: 13:13
+        - region "Détails de la commande 333, défilable au clavier" [ref=e153]:
+          - generic [ref=e156]:
+            - generic [ref=e157]:
+              - text: "1"
+              - generic [ref=e158]: ×
+            - generic [ref=e159]: Sandwich Cayenne
+          - generic [ref=e160]:
+            - generic [ref=e162]:
+              - generic [ref=e163]:
+                - text: "2"
+                - generic [ref=e164]: ×
+              - generic [ref=e165]: Sandwich Cayenne
+            - generic [ref=e167]:
+              - generic [ref=e168]: ·
+              - generic [ref=e169]: Sauce blanche
+          - generic [ref=e170]:
+            - generic [ref=e172]:
+              - generic [ref=e173]:
+                - text: "1"
+                - generic [ref=e174]: ×
+              - generic [ref=e175]: Sandwich Cayenne
+            - generic [ref=e177]:
+              - generic [ref=e178]: ·
+              - generic [ref=e179]: Sans oignon
+          - generic [ref=e180]:
+            - generic [ref=e182]:
+              - generic [ref=e183]:
+                - text: "3"
+                - generic [ref=e184]: ×
+              - generic [ref=e185]: Sandwich Cayenne
+            - generic [ref=e187]:
+              - generic [ref=e188]: ·
+              - generic [ref=e189]: Bien cuit
+          - generic [ref=e190]:
+            - generic [ref=e192]:
+              - generic [ref=e193]:
+                - text: "3"
+                - generic [ref=e194]: ×
+              - generic [ref=e195]: Sandwich Cayenne
+            - generic [ref=e197]:
+              - generic [ref=e198]: ·
+              - generic [ref=e199]: À emporter
+        - button "Prêt" [ref=e200] [cursor=pointer]:
+          - img [ref=e201]
+          - generic [ref=e203]: Prêt
+      - region "Commande 438, source Borne, En cours, attente 13 minutes 9 secondes" [ref=e733]:
+        - generic [ref=e206]:
+          - generic [ref=e207]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e208]: "[C]"
+            - generic [ref=e209]:
+              - generic [ref=e210]: En cours
+              - generic [ref=e213]: Borne
+          - generic [ref=e214]:
+            - generic [ref=e215]:
+              - generic [ref=e216]: N°
+              - text: "438"
+            - generic [ref=e217]:
+              - generic [ref=e218]: Attente
+              - generic [ref=e219]: 13:09
+        - region "Détails de la commande 438, défilable au clavier" [ref=e220]:
+          - generic [ref=e223]:
+            - generic [ref=e224]:
+              - text: "2"
+              - generic [ref=e225]: ×
+            - generic [ref=e226]: Sandwich Cayenne
+          - generic [ref=e227]:
+            - generic [ref=e229]:
+              - generic [ref=e230]:
+                - text: "1"
+                - generic [ref=e231]: ×
+              - generic [ref=e232]: Sandwich Cayenne
+            - generic [ref=e234]:
+              - generic [ref=e235]: ·
+              - generic [ref=e236]: Sauce blanche
+          - generic [ref=e237]:
+            - generic [ref=e239]:
+              - generic [ref=e240]:
+                - text: "2"
+                - generic [ref=e241]: ×
+              - generic [ref=e242]: Sandwich Cayenne
+            - generic [ref=e244]:
+              - generic [ref=e245]: ·
+              - generic [ref=e246]: Sans oignon
+          - generic [ref=e247]:
+            - generic [ref=e249]:
+              - generic [ref=e250]:
+                - text: "2"
+                - generic [ref=e251]: ×
+              - generic [ref=e252]: Sandwich Cayenne
+            - generic [ref=e254]:
+              - generic [ref=e255]: ·
+              - generic [ref=e256]: Bien cuit
+          - generic [ref=e257]:
+            - generic [ref=e259]:
+              - generic [ref=e260]:
+                - text: "3"
+                - generic [ref=e261]: ×
+              - generic [ref=e262]: Sandwich Cayenne
+            - generic [ref=e264]:
+              - generic [ref=e265]: ·
+              - generic [ref=e266]: À emporter
+        - button "Prêt" [ref=e267] [cursor=pointer]:
+          - img [ref=e268]
+          - generic [ref=e270]: Prêt
+      - region "Commande 730, source Borne, En cours, attente 13 minutes 4 secondes" [ref=e734]:
+        - generic [ref=e273]:
+          - generic [ref=e274]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e275]: "[D]"
+            - generic [ref=e276]:
+              - generic [ref=e277]: En cours
+              - generic [ref=e280]: Borne
+          - generic [ref=e281]:
+            - generic [ref=e282]:
+              - generic [ref=e283]: N°
+              - text: "730"
+            - generic [ref=e284]:
+              - generic [ref=e285]: Attente
+              - generic [ref=e286]: 13:04
+        - region "Détails de la commande 730, défilable au clavier" [ref=e287]:
+          - generic [ref=e290]:
+            - generic [ref=e291]:
+              - text: "3"
+              - generic [ref=e292]: ×
+            - generic [ref=e293]: Sandwich Cayenne
+          - generic [ref=e294]:
+            - generic [ref=e296]:
+              - generic [ref=e297]:
+                - text: "2"
+                - generic [ref=e298]: ×
+              - generic [ref=e299]: Sandwich Cayenne
+            - generic [ref=e301]:
+              - generic [ref=e302]: ·
+              - generic [ref=e303]: Sauce blanche
+          - generic [ref=e304]:
+            - generic [ref=e306]:
+              - generic [ref=e307]:
+                - text: "1"
+                - generic [ref=e308]: ×
+              - generic [ref=e309]: Sandwich Cayenne
+            - generic [ref=e311]:
+              - generic [ref=e312]: ·
+              - generic [ref=e313]: Sans oignon
+          - generic [ref=e314]:
+            - generic [ref=e316]:
+              - generic [ref=e317]:
+                - text: "2"
+                - generic [ref=e318]: ×
+              - generic [ref=e319]: Sandwich Cayenne
+            - generic [ref=e321]:
+              - generic [ref=e322]: ·
+              - generic [ref=e323]: Bien cuit
+          - generic [ref=e324]:
+            - generic [ref=e326]:
+              - generic [ref=e327]:
+                - text: "1"
+                - generic [ref=e328]: ×
+              - generic [ref=e329]: Sandwich Cayenne
+            - generic [ref=e331]:
+              - generic [ref=e332]: ·
+              - generic [ref=e333]: À emporter
+          - generic [ref=e336]:
+            - generic [ref=e337]:
+              - text: "1"
+              - generic [ref=e338]: ×
+            - generic [ref=e339]: Sandwich Cayenne
+          - generic [ref=e340]:
+            - generic [ref=e342]:
+              - generic [ref=e343]:
+                - text: "3"
+                - generic [ref=e344]: ×
+              - generic [ref=e345]: Sandwich Cayenne
+            - generic [ref=e347]:
+              - generic [ref=e348]: ·
+              - generic [ref=e349]: Sauce blanche
+          - generic [ref=e350]:
+            - generic [ref=e352]:
+              - generic [ref=e353]:
+                - text: "1"
+                - generic [ref=e354]: ×
+              - generic [ref=e355]: Sandwich Cayenne
+            - generic [ref=e357]:
+              - generic [ref=e358]: ·
+              - generic [ref=e359]: Sans oignon
+          - generic [ref=e360]:
+            - generic [ref=e362]:
+              - generic [ref=e363]:
+                - text: "2"
+                - generic [ref=e364]: ×
+              - generic [ref=e365]: Sandwich Cayenne
+            - generic [ref=e367]:
+              - generic [ref=e368]: ·
+              - generic [ref=e369]: Bien cuit
+          - generic [ref=e370]:
+            - generic [ref=e372]:
+              - generic [ref=e373]:
+                - text: "2"
+                - generic [ref=e374]: ×
+              - generic [ref=e375]: Sandwich Cayenne
+            - generic [ref=e377]:
+              - generic [ref=e378]: ·
+              - generic [ref=e379]: À emporter
+        - button "Prêt" [ref=e380] [cursor=pointer]:
+          - img [ref=e381]
+          - generic [ref=e383]: Prêt
+      - region "Commande 817, source Borne, En cours, attente 13 minutes 2 secondes" [ref=e735]:
+        - generic [ref=e386]:
+          - generic [ref=e387]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e388]: "[E]"
+            - generic [ref=e389]:
+              - generic [ref=e390]: En cours
+              - generic [ref=e393]: Borne
+          - generic [ref=e394]:
+            - generic [ref=e395]:
+              - generic [ref=e396]: N°
+              - text: "817"
+            - generic [ref=e397]:
+              - generic [ref=e398]: Attente
+              - generic [ref=e399]: 13:02
+        - region "Détails de la commande 817, défilable au clavier" [ref=e400]:
+          - generic [ref=e403]:
+            - generic [ref=e404]:
+              - text: "3"
+              - generic [ref=e405]: ×
+            - generic [ref=e406]: Sandwich Cayenne
+          - generic [ref=e407]:
+            - generic [ref=e409]:
+              - generic [ref=e410]:
+                - text: "1"
+                - generic [ref=e411]: ×
+              - generic [ref=e412]: Sandwich Cayenne
+            - generic [ref=e414]:
+              - generic [ref=e415]: ·
+              - generic [ref=e416]: Sauce blanche
+          - generic [ref=e417]:
+            - generic [ref=e419]:
+              - generic [ref=e420]:
+                - text: "2"
+                - generic [ref=e421]: ×
+              - generic [ref=e422]: Sandwich Cayenne
+            - generic [ref=e424]:
+              - generic [ref=e425]: ·
+              - generic [ref=e426]: Sans oignon
+          - generic [ref=e427]:
+            - generic [ref=e429]:
+              - generic [ref=e430]:
+                - text: "2"
+                - generic [ref=e431]: ×
+              - generic [ref=e432]: Sandwich Cayenne
+            - generic [ref=e434]:
+              - generic [ref=e435]: ·
+              - generic [ref=e436]: Bien cuit
+          - generic [ref=e437]:
+            - generic [ref=e439]:
+              - generic [ref=e440]:
+                - text: "3"
+                - generic [ref=e441]: ×
+              - generic [ref=e442]: Sandwich Cayenne
+            - generic [ref=e444]:
+              - generic [ref=e445]: ·
+              - generic [ref=e446]: À emporter
+          - generic [ref=e449]:
+            - generic [ref=e450]:
+              - text: "2"
+              - generic [ref=e451]: ×
+            - generic [ref=e452]: Sandwich Cayenne
+          - generic [ref=e453]:
+            - generic [ref=e455]:
+              - generic [ref=e456]:
+                - text: "2"
+                - generic [ref=e457]: ×
+              - generic [ref=e458]: Sandwich Cayenne
+            - generic [ref=e460]:
+              - generic [ref=e461]: ·
+              - generic [ref=e462]: Sauce blanche
+          - generic [ref=e463]:
+            - generic [ref=e465]:
+              - generic [ref=e466]:
+                - text: "1"
+                - generic [ref=e467]: ×
+              - generic [ref=e468]: Sandwich Cayenne
+            - generic [ref=e470]:
+              - generic [ref=e471]: ·
+              - generic [ref=e472]: Sans oignon
+          - generic [ref=e473]:
+            - generic [ref=e475]:
+              - generic [ref=e476]:
+                - text: "3"
+                - generic [ref=e477]: ×
+              - generic [ref=e478]: Sandwich Cayenne
+            - generic [ref=e480]:
+              - generic [ref=e481]: ·
+              - generic [ref=e482]: Bien cuit
+          - generic [ref=e483]:
+            - generic [ref=e485]:
+              - generic [ref=e486]:
+                - text: "1"
+                - generic [ref=e487]: ×
+              - generic [ref=e488]: Sandwich Cayenne
+            - generic [ref=e490]:
+              - generic [ref=e491]: ·
+              - generic [ref=e492]: À emporter
+          - generic [ref=e495]:
+            - generic [ref=e496]:
+              - text: "2"
+              - generic [ref=e497]: ×
+            - generic [ref=e498]: Sandwich Cayenne
+        - button "Prêt" [ref=e499] [cursor=pointer]:
+          - img [ref=e500]
+          - generic [ref=e502]: Prêt
+      - region "Commande 240, source Borne, En cours, attente 1 minutes 40 secondes" [ref=e736]:
+        - generic [ref=e505]:
+          - generic [ref=e506]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e507]: "[F]"
+            - generic [ref=e508]:
+              - generic [ref=e509]: En cours
+              - generic [ref=e512]: Borne
+          - generic [ref=e513]:
+            - generic [ref=e514]:
+              - generic [ref=e515]: N°
+              - text: "240"
+            - generic [ref=e516]:
+              - generic [ref=e517]: Attente
+              - generic [ref=e518]: 01:40
+        - region "Détails de la commande 240, défilable au clavier" [ref=e519]:
+          - generic [ref=e522]:
+            - generic [ref=e523]:
+              - text: "2"
+              - generic [ref=e524]: ×
+            - generic [ref=e525]: Sandwich Cayenne
+          - generic [ref=e526]:
+            - generic [ref=e528]:
+              - generic [ref=e529]:
+                - text: "3"
+                - generic [ref=e530]: ×
+              - generic [ref=e531]: Sandwich Cayenne
+            - generic [ref=e533]:
+              - generic [ref=e534]: ·
+              - generic [ref=e535]: Sauce blanche
+          - generic [ref=e536]:
+            - generic [ref=e538]:
+              - generic [ref=e539]:
+                - text: "3"
+                - generic [ref=e540]: ×
+              - generic [ref=e541]: Sandwich Cayenne
+            - generic [ref=e543]:
+              - generic [ref=e544]: ·
+              - generic [ref=e545]: Sans oignon
+        - button "Prêt" [ref=e546] [cursor=pointer]:
+          - img [ref=e547]
+          - generic [ref=e549]: Prêt
+      - region "Commande 873, source Borne, En cours, attente 1 minutes 3 secondes" [ref=e737]:
+        - generic [ref=e552]:
+          - generic [ref=e553]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e554]: "[G]"
+            - generic [ref=e555]:
+              - generic [ref=e556]: En cours
+              - generic [ref=e559]: Borne
+          - generic [ref=e560]:
+            - generic [ref=e561]:
+              - generic [ref=e562]: N°
+              - text: "873"
+            - generic [ref=e563]:
+              - generic [ref=e564]: Attente
+              - generic [ref=e565]: 01:03
+        - region "Détails de la commande 873, défilable au clavier" [ref=e566]:
+          - generic [ref=e569]:
+            - generic [ref=e570]:
+              - text: "3"
+              - generic [ref=e571]: ×
+            - generic [ref=e572]: Sandwich Cayenne
+          - generic [ref=e573]:
+            - generic [ref=e575]:
+              - generic [ref=e576]:
+                - text: "1"
+                - generic [ref=e577]: ×
+              - generic [ref=e578]: Sandwich Cayenne
+            - generic [ref=e580]:
+              - generic [ref=e581]: ·
+              - generic [ref=e582]: Sauce blanche
+          - generic [ref=e583]:
+            - generic [ref=e585]:
+              - generic [ref=e586]:
+                - text: "1"
+                - generic [ref=e587]: ×
+              - generic [ref=e588]: Sandwich Cayenne
+            - generic [ref=e590]:
+              - generic [ref=e591]: ·
+              - generic [ref=e592]: Sans oignon
+          - generic [ref=e593]:
+            - generic [ref=e595]:
+              - generic [ref=e596]:
+                - text: "2"
+                - generic [ref=e597]: ×
+              - generic [ref=e598]: Sandwich Cayenne
+            - generic [ref=e600]:
+              - generic [ref=e601]: ·
+              - generic [ref=e602]: Bien cuit
+          - generic [ref=e603]:
+            - generic [ref=e605]:
+              - generic [ref=e606]:
+                - text: "3"
+                - generic [ref=e607]: ×
+              - generic [ref=e608]: Sandwich Cayenne
+            - generic [ref=e610]:
+              - generic [ref=e611]: ·
+              - generic [ref=e612]: À emporter
+        - button "Prêt" [ref=e613] [cursor=pointer]:
+          - img [ref=e614]
+          - generic [ref=e616]: Prêt
+      - region "Commande 990, source Borne, En cours, attente 0 minutes 15 secondes" [ref=e738]:
+        - generic [ref=e619]:
+          - generic [ref=e620]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e621]: "[H]"
+            - generic [ref=e622]:
+              - generic [ref=e623]: En cours
+              - generic [ref=e626]: Borne
+          - generic [ref=e627]:
+            - generic [ref=e628]:
+              - generic [ref=e629]: N°
+              - text: "990"
+            - generic [ref=e630]:
+              - generic [ref=e631]: Attente
+              - generic [ref=e632]: 00:15
+        - region "Détails de la commande 990, défilable au clavier" [ref=e633]:
+          - generic [ref=e636]:
+            - generic [ref=e637]:
+              - text: "1"
+              - generic [ref=e638]: ×
+            - generic [ref=e639]: Sandwich Cayenne
+          - generic [ref=e640]:
+            - generic [ref=e642]:
+              - generic [ref=e643]:
+                - text: "3"
+                - generic [ref=e644]: ×
+              - generic [ref=e645]: Sandwich Cayenne
+            - generic [ref=e647]:
+              - generic [ref=e648]: ·
+              - generic [ref=e649]: Sauce blanche
+          - generic [ref=e650]:
+            - generic [ref=e652]:
+              - generic [ref=e653]:
+                - text: "3"
+                - generic [ref=e654]: ×
+              - generic [ref=e655]: Sandwich Cayenne
+            - generic [ref=e657]:
+              - generic [ref=e658]: ·
+              - generic [ref=e659]: Sans oignon
+          - generic [ref=e660]:
+            - generic [ref=e662]:
+              - generic [ref=e663]:
+                - text: "2"
+                - generic [ref=e664]: ×
+              - generic [ref=e665]: Sandwich Cayenne
+            - generic [ref=e667]:
+              - generic [ref=e668]: ·
+              - generic [ref=e669]: Bien cuit
+          - generic [ref=e670]:
+            - generic [ref=e672]:
+              - generic [ref=e673]:
+                - text: "3"
+                - generic [ref=e674]: ×
+              - generic [ref=e675]: Sandwich Cayenne
+            - generic [ref=e677]:
+              - generic [ref=e678]: ·
+              - generic [ref=e679]: À emporter
+          - generic [ref=e682]:
+            - generic [ref=e683]:
+              - text: "3"
+              - generic [ref=e684]: ×
+            - generic [ref=e685]: Sandwich Cayenne
+          - generic [ref=e686]:
+            - generic [ref=e688]:
+              - generic [ref=e689]:
+                - text: "2"
+                - generic [ref=e690]: ×
+              - generic [ref=e691]: Sandwich Cayenne
+            - generic [ref=e693]:
+              - generic [ref=e694]: ·
+              - generic [ref=e695]: Sauce blanche
+          - generic [ref=e696]:
+            - generic [ref=e698]:
+              - generic [ref=e699]:
+                - text: "1"
+                - generic [ref=e700]: ×
+              - generic [ref=e701]: Sandwich Cayenne
+            - generic [ref=e703]:
+              - generic [ref=e704]: ·
+              - generic [ref=e705]: Sans oignon
+          - generic [ref=e706]:
+            - generic [ref=e708]:
+              - generic [ref=e709]:
+                - text: "2"
+                - generic [ref=e710]: ×
+              - generic [ref=e711]: Sandwich Cayenne
+            - generic [ref=e713]:
+              - generic [ref=e714]: ·
+              - generic [ref=e715]: Bien cuit
+          - generic [ref=e716]:
+            - generic [ref=e718]:
+              - generic [ref=e719]:
+                - text: "1"
+                - generic [ref=e720]: ×
+              - generic [ref=e721]: Sandwich Cayenne
+            - generic [ref=e723]:
+              - generic [ref=e724]: ·
+              - generic [ref=e725]: À emporter
+        - button "Prêt" [ref=e726] [cursor=pointer]:
+          - img [ref=e727]
+          - generic [ref=e729]: Prêt

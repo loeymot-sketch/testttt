@@ -1,0 +1,21 @@
+- generic [ref=e43]:
+  - generic [ref=e44] [cursor=pointer]:
+    - button "Paramètres d'accessibilité" [ref=e46]:
+      - img [ref=e47]
+    - generic:
+      - generic: 🌮
+      - generic: 🍔
+      - generic: 🍟
+    - generic [ref=e53]:
+      - generic [ref=e56]:
+        - heading "Bienvenue !" [level=2] [ref=e57]
+        - paragraph [ref=e58]: Commandez en quelques touches
+      - img [ref=e63]
+      - group "Choisir le mode de commande" [ref=e65]:
+        - button "À emporter Je récupère ma commande" [ref=e66]:
+          - img [ref=e68]
+          - generic [ref=e70]:
+            - generic [ref=e71]: À emporter
+            - generic [ref=e72]: Je récupère ma commande
+      - paragraph [ref=e73]: Choisissez une option pour commencer
+  - status

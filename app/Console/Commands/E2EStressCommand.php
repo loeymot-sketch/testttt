@@ -404,14 +404,32 @@ class E2EStressCommand extends Command
      */
     private function minimalPosOrderPayload(int $branchId): array
     {
+        // [F.2 SOAK 2026-05-23] Repair the three named-422 fields surfaced by
+        // PosController OrderRequest validation (is_advance_order + source +
+        // non-empty items). Pattern mirrors minimalKioskOrderPayload above
+        // (the working template). source=POS (15), order_type=POS (15),
+        // single-line stress order item id=1 qty=1. Repair is scope-minimal
+        // (only the named-required fields) — no behavioural change to the
+        // command's invariant-check semantics.
+        // PosOrderRequest extends OrderRequest and adds pos_payment_method
+        // (PosPaymentMethod enum) + conditional fields per method. CASH=1
+        // needs pos_received_amount; CARD/MOBILE/OTHER/TR need pos_payment_note.
+        // Using CASH minimises the conditional rule surface (lowest validation
+        // friction → cleanest soak signal on the fiscal/audit pipeline).
         return [
-            'branch_id'      => $branchId,
-            'order_type'     => \App\Enums\OrderType::POS,
-            'payment_method' => \App\Enums\PaymentGateway::CARD,
-            'items'          => json_encode([]),
-            'total'          => 0,
-            'subtotal'       => 0,
-            'discount'       => 0,
+            'branch_id'           => $branchId,
+            'order_type'          => \App\Enums\OrderType::POS,
+            'is_advance_order'    => 0,
+            'source'              => \App\Enums\Source::POS,
+            'payment_method'      => \App\Enums\PaymentGateway::CARD,
+            'pos_payment_method'  => \App\Enums\PosPaymentMethod::CASH,
+            'pos_received_amount' => 1000,
+            'items'               => json_encode([
+                ['item_id' => 1, 'quantity' => 1],
+            ]),
+            'total'    => 0,
+            'subtotal' => 0,
+            'discount' => 0,
         ];
     }
 

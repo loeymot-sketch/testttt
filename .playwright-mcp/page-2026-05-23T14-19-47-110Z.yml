@@ -1,0 +1,363 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=e12] [cursor=pointer]:
+            - generic [ref=e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=e14]:
+              - generic [ref=e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=e17]:
+          - link " Tableau de bord" [ref=e19] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e20]: 
+            - generic [ref=e21]: Tableau de bord
+          - button "flag" [ref=e24] [cursor=pointer]:
+            - img "flag" [ref=e25]
+      - generic [ref=e26]:
+        - button "avatar Bonjour Admin Le Cayenne " [ref=e27] [cursor=pointer]:
+          - img "avatar" [ref=e28]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=e29]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=e30]
+          - generic [ref=e31]: 
+        - generic:
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "0.00€" [level=3]
+          - navigation:
+            - link " Modifier le profil":
+              - /url: /admin/profile/edit-profile
+              - generic: 
+              - generic: Modifier le profil
+            - link " Changer le mot de passe":
+              - /url: /admin/profile/change-password
+              - generic: 
+              - generic: Changer le mot de passe
+            - button " Déconnexion":
+              - generic: 
+              - generic: Déconnexion
+  - text:                     
+  - button "Ouvrir l'historique des commandes du jour" [ref=e33] [cursor=pointer]:
+    - generic [ref=e34]: 📚
+    - generic [ref=e35]: Historique
+  - generic [ref=e36]:
+    - status [ref=e37]:
+      - generic [ref=e38]:
+        - img [ref=e40]
+        - generic [ref=e42]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=e43]: LOCAL
+    - generic [ref=e57]:
+      - region "Commande 901, source Caisse, En cours, attente 9 minutes 48 secondes" [ref=e403]:
+        - generic [ref=e60]:
+          - generic [ref=e61]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e62]: "[A]"
+            - generic [ref=e63]:
+              - generic [ref=e64]: En cours
+              - generic [ref=e67]: Caisse
+          - generic [ref=e68]:
+            - generic [ref=e69]:
+              - generic [ref=e70]: N°
+              - text: "901"
+            - generic [ref=e71]:
+              - generic [ref=e72]: Attente
+              - generic [ref=e73]: 09:48
+        - region "Détails de la commande 901, défilable au clavier" [ref=e74]
+        - button "Prêt" [ref=e75] [cursor=pointer]:
+          - img [ref=e76]
+          - generic [ref=e78]: Prêt
+      - region "Commande 803, source Caisse, En cours, attente 4 minutes 0 secondes" [ref=e404]:
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e83]: "[B]"
+            - generic [ref=e84]:
+              - generic [ref=e85]: En cours
+              - generic [ref=e88]: Caisse
+          - generic [ref=e89]:
+            - generic [ref=e90]:
+              - generic [ref=e91]: N°
+              - text: "803"
+            - generic [ref=e92]:
+              - generic [ref=e93]: Attente
+              - generic [ref=e94]: 04:00
+        - region "Détails de la commande 803, défilable au clavier" [ref=e95]:
+          - generic [ref=e98]:
+            - generic [ref=e99]:
+              - text: "1"
+              - generic [ref=e100]: ×
+            - generic [ref=e101]: Menu (Frites + Boisson)
+        - button "Prêt" [ref=e102] [cursor=pointer]:
+          - img [ref=e103]
+          - generic [ref=e105]: Prêt
+      - region "Commande 804, source Caisse, En cours, attente 4 minutes 0 secondes" [ref=e405]:
+        - generic [ref=e108]:
+          - generic [ref=e109]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e110]: "[C]"
+            - generic [ref=e111]:
+              - generic [ref=e112]: En cours
+              - generic [ref=e115]: Caisse
+          - generic [ref=e116]:
+            - generic [ref=e117]:
+              - generic [ref=e118]: N°
+              - text: "804"
+            - generic [ref=e119]:
+              - generic [ref=e120]: Attente
+              - generic [ref=e121]: 04:00
+        - region "Détails de la commande 804, défilable au clavier" [ref=e122]:
+          - generic [ref=e125]:
+            - generic [ref=e126]:
+              - text: "1"
+              - generic [ref=e127]: ×
+            - generic [ref=e128]: Menu (Frites + Boisson)
+        - button "Prêt" [ref=e129] [cursor=pointer]:
+          - img [ref=e130]
+          - generic [ref=e132]: Prêt
+      - region "Commande 805, source Caisse, En cours, attente 4 minutes 0 secondes" [ref=e406]:
+        - generic [ref=e135]:
+          - generic [ref=e136]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e137]: "[D]"
+            - generic [ref=e138]:
+              - generic [ref=e139]: En cours
+              - generic [ref=e142]: Caisse
+          - generic [ref=e143]:
+            - generic [ref=e144]:
+              - generic [ref=e145]: N°
+              - text: "805"
+            - generic [ref=e146]:
+              - generic [ref=e147]: Attente
+              - generic [ref=e148]: 04:00
+        - region "Détails de la commande 805, défilable au clavier" [ref=e149]:
+          - generic [ref=e152]:
+            - generic [ref=e153]:
+              - text: "1"
+              - generic [ref=e154]: ×
+            - generic [ref=e155]: Menu (Frites + Boisson)
+        - button "Prêt" [ref=e156] [cursor=pointer]:
+          - img [ref=e157]
+          - generic [ref=e159]: Prêt
+      - region "Commande 806, source Caisse, En cours, attente 4 minutes 0 secondes" [ref=e407]:
+        - generic [ref=e162]:
+          - generic [ref=e163]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e164]: "[E]"
+            - generic [ref=e165]:
+              - generic [ref=e166]: En cours
+              - generic [ref=e169]: Caisse
+          - generic [ref=e170]:
+            - generic [ref=e171]:
+              - generic [ref=e172]: N°
+              - text: "806"
+            - generic [ref=e173]:
+              - generic [ref=e174]: Attente
+              - generic [ref=e175]: 04:00
+        - region "Détails de la commande 806, défilable au clavier" [ref=e176]:
+          - generic [ref=e179]:
+            - generic [ref=e180]:
+              - text: "1"
+              - generic [ref=e181]: ×
+            - generic [ref=e182]: Menu (Frites + Boisson)
+        - button "Prêt" [ref=e183] [cursor=pointer]:
+          - img [ref=e184]
+          - generic [ref=e186]: Prêt
+      - region "Commande 807, source Caisse, En cours, attente 4 minutes 0 secondes" [ref=e408]:
+        - generic [ref=e189]:
+          - generic [ref=e190]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e191]: "[F]"
+            - generic [ref=e192]:
+              - generic [ref=e193]: En cours
+              - generic [ref=e196]: Caisse
+          - generic [ref=e197]:
+            - generic [ref=e198]:
+              - generic [ref=e199]: N°
+              - text: "807"
+            - generic [ref=e200]:
+              - generic [ref=e201]: Attente
+              - generic [ref=e202]: 04:00
+        - region "Détails de la commande 807, défilable au clavier" [ref=e203]:
+          - generic [ref=e206]:
+            - generic [ref=e207]:
+              - text: "1"
+              - generic [ref=e208]: ×
+            - generic [ref=e209]: Menu (Frites + Boisson)
+        - button "Prêt" [ref=e210] [cursor=pointer]:
+          - img [ref=e211]
+          - generic [ref=e213]: Prêt
+      - region "Commande 808, source Caisse, En cours, attente 4 minutes 0 secondes" [ref=e409]:
+        - generic [ref=e216]:
+          - generic [ref=e217]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e218]: "[G]"
+            - generic [ref=e219]:
+              - generic [ref=e220]: En cours
+              - generic [ref=e223]: Caisse
+          - generic [ref=e224]:
+            - generic [ref=e225]:
+              - generic [ref=e226]: N°
+              - text: "808"
+            - generic [ref=e227]:
+              - generic [ref=e228]: Attente
+              - generic [ref=e229]: 04:00
+        - region "Détails de la commande 808, défilable au clavier" [ref=e230]:
+          - generic [ref=e233]:
+            - generic [ref=e234]:
+              - text: "1"
+              - generic [ref=e235]: ×
+            - generic [ref=e236]: Menu (Frites + Boisson)
+        - button "Prêt" [ref=e237] [cursor=pointer]:
+          - img [ref=e238]
+          - generic [ref=e240]: Prêt
+      - region "Commande 999, source Caisse, En cours, attente 0 minutes 13 secondes" [ref=e410]:
+        - generic [ref=e243]:
+          - generic [ref=e244]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e245]: "[H]"
+            - generic [ref=e246]:
+              - generic [ref=e247]: En cours
+              - generic [ref=e250]: Caisse
+          - generic [ref=e251]:
+            - generic [ref=e252]:
+              - generic [ref=e253]: N°
+              - text: "999"
+            - generic [ref=e254]:
+              - generic [ref=e255]: Attente
+              - generic [ref=e256]: 00:13
+        - region "Détails de la commande 999, défilable au clavier" [ref=e257]:
+          - generic [ref=e258]:
+            - generic [ref=e260]:
+              - generic [ref=e261]:
+                - text: "1"
+                - generic [ref=e262]: ×
+              - generic [ref=e263]: Menu (Frites + Boisson)
+            - generic [ref=e265]:
+              - generic [ref=e266]: Choix
+              - generic [ref=e267]: ":"
+            - generic [ref=e269]:
+              - generic [ref=e270]: ·
+              - generic [ref=e271]: Note client 1
+          - generic [ref=e272]:
+            - generic [ref=e274]:
+              - generic [ref=e275]:
+                - text: "1"
+                - generic [ref=e276]: ×
+              - generic [ref=e277]: Frites Seules
+            - generic [ref=e279]:
+              - generic [ref=e280]: Choix
+              - generic [ref=e281]: ":"
+            - generic [ref=e283]:
+              - generic [ref=e284]: ·
+              - generic [ref=e285]: Note client 2
+          - generic [ref=e286]:
+            - generic [ref=e288]:
+              - generic [ref=e289]:
+                - text: "1"
+                - generic [ref=e290]: ×
+              - generic [ref=e291]: Boisson Seule
+            - generic [ref=e293]:
+              - generic [ref=e294]: Choix
+              - generic [ref=e295]: ":"
+            - generic [ref=e297]:
+              - generic [ref=e298]: ·
+              - generic [ref=e299]: Note client 3
+          - generic [ref=e300]:
+            - generic [ref=e302]:
+              - generic [ref=e303]:
+                - text: "1"
+                - generic [ref=e304]: ×
+              - generic [ref=e305]: Cheddar
+            - generic [ref=e307]:
+              - generic [ref=e308]: Choix
+              - generic [ref=e309]: ":"
+          - generic [ref=e310]:
+            - generic [ref=e312]:
+              - generic [ref=e313]:
+                - text: "1"
+                - generic [ref=e314]: ×
+              - generic [ref=e315]: Raclette
+            - generic [ref=e317]:
+              - generic [ref=e318]: Choix
+              - generic [ref=e319]: ":"
+          - generic [ref=e320]:
+            - generic [ref=e322]:
+              - generic [ref=e323]:
+                - text: "1"
+                - generic [ref=e324]: ×
+              - generic [ref=e325]: Emmental
+            - generic [ref=e327]:
+              - generic [ref=e328]: Choix
+              - generic [ref=e329]: ":"
+          - generic [ref=e330]:
+            - generic [ref=e332]:
+              - generic [ref=e333]:
+                - text: "1"
+                - generic [ref=e334]: ×
+              - generic [ref=e335]: Œuf
+            - generic [ref=e337]:
+              - generic [ref=e338]: Choix
+              - generic [ref=e339]: ":"
+          - generic [ref=e340]:
+            - generic [ref=e342]:
+              - generic [ref=e343]:
+                - text: "1"
+                - generic [ref=e344]: ×
+              - generic [ref=e345]: Légumes sautés
+            - generic [ref=e347]:
+              - generic [ref=e348]: Choix
+              - generic [ref=e349]: ":"
+          - generic [ref=e352]:
+            - generic [ref=e353]:
+              - text: "1"
+              - generic [ref=e354]: ×
+            - generic [ref=e355]: Jambon
+          - generic [ref=e358]:
+            - generic [ref=e359]:
+              - text: "1"
+              - generic [ref=e360]: ×
+            - generic [ref=e361]: Oignon frais
+          - generic [ref=e364]:
+            - generic [ref=e365]:
+              - text: "1"
+              - generic [ref=e366]: ×
+            - generic [ref=e367]: Champignons
+          - generic [ref=e370]:
+            - generic [ref=e371]:
+              - text: "1"
+              - generic [ref=e372]: ×
+            - generic [ref=e373]: Boule gratinée
+          - generic [ref=e376]:
+            - generic [ref=e377]:
+              - text: "1"
+              - generic [ref=e378]: ×
+            - generic [ref=e379]: Sandwich Cayenne
+          - generic [ref=e382]:
+            - generic [ref=e383]:
+              - text: "1"
+              - generic [ref=e384]: ×
+            - generic [ref=e385]: Galette Normale
+          - generic [ref=e388]:
+            - generic [ref=e389]:
+              - text: "1"
+              - generic [ref=e390]: ×
+            - generic [ref=e391]: Galette Cayenne
+        - button "Prêt" [ref=e392] [cursor=pointer]:
+          - img [ref=e393]
+          - generic [ref=e395]: Prêt
+    - region "Récemment servies" [ref=e396]:
+      - generic [ref=e397]: Récemment servies
+      - generic [ref=e398]:
+        - generic "Commande N°801 servie" [ref=e399]:
+          - generic [ref=e400]: N°801
+        - generic "Commande N°802 servie" [ref=e401]:
+          - generic [ref=e402]: N°802

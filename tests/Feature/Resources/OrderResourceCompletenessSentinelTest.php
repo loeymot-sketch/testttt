@@ -35,7 +35,7 @@ use Tests\TestCase;
  * Both fields are 2-LOC additions to their respective Resources; this
  * sentinel ensures they cannot silently regress.
  */
-class OrderResourceCompletenessSentinel extends TestCase
+class OrderResourceCompletenessSentinelTest extends TestCase
 {
     use RefreshDatabase;
 

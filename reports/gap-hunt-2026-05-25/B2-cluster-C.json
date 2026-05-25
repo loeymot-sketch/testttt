@@ -1,0 +1,190 @@
+{
+  "agent": "B.2-CLUSTER-C",
+  "mission": "Cross-system gap hunt — C7 cross-day operations + C8 customer journey end-to-end",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scan_date": "2026-05-25",
+  "scope": [
+    "app/Services/Fiscal/* (ZReportService, FiscalSequenceService, ZReportCashEnrichmentService, XReportService)",
+    "app/Console/Kernel.php (cron schedule)",
+    "app/Console/Commands/FiscalCloseAllActiveBranchesCommand.php",
+    "app/Services/OrderService.php (business_date allocation, paid_at)",
+    "app/Services/FrontendOrderService.php (kiosk fiscal alloc)",
+    "app/Services/LoyaltyService.php + Listeners/AwardLoyaltyPointsOnDelivery.php + ClawbackLoyaltyPointsOnRefund.php",
+    "app/Services/OrderSmsNotificationBuilder.php / OrderGotSmsNotificationBuilder.php",
+    "app/Services/Sms* (SmsService, SmsManagerService) + app/Http/SmsGateways/Gateways/*",
+    "app/Http/Controllers/Admin/PosOrderController.php::reorderItems",
+    "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue",
+    "routes/api.php, routes/web.php (feedback/review/rating endpoint scan)"
+  ],
+  "verdict": "RED_HIGH — C7 has a defensible cross-day model but a SILENT FALLBACK BEHAVIOUR that diverges from owner mental-model + the 10-minute Z-OPEN gap is operational debt; C8 is critically underbuilt — kiosk customers receive ZERO transactional SMS by design, no feedback/review collection feature exists, customer reorder is POS-only (admin), customer retention surface is minimal",
+
+  "C7_cross_day_operations": {
+    "scenario": "Cashier rings a POS sale at 23:59:30 (created_at = J 23:59:30) and the customer pays 30 seconds later at 00:00:30 (J+1). Or kiosk order created at 23:59 paid online via TPE at 00:01.",
+    "code_path_evidence": [
+      {
+        "file": "app/Services/OrderService.php:2752-2762",
+        "fn": "resolveBusinessDate(mixed $orderDatetime): string",
+        "behaviour": "Sets orders.business_date = Carbon::parse($order_datetime)->toDateString() OR Carbon::now()->toDateString() if blank. business_date is wall-clock day at order CREATION — never updated on payment."
+      },
+      {
+        "file": "app/Services/OrderService.php:2685-2725",
+        "fn": "saveOrderWithQueueNumber + allocateQueueNumber",
+        "behaviour": "queue_number is scoped (branch_id, business_date) with a UNIQUE index `orders_branch_business_date_queue_unique`. Day boundary resets the A0001 queue — operationally desired."
+      },
+      {
+        "file": "app/Services/Fiscal/ZReportService.php:337-347, 386-390",
+        "fn": "ZReportService::aggregate(int $branchId, ?Carbon $from, Carbon $to)",
+        "behaviour": "Half-open (from, to] window keyed on Order.created_at (NOT business_date, NOT paid_at). The post-Z adjustment window uses updated_at — so a refund of an order that crossed midnight inside a closed Z is folded into the next Z (correct M-08 policy)."
+      },
+      {
+        "file": "app/Services/Fiscal/ZReportCashEnrichmentService.php:128-163",
+        "fn": "Cash enrichment payments aggregator",
+        "behaviour": "Aggregates OrderPayment rows by paid_at — DIFFERENT KEY than ZReportService::aggregate (created_at). For a 23:59 created / 00:01 paid order this means the order itself is in Z(J) but its OrderPayment row may land in Z(J+1) depending on cron timing."
+      },
+      {
+        "file": "app/Console/Kernel.php:356-406",
+        "fn": "Z-close safety-net 23:55 Paris (GOAL-G2-HEAL-06) + Z-open safety-net 00:05 Paris (GOAL-L2-HEAL-07)",
+        "behaviour": "23:55 → fiscal:close-all-active-branches; 00:05 → fiscal:open-all-active-branches. Both timezone('Europe/Paris'), onOneServer, withoutOverlapping, runInBackground. Comment explicitly states ‘23:55 = same business_date as transactions, required by NF525 same-day semantics’."
+      },
+      {
+        "file": "app/Services/FrontendOrderService.php:1153-1213",
+        "fn": "finalizePaidKioskOrder (kiosk paid TPE)",
+        "behaviour": "fiscal_sequence_no allocated at status flip to ACCEPT (i.e. AFTER payment confirmed). For a kiosk order created 23:59 + Stripe webhook firing 00:01, the fiscal_sequence_no carries the NEXT day's allocation order — but the Z window key is created_at (yesterday) so it correctly lands in Z(J) anyway IF the close cron has not yet fired."
+      }
+    ],
+    "deep_problem_analysis": {
+      "behaviour_in_practice_minute_by_minute": [
+        "23:54:59 — Z(J) STATUS_OPEN. Order #100 created.business_date=J, created_at=23:54:59.",
+        "23:55:00 — fiscal-close-safety-net cron starts. Cache::lock('z_report_b{n}', 10s) acquired. close() runs.",
+        "23:55:01 — close() reads aggregate(branch, opened_at, NOW=23:55:01). Order #100 (created_at <= 23:55:01) is included. ✓",
+        "23:55:30 — close() commits. Z(J) STATUS_CLOSED, signed. Next sequence reserved on open.",
+        "23:55:31 → 00:04:59 — DEAD ZONE (10 min). Branch has NO open Z. If a cashier rings a 23:57 sale here:",
+        "  • Order is created OK (business_date=J because Carbon::now()=23:57, J).",
+        "  • Order.fiscal_sequence_no allocated OK (FiscalSequenceService:next ignores Z status, just MAX+1 per branch).",
+        "  • BUT created_at=23:57 > Z(J).closed_at=23:55:30, so this order is NOT in Z(J) aggregate.",
+        "  • When Z(J+1) opens at 00:05 and is eventually closed (23:55 J+1), aggregate(opened_at=00:05 J+1, to=23:55 J+1) uses (from, to] with from=00:05, so an order created at 23:57 J (< from) is EXCLUDED FROM Z(J+1) TOO.",
+        "  • Net effect: a fiscal_sequence_no exists, payment is recorded, customer receipt has fiscal_seq printed → NF525 invariant 'every fiscally sequenced receipt appears in exactly one Z' is VIOLATED for orders created in the 10-minute dead zone.",
+        "00:01:00 — Order #100's payment webhook arrives. ZReportCashEnrichmentService keys on OrderPayment.paid_at=00:01 J+1. paid_at > Z(J) close → payment line excluded from Z(J) cash totals. Excluded from Z(J+1) cash totals too if cash enrichment uses the (opened_at, closed_at] window of Z(J+1) and Z(J+1) opens at 00:05 (paid_at 00:01 < 00:05). → SECOND HOLE: cash-method payment totals in the same dead zone.",
+        "00:05:00 — fiscal-open-safety-net cron. New Z(J+1) STATUS_OPEN. Dead zone ends."
+      ],
+      "smoking_gun_files_lines": [
+        "ZReportService.php:344 — `where('created_at', '<=', $to)` + line 346 `where('created_at', '>', $from)`. Window key = created_at, NOT business_date.",
+        "ZReportCashEnrichmentService.php:160 + :163 — payments keyed by paid_at, structurally divergent from order aggregation (created_at). Cross-midnight order = order in one Z, payment in another Z.",
+        "Kernel.php:357 (`dailyAt('23:55')`) + Kernel.php:399 (`dailyAt('00:05')`) = 10-minute gap by design. Comment at 380-383 claims '10-minute gap leaves room for close to finish'. The gap is operationally justified BUT no logic prevents new orders from being rung INSIDE the gap. There is no 'pause new fiscal allocations during close window' guard.",
+        "OrderService.php:2752-2762 — `resolveBusinessDate` uses Carbon::now()->toDateString() with NO grace cutover. An order rung at 00:00:30 has business_date=J+1 even if the cashier semantically considers it 'still tonight's shift'. Whether this matches owner mental model is unverified — the codebase has NO config like `business_day_cutover_hour`."
+      ],
+      "is_z_loop_covering_this_edge": "PARTIALLY. The 23:55 close + 00:05 open is a defensible NF525 cadence (close BEFORE midnight, open AFTER) but it creates a 10-minute interval where new fiscal allocations DO succeed and DO get fiscal_sequence_no but DO NOT land in any Z aggregate. The orphan-warn at ZReportService.php:586-616 only flags PAID orders with NULL fiscal_sequence_no — it does NOT flag the inverse case (fiscal_sequence_no SET but order falls outside both Z windows).",
+      "ui_clarity": "NONE. The kiosk confirmation page (KioskConfirmationComponent.vue, line 60) prints loyalty points but does NOT show the business_date or fiscal day. The customer sees a receipt with a fiscal_sequence_no and a wall-clock timestamp — they have no way to know whether their order is fiscally attached to today or tomorrow. The cashier has the same blind spot in the POS UI."
+    },
+    "expected_behaviour_per_NF525_owner_intent": [
+      "Z(N) must include every order whose business_date = J (whatever the wall-clock of creation/payment within ±5min)",
+      "Every fiscal_sequence_no must land in exactly one Z (the gap-free invariant explicitly stated in FiscalSequenceService.php:21-22)",
+      "Cross-midnight cashier shift (e.g. close at 02:00 instead of 23:00) should be supported by a configurable cutover, not hard-coded to wall-clock midnight"
+    ],
+    "remediation_paths": [
+      "P0 — Switch ZReportService::aggregate window key from created_at to business_date (with proper migration of historical Z signatures: signatures only sign aggregates, not the window key, so no chain break — but a freeze must be planned around the cutover).",
+      "P0-alt — Shift the close cron to 23:59:55 and the open cron to 00:00:05 to shrink the dead zone, AND ensure no NEW order creation can be admitted between the close and the next-day's first allocation (orders.business_date guard: refuse fiscal_sequence_no allocation when no STATUS_OPEN Z exists for the branch).",
+      "P1 — Add a `business_day_cutover_hour` config (default 0 = midnight) so cashier-shift restaurants (open 18:00-03:00) can attach a J+1 wall-clock 02:00 sale to business_date J.",
+      "P1 — Display business_date alongside fiscal_sequence_no on the receipt and the confirmation screen so the customer + auditor can see day-attribution explicitly."
+    ]
+  },
+
+  "C8_customer_journey_end_to_end": {
+    "happy_path_observed": [
+      "1. Order created → SendOrderGotSms dispatched to ADMIN/BRANCH MANAGER (not customer). OrderGotSmsNotificationBuilder.php:33-47.",
+      "2. SendOrderSms dispatched to customer for status changes (PENDING, ACCEPT, PREPARING, PREPARED, OUT_FOR_DELIVERY, DELIVERED, CANCELED, REJECTED, RETURNED).",
+      "3. OrderStatusChanged event → AwardLoyaltyPointsOnDelivery listener increments user.loyalty_points and writes loyalty_transactions row.",
+      "4. KioskConfirmationComponent shows points earned (line 60 i18n key kiosk.confirmation.loyalty_points)."
+    ],
+    "gaps": [
+      {
+        "id": "C8-G1",
+        "severity": "P0",
+        "title": "Kiosk customers receive ZERO transactional SMS by design",
+        "evidence_file": "app/Services/OrderSmsNotificationBuilder.php:30-33",
+        "evidence_snippet": "// Source 10 = Kiosk Machine. No SMS for Kiosk orders to prevent spam. if ($this->order->source == 10) { return; }",
+        "impact": "A loyalty customer who orders at the kiosk and walks away has NO way of knowing when their order is ready. They have to physically watch the OSS screen. For takeaway / non-eat-in flows this breaks the customer journey at exactly the moment retention is most valuable (PREPARED → 'come pick up' SMS).",
+        "additionally": "The kiosk also captures phone via Loyalty flow (LoyaltyController.php:152) so the channel exists — only the hard-coded guard blocks it. No config flag, no per-status override — the comment says 'prevent spam' but the cure (suppress every status) is worse than the disease."
+      },
+      {
+        "id": "C8-G2",
+        "severity": "P0",
+        "title": "No feedback / review / rating collection feature exists",
+        "evidence": "Repo-wide grep across routes/api.php, routes/web.php, app/Http/Controllers, app/Services, app/Models for terms `feedback|review|rating|nps|google.review|trustpilot|opinion` returns ZERO matches outside (a) Stock review-rupture UI, (b) admin RBAC permissions (review-only). The Customer/User domain has NO ratings model, NO post-purchase nudge, NO Google review URL plumbing.",
+        "impact": "Le Cayenne has no signal on customer satisfaction, no flywheel into Google reviews (critical for fast-food local-SEO), no NPS to detect churn. The SpinBoost product (separate SaaS sibling, ULTRA_REVIEW_SPINBOOST_2026-05-16.md) is the intended retention layer but is NOT integrated.",
+        "additionally": "No DELIVERED-status SMS template includes a feedback URL. NotificationAlert.where(['language' => 'order_delivered_message']) is whatever text the admin typed — no system-level placeholder for a review CTA."
+      },
+      {
+        "id": "C8-G3",
+        "severity": "P1",
+        "title": "Reorder is ADMIN-ONLY (cashier-driven), no customer-facing repeat-order surface",
+        "evidence_file": "app/Http/Controllers/Admin/PosOrderController.php:222-251",
+        "evidence_snippet": "GET /api/v1/admin/pos-order/{order}/reorder-items — guarded by RBAC permission 'reorderItems' (line 34). No corresponding /api/frontend/* or /api/customer/* endpoint.",
+        "impact": "A loyal customer who phones in the same order weekly has NO self-service way to repeat. The cashier must look it up in the admin POS. The kiosk wizard re-enters every step from scratch every visit.",
+        "additionally": "The kiosk KioskWizard is FROZEN (CLAUDE.md §7) so adding a 'last order' shortcut requires a LOCK doc."
+      },
+      {
+        "id": "C8-G4",
+        "severity": "P1",
+        "title": "SMS gateway selection is single-provider-at-a-time, no failover, no delivery-receipt tracking",
+        "evidence_file": "app/Services/SmsService.php:14-23 + app/Services/SmsManagerService.php:11-30",
+        "evidence_snippet": "SmsService::gateway() reads site_default_sms_gateway setting and instantiates a single Gateway class (Twilio, Nexmo, Bulksms, Msg91, Clickatell, Telesign, Twofactor, Bulksmsbd). SmsManagerService::send() returns whatever the gateway returns — no persistence, no retry, no DLR.",
+        "impact": "If Twilio is down, all customer SMS silently fail. Listener catches Exception and just Log::info($e->getMessage()) — no admin alert, no retry, no observability except a generic Laravel log line.",
+        "additionally": "Compare to webhook_events / outbox infrastructure which has full retry + DLQ + 6y retention. SMS has none. Webhook delivery is treated as fiscal-critical; customer SMS as fire-and-forget."
+      },
+      {
+        "id": "C8-G5",
+        "severity": "P1",
+        "title": "Loyalty points are FOR-USER-ONLY — no household/family/group plan; no expiry policy enforced",
+        "evidence_file": "app/Listeners/AwardLoyaltyPointsOnDelivery.php:84 + app/Services/LoyaltyService.php (no expiry method)",
+        "evidence_snippet": "rate = Settings::group('loyalty_setup')->get('loyalty_points_per_euro', 10). loyalty_transactions.type ENUM includes 'expire' value (mentioned in :126-128 docblock) but NO cron, NO listener, NO command issues an expire row. Points accumulate forever.",
+        "impact": "Le Cayenne has no balance-sheet ceiling — over 6+ years a regular customer can accumulate a 4-digit-euro liability with no expiry. NF525 requires the audit log but not a liability cap. Owner Q14 mentioned multi-tier retention; loyalty has none.",
+        "remediation": "Add foodking:loyalty:expire-stale daily cron + Settings::group('loyalty_setup')->get('points_expiry_months', 24) per the existing enum slot."
+      },
+      {
+        "id": "C8-G6",
+        "severity": "P2",
+        "title": "Customer-self-service deletion/data-export (RGPD Art 15+17) — phone/email captured at loyalty signup, no delete-account endpoint located",
+        "evidence": "LoyaltyController stores phone (:152), customer addresses table, repeat-order history. Grep for `delete-account|destroy.*customer|rgpd|gdpr|right-to-erasure` returned no matches in app/Http/Controllers/Frontend or app/Services.",
+        "impact": "RGPD non-compliance risk. Customer cannot self-delete from the kiosk or web. Falls under V1.0.2 backlog typically but no item is filed."
+      }
+    ],
+    "what_works": [
+      "Loyalty refund on cancel (LoyaltyService::refundPoints) is idempotent via UNIQUE (user_id, order_id, type) + pre-flight existence check — HEAL-A.2 / Z8 P0-2 pattern is solid.",
+      "Clawback on refund (LoyaltyService::clawbackEarnedPoints, GOAL-J2-HEAL-07) closes the cash+points double-dip exploit.",
+      "Confirmation screen (Vue) shows points earned at kiosk — the only customer-facing loyalty feedback in the system, but it's there."
+    ]
+  },
+
+  "cross_cluster_observations": [
+    "Both C7 and C8 share a root cause: time-attribution divergence. C7 = three different keys (created_at, paid_at, business_date) for the SAME order across three different services. C8 = no retention loop because the 'last touch with customer' (DELIVERED status SMS) is suppressed for kiosk (where 80%+ of Le Cayenne volume lives).",
+    "The 10-minute Z dead zone (23:55→00:05) is the highest-risk finding. NF525 invariant 'every fiscally sequenced receipt appears in exactly one Z' is mathematically breakable today by a single transaction rung in that window. The probability is low (the restaurant is closing) but the exposure is fiscal — owner cannot dismiss as P2.",
+    "SpinBoost product (separate repo, ULTRA_REVIEW_SPINBOOST_2026-05-16.md) exists as the intended customer-retention SaaS but is NOT wired into Le Cayenne. C8 retention gap is essentially 'SpinBoost integration TODO' if owner intent is to ship it as one product."
+  ],
+
+  "top_finding_per_cluster": {
+    "C7_top": {
+      "id": "C7-T1",
+      "title": "10-minute Z dead zone (23:55 close → 00:05 open) admits orders that get a fiscal_sequence_no but land in NO Z aggregate",
+      "severity": "P0",
+      "evidence": "app/Console/Kernel.php:357 + :399 + app/Services/Fiscal/ZReportService.php:343-347",
+      "fix_class": "Either (a) Shrink gap to <60s + admit guard on fiscal_sequence_no allocation when no STATUS_OPEN Z exists, or (b) Switch aggregate window key from created_at to business_date so cross-midnight orders attach to the correct Z by date logic, not wall-clock."
+    },
+    "C8_top": {
+      "id": "C8-T1",
+      "title": "Hard-coded kiosk SMS suppression (source==10 → return) blocks 80%+ of customer touchpoints",
+      "severity": "P0",
+      "evidence": "app/Services/OrderSmsNotificationBuilder.php:30-33",
+      "fix_class": "Remove the blanket source==10 guard. Replace with per-status feature flags (notification_alerts table already has sms ON/OFF per status) so admin can choose to silence PENDING/ACCEPT but enable PREPARED (the one customers actually need). Add opt-in checkbox at kiosk loyalty-capture step."
+    }
+  },
+
+  "report_path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/gap-hunt-2026-05-25/B2-cluster-C.json",
+  "frozen_zone_diff": 0,
+  "notes": [
+    "Read-only audit. No code modified. No tests run.",
+    "Findings cross-validated against CLAUDE.md §8 (NF525 invariants) and the comment chain inside ZReportService (which explicitly documents the half-open window, the post-Z adjustment rule, and the orphan-warn).",
+    "Evidence is direct (file:line citations). No claim is made from memory.",
+    "Branch had local modifications to public/js/* and public/css/* (Vite build output) but no fiscal code changes — frozen zone diff = 0 for this scan."
+  ]
+}

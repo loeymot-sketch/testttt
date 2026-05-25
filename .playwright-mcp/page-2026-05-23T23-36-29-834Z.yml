@@ -1,0 +1,176 @@
+- generic [ref=e1]:
+  - generic [ref=e40]:
+    - generic [ref=e41]:
+      - generic [ref=e42]:
+        - img [ref=e44]
+        - generic [ref=e45]:
+          - generic [ref=e46]: Nos
+          - generic [ref=e47]: Tacos
+      - button "Mon compte" [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: 👤
+        - text: Mon compte
+    - generic [ref=e51]:
+      - navigation "Navigation catégories" [ref=e52]:
+        - button "Sandwich Cayenne" [ref=e53] [cursor=pointer]:
+          - generic [ref=e54]: Sandwich Cayenne
+        - button "Galette" [ref=e56] [cursor=pointer]:
+          - generic [ref=e57]: Galette
+        - button "Sandwich Classique" [ref=e59] [cursor=pointer]:
+          - generic [ref=e60]: Sandwich Classique
+        - button "Burgers" [ref=e62] [cursor=pointer]:
+          - generic [ref=e63]: Burgers
+        - button "Tacos" [ref=e65] [cursor=pointer]:
+          - generic [ref=e66]: Tacos
+        - button "Bols Gourmands" [ref=e68] [cursor=pointer]:
+          - generic [ref=e69]: Bols Gourmands
+        - button "Menu enfant" [ref=e71] [cursor=pointer]:
+          - generic [ref=e72]: Menu enfant
+        - button "Frites" [ref=e74] [cursor=pointer]:
+          - generic [ref=e75]: Frites
+        - button "Suppléments" [ref=e77] [cursor=pointer]:
+          - generic [ref=e78]: Suppléments
+        - button "Desserts" [ref=e80] [cursor=pointer]:
+          - generic [ref=e81]: Desserts
+        - button "Boissons" [ref=e83] [cursor=pointer]:
+          - generic [ref=e84]: Boissons
+      - main [ref=e86]:
+        - generic [ref=e217]:
+          - generic [ref=e218]:
+            - heading "Tacos" [level=1] [ref=e219]
+            - paragraph [ref=e220]: 2 produits
+          - list [ref=e221]:
+            - listitem [ref=e222] [cursor=pointer]:
+              - generic [ref=e223]:
+                - img [ref=e224]
+                - generic [ref=e225]: Personnaliser
+                - button "Ajouter Tacos" [ref=e226]:
+                  - generic [ref=e246]: +
+              - generic [ref=e228]:
+                - heading "Tacos" [level=2] [ref=e229]
+                - paragraph [ref=e230]: 1 viande au choix + frites maison + sauce fromagère maison.
+                - generic [ref=e231]: €6,90
+            - listitem [ref=e232] [cursor=pointer]:
+              - generic [ref=e233]:
+                - img [ref=e234]
+                - generic [ref=e235]: Personnaliser
+                - button "Ajouter Big Tacos" [ref=e236]:
+                  - generic [ref=e237]: +
+              - generic [ref=e238]:
+                - heading "Big Tacos" [level=2] [ref=e239]
+                - paragraph [ref=e240]: 2 viandes au choix + frites maison + sauce fromagère maison.
+                - generic [ref=e241]: €7,90
+    - region "Panier et paiement" [ref=e204]:
+      - generic [ref=e205]:
+        - button "Ouvrir le panier — 0 articles" [disabled] [ref=e206]:
+          - img [ref=e208]
+          - generic [ref=e212]: 0 article
+        - generic [ref=e213]: €0,00
+      - generic [ref=e214]:
+        - button "Abandonner ma commande" [ref=e215] [cursor=pointer]
+        - button "Payer" [disabled] [ref=e216]
+    - dialog "Tacos" [ref=e248]:
+      - heading "Tacos" [level=1] [ref=e249]
+      - generic [ref=e250]:
+        - generic [ref=e251]:
+          - text: Vous composez
+          - heading "Tacos" [level=2] [ref=e252]
+        - button "Fermer la personnalisation" [ref=e253] [cursor=pointer]: ×
+      - generic [ref=e254]:
+        - generic [ref=e255]:
+          - generic [ref=e256]:
+            - img "QUELLE VIANDE ?" [ref=e257]
+            - generic [ref=e338]: ✓ 1
+          - generic [ref=e258]: QUELLE VIANDE ?
+        - generic [ref=e259]:
+          - generic [ref=e260]:
+            - img "QUELLE SAUCE ?" [ref=e261]
+            - text: ✓
+          - generic [ref=e262]: QUELLE SAUCE ?
+        - generic [ref=e263]:
+          - generic [ref=e264]:
+            - img "QUEL MENU ?" [ref=e265]
+            - text: ✓
+          - generic [ref=e266]: QUEL MENU ?
+        - generic [ref=e267]:
+          - generic [ref=e268]:
+            - img "RÉCAP" [ref=e269]
+            - text: ✓
+          - generic [ref=e270]: RÉCAP
+      - generic [ref=e271]:
+        - button "PRÉCÉDENT" [ref=e272] [cursor=pointer]: ‹
+        - generic [ref=e273]:
+          - generic [ref=e275]: "1"
+          - generic [ref=e277]: "2"
+          - generic [ref=e279]: "3"
+          - generic [ref=e281]: "4"
+        - button "SUIVANT" [disabled] [ref=e282] [cursor=pointer]: ›
+      - region "Composition en direct" [ref=e283]:
+        - generic [ref=e284]: Votre composition
+        - generic [ref=e328]:
+          - generic [ref=e329]: Viandes
+          - generic [ref=e330]: Poulet mariné
+      - generic [ref=e287]: QUELLE SAUCE ?
+      - generic [ref=e339]:
+        - generic [ref=e341]: 1re sauce gratuite
+        - generic [ref=e342]:
+          - checkbox "Algérienne" [disabled] [ref=e343]:
+            - img "Algérienne" [ref=e345]
+            - generic [ref=e346]: Algérienne
+            - generic "Épuisé" [ref=e347]
+          - checkbox "Andalouse" [ref=e348] [cursor=pointer]:
+            - img "Andalouse" [ref=e350]
+            - generic [ref=e351]: Andalouse
+            - generic [ref=e352]: +
+          - checkbox "Blanche" [ref=e353] [cursor=pointer]:
+            - img "Blanche" [ref=e355]
+            - generic [ref=e356]: Blanche
+            - generic [ref=e357]: +
+          - checkbox "Curry" [ref=e358] [cursor=pointer]:
+            - img "Curry" [ref=e360]
+            - generic [ref=e361]: Curry
+            - generic [ref=e362]: +
+          - checkbox "Hannibal" [ref=e363] [cursor=pointer]:
+            - img "Hannibal" [ref=e365]
+            - generic [ref=e366]: Hannibal
+            - generic [ref=e367]: +
+          - checkbox "Harissa" [ref=e368] [cursor=pointer]:
+            - img "Harissa" [ref=e370]
+            - generic [ref=e371]: Harissa
+            - generic [ref=e372]: +
+          - checkbox "Ketchup" [ref=e373] [cursor=pointer]:
+            - img "Ketchup" [ref=e375]
+            - generic [ref=e376]: Ketchup
+            - generic [ref=e377]: +
+          - checkbox "Mayonnaise" [ref=e378] [cursor=pointer]:
+            - img "Mayonnaise" [ref=e380]
+            - generic [ref=e381]: Mayonnaise
+            - generic [ref=e382]: +
+          - checkbox "Samouraï" [ref=e383] [cursor=pointer]:
+            - img "Samouraï" [ref=e385]
+            - generic [ref=e386]: Samouraï
+            - generic [ref=e387]: +
+          - checkbox "Sauce Spicy Maison" [ref=e388] [cursor=pointer]:
+            - img "Sauce Spicy Maison" [ref=e390]
+            - generic [ref=e391]: Sauce Spicy Maison
+            - generic [ref=e392]: +
+          - checkbox "Barbecue" [ref=e393] [cursor=pointer]:
+            - img "Barbecue" [ref=e395]
+            - generic [ref=e396]: Barbecue
+            - generic [ref=e397]: +
+          - checkbox "Sauce Fromagère Maison" [ref=e398] [cursor=pointer]:
+            - img "Sauce Fromagère Maison" [ref=e400]
+            - generic [ref=e401]: Sauce Fromagère Maison
+            - generic [ref=e402]: +
+          - checkbox "Sans Sauce" [ref=e403] [cursor=pointer]:
+            - img "Sans Sauce" [ref=e405]
+            - generic [ref=e406]: Sans Sauce
+            - generic [ref=e407]: +
+        - status [ref=e408]: Sélectionnez au moins une sauce
+      - generic [ref=e315]:
+        - generic [ref=e316]:
+          - button "ABANDONNER L'ARTICLE" [ref=e317] [cursor=pointer]
+          - button "PRÉCÉDENT" [ref=e318] [cursor=pointer]
+          - button "SUIVANT" [disabled] [ref=e319]:
+            - generic [ref=e320]: SUIVANT
+        - generic [ref=e321]: Total €6,90
+  - status
