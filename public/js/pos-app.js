@@ -56986,7 +56986,15 @@ __webpack_require__.r(__webpack_exports__);
         permission: false,
         url: "",
         orderType: null
-      }
+      },
+      // [UR3-A1 V1.0.2 Wave D1] Profile dropdown ARIA + keyboard state.
+      // Vue 3 has no `_uid` — generate unique IDs once for aria-controls/aria-labelledby.
+      // `profileMenuOpen` is mirrored from the dropdown.js `.active` class via MutationObserver
+      // (dropdown.js remains the SSOT for open/close to avoid double-toggling).
+      profileMenuId: 'profile-menu-' + Math.random().toString(36).slice(2, 10),
+      profileMenuTriggerId: 'profile-menu-trigger-' + Math.random().toString(36).slice(2, 10),
+      profileMenuOpen: false,
+      profileMenuObserver: null
     };
   },
   computed: {
@@ -57051,6 +57059,23 @@ __webpack_require__.r(__webpack_exports__);
   },
   mounted: function mounted() {
     var _this = this;
+    // [UR3-A1 V1.0.2 Wave D1] Observe `.active` class on profile menu DOM node
+    // (toggled by public/themes/default/js/dropdown.js) to mirror state into
+    // `profileMenuOpen` for reactive `aria-expanded` binding.
+    this.$nextTick(function () {
+      if (_this.$refs.profileMenu && typeof MutationObserver !== 'undefined') {
+        _this.profileMenuObserver = new MutationObserver(function () {
+          var isOpen = _this.$refs.profileMenu && _this.$refs.profileMenu.classList.contains('active');
+          if (_this.profileMenuOpen !== isOpen) {
+            _this.profileMenuOpen = isOpen;
+          }
+        });
+        _this.profileMenuObserver.observe(_this.$refs.profileMenu, {
+          attributes: true,
+          attributeFilter: ['class']
+        });
+      }
+    });
     _services_appService__WEBPACK_IMPORTED_MODULE_4__["default"].responsiveLoad();
     this.$store.dispatch("globalState/set", {
       topSidebar: this.sidebarOpen
@@ -57120,19 +57145,58 @@ __webpack_require__.r(__webpack_exports__);
       }
     }, 5000);
   },
+  beforeUnmount: function beforeUnmount() {
+    // [UR3-A1 V1.0.2 Wave D1] Tear down profile-menu class observer to prevent leaks.
+    if (this.profileMenuObserver) {
+      this.profileMenuObserver.disconnect();
+      this.profileMenuObserver = null;
+    }
+  },
   methods: {
     // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
     safePhone: function safePhone(phone) {
       return (0,_helpers_phoneDisplay__WEBPACK_IMPORTED_MODULE_8__.safePhone)(phone);
+    },
+    // [UR3-A1 V1.0.2 Wave D1] Profile dropdown keyboard handlers.
+    // Note: open/close SSOT is dropdown.js — these helpers manually replicate
+    // its `.active`/`.rotated` toggle so keyboard parity holds without racing.
+    closeProfileMenu: function closeProfileMenu() {
+      var _this2 = this;
+      if (this.$refs.profileMenu) {
+        this.$refs.profileMenu.classList.remove('active');
+      }
+      if (this.$refs.profileTrigger) {
+        this.$refs.profileTrigger.classList.remove('rotated');
+        this.$nextTick(function () {
+          if (_this2.$refs.profileTrigger) _this2.$refs.profileTrigger.focus();
+        });
+      }
+    },
+    openProfileMenuAndFocusFirst: function openProfileMenuAndFocusFirst() {
+      var _this3 = this;
+      // If menu is closed, trigger the document-level click handler in
+      // dropdown.js by clicking the trigger (which will also close any other
+      // open dropdown). If already open, just move focus to first menuitem.
+      if (!this.profileMenuOpen && this.$refs.profileTrigger) {
+        this.$refs.profileTrigger.click();
+      }
+      this.$nextTick(function () {
+        var menu = _this3.$refs.profileMenu;
+        if (!menu) return;
+        var items = menu.querySelectorAll('[role="menuitem"]');
+        if (items && items.length > 0) {
+          items[0].focus();
+        }
+      });
     },
     textShortener: function textShortener(text) {
       var number = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 30;
       return _services_appService__WEBPACK_IMPORTED_MODULE_4__["default"].textShortener(text, number);
     },
     logout: function logout() {
-      var _this2 = this;
+      var _this4 = this;
       this.$store.dispatch("logout").then(function (res) {
-        _this2.$router.push({
+        _this4.$router.push({
           name: "frontend.home"
         });
       })["catch"]();
@@ -57154,36 +57218,36 @@ __webpack_require__.r(__webpack_exports__);
       }
     },
     changeBranch: function changeBranch(id) {
-      var _this3 = this;
+      var _this5 = this;
       this.$store.dispatch("defaultAccess/saveOrUpdate", {
         branch_id: id
       }).then(function (res) {
-        _this3.$store.dispatch('backendGlobalState/branchShow', id).then(function (res) {
+        _this5.$store.dispatch('backendGlobalState/branchShow', id).then(function (res) {
           location.reload();
         })["catch"]();
       });
     },
     changeLanguage: function changeLanguage(id, code) {
-      var _this4 = this;
+      var _this6 = this;
       this.defaultLanguage = id;
       this.$store.dispatch("globalState/set", {
         language_id: id,
         language_code: code
       }).then(function (res) {
-        _this4.$store.dispatch('frontendLanguage/show', id).then(function (res) {
-          _this4.$i18n.locale = res.data.data.code;
+        _this6.$store.dispatch('frontendLanguage/show', id).then(function (res) {
+          _this6.$i18n.locale = res.data.data.code;
         })["catch"]();
       })["catch"]();
     },
     posPermissionCheck: function posPermissionCheck() {
-      var _this5 = this;
+      var _this7 = this;
       var permissions = this.normalizedAuthPermissionList();
       if (permissions.length > 0) {
         lodash__WEBPACK_IMPORTED_MODULE_2___default().forEach(permissions, function (permission) {
           if (permission.name === 'pos') {
             if (permission.access === true) {
-              _this5.pos.permission = true;
-              _this5.pos.url = permission.url;
+              _this7.pos.permission = true;
+              _this7.pos.url = permission.url;
             }
           }
         });
@@ -57200,7 +57264,7 @@ __webpack_require__.r(__webpack_exports__);
       return [];
     },
     saveImage: function saveImage() {
-      var _this6 = this;
+      var _this8 = this;
       if (this.$refs.imageProperty.files[0]) {
         try {
           this.loading.isActive = true;
@@ -57209,17 +57273,17 @@ __webpack_require__.r(__webpack_exports__);
           this.$store.dispatch("frontendEditProfile/changeImage", {
             form: formData
           }).then(function (res) {
-            _this6.$store.dispatch('updateAuthInfo', res.data.data).then(function (res) {
-              _this6.loading.isActive = false;
-              _services_alertService__WEBPACK_IMPORTED_MODULE_3__["default"].success(_this6.$t("message.photo_update"));
-              _this6.$refs.imageProperty.value = null;
+            _this8.$store.dispatch('updateAuthInfo', res.data.data).then(function (res) {
+              _this8.loading.isActive = false;
+              _services_alertService__WEBPACK_IMPORTED_MODULE_3__["default"].success(_this8.$t("message.photo_update"));
+              _this8.$refs.imageProperty.value = null;
             })["catch"](function (err) {
-              _this6.loading.isActive = false;
+              _this8.loading.isActive = false;
               _services_alertService__WEBPACK_IMPORTED_MODULE_3__["default"].error(err);
             });
           })["catch"](function (err) {
-            _this6.loading.isActive = false;
-            _this6.imageErrors = err.response.data.errors;
+            _this8.loading.isActive = false;
+            _this8.imageErrors = err.response.data.errors;
             _services_alertService__WEBPACK_IMPORTED_MODULE_3__["default"].error(err.response.data.message);
           });
         } catch (err) {
@@ -57229,20 +57293,20 @@ __webpack_require__.r(__webpack_exports__);
       }
     },
     orderPermissionCheck: function orderPermissionCheck() {
-      var _this7 = this;
+      var _this9 = this;
       var permissions = this.normalizedAuthPermissionList();
       if (permissions.length > 0) {
         lodash__WEBPACK_IMPORTED_MODULE_2___default().forEach(permissions, function (permission) {
           if (permission.name === 'online-orders') {
             if (permission.access === true) {
-              _this7.orderNotification.permission = true;
-              _this7.orderNotification.url = permission.url;
+              _this9.orderNotification.permission = true;
+              _this9.orderNotification.url = permission.url;
             }
           }
           if (permission.name === 'table-orders') {
             if (permission.access === true) {
-              _this7.orderNotification.tablePermission = true;
-              _this7.orderNotification.tableUrl = permission.url;
+              _this9.orderNotification.tablePermission = true;
+              _this9.orderNotification.tableUrl = permission.url;
             }
           }
         });
@@ -67863,17 +67927,13 @@ var _hoisted_28 = ["aria-label"];
 var _hoisted_29 = {
   "class": "dropdown-group"
 };
-var _hoisted_30 = {
-  "class": "dropdown-btn flex items-center gap-2"
-};
+var _hoisted_30 = ["id", "aria-expanded", "aria-controls"];
 var _hoisted_31 = ["src"];
 var _hoisted_32 = {
   "class": "whitespace-nowrap text-sm capitalize text-left leading-[17px]"
 };
 var _hoisted_33 = ["title"];
-var _hoisted_34 = {
-  "class": "dropdown-list fixed sm:absolute top-[75px] sm:top-12 ltr:right-0 rtl:left-0 z-[60] rounded-xl w-full h-[calc(100dvh_-_75px)] overflow-y-auto sm:h-auto sm:w-[360px] p-4 shadow-paper bg-white transition-all duration-300 scale-y-0 origin-top"
-};
+var _hoisted_34 = ["id", "aria-labelledby"];
 var _hoisted_35 = {
   "class": "w-fit mx-auto text-center mb-5"
 };
@@ -67898,23 +67958,27 @@ var _hoisted_43 = {
   "class": "font-medium text-sm leading-6 capitalize mb-0.5"
 };
 var _hoisted_44 = {
-  key: 0,
-  href: "/admin/profile/edit-profile",
-  "class": "paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]"
+  role: "none"
 };
 var _hoisted_45 = {
-  "class": "text-sm leading-6 capitalize"
+  key: 0,
+  href: "/admin/profile/edit-profile",
+  role: "menuitem",
+  tabindex: "-1",
+  "class": "paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]"
 };
 var _hoisted_46 = {
   "class": "text-sm leading-6 capitalize"
 };
 var _hoisted_47 = {
-  key: 2,
-  href: "/admin/profile/change-password",
-  "class": "paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]"
+  "class": "text-sm leading-6 capitalize"
 };
 var _hoisted_48 = {
-  "class": "text-sm leading-6 capitalize"
+  key: 2,
+  href: "/admin/profile/change-password",
+  role: "menuitem",
+  tabindex: "-1",
+  "class": "paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]"
 };
 var _hoisted_49 = {
   "class": "text-sm leading-6 capitalize"
@@ -67923,23 +67987,26 @@ var _hoisted_50 = {
   "class": "text-sm leading-6 capitalize"
 };
 var _hoisted_51 = {
+  "class": "text-sm leading-6 capitalize"
+};
+var _hoisted_52 = {
   key: 0,
   id: "order",
   ref: "orderNotificationModal",
   "class": "modal active ff-modal"
 };
-var _hoisted_52 = {
+var _hoisted_53 = {
   "class": "modal-dialog max-w-[360px] p-6 text-center relative"
 };
-var _hoisted_53 = {
+var _hoisted_54 = {
   "class": "text-[18px] font-semibold leading-8 mb-6"
 };
-var _hoisted_54 = {
+var _hoisted_55 = {
   "class": "block"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_router_link = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("router-link");
-  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [_cache[20] || (_cache[20] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [_cache[23] || (_cache[23] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "backdrop"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_1, [$options.isPosV4Shell ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", {
     key: 0,
@@ -67976,12 +68043,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }),
     "aria-label": "Plein écran",
     "class": "hidden db-header-toggle lg:flex items-center justify-center w-9 h-9 px-3 rounded-lg bg-[#E0FFED]"
-  }, _toConsumableArray(_cache[7] || (_cache[7] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, _toConsumableArray(_cache[10] || (_cache[10] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-maximize lab-font-size-24 text-[#1AB759]",
     "aria-hidden": "true"
-  }, null, -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.authBranch === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_7, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.authBranch === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_7, [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-shop lab-font-size-24 font-fill-primary"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.branch')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("b", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.branch.name), 1 /* TEXT */)]), _cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.branch')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("b", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.branch.name), 1 /* TEXT */)]), _cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-arrow-down text-xs ml-1.5 lab-font-size-14"
   }, null, -1 /* CACHED */))]), $options.branches.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_11, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.branches, function (branch) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
@@ -68033,7 +68100,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "w-9 h-9 rounded-lg flex items-center justify-center bg-[#FFEBD8]",
     "aria-label": _ctx.$t('menu.pos'),
     href: '/admin/' + $data.pos.url
-  }, _toConsumableArray(_cache[10] || (_cache[10] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, _toConsumableArray(_cache[13] || (_cache[13] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-pos-bold lab-font-size-16 font-fill-pos",
     "aria-hidden": "true"
   }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_27)) : $data.pos.permission && !_ctx.$route.path.includes('kitchen-display-system') && !_ctx.$route.path.includes('order-status-screen') ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_router_link, {
@@ -68045,7 +68112,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return _toConsumableArray(_cache[11] || (_cache[11] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      return _toConsumableArray(_cache[14] || (_cache[14] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
         "class": "lab lab-pos-bold lab-font-size-16 font-fill-pos",
         "aria-hidden": "true"
       }, null, -1 /* CACHED */)]));
@@ -68058,21 +68125,43 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, ["prevent"])),
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["fa-solid db-header-nav w-9 h-9 rounded-lg text-primary bg-primary/5", $options.sidebar ? 'fa-align-left' : 'fa-bars']),
     "aria-label": $options.sidebar ? _ctx.$t('button.close') : _ctx.$t('button.menu')
-  }, null, 10 /* CLASS, PROPS */, _hoisted_28)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_30, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+  }, null, 10 /* CLASS, PROPS */, _hoisted_28)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [UR3-A1 V1.0.2 Wave D1] Profile dropdown — ARIA + keyboard nav additive over dropdown.js "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    "class": "dropdown-btn flex items-center gap-2",
+    ref: "profileTrigger",
+    id: $data.profileMenuTriggerId,
+    "aria-expanded": $data.profileMenuOpen ? 'true' : 'false',
+    "aria-haspopup": "menu",
+    "aria-controls": $data.profileMenuId,
+    onKeydown: [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)(function () {
+      return $options.closeProfileMenu && $options.closeProfileMenu.apply($options, arguments);
+    }, ["escape"])), _cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.openProfileMenuAndFocusFirst && $options.openProfileMenuAndFocusFirst.apply($options, arguments);
+    }, ["prevent"]), ["down"]))]
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "flex-shrink-0 w-9 h-9 object-cover rounded-lg",
     src: $options.authInfo.image,
     alt: "avatar"
   }, null, 8 /* PROPS */, _hoisted_31), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix A-009/A-012 round-7 2026-05-10] No JS chop \"..\"; CSS ellipsis + :title for full name on hover/SR "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.hello')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("b", {
     title: $options.authInfo.name,
     "class": "block font-semibold text-[#111827] overflow-hidden text-ellipsis whitespace-nowrap max-w-[160px]"
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.authInfo.name), 9 /* TEXT, PROPS */, _hoisted_33)]), _cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-    "class": "lab lab-arrow-down text-xs ml-1.5 lab-font-size-14"
-  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_34, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_35, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("figure", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.authInfo.name), 9 /* TEXT, PROPS */, _hoisted_33)]), _cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-arrow-down text-xs ml-1.5 lab-font-size-14",
+    "aria-hidden": "true"
+  }, null, -1 /* CACHED */))], 40 /* PROPS, NEED_HYDRATION */, _hoisted_30), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    id: $data.profileMenuId,
+    role: "menu",
+    "aria-labelledby": $data.profileMenuTriggerId,
+    ref: "profileMenu",
+    onKeydown: _cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)(function () {
+      return $options.closeProfileMenu && $options.closeProfileMenu.apply($options, arguments);
+    }, ["escape"])),
+    "class": "dropdown-list fixed sm:absolute top-[75px] sm:top-12 ltr:right-0 rtl:left-0 z-[60] rounded-xl w-full h-[calc(100dvh_-_75px)] overflow-y-auto sm:h-auto sm:w-[360px] p-4 shadow-paper bg-white transition-all duration-300 scale-y-0 origin-top"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_35, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("figure", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "w-[90px] h-[90px] rounded-full shadow-avatar",
     src: $options.authInfo.image,
     alt: "avatar"
   }, null, 8 /* PROPS */, _hoisted_37)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
-    onChange: _cache[4] || (_cache[4] = function () {
+    onChange: _cache[6] || (_cache[6] = function () {
       return $options.saveImage && $options.saveImage.apply($options, arguments);
     }),
     accept: "image/png, image/jpeg, image/jpg",
@@ -68081,56 +68170,67 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     id: "imageProperty",
     "aria-label": _ctx.$t('button.edit_profile'),
     "class": "w-full h-full rounded-full opacity-0 cursor-pointer"
-  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_39), _cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_39), _cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-edit-2 absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 -z-10 lab-font-size-24 lab-font-color-1"
   }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix A-009/A-012 round-7 2026-05-10] Render full name + title fallback; CSS handles overflow "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", {
     title: $options.authInfo.name,
     "class": "font-medium text-sm leading-6 capitalize mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap max-w-[260px] mx-auto"
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.authInfo.name), 9 /* TEXT, PROPS */, _hoisted_40), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.authInfo.email), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\\Support\\PhoneDisplay::safe "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.safePhone($options.authInfo.phone) ? ($options.authInfo.country_code || '') + $options.safePhone($options.authInfo.phone) : ''), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_43, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.authInfo.currency_balance), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", null, [$options.isPosV4Shell ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", _hoisted_44, [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-    "class": "lab lab-edit lab-font-size-17"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.edit_profile')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_router_link, {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.authInfo.name), 9 /* TEXT, PROPS */, _hoisted_40), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.authInfo.email), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\\Support\\PhoneDisplay::safe "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.safePhone($options.authInfo.phone) ? ($options.authInfo.country_code || '') + $options.safePhone($options.authInfo.phone) : ''), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_43, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.authInfo.currency_balance), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [UR3-A1 V1.0.2 Wave D1] role=\"none\" makes <nav> transparent to AT so role=\"menu\"\n                         on the outer container correctly owns the role=\"menuitem\" children per ARIA spec\n                         (fixes axe aria-required-children + aria-required-parent). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", _hoisted_44, [$options.isPosV4Shell ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", _hoisted_45, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-edit lab-font-size-17",
+    "aria-hidden": "true"
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.edit_profile')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_router_link, {
     key: 1,
     to: {
       name: 'admin.profile.editProfile'
     },
+    role: "menuitem",
+    tabindex: "-1",
     "class": "paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-        "class": "lab lab-edit lab-font-size-17"
-      }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.edit_profile')), 1 /* TEXT */)];
+      return [_cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+        "class": "lab lab-edit lab-font-size-17",
+        "aria-hidden": "true"
+      }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_47, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.edit_profile')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
-  })), $options.isPosV4Shell ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", _hoisted_47, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-    "class": "lab lab-key lab-font-size-17"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_48, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.change_password')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_router_link, {
+  })), $options.isPosV4Shell ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", _hoisted_48, [_cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-key lab-font-size-17",
+    "aria-hidden": "true"
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_49, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.change_password')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_router_link, {
     key: 3,
     to: {
       name: 'admin.profile.changePassword'
     },
+    role: "menuitem",
+    tabindex: "-1",
     "class": "paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-        "class": "lab lab-key lab-font-size-17"
-      }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_49, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.change_password')), 1 /* TEXT */)];
+      return [_cache[20] || (_cache[20] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+        "class": "lab lab-key lab-font-size-17",
+        "aria-hidden": "true"
+      }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_50, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.change_password')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
   })), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
-    onClick: _cache[5] || (_cache[5] = function ($event) {
+    onClick: _cache[7] || (_cache[7] = function ($event) {
       return $options.logout();
     }),
+    role: "menuitem",
+    tabindex: "-1",
     "class": "paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]"
-  }, [_cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-    "class": "lab lab-logout lab-font-size-17"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_50, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.logout')), 1 /* TEXT */)])])])])])]), $data.orderNotificationStatus ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_51, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_52, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
-    onClick: _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+  }, [_cache[21] || (_cache[21] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-logout lab-font-size-17",
+    "aria-hidden": "true"
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_51, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.logout')), 1 /* TEXT */)])])], 40 /* PROPS, NEED_HYDRATION */, _hoisted_34)])])]), $data.orderNotificationStatus ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_52, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_53, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    onClick: _cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.closeOrderNotificationModal && $options.closeOrderNotificationModal.apply($options, arguments);
     }, ["prevent"])),
     "class": "modal-close absolute top-4 right-4"
-  }, _toConsumableArray(_cache[19] || (_cache[19] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, _toConsumableArray(_cache[22] || (_cache[22] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "fa-regular fa-circle-xmark"
-  }, null, -1 /* CACHED */)]))), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_53, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.orderNotificationMessage) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.please_check_your_order_list')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_router_link, {
+  }, null, -1 /* CACHED */)]))), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_54, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.orderNotificationMessage) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_55, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.please_check_your_order_list')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_router_link, {
     onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)($options.closeOrderNotificationModal, ["prevent"]),
     to: {
       path: '/admin/' + $options.getUrl()
