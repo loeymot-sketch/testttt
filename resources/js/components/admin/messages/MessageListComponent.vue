@@ -38,7 +38,7 @@
                     <img v-if="user.image" class="flex-shrink-0 w-9 rounded" :src="user.image" alt="avatar">
                     <h4 class="text-sm font-medium leading-4 capitalize">{{ user.name }}
                         <span class="block mt-2 text-xs font-normal leading-[14px] text-paragraph">{{
-                            user.phone
+                            user.phone && !String(user.phone).startsWith('PENDING_') ? user.phone : ''
                             }}</span>
                     </h4>
                 </div>

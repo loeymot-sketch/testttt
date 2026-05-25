@@ -85,7 +85,7 @@
                             <tr class="db-table-body-tr" v-for="user in creditBalanceReports" :key="user">
                                 <td class="db-table-body-td">{{ user.name }}</td>
                                 <td class="db-table-body-td">{{ user.email }}</td>
-                                <td class="db-table-body-td">{{ user.phone ? user.country_code + '' + user.phone : '' }}
+                                <td class="db-table-body-td">{{ user.phone && !String(user.phone).startsWith('PENDING_') ? user.country_code + '' + user.phone : '' }}
                                 </td>
                                 <td class="db-table-body-td">{{ user.balance }}</td>
 

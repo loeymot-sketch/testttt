@@ -1,0 +1,18 @@
+[
+  {
+    "type": "warning",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established."
+  },
+  {
+    "type": "info",
+    "text": "Connecting to 'http://localhost:8000/api/broadcasting/auth' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https:\". The policy is report-only, so the violation has been logged but no further action has been taken."
+  },
+  {
+    "type": "warning",
+    "text": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established."
+  },
+  {
+    "type": "info",
+    "text": "Connecting to 'http://localhost:8000/api/broadcasting/auth' violates the following Content Security Policy directive: \"connect-src 'self' ws: wss: https:\". The policy is report-only, so the violation has been logged but no further action has been taken."
+  }
+]

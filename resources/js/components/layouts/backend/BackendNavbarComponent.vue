@@ -124,7 +124,7 @@
                         <h3 :title="authInfo.name" class="font-medium text-sm leading-6 capitalize mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap max-w-[260px] mx-auto">{{ authInfo.name }}
                         </h3>
                         <p class="text-xs mb-0.5">{{ authInfo.email }}</p>
-                        <p dir="ltr" class="text-xs">{{ authInfo.country_code }}{{ authInfo.phone }}</p>
+                        <p dir="ltr" class="text-xs">{{ authInfo.phone && !String(authInfo.phone).startsWith('PENDING_') ? (authInfo.country_code || '') + authInfo.phone : '' }}</p>
                         <h3 class="font-medium text-sm leading-6 capitalize mb-0.5">{{ authInfo.currency_balance }}</h3>
                     </div>
                     <nav>

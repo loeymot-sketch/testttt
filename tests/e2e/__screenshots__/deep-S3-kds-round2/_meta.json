@@ -1,0 +1,18 @@
+{
+  "historiqueFound": true,
+  "historiqueOpened": true,
+  "cardProbe": {
+    ".order-card": 0,
+    ".kds-order": 0,
+    "[data-order-id]": 1,
+    ".card-order": 0,
+    ".kds-card": 1,
+    ".order-tile": 0,
+    "allDataOrder": 0,
+    "bodyLen": 29758,
+    "kdsRootPresent": true,
+    "vueAppPresent": true,
+    "title": "Le Cayenne"
+  },
+  "finalUrl": "http://127.0.0.1:8000/admin/kitchen-display-system"
+}
