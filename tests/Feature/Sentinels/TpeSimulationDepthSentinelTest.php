@@ -131,7 +131,7 @@ class TpeSimulationDepthSentinelTest extends TestCase
 
         $order = $this->createKioskCardOrder(50.00);
 
-        $response = $this->postJson('/api/frontend/payment-reconcile', [
+        $response = $this->postJson('/api/frontend/payment/reconcile-pending', [
             'entries' => [
                 [
                     'order_id'       => $order->id,
