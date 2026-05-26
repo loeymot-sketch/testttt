@@ -13883,6 +13883,20 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       return this.$store.getters["deliveryBoy/lists"];
     },
     orderStatusObject: function orderStatusObject() {
+      // [HEAL-4 / PROPOSAL-02 / B2-P3-CF-02 — V101-02 2026-05-26]
+      // RETURNED was REMOVED from the selectable status dropdown to
+      // mirror PosOrderShowComponent (same NF525 bypass fix). Pre-heal
+      // a staffer could flip an online order to "Returned" without
+      // creating the NF525 counter-entry mirror — violates the Loi
+      // de Finance France append-only requirement. Refunds must go
+      // through PosRefundModal (POST refund-with-counter-entry) which
+      // is exposed in PosOrderShowComponent for past orders. Online
+      // orders that need refunding should be routed through the same
+      // mirror service (future enhancement: surface the Refund CTA
+      // here too — V1.0.2 candidate). For now, lock the bypass.
+      //
+      // RETURNED stays in orderStatusEnumArray (display map) so
+      // historical refunded orders still render "Retourné".
       var list = [{
         name: this.$t("label.accept"),
         value: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_4__["default"].ACCEPT
@@ -13898,10 +13912,10 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       }] : []), [{
         name: this.$t("label.delivered"),
         value: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_4__["default"].DELIVERED
-      }, {
-        name: this.$t("label.returned"),
-        value: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_4__["default"].RETURNED
-      }]);
+      }
+      // REMOVED: { name: this.$t("label.returned"), value: orderStatusEnum.RETURNED }
+      // Use PosRefundModal NF525 counter-entry refund path instead.
+      ]);
       return list;
     },
     orderStatusEnumArray: function orderStatusEnumArray() {

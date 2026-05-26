@@ -196,6 +196,29 @@
                     "generic": "تعذّر تطبيق الخصم."
                 }
             }
+        },
+        "refund": {
+            "btn_open": "استرداد",
+            "modal_title": "استرداد هذا الطلب",
+            "source_badge": "NF525",
+            "close": "إغلاق",
+            "field_total": "إجمالي الاسترداد",
+            "field_payment_method": "طريقة الدفع",
+            "field_date": "التاريخ",
+            "warning": "هذا الإجراء ينشئ أمرًا معاكسًا NF525 وإيصال استرداد. العملية لا رجعة فيها.",
+            "reason_label": "السبب (مطلوب)",
+            "reason_placeholder": "مثال: صنف خاطئ، اعتراض العميل، رفض البطاقة بعد الإيصال…",
+            "reason_help": "5 أحرف كحد أدنى — يُسجَّل السبب في سلسلة التدقيق.",
+            "reason_min_error": "يجب أن يحتوي السبب على 5 أحرف على الأقل.",
+            "confirm_btn": "تأكيد الاسترداد",
+            "cancel_btn": "إلغاء",
+            "processing": "جارٍ المعالجة…",
+            "success": "تم الاسترداد ✓",
+            "already_refunded": "تم استرداد هذا الطلب بالفعل.",
+            "error_permission": "ليس لديك صلاحية إصدار استرداد.",
+            "error_invalid": "لا يمكن استرداد هذا الطلب.",
+            "error_server": "خطأ في الخادم — أعد المحاولة أو اتصل بالمسؤول.",
+            "error_generic": "تعذّر إصدار الاسترداد."
         }
     },
     "menu": {
@@ -1081,6 +1104,15 @@
         "kds_state_prepared": "جاهز",
         "kds_state_out": "قيد التوصيل",
         "kds_state_delivered": "تم التسليم",
+        "kds_recall_button": "↶ إلغاء التأكيد",
+        "kds_recall_button_aria": "إلغاء تأكيد الطلب رقم {queue} — متاح لمدة 60 ثانية",
+        "kds_recall_badge": "تم الاسترداد",
+        "kds_recall_badge_aria": "تم استرداد الطلب رقم {queue} إلى المطبخ",
+        "kds_recall_confirm_title": "إلغاء حالة \"جاهز\" هذه؟",
+        "kds_recall_warning_60s": "متاح لمدة 60 ثانية بعد التأكيد",
+        "kds_recall_success": "تم استرداد الطلب ✓",
+        "kds_recall_too_late": "انقضت مهلة 60 ثانية — اتصل بأمين الصندوق",
+        "kds_recall_already_recalled": "تم استرداد هذا الطلب بالفعل",
         "kds_served_pill_title": "الطلب رقم {queue} تم تقديمه",
         "kds_served_just_now": "للتو",
         "kds_served_ago": "منذ {mins} د",

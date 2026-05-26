@@ -188,6 +188,22 @@ class PermissionTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] POS Refund UI permission.
+            // Gates the new PosRefundModal.vue counter-entry refund workflow. The
+            // backend route (refund-with-counter-entry) is permission-guarded via
+            // PosOrderController::refundWithCounterEntry (abort_unless can() check).
+            // Granted ONLY to Admin (auto via Permission::all()) + Branch Manager
+            // (explicit list). POS Operator does NOT get this permission by default
+            // to prevent mass-refund vector (proposal §8 risk register #1).
+            // Owner can grant manually via /admin/role/{id}/edit UI if needed.
+            [
+                'title'      => 'POS Refund (Counter-Entry NF525)',
+                'name'       => 'pos-refund',
+                'guard_name' => 'sanctum',
+                'url'        => 'pos/refund',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
             [
                 'title'      => 'Online Orders',
                 'name'       => 'online-orders',

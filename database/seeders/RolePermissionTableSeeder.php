@@ -82,6 +82,11 @@ class RolePermissionTableSeeder extends Seeder
                 // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Branch Manager can
                 // apply customer loyalty redemption from POS cashier UI.
                 'pos.redeem-loyalty',
+                // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] Branch Manager can
+                // issue NF525 counter-entry refunds via the new PosRefundModal UI.
+                // Admin gets this via Permission::all() above. POS Operator does
+                // NOT get it by default (mass-refund vector mitigation).
+                'pos-refund',
             ];
             $branchManager->givePermissionTo(
                 Permission::whereIn('name', $branchManagerPermissionNames)->get()

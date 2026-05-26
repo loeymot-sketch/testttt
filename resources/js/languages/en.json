@@ -306,6 +306,29 @@
                     "generic": "Unable to apply the discount."
                 }
             }
+        },
+        "refund": {
+            "btn_open": "Refund",
+            "modal_title": "Refund this order",
+            "source_badge": "NF525",
+            "close": "Close",
+            "field_total": "Refund total",
+            "field_payment_method": "Payment method",
+            "field_date": "Date",
+            "warning": "This action creates an NF525 mirror order and a refund receipt. The operation is irreversible.",
+            "reason_label": "Reason (required)",
+            "reason_placeholder": "Example: wrong item served, customer dispute, card declined after ticket…",
+            "reason_help": "Minimum 5 characters — the reason is logged in the audit chain.",
+            "reason_min_error": "Reason must contain at least 5 characters.",
+            "confirm_btn": "Confirm refund",
+            "cancel_btn": "Cancel",
+            "processing": "Processing…",
+            "success": "Refund issued ✓",
+            "already_refunded": "This order has already been refunded.",
+            "error_permission": "You don't have permission to issue a refund.",
+            "error_invalid": "This order cannot be refunded.",
+            "error_server": "Server error — try again or contact the administrator.",
+            "error_generic": "Unable to issue the refund."
         }
     },
     "menu": {
@@ -1233,6 +1256,15 @@
         "kds_state_prepared": "Ready",
         "kds_state_out": "Out for delivery",
         "kds_state_delivered": "Delivered",
+        "kds_recall_button": "↶ Undo bump",
+        "kds_recall_button_aria": "Undo bump for order N°{queue} — available for 60 seconds",
+        "kds_recall_badge": "RECALLED",
+        "kds_recall_badge_aria": "Order N°{queue} recalled to kitchen",
+        "kds_recall_confirm_title": "Undo this \"Ready\"?",
+        "kds_recall_warning_60s": "Available 60 seconds after bump",
+        "kds_recall_success": "Order recalled ✓",
+        "kds_recall_too_late": "60s window expired — contact cashier",
+        "kds_recall_already_recalled": "This order has already been recalled",
         "kds_served_pill_title": "Order #{queue} served",
         "kds_served_just_now": "just now",
         "kds_served_ago": "{mins} min ago",

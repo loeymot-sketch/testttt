@@ -307,6 +307,29 @@
                     "generic": "Impossible d'appliquer la réduction."
                 }
             }
+        },
+        "refund": {
+            "btn_open": "Rembourser",
+            "modal_title": "Rembourser cette commande",
+            "source_badge": "NF525",
+            "close": "Fermer",
+            "field_total": "Total à rembourser",
+            "field_payment_method": "Mode de paiement",
+            "field_date": "Date",
+            "warning": "Cette action génère une commande miroir NF525 et un ticket de remboursement. L'opération est irréversible.",
+            "reason_label": "Raison du remboursement (obligatoire)",
+            "reason_placeholder": "Exemple : article erroné, client mécontent, CB déclinée après ticket…",
+            "reason_help": "Minimum 5 caractères — la raison est journalisée dans la chaîne d'audit.",
+            "reason_min_error": "La raison doit contenir au moins 5 caractères.",
+            "confirm_btn": "Confirmer le remboursement",
+            "cancel_btn": "Annuler",
+            "processing": "Traitement en cours…",
+            "success": "Remboursement effectué ✓",
+            "already_refunded": "Cette commande a déjà été remboursée.",
+            "error_permission": "Vous n'avez pas le droit d'émettre un remboursement.",
+            "error_invalid": "Cette commande ne peut pas être remboursée.",
+            "error_server": "Erreur serveur — réessayez ou contactez l'administrateur.",
+            "error_generic": "Impossible d'émettre le remboursement."
         }
     },
     "menu": {
@@ -748,6 +771,15 @@
         "kds_state_prepared": "Prêt",
         "kds_state_out": "En livraison",
         "kds_state_delivered": "Livré",
+        "kds_recall_button": "↶ Annuler bump",
+        "kds_recall_button_aria": "Annuler le bump de la commande N°{queue} — disponible 60 secondes",
+        "kds_recall_badge": "RAPPELÉ",
+        "kds_recall_badge_aria": "Commande N°{queue} rappelée en cuisine",
+        "kds_recall_confirm_title": "Annuler ce \"Prêt\" ?",
+        "kds_recall_warning_60s": "Disponible 60 secondes après bump",
+        "kds_recall_success": "Commande rappelée ✓",
+        "kds_recall_too_late": "Délai 60s dépassé — contacter cassier",
+        "kds_recall_already_recalled": "Cette commande a déjà été rappelée",
         "kds_served_pill_title": "Commande N°{queue} servie",
         "kds_served_just_now": "à l'instant",
         "kds_served_ago": "il y a {mins} min",

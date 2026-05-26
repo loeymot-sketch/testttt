@@ -49,6 +49,18 @@ class PosOrderController extends AdminController
         Request $request,
         \App\Services\Order\RefundWithCounterEntryService $service
     ): \Illuminate\Http\JsonResponse {
+        // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] Permission gate.
+        // Granted ONLY to Admin (Permission::all()) + Branch Manager (explicit).
+        // POS Operator does NOT get this permission by default (mass-refund
+        // vector mitigation per PROPOSAL_POS_REFUND_UI_2026-05-25 §8 risk #1).
+        // Owner can grant manually via /admin/role/{id}/edit UI if needed.
+        // Fail-fast BEFORE validation to surface the authz error cleanly.
+        abort_unless(
+            \Illuminate\Support\Facades\Auth::user()?->can('pos-refund') ?? false,
+            403,
+            'Insufficient permission to issue refund.'
+        );
+
         $validated = $request->validate([
             'reason' => ['required', 'string', 'min:3', 'max:700'],
         ]);

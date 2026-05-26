@@ -174,6 +174,30 @@
                         <i class="lab lab-printer-line lab-font-size-16 text-white"></i>
                         <span class="text-sm capitalize text-white">{{ $t('button.print_invoice') }}</span>
                     </button>
+                    <!--
+                      [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26]
+                      POS Refund UI button — NF525 counter-entry refund CTA.
+                      Visible ONLY when:
+                        - order is PAID (payment_status === PAID)
+                        - order is NOT already a refund mirror (parent_order_id null/0)
+                        - current user holds `pos-refund` permission (Admin or Branch Manager)
+                      Opens PosRefundModal which POSTs to backend route
+                      /api/admin/pos-order/{id}/refund-with-counter-entry — service
+                      creates an immutable mirror order with full-negate totals +
+                      fresh fiscal_sequence_no, preserving the NF525 append-only chain.
+                      Backend triple-defense: UUID idempotency + UNIQUE(parent_order_id)
+                      + 409 MIRROR_ALREADY_EXISTS handler (PosOrderController:82-96).
+                    -->
+                    <button
+                        v-if="canShowRefund"
+                        type="button"
+                        class="flex items-center justify-center gap-2 px-4 h-[38px] rounded shadow-db-card border-2 border-[#cf3a3a] bg-white text-[#cf3a3a] hover:bg-[#cf3a3a] hover:text-white transition"
+                        data-testid="pos-order-refund-open"
+                        @click="openRefundModal"
+                    >
+                        <span aria-hidden="true">💸</span>
+                        <span class="text-sm capitalize">{{ $t('pos.refund.btn_open') }}</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -333,6 +357,18 @@
         @close="loyaltyRedeemOpen = false"
         @applied="onLoyaltyRedeemApplied"
     />
+
+    <!-- [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] NF525 Refund modal.
+         Reusable standalone modal — opens via the "Rembourser" CTA above.
+         On `refunded`, refreshes the order so REMBOURSEMENT marker + new
+         payment_status appear without page reload. Modal is fed the
+         `refundTarget` (cleared on close); v-if visibility is driven by
+         the modal's internal computed (order != null). -->
+    <PosRefundModal
+        :order="refundTarget"
+        @close="onRefundClose"
+        @refunded="onRefundCompleted"
+    />
 </template>
 <script>
 import LoadingComponent from "../components/LoadingComponent";
@@ -356,6 +392,12 @@ import PosOrderMapComponent from "./PosOrderMapComponent";
 // modal itself is server-permission-gated so it's safe to render the CTA
 // unconditionally — backend will 403 unauthorized cashiers.
 import PosLoyaltyRedeemModal from "../pos/PosLoyaltyRedeemModal.vue";
+// [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] NF525 refund modal.
+// Owner-mandate V1 ship gate per PROPOSAL_POS_REFUND_UI_2026-05-25 §3
+// Option B (reusable standalone modal). Visibility CTA gated by
+// permission `pos-refund` (Admin + Branch Manager ONLY). Backend route
+// is also permission-gated (defense-in-depth, fail-fast 403).
+import PosRefundModal from "../pos/PosRefundModal.vue";
 // [WT-D-R1-F4 2026-05-20] Shared admin FR EUR price formatter — canonicalises
 // "19,00 €" across PosOrderShow / PosOrderList / tracker.
 import { adminPriceMixin } from "../../../helpers/formatPrice";
@@ -372,6 +414,8 @@ export default {
         PosOrderReceiptComponent,
         PosOrderMapComponent,
         PosLoyaltyRedeemModal,
+        // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26]
+        PosRefundModal,
     },
     directives: {
         print
@@ -401,6 +445,10 @@ export default {
             // successful driver assignment so the cashier visually perceives
             // the state change beyond the toast.
             driverFlashHighlight: false,
+            // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] Refund modal target.
+            // Non-null = modal visible. Cleared on close/cancel/refunded.
+            // The order ref is the live `this.order` snapshot at click time.
+            refundTarget: null,
         }
     },
     mounted() {
@@ -453,7 +501,49 @@ export default {
             if (terminal.includes(o.status)) return false;
             return true;
         },
+        // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] Refund CTA visibility.
+        // Backend is authoritative (PosOrderController:54-57 abort_unless can()
+        // and RefundWithCounterEntryService own guards) — this computed only
+        // hides the visual entry point for cases that would obviously fail:
+        //   1. No order loaded yet
+        //   2. Order not paid (nothing to refund)
+        //   3. Order IS a refund mirror itself (parent_order_id set) — would
+        //      DB-UNIQUE-block via 409 MIRROR_ALREADY_EXISTS anyway
+        //   4. Current user does NOT hold `pos-refund` permission
+        //      (Admin + Branch Manager ONLY by default per RolePermissionTableSeeder)
+        // Server permission is the source of truth — frontend hide just spares
+        // the cashier a confusing 403 toast.
+        canShowRefund: function () {
+            const o = this.order || {};
+            if (!o.id) return false;
+            if (o.payment_status !== paymentStatusEnum.PAID) return false;
+            // parent_order_id non-null/0 = this is itself a refund mirror.
+            // Cannot refund a refund. Backend UNIQUE constraint also blocks.
+            if (o.parent_order_id && Number(o.parent_order_id) > 0) return false;
+            // Permission gate — Admin + Branch Manager only by default.
+            // appService.permissionChecker reads the same authPermission
+            // store array used elsewhere (PosOrderListComponent etc).
+            if (!appService.permissionChecker('pos-refund')) return false;
+            return true;
+        },
         orderStatusObject: function () {
+            // [HEAL-4 / PROPOSAL-02 / B2-P3-CF-02 — V101-02 2026-05-26]
+            // RETURNED was REMOVED from the selectable status dropdown.
+            // Pre-heal a cashier could flip an order to "Returned" via this
+            // dropdown to refund cosmetically — WITHOUT creating the NF525
+            // counter-entry mirror order. This violates the Loi de Finance
+            // France append-only requirement (a refund MUST emit a mirror
+            // order in the current Z window so the audit chain reflects the
+            // negative line).
+            //
+            // The legitimate refund path is now the new PosRefundModal CTA
+            // ("💸 Rembourser") gated by permission `pos-refund`, which
+            // POSTs to /api/admin/pos-order/{id}/refund-with-counter-entry
+            // and properly creates the mirror via RefundWithCounterEntryService.
+            //
+            // We keep RETURNED in `orderStatusEnumArray` (display map) so
+            // existing/historical refunded orders still render "Retourné"
+            // correctly in the UI. Only the SELECTOR is restricted.
             const list = [
                 { name: this.$t("label.accept"), value: orderStatusEnum.ACCEPT },
                 { name: this.$t("label.preparing"), value: orderStatusEnum.PREPARING },
@@ -462,7 +552,8 @@ export default {
                     ? [{ name: this.$t("label.out_for_delivery"), value: orderStatusEnum.OUT_FOR_DELIVERY }]
                     : []),
                 { name: this.$t("label.delivered"), value: orderStatusEnum.DELIVERED },
-                { name: this.$t("label.returned"), value: orderStatusEnum.RETURNED },
+                // REMOVED: { name: this.$t("label.returned"), value: orderStatusEnum.RETURNED }
+                // Use the Rembourser modal instead — NF525 mirror order required.
             ];
 
             return list;
@@ -528,6 +619,35 @@ export default {
         // reflect the new state. Then close the modal.
         onLoyaltyRedeemApplied: function () {
             this.loyaltyRedeemOpen = false;
+            this.loading.isActive = true;
+            this.$store
+                .dispatch('posOrder/show', this.$route.params.id)
+                .then((res) => {
+                    this.payment_status = res.data.data.payment_status;
+                    this.order_status = res.data.data.status;
+                    this.loading.isActive = false;
+                })
+                .catch(() => {
+                    this.loading.isActive = false;
+                });
+        },
+        // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] Refund modal handlers.
+        openRefundModal: function () {
+            // Snapshot the current order into refundTarget — the modal owns
+            // its own form state; we just feed it the order ref.
+            this.refundTarget = this.order || null;
+        },
+        onRefundClose: function () {
+            this.refundTarget = null;
+        },
+        onRefundCompleted: function (_payload) {
+            // Refresh the order so the new payment_status / REMBOURSEMENT
+            // marker / mirror reference materialize without page reload.
+            // `_payload` carries { mirrorOrder, parentOrderId,
+            // mirrorFiscalSequenceNo, alreadyRefunded? } — we just trigger
+            // a fresh fetch of the parent ; the mirror appears in the
+            // history list via its own routes.
+            this.refundTarget = null;
             this.loading.isActive = true;
             this.$store
                 .dispatch('posOrder/show', this.$route.params.id)

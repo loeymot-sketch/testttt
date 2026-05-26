@@ -230,6 +230,15 @@ class RefundCounterEntryUniqueParentTest extends TestCase
             \Spatie\Permission\Models\Permission::create(['name' => 'pos-orders', 'guard_name' => 'web']);
         }
         $admin->givePermissionTo('pos-orders');
+        // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] New pos-refund permission
+        // gate added to PosOrderController::refundWithCounterEntry. Admin role
+        // gets all permissions in production via Permission::all(); this test
+        // creates a bare Admin user with assignRole + minimal grants so we
+        // need to explicitly add pos-refund here to clear the new gate.
+        if (!\Spatie\Permission\Models\Permission::where('name', 'pos-refund')->exists()) {
+            \Spatie\Permission\Models\Permission::create(['name' => 'pos-refund', 'guard_name' => 'sanctum']);
+        }
+        $admin->givePermissionTo('pos-refund');
 
         $opened = Carbon::parse('2026-05-01 08:00:00');
         $closed = Carbon::parse('2026-05-01 20:00:00');

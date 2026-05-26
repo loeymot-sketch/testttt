@@ -368,6 +368,20 @@ export default {
             return this.$store.getters["deliveryBoy/lists"];
         },
         orderStatusObject: function () {
+            // [HEAL-4 / PROPOSAL-02 / B2-P3-CF-02 — V101-02 2026-05-26]
+            // RETURNED was REMOVED from the selectable status dropdown to
+            // mirror PosOrderShowComponent (same NF525 bypass fix). Pre-heal
+            // a staffer could flip an online order to "Returned" without
+            // creating the NF525 counter-entry mirror — violates the Loi
+            // de Finance France append-only requirement. Refunds must go
+            // through PosRefundModal (POST refund-with-counter-entry) which
+            // is exposed in PosOrderShowComponent for past orders. Online
+            // orders that need refunding should be routed through the same
+            // mirror service (future enhancement: surface the Refund CTA
+            // here too — V1.0.2 candidate). For now, lock the bypass.
+            //
+            // RETURNED stays in orderStatusEnumArray (display map) so
+            // historical refunded orders still render "Retourné".
             const list = [
                 { name: this.$t("label.accept"), value: orderStatusEnum.ACCEPT },
                 { name: this.$t("label.preparing"), value: orderStatusEnum.PREPARING },
@@ -376,7 +390,8 @@ export default {
                     ? [{ name: this.$t("label.out_for_delivery"), value: orderStatusEnum.OUT_FOR_DELIVERY }]
                     : []),
                 { name: this.$t("label.delivered"), value: orderStatusEnum.DELIVERED },
-                { name: this.$t("label.returned"), value: orderStatusEnum.RETURNED },
+                // REMOVED: { name: this.$t("label.returned"), value: orderStatusEnum.RETURNED }
+                // Use PosRefundModal NF525 counter-entry refund path instead.
             ];
 
             return list;
