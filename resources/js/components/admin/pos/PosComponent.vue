@@ -1272,7 +1272,8 @@
                 <button
                   class="kiosk-cash-cancel-btn"
                   :disabled="order._collecting || order._canceling"
-                  @click="cancelKioskCashOrder(order)"
+                  data-testid="kiosk-cash-cancel-open"
+                  @click="openCancelKioskCashDialog(order)"
                 >
                   {{ order._canceling ? '…' : 'Annuler' }}
                 </button>
@@ -1285,6 +1286,102 @@
         </div>
       </div>
     </transition>
+
+    <!--
+      [HEAL B2-P6-F01 2026-05-26] Confirmation dialog before destructive
+      cancel of a kiosk-cash counter-collect order. Mirrors the
+      PosOrdersTrackerComponent cancel-with-reason pattern (role=dialog
+      + aria-modal + required textarea ≥3 chars + danger button) so a
+      single-click on the "Annuler" button never reaches the backend
+      without operator-typed reason. Owner mandate: "ajouter
+      confirmation avant action destructive irréversible".
+    -->
+    <div
+      v-if="cancelKioskCashDialog.open"
+      class="pos-kiosk-cash-cancel-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pos-kiosk-cash-cancel-title"
+      data-testid="kiosk-cash-cancel-dialog"
+      @click.self="closeCancelKioskCashDialog"
+      @keydown.esc="closeCancelKioskCashDialog"
+    >
+      <div class="pos-kiosk-cash-cancel-card">
+        <header class="pos-kiosk-cash-cancel-head">
+          <h3 id="pos-kiosk-cash-cancel-title">{{ $t('pos.cancel_kiosk_cash.title') }}</h3>
+          <button
+            type="button"
+            class="pos-kiosk-cash-cancel-close"
+            :aria-label="$t('button.close')"
+            :disabled="cancelKioskCashDialog.busy"
+            @click="closeCancelKioskCashDialog"
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </header>
+        <div class="pos-kiosk-cash-cancel-body">
+          <p class="pos-kiosk-cash-cancel-warning" role="alert">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            {{ $t('pos.cancel_kiosk_cash.warning') }}
+          </p>
+          <p class="pos-kiosk-cash-cancel-target" v-if="cancelKioskCashDialog.order">
+            <strong>
+              {{ cancelKioskCashDialog.order.queue_number
+                ? 'N° ' + cancelKioskCashDialog.order.queue_number
+                : '#' + (cancelKioskCashDialog.order.order_serial_no || cancelKioskCashDialog.order.id) }}
+            </strong>
+            <span> — {{ formatKioskPrice(
+              cancelKioskCashDialog.order.total
+                ?? cancelKioskCashDialog.order.total_amount_price
+                ?? cancelKioskCashDialog.order.order_amount
+            ) }}</span>
+          </p>
+          <label for="pos-kiosk-cash-cancel-reason" class="pos-kiosk-cash-cancel-label">
+            {{ $t('pos.cancel_kiosk_cash.reason_required') }}
+          </label>
+          <textarea
+            id="pos-kiosk-cash-cancel-reason"
+            ref="cancelKioskCashReasonInput"
+            v-model="cancelKioskCashDialog.reason"
+            rows="3"
+            maxlength="700"
+            class="pos-kiosk-cash-cancel-textarea"
+            data-testid="kiosk-cash-cancel-reason"
+          ></textarea>
+          <div
+            v-if="cancelKioskCashDialog.error"
+            class="pos-kiosk-cash-cancel-error"
+            role="alert"
+            aria-live="assertive"
+          >
+            <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+            <span>{{ cancelKioskCashDialog.error }}</span>
+          </div>
+        </div>
+        <footer class="pos-kiosk-cash-cancel-foot">
+          <button
+            type="button"
+            class="pos-kiosk-cash-cancel-btn pos-kiosk-cash-cancel-btn--ghost"
+            :disabled="cancelKioskCashDialog.busy"
+            data-testid="kiosk-cash-cancel-back"
+            @click="closeCancelKioskCashDialog"
+          >
+            {{ $t('pos.cancel_kiosk_cash.back_btn') }}
+          </button>
+          <button
+            type="button"
+            class="pos-kiosk-cash-cancel-btn pos-kiosk-cash-cancel-btn--danger"
+            :disabled="cancelKioskCashDialog.busy"
+            :aria-busy="cancelKioskCashDialog.busy"
+            data-testid="kiosk-cash-cancel-confirm"
+            @click="confirmCancelKioskCashOrder"
+          >
+            <i v-if="cancelKioskCashDialog.busy" class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+            {{ $t('pos.cancel_kiosk_cash.confirm_btn') }}
+          </button>
+        </footer>
+      </div>
+    </div>
 
     <!--
       [Wave X X1 P-OWNER 2026-05-21] Counter-collect SSOT modal — replaces
@@ -1460,6 +1557,18 @@ export default {
             kioskCashOrders: [],
             kioskCashLoading: false,
             showKioskCashPanel: false,
+            // [HEAL B2-P6-F01 2026-05-26] Confirm-before-cancel dialog
+            // state for kiosk-cash (counter-collect) orders. Mirrors the
+            // PosOrdersTrackerComponent cancelDialog pattern so any
+            // destructive cancel requires operator-typed reason (≥3
+            // chars) before the backend POST fires.
+            cancelKioskCashDialog: {
+                open: false,
+                order: null,
+                reason: '',
+                error: '',
+                busy: false,
+            },
             // [Wave X X1 P-OWNER 2026-05-21] Counter-collect SSOT modal trigger.
             //
             // When non-null, PosCounterCollectModal renders with this Order
@@ -2837,13 +2946,20 @@ export default {
             }
             const debounced = idKey && this._availabilityToastTimers[idKey];
             const safeName = itemName || ('#' + itemId);
+            // [HEAL-2 V102-03 2026-05-26] i18n FR/EN/AR via pos.* keys
+            // (was hardcoded FR — owner clarification "stocks juste configurés
+            // par stock ou bien rupture"). reason suffix dropped per spec
+            // (owner mission: "Stock épuisé : {item_name}" — clean & translatable).
             let label;
-            if (isAvailable) {
-                label = `${safeName} de nouveau disponible`;
-            } else {
-                label = reason
-                    ? `${safeName} indisponible — ${reason}`
-                    : `${safeName} indisponible`;
+            try {
+                label = isAvailable
+                    ? this.$t('pos.item_back_available', { name: safeName })
+                    : this.$t('pos.stock_rupture_alert', { name: safeName });
+            } catch (_e) {
+                // Defensive fallback if i18n unavailable mid-init.
+                label = isAvailable
+                    ? `${safeName} de nouveau disponible`
+                    : `Stock épuisé : ${safeName}`;
             }
             // Update the aria-live region every time (no debounce) so screen
             // readers always reflect the latest state.
@@ -3153,8 +3269,50 @@ export default {
                 order._delivering = false;
             }
         },
-        async cancelKioskCashOrder(order) {
+        // [HEAL B2-P6-F01 2026-05-26] Open confirm-before-cancel dialog
+        // instead of firing the destructive POST directly. Mirrors
+        // PosOrdersTrackerComponent.openCancelDialog pattern.
+        openCancelKioskCashDialog(order) {
+            if (!order || order._canceling) return;
+            this.cancelKioskCashDialog = {
+                open: true,
+                order,
+                reason: '',
+                error: '',
+                busy: false,
+            };
+            this.$nextTick(() => {
+                try { this.$refs.cancelKioskCashReasonInput?.focus(); } catch (_) { /* defensive */ }
+            });
+        },
+        closeCancelKioskCashDialog() {
+            if (this.cancelKioskCashDialog.busy) return;
+            this.cancelKioskCashDialog = {
+                open: false,
+                order: null,
+                reason: '',
+                error: '',
+                busy: false,
+            };
+        },
+        // [HEAL B2-P6-F01 2026-05-26] Confirm action — fires the actual
+        // backend cancel only after operator typed a reason (≥3 chars).
+        // Reason is sent on the POST payload (replacing the previous
+        // client-side hardcoded string) so the audit trail captures the
+        // real operator motive (NF525-friendly even though /cancel is
+        // not itself a fiscal write).
+        async confirmCancelKioskCashOrder() {
+            const dlg = this.cancelKioskCashDialog;
+            if (!dlg.open || !dlg.order || dlg.busy) return;
+            const reason = String(dlg.reason || '').trim();
+            if (reason.length < 3) {
+                this.cancelKioskCashDialog.error = this.$t('pos.cancel_kiosk_cash.reason_required');
+                return;
+            }
+            const order = dlg.order;
             if (order._canceling) return;
+            this.cancelKioskCashDialog.busy = true;
+            this.cancelKioskCashDialog.error = '';
             order._canceling = true;
             try {
                 // [Wave W P-OWNER 2026-05-21] X-Idempotency-Key on cancel
@@ -3171,14 +3329,18 @@ export default {
                 const idempotencyKey = `pos-counter-collect-${order.id}-0-${minuteBucket}`;
                 await axios.post(
                     `admin/pos/counter-collect/${order.id}/cancel`,
-                    { reason: 'Commande borne annulee au comptoir' },
+                    { reason },
                     { headers: { 'X-Idempotency-Key': idempotencyKey } }
                 );
+                this.cancelKioskCashDialog.busy = false;
+                this.closeCancelKioskCashDialog();
                 await this.loadKioskCashOrders();
             } catch (err) {
-                const msg = err?.response?.data?.message || 'Erreur lors de l\'annulation';
-                alertService.error(msg);
+                this.cancelKioskCashDialog.busy = false;
                 order._canceling = false;
+                const msg = err?.response?.data?.message || 'Erreur lors de l\'annulation';
+                this.cancelKioskCashDialog.error = msg;
+                try { alertService.error(msg); } catch (_) { /* defensive */ }
             }
         },
         formatKioskPrice(amount) {
@@ -4870,5 +5032,184 @@ export default {
   font-size: 12px;
   font-weight: 700;
   margin-left: 6px;
+}
+
+/* [HEAL B2-P6-F01 2026-05-26] Confirm-before-cancel dialog styles for
+   the kiosk-cash (counter-collect) destructive-action gate. Style
+   tokens mirror PosOrdersTrackerComponent .pos-tracker-cancel-* with a
+   distinct .pos-kiosk-cash-cancel-* prefix (scoped style cannot bleed
+   the tracker classes here). */
+.pos-kiosk-cash-cancel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.pos-kiosk-cash-cancel-card {
+  width: min(480px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.24);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.pos-kiosk-cash-cancel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.pos-kiosk-cash-cancel-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.pos-kiosk-cash-cancel-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.pos-kiosk-cash-cancel-close:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.pos-kiosk-cash-cancel-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pos-kiosk-cash-cancel-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pos-kiosk-cash-cancel-warning {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.pos-kiosk-cash-cancel-warning i {
+  flex-shrink: 0;
+  color: #dc2626;
+  font-size: 16px;
+  line-height: 1.45;
+}
+.pos-kiosk-cash-cancel-target {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+.pos-kiosk-cash-cancel-target strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+.pos-kiosk-cash-cancel-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+.pos-kiosk-cash-cancel-textarea {
+  width: 100%;
+  min-height: 84px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #0f172a;
+  background: #f9fafb;
+  resize: vertical;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.pos-kiosk-cash-cancel-textarea:focus {
+  outline: none;
+  border-color: #ef4444;
+  background: #fff;
+}
+.pos-kiosk-cash-cancel-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pos-kiosk-cash-cancel-error i {
+  flex-shrink: 0;
+  color: #dc2626;
+}
+.pos-kiosk-cash-cancel-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+.pos-kiosk-cash-cancel-btn {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.pos-kiosk-cash-cancel-btn--ghost {
+  background: #fff;
+  color: #0f172a;
+}
+.pos-kiosk-cash-cancel-btn--ghost:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+.pos-kiosk-cash-cancel-btn--ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pos-kiosk-cash-cancel-btn--danger {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+.pos-kiosk-cash-cancel-btn--danger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+.pos-kiosk-cash-cancel-btn--danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

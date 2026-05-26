@@ -135,6 +135,8 @@
         "item_86_d": "نفذ",
         "item_unavailable_during_edit": "أصبح هذا المنتج غير متاح للتو. اطلب من المدير أو اختر منتجًا آخر.",
         "item_no_longer_available": "«{name}» لم يعد متاحًا.",
+        "stock_rupture_alert": "نفد المخزون: {name}",
+        "item_back_available": "{name} متاح مرة أخرى",
         "park": "تعليق",
         "parked_orders": "الطلبات المعلّقة",
         "restore": "استعادة",
@@ -164,6 +166,13 @@
         "split_not_balanced": "الدفع المتعدد غير متوازن (المتبقي).",
         "terminal_required_card": "حدّد محطة الدفع قبل إتمام الدفع بالبطاقة.",
         "no_terminal_configured_hint": "لا توجد محطة دفع نشطة لهذا الفرع. أضف محطة من الإعدادات ← محطات الدفع قبل قبول الدفع بالبطاقة.",
+        "cancel_kiosk_cash": {
+            "title": "إلغاء طلب الكشك هذا؟",
+            "warning": "هذا الإجراء لا يمكن التراجع عنه. سيتم إلغاء الطلب المدفوع.",
+            "reason_required": "السبب مطلوب (3 أحرف على الأقل)",
+            "confirm_btn": "نعم، إلغاء الطلب",
+            "back_btn": "رجوع"
+        },
         "loyalty": {
             "redeem": {
                 "title": "تطبيق خصم الولاء",

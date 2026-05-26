@@ -165,6 +165,8 @@
         "item_86_d": "Sold out",
         "item_unavailable_during_edit": "This item just became unavailable. Ask a manager or pick another product.",
         "item_no_longer_available": "“{name}” is no longer available.",
+        "stock_rupture_alert": "Out of stock: {name}",
+        "item_back_available": "{name} available again",
         "park": "Mettre en attente",
         "parked_orders": "Commandes en attente",
         "parked_orders_short": "En attente",
@@ -216,6 +218,13 @@
         "cancel_order_done": "Commande annulée.",
         "cancel_order_error": "Impossible d'annuler cette commande.",
         "cancel_order_reason_required": "Saisissez un motif d'annulation (min. 3 caractères).",
+        "cancel_kiosk_cash": {
+            "title": "Cancel this kiosk order?",
+            "warning": "This action is irreversible. The paid order will be canceled.",
+            "reason_required": "Reason required (min 3 characters)",
+            "confirm_btn": "Yes, cancel the order",
+            "back_btn": "Back"
+        },
         "reason_required_short": "obligatoire",
         "reason_required_placeholder": "Motif de remise (min. 3 caractères)",
         "reason_required_hint": "Saisissez un motif d'au moins 3 caractères pour appliquer la remise.",
