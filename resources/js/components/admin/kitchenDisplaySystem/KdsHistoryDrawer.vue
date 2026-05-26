@@ -1,14 +1,21 @@
 <!--
   [Wave X3 2026-05-21] KDS Historique du jour — read-only V1.
+  [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
 
   Slide-in right drawer listing today's PREPARED + OUT_FOR_DELIVERY + DELIVERED
   orders for the chef's branch. Used to verify content when a customer reports
   an error on an already-bumped order.
 
-  Read-only V1: revert PREPARED → PREPARING is intentionally NOT exposed here.
-  OrderStateMachine (frozen §7) forbids reverse transitions, and the owner has
-  classified this as "secondaire" — revert is V1.0.2 backlog pending a LOCK
-  plan + owner countersign.
+  Heal-5: chef "↶ Annuler bump" surfaced on each PREPARED order whose
+  `updated_at` is within the last 60 seconds. Click POSTs to
+  `/api/admin/kds-order/recall/{order}` which appends a `kitchen_recall` row
+  to `order_status_transitions` (NF525-safe append; `orders.status` stays
+  PREPARED). Backend broadcasts `KdsOrderRecalled` on `private-branch.{id}`
+  so KdsV2Grid re-injects the card with the RAPPELÉ badge.
+
+  Read-only revert (PREPARED → PREPARING) remains intentionally NOT exposed
+  here — V1.0.2 backlog Path C. Path B is the compensating action that does
+  NOT violate OrderStateMachine §7 (uses the identity transition).
 
   Wave U "Récemment servies" strip in `KdsV2Grid.vue` remains independent —
   this drawer is a separate sibling surface accessible from a header button.
@@ -18,6 +25,11 @@
     - Branch-scoped (admin branch_id=0 sees all branches)
     - Throttled 60/min
     - TZ-aware Paris-local bounds (Wave T R5 discipline)
+
+  Endpoint: POST /api/admin/kds-order/recall/{order}
+    - Same permission gate, idempotency + throttle:kds-bump
+    - 422 if order is not PREPARED OR window > 60s
+    - 409 if already recalled (cap N=1)
 -->
 <template>
   <div
@@ -136,10 +148,45 @@
             </li>
           </ul>
           <!--
-            V1.0.2 backlog: revert button (PREPARED → PREPARING).
-            Blocked in V1 by OrderStateMachine §7 frozen-zone (forward-only).
-            Requires LOCK plan + owner countersign before implementation.
+            [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+            Chef "Annuler bump" surfaced ONLY when:
+              - order.status === PREPARED (statuses OUT/DELIVERED can no longer be recalled)
+              - order.updated_at within the last 60s (TTL window matches backend guard)
+              - order.recalled_by_id NOT already set in the local cache (cap N=1 — best-effort,
+                the backend remains the source of truth and returns 409 otherwise)
+
+            V1.0.2 backlog Path C (reverse transition PREPARED → PREPARING) remains
+            deferred — Path B is the V1 ship per owner mandate 2026-05-26.
           -->
+          <div
+            v-if="canRecall(order)"
+            class="kds-history-drawer__recall-row"
+          >
+            <button
+              type="button"
+              class="kds-history-drawer__recall-btn"
+              :aria-label="$t('label.kds_recall_button_aria', { queue: order.queue_number || order.id })"
+              :disabled="recallingIds.includes(order.id)"
+              :data-testid="`kds-recall-${order.id}`"
+              @click="recall(order)"
+            >
+              {{ $t('label.kds_recall_button') }}
+            </button>
+            <span class="kds-history-drawer__recall-hint">
+              {{ recallSecondsLeft(order) }}s
+            </span>
+          </div>
+          <div
+            v-else-if="order.status === STATUS_PREPARED && wasRecentlyRecalled(order)"
+            class="kds-history-drawer__recall-row kds-history-drawer__recall-row--done"
+          >
+            <span
+              class="kds-history-drawer__recall-badge"
+              :aria-label="$t('label.kds_recall_badge_aria', { queue: order.queue_number || order.id })"
+            >
+              {{ $t('label.kds_recall_badge') }}
+            </span>
+          </div>
         </li>
       </ul>
     </div>
@@ -167,13 +214,38 @@ export default {
     },
   },
 
-  emits: ['close'],
+  // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] emits `recalled`
+  // so the parent KitchenDisplaySystemComponent can re-inject the card into
+  // KdsV2Grid with the RAPPELÉ badge for 60s without waiting for the next
+  // polling tick (websocket fan-out covers other stations; the click origin
+  // gets the instant local mirror via this emit).
+  emits: ['close', 'recalled'],
 
   data() {
     return {
       orders: [],
       loading: false,
       error: false,
+      // [Heal-5] Reactive clock — drives the 60s countdown badge so the
+      // "↶ Annuler bump" button auto-hides when the TTL expires without
+      // requiring a fetch round-trip. Single setInterval owned by this
+      // component (cleared on beforeUnmount).
+      now: Date.now(),
+      tickerId: null,
+      // [Heal-5] Ids of orders for which a recall POST is in-flight — used
+      // to disable the button + show a spinner without re-rendering the list.
+      recallingIds: [],
+      // [Heal-5] Local cache of orders the chef has recalled in this session
+      // (orderId → recalledAtMs). Backend remains the source of truth (returns
+      // 409 if a row already exists), but this lets us flip the UI to the
+      // RAPPELÉ badge synchronously on success without waiting for a refetch.
+      recalledMap: {},
+      // [Heal-5] Constant — recall TTL window in seconds. Mirrors the backend
+      // 60s window in KitchenDisplaySystemOrderService::recall.
+      RECALL_TTL_SECONDS: 60,
+      // [Heal-5] Status constant kept on the instance so the template can
+      // reference it via `STATUS_PREPARED` without importing.
+      STATUS_PREPARED,
     };
   },
 
@@ -181,6 +253,9 @@ export default {
     open(newVal) {
       if (newVal) {
         this.fetch();
+        // Reset the local recall cache when the drawer (re-)opens so a
+        // chef who closed + re-opened sees the canonical backend state.
+        this.recalledMap = {};
       }
     },
   },
@@ -197,12 +272,22 @@ export default {
       }
     };
     document.addEventListener('keydown', this._onEsc);
+
+    // [Heal-5] Single 1s ticker for the recall TTL countdown. Cheaper than
+    // a per-button setInterval; the template just reads `this.now` reactively.
+    this.tickerId = window.setInterval(() => {
+      this.now = Date.now();
+    }, 1000);
   },
 
   beforeUnmount() {
     if (this._onEsc) {
       document.removeEventListener('keydown', this._onEsc);
       this._onEsc = null;
+    }
+    if (this.tickerId) {
+      window.clearInterval(this.tickerId);
+      this.tickerId = null;
     }
   },
 
@@ -262,6 +347,117 @@ export default {
         return `${hh}:${mm}`;
       } catch (_e) {
         return '';
+      }
+    },
+
+    // [Heal-5] Returns ms since the order was last bumped (PREPARED). Returns
+    // -1 if the timestamp is unparseable so the gates below safely fail-closed.
+    _msSinceUpdated(order) {
+      const stamp = Date.parse(order?.updated_at || '');
+      if (Number.isNaN(stamp)) {
+        return -1;
+      }
+      return Math.max(0, this.now - stamp);
+    },
+
+    // [Heal-5] Eligibility gate for the "↶ Annuler bump" button. Three rules:
+    //   1. Order must currently be PREPARED (post-bump). OUT/DELIVERED orders
+    //      are out-of-scope — once the customer has picked up the food, the
+    //      compensating action no longer makes sense (the customer can't be
+    //      asked to give it back).
+    //   2. updated_at must be within the last RECALL_TTL_SECONDS. Backend
+    //      enforces the same 60s guard; this mirror keeps the button hidden
+    //      after expiry so chef never sees a clickable button that would 422.
+    //   3. The order has NOT been recalled yet (cap N=1). Local cache short-
+    //      circuits the second click; backend remains source of truth via 409.
+    canRecall(order) {
+      if (!order || order.status !== STATUS_PREPARED) {
+        return false;
+      }
+      if (this.wasRecentlyRecalled(order)) {
+        return false;
+      }
+      const ms = this._msSinceUpdated(order);
+      if (ms < 0) {
+        return false;
+      }
+      return ms < this.RECALL_TTL_SECONDS * 1000;
+    },
+
+    // [Heal-5] Countdown in seconds shown next to the button — gives the chef
+    // peripheral awareness ("5s left to undo"). Clamped to 0 so a transiently
+    // out-of-window read never displays a negative.
+    recallSecondsLeft(order) {
+      const ms = this._msSinceUpdated(order);
+      if (ms < 0) {
+        return 0;
+      }
+      return Math.max(0, this.RECALL_TTL_SECONDS - Math.floor(ms / 1000));
+    },
+
+    // [Heal-5] Has the chef recalled this order in the current drawer session?
+    // The badge renders when recently recalled even though the button is gone.
+    wasRecentlyRecalled(order) {
+      if (!order) {
+        return false;
+      }
+      const recalledAt = this.recalledMap[order.id];
+      if (!recalledAt) {
+        return false;
+      }
+      // Badge persists 60s post-recall (same window as the button) so the chef
+      // sees the confirmation even if the drawer scrolls or another order is
+      // added. After 60s the row reverts to the default styling.
+      return (this.now - recalledAt) < this.RECALL_TTL_SECONDS * 1000;
+    },
+
+    // [Heal-5] POST to /api/admin/kds-order/recall/{order}. The endpoint
+    // mirrors `change-status` middleware (idempotency + throttle:kds-bump)
+    // so a double-click is absorbed (1 row, not 2). On success we emit
+    // `recalled` so the parent KitchenDisplaySystemComponent can re-inject
+    // the card into KdsV2Grid with the RAPPELÉ badge immediately, without
+    // waiting for the websocket fan-out (which still fires for other
+    // stations of the same branch).
+    async recall(order) {
+      if (!order || !this.canRecall(order)) {
+        return;
+      }
+      if (this.recallingIds.includes(order.id)) {
+        return; // double-click guard
+      }
+      this.recallingIds = [...this.recallingIds, order.id];
+      try {
+        const response = await axios.post(`admin/kds-order/recall/${order.id}`);
+        const recalledAt = Date.now();
+        this.recalledMap = { ...this.recalledMap, [order.id]: recalledAt };
+        this.$emit('recalled', {
+          orderId: order.id,
+          queueNumber: order.queue_number || null,
+          recalledAt,
+          payload: response?.data || null,
+        });
+      } catch (e) {
+        // 409 → already recalled by another chef on the same branch. Surface
+        // the localized message and refetch so the chef sees the canonical
+        // state. 422 (window expired) likewise triggers a refetch so stale
+        // entries are pruned.
+        const status = e?.response?.status;
+        const message = e?.response?.data?.message;
+        if (status === 409 || status === 422) {
+          // Mark as recalled locally so the button hides until the next
+          // fetch reconciles. Avoids the chef hammering a button that the
+          // backend has already gated.
+          this.recalledMap = { ...this.recalledMap, [order.id]: Date.now() };
+        }
+        // Defensive surfacing via the existing toast helper if available.
+        // Falls back to console.warn so the failure is observable in dev.
+        if (window?.toastr?.error && message) {
+          window.toastr.error(message);
+        } else {
+          console.warn('[KDS recall] failed:', status, message || e?.message);
+        }
+      } finally {
+        this.recallingIds = this.recallingIds.filter((id) => id !== order.id);
       }
     },
   },
@@ -445,6 +641,76 @@ export default {
   font-size: 0.85rem;
   width: 100%;
   margin-left: 32px;
+}
+
+/* [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] recall row.
+   - Visually grounded under the items list, separated by a thin top border
+     so the chef's eye lands on the orange CTA after reading the order content.
+   - The button uses Cayenne orange #F4501E (matches `.kds-overflow-chip` in
+     KdsV2Grid for brand cohesion) with high contrast white text.
+   - The TTL hint (e.g. "12s") is monospace so the countdown ticks visually
+     without layout shift.
+   - The RAPPELÉ badge variant inverts to a quiet success treatment after a
+     successful recall — the chef has the confirmation but the row no longer
+     screams for action. */
+.kds-history-drawer__recall-row {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed #e2e2e2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kds-history-drawer__recall-btn {
+  background: #F4501E;
+  color: #ffffff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 4px rgba(244, 80, 30, 0.18);
+}
+
+.kds-history-drawer__recall-btn:hover:not(:disabled),
+.kds-history-drawer__recall-btn:focus:not(:disabled) {
+  background: #DC4615;
+  outline: 2px solid #ffd400;
+  outline-offset: 1px;
+}
+
+.kds-history-drawer__recall-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.kds-history-drawer__recall-hint {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6B7280;
+  font-variant-numeric: tabular-nums;
+}
+
+.kds-history-drawer__recall-row--done {
+  border-top-style: solid;
+  border-top-color: #F4501E;
+}
+
+.kds-history-drawer__recall-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #F4501E;
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 /* RTL */

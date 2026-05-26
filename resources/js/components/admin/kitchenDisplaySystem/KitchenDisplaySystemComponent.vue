@@ -22,6 +22,7 @@
     :open="historyDrawerOpen"
     :dir="direction"
     @close="historyDrawerOpen = false"
+    @recalled="onKdsOrderRecalled"
   />
   <!--
     [kds/sprint-2 V-5] Feature-flagged V2 layout. When useV2Layout is true
@@ -40,6 +41,7 @@
     :admin-polling-hint="kdsIsCentralAdmin"
     :bump-local-only-notice="!kdsHideBumpInfo"
     :auto-transition-enabled="v2AutoTransitionEnabled"
+    :recall-active-ids="recallActiveIds"
     @change-status="onV2ChangeStatus"
     @auto-promote="onV2AutoPromote"
   />
@@ -1172,6 +1174,20 @@ export default {
       kdsOverflowDetected: false,
       // [Wave X3 2026-05-21] KDS Historique du jour drawer — open state.
       historyDrawerOpen: false,
+      // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+      // Local cache of orders recalled by this branch in the last 60s. Populated
+      // by the @recalled emit from KdsHistoryDrawer (the chef who clicked) AND
+      // by the `KdsOrderRecalled` Echo handler (other stations of the same branch).
+      // KdsV2Grid reads `recallActiveIds` (a computed array of currently-active
+      // ids) and applies the RAPPELÉ badge accordingly. Entries auto-expire 60s
+      // after `recalledAt` via the computed (no setInterval needed — the global
+      // `now` ticker in KdsV2Grid drives reactivity downstream).
+      kdsRecalledMap: {},
+      // Companion ticker for the 60s recall TTL — independent of the grid's
+      // own ticker so this component can compute `recallActiveIds` without
+      // reading into the child. Cleared in beforeUnmount.
+      _kdsRecallNow: Date.now(),
+      _kdsRecallTickerId: null,
       // [CV1-KDS-A11Y-RICH-001] Polite aria-live message that announces
       // ACCEPT → PREPARING → PREPARED transitions to assistive technology.
       // Updated by `kdsAnnounceTransition`; rendered in the dedicated
@@ -1208,6 +1224,25 @@ export default {
   computed: {
     direction() {
       return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
+    },
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // Currently-active recall ids (RAPPELÉ badge window still open). Derived
+    // from `kdsRecalledMap` + the 60s TTL using `_kdsRecallNow` so the badge
+    // auto-disappears at expiry without an explicit cleanup pass. Passed down
+    // to `KdsV2Grid` via `recall-active-ids` and to the legacy 4-col layout
+    // via the same prop.
+    recallActiveIds() {
+      const ttlMs = 60 * 1000;
+      const now = this._kdsRecallNow;
+      const ids = [];
+      const map = this.kdsRecalledMap || {};
+      for (const key of Object.keys(map)) {
+        const at = map[key];
+        if (typeof at === 'number' && (now - at) < ttlMs) {
+          ids.push(parseInt(key, 10));
+        }
+      }
+      return ids;
     },
     // [kds/sprint-2 V-5 / Sprint 3C 2026-05-16 / Sprint H4 Z3-NEW-006 2026-05-17]
     // V2 layout = PRODUCTION DEFAULT since 2026-05-16. The original gated rollout
@@ -1440,6 +1475,13 @@ export default {
     window.addEventListener('realtime-order-update', this.refreshOrderList);
     this.subscribeEcho();
     this._bindWsService();
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // 1s ticker that drives `recallActiveIds` expiry. Independent of
+    // KdsV2Grid's own ticker so this orchestrator owns the SSOT for the
+    // RAPPELÉ-badge lifecycle.
+    this._kdsRecallTickerId = window.setInterval(() => {
+      this._kdsRecallNow = Date.now();
+    }, 1000);
     // [iter15-mega-fix C-017 2026-05-10] Self-heal the KDS surface when a
     // status transition POST succeeds. Production case: Pusher dev WS dies,
     // chef clicks "prêt", backend persists (202), but no broadcast → board
@@ -1881,6 +1923,26 @@ export default {
           {
             broadcastAs: 'OrderTableChanged',
             handler: (payload) => { this._handleTableChanged(payload); },
+          },
+          // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B]
+          // Chef on station A recalls an order → all other stations of the
+          // same branch get the event here and re-inject the card with the
+          // RAPPELÉ badge for 60s without polling. The handler delegates to
+          // onKdsOrderRecalled which sets the local `recallActiveMap` entry;
+          // KdsV2Grid reads it via the `recall-active-ids` prop.
+          {
+            broadcastAs: 'KdsOrderRecalled',
+            handler: (parsed) => {
+              const orderId = parsed?.payload?.order_id || parsed?.payload?.orderId;
+              if (orderId) {
+                this.onKdsOrderRecalled({
+                  orderId: parseInt(orderId, 10),
+                  queueNumber: parsed?.payload?.queue_number || null,
+                  recalledAt: Date.now(),
+                  payload: parsed?.payload || null,
+                });
+              }
+            },
           },
         ]);
         // [P13_LOG_HYGIENE] console.log(`[KDS] Echo subscribed to branch.${branchId}`);
@@ -2361,9 +2423,42 @@ export default {
       }
     },
 
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // Handler shared by:
+    //   (a) `KdsHistoryDrawer` `@recalled` emit — fires synchronously after the
+    //       chef clicks "↶ Annuler bump" on the originating station (instant
+    //       local feedback);
+    //   (b) `KdsOrderRecalled` Echo broadcast handler — fires on OTHER stations
+    //       of the same branch (cross-poste sync, see subscribeEcho).
+    // We store the timestamp in `kdsRecalledMap` so the computed
+    // `recallActiveIds` exposes the order to KdsV2Grid for the 60s window.
+    // Also bumps an aria-live message for screen-reader users.
+    onKdsOrderRecalled(payload) {
+      if (!payload || !payload.orderId) {
+        return;
+      }
+      const id = parseInt(payload.orderId, 10);
+      const at = typeof payload.recalledAt === 'number' ? payload.recalledAt : Date.now();
+      this.kdsRecalledMap = { ...this.kdsRecalledMap, [id]: at };
+      this.kdsAriaLiveMessage = this.$t('label.kds_recall_badge_aria', {
+        queue: payload.queueNumber || id,
+      });
+      // Trigger a debounced list refresh so the card actually re-appears on
+      // the board (the order's `updated_at` may have aged out of the active
+      // grid even though it's still PREPARED). The recall row in the DB
+      // doesn't change `orders.updated_at`, so without a refresh the FIFO
+      // sort would not re-insert it.
+      this._debouncedRefresh();
+    },
+
   },
   beforeUnmount() {
     this.stopAutoRefresh();
+    // [Heal-5] Stop the recall TTL ticker.
+    if (this._kdsRecallTickerId) {
+      window.clearInterval(this._kdsRecallTickerId);
+      this._kdsRecallTickerId = null;
+    }
     if (this._kdsWaitInterval) {
       clearInterval(this._kdsWaitInterval);
       this._kdsWaitInterval = null;

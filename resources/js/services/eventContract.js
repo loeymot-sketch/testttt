@@ -11,6 +11,8 @@ export const EVENT_TYPES = {
     STOCK_LOW: 'stock.low',
     // [PROMO-DASH-2026-05-06] Coupon mutations broadcast (Dashboard cycle 6).
     COUPON_CHANGED: 'promo.coupon_changed',
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    KDS_ORDER_RECALLED: 'kds.order_recalled',
 };
 
 export const BROADCAST_MAP = {
@@ -22,6 +24,8 @@ export const BROADCAST_MAP = {
     CatalogChanged: EVENT_TYPES.CATALOG_CHANGED,
     // [PROMO-DASH-2026-05-06] Coupon mutations broadcast.
     CouponChanged: EVENT_TYPES.COUPON_CHANGED,
+    // [Heal-5] Kitchen recall — emitted by the chef "↶ Annuler bump" path.
+    KdsOrderRecalled: EVENT_TYPES.KDS_ORDER_RECALLED,
 };
 
 function warnValidation(reason, data) {

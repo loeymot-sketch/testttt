@@ -17,7 +17,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-history-drawer[data-v-593d75f2] {\n  position: fixed;\n  inset: 0;\n  z-index: 9000;\n  display: flex;\n  justify-content: flex-end;\n  pointer-events: none;\n}\n.kds-history-drawer__backdrop[data-v-593d75f2] {\n  position: absolute;\n  inset: 0;\n  background: rgba(0, 0, 0, 0.45);\n  pointer-events: auto;\n}\n.kds-history-drawer__panel[data-v-593d75f2] {\n  position: relative;\n  width: min(440px, 90vw);\n  height: 100%;\n  background: #ffffff;\n  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);\n  pointer-events: auto;\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n}\n.kds-history-drawer__header[data-v-593d75f2] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 14px 18px;\n  border-bottom: 1px solid #eaeaea;\n  background: #111111;\n  color: #ffffff;\n  flex-shrink: 0;\n}\n.kds-history-drawer__title[data-v-593d75f2] {\n  margin: 0;\n  font-size: 1.05rem;\n  font-weight: 600;\n  display: flex;\n  gap: 8px;\n  align-items: baseline;\n}\n.kds-history-drawer__count[data-v-593d75f2] {\n  font-size: 0.85rem;\n  opacity: 0.85;\n  font-weight: 400;\n}\n.kds-history-drawer__close[data-v-593d75f2] {\n  background: transparent;\n  border: none;\n  color: inherit;\n  font-size: 1.25rem;\n  cursor: pointer;\n  padding: 6px 10px;\n  border-radius: 4px;\n}\n.kds-history-drawer__close[data-v-593d75f2]:hover,\n.kds-history-drawer__close[data-v-593d75f2]:focus {\n  background: rgba(255, 255, 255, 0.12);\n  outline: 2px solid #ffd400;\n  outline-offset: 1px;\n}\n.kds-history-drawer__loading[data-v-593d75f2],\n.kds-history-drawer__empty[data-v-593d75f2],\n.kds-history-drawer__error[data-v-593d75f2] {\n  padding: 22px 18px;\n  color: #555;\n  font-size: 0.95rem;\n}\n.kds-history-drawer__error[data-v-593d75f2] {\n  color: #b00020;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  align-items: flex-start;\n}\n.kds-history-drawer__retry[data-v-593d75f2] {\n  background: #111;\n  color: #fff;\n  border: none;\n  padding: 6px 14px;\n  border-radius: 4px;\n  cursor: pointer;\n  font-size: 0.85rem;\n}\n.kds-history-drawer__list[data-v-593d75f2] {\n  list-style: none;\n  margin: 0;\n  padding: 12px;\n  overflow-y: auto;\n  flex: 1;\n}\n.kds-history-drawer__item[data-v-593d75f2] {\n  border: 1px solid #e2e2e2;\n  border-left: 4px solid #888;\n  border-radius: 6px;\n  padding: 10px 12px;\n  margin-bottom: 10px;\n  background: #fafafa;\n}\n.kds-history-drawer__item.is-prepared[data-v-593d75f2]  { border-left-color: #1e88e5;\n}\n.kds-history-drawer__item.is-out[data-v-593d75f2]       { border-left-color: #fb8c00;\n}\n.kds-history-drawer__item.is-delivered[data-v-593d75f2] { border-left-color: #2e7d32;\n}\n.kds-history-drawer__head[data-v-593d75f2] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n.kds-history-drawer__queue[data-v-593d75f2] {\n  font-weight: 700;\n  font-size: 1rem;\n}\n.kds-history-drawer__status[data-v-593d75f2] {\n  background: #111;\n  color: #fff;\n  padding: 2px 8px;\n  border-radius: 999px;\n  font-size: 0.72rem;\n  text-transform: uppercase;\n  letter-spacing: 0.04em;\n}\n.kds-history-drawer__time[data-v-593d75f2] {\n  margin-left: auto;\n  font-variant-numeric: tabular-nums;\n  font-size: 0.85rem;\n  color: #444;\n}\n.kds-history-drawer__items[data-v-593d75f2] {\n  list-style: none;\n  margin: 8px 0 0;\n  padding: 0;\n}\n.kds-history-drawer__line[data-v-593d75f2] {\n  font-size: 0.9rem;\n  padding: 2px 0;\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n}\n.kds-history-drawer__qty[data-v-593d75f2] {\n  font-weight: 700;\n  min-width: 28px;\n}\n.kds-history-drawer__name[data-v-593d75f2] {\n  flex: 1;\n}\n.kds-history-drawer__variations[data-v-593d75f2] {\n  color: #555;\n  font-style: italic;\n  font-size: 0.85rem;\n  width: 100%;\n  margin-left: 32px;\n}\n\n/* RTL */\n.kds-history-drawer[dir=\"rtl\"] .kds-history-drawer__panel[data-v-593d75f2] {\n  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.25);\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-history-drawer[data-v-593d75f2] {\n  position: fixed;\n  inset: 0;\n  z-index: 9000;\n  display: flex;\n  justify-content: flex-end;\n  pointer-events: none;\n}\n.kds-history-drawer__backdrop[data-v-593d75f2] {\n  position: absolute;\n  inset: 0;\n  background: rgba(0, 0, 0, 0.45);\n  pointer-events: auto;\n}\n.kds-history-drawer__panel[data-v-593d75f2] {\n  position: relative;\n  width: min(440px, 90vw);\n  height: 100%;\n  background: #ffffff;\n  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);\n  pointer-events: auto;\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n}\n.kds-history-drawer__header[data-v-593d75f2] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 14px 18px;\n  border-bottom: 1px solid #eaeaea;\n  background: #111111;\n  color: #ffffff;\n  flex-shrink: 0;\n}\n.kds-history-drawer__title[data-v-593d75f2] {\n  margin: 0;\n  font-size: 1.05rem;\n  font-weight: 600;\n  display: flex;\n  gap: 8px;\n  align-items: baseline;\n}\n.kds-history-drawer__count[data-v-593d75f2] {\n  font-size: 0.85rem;\n  opacity: 0.85;\n  font-weight: 400;\n}\n.kds-history-drawer__close[data-v-593d75f2] {\n  background: transparent;\n  border: none;\n  color: inherit;\n  font-size: 1.25rem;\n  cursor: pointer;\n  padding: 6px 10px;\n  border-radius: 4px;\n}\n.kds-history-drawer__close[data-v-593d75f2]:hover,\n.kds-history-drawer__close[data-v-593d75f2]:focus {\n  background: rgba(255, 255, 255, 0.12);\n  outline: 2px solid #ffd400;\n  outline-offset: 1px;\n}\n.kds-history-drawer__loading[data-v-593d75f2],\n.kds-history-drawer__empty[data-v-593d75f2],\n.kds-history-drawer__error[data-v-593d75f2] {\n  padding: 22px 18px;\n  color: #555;\n  font-size: 0.95rem;\n}\n.kds-history-drawer__error[data-v-593d75f2] {\n  color: #b00020;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  align-items: flex-start;\n}\n.kds-history-drawer__retry[data-v-593d75f2] {\n  background: #111;\n  color: #fff;\n  border: none;\n  padding: 6px 14px;\n  border-radius: 4px;\n  cursor: pointer;\n  font-size: 0.85rem;\n}\n.kds-history-drawer__list[data-v-593d75f2] {\n  list-style: none;\n  margin: 0;\n  padding: 12px;\n  overflow-y: auto;\n  flex: 1;\n}\n.kds-history-drawer__item[data-v-593d75f2] {\n  border: 1px solid #e2e2e2;\n  border-left: 4px solid #888;\n  border-radius: 6px;\n  padding: 10px 12px;\n  margin-bottom: 10px;\n  background: #fafafa;\n}\n.kds-history-drawer__item.is-prepared[data-v-593d75f2]  { border-left-color: #1e88e5;\n}\n.kds-history-drawer__item.is-out[data-v-593d75f2]       { border-left-color: #fb8c00;\n}\n.kds-history-drawer__item.is-delivered[data-v-593d75f2] { border-left-color: #2e7d32;\n}\n.kds-history-drawer__head[data-v-593d75f2] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n.kds-history-drawer__queue[data-v-593d75f2] {\n  font-weight: 700;\n  font-size: 1rem;\n}\n.kds-history-drawer__status[data-v-593d75f2] {\n  background: #111;\n  color: #fff;\n  padding: 2px 8px;\n  border-radius: 999px;\n  font-size: 0.72rem;\n  text-transform: uppercase;\n  letter-spacing: 0.04em;\n}\n.kds-history-drawer__time[data-v-593d75f2] {\n  margin-left: auto;\n  font-variant-numeric: tabular-nums;\n  font-size: 0.85rem;\n  color: #444;\n}\n.kds-history-drawer__items[data-v-593d75f2] {\n  list-style: none;\n  margin: 8px 0 0;\n  padding: 0;\n}\n.kds-history-drawer__line[data-v-593d75f2] {\n  font-size: 0.9rem;\n  padding: 2px 0;\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n}\n.kds-history-drawer__qty[data-v-593d75f2] {\n  font-weight: 700;\n  min-width: 28px;\n}\n.kds-history-drawer__name[data-v-593d75f2] {\n  flex: 1;\n}\n.kds-history-drawer__variations[data-v-593d75f2] {\n  color: #555;\n  font-style: italic;\n  font-size: 0.85rem;\n  width: 100%;\n  margin-left: 32px;\n}\n\n/* [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] recall row.\n   - Visually grounded under the items list, separated by a thin top border\n     so the chef's eye lands on the orange CTA after reading the order content.\n   - The button uses Cayenne orange #F4501E (matches `.kds-overflow-chip` in\n     KdsV2Grid for brand cohesion) with high contrast white text.\n   - The TTL hint (e.g. \"12s\") is monospace so the countdown ticks visually\n     without layout shift.\n   - The RAPPELÉ badge variant inverts to a quiet success treatment after a\n     successful recall — the chef has the confirmation but the row no longer\n     screams for action. */\n.kds-history-drawer__recall-row[data-v-593d75f2] {\n  margin-top: 10px;\n  padding-top: 8px;\n  border-top: 1px dashed #e2e2e2;\n  display: flex;\n  align-items: center;\n  gap: 10px;\n}\n.kds-history-drawer__recall-btn[data-v-593d75f2] {\n  background: #F4501E;\n  color: #ffffff;\n  border: none;\n  padding: 8px 14px;\n  border-radius: 6px;\n  font-weight: 700;\n  font-size: 0.9rem;\n  cursor: pointer;\n  letter-spacing: 0.02em;\n  box-shadow: 0 2px 4px rgba(244, 80, 30, 0.18);\n}\n.kds-history-drawer__recall-btn[data-v-593d75f2]:hover:not(:disabled),\n.kds-history-drawer__recall-btn[data-v-593d75f2]:focus:not(:disabled) {\n  background: #DC4615;\n  outline: 2px solid #ffd400;\n  outline-offset: 1px;\n}\n.kds-history-drawer__recall-btn[data-v-593d75f2]:disabled {\n  opacity: 0.55;\n  cursor: not-allowed;\n}\n.kds-history-drawer__recall-hint[data-v-593d75f2] {\n  font-family: 'JetBrains Mono', ui-monospace, monospace;\n  font-size: 0.8rem;\n  font-weight: 600;\n  color: #6B7280;\n  font-variant-numeric: tabular-nums;\n}\n.kds-history-drawer__recall-row--done[data-v-593d75f2] {\n  border-top-style: solid;\n  border-top-color: #F4501E;\n}\n.kds-history-drawer__recall-badge[data-v-593d75f2] {\n  display: inline-flex;\n  align-items: center;\n  background: #F4501E;\n  color: #ffffff;\n  padding: 4px 10px;\n  border-radius: 999px;\n  font-size: 0.72rem;\n  font-weight: 800;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n/* RTL */\n.kds-history-drawer[dir=\"rtl\"] .kds-history-drawer__panel[data-v-593d75f2] {\n  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.25);\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -40,7 +40,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-card[data-v-151558cb] {\n    position: relative;\n    display: flex;\n    flex-direction: column;\n    background: #FFFFFF;\n    border-radius: 12px;\n    overflow: hidden;\n    transition: transform 250ms ease-out, box-shadow 150ms ease, opacity 200ms ease;\n    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);\n}\n.kds-card[data-v-151558cb]:hover {\n    transform: translateY(-1px);\n    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);\n}\n.kds-card[data-v-151558cb]:focus-visible {\n    outline: 4px solid #EA580C;\n    outline-offset: 4px;\n}\n.kds-card__stripe[data-v-151558cb] {\n    height: 6px;\n    flex-shrink: 0;\n}\n.kds-card__header[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    border-bottom: 1px solid #F3F4F6;\n}\n.kds-card__meta[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    height: 26px;\n    padding: 6px 12px 0;\n}\n.kds-card__shortcut[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    /* KDS-R1-03 heal: stable WCAG AA contrast regardless of bucket-tinted header.\n       Previously #6B7280 on rgba(0,0,0,0.04) gave 3.63:1 on critical bucket (red header)\n       and 4.43:1 on fresh — both FAIL AA for normal text. Now opaque gray-100 bg + gray-800\n       text = ~12.6:1 stable on every bucket. */\n    color: #1F2937;\n    background: #F3F4F6;\n    min-width: 22px;\n    height: 18px;\n    border-radius: 4px;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.04em;\n}\n.kds-card__shortcut-spacer[data-v-151558cb],\n.kds-card__allergen-spacer[data-v-151558cb] {\n    width: 22px;\n}\n.kds-card__state-source[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n}\n.kds-card__state-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 8px;\n    height: 24px;\n    border-radius: 9999px;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n}\n.kds-card__state-dot[data-v-151558cb] {\n    display: inline-block;\n    width: 6px;\n    height: 6px;\n    border-radius: 9999px;\n}\n.kds-card__source-chip[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 10px;\n    height: 28px;\n    border-radius: 6px;\n    font-size: 13px;\n    font-weight: 700;\n    letter-spacing: 0.1em;\n    text-transform: uppercase;\n}\n.kds-card__allergen-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 4px;\n    padding: 0 8px;\n    height: 20px;\n    border-radius: 4px;\n    background: #EA580C;\n    color: #FFFFFF;\n    font-size: 10px;\n    font-weight: 800;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.30);\n}\n\n/* [Wave T R1 F3 WT-B-R1-002 2026-05-20] Responsive type scale with clamp().\n   At 1280px viewport the 4-col grid yields ~300px per card. The previous\n   52px queue + 34px elapsed + 26px prefix + 0.15em letter-spaced ATTENTE\n   label overflowed and `.kds-card { overflow: hidden }` clipped the seconds\n   off the elapsed timer (Wave T R1 evidence: \"14:26\" rendering as \"14:2\",\n   \"ATTENTE\" rendering as \"ATTEN\"). Now sized to fit inside 300px at the\n   tightest breakpoint while preserving 2m-readability at ≥1600px. */\n.kds-card__main[data-v-151558cb] {\n    display: flex;\n    align-items: flex-end;\n    justify-content: space-between;\n    gap: 8px; /* tightened from 12px to recover horizontal budget */\n    padding: 2px 12px 10px; /* tightened from 16px to recover ~8px */\n}\n.kds-card__queue[data-v-151558cb],\n.kds-card__elapsed-wrap[data-v-151558cb] {\n    flex-shrink: 0; /* KDS-R1-01 heal: never compress, never overlap */\n    min-width: 0; /* allow children to participate in the flex shrink calc */\n    overflow: visible; /* ensure timer descenders/digits never clipped */\n}\n.kds-card__queue[data-v-151558cb] {\n    color: #111827;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: clamp(36px, 4.2vw, 52px);\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.03em;\n    font-variant-numeric: tabular-nums;\n}\n.kds-card__queue-prefix[data-v-151558cb] {\n    font-size: clamp(16px, 2vw, 26px);\n    font-weight: 700;\n    opacity: 0.55;\n    margin-inline-end: 2px;\n}\n.kds-card__elapsed-wrap[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    align-items: flex-end;\n    gap: 2px;\n    overflow: visible;\n}\n.kds-card__elapsed-label[data-v-151558cb] {\n    font-size: 10px;\n    font-weight: 700;\n    /* [Wave T R1 F3 WT-B-R1-002 2026-05-20] letter-spacing reduced 0.15em→0.06em\n       so \"ATTENTE\" fits the elapsed-wrap column without clipping at 1280px.\n       Still visually distinct as a small-caps eyebrow above the big timer. */\n    letter-spacing: 0.06em;\n    text-transform: uppercase;\n    white-space: nowrap;\n    /* KDS-R1-02 heal: removed opacity:0.75 which dropped contrast below WCAG AA. */\n}\n.kds-card__elapsed[data-v-151558cb] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: clamp(22px, 2.8vw, 34px);\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.02em;\n    font-variant-numeric: tabular-nums;\n    white-space: nowrap;\n}\n.kds-card__body[data-v-151558cb] {\n    flex: 1 1 auto;\n    min-height: 0; /* defensive: keep flex child scrollable if future cardStyle drops fixed height */\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    padding: 4px 16px;\n    position: relative;\n    /* [Wave U 2026-05-21] Owner-reported bug: chef could not discover scroll\n       on long-item orders (Sandwich Cayenne with 4 variations + extras +\n       crudités + sauces + supplements). Firefox thin scrollbar hint +\n       webkit 8px (was 4px) + darker thumb so the cue is visible at 2m\n       chef distance. */\n    scrollbar-width: thin;\n    scrollbar-color: #6B7280 transparent;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar {\n    width: 8px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-thumb {\n    background: #6B7280;\n    border-radius: 4px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-thumb:hover {\n    background: #4B5563;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-track {\n    background: rgba(0, 0, 0, 0.04);\n    border-radius: 4px;\n}\n.kds-card__item-block[data-v-151558cb] {\n    border-top: 1px solid #F3F4F6;\n}\n.kds-card__item-block[data-v-151558cb]:first-child {\n    border-top: none;\n}\n\n/* [Sprint 2A DEL-3 2026-05-16] Delivery block — sits at the top of the\n   card body, quiet teal accent (matches KDS_SOURCE.DELIVERY palette in\n   helpers/kdsSource.js). Never out-screams the queue number or timer. */\n.kds-card__delivery[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    gap: 4px;\n    padding: 8px 10px;\n    margin: 4px 0 6px;\n    border-radius: 8px;\n    background: #F0FDFA;\n    border-left: 3px solid #0F766E;\n}\n.kds-card__delivery-row[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n    font-size: 13px;\n    line-height: 1.3;\n    color: #0F766E;\n    font-weight: 600;\n    text-decoration: none;\n}\n.kds-card__delivery-row--muted[data-v-151558cb] {\n    color: #115E59;\n    font-weight: 500;\n}\n.kds-card__delivery-icon[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    width: 16px;\n    font-size: 14px;\n    flex-shrink: 0;\n}\n.kds-card__delivery-text[data-v-151558cb] {\n    min-width: 0;\n    overflow-wrap: anywhere;\n}\n.kds-card__delivery-phone[data-v-151558cb] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-weight: 700;\n    letter-spacing: 0.02em;\n    cursor: pointer;\n}\n.kds-card__delivery-phone[data-v-151558cb]:hover {\n    text-decoration: underline;\n}\n.kds-card__delivery-phone[data-v-151558cb]:focus-visible {\n    outline: 2px solid #0F766E;\n    outline-offset: 2px;\n    border-radius: 4px;\n}\n.kds-card__body-fade[data-v-151558cb] {\n    position: sticky;\n    bottom: 0;\n    height: 0;\n    pointer-events: none; /* never intercept scroll wheel / touch */\n}\n.kds-card__body-fade[data-v-151558cb]::before {\n    content: '';\n    position: absolute;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    /* [Wave U 2026-05-21] Reduced 16px → 8px so the fade hints \"more content\n       below\" without masking a full line of text. With the 8px-wide\n       scrollbar now visible, the fade is decorative only. */\n    height: 8px;\n    background: linear-gradient(to top, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));\n}\n.kds-card__cta[data-v-151558cb] {\n    margin: 4px 8px 8px;\n    height: 52px;\n    background: #1F2937;\n    color: #FFFFFF;\n    border: 0;\n    border-radius: 12px;\n    font-size: 22px;\n    font-weight: 700;\n    letter-spacing: 0.01em;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    gap: 14px;\n    transition: transform 100ms ease;\n}\n.kds-card__cta[data-v-151558cb]:active {\n    transform: translateY(1px);\n}\n.kds-card__cta[data-v-151558cb]:focus-visible {\n    outline: 4px solid #4B5563;\n    outline-offset: 2px;\n}\n\n/* [Wave S-2 P-OWNER 2026-05-20] Cash-pending passive badge.\n   Replaces the CTA when the order is awaiting cashier encaissement.\n   Visual contract: amber/orange tones signal \"wait\", NEVER green-go.\n   Same vertical footprint as the CTA (52px tall + 8px margin) so the\n   grid card height stays stable. WCAG: #92400E on #FEF3C7 = 7.94:1 AAA. */\n.kds-card__cash-pending[data-v-151558cb] {\n    margin: 4px 8px 8px;\n    height: 52px;\n    background: #FEF3C7;\n    color: #92400E;\n    border: 2px dashed #F59E0B;\n    border-radius: 12px;\n    font-size: 18px;\n    font-weight: 700;\n    letter-spacing: 0.04em;\n    text-transform: uppercase;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    gap: 10px;\n    cursor: default;\n}\n\n/* age critical pulse on time digit (1Hz) */\n@keyframes kds-card-pulse-digit-151558cb {\n0%, 100% { opacity: 1;\n}\n50%      { opacity: 0.55;\n}\n}\n.kds-pulse-digit[data-v-151558cb] {\n    animation: kds-card-pulse-digit-151558cb 1s ease-in-out infinite;\n}\n.kds-card--ready[data-v-151558cb] {\n    opacity: 0.7;\n}\n.kds-card--cancelled[data-v-151558cb] {\n    background: rgba(254, 226, 226, 0.5);\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-card[data-v-151558cb],\n    .kds-pulse-digit[data-v-151558cb],\n    .kds-card__cta[data-v-151558cb] {\n        transition: none !important;\n        animation: none !important;\n}\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-card[data-v-151558cb] {\n    position: relative;\n    display: flex;\n    flex-direction: column;\n    background: #FFFFFF;\n    border-radius: 12px;\n    overflow: hidden;\n    transition: transform 250ms ease-out, box-shadow 150ms ease, opacity 200ms ease;\n    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);\n}\n.kds-card[data-v-151558cb]:hover {\n    transform: translateY(-1px);\n    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);\n}\n.kds-card[data-v-151558cb]:focus-visible {\n    outline: 4px solid #EA580C;\n    outline-offset: 4px;\n}\n.kds-card__stripe[data-v-151558cb] {\n    height: 6px;\n    flex-shrink: 0;\n}\n\n/* [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]\n   RAPPELÉ badge — Cayenne orange #F4501E pill positioned over the top stripe\n   so it's the dominant 2-3m signal when a card is re-injected post-recall.\n   Uses absolute positioning + z-index:5 so it sits over the stripe (z-index:1)\n   without disturbing the rest of the card layout. The pulse animation pulls\n   peripheral attention; respects `prefers-reduced-motion`. */\n.kds-card__recall-badge[data-v-151558cb] {\n    position: absolute;\n    top: 12px;\n    left: 50%;\n    transform: translateX(-50%);\n    z-index: 5;\n    background: #F4501E;\n    color: #FFFFFF;\n    padding: 4px 14px;\n    border-radius: 999px;\n    font-size: 12px;\n    font-weight: 800;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n    box-shadow: 0 2px 8px rgba(244, 80, 30, 0.35);\n    animation: kds-recall-pulse-151558cb 2s ease-in-out infinite;\n}\n@keyframes kds-recall-pulse-151558cb {\n0%, 100% { transform: translateX(-50%) scale(1);\n}\n50% { transform: translateX(-50%) scale(1.05);\n}\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-card__recall-badge[data-v-151558cb] {\n        animation: none;\n}\n}\n.kds-card__header[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    border-bottom: 1px solid #F3F4F6;\n}\n.kds-card__meta[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    height: 26px;\n    padding: 6px 12px 0;\n}\n.kds-card__shortcut[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    /* KDS-R1-03 heal: stable WCAG AA contrast regardless of bucket-tinted header.\n       Previously #6B7280 on rgba(0,0,0,0.04) gave 3.63:1 on critical bucket (red header)\n       and 4.43:1 on fresh — both FAIL AA for normal text. Now opaque gray-100 bg + gray-800\n       text = ~12.6:1 stable on every bucket. */\n    color: #1F2937;\n    background: #F3F4F6;\n    min-width: 22px;\n    height: 18px;\n    border-radius: 4px;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.04em;\n}\n.kds-card__shortcut-spacer[data-v-151558cb],\n.kds-card__allergen-spacer[data-v-151558cb] {\n    width: 22px;\n}\n.kds-card__state-source[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n}\n.kds-card__state-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 8px;\n    height: 24px;\n    border-radius: 9999px;\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n}\n.kds-card__state-dot[data-v-151558cb] {\n    display: inline-block;\n    width: 6px;\n    height: 6px;\n    border-radius: 9999px;\n}\n.kds-card__source-chip[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 0 10px;\n    height: 28px;\n    border-radius: 6px;\n    font-size: 13px;\n    font-weight: 700;\n    letter-spacing: 0.1em;\n    text-transform: uppercase;\n}\n.kds-card__allergen-pill[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    gap: 4px;\n    padding: 0 8px;\n    height: 20px;\n    border-radius: 4px;\n    background: #EA580C;\n    color: #FFFFFF;\n    font-size: 10px;\n    font-weight: 800;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.30);\n}\n\n/* [Wave T R1 F3 WT-B-R1-002 2026-05-20] Responsive type scale with clamp().\n   At 1280px viewport the 4-col grid yields ~300px per card. The previous\n   52px queue + 34px elapsed + 26px prefix + 0.15em letter-spaced ATTENTE\n   label overflowed and `.kds-card { overflow: hidden }` clipped the seconds\n   off the elapsed timer (Wave T R1 evidence: \"14:26\" rendering as \"14:2\",\n   \"ATTENTE\" rendering as \"ATTEN\"). Now sized to fit inside 300px at the\n   tightest breakpoint while preserving 2m-readability at ≥1600px. */\n.kds-card__main[data-v-151558cb] {\n    display: flex;\n    align-items: flex-end;\n    justify-content: space-between;\n    gap: 8px; /* tightened from 12px to recover horizontal budget */\n    padding: 2px 12px 10px; /* tightened from 16px to recover ~8px */\n}\n.kds-card__queue[data-v-151558cb],\n.kds-card__elapsed-wrap[data-v-151558cb] {\n    flex-shrink: 0; /* KDS-R1-01 heal: never compress, never overlap */\n    min-width: 0; /* allow children to participate in the flex shrink calc */\n    overflow: visible; /* ensure timer descenders/digits never clipped */\n}\n.kds-card__queue[data-v-151558cb] {\n    color: #111827;\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: clamp(36px, 4.2vw, 52px);\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.03em;\n    font-variant-numeric: tabular-nums;\n}\n.kds-card__queue-prefix[data-v-151558cb] {\n    font-size: clamp(16px, 2vw, 26px);\n    font-weight: 700;\n    opacity: 0.55;\n    margin-inline-end: 2px;\n}\n.kds-card__elapsed-wrap[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    align-items: flex-end;\n    gap: 2px;\n    overflow: visible;\n}\n.kds-card__elapsed-label[data-v-151558cb] {\n    font-size: 10px;\n    font-weight: 700;\n    /* [Wave T R1 F3 WT-B-R1-002 2026-05-20] letter-spacing reduced 0.15em→0.06em\n       so \"ATTENTE\" fits the elapsed-wrap column without clipping at 1280px.\n       Still visually distinct as a small-caps eyebrow above the big timer. */\n    letter-spacing: 0.06em;\n    text-transform: uppercase;\n    white-space: nowrap;\n    /* KDS-R1-02 heal: removed opacity:0.75 which dropped contrast below WCAG AA. */\n}\n.kds-card__elapsed[data-v-151558cb] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-size: clamp(22px, 2.8vw, 34px);\n    font-weight: 800;\n    line-height: 1;\n    letter-spacing: -0.02em;\n    font-variant-numeric: tabular-nums;\n    white-space: nowrap;\n}\n.kds-card__body[data-v-151558cb] {\n    flex: 1 1 auto;\n    min-height: 0; /* defensive: keep flex child scrollable if future cardStyle drops fixed height */\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    padding: 4px 16px;\n    position: relative;\n    /* [Wave U 2026-05-21] Owner-reported bug: chef could not discover scroll\n       on long-item orders (Sandwich Cayenne with 4 variations + extras +\n       crudités + sauces + supplements). Firefox thin scrollbar hint +\n       webkit 8px (was 4px) + darker thumb so the cue is visible at 2m\n       chef distance. */\n    scrollbar-width: thin;\n    scrollbar-color: #6B7280 transparent;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar {\n    width: 8px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-thumb {\n    background: #6B7280;\n    border-radius: 4px;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-thumb:hover {\n    background: #4B5563;\n}\n.kds-card__body[data-v-151558cb]::-webkit-scrollbar-track {\n    background: rgba(0, 0, 0, 0.04);\n    border-radius: 4px;\n}\n.kds-card__item-block[data-v-151558cb] {\n    border-top: 1px solid #F3F4F6;\n}\n.kds-card__item-block[data-v-151558cb]:first-child {\n    border-top: none;\n}\n\n/* [Sprint 2A DEL-3 2026-05-16] Delivery block — sits at the top of the\n   card body, quiet teal accent (matches KDS_SOURCE.DELIVERY palette in\n   helpers/kdsSource.js). Never out-screams the queue number or timer. */\n.kds-card__delivery[data-v-151558cb] {\n    display: flex;\n    flex-direction: column;\n    gap: 4px;\n    padding: 8px 10px;\n    margin: 4px 0 6px;\n    border-radius: 8px;\n    background: #F0FDFA;\n    border-left: 3px solid #0F766E;\n}\n.kds-card__delivery-row[data-v-151558cb] {\n    display: flex;\n    align-items: center;\n    gap: 6px;\n    font-size: 13px;\n    line-height: 1.3;\n    color: #0F766E;\n    font-weight: 600;\n    text-decoration: none;\n}\n.kds-card__delivery-row--muted[data-v-151558cb] {\n    color: #115E59;\n    font-weight: 500;\n}\n.kds-card__delivery-icon[data-v-151558cb] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    width: 16px;\n    font-size: 14px;\n    flex-shrink: 0;\n}\n.kds-card__delivery-text[data-v-151558cb] {\n    min-width: 0;\n    overflow-wrap: anywhere;\n}\n.kds-card__delivery-phone[data-v-151558cb] {\n    font-family: 'JetBrains Mono', ui-monospace, monospace;\n    font-weight: 700;\n    letter-spacing: 0.02em;\n    cursor: pointer;\n}\n.kds-card__delivery-phone[data-v-151558cb]:hover {\n    text-decoration: underline;\n}\n.kds-card__delivery-phone[data-v-151558cb]:focus-visible {\n    outline: 2px solid #0F766E;\n    outline-offset: 2px;\n    border-radius: 4px;\n}\n.kds-card__body-fade[data-v-151558cb] {\n    position: sticky;\n    bottom: 0;\n    height: 0;\n    pointer-events: none; /* never intercept scroll wheel / touch */\n}\n.kds-card__body-fade[data-v-151558cb]::before {\n    content: '';\n    position: absolute;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    /* [Wave U 2026-05-21] Reduced 16px → 8px so the fade hints \"more content\n       below\" without masking a full line of text. With the 8px-wide\n       scrollbar now visible, the fade is decorative only. */\n    height: 8px;\n    background: linear-gradient(to top, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));\n}\n.kds-card__cta[data-v-151558cb] {\n    margin: 4px 8px 8px;\n    height: 52px;\n    background: #1F2937;\n    color: #FFFFFF;\n    border: 0;\n    border-radius: 12px;\n    font-size: 22px;\n    font-weight: 700;\n    letter-spacing: 0.01em;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    gap: 14px;\n    transition: transform 100ms ease;\n}\n.kds-card__cta[data-v-151558cb]:active {\n    transform: translateY(1px);\n}\n.kds-card__cta[data-v-151558cb]:focus-visible {\n    outline: 4px solid #4B5563;\n    outline-offset: 2px;\n}\n\n/* [Wave S-2 P-OWNER 2026-05-20] Cash-pending passive badge.\n   Replaces the CTA when the order is awaiting cashier encaissement.\n   Visual contract: amber/orange tones signal \"wait\", NEVER green-go.\n   Same vertical footprint as the CTA (52px tall + 8px margin) so the\n   grid card height stays stable. WCAG: #92400E on #FEF3C7 = 7.94:1 AAA. */\n.kds-card__cash-pending[data-v-151558cb] {\n    margin: 4px 8px 8px;\n    height: 52px;\n    background: #FEF3C7;\n    color: #92400E;\n    border: 2px dashed #F59E0B;\n    border-radius: 12px;\n    font-size: 18px;\n    font-weight: 700;\n    letter-spacing: 0.04em;\n    text-transform: uppercase;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    gap: 10px;\n    cursor: default;\n}\n\n/* age critical pulse on time digit (1Hz) */\n@keyframes kds-card-pulse-digit-151558cb {\n0%, 100% { opacity: 1;\n}\n50%      { opacity: 0.55;\n}\n}\n.kds-pulse-digit[data-v-151558cb] {\n    animation: kds-card-pulse-digit-151558cb 1s ease-in-out infinite;\n}\n.kds-card--ready[data-v-151558cb] {\n    opacity: 0.7;\n}\n.kds-card--cancelled[data-v-151558cb] {\n    background: rgba(254, 226, 226, 0.5);\n}\n@media (prefers-reduced-motion: reduce) {\n.kds-card[data-v-151558cb],\n    .kds-pulse-digit[data-v-151558cb],\n    .kds-card__cta[data-v-151558cb] {\n        transition: none !important;\n        animation: none !important;\n}\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -151,6 +151,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
@@ -174,18 +182,46 @@ var STATUS_DELIVERED = 13;
       "default": 'ltr'
     }
   },
-  emits: ['close'],
+  // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] emits `recalled`
+  // so the parent KitchenDisplaySystemComponent can re-inject the card into
+  // KdsV2Grid with the RAPPELÉ badge for 60s without waiting for the next
+  // polling tick (websocket fan-out covers other stations; the click origin
+  // gets the instant local mirror via this emit).
+  emits: ['close', 'recalled'],
   data: function data() {
     return {
       orders: [],
       loading: false,
-      error: false
+      error: false,
+      // [Heal-5] Reactive clock — drives the 60s countdown badge so the
+      // "↶ Annuler bump" button auto-hides when the TTL expires without
+      // requiring a fetch round-trip. Single setInterval owned by this
+      // component (cleared on beforeUnmount).
+      now: Date.now(),
+      tickerId: null,
+      // [Heal-5] Ids of orders for which a recall POST is in-flight — used
+      // to disable the button + show a spinner without re-rendering the list.
+      recallingIds: [],
+      // [Heal-5] Local cache of orders the chef has recalled in this session
+      // (orderId → recalledAtMs). Backend remains the source of truth (returns
+      // 409 if a row already exists), but this lets us flip the UI to the
+      // RAPPELÉ badge synchronously on success without waiting for a refetch.
+      recalledMap: {},
+      // [Heal-5] Constant — recall TTL window in seconds. Mirrors the backend
+      // 60s window in KitchenDisplaySystemOrderService::recall.
+      RECALL_TTL_SECONDS: 60,
+      // [Heal-5] Status constant kept on the instance so the template can
+      // reference it via `STATUS_PREPARED` without importing.
+      STATUS_PREPARED: STATUS_PREPARED
     };
   },
   watch: {
     open: function open(newVal) {
       if (newVal) {
         this.fetch();
+        // Reset the local recall cache when the drawer (re-)opens so a
+        // chef who closed + re-opened sees the canonical backend state.
+        this.recalledMap = {};
       }
     }
   },
@@ -202,11 +238,21 @@ var STATUS_DELIVERED = 13;
       }
     };
     document.addEventListener('keydown', this._onEsc);
+
+    // [Heal-5] Single 1s ticker for the recall TTL countdown. Cheaper than
+    // a per-button setInterval; the template just reads `this.now` reactively.
+    this.tickerId = window.setInterval(function () {
+      _this.now = Date.now();
+    }, 1000);
   },
   beforeUnmount: function beforeUnmount() {
     if (this._onEsc) {
       document.removeEventListener('keydown', this._onEsc);
       this._onEsc = null;
+    }
+    if (this.tickerId) {
+      window.clearInterval(this.tickerId);
+      this.tickerId = null;
     }
   },
   methods: {
@@ -269,6 +315,139 @@ var STATUS_DELIVERED = 13;
       } catch (_e) {
         return '';
       }
+    },
+    // [Heal-5] Returns ms since the order was last bumped (PREPARED). Returns
+    // -1 if the timestamp is unparseable so the gates below safely fail-closed.
+    _msSinceUpdated: function _msSinceUpdated(order) {
+      var stamp = Date.parse((order === null || order === void 0 ? void 0 : order.updated_at) || '');
+      if (Number.isNaN(stamp)) {
+        return -1;
+      }
+      return Math.max(0, this.now - stamp);
+    },
+    // [Heal-5] Eligibility gate for the "↶ Annuler bump" button. Three rules:
+    //   1. Order must currently be PREPARED (post-bump). OUT/DELIVERED orders
+    //      are out-of-scope — once the customer has picked up the food, the
+    //      compensating action no longer makes sense (the customer can't be
+    //      asked to give it back).
+    //   2. updated_at must be within the last RECALL_TTL_SECONDS. Backend
+    //      enforces the same 60s guard; this mirror keeps the button hidden
+    //      after expiry so chef never sees a clickable button that would 422.
+    //   3. The order has NOT been recalled yet (cap N=1). Local cache short-
+    //      circuits the second click; backend remains source of truth via 409.
+    canRecall: function canRecall(order) {
+      if (!order || order.status !== STATUS_PREPARED) {
+        return false;
+      }
+      if (this.wasRecentlyRecalled(order)) {
+        return false;
+      }
+      var ms = this._msSinceUpdated(order);
+      if (ms < 0) {
+        return false;
+      }
+      return ms < this.RECALL_TTL_SECONDS * 1000;
+    },
+    // [Heal-5] Countdown in seconds shown next to the button — gives the chef
+    // peripheral awareness ("5s left to undo"). Clamped to 0 so a transiently
+    // out-of-window read never displays a negative.
+    recallSecondsLeft: function recallSecondsLeft(order) {
+      var ms = this._msSinceUpdated(order);
+      if (ms < 0) {
+        return 0;
+      }
+      return Math.max(0, this.RECALL_TTL_SECONDS - Math.floor(ms / 1000));
+    },
+    // [Heal-5] Has the chef recalled this order in the current drawer session?
+    // The badge renders when recently recalled even though the button is gone.
+    wasRecentlyRecalled: function wasRecentlyRecalled(order) {
+      if (!order) {
+        return false;
+      }
+      var recalledAt = this.recalledMap[order.id];
+      if (!recalledAt) {
+        return false;
+      }
+      // Badge persists 60s post-recall (same window as the button) so the chef
+      // sees the confirmation even if the drawer scrolls or another order is
+      // added. After 60s the row reverts to the default styling.
+      return this.now - recalledAt < this.RECALL_TTL_SECONDS * 1000;
+    },
+    // [Heal-5] POST to /api/admin/kds-order/recall/{order}. The endpoint
+    // mirrors `change-status` middleware (idempotency + throttle:kds-bump)
+    // so a double-click is absorbed (1 row, not 2). On success we emit
+    // `recalled` so the parent KitchenDisplaySystemComponent can re-inject
+    // the card into KdsV2Grid with the RAPPELÉ badge immediately, without
+    // waiting for the websocket fan-out (which still fires for other
+    // stations of the same branch).
+    recall: function recall(order) {
+      var _this3 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+        var response, recalledAt, _e$response, _e$response2, _window, status, message, _t2;
+        return _regenerator().w(function (_context2) {
+          while (1) switch (_context2.p = _context2.n) {
+            case 0:
+              if (!(!order || !_this3.canRecall(order))) {
+                _context2.n = 1;
+                break;
+              }
+              return _context2.a(2);
+            case 1:
+              if (!_this3.recallingIds.includes(order.id)) {
+                _context2.n = 2;
+                break;
+              }
+              return _context2.a(2);
+            case 2:
+              _this3.recallingIds = [].concat(_toConsumableArray(_this3.recallingIds), [order.id]);
+              _context2.p = 3;
+              _context2.n = 4;
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/kds-order/recall/".concat(order.id));
+            case 4:
+              response = _context2.v;
+              recalledAt = Date.now();
+              _this3.recalledMap = _objectSpread(_objectSpread({}, _this3.recalledMap), {}, _defineProperty({}, order.id, recalledAt));
+              _this3.$emit('recalled', {
+                orderId: order.id,
+                queueNumber: order.queue_number || null,
+                recalledAt: recalledAt,
+                payload: (response === null || response === void 0 ? void 0 : response.data) || null
+              });
+              _context2.n = 6;
+              break;
+            case 5:
+              _context2.p = 5;
+              _t2 = _context2.v;
+              // 409 → already recalled by another chef on the same branch. Surface
+              // the localized message and refetch so the chef sees the canonical
+              // state. 422 (window expired) likewise triggers a refetch so stale
+              // entries are pruned.
+              status = _t2 === null || _t2 === void 0 || (_e$response = _t2.response) === null || _e$response === void 0 ? void 0 : _e$response.status;
+              message = _t2 === null || _t2 === void 0 || (_e$response2 = _t2.response) === null || _e$response2 === void 0 || (_e$response2 = _e$response2.data) === null || _e$response2 === void 0 ? void 0 : _e$response2.message;
+              if (status === 409 || status === 422) {
+                // Mark as recalled locally so the button hides until the next
+                // fetch reconciles. Avoids the chef hammering a button that the
+                // backend has already gated.
+                _this3.recalledMap = _objectSpread(_objectSpread({}, _this3.recalledMap), {}, _defineProperty({}, order.id, Date.now()));
+              }
+              // Defensive surfacing via the existing toast helper if available.
+              // Falls back to console.warn so the failure is observable in dev.
+              if ((_window = window) !== null && _window !== void 0 && (_window = _window.toastr) !== null && _window !== void 0 && _window.error && message) {
+                window.toastr.error(message);
+              } else {
+                console.warn('[KDS recall] failed:', status, message || (_t2 === null || _t2 === void 0 ? void 0 : _t2.message));
+              }
+            case 6:
+              _context2.p = 6;
+              _this3.recallingIds = _this3.recallingIds.filter(function (id) {
+                return id !== order.id;
+              });
+              return _context2.f(6);
+            case 7:
+              return _context2.a(2);
+          }
+        }, _callee2, null, [[3, 5, 6, 7]]);
+      }))();
     }
   }
 });
@@ -332,6 +511,13 @@ var AGE_BORDER = {
     shortcut: {
       type: String,
       "default": null
+    },
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // True when this order is in the 60s RAPPELÉ window after a chef
+    // recall. Drives the orange overlay badge at the top of the card.
+    recallActive: {
+      type: Boolean,
+      "default": false
     }
   },
   emits: ['ready'],
@@ -755,6 +941,17 @@ var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
     autoTransitionEnabled: {
       type: Boolean,
       "default": false
+    },
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // Ids of orders that are currently in the RAPPELÉ window (60s after a
+    // chef "Annuler bump" click). Populated by the orchestrator from
+    // `kdsRecalledMap` + the 60s TTL. Each card cross-references this list
+    // to decide whether to render the RAPPELÉ badge overlay.
+    recallActiveIds: {
+      type: Array,
+      "default": function _default() {
+        return [];
+      }
     }
   },
   emits: ['change-status', 'auto-promote'],
@@ -795,11 +992,25 @@ var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
     // [Wave U 2026-05-21] Active grid orders = ACCEPT (4) + PREPARING (7) only.
     // PREPARED (8) leaves the FIFO grid (was lingering greyed via
     // kds-card--ready opacity:0.7 with timer still ticking — owner-reported bug).
+    //
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // PREPARED orders whose id appears in `recallActiveIds` (i.e. inside the
+    // 60s post-recall window) are RE-INJECTED into the grid so the chef
+    // sees the card with the RAPPELÉ badge alongside the live work. After
+    // 60s the orchestrator drops the id from the prop and the card slides
+    // back to the "Récemment servies" strip via the existing partitioning.
     activeOrders: function activeOrders() {
+      var recallIds = new Set(Array.isArray(this.recallActiveIds) ? this.recallActiveIds : []);
       return this.visibleOrders.filter(function (o) {
         var _o$status;
         var s = parseInt((_o$status = o === null || o === void 0 ? void 0 : o.status) !== null && _o$status !== void 0 ? _o$status : o === null || o === void 0 ? void 0 : o.rawStatus, 10);
-        return s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.ACCEPT || s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARING;
+        if (s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.ACCEPT || s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARING) {
+          return true;
+        }
+        if (s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARED && recallIds.has(o === null || o === void 0 ? void 0 : o.id)) {
+          return true;
+        }
+        return false;
       });
     },
     // [Wave U 2026-05-21] Récemment servies — last 4 PREPARED orders by
@@ -952,6 +1163,16 @@ var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
       }) : this.$t('label.kds_aria_live_preparing', {
         id: queueNo || orderId
       });
+    },
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // True if the order is in the RAPPELÉ window (passed down from the
+    // orchestrator via `recallActiveIds`). KdsOrderCard renders the badge
+    // overlay accordingly.
+    isRecallActive: function isRecallActive(order) {
+      if (!order || !Array.isArray(this.recallActiveIds)) {
+        return false;
+      }
+      return this.recallActiveIds.includes(order.id);
     },
     // [Wave U 2026-05-21] Compact "il y a Xm" relative label for the
     // recently-served strip. Reads `now` reactively so each pill updates
@@ -1129,6 +1350,20 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       kdsOverflowDetected: false,
       // [Wave X3 2026-05-21] KDS Historique du jour drawer — open state.
       historyDrawerOpen: false,
+      // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+      // Local cache of orders recalled by this branch in the last 60s. Populated
+      // by the @recalled emit from KdsHistoryDrawer (the chef who clicked) AND
+      // by the `KdsOrderRecalled` Echo handler (other stations of the same branch).
+      // KdsV2Grid reads `recallActiveIds` (a computed array of currently-active
+      // ids) and applies the RAPPELÉ badge accordingly. Entries auto-expire 60s
+      // after `recalledAt` via the computed (no setInterval needed — the global
+      // `now` ticker in KdsV2Grid drives reactivity downstream).
+      kdsRecalledMap: {},
+      // Companion ticker for the 60s recall TTL — independent of the grid's
+      // own ticker so this component can compute `recallActiveIds` without
+      // reading into the child. Cleared in beforeUnmount.
+      _kdsRecallNow: Date.now(),
+      _kdsRecallTickerId: null,
       // [CV1-KDS-A11Y-RICH-001] Polite aria-live message that announces
       // ACCEPT → PREPARING → PREPARED transitions to assistive technology.
       // Updated by `kdsAnnounceTransition`; rendered in the dedicated
@@ -1165,6 +1400,26 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
   computed: {
     direction: function direction() {
       return this.$store.getters['frontendLanguage/show'].display_mode === _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_6__["default"].RTL ? 'rtl' : 'ltr';
+    },
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // Currently-active recall ids (RAPPELÉ badge window still open). Derived
+    // from `kdsRecalledMap` + the 60s TTL using `_kdsRecallNow` so the badge
+    // auto-disappears at expiry without an explicit cleanup pass. Passed down
+    // to `KdsV2Grid` via `recall-active-ids` and to the legacy 4-col layout
+    // via the same prop.
+    recallActiveIds: function recallActiveIds() {
+      var ttlMs = 60 * 1000;
+      var now = this._kdsRecallNow;
+      var ids = [];
+      var map = this.kdsRecalledMap || {};
+      for (var _i = 0, _Object$keys = Object.keys(map); _i < _Object$keys.length; _i++) {
+        var key = _Object$keys[_i];
+        var at = map[key];
+        if (typeof at === 'number' && now - at < ttlMs) {
+          ids.push(parseInt(key, 10));
+        }
+      }
+      return ids;
     },
     // [kds/sprint-2 V-5 / Sprint 3C 2026-05-16 / Sprint H4 Z3-NEW-006 2026-05-17]
     // V2 layout = PRODUCTION DEFAULT since 2026-05-16. The original gated rollout
@@ -1408,6 +1663,13 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     window.addEventListener('realtime-order-update', this.refreshOrderList);
     this.subscribeEcho();
     this._bindWsService();
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // 1s ticker that drives `recallActiveIds` expiry. Independent of
+    // KdsV2Grid's own ticker so this orchestrator owns the SSOT for the
+    // RAPPELÉ-badge lifecycle.
+    this._kdsRecallTickerId = window.setInterval(function () {
+      _this._kdsRecallNow = Date.now();
+    }, 1000);
     // [iter15-mega-fix C-017 2026-05-10] Self-heal the KDS surface when a
     // status transition POST succeeds. Production case: Pusher dev WS dies,
     // chef clicks "prêt", backend persists (202), but no broadcast → board
@@ -1581,8 +1843,8 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     authBranchId: function authBranchId() {
       var _this$$store$state;
       var candidates = [this.$store.getters['auth/authBranchId'], this.$store.getters.authBranchId, (_this$$store$state = this.$store.state) === null || _this$$store$state === void 0 || (_this$$store$state = _this$$store$state.auth) === null || _this$$store$state === void 0 ? void 0 : _this$$store$state.authBranchId];
-      for (var _i = 0, _candidates = candidates; _i < _candidates.length; _i++) {
-        var candidate = _candidates[_i];
+      for (var _i2 = 0, _candidates = candidates; _i2 < _candidates.length; _i2++) {
+        var candidate = _candidates[_i2];
         if (candidate === '' || candidate === null || typeof candidate === 'undefined') {
           continue;
         }
@@ -1898,6 +2160,28 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
           broadcastAs: 'OrderTableChanged',
           handler: function handler(payload) {
             _this8._handleTableChanged(payload);
+          }
+        },
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B]
+        // Chef on station A recalls an order → all other stations of the
+        // same branch get the event here and re-inject the card with the
+        // RAPPELÉ badge for 60s without polling. The handler delegates to
+        // onKdsOrderRecalled which sets the local `recallActiveMap` entry;
+        // KdsV2Grid reads it via the `recall-active-ids` prop.
+        {
+          broadcastAs: 'KdsOrderRecalled',
+          handler: function handler(parsed) {
+            var _parsed$payload, _parsed$payload2;
+            var orderId = (parsed === null || parsed === void 0 || (_parsed$payload = parsed.payload) === null || _parsed$payload === void 0 ? void 0 : _parsed$payload.order_id) || (parsed === null || parsed === void 0 || (_parsed$payload2 = parsed.payload) === null || _parsed$payload2 === void 0 ? void 0 : _parsed$payload2.orderId);
+            if (orderId) {
+              var _parsed$payload3;
+              _this8.onKdsOrderRecalled({
+                orderId: parseInt(orderId, 10),
+                queueNumber: (parsed === null || parsed === void 0 || (_parsed$payload3 = parsed.payload) === null || _parsed$payload3 === void 0 ? void 0 : _parsed$payload3.queue_number) || null,
+                recalledAt: Date.now(),
+                payload: (parsed === null || parsed === void 0 ? void 0 : parsed.payload) || null
+              });
+            }
           }
         }]);
         // [P13_LOG_HYGIENE] console.log(`[KDS] Echo subscribed to branch.${branchId}`);
@@ -2389,10 +2673,42 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       } else {
         this.expandedFilter = index;
       }
+    },
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // Handler shared by:
+    //   (a) `KdsHistoryDrawer` `@recalled` emit — fires synchronously after the
+    //       chef clicks "↶ Annuler bump" on the originating station (instant
+    //       local feedback);
+    //   (b) `KdsOrderRecalled` Echo broadcast handler — fires on OTHER stations
+    //       of the same branch (cross-poste sync, see subscribeEcho).
+    // We store the timestamp in `kdsRecalledMap` so the computed
+    // `recallActiveIds` exposes the order to KdsV2Grid for the 60s window.
+    // Also bumps an aria-live message for screen-reader users.
+    onKdsOrderRecalled: function onKdsOrderRecalled(payload) {
+      if (!payload || !payload.orderId) {
+        return;
+      }
+      var id = parseInt(payload.orderId, 10);
+      var at = typeof payload.recalledAt === 'number' ? payload.recalledAt : Date.now();
+      this.kdsRecalledMap = _objectSpread(_objectSpread({}, this.kdsRecalledMap), {}, _defineProperty({}, id, at));
+      this.kdsAriaLiveMessage = this.$t('label.kds_recall_badge_aria', {
+        queue: payload.queueNumber || id
+      });
+      // Trigger a debounced list refresh so the card actually re-appears on
+      // the board (the order's `updated_at` may have aged out of the active
+      // grid even though it's still PREPARED). The recall row in the DB
+      // doesn't change `orders.updated_at`, so without a refresh the FIFO
+      // sort would not re-insert it.
+      this._debouncedRefresh();
     }
   },
   beforeUnmount: function beforeUnmount() {
     this.stopAutoRefresh();
+    // [Heal-5] Stop the recall TTL ticker.
+    if (this._kdsRecallTickerId) {
+      window.clearInterval(this._kdsRecallTickerId);
+      this._kdsRecallTickerId = null;
+    }
     if (this._kdsWaitInterval) {
       clearInterval(this._kdsWaitInterval);
       this._kdsWaitInterval = null;
@@ -2513,6 +2829,19 @@ var _hoisted_18 = {
 var _hoisted_19 = {
   key: 0
 };
+var _hoisted_20 = {
+  key: 0,
+  "class": "kds-history-drawer__recall-row"
+};
+var _hoisted_21 = ["aria-label", "disabled", "data-testid", "onClick"];
+var _hoisted_22 = {
+  "class": "kds-history-drawer__recall-hint"
+};
+var _hoisted_23 = {
+  key: 1,
+  "class": "kds-history-drawer__recall-row kds-history-drawer__recall-row--done"
+};
+var _hoisted_24 = ["aria-label"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   return $props.open ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
     key: 0,
@@ -2567,7 +2896,23 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           key: vIdx
         }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("— " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), vIdx + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_19, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
       }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-    }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n            V1.0.2 backlog: revert button (PREPARED → PREPARING).\n            Blocked in V1 by OrderStateMachine §7 frozen-zone (forward-only).\n            Requires LOCK plan + owner countersign before implementation.\n          ")], 2 /* CLASS */);
+    }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n            [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]\n            Chef \"Annuler bump\" surfaced ONLY when:\n              - order.status === PREPARED (statuses OUT/DELIVERED can no longer be recalled)\n              - order.updated_at within the last 60s (TTL window matches backend guard)\n              - order.recalled_by_id NOT already set in the local cache (cap N=1 — best-effort,\n                the backend remains the source of truth and returns 409 otherwise)\n\n            V1.0.2 backlog Path C (reverse transition PREPARED → PREPARING) remains\n            deferred — Path B is the V1 ship per owner mandate 2026-05-26.\n          "), $options.canRecall(order) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      type: "button",
+      "class": "kds-history-drawer__recall-btn",
+      "aria-label": _ctx.$t('label.kds_recall_button_aria', {
+        queue: order.queue_number || order.id
+      }),
+      disabled: $data.recallingIds.includes(order.id),
+      "data-testid": "kds-recall-".concat(order.id),
+      onClick: function onClick($event) {
+        return $options.recall(order);
+      }
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_recall_button')), 9 /* TEXT, PROPS */, _hoisted_21), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.recallSecondsLeft(order)) + "s ", 1 /* TEXT */)])) : order.status === $data.STATUS_PREPARED && $options.wasRecentlyRecalled(order) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_23, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "class": "kds-history-drawer__recall-badge",
+      "aria-label": _ctx.$t('label.kds_recall_badge_aria', {
+        queue: order.queue_number || order.id
+      })
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_recall_badge')), 9 /* TEXT, PROPS */, _hoisted_24)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */);
   }), 128 /* KEYED_FRAGMENT */))]))], 8 /* PROPS */, _hoisted_2)], 8 /* PROPS */, _hoisted_1)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
 }
 
@@ -2586,65 +2931,66 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
 
 var _hoisted_1 = ["aria-label", "data-order-id"];
-var _hoisted_2 = {
+var _hoisted_2 = ["aria-label", "data-testid"];
+var _hoisted_3 = {
   "class": "kds-card__meta"
 };
-var _hoisted_3 = ["title"];
-var _hoisted_4 = {
+var _hoisted_4 = ["title"];
+var _hoisted_5 = {
   key: 1,
   "class": "kds-card__shortcut-spacer"
 };
-var _hoisted_5 = {
+var _hoisted_6 = {
   "class": "kds-card__state-source"
 };
-var _hoisted_6 = {
+var _hoisted_7 = {
   "class": "kds-card__source-label"
 };
-var _hoisted_7 = {
+var _hoisted_8 = {
   key: 2,
   "class": "kds-card__allergen-pill",
   role: "alert",
   "aria-live": "assertive"
 };
-var _hoisted_8 = {
+var _hoisted_9 = {
   key: 3,
   "class": "kds-card__allergen-spacer"
 };
-var _hoisted_9 = {
+var _hoisted_10 = {
   "class": "kds-card__main"
 };
-var _hoisted_10 = {
+var _hoisted_11 = {
   "class": "kds-card__queue keep-latin"
 };
-var _hoisted_11 = {
+var _hoisted_12 = {
   "class": "kds-card__elapsed-wrap"
 };
-var _hoisted_12 = ["aria-label"];
-var _hoisted_13 = {
+var _hoisted_13 = ["aria-label"];
+var _hoisted_14 = {
   key: 0,
   "class": "kds-card__delivery",
   "data-testid": "kds-card-delivery"
 };
-var _hoisted_14 = {
+var _hoisted_15 = {
   key: 0,
   "class": "kds-card__delivery-row"
 };
-var _hoisted_15 = {
+var _hoisted_16 = {
   "class": "kds-card__delivery-text"
 };
-var _hoisted_16 = {
+var _hoisted_17 = {
   key: 1,
   "class": "kds-card__delivery-row kds-card__delivery-row--muted"
 };
-var _hoisted_17 = {
+var _hoisted_18 = {
   "class": "kds-card__delivery-text"
 };
-var _hoisted_18 = ["href", "aria-label"];
-var _hoisted_19 = {
+var _hoisted_19 = ["href", "aria-label"];
+var _hoisted_20 = {
   "class": "kds-card__delivery-text"
 };
-var _hoisted_20 = ["aria-label"];
 var _hoisted_21 = ["aria-label"];
+var _hoisted_22 = ["aria-label"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_KdsOrderLine = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsOrderLine");
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
@@ -2662,16 +3008,25 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
       background: $options.stripeColor
     })
-  }, null, 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" HEADER "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]\n         RAPPELÉ badge — surfaces when the orchestrator marks this order as\n         recalled (chef \"Annuler bump\" on same station, or websocket fan-out\n         from another station of the same branch). Lives ABOVE the header so\n         it's the first thing the chef sees on re-injection. aria-live=polite\n         announces the recall to screen-reader users. "), $props.recallActive ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 0,
+    "class": "kds-card__recall-badge",
+    role: "status",
+    "aria-live": "polite",
+    "aria-label": _ctx.$t('label.kds_recall_badge_aria', {
+      queue: $props.order.queue_number || $props.order.id
+    }),
+    "data-testid": "kds-card-recall-badge-".concat($props.order.id)
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_recall_badge')), 9 /* TEXT, PROPS */, _hoisted_2)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" HEADER "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "kds-card__header",
     style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
       background: $options.headerBg
     })
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" meta row: slot + state/source + allergen "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [$props.shortcut ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" meta row: slot + state/source + allergen "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [$props.shortcut ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
     key: 0,
     "class": "kds-card__shortcut",
     title: _ctx.$t('label.kds_bump_local_only_notice')
-  }, "[" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.shortcut) + "]", 9 /* TEXT, PROPS */, _hoisted_3)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_4)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, "[" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.shortcut) + "]", 9 /* TEXT, PROPS */, _hoisted_4)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_5)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kds-card__state-pill",
     style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)($options.statePillStyle)
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
@@ -2682,9 +3037,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   }, null, 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.stateLabel), 1 /* TEXT */)], 4 /* STYLE */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kds-card__source-chip",
     style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)($options.sourceChipStyle)
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sourceLabel), 1 /* TEXT */)], 4 /* STYLE */)]), $options.hasAllergen ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_7, " ⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergie')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_8))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" main row: queue number + elapsed "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_9, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [_cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sourceLabel), 1 /* TEXT */)], 4 /* STYLE */)]), $options.hasAllergen ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_8, " ⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergie')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_9))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" main row: queue number + elapsed "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [_cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kds-card__queue-prefix"
-  }, "N°", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.order.queue_number || $props.order.id), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, "N°", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.order.queue_number || $props.order.id), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kds-card__elapsed-label",
     style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
       color: $options.elapsedLabelColor
@@ -2701,13 +3056,13 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "aria-label": _ctx.$t('label.kds_card_body_aria', {
       queue: $props.order.queue_number || $props.order.id
     })
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint 2A DEL-3 2026-05-16] Delivery block — only renders when\n           the order is destined for delivery AND the backend has populated\n           `order_address` (i.e. the eager-load was applied). Without this,\n           the livreur sees a token + delivery_time and literally cannot\n           deliver. Kept visually quiet (border-left accent, monospace\n           latin digits for the phone) so it never out-screams the queue\n           number or the elapsed timer. "), $options.isDeliveryOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_13, [$options.deliveryAddressLine ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_14, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Sprint 2A DEL-3 2026-05-16] Delivery block — only renders when\n           the order is destined for delivery AND the backend has populated\n           `order_address` (i.e. the eager-load was applied). Without this,\n           the livreur sees a token + delivery_time and literally cannot\n           deliver. Kept visually quiet (border-left accent, monospace\n           latin digits for the phone) so it never out-screams the queue\n           number or the elapsed timer. "), $options.isDeliveryOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_14, [$options.deliveryAddressLine ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_15, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kds-card__delivery-icon",
     "aria-hidden": "true"
-  }, "📍", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.deliveryAddressLine), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.customerName ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_16, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, "📍", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.deliveryAddressLine), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.customerName ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_17, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kds-card__delivery-icon",
     "aria-hidden": "true"
-  }, "👤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerName), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.customerPhone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", {
+  }, "👤", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerName), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.customerPhone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("a", {
     key: 2,
     "class": "kds-card__delivery-row kds-card__delivery-phone keep-latin",
     href: "tel:".concat($options.customerPhone),
@@ -2718,7 +3073,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   }, [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kds-card__delivery-icon",
     "aria-hidden": "true"
-  }, "📱", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerPhone), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_18)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($props.order.order_items, function (item, idx) {
+  }, "📱", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerPhone), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_19)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($props.order.order_items, function (item, idx) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       key: item.id || idx,
       "class": "kds-card__item-block"
@@ -2730,8 +3085,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }), 128 /* KEYED_FRAGMENT */))]);
   }), 128 /* KEYED_FRAGMENT */)), _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "kds-card__body-fade"
-  }, null, -1 /* CACHED */))], 8 /* PROPS */, _hoisted_12), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" FOOTER CTA (paid orders) or CASH-PENDING badge (cash-at-counter waiting collection) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Wave S-2 P-OWNER 2026-05-20] Owner decision: 1 clic CTA = PREPARING→PREPARED\n         direct for paid orders (S-1 auto-promotes ACCEPT→PREPARING on payment).\n         For cash-at-counter orders still awaiting cashier encaissement\n         (payment_pending_counter=true), the chef MUST NOT bump — show a\n         passive badge \"EN ATTENTE ENCAISSEMENT\" instead. This prevents\n         the kitchen from preparing food before the cashier collects cash\n         (regulatory + revenue-protection requirement).\n         Server-side, OrderStateMachine still blocks if the chef tries\n         anyway via direct axios, but this UI gate is the primary signal. "), $options.isCashPending ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
-    key: 0,
+  }, null, -1 /* CACHED */))], 8 /* PROPS */, _hoisted_13), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" FOOTER CTA (paid orders) or CASH-PENDING badge (cash-at-counter waiting collection) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Wave S-2 P-OWNER 2026-05-20] Owner decision: 1 clic CTA = PREPARING→PREPARED\n         direct for paid orders (S-1 auto-promotes ACCEPT→PREPARING on payment).\n         For cash-at-counter orders still awaiting cashier encaissement\n         (payment_pending_counter=true), the chef MUST NOT bump — show a\n         passive badge \"EN ATTENTE ENCAISSEMENT\" instead. This prevents\n         the kitchen from preparing food before the cashier collects cash\n         (regulatory + revenue-protection requirement).\n         Server-side, OrderStateMachine still blocks if the chef tries\n         anyway via direct axios, but this UI gate is the primary signal. "), $options.isCashPending ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 1,
     "class": "kds-card__cash-pending",
     role: "status",
     "aria-label": _ctx.$t('label.kds_card_cash_pending_aria'),
@@ -2752,8 +3107,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     r: "10"
   }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("polyline", {
     points: "12 6 12 12 16 14"
-  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_card_cash_pending')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_20)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
-    key: 1,
+  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_card_cash_pending')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_21)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    key: 2,
     type: "button",
     "class": "kds-card__cta",
     onClick: _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
@@ -2773,7 +3128,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "aria-hidden": "true"
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
     d: "M5 12l5 5L20 7"
-  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_card_cta_ready')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_21))], 46 /* CLASS, STYLE, PROPS, NEED_HYDRATION */, _hoisted_1);
+  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_card_cta_ready')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_22))], 46 /* CLASS, STYLE, PROPS, NEED_HYDRATION */, _hoisted_1);
 }
 
 /***/ },
@@ -3025,10 +3380,11 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       order: o,
       now: $data.now,
       shortcut: $options.SHORTCUTS[idx],
+      "recall-active": $options.isRecallActive(o),
       onReady: function onReady($event) {
         return $options.onCtaTap(o.id, o.queue_number);
       }
-    }, null, 8 /* PROPS */, ["order", "now", "shortcut", "onReady"]);
+    }, null, 8 /* PROPS */, ["order", "now", "shortcut", "recall-active", "onReady"]);
   }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" placeholders to keep grid stable when <8 "), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(Math.max(0, 8 - $options.activeOrders.length), function (i) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       key: "ph-".concat(i),
@@ -3811,8 +4167,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     dir: $options.direction,
     onClose: _cache[1] || (_cache[1] = function ($event) {
       return $data.historyDrawerOpen = false;
-    })
-  }, null, 8 /* PROPS */, ["open", "dir"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [kds/sprint-2 V-5] Feature-flagged V2 layout. When useV2Layout is true\n    (URL ?v2=1, localStorage 'kds.v2_enabled', or future settings flag), the\n    new single-FIFO 4×2 grid renders. Otherwise the legacy 4-column layout\n    (Dine-in / Online / Takeaway / Kiosk) stays — instant rollback by URL\n    param removal.\n  "), $options.useV2Layout ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_KdsV2Grid, {
+    }),
+    onRecalled: $options.onKdsOrderRecalled
+  }, null, 8 /* PROPS */, ["open", "dir", "onRecalled"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [kds/sprint-2 V-5] Feature-flagged V2 layout. When useV2Layout is true\n    (URL ?v2=1, localStorage 'kds.v2_enabled', or future settings flag), the\n    new single-FIFO 4×2 grid renders. Otherwise the legacy 4-column layout\n    (Dine-in / Online / Takeaway / Kiosk) stays — instant rollback by URL\n    param removal.\n  "), $options.useV2Layout ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_KdsV2Grid, {
     key: 0,
     orders: $options.orders,
     dir: $options.direction,
@@ -3822,9 +4179,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "admin-polling-hint": $options.kdsIsCentralAdmin,
     "bump-local-only-notice": !$data.kdsHideBumpInfo,
     "auto-transition-enabled": $data.v2AutoTransitionEnabled,
+    "recall-active-ids": $options.recallActiveIds,
     onChangeStatus: $options.onV2ChangeStatus,
     onAutoPromote: $options.onV2AutoPromote
-  }, null, 8 /* PROPS */, ["orders", "dir", "offline-since", "list-at-cap", "fallback-mode", "admin-polling-hint", "bump-local-only-notice", "auto-transition-enabled", "onChangeStatus", "onAutoPromote"])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, null, 8 /* PROPS */, ["orders", "dir", "offline-since", "list-at-cap", "fallback-mode", "admin-polling-hint", "bump-local-only-notice", "auto-transition-enabled", "recall-active-ids", "onChangeStatus", "onAutoPromote"])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [iter15-mega-fix B-003/D-002 2026-05-10] Banner consolidation: suppress the\n    global transient \"Reconnexion en cours…\" banner here because the local\n    kds-sync-mode-banner already conveys fallback polling state to staff.\n    Prevents two banners shouting the same fact (iter15 mega-audit Wave B/D).\n    Terminal session_invalid still surfaces.\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ConnectionStatusBanner, {
     "suppress-transient": ""

@@ -104,6 +104,16 @@ return [
         'kds_state_prepared'      => 'Prêt',
         'kds_state_out'           => 'En livraison',
         'kds_state_delivered'     => 'Livré',
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+        'kds_recall_button'        => '↶ Annuler bump',
+        'kds_recall_button_aria'   => 'Annuler le bump de la commande N°{queue} — disponible 60 secondes',
+        'kds_recall_badge'         => 'RAPPELÉ',
+        'kds_recall_badge_aria'    => 'Commande N°{queue} rappelée en cuisine',
+        'kds_recall_confirm_title' => 'Annuler ce "Prêt" ?',
+        'kds_recall_warning_60s'   => 'Disponible 60 secondes après bump',
+        'kds_recall_success'       => 'Commande rappelée ✓',
+        'kds_recall_too_late'      => 'Délai 60s dépassé — contacter cassier',
+        'kds_recall_already_recalled' => 'Cette commande a déjà été rappelée',
         'configure_wizard' => 'Configurer le wizard',
         'composer' => [
             'product_context' => 'Produit',
@@ -195,6 +205,11 @@ return [
         // [test-e2e fix E-004 round-3] Translated exception messages — replaces
         // raw English strings previously hardcoded in app/Exceptions/Handler.php.
         'order_not_found'     => 'Commande introuvable.',
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] backend abort() copies.
+        'kds_recall_invalid_state'     => 'Seules les commandes Prêt peuvent être rappelées.',
+        'kds_recall_window_expired'    => 'Délai 60s dépassé — contacter le caissier pour annuler manuellement.',
+        'kds_recall_already_recalled'  => 'Cette commande a déjà été rappelée.',
+        'kds_recall_success'           => 'Commande rappelée en cuisine.',
         'unauthorized'        => "Vous n'avez pas les permissions nécessaires.",
         'method_not_supported' => "Méthode non prise en charge pour cette route.",
         'url_not_found'       => "L'URL spécifiée est introuvable.",

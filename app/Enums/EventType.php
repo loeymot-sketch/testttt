@@ -39,6 +39,13 @@ class EventType
     // the new status is INACTIVE so deactivation takes effect immediately
     // rather than waiting for the 480-minute TTL.
     const BRANCH_STATUS_CHANGED = 'branch.status_changed';
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // Chef recalled a PREPARED order within the 60s grace window. Append-only:
+    // `orders.status` stays PREPARED — only `order_status_transitions` gets the
+    // `kitchen_recall` row. Frontend KDS boards (KitchenDisplaySystemComponent)
+    // listen via `private-branch.{branchId}` and re-inject the card with a
+    // RAPPELÉ badge for 60s. Customer-facing OSS notification is untouched.
+    const KDS_ORDER_RECALLED = 'kds.order_recalled';
 
     public static function all(): array
     {
@@ -61,6 +68,8 @@ class EventType
             // [Wave 5G R9 / R10]
             self::SETTINGS_UPDATED,
             self::BRANCH_STATUS_CHANGED,
+            // [Heal-5]
+            self::KDS_ORDER_RECALLED,
         ];
     }
 }

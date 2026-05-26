@@ -111,6 +111,16 @@ return [
         'kds_state_prepared'      => 'Ready',
         'kds_state_out'           => 'Out for delivery',
         'kds_state_delivered'     => 'Delivered',
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+        'kds_recall_button'        => '↶ Undo bump',
+        'kds_recall_button_aria'   => 'Undo bump for order N°{queue} — available for 60 seconds',
+        'kds_recall_badge'         => 'RECALLED',
+        'kds_recall_badge_aria'    => 'Order N°{queue} recalled to kitchen',
+        'kds_recall_confirm_title' => 'Undo this "Ready"?',
+        'kds_recall_warning_60s'   => 'Available 60 seconds after bump',
+        'kds_recall_success'       => 'Order recalled ✓',
+        'kds_recall_too_late'      => '60s window expired — contact cashier',
+        'kds_recall_already_recalled' => 'This order has already been recalled',
         'configure_wizard' => 'Configure wizard',
         'composer' => [
             'product_context' => 'Product',
@@ -200,6 +210,11 @@ return [
         // [test-e2e fix E-004 round-3] Translated exception messages — replaces
         // raw English strings previously hardcoded in app/Exceptions/Handler.php.
         'order_not_found'      => 'Order not found.',
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] backend abort() copies.
+        'kds_recall_invalid_state'     => 'Only Ready orders can be recalled.',
+        'kds_recall_window_expired'    => '60s window expired — contact cashier for manual cancellation.',
+        'kds_recall_already_recalled'  => 'This order has already been recalled.',
+        'kds_recall_success'           => 'Order recalled to kitchen.',
         'unauthorized'         => 'User does not have the right permissions.',
         'method_not_supported' => 'Method not supported for the route.',
         'url_not_found'        => 'The specified URL cannot be found.',

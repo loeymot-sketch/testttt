@@ -27,6 +27,23 @@
     <!-- TOP ACCENT STRIPE — dominant 2m signal -->
     <div class="kds-card__stripe" :style="{ background: stripeColor }"></div>
 
+    <!-- [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+         RAPPELÉ badge — surfaces when the orchestrator marks this order as
+         recalled (chef "Annuler bump" on same station, or websocket fan-out
+         from another station of the same branch). Lives ABOVE the header so
+         it's the first thing the chef sees on re-injection. aria-live=polite
+         announces the recall to screen-reader users. -->
+    <div
+      v-if="recallActive"
+      class="kds-card__recall-badge"
+      role="status"
+      aria-live="polite"
+      :aria-label="$t('label.kds_recall_badge_aria', { queue: order.queue_number || order.id })"
+      :data-testid="`kds-card-recall-badge-${order.id}`"
+    >
+      {{ $t('label.kds_recall_badge') }}
+    </div>
+
     <!-- HEADER -->
     <div class="kds-card__header" :style="{ background: headerBg }">
       <!-- meta row: slot + state/source + allergen -->
@@ -212,6 +229,13 @@ export default {
         shortcut: {
             type: String,
             default: null,
+        },
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+        // True when this order is in the 60s RAPPELÉ window after a chef
+        // recall. Drives the orange overlay badge at the top of the card.
+        recallActive: {
+            type: Boolean,
+            default: false,
         },
     },
     emits: ['ready'],
@@ -415,6 +439,39 @@ export default {
 .kds-card__stripe {
     height: 6px;
     flex-shrink: 0;
+}
+
+/* [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+   RAPPELÉ badge — Cayenne orange #F4501E pill positioned over the top stripe
+   so it's the dominant 2-3m signal when a card is re-injected post-recall.
+   Uses absolute positioning + z-index:5 so it sits over the stripe (z-index:1)
+   without disturbing the rest of the card layout. The pulse animation pulls
+   peripheral attention; respects `prefers-reduced-motion`. */
+.kds-card__recall-badge {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    background: #F4501E;
+    color: #FFFFFF;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(244, 80, 30, 0.35);
+    animation: kds-recall-pulse 2s ease-in-out infinite;
+}
+@keyframes kds-recall-pulse {
+    0%, 100% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.05); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .kds-card__recall-badge {
+        animation: none;
+    }
 }
 
 .kds-card__header {

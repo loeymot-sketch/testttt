@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Exception;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use App\Http\Requests\Kds\KdsOrderRecallRequest;
 use App\Http\Requests\Kds\KdsOrderStatusRequest;
 use App\Http\Resources\KDSOrderItemsResource;
 use App\Http\Resources\KDSOrderDetailsResource;
@@ -19,7 +20,7 @@ class KitchenDisplaySystemController extends AdminController
     {
         parent::__construct();
         $this->kitchenDisplaySystemOrderService = $kitchenDisplaySystemOrderService;
-        $this->middleware(['permission:kitchen-display-system'])->only('index', 'changeStatus', 'orderItems', 'historyToday');
+        $this->middleware(['permission:kitchen-display-system'])->only('index', 'changeStatus', 'orderItems', 'historyToday', 'recall');
     }
 
     public function index(Request $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
@@ -72,6 +73,48 @@ class KitchenDisplaySystemController extends AdminController
     {
         try {
             return KDSOrderDetailsResource::collection($this->kitchenDisplaySystemOrderService->historyToday());
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    /**
+     * [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+     *
+     * Owner mandate verbatim: « écran de cuisine, je peux pas y accéder aux
+     * archives parce que je peux par exemple avoir fait valider une commande
+     * par erreur avec rapidité, je vais revenir pour la corriger ».
+     *
+     * Chef recalls a PREPARED order within a 60-second grace window.
+     * Compensating-action pattern — `orders.status` is NEVER mutated; we
+     * append a row to `order_status_transitions` with `reason='kitchen_recall'`
+     * and broadcast `KdsOrderRecalled` on `private-branch.{branchId}` so other
+     * stations re-inject the card with a RAPPELÉ badge for 60s.
+     *
+     * Status codes:
+     *  - 200 success → `{ status: true, transition_id, recalled_at, queue_number }`
+     *  - 401 unauthenticated (no actor)
+     *  - 403 cross-branch attempt
+     *  - 409 already recalled (cap N=1)
+     *  - 422 wrong state (not PREPARED) OR window expired (>60s)
+     *
+     * Route: `POST /api/admin/kds-order/recall/{order}`
+     * Middleware: idempotency + throttle:kds-bump (mirrors change-status).
+     */
+    public function recall(Order $order, KdsOrderRecallRequest $request): \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
+    {
+        try {
+            $result = $this->kitchenDisplaySystemOrderService->recall($order);
+
+            return response([
+                'status'        => true,
+                'message'       => trans('all.message.kds_recall_success'),
+                'transition_id' => $result['transition_id'],
+                'recalled_at'   => $result['recalled_at'],
+                'queue_number'  => $result['queue_number'],
+            ], 200);
+        } catch (HttpException $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], $e->getStatusCode());
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

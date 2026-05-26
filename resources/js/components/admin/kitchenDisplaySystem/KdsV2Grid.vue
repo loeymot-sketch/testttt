@@ -57,6 +57,7 @@
         :order="o"
         :now="now"
         :shortcut="SHORTCUTS[idx]"
+        :recall-active="isRecallActive(o)"
         @ready="onCtaTap(o.id, o.queue_number)"
       />
       <!-- placeholders to keep grid stable when <8 -->
@@ -155,6 +156,12 @@ export default {
         // also pins `v2AutoTransitionEnabled = false` so this stays off
         // independently of the prop default for any caller that omits the binding.
         autoTransitionEnabled: { type: Boolean, default: false },
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+        // Ids of orders that are currently in the RAPPELÉ window (60s after a
+        // chef "Annuler bump" click). Populated by the orchestrator from
+        // `kdsRecalledMap` + the 60s TTL. Each card cross-references this list
+        // to decide whether to render the RAPPELÉ badge overlay.
+        recallActiveIds: { type: Array, default: () => [] },
     },
     emits: ['change-status', 'auto-promote'],
     data() {
@@ -194,10 +201,24 @@ export default {
         // [Wave U 2026-05-21] Active grid orders = ACCEPT (4) + PREPARING (7) only.
         // PREPARED (8) leaves the FIFO grid (was lingering greyed via
         // kds-card--ready opacity:0.7 with timer still ticking — owner-reported bug).
+        //
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+        // PREPARED orders whose id appears in `recallActiveIds` (i.e. inside the
+        // 60s post-recall window) are RE-INJECTED into the grid so the chef
+        // sees the card with the RAPPELÉ badge alongside the live work. After
+        // 60s the orchestrator drops the id from the prop and the card slides
+        // back to the "Récemment servies" strip via the existing partitioning.
         activeOrders() {
+            const recallIds = new Set(Array.isArray(this.recallActiveIds) ? this.recallActiveIds : []);
             return this.visibleOrders.filter((o) => {
                 const s = parseInt(o?.status ?? o?.rawStatus, 10);
-                return s === ORDER_STATUS.ACCEPT || s === ORDER_STATUS.PREPARING;
+                if (s === ORDER_STATUS.ACCEPT || s === ORDER_STATUS.PREPARING) {
+                    return true;
+                }
+                if (s === ORDER_STATUS.PREPARED && recallIds.has(o?.id)) {
+                    return true;
+                }
+                return false;
             });
         },
         // [Wave U 2026-05-21] Récemment servies — last 4 PREPARED orders by
@@ -343,6 +364,16 @@ export default {
             this.liveMessage = isFinalStep
                 ? this.$t('label.kds_aria_live_ready', { id: queueNo || orderId })
                 : this.$t('label.kds_aria_live_preparing', { id: queueNo || orderId });
+        },
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+        // True if the order is in the RAPPELÉ window (passed down from the
+        // orchestrator via `recallActiveIds`). KdsOrderCard renders the badge
+        // overlay accordingly.
+        isRecallActive(order) {
+            if (!order || !Array.isArray(this.recallActiveIds)) {
+                return false;
+            }
+            return this.recallActiveIds.includes(order.id);
         },
         // [Wave U 2026-05-21] Compact "il y a Xm" relative label for the
         // recently-served strip. Reads `now` reactively so each pill updates

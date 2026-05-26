@@ -27,6 +27,9 @@ use App\Events\OrderPaidAtCounter;
 use App\Events\OrderPaymentStatusChanged;
 use App\Events\OrderStatusChanged;
 use App\Events\OrderTableChanged;
+// [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+use App\Events\KdsOrderRecalled;
+use App\Listeners\PersistKdsOrderRecalledToOutbox;
 // [HEAL B.2 2026-05-19] OutboxBroadcastSwallowedEvent listener registration —
 // closes RED-Z3 finding B-3 P1 (alarm void on outbox swallow).
 use App\Events\OutboxBroadcastSwallowedEvent;
@@ -149,6 +152,18 @@ class EventServiceProvider extends ServiceProvider
             AwardLoyaltyPointsOnDelivery::class,
             // [PHASE-36-P1] FCM push notifications on status change
             SendFcmOnOrderStatusChange::class,
+        ],
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+        // Chef "↶ Annuler bump" within 60s of bump. Append-only — orders.status
+        // is NOT touched. We do NOT chain SendOrderMail / SendOrderSms / FCM
+        // here because the recall is purely INTERNAL to the kitchen: the
+        // customer-facing OSS "Prêt" notification already fired on the
+        // initial PREPARING→PREPARED transition and the NF525 ledger view
+        // is read-only. The single outbox listener fans the event to KDS
+        // boards via `private-branch.{branchId}` for visual re-injection
+        // with the RAPPELÉ badge.
+        KdsOrderRecalled::class => [
+            PersistKdsOrderRecalledToOutbox::class,
         ],
         // [PHASE-36-P1] FCM push notifications on new order
         OrderCreated::class => [

@@ -6,11 +6,13 @@ use Exception;
 use App\Enums\Ask;
 use Carbon\Carbon;
 use App\Models\Order;
+use App\Models\OrderStatusTransition;
 use App\Enums\OrderType;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\PosPaymentMethod;
 use App\Domain\Kds\KitchenReleaseRule;
+use App\Events\KdsOrderRecalled;
 use App\Events\SendOrderSms;
 use Illuminate\Http\Request;
 use App\Events\SendOrderMail;
@@ -20,6 +22,7 @@ use App\Listeners\DispatchKdsTicket;
 use Illuminate\Support\Facades\Log;
 use App\Libraries\QueryExceptionLibrary;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class KitchenDisplaySystemOrderService
@@ -243,6 +246,138 @@ class KitchenDisplaySystemOrderService
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
+    }
+
+    /**
+     * [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+     *
+     * Chef recalls a PREPARED order within a 60-second grace window after the
+     * bump. Mandate verbatim: « j'ai pu valider une commande par erreur avec
+     * rapidité, je vais revenir pour la corriger ».
+     *
+     * INVARIANTS (NF525-safe, append-only):
+     *  - `orders.status` is NEVER mutated (stays PREPARED). The state ledger
+     *    is frozen-forward by OrderStateMachine §7.
+     *  - One `order_status_transitions` row is appended with `from=PREPARED`,
+     *    `to=PREPARED`, `reason='kitchen_recall'`. We DO NOT call
+     *    `OrderStateMachine::recordTransition()` because it short-circuits
+     *    when from==to (silent no-op — exact identity-transition guard at
+     *    OrderStateMachine.php:140). We persist directly via the Eloquent
+     *    model, which is the documented compensating-action pattern.
+     *  - The OSS "Prêt" notification to the customer is NOT downgraded.
+     *  - audit_logs HMAC chain is NOT touched (this is a business-events
+     *    journal, not the fiscal chain).
+     *
+     * GUARDS (under lockForUpdate inside DB::transaction):
+     *  - Status must be PREPARED (else 422).
+     *  - `updated_at` must be within last 60 seconds (TTL — else 422).
+     *  - Cap N=1 per order: if a prior `kitchen_recall` row exists for this
+     *    order in the window, return 409 (PROPOSAL §7 R2).
+     *  - Branch isolation: branch staff (branch_id > 0) may only recall
+     *    orders of their own branch (else 403). Admin (branch_id=0) bypass.
+     *
+     * Returns the OrderStatusTransition row id + recalled_at timestamp so the
+     * controller can build a 200 JSON envelope. Broadcasts KdsOrderRecalled
+     * after commit (DispatchableAfterCommit) for KDS boards on other stations.
+     *
+     * @throws HttpException 422 (state, TTL), 403 (branch), 409 (already recalled)
+     */
+    public function recall(Order $order): array
+    {
+        $user = auth()->user();
+        $actorId = $user ? (int) $user->getAuthIdentifier() : 0;
+        $userBranchId = (int) ($user->branch_id ?? 0);
+        $correlationId = request()?->header('X-Correlation-ID') ?? (string) Str::uuid();
+        $windowSeconds = 60;
+
+        $result = DB::transaction(function () use ($order, $actorId, $userBranchId, $correlationId, $windowSeconds) {
+            /** @var Order $locked */
+            $locked = Order::query()
+                ->whereKey($order->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Branch isolation under lock (defence-in-depth — BranchScope already
+            // filters route binding for non-admin, but lock + recheck protects
+            // the cross-branch race window).
+            if ($userBranchId > 0 && (int) $locked->branch_id !== $userBranchId) {
+                abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
+            }
+
+            // State guard — only PREPARED orders are recallable.
+            if ((int) $locked->status !== OrderStatus::PREPARED) {
+                abort(422, trans('all.message.kds_recall_invalid_state'));
+            }
+
+            // TTL guard — 60s window since the last write (updated_at proxy
+            // for bump time; see PROPOSAL §A "Why updated_at").
+            $bumpedAt = $locked->updated_at instanceof \DateTimeInterface
+                ? Carbon::instance($locked->updated_at)
+                : Carbon::parse((string) $locked->updated_at);
+
+            $now = Carbon::now();
+            if ($bumpedAt->lt($now->copy()->subSeconds($windowSeconds))) {
+                abort(422, trans('all.message.kds_recall_window_expired'));
+            }
+
+            // Cap N=1 — refuse a second recall for the same order in the same
+            // window (PROPOSAL §7 R2). Lookup is cheap (indexed order_id).
+            $alreadyRecalled = OrderStatusTransition::query()
+                ->where('order_id', $locked->id)
+                ->where('reason', 'kitchen_recall')
+                ->where('occurred_at', '>=', $bumpedAt)
+                ->exists();
+
+            if ($alreadyRecalled) {
+                abort(409, trans('all.message.kds_recall_already_recalled'));
+            }
+
+            // Append the compensating action row. DO NOT call
+            // OrderStateMachine::recordTransition() — its from==to guard
+            // (OrderStateMachine.php:140) would silently return without writing.
+            $recallRow = OrderStatusTransition::query()->create([
+                'order_id'       => (int) $locked->id,
+                'order_type'     => Order::class,
+                'from_status'    => OrderStatus::PREPARED,
+                'to_status'      => OrderStatus::PREPARED,
+                'actor_id'       => $actorId ?: null,
+                'actor_type'     => $actorId ? 'user' : null,
+                'reason'         => 'kitchen_recall',
+                'correlation_id' => $correlationId,
+                'occurred_at'    => $now,
+            ]);
+
+            // CRITICAL invariant assertion: orders.status MUST stay PREPARED.
+            // The compensating-action contract is broken if anything mutates
+            // this row inside the transaction. A defensive re-read here is
+            // cheap and gives the sentinel test a hard pin.
+            $statusAfter = (int) Order::query()->whereKey($locked->id)->value('status');
+            if ($statusAfter !== OrderStatus::PREPARED) {
+                throw new Exception('[KDS recall] Invariant broken: orders.status mutated during recall transaction.');
+            }
+
+            return [
+                'transition_id' => (int) $recallRow->id,
+                'order_id'      => (int) $locked->id,
+                'branch_id'     => (int) $locked->branch_id,
+                'queue_number'  => $locked->queue_number !== null ? (int) $locked->queue_number : null,
+                'recalled_at'   => $now->toIso8601String(),
+            ];
+        });
+
+        // Broadcast after commit so KDS boards on other stations re-inject
+        // the card with a RAPPELÉ badge. DispatchableAfterCommit drops the
+        // event entirely on rollback (gate C9 — KI-001).
+        KdsOrderRecalled::dispatch(
+            $result['order_id'],
+            $result['branch_id'],
+            $result['queue_number'],
+            $actorId,
+            $result['recalled_at'],
+            $correlationId
+        );
+
+        return $result;
     }
 
     /**

@@ -120,6 +120,16 @@ return [
         'kds_state_prepared'      => 'جاهز',
         'kds_state_out'           => 'قيد التوصيل',
         'kds_state_delivered'     => 'تم التسليم',
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+        'kds_recall_button'        => '↶ إلغاء التأكيد',
+        'kds_recall_button_aria'   => 'إلغاء تأكيد الطلب رقم {queue} — متاح لمدة 60 ثانية',
+        'kds_recall_badge'         => 'تم الاسترداد',
+        'kds_recall_badge_aria'    => 'تم استرداد الطلب رقم {queue} إلى المطبخ',
+        'kds_recall_confirm_title' => 'إلغاء حالة "جاهز" هذه؟',
+        'kds_recall_warning_60s'   => 'متاح لمدة 60 ثانية بعد التأكيد',
+        'kds_recall_success'       => 'تم استرداد الطلب ✓',
+        'kds_recall_too_late'      => 'انقضت مهلة 60 ثانية — اتصل بأمين الصندوق',
+        'kds_recall_already_recalled' => 'تم استرداد هذا الطلب بالفعل',
     ],
     'studio' => [
         'eyebrow' => 'كتالوج مركزي',
@@ -142,6 +152,11 @@ return [
         // [test-e2e fix E-004 round-3] Translated exception messages — replaces
         // raw English strings previously hardcoded in app/Exceptions/Handler.php.
         'order_not_found'             => 'الطلب غير موجود.',
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] backend abort() copies.
+        'kds_recall_invalid_state'     => 'يمكن استرداد الطلبات الجاهزة فقط.',
+        'kds_recall_window_expired'    => 'انقضت مهلة 60 ثانية — اتصل بأمين الصندوق للإلغاء يدويًا.',
+        'kds_recall_already_recalled'  => 'تم استرداد هذا الطلب بالفعل.',
+        'kds_recall_success'           => 'تم استرداد الطلب إلى المطبخ.',
         'unauthorized'                => 'ليس لديك الصلاحيات اللازمة.',
         'method_not_supported'        => 'الطريقة غير مدعومة لهذا المسار.',
         'url_not_found'               => 'لم يتم العثور على عنوان URL المحدد.',
