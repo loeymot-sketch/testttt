@@ -1,0 +1,78 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - link " Tableau de bord" [ref=e745] [cursor=pointer]:
+        - /url: /admin/dashboard
+        - generic [ref=e746]: 
+        - generic [ref=e747]: Tableau de bord
+      - generic [ref=e16]:
+        - button "avatar Bonjour Admin " [ref=e17] [cursor=pointer]:
+          - img "avatar" [ref=e18]
+          - heading "Bonjour Admin" [level=3] [ref=e19]:
+            - text: Bonjour
+            - generic "Admin" [ref=e20]
+          - generic [ref=e21]: 
+        - generic:
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: PENDING_CREATE_3e69b24b3b84
+            - heading "0,00 €" [level=3]
+          - navigation:
+            - link " Modifier le profil":
+              - /url: /admin/profile/edit-profile
+              - generic: 
+              - generic: Modifier le profil
+            - link " Changer le mot de passe":
+              - /url: /admin/profile/change-password
+              - generic: 
+              - generic: Changer le mot de passe
+            - button " Déconnexion":
+              - generic: 
+              - generic: Déconnexion
+  - text:                     
+  - button "Ouvrir l'historique des commandes du jour" [ref=e749] [cursor=pointer]:
+    - generic [ref=e750]: 📚
+    - generic [ref=e751]: Historique
+  - generic [ref=e752]:
+    - status [ref=e753]:
+      - generic [ref=e754]:
+        - img [ref=e756]
+        - generic [ref=e758]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=e759]: LOCAL
+    - region "Commande A0001, source Borne, Nouvelle, attente 0 minutes 49 secondes" [ref=e804]:
+      - generic [ref=e763]:
+        - generic [ref=e764]:
+          - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e765]: "[A]"
+          - generic [ref=e766]:
+            - generic [ref=e767]: Nouvelle
+            - generic [ref=e770]: Borne
+        - generic [ref=e771]:
+          - generic [ref=e772]:
+            - generic [ref=e773]: N°
+            - text: A0001
+          - generic [ref=e774]:
+            - generic [ref=e775]: Attente
+            - generic [ref=e776]: 00:49
+      - region "Détails de la commande A0001, défilable au clavier" [ref=e777]:
+        - generic [ref=e780]:
+          - generic [ref=e781]:
+            - text: "1"
+            - generic [ref=e782]: ×
+          - generic [ref=e783]: Cheddar
+        - generic [ref=e786]:
+          - generic [ref=e787]:
+            - text: "1"
+            - generic [ref=e788]: ×
+          - generic [ref=e789]: Tacos
+      - status "Commande en attente d'encaissement par le caissier — préparation en attente" [ref=e790]:
+        - img [ref=e791]
+        - generic [ref=e794]: En attente encaissement

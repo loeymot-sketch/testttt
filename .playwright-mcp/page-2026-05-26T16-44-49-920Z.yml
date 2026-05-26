@@ -1,0 +1,63 @@
+- generic [ref=e1]:
+  - generic [ref=e39]:
+    - generic [ref=e40]:
+      - generic [ref=e41]:
+        - img [ref=e43]
+        - generic [ref=e44]:
+          - generic [ref=e45]: Nos
+          - generic [ref=e46]: E2E_PLAYWRIGHT_STUDIO_CATEGORY
+      - button "Mon compte" [ref=e48] [cursor=pointer]:
+        - generic [ref=e49]: 👤
+        - text: Mon compte
+    - generic [ref=e50]:
+      - navigation "Navigation catégories" [ref=e51]:
+        - button "Sandwich Cayenne" [ref=e52] [cursor=pointer]:
+          - generic [ref=e53]: Sandwich Cayenne
+        - button "Galette" [ref=e55] [cursor=pointer]:
+          - generic [ref=e56]: Galette
+        - button "Sandwich Classique" [ref=e58] [cursor=pointer]:
+          - generic [ref=e59]: Sandwich Classique
+        - button "Burgers" [ref=e61] [cursor=pointer]:
+          - generic [ref=e62]: Burgers
+        - button "Tacos" [ref=e64] [cursor=pointer]:
+          - generic [ref=e65]: Tacos
+        - button "Bols Gourmands" [ref=e67] [cursor=pointer]:
+          - generic [ref=e68]: Bols Gourmands
+        - button "Menu enfant" [ref=e70] [cursor=pointer]:
+          - generic [ref=e71]: Menu enfant
+        - button "Frites" [ref=e73] [cursor=pointer]:
+          - generic [ref=e74]: Frites
+        - button "Suppléments" [ref=e76] [cursor=pointer]:
+          - generic [ref=e77]: Suppléments
+        - button "E2E_PLAYWRIGHT_STUDIO_CATEGORY" [ref=e79] [cursor=pointer]:
+          - generic [ref=e80]: E2E_PLAYWRIGHT_STUDIO_CATEGORY
+        - button "Desserts" [ref=e82] [cursor=pointer]:
+          - generic [ref=e83]: Desserts
+        - button "Boissons" [ref=e85] [cursor=pointer]:
+          - generic [ref=e86]: Boissons
+      - main [ref=e88]:
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - heading "E2E_PLAYWRIGHT_STUDIO_CATEGORY" [level=1] [ref=e91]
+            - paragraph [ref=e92]: 1 produit
+          - list [ref=e93]:
+            - listitem [ref=e94] [cursor=pointer]:
+              - generic [ref=e95]:
+                - img [ref=e96]
+                - generic [ref=e97]: Nouveau
+                - button "Ajouter E2E_PLAYWRIGHT_STUDIO_ITEM" [ref=e98]:
+                  - generic [ref=e99]: +
+              - generic [ref=e100]:
+                - heading "E2E_PLAYWRIGHT_STUDIO_ITEM" [level=2] [ref=e101]
+                - paragraph [ref=e102]: E2E catalog studio seed
+                - generic [ref=e103]: €1,00
+    - region "Panier et paiement" [ref=e104]:
+      - generic [ref=e105]:
+        - button "Ouvrir le panier — 0 articles" [disabled] [ref=e106]:
+          - img [ref=e108]
+          - generic [ref=e112]: 0 article
+        - generic [ref=e113]: €0,00
+      - generic [ref=e114]:
+        - button "Abandonner ma commande" [ref=e115] [cursor=pointer]
+        - button "Payer" [disabled] [ref=e116]
+  - status

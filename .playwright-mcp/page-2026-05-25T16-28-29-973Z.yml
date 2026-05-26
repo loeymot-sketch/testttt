@@ -1,0 +1,54 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - link " Tableau de bord" [ref=e134] [cursor=pointer]:
+        - /url: /admin/dashboard
+        - generic [ref=e135]: 
+        - generic [ref=e136]: Tableau de bord
+      - generic [ref=e16]:
+        - button "avatar Bonjour Admin " [ref=e17] [cursor=pointer]:
+          - img "avatar" [ref=e18]
+          - heading "Bonjour Admin" [level=3] [ref=e19]:
+            - text: Bonjour
+            - generic "Admin" [ref=e20]
+          - generic [ref=e21]: 
+        - generic:
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: PENDING_CREATE_3e69b24b3b84
+            - heading "0,00 €" [level=3]
+          - navigation:
+            - link " Modifier le profil":
+              - /url: /admin/profile/edit-profile
+              - generic: 
+              - generic: Modifier le profil
+            - link " Changer le mot de passe":
+              - /url: /admin/profile/change-password
+              - generic: 
+              - generic: Changer le mot de passe
+            - button " Déconnexion":
+              - generic: 
+              - generic: Déconnexion
+  - text:                     
+  - button "Ouvrir l'historique des commandes du jour" [ref=e138] [cursor=pointer]:
+    - generic [ref=e139]: 📚
+    - generic [ref=e140]: Historique
+  - generic [ref=e141]:
+    - status [ref=e142]:
+      - generic [ref=e143]:
+        - img [ref=e145]
+        - generic [ref=e147]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=e148]: LOCAL
+    - generic [ref=e149]:
+      - img [ref=e152]
+      - generic [ref=e159]: Aucune commande en cours
+      - generic [ref=e160]: Les nouvelles commandes apparaîtront ici

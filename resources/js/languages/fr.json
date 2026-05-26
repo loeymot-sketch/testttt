@@ -206,7 +206,7 @@
         "cancel_last_line_done": "Dernière ligne annulée.",
         "cancel_last_line_done_named": "« {name} » retirée du panier.",
         "cancel_last_line_error": "Impossible d'annuler la dernière ligne.",
-        "parked_search_placeholder": "Rechercher par n° / nom / client",
+        "parked_search_placeholder": "Rechercher par n° \/ nom \/ client",
         "parked_search_no_match": "Aucune commande parkée ne correspond.",
         "reprint_ticket_hint": "Imprime à nouveau le ticket caisse + cuisine pour cette commande (duplicata).",
         "reprint_error": "Impossible de réimprimer cette commande.",
@@ -494,7 +494,7 @@
             "source_ref_help": "Par défaut toutes les options de la source sont proposées. Choisis un groupe précis pour ne montrer qu’un sous-ensemble.",
             "min_select_help": "Combien d'articles le client doit minimum choisir. 0 = optionnel, 1+ = obligatoire.",
             "max_select_help": "Combien d'articles le client peut maximum choisir.",
-            "visible_on_help": "Sur quels canaux cette étape apparaît (caisse interne POS et/ou borne client).",
+            "visible_on_help": "Sur quels canaux cette étape apparaît (caisse interne POS et\/ou borne client).",
             "is_active_help": "Désactiver une étape la cache aux clients sans la supprimer.",
             "min_max_summary_optional_one": "= Optionnel, le client peut choisir 1 article maximum.",
             "min_max_summary_required_n": "= Obligatoire, le client doit choisir exactement {n} articles.",
@@ -536,7 +536,7 @@
         "tpe_validated_simulation": "Paiement TPE validé (simulation) — Commande N°{order} encaissée",
         "cc_source_kiosk": "Borne",
         "cc_mode_card_hint": "Le client paie par carte au TPE. Cliquez sur Confirmer pour valider la transaction.",
-        "cc_mode_mobile_hint": "Paiement mobile (Apple Pay / Google Pay) au comptoir. Cliquez sur Confirmer une fois encaissé.",
+        "cc_mode_mobile_hint": "Paiement mobile (Apple Pay \/ Google Pay) au comptoir. Cliquez sur Confirmer une fois encaissé.",
         "cc_mode_ticket_hint": "Ticket restaurant ou chèque déjeuner. Cliquez sur Confirmer une fois encaissé.",
         "cc_cash_short": "Montant reçu inférieur au total. Ajustez avant de valider.",
         "processing": "Traitement…",
@@ -598,7 +598,7 @@
         "category": "Catégorie",
         "catalog_pilot": "Pilotage catalogue",
         "catalog_subtitle": "Produits, catégories, offres et disponibilités",
-        "catalog_pos_kiosk": "POS / borne",
+        "catalog_pos_kiosk": "POS \/ borne",
         "catalog_summary_aria": "Résumé catalogue",
         "catalog_actions_aria": "Actions catalogue",
         "catalog_metric_products": "produits",
@@ -831,7 +831,7 @@
         "branch_id": "Branche",
         "branch_manager": "Responsable de branche",
         "cancel_order": "Annuler la commande",
-        "cash_card": "Espèces / carte",
+        "cash_card": "Espèces \/ carte",
         "cash_on_delivery": "Paiement à la livraison",
         "caution": "Attention",
         "change_due": "Monnaie à rendre",
@@ -848,7 +848,7 @@
         "other": "Autre",
         "charge_per_kilo": "Tarif par kilo",
         "chef": "Chef",
-        "chef_kitchen": "Chef / cuisine",
+        "chef_kitchen": "Chef \/ cuisine",
         "choose_a_time": "Choisir un horaire",
         "city": "Ville",
         "closing_time": "Heure de fermeture",
@@ -1233,7 +1233,10 @@
             "usage_empty": "Aucun produit ni catégorie n'utilise cet ingrédient.",
             "view_details": "Voir les détails"
         },
-        "kds_toggle_items": "Afficher/Masquer les articles"
+        "kds_toggle_items": "Afficher\/Masquer les articles",
+        "eod_pdf_button": "PDF Clôture du jour",
+        "eod_pdf_error": "Téléchargement du PDF échoué. Réessayez ou vérifiez vos permissions.",
+        "downloading": "Téléchargement…"
     },
     "button": {
         "add": "Ajouter",
@@ -1680,8 +1683,8 @@
             "payment_cancelled": "Paiement annulé.",
             "payment_cancelled_toast": "Paiement annulé",
             "speech_error": "Paiement refusé. {msg}",
-            "offline_alert": "Paiement CB/TR indisponible hors ligne. Le menu reste consultable; choisissez les espèces au comptoir ou réessayez quand la connexion revient.",
-            "offline_short": "Paiement CB/TR indisponible hors ligne."
+            "offline_alert": "Paiement CB\/TR indisponible hors ligne. Le menu reste consultable; choisissez les espèces au comptoir ou réessayez quand la connexion revient.",
+            "offline_short": "Paiement CB\/TR indisponible hors ligne."
         },
         "upsell_screen": {
             "title": "Et pour terminer ?",
@@ -1915,7 +1918,7 @@
                     "instruction_many": "Choisissez {n} portions de viande : sélectionnez-en plusieurs ou répétez la même avec + après l'avoir choisie.",
                     "instruction_remaining_one": "Encore {n} portion : touchez une autre viande ou + sur une viande déjà choisie.",
                     "instruction_remaining_many": "Encore {n} portions : touchez une autre viande ou + sur une viande déjà choisie.",
-                    "instruction_complete": "Choix validé. Vous pouvez continuer ou ajuster avec + / −.",
+                    "instruction_complete": "Choix validé. Vous pouvez continuer ou ajuster avec + \/ −.",
                     "meta_selected": "Choisi",
                     "meta_paid": "Supplément {price}"
                 },
@@ -1959,7 +1962,7 @@
             "pmr": "Mode PMR",
             "pmr_hint": "Textes plus grands, zones tactiles élargies",
             "audio": "Assistance audio",
-            "audio_hint": "Lecture vocale des étapes (FR/EN)",
+            "audio_hint": "Lecture vocale des étapes (FR\/EN)",
             "audio_description": "Description audio détaillée",
             "audio_description_hint": "Lit à voix haute boutons, prix et choix (EAA 2025)",
             "reduced_motion": "Animations réduites",
@@ -2071,7 +2074,7 @@
             "upload_success": "Image téléversée",
             "upload_error": "Erreur upload",
             "upload_retry": "Réessayer",
-            "upload_invalid_mime": "Format non supporté (JPG/PNG/WEBP)",
+            "upload_invalid_mime": "Format non supporté (JPG\/PNG\/WEBP)",
             "upload_oversize": "Image trop lourde (max 4 Mo)"
         }
     },

@@ -1,0 +1,762 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - heading "Le Cayenne — Decisions Gap-Hunt V1" [level=1] [ref=e6]
+          - generic [ref=e7]:
+            - text: Top 30 gaps (sur 71) — Phase C Owner Validation — branche
+            - code [ref=e8]: heal/cms-pr1-quickwins-2026-05-18
+        - generic [ref=e9]: 2026-05-25
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]: P0 Critique
+        - generic [ref=e13]: "13"
+      - generic [ref=e14]:
+        - generic [ref=e15]: P1 Important
+        - generic [ref=e16]: "17"
+      - generic [ref=e17]:
+        - generic [ref=e18]: P2 Mineur
+        - generic [ref=e19]: "0"
+      - generic [ref=e20]:
+        - generic [ref=e21]: Approuvés
+        - generic [ref=e22]: "0"
+      - generic [ref=e23]:
+        - generic [ref=e24]: Rejetés
+        - generic [ref=e25]: "0"
+      - generic [ref=e26]:
+        - generic [ref=e27]: Différés
+        - generic [ref=e28]: "0"
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - searchbox "Rechercher (titre / story / système / hint…)" [ref=e31]
+        - button "Réinitialiser filtres" [ref=e32] [cursor=pointer]
+        - button "Effacer tous les votes" [ref=e33] [cursor=pointer]
+      - generic [ref=e34]:
+        - generic [ref=e35]: "Système :"
+        - button "S7 Admin Inspector" [ref=e36] [cursor=pointer]
+        - button "S7 Admin Owner" [ref=e37] [cursor=pointer]
+        - button "S5 Cash Drawer" [ref=e38] [cursor=pointer]
+        - button "Cross-System" [ref=e39] [cursor=pointer]
+        - button "S3 KDS" [ref=e40] [cursor=pointer]
+        - button "S1 Kiosk" [ref=e41] [cursor=pointer]
+        - button "S2 POS Caisse" [ref=e42] [cursor=pointer]
+        - button "S6 Stock" [ref=e43] [cursor=pointer]
+      - generic [ref=e44]:
+        - generic [ref=e45]: "Sévérité :"
+        - button "P0" [ref=e46] [cursor=pointer]
+        - button "P1" [ref=e47] [cursor=pointer]
+      - generic [ref=e48]:
+        - generic [ref=e49]: "Effort :"
+        - button "XS" [ref=e50] [cursor=pointer]
+        - button "S" [ref=e51] [cursor=pointer]
+        - button "M" [ref=e52] [cursor=pointer]
+      - generic [ref=e53]:
+        - generic [ref=e54]: "Persona :"
+        - button "P1 Chef" [ref=e55] [cursor=pointer]
+        - button "P2 Client" [ref=e56] [cursor=pointer]
+        - button "P3 Caissier" [ref=e57] [cursor=pointer]
+        - button "P4 Owner" [ref=e58] [cursor=pointer]
+        - button "P5 Inspecteur" [ref=e59] [cursor=pointer]
+        - button "P6 Newbie" [ref=e60] [cursor=pointer]
+      - generic [ref=e61]:
+        - generic [ref=e62]: "Drapeaux :"
+        - button "V1 Ship-Blocker" [ref=e63] [cursor=pointer]
+        - button "Frozen-zone" [ref=e64] [cursor=pointer]
+        - button "Owner-mentionné" [ref=e65] [cursor=pointer]
+    - generic [ref=e66]:
+      - generic [ref=e67]:
+        - generic [ref=e68]:
+          - generic [ref=e69]:
+            - generic [ref=e70]: MASTER-GAP-002
+            - generic [ref=e71]: ★ KDS recall/undo after wrong bump (owner mandate verbatim)
+          - generic [ref=e72]: score 10
+        - generic [ref=e73]:
+          - generic [ref=e74]: P0
+          - generic [ref=e75]: BLOCKER-DAILY
+          - generic [ref=e76]: Effort M · 2j
+          - generic [ref=e77]: S3 KDS
+          - generic [ref=e78]: P1 Chef
+          - generic [ref=e79]: P6 Newbie
+          - generic [ref=e80]: ⚠ Frozen-zone
+          - generic [ref=e81]: V1 Ship-Blocker
+        - generic [ref=e82]:
+          - generic [ref=e83]: Scénario utilisateur
+          - generic [ref=e84]: "Chef bumps PRET by mistake at rush hour. Wave V removed 3s undo toast. OrderStateMachine forbids reverse. Owner: 'je peux pas y accéder aux archives parce que je peux par exemple avoir fait valider une commande par erreur'."
+        - generic [ref=e85]:
+          - generic [ref=e86]: Risque si absent
+          - generic [ref=e87]: Operational — client gets false 'ready' notification, waste matiere si chef reprep, frustration cuisine + caisse
+        - generic "Cliquer pour étendre / replier" [ref=e88] [cursor=pointer]: "Compensating-action pattern (NF525 forward-only preserved): POST /kds-order/{order}/recall-recent with 60s grace window + 'RAPPELE' yellow badge re-injecting card. OR gated reverse transition via LOCK_KDS_RECALL_2026-05-25.md per CLAUDE.md §7. Owner choice."
+        - generic [ref=e89]:
+          - button "✓ Approuver" [ref=e90] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e91] [cursor=pointer]
+          - button "⏸ Différer" [ref=e92] [cursor=pointer]
+      - generic [ref=e93]:
+        - generic [ref=e94]:
+          - generic [ref=e95]:
+            - generic [ref=e96]: MASTER-GAP-001
+            - generic [ref=e97]: ★ Refund UI button — backend NF525-ready, NO cashier-facing trigger
+          - generic [ref=e98]: score 9
+        - generic [ref=e99]:
+          - generic [ref=e100]: P0
+          - generic [ref=e101]: BLOCKER-DAILY
+          - generic [ref=e102]: Effort S · 1j
+          - generic [ref=e103]: S2 POS Caisse
+          - generic [ref=e104]: P3 Caissier
+          - generic [ref=e105]: V1 Ship-Blocker
+        - generic [ref=e106]:
+          - generic [ref=e107]: Scénario utilisateur
+          - generic [ref=e108]: Cashier rings wrong item / customer changes mind post-payment / card-cleared mistake. Today must escalate to manager + curl/Postman.
+        - generic [ref=e109]:
+          - generic [ref=e110]: Risque si absent
+          - generic [ref=e111]: NF525 — manual DB fallback bypasses audit chain attribution
+        - generic "Cliquer pour étendre / replier" [ref=e112] [cursor=pointer]: "Refund button on PosOrderShowComponent + confirmation modal + reason input + POST /api/admin/pos-order/{order}/refund-with-counter-entry. Backend READY (sealed-parent guard, mirror order, audit-chain APPEND, sentinel-tested). Mint pos-refund permission + middleware on api.php:961."
+        - generic [ref=e113]:
+          - button "✓ Approuver" [ref=e114] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e115] [cursor=pointer]
+          - button "⏸ Différer" [ref=e116] [cursor=pointer]
+      - generic [ref=e117]:
+        - generic [ref=e118]:
+          - generic [ref=e119]:
+            - generic [ref=e120]: MASTER-GAP-005
+            - generic [ref=e121]: ★ Owner export PDF/Excel cloture du soir — 1 click from dashboard
+          - generic [ref=e122]: score 9
+        - generic [ref=e123]:
+          - generic [ref=e124]: P1
+          - generic [ref=e125]: FRICTION-WEEKLY
+          - generic [ref=e126]: Effort S · 1j
+          - generic [ref=e127]: S7 Admin Owner
+          - generic [ref=e128]: P4 Owner
+        - generic [ref=e129]:
+          - generic [ref=e130]: Scénario utilisateur
+          - generic [ref=e131]: "Owner 22h30 wants 'Cloture du soir PDF' to send to comptable. Today: 4 clicks (menu lateral → Sales Report → filter today → PDF) AND the PDF is a transaction list, NOT a comptable-ready synthese (KPIs + breakdown TVA + top 5 items + refunds)."
+        - generic [ref=e132]:
+          - generic [ref=e133]: Risque si absent
+          - generic [ref=e134]: Owner ergonomics — 5min/day × 7d = 35min/week × 52 = 30h/year. Library Maatwebsite+DomPDF deja installes + used by 9 other controllers.
+        - generic "Cliquer pour étendre / replier" [ref=e135] [cursor=pointer]: app/Exports/CashOverviewExport.php (FromCollection) + app/Exports/DailySummaryExport + DailySummaryController::exportPdf reusing Transaction::with(...) builder + 1 button on RealtimeReportComponent. NEW template pdf.daily_summary.blade.php (1 page A4 KPIs+breakdown TVA+top 5 items).
+        - generic [ref=e136]:
+          - button "✓ Approuver" [ref=e137] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e138] [cursor=pointer]
+          - button "⏸ Différer" [ref=e139] [cursor=pointer]
+      - generic [ref=e140]:
+        - generic [ref=e141]:
+          - generic [ref=e142]:
+            - generic [ref=e143]: MASTER-GAP-022
+            - generic [ref=e144]: ★ Chef→cashier shortage signal channel absent (reverse exists POS→KDS)
+          - generic [ref=e145]: score 9
+        - generic [ref=e146]:
+          - generic [ref=e147]: P0
+          - generic [ref=e148]: FRICTION-WEEKLY
+          - generic [ref=e149]: Effort S · 1j
+          - generic [ref=e150]: Cross-System
+          - generic [ref=e151]: P1 Chef
+        - generic [ref=e152]:
+          - generic [ref=e153]: Scénario utilisateur
+          - generic [ref=e154]: "Chef ouvre frigo: 0 cheddar. To block, chef must (a) sortir KDS (b) ouvrir admin stock rupture (c) chercher cheddar dans 100+ extras (d) toggle. Pendant ce temps 3 Cayenne+cheddar peuvent etre encaissees. Workaround = chef CRIE 'plus de cheddar'. Cross-validated by S3-P1 + S6-P1 independent."
+        - generic [ref=e155]:
+          - generic [ref=e156]: Risque si absent
+          - generic [ref=e157]: Daily 2-5 incidents per rush. 30-60s perdues + risque client servi sans ingredient.
+        - generic "Cliquer pour étendre / replier" [ref=e158] [cursor=pointer]: Button 'Signaler rupture' on KdsOrderCard.vue opening mini-modal listing order composants toggleable. Backend POST /api/admin/kitchen/signal-shortage delegates to AvailabilityService::toggle (existing). Broadcast ItemAvailabilityChanged → POS+Kiosk re-render.
+        - generic [ref=e159]:
+          - button "✓ Approuver" [ref=e160] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e161] [cursor=pointer]
+          - button "⏸ Différer" [ref=e162] [cursor=pointer]
+      - generic [ref=e163]:
+        - generic [ref=e164]:
+          - generic [ref=e165]:
+            - generic [ref=e166]: MASTER-GAP-003
+            - generic [ref=e167]: Customer SMS notification when order PRET (kiosk hardcoded suppress)
+          - generic [ref=e168]: score 8
+        - generic [ref=e169]:
+          - generic [ref=e170]: P0
+          - generic [ref=e171]: FRICTION-WEEKLY
+          - generic [ref=e172]: Effort M · 2j
+          - generic [ref=e173]: S1 Kiosk
+          - generic [ref=e174]: P2 Client
+        - generic [ref=e175]:
+          - generic [ref=e176]: Scénario utilisateur
+          - generic [ref=e177]: Kiosk customer takeaway pays and walks away. Receives ZERO transactional SMS by design (source==10 guard). Cloud-pinned to OSS wall 8-15 min defeats takeaway value. Standard concurrent in McDo/BK/Starbucks 2024-2026.
+        - generic [ref=e178]:
+          - generic [ref=e179]: Risque si absent
+          - generic [ref=e180]: Customer retention — cloue le client devant le wall + breaks takeaway UX. 80%+ Le Cayenne volume = kiosk = zero touchpoint.
+        - generic "Cliquer pour étendre / replier" [ref=e181] [cursor=pointer]: Remove blanket source==10 guard in OrderSmsNotificationBuilder.php:30-33. Per-status feature flags via notification_alerts table (admin choose which status SMS). Opt-in checkbox kiosk loyalty step. Phone deja collecte si loyalty.
+        - generic [ref=e182]:
+          - button "✓ Approuver" [ref=e183] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e184] [cursor=pointer]
+          - button "⏸ Différer" [ref=e185] [cursor=pointer]
+      - generic [ref=e186]:
+        - generic [ref=e187]:
+          - generic [ref=e188]:
+            - generic [ref=e189]: MASTER-GAP-009
+            - generic [ref=e190]: Phone-number search missing in both cashier surfaces (POS tracker + posOrders list)
+          - generic [ref=e191]: score 8
+        - generic [ref=e192]:
+          - generic [ref=e193]: P1
+          - generic [ref=e194]: FRICTION-WEEKLY
+          - generic [ref=e195]: Effort S · 0.5j
+          - generic [ref=e196]: S2 POS Caisse
+          - generic [ref=e197]: P3 Caissier
+        - generic [ref=e198]:
+          - generic [ref=e199]: Scénario utilisateur
+          - generic [ref=e200]: Customer phones '03-23-XX-XX, j'ai commande hier livraison, ca n'est pas arrive'. Cashier cannot search by phone (haystack is queue_number+serial+name only). Phone column exists on customers but cashier blocked by customers permission.
+        - generic [ref=e201]:
+          - generic [ref=e202]: Risque si absent
+          - generic [ref=e203]: Daily friction — every shift 3-5 phone-call lookups. Currently escalates to manager.
+        - generic "Cliquer pour étendre / replier" [ref=e204] [cursor=pointer]: Add user.phone OR address.phone to PosOrdersTracker.filteredOrders haystack (1 line). Add phone input to PosOrderListComponent search filter. customers.phone already indexed.
+        - generic [ref=e205]:
+          - button "✓ Approuver" [ref=e206] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e207] [cursor=pointer]
+          - button "⏸ Différer" [ref=e208] [cursor=pointer]
+      - generic [ref=e209]:
+        - generic [ref=e210]:
+          - generic [ref=e211]:
+            - generic [ref=e212]: MASTER-GAP-046
+            - generic [ref=e213]: "★ Stock: 'il reste 3 portions' alert threshold (backend gated/log-only)"
+          - generic [ref=e214]: score 8
+        - generic [ref=e215]:
+          - generic [ref=e216]: P0
+          - generic [ref=e217]: FRICTION-WEEKLY
+          - generic [ref=e218]: Effort M · 2j
+          - generic [ref=e219]: S6 Stock
+          - generic [ref=e220]: P1 Chef
+        - generic [ref=e221]:
+          - generic [ref=e222]: Scénario utilisateur
+          - generic [ref=e223]: Owner verbatim 'alerte automatique il reste 3 portions avant rupture'. Backend support EXISTS (stock_levels.threshold_low + NotifyStockLowOnStockLevelChanged listener) BUT (a) flag FK_CATALOG_STOCK_LOW_ALERT_ENABLED=false default (b) StockLevelChanged dispatched ONLY on choice-boundary cross-zero (decrement 5→4→3 never triggers) (c) when fires, Log::warning only, no UI push.
+        - generic [ref=e224]:
+          - generic [ref=e225]: Risque si absent
+          - generic [ref=e226]: Daily rush on 5-12 SKUs tracked. Owner-cited verbatim '3 portions'.
+        - generic "Cliquer pour étendre / replier" [ref=e227] [cursor=pointer]: "Path A: activate FK_CATALOG_STOCK_LOW_ALERT_ENABLED=true + replace Log::warning with event broadcast stock-low.{branchId}. Path B: add ChoiceBoundaryProximityEvent fired when on_hand <= threshold_low (not just on_hand=0). KDS subscribe + toast 'Reste 3 portions Frites' + son court."
+        - generic [ref=e228]:
+          - button "✓ Approuver" [ref=e229] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e230] [cursor=pointer]
+          - button "⏸ Différer" [ref=e231] [cursor=pointer]
+      - generic [ref=e232]:
+        - generic [ref=e233]:
+          - generic [ref=e234]:
+            - generic [ref=e235]: MASTER-GAP-020
+            - generic [ref=e236]: PENDING_COUNTER zombies pollute KDS — CleanupStalePendingKioskOrders filters UNPAID only
+          - generic [ref=e237]: score 7.75
+        - generic [ref=e238]:
+          - generic [ref=e239]: P1
+          - generic [ref=e240]: FRICTION-WEEKLY
+          - generic [ref=e241]: Effort XS · 0.25j
+          - generic [ref=e242]: Cross-System
+        - generic [ref=e243]:
+          - generic [ref=e244]: Scénario utilisateur
+          - generic [ref=e245]: Kiosk cash counter-deferred order abandoned → KDS shows 'EN ATTENTE ENCAISSEMENT' badge indefiniment. Chef may prep waste or wait forever. Counter-collect list saturates with zombies.
+        - generic [ref=e246]:
+          - generic [ref=e247]: Risque si absent
+          - generic [ref=e248]: Stock leak + waste kitchen + zombie pollution of counter-collect list.
+        - generic "Cliquer pour étendre / replier" [ref=e249] [cursor=pointer]: Extend Jobs/CleanupStalePendingKioskOrders.php:33 whereIn payment_status [UNPAID, PENDING_COUNTER]. Threshold 30min owner-gate (vs 15 UNPAID). OrderCanceled cascade tested already (sentinel).
+        - generic [ref=e250]:
+          - button "✓ Approuver" [ref=e251] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e252] [cursor=pointer]
+          - button "⏸ Différer" [ref=e253] [cursor=pointer]
+      - generic [ref=e254]:
+        - generic [ref=e255]:
+          - generic [ref=e256]:
+            - generic [ref=e257]: MASTER-GAP-004
+            - generic [ref=e258]: 10-min fiscal Z dead-zone (23:55→00:05) admits orders into NO Z aggregate
+          - generic [ref=e259]: score 7
+        - generic [ref=e260]:
+          - generic [ref=e261]: P0
+          - generic [ref=e262]: BLOCKER-DAILY
+          - generic [ref=e263]: Effort M · 3j
+          - generic [ref=e264]: Cross-System
+          - generic [ref=e265]: ⚠ Frozen-zone
+          - generic [ref=e266]: V1 Ship-Blocker
+        - generic [ref=e267]:
+          - generic [ref=e268]: Scénario utilisateur
+          - generic [ref=e269]: "Cashier rings 23:57 sale: order created with business_date=J + fiscal_sequence_no allocated, but created_at > Z(J).closed_at → excluded from Z(J), then excluded from Z(J+1) because created_at < Z(J+1).from. Receipt prints fiscal_seq + customer gets receipt + NO Z contains this transaction = NF525 invariant 'gap-free' broken."
+        - generic [ref=e270]:
+          - generic [ref=e271]: Risque si absent
+          - generic [ref=e272]: NF525 invariant violation — fiscal_sequence appears in NO Z aggregate. Mathematically breakable today.
+        - generic "Cliquer pour étendre / replier" [ref=e273] [cursor=pointer]: "Option A: shrink cron window 23:59:55→00:00:05 + admit guard refusing fiscal_sequence_no allocation when no STATUS_OPEN Z. Option B: switch aggregate window key from created_at to business_date (chain signs aggregates not window key — chain compat). LOCK_FISCAL_DEAD_ZONE plan + owner countersign required (NF525 frozen list)."
+        - generic [ref=e274]:
+          - button "✓ Approuver" [ref=e275] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e276] [cursor=pointer]
+          - button "⏸ Différer" [ref=e277] [cursor=pointer]
+      - generic [ref=e278]:
+        - generic [ref=e279]:
+          - generic [ref=e280]:
+            - generic [ref=e281]: MASTER-GAP-006
+            - generic [ref=e282]: ★ Daily incident note feature absent (panne TPE, fournisseur retard, etc.)
+          - generic [ref=e283]: score 7
+        - generic [ref=e284]:
+          - generic [ref=e285]: P1
+          - generic [ref=e286]: FRICTION-WEEKLY
+          - generic [ref=e287]: Effort S · 1j
+          - generic [ref=e288]: S7 Admin Owner
+          - generic [ref=e289]: P3 Caissier
+          - generic [ref=e290]: P4 Owner
+        - generic [ref=e291]:
+          - generic [ref=e292]: Scénario utilisateur
+          - generic [ref=e293]: Owner 22h wants to log 'panne TPE 14h05-14h45' or 'cassoulet brule rush midi'. Comptable + insurance + owner-memory all depend on context that LIVES NOWHERE today. variance_reason is per-cashier-close, not per-day-owner narrative. Currently paper-notebook.
+        - generic [ref=e294]:
+          - generic [ref=e295]: Risque si absent
+          - generic [ref=e296]: Audit/insurance + owner cognition — absence cannot be recovered after.
+        - generic "Cliquer pour étendre / replier" [ref=e297] [cursor=pointer]: Migration daily_incident_notes (id, branch_id, user_id, business_date, severity ENUM info/warning/critical, title, body, occurred_at_local). DailyIncidentNoteController + form panel on CashOverviewComponent + dashboard widget. Branch-scoped. NF525 read-only sibling.
+        - generic [ref=e298]:
+          - button "✓ Approuver" [ref=e299] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e300] [cursor=pointer]
+          - button "⏸ Différer" [ref=e301] [cursor=pointer]
+      - generic [ref=e302]:
+        - generic [ref=e303]:
+          - generic [ref=e304]:
+            - generic [ref=e305]: MASTER-GAP-007
+            - generic [ref=e306]: ★ Compare J vs J-1 / S-1 deltas on owner dashboard
+          - generic [ref=e307]: score 7
+        - generic [ref=e308]:
+          - generic [ref=e309]: P1
+          - generic [ref=e310]: FRICTION-WEEKLY
+          - generic [ref=e311]: Effort S · 1j
+          - generic [ref=e312]: S7 Admin Owner
+          - generic [ref=e313]: P4 Owner
+        - generic [ref=e314]:
+          - generic [ref=e315]: Scénario utilisateur
+          - generic [ref=e316]: Owner '750 EUR today' meaningless absolute. Wants '750 EUR (+12% vs hier, -5% vs lundi dernier)'. Tonight signal-detection impossible without reference.
+        - generic [ref=e317]:
+          - generic [ref=e318]: Risque si absent
+          - generic [ref=e319]: Owner pilote sans reference — -25% drop detected 2 weeks late = cash-flow problem.
+        - generic "Cliquer pour étendre / replier" [ref=e320] [cursor=pointer]: Extend DashboardService::realtimeReport / CashOverviewController.summary to compute summary_previous_day + summary_previous_week in same response (3 SUMs scoped to branch_filter). Frontend 2 delta cells per source card + green up/red down arrow.
+        - generic [ref=e321]:
+          - button "✓ Approuver" [ref=e322] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e323] [cursor=pointer]
+          - button "⏸ Différer" [ref=e324] [cursor=pointer]
+      - generic [ref=e325]:
+        - generic [ref=e326]:
+          - generic [ref=e327]:
+            - generic [ref=e328]: MASTER-GAP-017
+            - generic [ref=e329]: NF525 chain verify on-demand UI button
+          - generic [ref=e330]: score 7
+        - generic [ref=e331]:
+          - generic [ref=e332]: P0
+          - generic [ref=e333]: FRICTION-WEEKLY
+          - generic [ref=e334]: Effort S · 1j
+          - generic [ref=e335]: S7 Admin Inspector
+          - generic [ref=e336]: P5 Inspecteur
+        - generic [ref=e337]:
+          - generic [ref=e338]: Scénario utilisateur
+          - generic [ref=e339]: Inspector asks 'prove chain is intact NOW'. FiscalVerifyChainCommand CLI exists (audit_logs+z_reports both, distinct exit codes 0/1/2/3). No HTTP endpoint, no admin button, no badge 'last verified at T'.
+        - generic [ref=e340]:
+          - generic [ref=e341]: Risque si absent
+          - generic [ref=e342]: NF525 on-the-spot proof — manager cannot answer integrity question without dev shell.
+        - generic "Cliquer pour étendre / replier" [ref=e343] [cursor=pointer]: Endpoint wrapping FiscalVerifyChainCommand::handle (run sync, return structured result). UI badge on dashboard 'Chain verified at T+N min' + Verify Now button.
+        - generic [ref=e344]:
+          - button "✓ Approuver" [ref=e345] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e346] [cursor=pointer]
+          - button "⏸ Différer" [ref=e347] [cursor=pointer]
+      - generic [ref=e348]:
+        - generic [ref=e349]:
+          - generic [ref=e350]:
+            - generic [ref=e351]: MASTER-GAP-018
+            - generic [ref=e352]: Past-order replay UI shows ZERO fiscal context (audit_fingerprint orphan)
+          - generic [ref=e353]: score 7
+        - generic [ref=e354]:
+          - generic [ref=e355]: P0
+          - generic [ref=e356]: FRICTION-WEEKLY
+          - generic [ref=e357]: Effort S · 1j
+          - generic [ref=e358]: S7 Admin Inspector
+          - generic [ref=e359]: P5 Inspecteur
+        - generic [ref=e360]:
+          - generic [ref=e361]: Scénario utilisateur
+          - generic [ref=e362]: "Inspector clicks past order on PosOrderShowComponent: shows status badges + items + 'Print invoice' (generic HTML print). NO fiscal_sequence_no, NO audit_fingerprint, NO link to Z-report sealing the order, NO composition_snapshot drill-down, NO duplicata-aware print button. OrderDetailsResource computes audit_fingerprint (12-char) but NO Vue consumer reads it. i18n key label.audit_fingerprint orphan."
+        - generic [ref=e363]:
+          - generic [ref=e364]: Risque si absent
+          - generic [ref=e365]: NF525 inspector cannot verify single past transaction without raw SQL.
+        - generic "Cliquer pour étendre / replier" [ref=e366] [cursor=pointer]: "PosOrderShowComponent.vue header: render fiscal_sequence_no + audit_fingerprint + Z-report sealing link + duplicata button calling admin/pos/orders/{order}/print-receipt (endpoint exists)."
+        - generic [ref=e367]:
+          - button "✓ Approuver" [ref=e368] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e369] [cursor=pointer]
+          - button "⏸ Différer" [ref=e370] [cursor=pointer]
+      - generic [ref=e371]:
+        - generic [ref=e372]:
+          - generic [ref=e373]:
+            - generic [ref=e374]: MASTER-GAP-027
+            - generic [ref=e375]: POS direct-sale cart line lacks chef-instruction input
+          - generic [ref=e376]: score 7
+        - generic [ref=e377]:
+          - generic [ref=e378]: P1
+          - generic [ref=e379]: FRICTION-WEEKLY
+          - generic [ref=e380]: Effort S · 1j
+          - generic [ref=e381]: S2 POS Caisse
+          - generic [ref=e382]: P1 Chef
+        - generic [ref=e383]:
+          - generic [ref=e384]: Scénario utilisateur
+          - generic [ref=e385]: Client says 'sans oignons / bien cuit'. OrderItem.instruction column EXISTS (DB + KDS displays it for kiosk cash echo). POS direct-sale cart has NO setter UI per line. Kiosk wizard customizeWithText pattern exists but not in POS cart.
+        - generic [ref=e386]:
+          - generic [ref=e387]: Risque si absent
+          - generic [ref=e388]: Daily chef instruction loss. Schema already in place.
+        - generic "Cliquer pour étendre / replier" [ref=e389] [cursor=pointer]: Per-line note icon-button on .pos-v5-cart-item opening quick textarea modal (max 80 chars, kiosk wizard customizeWithText pattern). Write to cart row instruction field (backend payload at L3628 already reads it).
+        - generic [ref=e390]:
+          - button "✓ Approuver" [ref=e391] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e392] [cursor=pointer]
+          - button "⏸ Différer" [ref=e393] [cursor=pointer]
+      - generic [ref=e394]:
+        - generic [ref=e395]:
+          - generic [ref=e396]:
+            - generic [ref=e397]: MASTER-GAP-047
+            - generic [ref=e398]: ★ Stock quick-toggle 'rupture du jour' from POS/KDS without admin nav
+          - generic [ref=e399]: score 7
+        - generic [ref=e400]:
+          - generic [ref=e401]: P1
+          - generic [ref=e402]: FRICTION-WEEKLY
+          - generic [ref=e403]: Effort S · 1j
+          - generic [ref=e404]: S6 Stock
+          - generic [ref=e405]: P1 Chef
+        - generic [ref=e406]:
+          - generic [ref=e407]: Scénario utilisateur
+          - generic [ref=e408]: "Chef burns toutes cretes Cayenne today. Wants block item ce service uniquement. Today: must admin/stock/rupture → reason out_of_stock_manual → demain re-toggler tous items manuellement. No 'temporary_today' reason, no Kernel.php midnight auto-reset job for manual_unavailable_reason."
+        - generic [ref=e409]:
+          - generic [ref=e410]: Risque si absent
+          - generic [ref=e411]: 1-3 per service × 5-12 items = ~10 toggles/service × 2 (off+on) = ~20 micro-actions admin/jour-rush.
+        - generic "Cliquer pour étendre / replier" [ref=e412] [cursor=pointer]: Add reason='temporary_today' to MANUAL_UNAVAILABLE_REASONS whitelist + Kernel.php daily 0h00 job re-toggling rows with this reason. OR add auto_restore_at column. Quick-toggle modal accessible from POS/KDS appbar.
+        - generic [ref=e413]:
+          - button "✓ Approuver" [ref=e414] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e415] [cursor=pointer]
+          - button "⏸ Différer" [ref=e416] [cursor=pointer]
+      - generic [ref=e417]:
+        - generic [ref=e418]:
+          - generic [ref=e419]:
+            - generic [ref=e420]: MASTER-GAP-048
+            - generic [ref=e421]: ★ Stock quantity remaining visible on KDS card
+          - generic [ref=e422]: score 7
+        - generic [ref=e423]:
+          - generic [ref=e424]: P1
+          - generic [ref=e425]: FRICTION-WEEKLY
+          - generic [ref=e426]: Effort S · 1j
+          - generic [ref=e427]: S6 Stock
+          - generic [ref=e428]: P1 Chef
+        - generic [ref=e429]:
+          - generic [ref=e430]: Scénario utilisateur
+          - generic [ref=e431]: "Chef sees order #45 with 1 Cayenne. Doesn't know if 8th of 10 portions or 2nd. KdsOrderCard.vue zero stock indicator. KDSOrderItemsResource no remaining_today field. KDS subscribes ItemAvailabilityChanged (binary) not StockLevelChanged (numeric)."
+        - generic [ref=e432]:
+          - generic [ref=e433]: Risque si absent
+          - generic [ref=e434]: Continu sur top-3 items signature. Chef pilote au feeling.
+        - generic "Cliquer pour étendre / replier" [ref=e435] [cursor=pointer]: "Extend KDSOrderItemsResource remaining_today = max_daily_qty - daily_consumed_qty OR on_hand. KdsOrderCard render: if remaining<=5 → badge orange 'X portions left'. Add Echo listener StockLevelChanged."
+        - generic [ref=e436]:
+          - button "✓ Approuver" [ref=e437] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e438] [cursor=pointer]
+          - button "⏸ Différer" [ref=e439] [cursor=pointer]
+      - generic [ref=e440]:
+        - generic [ref=e441]:
+          - generic [ref=e442]:
+            - generic [ref=e443]: MASTER-GAP-008
+            - generic [ref=e444]: ★ Top items du jour avec chart (MostPopular is lifetime, no chart)
+          - generic [ref=e445]: score 6
+        - generic [ref=e446]:
+          - generic [ref=e447]: P1
+          - generic [ref=e448]: FRICTION-WEEKLY
+          - generic [ref=e449]: Effort M · 2j
+          - generic [ref=e450]: S7 Admin Owner
+          - generic [ref=e451]: P4 Owner
+        - generic [ref=e452]:
+          - generic [ref=e453]: Scénario utilisateur
+          - generic [ref=e454]: Owner wants top 5 items vendus ce soir AVEC graphique horizontal bars. Today MostPopularItems is lifetime (depuis le debut des temps) + plain <ul><li> sans chart lib.
+        - generic [ref=e455]:
+          - generic [ref=e456]: Risque si absent
+          - generic [ref=e457]: Owner sur-/sous-commande ingredients demain. -5% marge cumulee.
+        - generic "Cliquer pour étendre / replier" [ref=e458] [cursor=pointer]: GET /api/admin/cash-overview/top-items?from=&to=&limit=10 reading OrderItem joined Order GROUP BY item_id. TopItemsTodayChart.vue using vue-chartjs BarChart horizontal (chart.js already in vendor.js per CashOverview cluster).
+        - generic [ref=e459]:
+          - button "✓ Approuver" [ref=e460] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e461] [cursor=pointer]
+          - button "⏸ Différer" [ref=e462] [cursor=pointer]
+      - generic [ref=e463]:
+        - generic [ref=e464]:
+          - generic [ref=e465]:
+            - generic [ref=e466]: MASTER-GAP-010
+            - generic [ref=e467]: Customer history at-the-till (Spatie permission blocks POS Operator)
+          - generic [ref=e468]: score 6
+        - generic [ref=e469]:
+          - generic [ref=e470]: P1
+          - generic [ref=e471]: FRICTION-WEEKLY
+          - generic [ref=e472]: Effort M · 2j
+          - generic [ref=e473]: S2 POS Caisse
+          - generic [ref=e474]: P3 Caissier
+        - generic [ref=e475]:
+          - generic [ref=e476]: Scénario utilisateur
+          - generic [ref=e477]: Le Cayenne small merchant. Regular customer walks in. Cashier wants 'Mr Dupont, 12 visits, last week Le Cayenne sans oignons, allergy arachide'. Data EXISTS in CustomerShowComponent.vue:158-200 'My orders' tab. Spatie 'customers' permission denied to POS Operator role.
+        - generic [ref=e478]:
+          - generic [ref=e479]: Risque si absent
+          - generic [ref=e480]: Repeat-customer intimacy. Le Cayenne mandate small-merchant warmth.
+        - generic "Cliquer pour étendre / replier" [ref=e481] [cursor=pointer]: "Mint narrow `customers_orders_read` Spatie permission. Embed past-orders panel + allergen chip + last-visit note in POS checkout drawer when customer_id set. CustomerShow component reusable in partial."
+        - generic [ref=e482]:
+          - button "✓ Approuver" [ref=e483] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e484] [cursor=pointer]
+          - button "⏸ Différer" [ref=e485] [cursor=pointer]
+      - generic [ref=e486]:
+        - generic [ref=e487]:
+          - generic [ref=e488]:
+            - generic [ref=e489]: MASTER-GAP-011
+            - generic [ref=e490]: Multi-cashier same drawer (relais shift / pause-dejeuner)
+          - generic [ref=e491]: score 6
+        - generic [ref=e492]:
+          - generic [ref=e493]: P0
+          - generic [ref=e494]: FRICTION-WEEKLY
+          - generic [ref=e495]: Effort M · 2j
+          - generic [ref=e496]: S5 Cash Drawer
+          - generic [ref=e497]: P3 Caissier
+        - generic [ref=e498]:
+          - generic [ref=e499]: Scénario utilisateur
+          - generic [ref=e500]: "Cashier A pause-dejeuner 13h, Cashier B prend le relais sur LE MEME tiroir physique. Today: impossible (UNIQUE partial index on branch_id+opened_by_user_id WHERE open). Workarounds catastrophiques: closeSession (NF525 1-Z/jour) ou usage compte autrui (security violation)."
+        - generic [ref=e501]:
+          - generic [ref=e502]: Risque si absent
+          - generic [ref=e503]: Direct operational blocker pour journee restaurant standard avec pause/remplacement.
+        - generic "Cliquer pour étendre / replier" [ref=e504] [cursor=pointer]: "Add current_cashier_id column + cash_drawer_session_handovers table (from_user, to_user, snapshot_amount, handover_at, audit_log_id). POST /cash-drawer/sessions/{session}/handover endpoint (manager-gated optional). UI 'Passer la main' button. Pattern Toast/Square = same session DB."
+        - generic [ref=e505]:
+          - button "✓ Approuver" [ref=e506] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e507] [cursor=pointer]
+          - button "⏸ Différer" [ref=e508] [cursor=pointer]
+      - generic [ref=e509]:
+        - generic [ref=e510]:
+          - generic [ref=e511]:
+            - generic [ref=e512]: MASTER-GAP-012
+            - generic [ref=e513]: Cash skim / sortie coffre/banque mid-shift not modeled
+          - generic [ref=e514]: score 6
+        - generic [ref=e515]:
+          - generic [ref=e516]: P1
+          - generic [ref=e517]: FRICTION-WEEKLY
+          - generic [ref=e518]: Effort M · 2j
+          - generic [ref=e519]: S5 Cash Drawer
+          - generic [ref=e520]: P3 Caissier
+        - generic [ref=e521]:
+          - generic [ref=e522]: Scénario utilisateur
+          - generic [ref=e523]: "Midi rush 12-14h tiroir 1200€. Cashier veut transferer 800€ vers coffre arriere. Today: CashMovement TYPE enum has 5 values (order_payment/cashback/drawer_open/drawer_close/adjustment), NO skim/cash_drop/safe_deposit. No POST /movements endpoint. Forced: cash exposé OR procedure papier hors-systeme."
+        - generic [ref=e524]:
+          - generic [ref=e525]: Risque si absent
+          - generic [ref=e526]: Securite physique + NF525 traçabilite espèces. Phantom variance au close si procedure papier.
+        - generic "Cliquer pour étendre / replier" [ref=e527] [cursor=pointer]: "Add TYPE_SKIM + TYPE_CASH_DROP to CashMovement enum. POST /cash-drawer/sessions/{session}/movements endpoint (manager-gated config). UI 'Sortie coffre' button. Audit-trail via existing recordMovement."
+        - generic [ref=e528]:
+          - button "✓ Approuver" [ref=e529] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e530] [cursor=pointer]
+          - button "⏸ Différer" [ref=e531] [cursor=pointer]
+      - generic [ref=e532]:
+        - generic [ref=e533]:
+          - generic [ref=e534]:
+            - generic [ref=e535]: MASTER-GAP-015
+            - generic [ref=e536]: NF525 audit_logs UI search/browse (currently AuditTrailComponent reads WRONG table)
+          - generic [ref=e537]: score 6
+        - generic [ref=e538]:
+          - generic [ref=e539]: P0
+          - generic [ref=e540]: FRICTION-WEEKLY
+          - generic [ref=e541]: Effort M · 2j
+          - generic [ref=e542]: S7 Admin Inspector
+          - generic [ref=e543]: P5 Inspecteur
+        - generic [ref=e544]:
+          - generic [ref=e545]: Scénario utilisateur
+          - generic [ref=e546]: Inspecteur DGFiP asks 'who reprinted ticket 11842 last Tuesday?'. Data exists in audit_logs (HMAC chained). Frontend AuditTrailComponent reads ActionLog (NON-chained) — MISLEADS. No Vue/route/controller for real audit_logs (grep AuditLog in resources/js = 0).
+        - generic [ref=e547]:
+          - generic [ref=e548]: Risque si absent
+          - generic [ref=e549]: NF525 inspector accessibility — no admin UI surface for chain-signed table. Currently misleading (wrong table).
+        - generic "Cliquer pour étendre / replier" [ref=e550] [cursor=pointer]: Replace DashboardService::auditTrail data source from ActionLog to AuditLog. OR rename current widget 'Action history (non-fiscal)' and add separate 'Fiscal audit chain' widget reading AuditLog. Add /admin/audit-logs route + filter table (date/action/user/resource_id) + CSV export.
+        - generic [ref=e551]:
+          - button "✓ Approuver" [ref=e552] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e553] [cursor=pointer]
+          - button "⏸ Différer" [ref=e554] [cursor=pointer]
+      - generic [ref=e555]:
+        - generic [ref=e556]:
+          - generic [ref=e557]:
+            - generic [ref=e558]: MASTER-GAP-016
+            - generic [ref=e559]: NF525 fiscal archive 6-year export UI (FiscalArchiveCommand CLI-only)
+          - generic [ref=e560]: score 6
+        - generic [ref=e561]:
+          - generic [ref=e562]: P0
+          - generic [ref=e563]: FRICTION-WEEKLY
+          - generic [ref=e564]: Effort M · 2j
+          - generic [ref=e565]: S7 Admin Inspector
+          - generic [ref=e566]: P5 Inspecteur
+        - generic [ref=e567]:
+          - generic [ref=e568]: Scénario utilisateur
+          - generic [ref=e569]: "Inspector during control: 'Export NF525 archive branch X period Y'. CLI fully implemented (lazy-cursor + zip + branch-lock + manifest schema_v3 z_chain_verified). No admin route, no Vue page, no controller endpoint. Operator without SSH = blocked."
+        - generic [ref=e570]:
+          - generic [ref=e571]: Risque si absent
+          - generic [ref=e572]: NF525 art 88 — archive producible on demand by operator during control.
+        - generic "Cliquer pour étendre / replier" [ref=e573] [cursor=pointer]: "/admin/fiscal/archive page: pick branch+period → POST queued job FiscalArchiveCommand → download link in storage/fiscal/. GET list of already-produced bundles with manifest summary. Permission pos-manage-fiscal."
+        - generic [ref=e574]:
+          - button "✓ Approuver" [ref=e575] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e576] [cursor=pointer]
+          - button "⏸ Différer" [ref=e577] [cursor=pointer]
+      - generic [ref=e578]:
+        - generic [ref=e579]:
+          - generic [ref=e580]:
+            - generic [ref=e581]: MASTER-GAP-021
+            - generic [ref=e582]: OrderCancelled broadcast → KDS chef silent radio when cancel after send-to-kitchen
+          - generic [ref=e583]: score 6
+        - generic [ref=e584]:
+          - generic [ref=e585]: P0
+          - generic [ref=e586]: FRICTION-WEEKLY
+          - generic [ref=e587]: Effort M · 2j
+          - generic [ref=e588]: Cross-System
+        - generic [ref=e589]:
+          - generic [ref=e590]: Scénario utilisateur
+          - generic [ref=e591]: "Chef prepping #42, caissier annule order. Today: card disappears silently on next refresh (no toast, no son, no flash). SendFcmOnOrderStatusChange has no case for CANCELED. EventContract BROADCAST_MAP declares 'OrderCancelled' but ZERO emitter (PersistOrderCancelledToOutbox does not exist). Chef wastes matiere or pursues phantom cancel."
+        - generic [ref=e592]:
+          - generic [ref=e593]: Risque si absent
+          - generic [ref=e594]: Daily waste matiere chef + frustration + race chef-bump-vs-cashier-cancel cryptique.
+        - generic "Cliquer pour étendre / replier" [ref=e595] [cursor=pointer]: "(1) PersistOrderCancelledToOutbox listener wired to OrderCanceled in EventServiceProvider. (2) KitchenDisplaySystemComponent.vue subscribe handler {broadcastAs:'OrderCancelled' → showCancelToast + refresh}. (3) FCM kitchen_branch case CANCELED. (4) ItemAvailabilityChanged-like toast 6s sticky."
+        - generic [ref=e596]:
+          - button "✓ Approuver" [ref=e597] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e598] [cursor=pointer]
+          - button "⏸ Différer" [ref=e599] [cursor=pointer]
+      - generic [ref=e600]:
+        - generic [ref=e601]:
+          - generic [ref=e602]:
+            - generic [ref=e603]: MASTER-GAP-028
+            - generic [ref=e604]: POS allergen observation at counter — no capture path (kiosk handles it)
+          - generic [ref=e605]: score 6
+        - generic [ref=e606]:
+          - generic [ref=e607]: P1
+          - generic [ref=e608]: FRICTION-WEEKLY
+          - generic [ref=e609]: Effort M · 2j
+          - generic [ref=e610]: S2 POS Caisse
+          - generic [ref=e611]: P1 Chef
+        - generic [ref=e612]:
+          - generic [ref=e613]: Scénario utilisateur
+          - generic [ref=e614]: Customer at counter 'allergique arachide'. PosComponent.vue displays allergens_snapshot ONLY in kiosk-cash detail (echo). Direct-sale cart has NO allergen field. No order-level customer_allergens column.
+        - generic [ref=e615]:
+          - generic [ref=e616]: Risque si absent
+          - generic [ref=e617]: FIC UE 1169/2011 + EAA 2025 regulatory + safety legal.
+        - generic "Cliquer pour étendre / replier" [ref=e618] [cursor=pointer]: orders.customer_allergens JSON column + chip with 8-12 common allergens (gluten/lactose/fruits coque/arachides/oeufs/soja/poisson/crustacés/sésame) in cart header. Broadcast KDS ticket header red banner.
+        - generic [ref=e619]:
+          - button "✓ Approuver" [ref=e620] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e621] [cursor=pointer]
+          - button "⏸ Différer" [ref=e622] [cursor=pointer]
+      - generic [ref=e623]:
+        - generic [ref=e624]:
+          - generic [ref=e625]:
+            - generic [ref=e626]: MASTER-GAP-030
+            - generic [ref=e627]: POS parked orders strictly user-scoped — shift handover breaks all in-flight tickets
+          - generic [ref=e628]: score 6
+        - generic [ref=e629]:
+          - generic [ref=e630]: P1
+          - generic [ref=e631]: FRICTION-WEEKLY
+          - generic [ref=e632]: Effort M · 2j
+          - generic [ref=e633]: S2 POS Caisse
+          - generic [ref=e634]: P3 Caissier
+        - generic [ref=e635]:
+          - generic [ref=e636]: Scénario utilisateur
+          - generic [ref=e637]: Lunch 12-14h handover. Cashier A parks order, called away. Cashier B cannot recall A's parked orders. ParkedOrderController abort_unless(authId===requestUser->id, 403). No admin override, no reassign endpoint.
+        - generic [ref=e638]:
+          - generic [ref=e639]: Risque si absent
+          - generic [ref=e640]: Daily lunch/dinner handover loses N parked orders silently.
+        - generic "Cliquer pour étendre / replier" [ref=e641] [cursor=pointer]: Relax ParkedOrderController gate to (admin OR cashier within branch). Add transfer-to-cashier endpoint with audit log. UI cashier-picker on parked drawer. Branch-scope guard stays (P0-POS-04 GOAL invariant).
+        - generic [ref=e642]:
+          - button "✓ Approuver" [ref=e643] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e644] [cursor=pointer]
+          - button "⏸ Différer" [ref=e645] [cursor=pointer]
+      - generic [ref=e646]:
+        - generic [ref=e647]:
+          - generic [ref=e648]:
+            - generic [ref=e649]: MASTER-GAP-056
+            - generic [ref=e650]: Owner tx/h synthesis chart (CustomerStatsComponent ORPHAN — not mounted in dashboard)
+          - generic [ref=e651]: score 5.9
+        - generic [ref=e652]:
+          - generic [ref=e653]: P1
+          - generic [ref=e654]: NICE
+          - generic [ref=e655]: Effort XS · 0.1j
+          - generic [ref=e656]: S7 Admin Owner
+          - generic [ref=e657]: P4 Owner
+        - generic [ref=e658]:
+          - generic [ref=e659]: Scénario utilisateur
+          - generic [ref=e660]: DashboardService::customerStates() calcule tableau heure-par-heure (06h-23h). CustomerStatsComponent.vue EXISTS resources/js/components/admin/dashboard/ but DOES NOT APPEAR in DashboardComponent.vue:31-47 template. Orphan signal.
+        - generic [ref=e661]:
+          - generic [ref=e662]: Risque si absent
+          - generic [ref=e663]: Backend computes (CPU+DB) but rendu jamais ecran. Owner ne pilote pas staffing horaire.
+        - generic "Cliquer pour étendre / replier" [ref=e664] [cursor=pointer]: ADD <CustomerStatsComponent /> in DashboardComponent.vue line 47. Verify component works. 5 min.
+        - generic [ref=e665]:
+          - button "✓ Approuver" [ref=e666] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e667] [cursor=pointer]
+          - button "⏸ Différer" [ref=e668] [cursor=pointer]
+      - generic [ref=e669]:
+        - generic [ref=e670]:
+          - generic [ref=e671]:
+            - generic [ref=e672]: MASTER-GAP-044
+            - generic [ref=e673]: KDS step ladder ACCEPT→PREPARING→PREPARED CTA label static 'Pret' for both taps
+          - generic [ref=e674]: score 5.75
+        - generic [ref=e675]:
+          - generic [ref=e676]: P1
+          - generic [ref=e677]: NICE
+          - generic [ref=e678]: Effort XS · 0.25j
+          - generic [ref=e679]: S3 KDS
+          - generic [ref=e680]: P6 Newbie
+        - generic [ref=e681]:
+          - generic [ref=e682]: Scénario utilisateur
+          - generic [ref=e683]: CTA stays 'Pret' (label.kds_card_cta_ready) regardless of status. 1st tap dispatches ACCEPT→PREPARING, 2nd tap PREPARING→PREPARED. Newbie thinks 2nd tap is confirmation, not transition irreversible. Legacy 4-col layout had dynamic 'Demarrer' / 'Marquer Pret' labels per status — V2 regressed.
+        - generic [ref=e684]:
+          - generic [ref=e685]: Risque si absent
+          - generic [ref=e686]: Source structurelle erreur newbie.
+        - generic "Cliquer pour étendre / replier" [ref=e687] [cursor=pointer]: "Computed ctaLabel + ctaColor in KdsOrderCard: status=ACCEPT → 'Demarrer' orange, status=PREPARING → 'Marquer Pret' vert. 15 LOC. Mirror legacy convention."
+        - generic [ref=e688]:
+          - button "✓ Approuver" [ref=e689] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e690] [cursor=pointer]
+          - button "⏸ Différer" [ref=e691] [cursor=pointer]
+      - generic [ref=e692]:
+        - generic [ref=e693]:
+          - generic [ref=e694]:
+            - generic [ref=e695]: MASTER-GAP-068
+            - generic [ref=e696]: Kiosk is_rush UI banner (backend computes, store stocks, 0 consumer)
+          - generic [ref=e697]: score 5.75
+        - generic [ref=e698]:
+          - generic [ref=e699]: P1
+          - generic [ref=e700]: NICE
+          - generic [ref=e701]: Effort XS · 0.25j
+          - generic [ref=e702]: S1 Kiosk
+          - generic [ref=e703]: P1 Chef
+        - generic [ref=e704]:
+          - generic [ref=e705]: Scénario utilisateur
+          - generic [ref=e706]: KioskMenuService computeIsRush(branch) reads config kiosk.rush_windows. kioskMenu.js stocks branchFlags.is_rush. Zero consumer. Orphan signal. Customer paie sans savoir 'cuisine en rush, attente +5min'.
+        - generic [ref=e707]:
+          - generic [ref=e708]: Risque si absent
+          - generic [ref=e709]: Expectation mismatch → 1-star Google rush hour 12h-14h / 19h-21h.
+        - generic "Cliquer pour étendre / replier" [ref=e710] [cursor=pointer]: Bind kioskBranchFlags.is_rush in KioskIdleScreenComponent header + KioskCartComponent banner. Texte i18n 'Cuisine en pleine activite — attente estimee ~12 min'.
+        - generic [ref=e711]:
+          - button "✓ Approuver" [ref=e712] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e713] [cursor=pointer]
+          - button "⏸ Différer" [ref=e714] [cursor=pointer]
+      - generic [ref=e715]:
+        - generic [ref=e716]:
+          - generic [ref=e717]:
+            - generic [ref=e718]: MASTER-GAP-041
+            - generic [ref=e719]: KDS actor identity captured in transitions table but never exposed in drawer (anonymous bump)
+          - generic [ref=e720]: score 5.5
+        - generic [ref=e721]:
+          - generic [ref=e722]: P0
+          - generic [ref=e723]: NICE
+          - generic [ref=e724]: Effort S · 0.5j
+          - generic [ref=e725]: S3 KDS
+          - generic [ref=e726]: P5 Inspecteur
+        - generic [ref=e727]:
+          - generic [ref=e728]: Scénario utilisateur
+          - generic [ref=e729]: "Inspector asks 'identify staff member responsible for PREPARED transition #X — name + employee number + station'. actor_id captured at OrderStateMachine.php:150 but historyToday() doesn't eager-load, KDSOrderDetailsResource doesn't expose, drawer Vue doesn't render. Anonymous from drawer."
+        - generic [ref=e730]:
+          - generic [ref=e731]: Risque si absent
+          - generic [ref=e732]: Accountability gap — contested transition cannot be traced.
+        - generic "Cliquer pour étendre / replier" [ref=e733] [cursor=pointer]: "Eager-load latest PREPARED transition in historyToday(). Add bumped_by to KDSOrderDetailsResource. Render drawer 'Préparé par: {{ order.bumped_by_name }}'."
+        - generic [ref=e734]:
+          - button "✓ Approuver" [ref=e735] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e736] [cursor=pointer]
+          - button "⏸ Différer" [ref=e737] [cursor=pointer]
+      - generic [ref=e738]:
+        - generic [ref=e739]:
+          - generic [ref=e740]:
+            - generic [ref=e741]: MASTER-GAP-013
+            - generic [ref=e742]: Cash mid-shift count / X-report intermediate impossible
+          - generic [ref=e743]: score 5
+        - generic [ref=e744]:
+          - generic [ref=e745]: P1
+          - generic [ref=e746]: NICE
+          - generic [ref=e747]: Effort S · 1j
+          - generic [ref=e748]: S5 Cash Drawer
+          - generic [ref=e749]: P3 Caissier
+        - generic [ref=e750]:
+          - generic [ref=e751]: Scénario utilisateur
+          - generic [ref=e752]: "Cashier 15h fin du rush wants verify physical cash = expected without closing (NF525 1-Z/day). Today: only path = closeSession (terminal). Pattern Toast/Lightspeed = Cash Count → X-report read-only snapshot."
+        - generic [ref=e753]:
+          - generic [ref=e754]: Risque si absent
+          - generic [ref=e755]: Detection precoce ecart cash impossible.
+        - generic "Cliquer pour étendre / replier" [ref=e756] [cursor=pointer]: "Method CashDrawerService::countSession() + endpoint GET /cash-drawer/sessions/{session}/count + UI 'Compter sans clôturer' modal (read-only snapshot, no NF525 mutation)."
+        - generic [ref=e757]:
+          - button "✓ Approuver" [ref=e758] [cursor=pointer]
+          - button "✗ Rejeter" [ref=e759] [cursor=pointer]
+          - button "⏸ Différer" [ref=e760] [cursor=pointer]
+  - button "Envoyer plan validé 0" [ref=e761] [cursor=pointer]
