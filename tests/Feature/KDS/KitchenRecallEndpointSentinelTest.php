@@ -162,6 +162,44 @@ class KitchenRecallEndpointSentinelTest extends TestCase
     }
 
     /** @test */
+    public function recall_rejects_authenticated_user_without_kds_permission(): void
+    {
+        // [Heal-5 advisor concern 3] Difference between auth gate vs authz gate:
+        // a user can be authenticated AND have a recognised role
+        // (e.g. POS Operator), but if they don't carry the
+        // `kitchen-display-system` permission, the controller middleware
+        // must deny the recall. Without this assertion, a non-chef role
+        // (e.g. a future operator persona that lands in POS Operator group
+        // but not chef-permission) would silently slip through.
+        $branch = Branch::factory()->create();
+        $order = $this->preparedOrder($branch, Carbon::now()->subSeconds(10));
+
+        // Create a user with a benign role that does NOT carry the
+        // `kitchen-display-system` permission. Customer is a safe choice
+        // (zero KDS permissions by definition).
+        $user = User::factory()->create(['branch_id' => $branch->id]);
+        $user->assignRole('Customer');
+        $this->actingAs($user, 'sanctum');
+
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson($this->endpoint($order));
+
+        $this->assertTrue(
+            in_array($response->status(), [401, 403], true),
+            "Authenticated-but-unauthorized user must be denied (401/403); got HTTP {$response->status()}."
+        );
+
+        $this->assertEquals(
+            0,
+            OrderStatusTransition::query()
+                ->where('order_id', $order->id)
+                ->where('reason', 'kitchen_recall')
+                ->count(),
+            'No row must be appended on permission-less actor.'
+        );
+    }
+
+    /** @test */
     public function recall_does_not_mutate_orders_status(): void
     {
         // [NF525 invariant] The load-bearing test: after a successful recall,
