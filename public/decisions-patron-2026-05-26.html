@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Mes décisions Patron — Le Cayenne</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0a0a0a;color:#fff;line-height:1.6;padding:20px;padding-bottom:140px}
+
+  .header{max-width:900px;margin:0 auto 24px;text-align:center}
+  .header h1{font-size:32px;color:#F4501E;margin-bottom:12px;font-weight:900}
+  .header .subtitle{color:#FFCB05;font-size:16px;margin-bottom:20px}
+  .header .intro{color:#ddd;font-size:15px;background:#1a1a1a;padding:20px;border-radius:12px;border-left:4px solid #F4501E;text-align:left}
+  .header .intro strong{color:#1AB759}
+  .header .intro em{color:#FFCB05;font-style:normal;font-weight:bold}
+
+  .progress-bar{max-width:900px;margin:0 auto 24px;background:#1a1a1a;padding:20px;border-radius:12px;text-align:center}
+  .progress-bar .title{color:#FFCB05;font-size:14px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+  .progress-bar .count{font-size:36px;font-weight:900;color:#F4501E}
+  .progress-bar .total{color:#999;font-size:18px}
+
+  .verdict-box{max-width:900px;margin:0 auto 32px;background:linear-gradient(135deg,#1AB759,#0d8a44);padding:24px;border-radius:12px;text-align:center;display:none}
+  .verdict-box.show{display:block}
+  .verdict-box h2{color:#fff;font-size:22px;margin-bottom:8px}
+  .verdict-box p{color:#fff;font-size:14px}
+
+  .card{max-width:900px;margin:0 auto 20px;background:#1a1a1a;border:2px solid #333;border-radius:16px;padding:24px;transition:all 0.3s}
+  .card:hover{border-color:#F4501E;transform:translateY(-2px)}
+  .card.yes{border-color:#1AB759;background:linear-gradient(135deg,#1a2a1a,#1a1a1a)}
+  .card.no{border-color:#666;opacity:0.55;background:#1a1a1a}
+
+  .card .number{display:inline-block;width:36px;height:36px;background:#F4501E;color:#fff;border-radius:50%;text-align:center;line-height:36px;font-weight:bold;font-size:16px;margin-right:12px;vertical-align:middle}
+  .card h3{display:inline;font-size:22px;color:#fff;vertical-align:middle;font-weight:700}
+  .card .scenario{background:#0a0a0a;padding:16px;border-radius:8px;margin:16px 0;border-left:3px solid #FFCB05;color:#ddd;font-size:15px;font-style:italic}
+  .card .scenario .label{color:#FFCB05;font-weight:bold;font-style:normal;display:block;margin-bottom:6px;font-size:11px;text-transform:uppercase;letter-spacing:1px}
+
+  .impact-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+  .impact-cell{padding:14px;border-radius:8px;font-size:14px}
+  .impact-cell.bad{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3)}
+  .impact-cell.good{background:rgba(26,183,89,0.15);border:1px solid rgba(26,183,89,0.3)}
+  .impact-cell .label{display:block;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .impact-cell.bad .label{color:#DC2626}
+  .impact-cell.good .label{color:#1AB759}
+
+  .my-advice{background:#252525;padding:16px;border-radius:8px;margin:16px 0;border:1px solid #F4501E}
+  .my-advice .label{color:#F4501E;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .my-advice .text{color:#fff;font-size:15px}
+  .my-advice .recommendation{color:#1AB759;font-weight:bold;font-size:14px;margin-top:8px}
+
+  .effort{display:inline-block;background:#0a0a0a;padding:6px 14px;border-radius:20px;font-size:12px;color:#999;margin-top:8px}
+
+  .actions{display:flex;gap:12px;margin-top:20px}
+  .btn{flex:1;padding:16px;border:2px solid #444;background:transparent;color:#fff;border-radius:10px;cursor:pointer;font-size:16px;font-weight:bold;transition:all 0.2s}
+  .btn:hover{transform:translateY(-1px)}
+  .btn.yes{border-color:#1AB759;color:#1AB759}
+  .btn.yes:hover,.btn.yes.selected{background:#1AB759;color:#fff}
+  .btn.no{border-color:#666;color:#999}
+  .btn.no:hover,.btn.no.selected{background:#444;color:#fff}
+
+  .floating-cta{position:fixed;bottom:24px;right:24px;background:#F4501E;color:#fff;border:none;padding:18px 28px;border-radius:30px;cursor:pointer;font-size:15px;font-weight:bold;box-shadow:0 8px 24px rgba(244,80,30,0.5);z-index:100;display:flex;align-items:center;gap:10px}
+  .floating-cta:hover{transform:scale(1.05)}
+  .floating-cta .count{background:#fff;color:#F4501E;border-radius:14px;padding:4px 12px;font-size:13px}
+  .floating-cta:disabled{opacity:0.5;cursor:not-allowed}
+
+  .modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-bg.open{display:flex}
+  .modal{background:#1a1a1a;border:2px solid #F4501E;border-radius:16px;padding:28px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto}
+  .modal h2{color:#F4501E;margin-bottom:20px;font-size:24px}
+  .modal pre{background:#0a0a0a;padding:20px;border-radius:10px;color:#FFCB05;font-size:13px;white-space:pre-wrap;max-height:400px;overflow-y:auto;border:1px solid #333;line-height:1.6}
+  .modal-actions{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+  .modal-actions button{flex:1;min-width:140px;padding:14px;background:#F4501E;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;font-size:14px}
+  .modal-actions button.close{background:#444}
+
+  @media (max-width:768px){
+    .impact-grid{grid-template-columns:1fr}
+    .floating-cta{bottom:12px;right:12px;left:12px;justify-content:center}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+<h1>🍽️ Mes Décisions Patron</h1>
+<div class="subtitle">Restaurant Le Cayenne · Pour fermer la version 1</div>
+<div class="intro">
+<strong>Salut patron 👋</strong><br><br>
+Voici 8 questions <em>simples</em> sur ton restaurant. Pas de technique, juste des choix opérationnels.
+<br><br>
+Pour chaque question :
+<br>• Je te raconte la <em>scène concrète</em> dans ton resto
+<br>• Je te dis ce qui se passe <em>si tu choisis oui</em> et <em>si tu choisis non</em>
+<br>• Je te donne <em>mon avis</em> avec ce que je ferais à ta place
+<br><br>
+Tu cliques <strong>« Oui »</strong> ou <strong>« Pas maintenant »</strong>. Moi je gère tout le reste (code, sécurité, mise en service).
+</div>
+</div>
+
+<div class="progress-bar">
+<div class="title">Questions répondues</div>
+<div><span class="count" id="answered">0</span><span class="total"> / 8</span></div>
+</div>
+
+<div class="verdict-box" id="verdict-box">
+<h2>✅ Toutes les décisions prises !</h2>
+<p>Clique « Envoyer mon plan » en bas à droite pour me transmettre tes choix.</p>
+</div>
+
+<div id="cards-container"></div>
+
+<button class="floating-cta" onclick="openModal()">📋 Envoyer mon plan <span class="count" id="cta-count">0</span></button>
+
+<div class="modal-bg" id="modal">
+<div class="modal">
+<h2>📋 Récap de tes décisions</h2>
+<pre id="modal-content"></pre>
+<div class="modal-actions">
+<button onclick="copySummary()">📋 Copier</button>
+<button onclick="downloadSummary()">💾 Télécharger</button>
+<button class="close" onclick="closeModal()">Fermer</button>
+</div>
+</div>
+</div>
+
+<script>
+const DECISIONS = [
+  {
+    id:'GO-LIVE',
+    title:'Lancer ton resto avec V1 lundi prochain ?',
+    scenario:'Lundi matin 9h. Ton équipe arrive. Borne allumée, caisse opérationnelle, écran cuisine prêt. Premier client à 11h00. Tu utilises l\'application pour de vrai.',
+    badImpact:'Tu reportes encore une semaine. Coût : tu continues à perdre du temps sur des changements qui n\'apportent rien de plus (le système est prêt depuis 6 cycles de tests).',
+    goodImpact:'Tu démarres lundi. ~2h de préparation samedi matin (j\'ai listé exactement quoi faire). Premier vrai service midi sans souci.',
+    myAdvice:'Lance. Le système est prêt techniquement depuis longtemps. Chaque jour de retard = perte de chiffre d\'affaires sans gain.',
+    recommendation:'✅ Mon avis : OUI, lance lundi.',
+    effort:'2h de préparation samedi + 90 min de walk dimanche'
+  },
+  {
+    id:'KDS-UNDO',
+    title:'Donner au chef la possibilité d\'annuler un "Prêt" par erreur ?',
+    scenario:'Vendredi 12h30, rush. Ton chef tape sur la commande #42 par erreur (commande #41 voulait), elle disparaît de son écran. Aujourd\'hui : impossible de la récupérer. Avec cette fonction : un bouton "Rappeler" pendant 60 secondes après chaque action — la carte revient.',
+    badImpact:'Ton chef perd la commande, doit demander au caissier ce qu\'il y avait dessus, le client attend 5 min de plus, frustration.',
+    goodImpact:'Filet de sécurité chef-rush. Une mauvaise tape récupérable. Tranquillité chef en peak hour.',
+    myAdvice:'Tu m\'avais parlé de ce point précis (« je peux pas accéder aux archives pour corriger »). C\'est exactement ce gap. 3-4 jours de dev de mon côté, sécurisé (aucun impact fiscal).',
+    recommendation:'✅ Mon avis : OUI, après le lancement V1 (dans la première semaine post-live).',
+    effort:'3-4 jours dev après ship'
+  },
+  {
+    id:'POS-REFUND',
+    title:'Bouton « Rembourser » sur la caisse pour le caissier ?',
+    scenario:'Lundi 14h. Cliente revient avec son sandwich froid. Aujourd\'hui : caissier doit appeler le patron (toi) pour faire le remboursement manuel. Avec ce bouton : caissier (manager autorisé seulement) clique « Rembourser », tape la raison, le ticket de remboursement s\'imprime tout seul, conforme aux obligations fiscales.',
+    badImpact:'Caissier ne peut pas rembourser sans toi. Files d\'attente quand tu n\'es pas là. Ou pire : caissier triche en changeant le statut de la commande à "Retournée" (ça contourne les obligations fiscales = problème en cas de contrôle).',
+    goodImpact:'Caissier autonome. Remboursement propre + conforme. Tu gardes le contrôle (permission Manager uniquement).',
+    myAdvice:'Le moteur technique est déjà prêt en backend depuis longtemps. Juste le bouton à ajouter. ~6h de mon côté. Permission grantée Manager+, pas tous caissiers (sécurité contre fraude).',
+    recommendation:'✅ Mon avis : OUI, à shipper avec V1.0.1 (1 semaine après ship).',
+    effort:'6h dev (1 jour)'
+  },
+  {
+    id:'CONFIRM-CANCEL',
+    title:'Demander confirmation avant d\'annuler une commande payée ?',
+    scenario:'Caissière nouvelle, premier jour. Elle clique par accident sur "Annuler commande borne" — clic unique. Aujourd\'hui : la commande payée disparaît immédiatement, client paie sans rien recevoir. Avec ce changement : fenêtre "Es-tu sûr ?" + raison obligatoire avant validation.',
+    badImpact:'Risque réel chaque jour avec nouveau staff. Une seule erreur = commande perdue + client mécontent + pas de trace pour comprendre.',
+    goodImpact:'Filet sécurité 100% standard (toutes les autres actions destructives ont déjà cette confirmation, sauf celle-ci pour une raison historique).',
+    myAdvice:'Une heure de dev maximum. Polish important pour nouveaux staff. Aucun risque.',
+    recommendation:'✅ Mon avis : OUI, à inclure pré-ship V1 (vite fait).',
+    effort:'1 heure dev'
+  },
+  {
+    id:'SMS-CLIENT',
+    title:'Envoyer un SMS au client quand sa commande est prête ?',
+    scenario:'Borne. Client commande, paye, reçoit ticket avec numéro de commande, va s\'asseoir / sort fumer. Aujourd\'hui : il doit garder un œil sur l\'écran "Prêt". Avec SMS : son téléphone sonne quand le chef met sa commande en "Prêt" — il revient direct chercher.',
+    badImpact:'Clients impatients regardent l\'écran toutes les 30s. Frustration. Standard moderne McDo / Burger King depuis longtemps.',
+    goodImpact:'Client tranquille, peut sortir. Standard QSR moderne. Tu collectes leur téléphone via fidélité de toute façon.',
+    myAdvice:'Bonne feature mais pas urgent V1. L\'écran public "Prêt" fait le job au lancement. À ajouter dans V1.0.1 (2-3 semaines post-ship) quand tu auras du recul sur le vrai usage.',
+    recommendation:'⏸ Mon avis : PAS MAINTENANT (V1.0.1 dans 2-3 semaines).',
+    effort:'1 jour dev + abonnement opérateur SMS ~10€/mois'
+  },
+  {
+    id:'PDF-EXPORT',
+    title:'Bouton « Export PDF du jour » pour ton comptable ?',
+    scenario:'Fin du mois, tu envoies les ventes du jour à ta comptable. Aujourd\'hui : 4 clics + Excel ligne par ligne. Avec ce bouton : 1 clic, PDF récap (chiffre d\'affaires, TVA, top items, remboursements) prêt à envoyer.',
+    badImpact:'Routine mensuelle = 30 min de perdues à chaque fois. Erreurs possibles (oubli de cellule, recopie manuelle).',
+    goodImpact:'1 clic = 1 PDF prêt. Routine devient 30 secondes.',
+    myAdvice:'J\'ai déjà corrigé un bug du PDF actuel ce matin (il crashait à cause d\'un champ manquant). L\'Excel marche déjà. Ajouter un bouton avec recap synthèse = 4h. À shipper V1.0.1.',
+    recommendation:'✅ Mon avis : OUI, V1.0.1 (la semaine après ship).',
+    effort:'4 heures dev'
+  },
+  {
+    id:'NOTE-INCIDENT',
+    title:'Cahier d\'incidents jour intégré ?',
+    scenario:'19h45, panne TPE pendant 1h. Tu encaisses uniquement en liquide. Aujourd\'hui : tu écris sur un post-it qui disparaît. Avec cette fonction : champ "Note du jour" dans le tableau de bord, tu tapes "Panne TPE 19h45-20h45 - liquide only". Cliquable historique 6 mois en arrière.',
+    badImpact:'Quand un client appelle 3 jours plus tard pour contester un paiement carte, tu n\'as plus la mémoire de l\'incident. Pareil pour ta comptable / assurance.',
+    goodImpact:'Mémoire du resto. Utile pour contestations, assurance, suivi staff.',
+    myAdvice:'Nice-to-have mais pas critique V1. Tu peux faire ça sur ton téléphone Notes Apple en attendant. À shipper V1.0.1.',
+    recommendation:'⏸ Mon avis : PAS MAINTENANT (V1.0.1 quand tu sens vraiment le besoin).',
+    effort:'4-6 heures dev'
+  },
+  {
+    id:'STOCK-ALERT',
+    title:'Alerte automatique « il reste 3 portions » sur stock ?',
+    scenario:'14h, ton chef regarde son écran. Plus que 3 sauces samouraï. Aujourd\'hui : il s\'en rend compte quand un client commande la 4ème (rupture surprise). Avec alerte : message visible chef + caissier dès qu\'un produit tombe à 3 portions restantes — temps de réagir.',
+    badImpact:'Ruptures-surprise gênent service. Client frustré ("y\'en a plus ?!"). Chef court en cuisine.',
+    goodImpact:'Anticipation. Chef peut préparer plus, caissier averti, client jamais déçu en commande.',
+    myAdvice:'Le moteur est déjà à 80% en place dans le code (juste désactivé par défaut). 4h dev pour l\'activer + configurer seuil. Bon ROI.',
+    recommendation:'✅ Mon avis : OUI, V1.0.1 (semaine après ship). Aide opérationnelle réelle.',
+    effort:'4 heures dev'
+  }
+];
+
+const STORAGE_KEY = 'foodking_owner_decisions_simples_2026-05-26';
+let votes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+
+function renderCards() {
+  const container = document.getElementById('cards-container');
+  container.innerHTML = '';
+
+  DECISIONS.forEach((d, idx) => {
+    const card = document.createElement('div');
+    card.className = 'card ' + (votes[d.id] === 'yes' ? 'yes' : votes[d.id] === 'no' ? 'no' : '');
+
+    card.innerHTML = `
+      <div>
+        <span class="number">${idx + 1}</span>
+        <h3>${d.title}</h3>
+      </div>
+
+      <div class="scenario">
+        <span class="label">📍 La scène concrète</span>
+        ${d.scenario}
+      </div>
+
+      <div class="impact-grid">
+        <div class="impact-cell bad">
+          <span class="label">⚠️ Si tu ne fais pas</span>
+          ${d.badImpact}
+        </div>
+        <div class="impact-cell good">
+          <span class="label">✓ Si tu fais</span>
+          ${d.goodImpact}
+        </div>
+      </div>
+
+      <div class="my-advice">
+        <div class="label">💡 Mon analyse</div>
+        <div class="text">${d.myAdvice}</div>
+        <div class="recommendation">${d.recommendation}</div>
+      </div>
+
+      <span class="effort">⏱️ ${d.effort}</span>
+
+      <div class="actions">
+        <button class="btn yes ${votes[d.id]==='yes'?'selected':''}" onclick="vote('${d.id}','yes')">✓ Oui, je veux</button>
+        <button class="btn no ${votes[d.id]==='no'?'selected':''}" onclick="vote('${d.id}','no')">⏸ Pas maintenant</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  updateProgress();
+}
+
+function vote(id, type) {
+  votes[id] = (votes[id] === type) ? null : type;
+  if (!votes[id]) delete votes[id];
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
+  renderCards();
+}
+
+function updateProgress() {
+  const count = Object.keys(votes).length;
+  document.getElementById('answered').textContent = count;
+  document.getElementById('cta-count').textContent = count;
+  document.getElementById('verdict-box').classList.toggle('show', count === DECISIONS.length);
+}
+
+function buildSummary() {
+  const yes = [], no = [], pending = [];
+  DECISIONS.forEach(d => {
+    if (votes[d.id] === 'yes') yes.push(d);
+    else if (votes[d.id] === 'no') no.push(d);
+    else pending.push(d);
+  });
+
+  let txt = `=== MES DÉCISIONS PATRON — Le Cayenne ===\nDate : ${new Date().toLocaleDateString('fr-FR')}\n\n`;
+
+  if (yes.length) {
+    txt += `\n✅ OUI, JE VEUX (${yes.length}) :\n`;
+    yes.forEach(d => txt += `  • ${d.title}\n    └─ ${d.effort}\n`);
+  }
+  if (no.length) {
+    txt += `\n⏸ PAS MAINTENANT (${no.length}) :\n`;
+    no.forEach(d => txt += `  • ${d.title}\n`);
+  }
+  if (pending.length) {
+    txt += `\n⏳ NON RÉPONDU (${pending.length}) :\n`;
+    pending.forEach(d => txt += `  • ${d.title}\n`);
+  }
+
+  txt += `\n=== PROCHAINES ÉTAPES ===\n`;
+  txt += `Claude va lire ces décisions et :\n`;
+  txt += `1. Préparer le ship V1 (3 actions owner-physical à faire samedi)\n`;
+  txt += `2. Implémenter les fonctions OUI marquées "pré-ship V1"\n`;
+  txt += `3. Planifier les OUI V1.0.1 pour la semaine après lancement\n`;
+  txt += `4. Mettre de côté les "Pas maintenant" pour plus tard\n`;
+
+  return txt;
+}
+
+function openModal() {
+  document.getElementById('modal-content').textContent = buildSummary();
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function copySummary() {
+  navigator.clipboard.writeText(buildSummary()).then(() => alert('✓ Copié — colle-le dans WhatsApp ou ailleurs'));
+}
+function downloadSummary() {
+  const blob = new Blob([buildSummary()], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `decisions-patron-${new Date().toISOString().split('T')[0]}.txt`;
+  a.click();
+}
+
+document.getElementById('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+renderCards();
+</script>
+</body>
+</html>
