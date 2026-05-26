@@ -8,13 +8,29 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Listens to StockLevelChanged and emits a "stock low" notification when
+ * Listens to StockLevelChanged and emits a "stock low" log warning when
  * any updated stock_level row crosses on_hand <= threshold_low.
  *
  * Throttled by (branch_id, stockable_type, stockable_id) via cache key with
  * a configurable TTL (default 1h) to avoid alerting on every minor mutation.
  *
- * Disabled by default — toggle via config('catalog_v15.stock_low_alert.enabled').
+ * [HEAL-2 V102-03 2026-05-26] Activated by default via
+ * FK_CATALOG_STOCK_LOW_ALERT_ENABLED=true. V1 Le Cayenne uses BINARY stock
+ * (in stock / out of stock) — owner clarification "stocks juste configurés
+ * par stock ou bien rupture" — so all stock_levels rows have threshold_low=0
+ * and this listener short-circuits at the threshold check (no log emitted).
+ * Kept active so V1.0.2 admin UI for `threshold_low > 0` lights up observability
+ * immediately without env churn.
+ *
+ * IMPORTANT: This listener MUST NOT broadcast `ItemAvailabilityChanged` —
+ * the binary on_hand → 0 rupture broadcast (POS + KDS toast + cart prune)
+ * is already wired through
+ * {@see \App\Services\Stock\StockService::syncItemAvailabilityForStockLevel}
+ * → {@see \App\Events\ItemAvailabilityChanged}::forBranch(reason: 'stock_rupture')
+ * → private-branch.{id} channel → POS `_announceAvailabilityChange()` +
+ * KDS `_onItemAvailabilityChanged()`. Re-broadcasting here would produce
+ * double-toasts on every rupture. Pinned by
+ * tests/Feature/Stock/StockRuptureAlertListenerSentinelTest.php.
  *
  * Plan : plans/PLAN_CV1-LIFECYCLE-UX-001_2026-05-02.md §2.7
  */

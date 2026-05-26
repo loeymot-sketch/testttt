@@ -2249,9 +2249,16 @@ export default {
             // region (kds-aria-live) carries the same message for screen readers.
             try {
               const itemName = payload.name || payload.item_name || ('#' + itemId);
-              const label = reason
-                ? `${itemName} indisponible — ${reason}`
-                : `${itemName} indisponible`;
+              // [HEAL-2 V102-03 2026-05-26] i18n FR/EN/AR via pos.stock_rupture_alert
+              // (was hardcoded FR concat with raw reason enum — caused mixed-locale
+              // labels in EN/AR). reason suffix dropped per owner mission spec
+              // "Stock épuisé : {item_name}".
+              let label;
+              try {
+                label = this.$t('pos.stock_rupture_alert', { name: itemName });
+              } catch (_t) {
+                label = `Stock épuisé : ${itemName}`;
+              }
               this.kdsAriaLiveMessage = label;
               alertService.warning(label);
             } catch (_e) { /* defensive */ }
