@@ -511,6 +511,232 @@ class DashboardService
         }
     }
 
+    /**
+     * [V102-08 HEAL-3 2026-05-26] One-click EOD synthesis for owner/accountant.
+     *
+     * Aggregates a single business day (Paris-local, branch-scoped) into the
+     * KPI shape consumed by `pdf/eod_synthesis.blade.php`. Pure read-only
+     * aggregation — NO fiscal sequence allocation, NO audit-log write, NO
+     * chain HMAC touch. NF525 RO discipline (DM6).
+     *
+     * Reuses:
+     *  - `dashboardBranchId()` for admin (cross-branch) vs staff (pinned)
+     *  - Paris-local Carbon bounds (Wave T R5 / GOAL-G2-HEAL-04 pattern,
+     *    session_tz=Paris face-value — DO NOT bind UTC literals).
+     *
+     * Payment buckets account for the dual-column reality (advisor flag):
+     *   - POS orders: `pos_payment_method` (CASH=1, CARD=2, MOBILE=3,
+     *     OTHER=4, TICKET_RESTAURANT=5, COUNTER_DEFERRED=6)
+     *   - Web/Kiosk orders: `payment_method` (PaymentGateway::CASH_ON_DELIVERY
+     *     =1, ONLINE/Stripe=3, CARD=4, TICKET_RESTAURANT=5).
+     * Buckets are language-stable French labels (CB, Espèces, Titre-resto,
+     * Mobile, Autre, En attente comptoir) — comptable-friendly, no i18n
+     * round-trip in a PDF that may be archived for 6y NF525 retention.
+     *
+     * @param string|null $date Y-m-d Paris-local; null → today.
+     * @return array{
+     *   date:string, branch_label:string,
+     *   total_ca:float, total_tva:float, total_orders:int,
+     *   paid_orders:int, refunded_orders:int, avg_ticket:float,
+     *   by_payment:array<int,array{label:string,count:int,total:float}>,
+     *   top_items:array<int,array{name:string,qty:int,revenue:float}>,
+     *   by_channel:array<int,array{label:string,count:int,total:float}>
+     * }
+     */
+    public function eodSynthesis(?string $date = null): array
+    {
+        try {
+            $appTz = config('app.timezone');
+            $dayParis = $date
+                ? Carbon::parse($date, $appTz)->startOfDay()
+                : Carbon::today($appTz);
+            $nextDayParis = $dayParis->copy()->addDay();
+            $dateString = $dayParis->toDateString();
+
+            $orderQuery = $this->orderQuery();
+            $branchId = $this->dashboardBranchId();
+            $branchLabel = $branchId === null
+                ? 'Toutes branches'
+                : ('Branche #' . $branchId);
+
+            // All orders of the day (any status, any payment_status).
+            $orders = (clone $orderQuery)
+                ->where('order_datetime', '>=', $dayParis)
+                ->where('order_datetime', '<', $nextDayParis)
+                ->get();
+
+            // Paid subset (CA + TVA + avg-ticket basis — refunds excluded).
+            $paid = $orders->filter(fn ($o) => (int) $o->payment_status === PaymentStatus::PAID);
+            $refunded = $orders->filter(fn ($o) => (int) $o->payment_status === PaymentStatus::REFUNDED);
+
+            $totalCa = (float) $paid->sum('total');
+            $totalTva = (float) $paid->sum('total_tax');
+            $paidCount = $paid->count();
+            $totalOrders = $orders->count();
+            $refundedCount = $refunded->count();
+            $avgTicket = $paidCount > 0 ? $totalCa / $paidCount : 0.0;
+
+            $byPayment = $this->bucketPaymentMethods($paid);
+            $byChannel = $this->bucketChannels($paid);
+            $topItems = $this->topItemsOfDay($dayParis, $nextDayParis, $branchId);
+
+            return [
+                'date' => $dateString,
+                'branch_label' => $branchLabel,
+                'total_ca' => round($totalCa, 2),
+                'total_tva' => round($totalTva, 2),
+                'total_orders' => $totalOrders,
+                'paid_orders' => $paidCount,
+                'refunded_orders' => $refundedCount,
+                'avg_ticket' => round($avgTicket, 2),
+                'by_payment' => $byPayment,
+                'by_channel' => $byChannel,
+                'top_items' => $topItems,
+            ];
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * Bucket paid orders by payment method into stable FR labels.
+     * Discriminates POS (`pos_payment_method`) vs Web/Kiosk (`payment_method`).
+     */
+    private function bucketPaymentMethods($paid): array
+    {
+        $buckets = [
+            'cash'        => ['label' => 'Espèces',           'count' => 0, 'total' => 0.0],
+            'card'        => ['label' => 'Carte bancaire',    'count' => 0, 'total' => 0.0],
+            'ticket'      => ['label' => 'Titre-restaurant',  'count' => 0, 'total' => 0.0],
+            'mobile'      => ['label' => 'Paiement mobile',   'count' => 0, 'total' => 0.0],
+            'online'      => ['label' => 'En ligne (Stripe)', 'count' => 0, 'total' => 0.0],
+            'counter'     => ['label' => 'À encaisser comptoir', 'count' => 0, 'total' => 0.0],
+            'other'       => ['label' => 'Autre',             'count' => 0, 'total' => 0.0],
+        ];
+
+        foreach ($paid as $order) {
+            $key = $this->resolvePaymentBucketKey($order);
+            $buckets[$key]['count']++;
+            $buckets[$key]['total'] += (float) $order->total;
+        }
+
+        // Drop zero-count buckets, round totals, reindex.
+        $out = [];
+        foreach ($buckets as $bucket) {
+            if ($bucket['count'] === 0) {
+                continue;
+            }
+            $bucket['total'] = round($bucket['total'], 2);
+            $out[] = $bucket;
+        }
+
+        return $out;
+    }
+
+    private function resolvePaymentBucketKey($order): string
+    {
+        $orderType = (int) ($order->order_type ?? 0);
+        $isPosTender = $orderType === \App\Enums\OrderType::POS;
+
+        if ($isPosTender) {
+            $method = (int) ($order->pos_payment_method ?? 0);
+            return match ($method) {
+                \App\Enums\PosPaymentMethod::CASH               => 'cash',
+                \App\Enums\PosPaymentMethod::CARD               => 'card',
+                \App\Enums\PosPaymentMethod::MOBILE_BANKING     => 'mobile',
+                \App\Enums\PosPaymentMethod::TICKET_RESTAURANT  => 'ticket',
+                \App\Enums\PosPaymentMethod::COUNTER_DEFERRED   => 'counter',
+                \App\Enums\PosPaymentMethod::OTHER              => 'other',
+                default                                         => 'other',
+            };
+        }
+
+        $method = (int) ($order->payment_method ?? 0);
+        return match ($method) {
+            \App\Enums\PaymentGateway::CASH_ON_DELIVERY   => 'cash',
+            \App\Enums\PaymentGateway::CARD               => 'card',
+            \App\Enums\PaymentGateway::TICKET_RESTAURANT  => 'ticket',
+            default                                       => 'online', // Stripe/online fallback
+        };
+    }
+
+    private function bucketChannels($paid): array
+    {
+        $kiosk = ['label' => 'Borne', 'count' => 0, 'total' => 0.0];
+        $pos   = ['label' => 'POS Caisse', 'count' => 0, 'total' => 0.0];
+        $web   = ['label' => 'Web/App', 'count' => 0, 'total' => 0.0];
+
+        foreach ($paid as $order) {
+            // Reuse channelStatistics() discriminator: source_surface='kiosk'
+            // is the canonical kiosk marker (WG-3 WF-3 P1 2026-05-19).
+            if ((string) ($order->source_surface ?? '') === 'kiosk'
+                || (int) $order->source === \App\Enums\Source::APP) {
+                $kiosk['count']++;
+                $kiosk['total'] += (float) $order->total;
+                continue;
+            }
+            if ((int) $order->source === \App\Enums\Source::POS) {
+                $pos['count']++;
+                $pos['total'] += (float) $order->total;
+                continue;
+            }
+            $web['count']++;
+            $web['total'] += (float) $order->total;
+        }
+
+        $out = [];
+        foreach ([$kiosk, $pos, $web] as $bucket) {
+            if ($bucket['count'] === 0) {
+                continue;
+            }
+            $bucket['total'] = round($bucket['total'], 2);
+            $out[] = $bucket;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Top 5 items of the day by quantity sold (paid orders only).
+     * Uses OrderItem aggregation with branch scope already baked in
+     * (OrderItem::booted() applies BranchScope as of P0-FIX-2 2026-05-09).
+     */
+    private function topItemsOfDay(Carbon $startParis, Carbon $endParisExclusive, ?int $branchId): array
+    {
+        $itemQuery = \App\Models\OrderItem::query()
+            ->select('item_id', 'tax_name')
+            ->selectRaw('SUM(quantity) AS qty_sum')
+            ->selectRaw('SUM(total_price) AS revenue_sum')
+            ->whereHas('order', function ($q) use ($startParis, $endParisExclusive, $branchId) {
+                $q->where('order_datetime', '>=', $startParis)
+                  ->where('order_datetime', '<', $endParisExclusive)
+                  ->where('payment_status', PaymentStatus::PAID);
+                if ($branchId !== null) {
+                    $q->where('branch_id', $branchId);
+                }
+            })
+            ->groupBy('item_id', 'tax_name')
+            ->orderByDesc('qty_sum')
+            ->limit(5);
+
+        $rows = $itemQuery->get();
+
+        // Resolve item names in one round-trip (avoid N+1).
+        $itemIds = $rows->pluck('item_id')->filter()->unique()->all();
+        $names = $itemIds
+            ? \App\Models\Item::whereIn('id', $itemIds)->pluck('name', 'id')
+            : collect();
+
+        return $rows->map(function ($row) use ($names) {
+            return [
+                'name' => $names[$row->item_id] ?? ('Item #' . $row->item_id),
+                'qty' => (int) $row->qty_sum,
+                'revenue' => round((float) $row->revenue_sum, 2),
+            ];
+        })->values()->all();
+    }
+
     public function auditTrail()
     {
         try {

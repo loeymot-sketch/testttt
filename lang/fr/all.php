@@ -66,6 +66,10 @@ return [
         'online_orders' => 'Commandes en ligne',
         'sales_report' => 'Rapport des ventes',
         'items_report' => 'Rapport des articles',
+        // [V102-08 HEAL-3 2026-05-26] One-click EOD PDF synthesis button on Admin Dashboard.
+        'eod_pdf_button' => 'PDF Clôture du jour',
+        'eod_pdf_error' => 'Téléchargement du PDF échoué. Réessayez ou vérifiez vos permissions.',
+        'downloading' => 'Téléchargement…',
         'stock_low_alerts' => 'Alertes stock bas',
         'last_z_report' => 'Dernier rapport Z',
         'view_all_alerts' => 'Voir toutes',

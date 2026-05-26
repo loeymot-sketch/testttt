@@ -5,9 +5,26 @@
         <p>{{ $t('label.data_reset') }}</p>
     </div>
 
-    <div class="mb-8">
-        <h3 class="font-semibold text-[26px] leading-10 capitalize text-primary">{{ visitorMessage() }}</h3>
-        <h4 class="font-medium text-[22px] leading-[34px] capitalize">{{ authInfo.name }}</h4>
+    <div class="mb-8 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+            <h3 class="font-semibold text-[26px] leading-10 capitalize text-primary">{{ visitorMessage() }}</h3>
+            <h4 class="font-medium text-[22px] leading-[34px] capitalize">{{ authInfo.name }}</h4>
+        </div>
+        <!-- [V102-08 HEAL-3 2026-05-26] One-click EOD PDF synthesis button.
+             Gated by `pos-manage-fiscal` permission (server-side enforcement) ;
+             frontend `v-if` hides for users without it so the button doesn't
+             dangle and 403. -->
+        <button
+            v-if="canFiscal"
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl border border-primary bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
+            :disabled="eodDownloading"
+            @click="downloadEodPdf"
+            :aria-busy="eodDownloading ? 'true' : 'false'"
+        >
+            <i class="lab lab-pos-bold" aria-hidden="true"></i>
+            <span>{{ eodDownloading ? $t('label.downloading') : $t('label.eod_pdf_button') }}</span>
+        </button>
     </div>
 
     <nav v-if="quickAccessLinks.length" class="mb-8" :aria-label="$t('label.quick_access')">
@@ -85,12 +102,26 @@ export default {
             loading: {
                 isActive: false,
             },
-            demo : ENV.DEMO
+            demo : ENV.DEMO,
+            // [V102-08 HEAL-3 2026-05-26] EOD PDF download state.
+            eodDownloading: false,
         };
     },
     computed: {
         authInfo: function () {
             return this.$store.getters.authInfo;
+        },
+        // [V102-08 HEAL-3 2026-05-26] Frontend gate for EOD PDF button.
+        // Aligns with backend `permission:pos-manage-fiscal` middleware.
+        // Defensive: if permission shape isn't loaded yet, hide the button
+        // rather than render a 403-prone control.
+        canFiscal() {
+            const perms = this.normalizedPermissions();
+            if (!perms.length) {
+                return false;
+            }
+            const entry = perms.find((p) => p && p.url === 'pos/manage-fiscal');
+            return entry ? entry.access === true : false;
         },
         quickAccessLinks() {
             const perms = this.normalizedPermissions();
@@ -167,6 +198,62 @@ export default {
                 greet = this.$t('message.good_evening');
             }
             return greet;
+        },
+        // [V102-08 HEAL-3 2026-05-26] POST to /api/admin/dashboard/eod-pdf
+        // with `responseType: 'blob'` (advisor flag — without it the binary
+        // returns corrupted). Then synthesize a same-origin object URL and
+        // trigger an <a download> click. Browser-honored across Chromium /
+        // Firefox / Safari.
+        downloadEodPdf: async function () {
+            if (this.eodDownloading) {
+                return;
+            }
+            this.eodDownloading = true;
+            try {
+                // Default to today (Paris) — server-side fallback when no `date` query.
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                const dateStr = `${yyyy}-${mm}-${dd}`;
+
+                const res = await axios.post(
+                    `admin/dashboard/eod-pdf?date=${dateStr}`,
+                    {},
+                    { responseType: 'blob' }
+                );
+
+                const blob = new Blob([res.data], { type: 'application/pdf' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `cloture_jour_${dateStr}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                // Revoke after the click event has been consumed.
+                setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+            } catch (err) {
+                // Show server message when available (PDF error payloads are
+                // JSON-encoded with `responseType:'blob'` — read via text()).
+                let msg = this.$t('label.eod_pdf_error');
+                try {
+                    if (err && err.response && err.response.data) {
+                        const text = await err.response.data.text();
+                        const parsed = JSON.parse(text);
+                        if (parsed && parsed.message) {
+                            msg = parsed.message;
+                        }
+                    }
+                } catch (_) {
+                    // swallow parse error, keep generic msg
+                }
+                if (window && window.alert) {
+                    window.alert(msg);
+                }
+            } finally {
+                this.eodDownloading = false;
+            }
         }
     }
 }

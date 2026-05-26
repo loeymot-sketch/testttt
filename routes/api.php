@@ -1050,6 +1050,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/sla-alerts', [DashboardController::class, 'slaAlerts']);
         Route::get('/channel-statistics', [DashboardController::class, 'channelStatistics']);
         Route::get('/audit-trail', [DashboardController::class, 'auditTrail']);
+        // [V102-08 HEAL-3 2026-05-26] One-click EOD PDF synthesis for owner/
+        // accountant. POST (per spec) ; permission `pos-manage-fiscal` enforced
+        // in DashboardController::__construct (separate from :dashboard).
+        Route::post('/eod-pdf', [DashboardController::class, 'eodPdf']);
     });
 
     Route::prefix('sales-report')->name('sales-report.')->group(function () {
@@ -1146,6 +1150,15 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/history-today', [KitchenDisplaySystemController::class, 'historyToday'])
             ->middleware('throttle:60,1')
             ->name('history-today');
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] Chef
+        // "Annuler bump" within 60s. Compensating action — orders.status is
+        // NOT mutated. See KitchenDisplaySystemController::recall +
+        // KitchenDisplaySystemOrderService::recall for the NF525-safe append-only
+        // invariant proof. Mirrors `change-status` middleware so idempotent
+        // replays + per-bump rate-limiting apply identically.
+        Route::post('/recall/{order}', [KitchenDisplaySystemController::class, 'recall'])
+            ->middleware(['idempotency', 'throttle:kds-bump'])
+            ->name('recall');
     });
 
     // [NEW-04] Observability surface — non-blocking telemetry rollups + ingestion.
