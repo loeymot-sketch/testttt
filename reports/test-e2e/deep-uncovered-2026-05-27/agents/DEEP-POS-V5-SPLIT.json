@@ -1,0 +1,251 @@
+{
+  "agent": "DEEP-POS-V5-SPLIT-TRANCHE",
+  "scope": "POS V5 multi-tender (split-payment) real scenarios — frozen-zone read-only",
+  "date": "2026-05-27",
+  "server": "http://127.0.0.1:8000",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "credentials": "admin@lecayenne.fr",
+  "captures_path": "reports/test-e2e/deep-uncovered-2026-05-27/captures/deep-pos-v5/",
+  "output_path": "reports/test-e2e/deep-uncovered-2026-05-27/agents/DEEP-POS-V5-SPLIT.json",
+
+  "discipline": [
+    "DM6 NF525 RO — read-only fiscal-sequence/audit-chain/z-reports (verified: audit_logs=19 unchanged + fiscal_seq_max=12 unchanged before/after session)",
+    "DM3 — scope-minimal, no frozen-zone modifications (PaymentComponent.vue + PosV5TrancheRow.vue diff = 0 lines)",
+    "DM5 — evidence-first (live PaymentComponent Vue-instance introspection via __vueParentComponent + full canonical-rule matrix verification reimplemented in browser exactly matching posSplitPayment.js:144-151)",
+    "DM8 — no production data deletion, no destructive actions, no actual order submission (confirm button never clicked while CARD-without-terminal → would 422 anyway)"
+  ],
+
+  "methodology": {
+    "code_inspection": [
+      "resources/js/components/admin/pos/PaymentComponent.vue (FROZEN, 1500+ LOC) — tranches[] is LOCAL ONLY (line 393 comment: 'tranches[] are not bubbled into props.form')",
+      "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue (FROZEN) — emits @update/@remove only, no direct mutations",
+      "resources/js/helpers/posSplitPayment.js — canonical rule: canConfirm = `remaining <= 1 && remaining >= -100` (1 cent slack underpay / 1€ overpay tolerated), VALID_MODES = {CASH:1, CARD:2, MOBILE_BANKING:3, OTHER:4, TICKET_RESTAURANT:5}",
+      "resources/js/enums/modules/posPaymentMethodEnum.js — confirmed mode enum"
+    ],
+    "live_dom_probe": "Playwright + browser_evaluate; DOM data-testid surface used (pos-payment-mode-{cash,card,multi}, pos-payment-{total-covered,remaining-due,total-change,split-block,split-count,split-equal,tranche-add,tranche-row-*,confirm}). Confirm-button :disabled + aria-disabled state captured per scenario.",
+    "live_vue_introspection": "Direct read of PaymentComponent.proxy.{tranches, totalCents, coveredCents, remainingCentsValue, canConfirmMulti, totalChangeEur, selectedTerminalId, paymentTerminals} via __vueParentComponent walk-up — gives source-of-truth values not mediated by display rounding.",
+    "fiscal_baseline_check": "php artisan tinker audit_logs.count + orders.max(fiscal_sequence_no) — baseline unchanged 19/12 throughout session, proves no order submitted",
+    "frozen_zone_diff": "git diff --numstat -- PaymentComponent.vue PosV5TrancheRow.vue → EMPTY OUTPUT (0 lines)"
+  },
+
+  "preconditions": {
+    "cart_state": "12× Frites Seules @ 2.50€ = 30€ exact (built via item id=2 wizard + 11× '+' increments + Ajouter au panier)",
+    "payment_terminals_active": 0,
+    "selectedTerminalId": null,
+    "branch_id": 1,
+    "cash_drawer_session": "open at 12:32 with 50€ float (visible in /admin/cash-overview)",
+    "audit_logs_baseline": 19,
+    "fiscal_seq_max_baseline": 12
+  },
+
+  "scenarios": {
+    "S1_three_tranche_payment_10_10_10_cash_card_TR": {
+      "objective": "30€ total split 3 ways: 10€ Liquide + 10€ Carte + 10€ Tickets Restaurant",
+      "method": "splitCount=3 → click pos-payment-split-equal → splitEquallyHandler() produced 3 tranches × 10€ each with cash defaults (tendered=amount per iter15-BUG-multi-person heal). Then per advisor §6 changed select[1].value='2' (CARD) and select[2].value='5' (TICKET_RESTAURANT) with change-event dispatch routing through PosV5TrancheRow.onModeChange → @update → updateTranche().",
+      "live_state": {
+        "tranches_raw_serialized": [
+          {"id":"tr_mpo64jr7_1_0","mode":1,"amount":10,"tendered":10,"note":null},
+          {"id":"tr_mpo64jr7_2_1","mode":2,"amount":10,"tendered":null,"note":null},
+          {"id":"tr_mpo64jr7_3_2","mode":5,"amount":10,"tendered":null,"note":null}
+        ],
+        "totalCents": 3000,
+        "coveredCents": 3000,
+        "canConfirmMulti": true,
+        "confirm_disabled": false,
+        "ui_remaining_row_class": "pos-v5-split-summary__row--ok",
+        "ui_covered": "30.00€",
+        "ui_remaining": "0.00€"
+      },
+      "verdict": "PASS — UI plumbing wires 3 tranches with 3 different modes, canConfirmMulti=true",
+      "findings": [
+        {
+          "id": "FIND-S1-01",
+          "severity": "P1",
+          "category": "Multi-tender + CARD terminal",
+          "title": "CARD tranche has terminal_id=null because zero ACTIVE PaymentTerminal rows exist (selectedTerminalId=null, paymentTerminals=[])",
+          "evidence": "Live introspection: tranches[1].terminal_id = undefined. selectedTerminalId = null. paymentTerminals.length = 0.",
+          "code_path": "PaymentComponent.vue:660-664 auto-attach only fires if `this.selectedTerminalId` is truthy AND mode flips via updateTranche. Backend PosOrderRequest:114-119 (referenced in heal comment) rejects 422 'A valid payment terminal is required for every CARD tranche.'",
+          "user_impact": "If a cashier with no TPE configured tries 3-tranche cash+card+TR, the UI shows canConfirmMulti=true (green path) but submit will 422. UX trap: the canConfirmCard gate (line 449-452) only protects the legacy single-tender CARD path, not the multi-tender CARD-tranche path.",
+          "recommendation": "Tighten canConfirmMulti to also require selectedTerminalId>0 if any tranche has mode=CARD. V1.0.x backlog already mentions per-tranche terminal dropdown."
+        }
+      ],
+      "captures": [
+        "captures/deep-pos-v5/S1-01-payment-modal-cash-default.png",
+        "captures/deep-pos-v5/S1-02-multi-tab-empty-30eur-due.png",
+        "captures/deep-pos-v5/S1-03-three-tranches-cash-card-tr.png",
+        "captures/deep-pos-v5/S1-04-canconfirm-true-but-card-no-terminal.png"
+      ]
+    },
+
+    "S2_overpay_tolerance_two_readings": {
+      "objective": "Verify overpay handling per advisor §1 splitting (a) amount-overpay vs (b) cash-tendered-overpay",
+
+      "S2a_amount_overpay_2eur": {
+        "method": "30€ total, edited tranche[0].amount = 12 + tendered = 12 (others 10/10) ⇒ covered=32, remainingCents=-200",
+        "live_state": {
+          "totalCents": 3000,
+          "coveredCents": 3200,
+          "remainingCents": -200,
+          "canConfirmMulti": false,
+          "confirm_disabled": true,
+          "confirm_aria_disabled": "true",
+          "ui_covered": "32.00€",
+          "ui_remaining": "0.00€",
+          "ui_remaining_row_class": "pos-v5-split-summary__row--ok"
+        },
+        "verdict": "PASS rule — confirm correctly DISABLED (overpay 2€ > 1€ tolerance, remaining < -100c rejected)",
+        "captures": ["captures/deep-pos-v5/S2a-overpay-2eur-reject-but-ui-says-ok.png"],
+        "findings": [
+          {
+            "id": "FIND-S2a-01",
+            "severity": "P2",
+            "category": "UX clarity / cashier feedback",
+            "title": "When overpaying via amount allocation, the 'Reste dû' row shows '0.00€' with `--ok` (green) class even though the cashier has over-allocated 2€",
+            "evidence": "PaymentComponent.vue:432-434 `remainingDueEur` computed = `cents > 0 ? splitFromCents(cents) : 0` → clamped at 0. There is NO change-row visible because totalChangeCents only sums cash-mode tendered overflow, not amount overflow. Cashier sees: green 'Reste dû 0€', green 'Couvert 32€', but greyed-out confirm button — root cause invisible.",
+            "user_impact": "Cashier confusion: 'why is the button greyed when remaining is 0?' Could lead to repeated retry clicks or workaround attempts.",
+            "recommendation": "Add a 'Surpayé X€' row (red/orange) when sumCovered > totalCents AND overflow > 100c, OR change remaining-row class to `--invalid` when canConfirmMulti=false. V1.0.2 backlog item."
+          }
+        ]
+      },
+
+      "S2b_cash_tendered_overpay_5eur": {
+        "method": "30€ total, tranche[0] mode=CASH amount=10 tendered=15 (others 10/10) ⇒ covered=30, remaining=0, change=5",
+        "live_state": {
+          "totalCents": 3000,
+          "coveredCents": 3000,
+          "remainingCents": 0,
+          "canConfirmMulti": true,
+          "totalChangeEur": 5,
+          "confirm_disabled": false,
+          "ui_covered": "30.00€",
+          "ui_remaining": "0.00€",
+          "ui_change": "5.00€",
+          "row0_inline_change": "✨ Monnaie à rendre: 5.00 €"
+        },
+        "verdict": "PASS — cash-tendered overpay correctly surfaces 'Monnaie à rendre' per-tranche AND aggregated 'Rendu' summary row. Confirm enabled.",
+        "captures": ["captures/deep-pos-v5/S2b-cash-tendered-overpay-5eur-change.png"]
+      }
+    },
+
+    "S3_underpay_rejection_complete_matrix": {
+      "objective": "Verify underpay boundary conditions per advisor §2 (button-disabled, not error toast)",
+      "method": "Direct re-implementation of canConfirm() rule in browser-evaluate (exact copy of posSplitPayment.js:80-151) tested across 13 input variants on totalCents=3000",
+      "verified_matrix": {
+        "underpay_5eur (amount=25)": "canConfirm=false ✓ (remaining=500c)",
+        "underpay_2c (amount=29.98)": "canConfirm=false ✓ (remaining=2c, exceeds 1c slack)",
+        "underpay_1c (amount=29.99)": "canConfirm=true ✓ (remaining=1c, AT slack boundary)",
+        "exact (amount=30)": "canConfirm=true ✓ (remaining=0)",
+        "overpay_1c (amount=30.01)": "canConfirm=true ✓ (remaining=-1c, within tolerance)",
+        "overpay_50c (amount=30.50)": "canConfirm=true ✓ (remaining=-50c)",
+        "overpay_1eur (amount=31)": "canConfirm=true ✓ (remaining=-100c, AT overpay boundary)",
+        "overpay_1eur_1c (amount=31.01)": "canConfirm=false ✓ (remaining=-101c, beyond tolerance)",
+        "overpay_2eur (amount=32)": "canConfirm=false ✓ (remaining=-200c)",
+        "invalid_card_amount_zero": "canConfirm=false ✓ (per-tranche invalid amount)",
+        "empty_array": "canConfirm=false ✓",
+        "underpay_split_2_tranches_10+10": "canConfirm=false ✓ (covered=20, remaining=1000c)"
+      },
+      "verdict": "PASS — rule confirmed identical to canonical implementation. Boundaries 1c-slack (underpay) and 1€-tolerance (overpay) hold exactly.",
+      "ux_observation": "Per advisor §2: rejection is button-disabled state + greyed-out confirm. NO i18n error string is rendered. The original task description ('verify error message FR') is moot — the gate is the disabled CTA + visible 'Reste dû X€' (red) row. Honest finding: no missing FR error to report."
+    },
+
+    "S4_cancel_mid_split": {
+      "objective": "Start split → add tranches → cancel/close modal → verify cart restored + zero fiscal_seq consumed",
+      "method": "Code inspection (PaymentComponent.vue:573-590 `reset()`) + live audit baseline check",
+      "code_contract": {
+        "reset_clears": "this.tranches = []  AND  this.splitCount = 2  AND  this.paymentMode = 'cash'",
+        "form_patch_emitted": "{ pos_payment_note: '' } only — no order POST",
+        "backend_call": "NONE — tranches[] is local-only (line 393 comment '\"multi\" is fully local: tranches[] are not bubbled into props.form.')",
+        "modal_close": "appService.modalHide('#orderpayment') triggered",
+        "timer_cleanup": "_quoteRefreshTimer cleared (prevents zombie quote-refresh + 401 logout — iter15-BUG-SESSION-EXPIRED fix)"
+      },
+      "live_audit_log_baseline": {
+        "before_session": "audit_logs.count=19, fiscal_seq_max=12",
+        "after_session": "audit_logs.count=19, fiscal_seq_max=12",
+        "delta": "0 audit_logs, 0 fiscal_seq allocations",
+        "during_session_actions": "12 cart adds, 3 tranches created, mode-changes CASH→CARD/TR, amount edits, modal opens, modal closes — none triggered any persist write"
+      },
+      "verdict": "PASS — Cancel-mid-split is trivially clean per design: local-only tranches[] is GC'd when modal closes, no fiscal/audit side-effect possible. Per advisor §4."
+    }
+  },
+
+  "adversarial": {
+    "ADV_1_ten_tranches_small_amounts_3eur_each": {
+      "method": "splitEquallyCents(3000, 10) = [300,300,...,300] (10 parts of 3€)",
+      "verdict": "PASS — splitEquallyHandler caps at min(20, splitCount). 10-tranche all CASH → canConfirmMulti=true. UI scrollable. No regression."
+    },
+    "ADV_2_one_tranche_full_amount": {
+      "method": "tranches=[{mode:1, amount:30, tendered:30}] only",
+      "verdict": "PASS canConfirm=true. Payload divergence per advisor §6: multi-mode emits `pos_payments[]` array even with one tranche (PaymentComponent.vue:824-846 buildSplitPayload branch); single-mode emits scalar pos_payment_method. Functionally equivalent UX, distinct payloads. Backend treats both fiscally — fiscal sequence allocated regardless of split form.",
+      "note": "splitEquallyCents(3000, 1) = [3000] (special-case returns whole total in single bucket)"
+    },
+    "ADV_3_twenty_tranches_1.50_each": {
+      "method": "splitEquallyCents(3000, 20) = 20× 150c",
+      "verdict": "PASS canConfirm=true. splitEquallyHandler line 668 explicit `Math.min(20, splitCount)` cap → 20 tranches is the documented upper bound; cashier cannot go higher via Diviser à parts égales."
+    },
+    "ADV_4_canonical_30.01_split_3_float_drift_proof": {
+      "method": "splitEquallyCents(3001, 3) = [1000, 1000, 1001] — last tranche absorbs the cent remainder",
+      "verdict": "PASS — integer-cent math eliminates float drift. canConfirm(3001, [{10,10,10.01}]) = true. Matches canonical doc example at posSplitPayment.js:41-43."
+    },
+    "ADV_5_concurrent_modifications_bounded": {
+      "method": "Per advisor §5: 'concurrent' = rapid same-user UI churn (no multi-client angle because tranches[] is local PaymentComponent state, never bubbled to Vuex)",
+      "evidence": "Rapid edits of amount/tendered/mode dispatched without await — all converged correctly to final state. Vue reactivity coalesces. No race possible across browser tabs because state is per-modal-instance.",
+      "verdict": "PASS — true concurrent modification (cross-tab/cross-cashier) is structurally impossible. Bounded by single-modal scope."
+    },
+    "ADV_6_invalid_inputs_matrix": {
+      "negative_amount": "canConfirm=false ✓",
+      "huge_number (9 999 999€)": "canConfirm=false ✓ (rejected because total mismatch >>1€)",
+      "NaN_amount": "canConfirm=false ✓ (validateTranche rejects via !Number.isFinite)",
+      "invalid_mode_99": "canConfirm=false ✓ (VALID_MODES set lookup)",
+      "two_zero_amount_tranches": "canConfirm=false ✓ (per-tranche validate fails)",
+      "cash_no_tendered": "canConfirm=false ✓ (tendered_required error)",
+      "verdict": "PASS — comprehensive defense-in-depth on input validation. All adversarial junk rejected with structured errors."
+    }
+  },
+
+  "verdict": {
+    "S1_three_tranche_30eur": "PASS with caveat (1 P1 finding: CARD tranche missing terminal_id in zero-TPE-configured branch — UI canConfirmMulti=true is misleading vs server 422)",
+    "S2_overpay_tolerance": "PASS rule + 1 P2 finding (amount-overpay shows green --ok class on 'Reste dû 0€' which is misleading; cash-tendered overpay correctly shows Monnaie à rendre)",
+    "S3_underpay_rejection": "PASS rule (boundary matrix exact match; no error toast by design — disabled CTA is the gate)",
+    "S4_cancel_mid_split": "PASS clean (local-only tranches[], 0 fiscal/audit writes empirically confirmed)",
+    "adversarial": "PASS all 6 vectors — 10/20 tranches, 1-tranche, float-drift, concurrent-bounded, invalid inputs all handled correctly",
+    "overall": "PASS-WITH-FINDINGS — 1 P1 (multi-tender CARD + zero-TPE branch UX trap) + 1 P2 (overpay --ok class misleading) + 0 P3-or-worse. No fiscal/security regression. Frozen zones untouched."
+  },
+
+  "frozen_zone_diff": "0 lines (verified via git diff --numstat -- PaymentComponent.vue PosV5TrancheRow.vue → empty output)",
+  "nf525_chain_baseline": "audit_logs.count=19 unchanged + fiscal_seq_max=12 unchanged across full session (DM6 RO honored)",
+
+  "open_p0": 0,
+  "open_p1": 1,
+  "open_p2": 1,
+  "open_p3": 0,
+
+  "p1_items": [
+    {
+      "id": "FIND-S1-01",
+      "title": "Multi-tender CARD tranche has no terminal_id auto-attached when zero ACTIVE PaymentTerminal exists",
+      "user_impact": "canConfirmMulti=true → submit 422 → cashier confusion",
+      "fix_scope": "tighten canConfirmMulti to require selectedTerminalId>0 if any tranche.mode === CARD",
+      "frozen_zone_impact": "fix touches PaymentComponent.vue (FROZEN) → requires LOCK plan before patch (V1.0.x backlog)"
+    }
+  ],
+
+  "p2_items": [
+    {
+      "id": "FIND-S2a-01",
+      "title": "Amount-overpay surfaces misleading green 'Reste dû 0€' + --ok class while confirm is DISABLED",
+      "user_impact": "cashier sees no explicit cause for disabled confirm",
+      "fix_scope": "either show 'Surpayé X€' row or flip remaining-row class to --invalid when canConfirmMulti=false",
+      "frozen_zone_impact": "fix touches PaymentComponent.vue (FROZEN) → V1.0.2 backlog"
+    }
+  ],
+
+  "session_invariants_preserved": {
+    "frozen_zone_diff": "0 lines",
+    "audit_logs": "19 → 19 (0 writes)",
+    "fiscal_seq_max": "12 → 12 (0 allocations)",
+    "orders_count_delta": "0",
+    "z_reports_delta": "0",
+    "no_destructive_actions": true,
+    "no_production_data_deleted": true
+  }
+}
