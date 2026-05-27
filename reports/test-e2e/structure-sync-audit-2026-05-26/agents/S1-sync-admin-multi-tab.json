@@ -1,0 +1,178 @@
+{
+  "agent": "S1 sync live multi-tab",
+  "executed_at": "2026-05-27T09:33:30Z",
+  "test_target": "Admin item toggle rupture/restore → Kiosk + POS sync propagation",
+  "subject_item": {
+    "name": "Big Cayenne",
+    "id": 36,
+    "category": "Sandwich Cayenne",
+    "price_eur": 9.40
+  },
+  "tabs_opened": 3,
+  "tabs": {
+    "tab0_admin": "http://127.0.0.1:8000/admin/stock/rupture",
+    "tab1_kiosk": "http://127.0.0.1:8000/kiosk/categories?cat=1",
+    "tab2_pos": "http://127.0.0.1:8000/admin/pos"
+  },
+  "auth_caveat": "Kiosk tab inherited admin session cookie (not anonymous kiosk-token). This is the same browser context for all 3 tabs. Production kiosks bind to a machine-token via /api/frontend/kiosk-event — that endpoint returned 401 in this session (see console_errors).",
+  "captures_dir": "reports/test-e2e/structure-sync-audit-2026-05-26/captures/sync-S1/",
+  "captures_count": 9,
+  "captures": [
+    "01-tab1-admin-stock-initial.png",
+    "01-tab1-admin-before-toggle.png",
+    "02-tab2-kiosk-initial-bigcayenne-visible.png",
+    "02-tab2-kiosk-before-toggle.png",
+    "03-tab3-pos-initial-bigcayenne-visible.png",
+    "03-tab3-pos-before-toggle.png",
+    "05-tab2-kiosk-after-rupture-EPUISE-VISIBLE.png",
+    "06-tab3-pos-after-rupture-EPUISE-VISIBLE.png",
+    "07-tab3-pos-after-restore-EN-STOCK-VISIBLE.png",
+    "08-tab2-kiosk-after-restore-via-reload-EN-STOCK.png",
+    "09-tab1-admin-final-state-EN-STOCK.png"
+  ],
+  "test_1_toggle_rupture": {
+    "description": "Admin toggles Big Cayenne from EN STOCK → rupture; observe propagation",
+    "T_CLICK_admin_ms": 1779874369432,
+    "method": "Click button[role=switch] inside [data-testid=stock-mgmt-product-item-36]; switch went aria-checked true→false",
+    "kiosk_propagated": true,
+    "kiosk_evidence": {
+      "before": {
+        "class": "kiosk-product-card",
+        "ariaDisabled": "false",
+        "buttonDisabled": false,
+        "badge": "(none, 'Personnaliser' label visible)"
+      },
+      "after": {
+        "class": "kiosk-product-card kiosk-product-card--filtered-out",
+        "ariaDisabled": "true",
+        "buttonDisabled": true,
+        "badge": "Épuisé",
+        "title_attr": "Épuisé"
+      },
+      "measurement_note": "Kiosk DOM state was confirmed AFTER kiosk tab navigated to /kiosk/categories?cat=1 (the kiosk Echo subscription requires /api/frontend/kiosk-event auth which returned 401 in our admin-session context — see console_errors_per_tab.kiosk). State change therefore confirmed at next page load, not via live Echo broadcast."
+    },
+    "pos_propagated": true,
+    "pos_evidence": {
+      "before": {
+        "class": "pos-v5-tile pos-item-tile",
+        "ariaDisabled": "false",
+        "ariaLabel": "Ajouter Big Cayenne, 9,40 €"
+      },
+      "after": {
+        "class": "pos-v5-tile pos-item-tile is-unavailable",
+        "ariaDisabled": "true",
+        "disabled": true,
+        "ariaLabel": "Indisponible : Big Cayenne",
+        "badge": "Épuisé",
+        "data_pos_item_id": "36"
+      },
+      "T_POS_RUPTURE_ms": 1779874369523,
+      "latency_pos_ms": 91,
+      "measurement_method": "MutationObserver on body subtree filtering class/aria-disabled/aria-label changes; first hit when className contains 'is-unavailable'"
+    },
+    "latency_kiosk_ms": null,
+    "latency_pos_ms": 91,
+    "verdict": "GREEN_POS_AMBER_KIOSK"
+  },
+  "test_2_restore": {
+    "description": "Admin toggles Big Cayenne back: rupture → EN STOCK",
+    "T_CLICK_admin_ms": 1779874155498,
+    "method": "Same button click toggling aria-checked false→true",
+    "pos_propagated_live": true,
+    "pos_evidence": {
+      "T_POS_RESTORE_ms": 1779874155672,
+      "latency_pos_ms": 174,
+      "after": {
+        "class": "pos-v5-tile pos-item-tile",
+        "ariaDisabled": "false",
+        "ariaLabel": "Ajouter Big Cayenne, 9,40 €",
+        "is_unavailable_class_removed": true
+      },
+      "measurement_method": "MutationObserver detected removal of 'is-unavailable' class on POS tile"
+    },
+    "kiosk_propagated_live": false,
+    "kiosk_evidence": {
+      "live_observed_within_90s": false,
+      "after_90s_polling": {
+        "class": "kiosk-product-card kiosk-product-card--filtered-out",
+        "ariaDisabled": "true",
+        "text_first_line": "Épuisé"
+      },
+      "after_page_reload": {
+        "class": "kiosk-product-card",
+        "ariaDisabled": "false",
+        "text_first_line": "Personnaliser"
+      },
+      "interpretation": "Backend WAS restored (confirmed via reload). Live Echo broadcast did NOT update kiosk DOM because the kiosk page lacks valid kiosk-event auth (401) — _subscribeEchoChannel runs but the underlying Echo channel auth flow likely fails silently. The page-mid-session restore is invisible until refresh."
+    },
+    "latency_kiosk_ms": null,
+    "latency_pos_ms": 174,
+    "verdict": "GREEN_POS_AMBER_KIOSK"
+  },
+  "test_3_echo_down_polling_fallback": {
+    "description": "Disable Echo and verify polling-fallback latency",
+    "status": "SKIPPED",
+    "skip_reason": "Test 1+2 already demonstrated that kiosk in current session is NOT receiving live Echo broadcasts (due to 401 on /api/frontend/kiosk-event subscription auth). The current kiosk behavior IS already running in fallback mode (no Echo). Polling on /api/frontend/menu also returned 401 — so even polling fallback was non-functional in this admin-session-cookied kiosk context. A separate machine-bound kiosk session (with valid kiosk_jwt) would be required to legitimately test Test 3."
+  },
+  "echo_subscription_evidence": {
+    "kiosk_code_subscribes": true,
+    "kiosk_code_path": "resources/js/components/frontend/kiosk/KioskAppComponent.vue:540-583 (_subscribeEchoChannel)",
+    "kiosk_events_listened": [
+      "ItemAvailabilityChanged",
+      "CatalogChanged",
+      "ComposerProfileChanged",
+      "CouponChanged"
+    ],
+    "kiosk_subscription_runtime_status": "BLOCKED — Echo auth requires kiosk-event endpoint which returned 401 in this admin-cookied session; cannot prove Echo channel join succeeded",
+    "pos_code_subscribes": "yes (PosShellComponent + admin shell are admin-channel subscribers — works because admin session cookie passes Echo auth)",
+    "pos_subscription_runtime_status": "WORKING — 91ms rupture + 174ms restore measured"
+  },
+  "console_errors_per_tab": {
+    "tab0_admin": "(not captured in S1 — 1 error visible on dashboard from initial login flow, non-blocking)",
+    "tab1_kiosk": [
+      "GET /api/frontend/kiosk-event → 401 Unauthorized",
+      "GET /api/frontend/menu → 401 Unauthorized",
+      "(localhost:8000/api/login — unrelated cross-host noise)"
+    ],
+    "tab2_pos": "0 errors"
+  },
+  "verdict": "AMBER",
+  "verdict_explanation": "POS sync proven sub-200ms via Echo (91ms rupture, 174ms restore). Kiosk sync NOT proven live in this test setup because kiosk auth (kiosk-event endpoint) returned 401 — the kiosk tab inherited admin session cookies instead of a proper machine kiosk_jwt token. On real production kiosks (Le Cayenne deployed kiosk machines), the kiosk_jwt is provisioned via machine binding — those would have working Echo. Our setup limitation, not necessarily a production bug, BUT the silent fallback (no toast, no error UI) is itself a concern.",
+  "findings": [
+    {
+      "id": "S1-F1",
+      "severity": "P1",
+      "title": "POS Echo propagation excellent (sub-200ms)",
+      "evidence": "T_CLICK→T_POS_RUPTURE = 91ms; T_CLICK→T_POS_RESTORE = 174ms (MutationObserver verified)",
+      "category": "performance_proof"
+    },
+    {
+      "id": "S1-F2",
+      "severity": "P0",
+      "title": "Kiosk Echo auth broken when run inside admin session (401 on /api/frontend/kiosk-event)",
+      "evidence": "Console errors on kiosk tab; kiosk DOM stayed at rupture state for >90s after admin restored item; required page reload to reflect new state",
+      "impact": "If admin/staff opens kiosk URL in their authenticated browser for review/training, they see stale availability. Production deployed kiosks are presumed unaffected (machine-bound kiosk_jwt), but this needs verification on the real LeCayenne kiosk hardware before V1 ship.",
+      "category": "sync_correctness",
+      "remediation": "Either (a) admin-session kiosk previewer should fall back to admin-channel for Echo subscriptions, or (b) document explicitly in BRAIN.md that kiosk previews from admin browser require manual refresh."
+    },
+    {
+      "id": "S1-F3",
+      "severity": "P2",
+      "title": "Admin tabs auto-redirect to /admin/order-status-screen or /admin/kitchen-display-system during background timers",
+      "evidence": "Multiple times during this test, tab 0 (/admin/stock/rupture) auto-navigated to OSS or KDS without explicit user action. Caused multi-tab test cleanup difficulties.",
+      "impact": "Confusing UX during multi-tab admin usage. Possible cause: an Echo handler somewhere is calling window.location = ... on certain broadcasts (orders ready/picked-up?).",
+      "category": "ux_drift",
+      "remediation": "Audit AdminAppShell or any admin Echo handlers for hard navigations on payload events."
+    }
+  ],
+  "critical_findings_3": [
+    "POS live Echo sync is production-grade: 91ms rupture, 174ms restore — well under the 1s Q9-S1 target.",
+    "Kiosk live Echo sync UNVERIFIED in this test due to 401 on /api/frontend/kiosk-event when kiosk runs inside an admin session. Must be re-tested on real machine-token kiosk before V1 ship to LeCayenne.",
+    "Admin shell auto-navigates between tabs on Echo events (observed: /admin/stock/rupture → /admin/kitchen-display-system → /admin/order-status-screen without user action). UX bug — needs audit."
+  ],
+  "discipline_dm6_compliance": {
+    "read_only_audit_logs_z_reports_fiscal_sequence": true,
+    "toggle_via_admin_ui_not_db": true,
+    "frozen_zone_diff": "0 (no source files modified)"
+  }
+}

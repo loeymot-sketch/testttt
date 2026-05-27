@@ -1,0 +1,170 @@
+{
+  "agent": "A1 service layer",
+  "audited_at": "2026-05-27",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "discipline": "READ-ONLY (DM6 NF525 honored, no INSERT/UPDATE on audit_logs/z_reports)",
+  "services_total": 152,
+  "services_by_domain": {
+    "root": 92,
+    "Pricing": 7,
+    "Fiscal": 7,
+    "Idempotency": 5,
+    "Hardware": 5,
+    "Composer": 5,
+    "Menu": 4,
+    "Loyalty": 4,
+    "Kiosk": 4,
+    "Order": 3,
+    "Delivery": 3,
+    "Stock": 2,
+    "Observability": 2,
+    "Ingredients": 2,
+    "Receipt": 1,
+    "Pos": 1,
+    "Payments": 1,
+    "Orders": 1,
+    "Catalog": 1,
+    "Cash": 1,
+    "Bypass": 1
+  },
+  "god_services_over_500_loc": [
+    {
+      "path": "app/Services/OrderService.php",
+      "loc": 2837,
+      "severity": "P0",
+      "note": "5.7x over the 500-LOC threshold; central blast radius — used by POS, kiosk, KDS, OSS, fiscal sealing"
+    },
+    {
+      "path": "app/Services/FrontendOrderService.php",
+      "loc": 1391,
+      "severity": "P0",
+      "note": "Kiosk lifecycle god service; near-duplicate of OrderService for frontend path"
+    },
+    {
+      "path": "app/Services/Pricing/PricingService.php",
+      "loc": 814,
+      "severity": "P1",
+      "note": "SSOT pricing — high LOC but frozen by NF525 invariant (CLAUDE.md §8); split risk > maintain risk"
+    },
+    {
+      "path": "app/Services/DashboardService.php",
+      "loc": 804,
+      "severity": "P1",
+      "note": "Now hosts eodSynthesis HEAL-3 (+80 LOC added this session at line 546). Read-only aggregator — internal split feasible (orderQuery / bucketPaymentMethods / bucketChannels / topItemsOfDay) without API churn."
+    },
+    {
+      "path": "app/Services/PaymentService.php",
+      "loc": 800,
+      "severity": "P1",
+      "note": "POS/Kiosk payment surface; depends on CashDrawerService + Fiscal triplet"
+    },
+    {
+      "path": "app/Services/Menu/AvailabilityService.php",
+      "loc": 774,
+      "severity": "P1",
+      "note": "ZERO service-injection in constructor — pure read/compute layer; LOC justified by domain (binary stock × variations × composer steps × broadcasting)"
+    },
+    {
+      "path": "app/Services/ItemService.php",
+      "loc": 756,
+      "severity": "P2"
+    },
+    {
+      "path": "app/Services/Fiscal/ZReportService.php",
+      "loc": 727,
+      "severity": "FROZEN",
+      "note": "CLAUDE.md §7 frozen — NF525 chain integrity. No split allowed."
+    },
+    {
+      "path": "app/Services/KitchenDisplaySystemOrderService.php",
+      "loc": 606,
+      "severity": "P1",
+      "note": "Hosts the new KdsOrderRecalled::dispatch at line 371 (HEAL-5 wiring)"
+    },
+    {
+      "path": "app/Services/Fiscal/ZReportCashEnrichmentService.php",
+      "loc": 587,
+      "severity": "P2"
+    },
+    {
+      "path": "app/Services/Order/OrderQuoteService.php",
+      "loc": 574,
+      "severity": "P2"
+    },
+    {
+      "path": "app/Services/Cash/CashDrawerService.php",
+      "loc": 549,
+      "severity": "P1"
+    },
+    {
+      "path": "app/Services/Kiosk/KioskMenuService.php",
+      "loc": 516,
+      "severity": "P2"
+    }
+  ],
+  "cyclic_dependencies": [],
+  "cyclic_dependencies_method": "Constructor-injection graph traversal: parsed `function __construct` signatures across app/Services/**. Verified OrderService → (CouponService, PricingService); FrontendOrderService → (CouponService, PricingService, DiscountCalculator); PricingService → optional AvailabilityService (nullable, default constructed); AvailabilityService has NO service-injection (terminal node); CashDrawerService → AuditLogService (terminal); RefundWithCounterEntryService → (FiscalSequenceService, AuditLogService) + service-locator SealedOrderGuard. No A→B→A loop detected.",
+  "service_locator_count": 58,
+  "service_locator_count_controllers": 16,
+  "service_locator_note": "58 `app(*::class)` calls inside app/Services; 16 inside app/Http/Controllers. Includes one mandatory at app/Services/Order/RefundWithCounterEntryService.php:73 to resolve SealedOrderGuard (avoids constructor cycle with itself in test factories).",
+  "controller_eloquent_bypass_count": 59,
+  "controller_eloquent_bypass_distinct_files": 26,
+  "controller_eloquent_bypass_method": "Regex match on `(Order|Item|User|Payment|Branch|Customer|StockLevel|Coupon|Category|Setting)::(query|find|findOrFail|where|create|all|first|firstOrFail|with|orderBy|whereIn|forBranch|paginate|count|exists)` inside app/Http/Controllers/**/*.php. 26 controllers reach past their service layer — concentrated in app/Http/Controllers/Frontend (ItemController, LoyaltyController, UpsellController, MenuController) where read-paths bypass the service layer entirely.",
+  "repository_layer_present": false,
+  "repository_ratio": "152 services / 0 repositories — repository pattern is ABSENT (not 152/2 as task hypothesized; the `app/Repositories` directory does not exist).",
+  "new_session_artifacts_status": {
+    "KdsOrderRecalled_wired": true,
+    "KdsOrderRecalled_evidence": "app/Providers/EventServiceProvider.php:31 use + :165 KdsOrderRecalled::class => [PersistKdsOrderRecalledToOutbox::class] mapping; dispatched at app/Services/KitchenDisplaySystemOrderService.php:371 inside chef-recall flow; uses DispatchableAfterCommit trait (afterCommit broadcast deferred until DB tx commits — CLAUDE.md gate C9 KI-001).",
+    "PersistKdsOrderRecalledToOutbox_wired": true,
+    "PersistKdsOrderRecalledToOutbox_evidence": "app/Providers/EventServiceProvider.php:32 use + :166 inside KdsOrderRecalled listener array. Listener uses DomainEvent firstOrCreate (idempotency key sha1(event_type|order_id|recalled_at|correlation_id)) + DispatchDomainEventsJob via DB::afterCommit + OutboxBroadcastSwallowedEvent fallback. Mirrors PersistOrderStatusChangedToOutbox pattern. NO duplicate channel broadcasts.",
+    "NotifyStockLowOnStockLevelChanged_active": true,
+    "NotifyStockLowOnStockLevelChanged_evidence": "app/Providers/EventServiceProvider.php:78 use + :288 StockLevelChanged::class => [..., NotifyStockLowOnStockLevelChanged::class] mapping; event fired at app/Services/Stock/StockService.php:145 and :447. Listener gated by config('catalog_v15.stock_low_alert.enabled') flag (HEAL-2 V102-03 activates default true). Throttled by (branch_id, stockable_type, stockable_id) cache key TTL=3600s. EXPLICITLY DOES NOT re-broadcast ItemAvailabilityChanged — pinned by StockRuptureAlertListenerSentinelTest. Discipline: log-only V1 (no Notification dispatched without human-gate on recipients).",
+    "DashboardService_eodSynthesis_present": true,
+    "DashboardService_eodSynthesis_evidence": "app/Services/DashboardService.php:546 public function eodSynthesis(?string $date = null): array. Pure read-only (NF525 RO discipline DM6 honored — no audit_logs/z_reports writes). Reuses dashboardBranchId() admin/staff split + Paris-local Carbon bounds (session_tz=Paris face-value, no UTC literal binding). Dual-column payment buckets (pos_payment_method 1-6 + payment_method 1/3/4/5). Called by app/Http/Controllers/Admin/DashboardController.php:222 with PDF render at :228.",
+    "RefundWithCounterEntryService_intact": true,
+    "RefundWithCounterEntryService_evidence": "app/Services/Order/RefundWithCounterEntryService.php — 406 LOC, modified 2026-05-24 11:01 (pre-session, not touched by current session). Constructor injects FiscalSequenceService + AuditLogService (clean DI). Wave5-POS-001 + HEAL-A.4 guards intact (lines 64-79). SealedOrderGuard resolved via app() at :73 (allowed — single-call path avoids circular DI). Sole HTTP caller PosOrderController.php:47 refundWithCounterEntry. Mirror order pattern preserved: parent IMMUTABLE, mirror in current Z window, fiscal_sequence_no fresh-allocated atomically."
+  },
+  "verdict": "AMBER",
+  "verdict_rationale": "All 5 session artifacts are correctly wired and intact (GREEN slice). Cycle detection found ZERO service-level cycles. However, three architectural smells weigh heavy: (1) OrderService at 2837 LOC + FrontendOrderService at 1391 LOC = 4228 LOC of near-duplicate order lifecycle code = sync drift vector; (2) Repository layer ABSENT — service-locator and direct Eloquent in 26 controllers means BranchScope coverage relies entirely on global-scope discipline and the Sentinel test (CLAUDE.md §9 — 20 models pinned); a missing-scope regression in any controller-direct-query is invisible to service-layer tests; (3) 16 `app(*::class)` calls inside controllers + 58 inside services indicate DI bypass that hides true coupling graph from static analysis.",
+  "findings": [
+    {
+      "id": "A1-F01",
+      "severity": "P0",
+      "title": "OrderService 2837 LOC + FrontendOrderService 1391 LOC = duplicate-lifecycle sync vector",
+      "evidence": "Both services own order creation, cancellation, status transition, loyalty refund, and cash-back hooks. RefundWithCounterEntryService:332-335 explicitly notes BOTH OrderService:1702/1805 AND FrontendOrderService:707 call refundPoints AFTER cashBack — duplicated discipline across two 800-2800-LOC files. Any sync-critical change (status enum extension, payment_method bucket, fiscal_sequence allocation) must be applied twice with no compile-time guard. The KdsOrderRecalled HEAL-5 succeeded because it was dispatched from KitchenDisplaySystemOrderService (single owner), but the same pattern applied to refund/cancel would carry a 50% drift risk.",
+      "impact": "sync_breakage_risk",
+      "remediation": "V1.0.2 backlog — extract OrderLifecycleService shared between POS and Kiosk paths (Architect agent specialty). Pin with `tests/Feature/Order/OrderServiceVsFrontendOrderServiceParitySentinelTest.php` to fail-CI when one mutates without the other."
+    },
+    {
+      "id": "A1-F02",
+      "severity": "P1",
+      "title": "Repository layer 0/152 ratio — BranchScope discipline is the ONLY guard against multi-tenant leak",
+      "evidence": "Task spec assumed 152/2 ratio; actual filesystem shows app/Repositories does not exist (find returns empty). 26 controllers query Eloquent models directly (Order/Item/User/Payment/Branch/Customer/StockLevel/Coupon/Category/Setting — 59 raw queries total). Frontend/ItemController, Frontend/LoyaltyController (15 hits), Frontend/UpsellController, Frontend/MenuController are the worst offenders. Multi-tenant safety rests entirely on BranchScope global + BranchScopeCoverageSentinelTest pinning 20 models. A controller using `User::where(...)->lockForUpdate()->first()` (LoyaltyController:277) inside a non-scoped path would silently cross-branch if scope ever regressed.",
+      "impact": "tenant_isolation_brittleness",
+      "remediation": "Either (a) ratchet a Repository layer for the 10 highest-traffic models (Order, Item, User, Payment, StockLevel, Coupon, Category, Branch, OrderItem, OrderPayment) or (b) add a static-analysis sentinel banning `Model::where|::find|::query` inside Http/Controllers (allow only in Services). Option (b) is V1.0.2 chip-away — preserves V1 ship date."
+    },
+    {
+      "id": "A1-F03",
+      "severity": "P1",
+      "title": "Service-locator usage hides true coupling — 58 `app(*::class)` in Services + 16 in Controllers",
+      "evidence": "Including the documented-and-necessary `app(SealedOrderGuard::class)` at RefundWithCounterEntryService.php:73, 58 service-locator calls exist inside Services. Each call is INVISIBLE to constructor-injection cycle detection — meaning the cycle scan above is a LOWER BOUND. Hidden runtime cycles (A injects B at construct, B resolves A via app() at call time) cannot be ruled out without per-call tracing. The session-new RefundWithCounterEntryService → SealedOrderGuard service-locator is documented and justified, but it sets a precedent that propagates.",
+      "impact": "hidden_dependency_graph",
+      "remediation": "Add a CI script grep counting `app(*::class)` inside app/Services — baseline at current count, fail on growth. Force new injections to flow through constructors. Documented exceptions (factory/circular) require a `// @service-locator-allowed: <reason>` comment to pass."
+    },
+    {
+      "id": "A1-F04",
+      "severity": "P2",
+      "title": "Stock low-alert listener correctly suppressed for V1 binary stock — but no observability hook for the suppression itself",
+      "evidence": "app/Listeners/NotifyStockLowOnStockLevelChanged.php:57 short-circuits when threshold_low <= 0 (V1 Le Cayenne binary stock — all rows have threshold_low=0). Listener is activated by HEAL-2 (FK_CATALOG_STOCK_LOW_ALERT_ENABLED=true) for V1.0.2 admin-UI threshold ramp-up. Currently fires zero log lines in production. A future regression that accidentally sets threshold_low > 0 on a row would generate alerts with no test pinning the V1 zero-emission baseline.",
+      "impact": "silent_emergence_of_alerts_on_V102_admin_UI_rollout",
+      "remediation": "tests/Feature/Stock/StockLowAlertV1ZeroEmissionSentinelTest — assert that across all StockLevel rows in V1 seed, NotifyStockLowOnStockLevelChanged emits zero Log::warning. Already partially covered by StockRuptureAlertListenerSentinelTest (no double-broadcast) but not by an emission-count sentinel."
+    },
+    {
+      "id": "A1-F05",
+      "severity": "INFO",
+      "title": "All 5 session artifacts validated GREEN — KdsOrderRecalled / outbox / stock-low / eodSynthesis / RefundWithCounterEntry",
+      "evidence": "Mapped EventServiceProvider entries for KdsOrderRecalled (line 165-166), StockLevelChanged (line 288-291). Verified dispatch sites (KitchenDisplaySystemOrderService:371 for KDS recall, StockService:145+447 for stock change). DashboardService::eodSynthesis present at line 546 + caller DashboardController:222 (PDF chain :228). RefundWithCounterEntryService intact at 406 LOC, NF525 mirror-order pattern preserved, sole HTTP caller PosOrderController:47.",
+      "impact": "no_action_required"
+    }
+  ]
+}

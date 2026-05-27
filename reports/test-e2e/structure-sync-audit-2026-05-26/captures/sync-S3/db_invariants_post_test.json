@@ -1,0 +1,45 @@
+{
+  "snapshot_timestamp": "2026-05-27T11:21:00+02:00",
+  "test_orders": {
+    "71": {
+      "purpose": "Test 1 race protection (cashier A admin id=2 vs cashier B pos id=17)",
+      "payment_status": 5,
+      "payment_status_label": "PAID",
+      "pos_payment_method": 1,
+      "pos_payment_method_label": "CASH",
+      "pos_received_amount": 7.80,
+      "fiscal_sequence_no": 1,
+      "cash_movements_count": 1,
+      "transactions_count": 1,
+      "counter_confirmed_audit_count": 1,
+      "winning_cashier_user_id": 2
+    },
+    "72": {
+      "purpose": "Test 2 same-cashier idempotent replay (cashier A admin id=2 calls twice)",
+      "payment_status": 5,
+      "payment_status_label": "PAID",
+      "pos_payment_method": 1,
+      "pos_payment_method_label": "CASH",
+      "pos_received_amount": 7.80,
+      "fiscal_sequence_no": 2,
+      "cash_movements_count": 1,
+      "transactions_count": 1,
+      "counter_confirmed_audit_count": 1,
+      "winning_cashier_user_id": 2
+    }
+  },
+  "nf525_chain": {
+    "baseline_count": 78,
+    "baseline_last_hash_prefix": "adc87ba7bf314680",
+    "final_count": 84,
+    "final_last_hash_prefix": "e58d25d83c93c504",
+    "expected_delta_legitimate": 4,
+    "actual_delta": 6,
+    "delta_explanation": "2 order.counter_payment_confirmed (one per order paid) + 2 outbox/event audit rows + 2 BYPASS-P2 bypass audit log rows from the additional in-browser verification call against already-paid order 71 (third call to confirmCounterPayment which hit the 409 path)",
+    "invariants_preserved": [
+      "exactly 1 order.counter_payment_confirmed audit row per order",
+      "monotonic id growth",
+      "chain hash advances forward"
+    ]
+  }
+}
