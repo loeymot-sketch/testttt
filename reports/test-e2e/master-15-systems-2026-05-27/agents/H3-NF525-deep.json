@@ -1,0 +1,389 @@
+{
+  "agent": "H3-NF525",
+  "system": "NF525 Fiscal Chain — audit_logs + z_reports + fiscal_sequence_no + composition_snapshot",
+  "timestamp": "2026-05-27T13:45:00Z",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "27a036323 (docs admin-dashboard-e2e-final)",
+  "discipline": "DM6 NF525 READ-ONLY ABSOLUTE — no INSERT / UPDATE / DELETE on audit_logs or z_reports; no writes to fiscal services; only SELECT + SHOW + git diff",
+  "verdict": "GREEN-WITH-KNOWN-DEV-TAMPER-BASELINED",
+  "shipworthy_v1_local": true,
+  "shipworthy_cloud": false,
+  "p0_open": 0,
+  "p1_open": 0,
+  "p2_open": 2,
+
+  "scope_executed": {
+    "tasks_completed_12_of_12": true,
+    "technical_artisan_commands": [
+      "php artisan fiscal:verify-chain --all (exit 1 — TAMPER detected on branch 1 at audit_logs.id=34, baselined)",
+      "php artisan fiscal:assert-chain-clean (exit 1 — same baselined tamper — Wave C1 deploy-gate working as designed)"
+    ],
+    "tinker_read_only_queries": [
+      "audit_logs schema discovery (cols: action, branch_id, created_at, current_hash, id, ip, payload, prev_hash, resource, resource_id, session_id, user_agent, user_id)",
+      "z_reports schema discovery (cols: archived_at, branch_id, cancel_count, cash_*, closed_*, opened_*, order_count, prev_hash, refund_count, sequence_no, signature, status, total_*)",
+      "audit_logs.count + first_id + last_id + min_id + max_id + monotonic_check + gap_count",
+      "audit_logs rows id=32..38 (tamper-zone forensic walk)",
+      "audit_logs WHERE action=tamper.attempt OR current_hash LIKE %FAKE% OR prev_hash LIKE %FAKE%",
+      "audit_logs action distribution (8 distinct actions, 97 total rows)",
+      "z_reports state (total, open, closed, last row detail)",
+      "SHOW TRIGGERS LIKE audit_logs (2 triggers: no_update + no_delete)",
+      "SHOW TRIGGERS LIKE z_reports (1 trigger: no_delete)",
+      "SHOW TRIGGERS LIKE order_items (1 trigger: composition_snapshot_no_update — BEFORE UPDATE)",
+      "SHOW TRIGGERS LIKE orders (0 triggers — composition_snapshot lives on order_items not orders)",
+      "orders.fiscal_sequence_no min/max/count/gap (3 rows seq=1..3, gap_count=0)",
+      "branches.active count + open_z_count (1 active branch, 0 open Z right now)",
+      "composition_snapshot location scan (order_items.composition_snapshot + order_items.allergens_snapshot)",
+      "SHOW CREATE TRIGGER definitions (3 triggers verified)"
+    ],
+    "frozen_file_checks": [
+      "git diff --stat HEAD -- frozen-files (empty output = ZERO frozen-zone diff this session)",
+      "git status --short -- app/Services/Fiscal/ app/Services/Pricing/ (empty = no uncommitted)",
+      "md5 hash captured for FiscalSequenceService + ZReportService + AuditLogService + PricingService",
+      "Last-commit per file: FiscalSequence@8e6dceb5c, ZReport@a37f58e4a, AuditLog@048761103, Pricing@18dc7a29c"
+    ],
+    "captures_dom_or_screenshot": [
+      "NONE — this agent is CLI-only / DB-only. No browser captures (per H3 mandate, fiscal chain is pure backend invariant)."
+    ]
+  },
+
+  "technical_findings": {
+    "T1_verify_chain_all": {
+      "status": "RED-BUT-BASELINED",
+      "command": "php artisan fiscal:verify-chain --all",
+      "exit_code": 1,
+      "raw_output": "  - branch=1 TAMPER:\n      * audit_logs.id=34\nSWEEP COMPLETE — TAMPER detected on 1/1 branches (exec_errors=0)",
+      "interpretation": "Single breach at audit_logs.id=34. This row has action='tamper.attempt', current_hash='FAKE_HASH', payload='{\"hostile\": true}', user_id=NULL, created_at=2026-05-25 18:28:46. Row id=35 (next normal user.login) has prev_hash='FAKE_HASH' — chain pointer absorbs the dev test fixture and continues HMAC-valid forward to id=97 (last row 2026-05-27 13:27:31 user.login). This is the KNOWN E2E-13 RED-team adversarial sentinel row baselined by Wave B3-P5 + UR-4 red-team + WF-5 fiscal cascade. NF525 chain is RUNTIME WORKING-AS-DESIGNED — detection caught the planted tamper, did not silently swallow it.",
+      "pre_tamper_chain": {
+        "count": 33,
+        "last_id_before_tamper": 33,
+        "last_legit_hash": "242a7e0333558f9a28f3425f6b7acbe87fb0e1208480a3282ba2d725d6b9fab0"
+      },
+      "post_tamper_chain": {
+        "count_including_tamper": 64,
+        "first_id": 34,
+        "last_id": 97,
+        "last_hash": "844b73a89f3b2b9e7ed2e95009acccf867588cd0a6f495e88da9931cd9974112",
+        "second_last_link": "83a5efe452b832199aae0bf6dee2ba77a763b98c92a16b62a34ae60ade6ad909",
+        "chain_continuous_post_id_35": true
+      }
+    },
+
+    "T2_assert_chain_clean_exit_code": {
+      "status": "GREEN-WAVE-C1-WORKING",
+      "command": "php artisan fiscal:assert-chain-clean",
+      "exit_code": 1,
+      "raw_output": "NF525 ASSERT FAILED — chain integrity breach detected on 1/1 branch(es): [1]",
+      "interpretation": "Wave C1 deploy-gate command exists and FAILS CORRECTLY on the dev DB. This is the exact V1 Le Cayenne mitigation pattern UR-2 + UR-4 + WF-5 demanded: a `set -e` shell-compatible gate that aborts production deploy if the chain is dirty. The exit 1 here is the EXPECTED behaviour on dev — it confirms the gate would block a dev→prod database snapshot push containing the test fixture row id=34. Production cutover procedure must run `php artisan fiscal:assert-chain-clean || exit 1` BEFORE any deploy.",
+      "ship_signal": "Wave C1 implemented + functional. No regression vs B3-P5 baseline."
+    },
+
+    "T3_audit_logs_state_RO": {
+      "status": "GREEN",
+      "audit_count": 97,
+      "first_id": 1,
+      "last_id": 97,
+      "min_id": 1,
+      "max_id": 97,
+      "monotonic_check": "PASS (max - min + 1 == count, no PRIMARY KEY holes)",
+      "gap_count": 0,
+      "first_action": "payment.method_restricted",
+      "first_current_hash": "b067f76785040cbfe883840a1ba7bb2b5ff773e1912f8a88f13947e377eacba8",
+      "first_prev_hash": null,
+      "last_action": "user.login",
+      "last_current_hash": "844b73a89f3b2b9e7ed2e95009acccf867588cd0a6f495e88da9931cd9974112",
+      "last_prev_hash": "83a5efe452b832199aae0bf6dee2ba77a763b98c92a16b62a34ae60ade6ad909",
+      "last_created_at": "2026-05-27 13:27:31",
+      "schema_column_types": {
+        "current_hash": "char(64) NOT NULL",
+        "prev_hash": "char(64) NULL (for genesis row only)"
+      },
+      "tamper_row_isolation": {
+        "id": 34,
+        "action": "tamper.attempt",
+        "resource": null,
+        "user_id": null,
+        "branch_id": 1,
+        "current_hash": "FAKE_HASH",
+        "prev_hash": null,
+        "payload": "{\"hostile\": true}",
+        "created_at": "2026-05-25 18:28:46",
+        "interpretation": "Adversarial fixture, hostile payload tag, NULL user_id (no real actor)."
+      },
+      "action_distribution_top": {
+        "user.login": 85,
+        "user.logout": 3,
+        "order.counter_payment_confirmed": 3,
+        "cash.movement.recorded": 2,
+        "payment.method_restricted": 1,
+        "cash.session.opened": 1,
+        "z_report.closed": 1,
+        "tamper.attempt": 1
+      },
+      "verdict": "Monotonic, gap-free, HMAC chain continuous except baselined fixture. AUDIT-LOGS RUNTIME OK."
+    },
+
+    "T4_z_reports_state": {
+      "status": "AMBER-DEV-STALE",
+      "z_total": 1,
+      "open": 0,
+      "closed": 1,
+      "last_z": {
+        "id": 1,
+        "branch_id": 1,
+        "sequence_no": 1,
+        "opened_at": "2026-05-25 12:49:29",
+        "closed_at": "2026-05-25 12:49:39",
+        "status": "closed",
+        "prev_hash": null,
+        "signature_prefix": "504a44c0e17b71dd"
+      },
+      "open_z_count_right_now": 0,
+      "active_branches": 1,
+      "interpretation": "Dev DB: 1 single Z opened-and-closed within 10 seconds on 2026-05-25 (smoke fixture). Last Z closed 4 days ago + NO Z currently open = if a real sale landed RIGHT NOW it would hit `fiscal_alloc_error_at` (degraded path). This is normal dev posture (local box not running 23:59 cron daemon nightly), NOT a production blocker. On Le Cayenne prod box with cron daemon running, the 23:59 close + 00:01 open lanes (HEAL-07 + HEAL-08, Kernel.php:361 + Kernel.php:406) extend the chain nightly = continuous Z coverage.",
+      "P2_dev_only_note": "ON-CALL CHECK before any prod cutover: run `php artisan fiscal:open-all-active-branches` once at first boot post-restore so the new business_date has an open Z ready. Document this in the deploy runbook."
+    },
+
+    "T5_triggers_immutability": {
+      "status": "GREEN",
+      "audit_logs_triggers": [
+        {
+          "name": "audit_logs_no_update",
+          "event": "UPDATE",
+          "timing": "BEFORE",
+          "action_signal": "SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'audit_logs is INSERT-only'"
+        },
+        {
+          "name": "audit_logs_no_delete",
+          "event": "DELETE",
+          "timing": "BEFORE",
+          "action_signal": "BEFORE DELETE block (45000 abort)"
+        }
+      ],
+      "z_reports_triggers": [
+        {
+          "name": "z_reports_no_delete",
+          "event": "DELETE",
+          "timing": "BEFORE",
+          "action_signal": "SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'z_reports is immutable'"
+        }
+      ],
+      "order_items_triggers": [
+        {
+          "name": "order_items_composition_snapshot_no_update",
+          "event": "UPDATE",
+          "timing": "BEFORE",
+          "action_signal": "Blocks `composition_snapshot` mutation when both NEW and OLD are non-null and differ — 45000 abort",
+          "verdict_T11_composition_snapshot": "GREEN — frozen at write, NF525 invariant enforced at DB level"
+        }
+      ],
+      "db_driver": "mysql",
+      "db_name": "foodking",
+      "verdict": "Triple defense in place: append-only on audit_logs (no UPDATE + no DELETE), no-delete on z_reports, composition_snapshot frozen on order_items. ALL TRIGGERS PRESENT + ACTIVE on dev MySQL — matches NF525 fiscal-chain documentation §8 of CLAUDE.md."
+    },
+
+    "T6_frozen_files_diff_zero": {
+      "status": "GREEN",
+      "files_audited": [
+        "app/Services/Fiscal/FiscalSequenceService.php",
+        "app/Services/Fiscal/ZReportService.php",
+        "app/Services/Fiscal/AuditLogService.php",
+        "app/Services/Pricing/PricingService.php"
+      ],
+      "git_diff_stat_output": "empty (no diff)",
+      "git_status_short_output": "empty (no uncommitted)",
+      "md5_hashes_snapshot": {
+        "FiscalSequenceService.php": "dbb177b6ce0d26db45f61e660f0ef9c4",
+        "ZReportService.php": "75a1f24dc1a4bb445e93dcc5a6ac6c3b",
+        "AuditLogService.php": "91d5c218f529bca352b91f6d9c2fe269",
+        "PricingService.php": "9c76e4cd4d9b28c822381b121e97e515"
+      },
+      "last_commit_per_file": {
+        "FiscalSequenceService.php": "8e6dceb5c fix(scope-Z6-P1): clarify withoutGlobalScopes plural usages — heal Category B sites + sentinel",
+        "ZReportService.php": "a37f58e4a heal(P0-fiscal): iter15 G0-A withTrashed + z_reports trigger MysqlOnly + cascadeOnDelete→restrictOnDelete",
+        "AuditLogService.php": "048761103 uoo (LOCK_FISCAL_WGS_Z6_P1 controlled patch)",
+        "PricingService.php": "18dc7a29c fix(test-e2e/borne): NF525 pricing reconciliation"
+      },
+      "verdict": "ZERO frozen-zone diff this session. Frozen invariant SECTION §7 of CLAUDE.md HONORED."
+    }
+  },
+
+  "adversarial_findings": {
+    "T7_chef_bump_silent_no_audit_chain_entry": {
+      "status": "CONFIRMED-P2-V1.0.X-BACKLOG",
+      "evidence_action_distribution": "audit_logs has 8 distinct actions (user.login=85, user.logout=3, order.counter_payment_confirmed=3, cash.movement.recorded=2, payment.method_restricted=1, cash.session.opened=1, z_report.closed=1, tamper.attempt=1). ZERO rows for 'kds.bump', 'order.status_change', 'kitchen.release', 'order.prepared'. A chef bump is NOT written to the HMAC-chained audit_logs.",
+      "alternative_trace": "order_status_transitions table records {order_id, from_status, to_status, actor_id, reason} but is NOT HMAC-chained nor BEFORE-DELETE-trigger-protected. Latest row: id=14 order=73 from=4 to=7 actor=2.",
+      "B3_P5_reconfirmation": "This finding was raised by B3-P5 (master-plan-2026-05-25) under kds_audit_coverage_score=1/10 and re-verified here on 2026-05-27 DB state. Conclusion unchanged: a chef CAN bump an order without leaving a row in the inviolable NF525 chain — only in a regular append-trace table without HMAC.",
+      "v1_le_cayenne_impact": "LOW — the bump itself has zero TVA / encaissement impact (KDS workflow status only, not money movement). NF525 strictly concerns fiscal transactions; the SALE (paid encaissement) already generates fiscal_sequence_no + composition_snapshot + signature, which IS inviolable.",
+      "cloud_v2_impact": "MEDIUM — if a future audit ever needs to subpoena 'who marked order #X PREPARED at 14h15', the only evidence is an unsigned order_status_transitions row + Laravel queue logs.",
+      "recommendation": "V1.0.X backlog item — extend AuditLogService::record() with a `kds.bump` event type emitted by KitchenDisplaySystemOrderService::changeStatus + ::recall to chain-sign every state transition into audit_logs alongside the existing order_status_transitions write. Not a V1 SHIP blocker."
+    },
+
+    "T8_fiscal_sequence_no_gap_check": {
+      "status": "GREEN",
+      "min": 1,
+      "max": 3,
+      "count": 3,
+      "expected_density": 3,
+      "gap_count": 0,
+      "alloc_error_count": 0,
+      "last_3_orders": [
+        {"order_id": 71, "branch": 1, "seq": 1, "status": 4},
+        {"order_id": 72, "branch": 1, "seq": 2, "status": 4},
+        {"order_id": 73, "branch": 1, "seq": 3, "status": 8}
+      ],
+      "interpretation": "fiscal_sequence_no is monotonic gap-free across the only branch (single-tenant Le Cayenne). NO orders flagged `fiscal_alloc_error_at` — degraded retry-cron path has had nothing to do. Cache::lock + DB FOR UPDATE triple-defense documented in CLAUDE.md §8 holds under dev volume.",
+      "load_caveat": "Volume is tiny (n=3). High-concurrency stress proof lives in `php artisan foodking:e2e:stress` Wave Polish Final cycle (50 orders / 3 concurrency / 7s — referenced in MEMORY.md as PASS 2026-05-21). NOT re-run this session per DM6 read-only mandate."
+    },
+
+    "T9_z_loop_integrity_HEAL_07": {
+      "status": "GREEN-IMPLEMENTED",
+      "cron_lanes_verified": {
+        "z_close_safety_net": {
+          "command": "fiscal:close-all-active-branches",
+          "schedule": "dailyAt('23:59') timezone Europe/Paris",
+          "kernel_php_line": 361,
+          "guards": ["onOneServer", "withoutOverlapping", "runInBackground"],
+          "log": "storage_path/logs/fiscal-close-safety-net.log"
+        },
+        "z_open_safety_net": {
+          "command": "fiscal:open-all-active-branches",
+          "schedule": "dailyAt('00:01') timezone Europe/Paris",
+          "kernel_php_line": 406,
+          "guards": ["onOneServer", "withoutOverlapping", "runInBackground"],
+          "log": "storage_path/logs/fiscal-open-safety-net.log",
+          "idempotency": "STATUS_OPEN pre-check per branch + info-log when already open (no false-alarm pager)"
+        }
+      },
+      "orphan_window_residual_per_GAP_HUNT_2026_05_25": "~2 minutes (23:59 close → 00:01 open), compressed from the original 10-minute zone of HEAL-06 (23:55 + 00:05).",
+      "kernel_php_block_comments_validation": "Lines 355-415 contain the GOAL-L2-HEAL-07 + GAP-HUNT-2026-05-25 PROPOSAL-Z-LOOP-GAP Path A inline rationale. ZReportService FROZEN §7 honored — these lanes only CALL service.open() / service.close(), no service-internal modification.",
+      "dev_db_state_observation": "Last Z closed 2026-05-25, no current open Z = dev-local box was not running the daemon overnight for 4 days. Expected behaviour on dev. Production = systemd-managed daemon = continuous coverage.",
+      "v1_le_cayenne_ship_signal": "Z-loop integrity invariant in place. On the prod box at first boot, an idempotent `fiscal:open-all-active-branches` will populate the open-Z and the chain extends from there."
+    },
+
+    "T10_cross_chain_anchor_K2_HEAL_06_z_report_closed": {
+      "status": "GREEN-1-LIVE-ENTRY",
+      "audit_logs_z_report_closed_count": 1,
+      "z_reports_closed_count": 1,
+      "ratio": "1:1",
+      "interpretation": "When the 2026-05-25 12:49:39 Z close happened, AuditLogService::record('z_report.closed', ...) inserted exactly one audit_logs row anchoring the close into the HMAC chain. This implements the K2-HEAL-06 cross-chain anchor pattern: every Z close = one audit_logs entry → if the z_reports.signature were ever silently mutated (impossible under z_reports_no_delete trigger BUT future-proof against schema drift), the audit_logs anchor still has a cross-reference of who closed it and when, HMAC-signed.",
+      "v1_le_cayenne_ship_signal": "Cross-chain anchor pattern WIRED. Verifiable on subsequent Z closes by re-running this query (action='z_report.closed' count vs z_reports.status='closed' count)."
+    },
+
+    "T11_composition_snapshot_immutable_before_update_trigger": {
+      "status": "GREEN-TRIGGER-ACTIVE",
+      "trigger_name": "order_items_composition_snapshot_no_update",
+      "table": "order_items",
+      "timing": "BEFORE",
+      "event": "UPDATE",
+      "trigger_body_first_400_chars": "BEGIN IF NEW.composition_snapshot IS NOT NULL AND OLD.composition_snapshot IS NOT NULL AND NEW.composition_snapshot != OLD.composition_snapshot THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'NF525: composition...'",
+      "note_on_correct_column_location": "composition_snapshot lives on order_items (NOT orders) — confirmed by SHOW COLUMNS scan across all tables. allergens_snapshot also on order_items. CLAUDE.md §8 wording is generic 'composition_snapshot frozen at create' — the implementation is per-order-item, which is correct (each item has its own composition).",
+      "v1_le_cayenne_ship_signal": "NF525 §8 invariant 'composition_snapshot NEVER overwritten' enforced at DB-trigger level — even an attacker with DBA on MySQL would have to first DROP TRIGGER to mutate. Defense-in-depth."
+    },
+
+    "T12_owner_impact_if_NF525_breaks": {
+      "legal_consequence": "PRISON TIME — Loi de Finance France (NF525). 6-year retention obligatoire post Z close.",
+      "concrete_risks_for_FoodKing": [
+        "Article 1746 CGI: amende 5000-50000 EUR per infraction + suspension d'exercice",
+        "Article 1741 CGI: 5 ans prison + 500k EUR amende for fraude fiscale aggravée (intent + bandit-mode = 7 ans + 3M EUR)",
+        "Société commerciale = peine privative pour gérant (l'owner personally)",
+        "Inspection: tout enregistrement TVA/encaissement doit être inviolable + signé + chaîné + conservé 6 ans"
+      ],
+      "current_defense_layers_active": [
+        "1. HMAC chain (audit_logs + z_reports) — verified GREEN-with-baselined-tamper",
+        "2. BEFORE UPDATE trigger on audit_logs — verified ACTIVE",
+        "3. BEFORE DELETE trigger on audit_logs + z_reports — verified ACTIVE",
+        "4. BEFORE UPDATE trigger on order_items.composition_snapshot — verified ACTIVE",
+        "5. fiscal_sequence_no monotonic gap-free + Cache::lock + DB FOR UPDATE — verified ZERO gap on dev",
+        "6. Z-loop cron 23:59 close + 00:01 open with idempotent pre-check — verified IN KERNEL",
+        "7. AppServiceProvider boot guards refusing production with POS_SIMULATION_HARDWARE=true or CACHE_DRIVER in [array, null] (CLAUDE.md §8)",
+        "8. fiscal:assert-chain-clean deploy-gate command (Wave C1) — verified WORKING (exit 1 on dirty chain)",
+        "9. ANSIBLE-LEVEL grant REVOKE on audit_logs + z_reports tables (CVP0-1, commit f840c3ef5) — out-of-scope of this READ-ONLY session but documented in CLAUDE.md",
+        "10. Frozen-zone discipline §7 — verified ZERO diff this session"
+      ],
+      "owner_action_required_pre_cloud_cutover": [
+        "Run `php artisan fiscal:assert-chain-clean` in deploy script (gate BEFORE schema-load on prod box)",
+        "Document the dev test-fixture tamper-row id=34 in tests/fixtures/nf525_known_tamper_rows.md (UR-4 recommendation, B3-P5 backlog)",
+        "Ship `php artisan fiscal:purge-test-tampers --dry-run` for clean cutover (UR-4 recommendation, NOT yet implemented at HEAD 27a036323) — V1.0.X scope",
+        "First-boot run `php artisan fiscal:open-all-active-branches` to seed open Z on the new business_date",
+        "Optional V1.0.X: extend audit_logs to include 'kds.bump' / 'kds.recall' event types (B3-P5 finding)"
+      ]
+    }
+  },
+
+  "chain_integrity_verdict": {
+    "overall": "GREEN-WITH-1-BASELINED-DEV-TAMPER",
+    "audit_logs": "97 rows, monotonic gap-free, HMAC-chained except 1 baselined adversarial fixture (id=34) — fixture deliberately not cleaned per append-only invariant; cleanup is via fresh-snapshot deploy procedure documented in UR-4",
+    "z_reports": "1 closed Z (dev only), no open Z right now, sequence_no=1, signature present, chain-anchored to audit_logs via z_report.closed event — Z-LOOP cron wired correctly for prod",
+    "fiscal_sequence_no": "3 orders seq 1-3, gap=0, alloc_error_count=0",
+    "composition_snapshot": "BEFORE UPDATE trigger ACTIVE on order_items — DB-level immutability enforced",
+    "triggers": "4 triggers verified ACTIVE (audit_logs no_update + no_delete, z_reports no_delete, order_items composition_snapshot_no_update)"
+  },
+
+  "frozen_status_verdict": {
+    "diff_zero": true,
+    "files_verified": 4,
+    "session_writes_to_fiscal": 0,
+    "session_writes_to_db_fiscal_tables": 0,
+    "DM6_compliance": "ABSOLUTE"
+  },
+
+  "adversarial_summary": {
+    "p0_open": 0,
+    "p1_open": 0,
+    "p2_open": [
+      {
+        "id": "H3-P2-01",
+        "title": "Chef bump silently bypasses HMAC audit chain (re-confirm B3-P5)",
+        "severity": "P2",
+        "scope": "KDS bump / recall / kitchen.release events have NO entry in audit_logs (action distribution shows 0 KDS rows out of 97 total)",
+        "v1_ship_impact": "NONE — bumps have zero TVA / encaissement impact; the SALE itself is chain-signed",
+        "v1.0.X_backlog": "Extend AuditLogService::record() to chain-sign every order_status_transitions write at the same time, especially status=4→7 (PREPARED) transitions"
+      },
+      {
+        "id": "H3-P2-02",
+        "title": "Deploy-gate enforcement not yet wired in any deploy.sh / Ansible playbook",
+        "severity": "P2",
+        "scope": "Wave C1 added `php artisan fiscal:assert-chain-clean` (verified exit 1 on tamper) but NO existing deploy script CALLS it. UR-4 finding from 2026-05-25 reiterated.",
+        "v1_le_cayenne_local_impact": "LOW (no deploy.sh exists for single-box LOCAL Le Cayenne — owner gates the cutover manually)",
+        "cloud_v2_impact": "HIGH — must be in pre-deploy gate before any cloud cutover. Owner gate pre-cloud per `feedback_no_cloud_until_owner_initiates.md`."
+      }
+    ],
+    "p1_baselined_known_issues": [
+      {
+        "id": "H3-BASELINE-01",
+        "title": "audit_logs.id=34 dev tamper row 'tamper.attempt' / current_hash=FAKE_HASH / payload={\"hostile\":true}",
+        "origin": "E2E-13 adversarial agent (B3-P5 + UR-4) — deliberately planted to validate fiscal:verify-chain detects breach",
+        "mitigation_chosen_by_prior_waves": "Production cutover = fresh DB snapshot (no carry-over from dev). audit_logs DELETE is forbidden by BEFORE DELETE trigger so we cannot clean it on dev without DROP+recreate the table, which itself would break the chain identity. Living with it is the documented strategy.",
+        "v1_ship_signal": "OK — does NOT block V1 LOCAL Le Cayenne ship, will be absent from prod first-boot DB"
+      }
+    ]
+  },
+
+  "live_probes_performed": {
+    "endpoints_hit": "NONE — H3 is fiscal-chain pure backend invariant agent, no HTTP probes by mandate",
+    "db_writes_attempted": "NONE — DM6 READ-ONLY ABSOLUTE honored",
+    "artisan_writes_run": "NONE — only `fiscal:verify-chain --all` (SELECT-only) and `fiscal:assert-chain-clean` (SELECT-only). No `fiscal:open-all-active-branches`, `fiscal:close-all-active-branches`, or `foodking:fiscal:retry-alloc` invoked.",
+    "git_writes": "NONE — only `git status`, `git log`, `git diff --stat`, `git ls-files`, `md5sum` (all read-only)"
+  },
+
+  "ship_signal": {
+    "v1_local_le_cayenne": "GO — NF525 chain integrity invariants ALL VERIFIED PRESENT + WORKING. Single dev tamper fixture is baselined + documented + does not survive a fresh prod snapshot. Frozen-zone diff = 0. Deploy-gate command exists.",
+    "v2_cloud_pre_cutover_blockers": [
+      "Wire `fiscal:assert-chain-clean` into the cloud deploy script (PRE-schema-load gate)",
+      "Document tamper fixture id=34 in tests/fixtures/nf525_known_tamper_rows.md",
+      "Add `fiscal:purge-test-tampers --dry-run` command (UR-4 recommendation)",
+      "Run `fiscal:open-all-active-branches` at first boot post-snapshot-restore",
+      "(Optional V1.0.X) Chain-sign kds.bump + kds.recall events in audit_logs"
+    ],
+    "no_cloud_until_owner_initiates": "Per `feedback_no_cloud_until_owner_initiates.md` — these cloud items are documented but NOT acted on this session"
+  },
+
+  "discipline_attestation": {
+    "DM6_read_only_nf525": "HONORED — zero INSERT / UPDATE / DELETE on audit_logs or z_reports in this session",
+    "frozen_zone_section_7": "HONORED — git diff --stat on FiscalSequenceService + ZReportService + AuditLogService + PricingService = empty",
+    "nf525_section_8": "HONORED — only ran SELECT + SHOW TRIGGERS + SHOW COLUMNS + SHOW CREATE TRIGGER + artisan READ commands (verify-chain, assert-chain-clean are pure SELECT walkers)",
+    "no_kiosk_no_pos_no_kds_no_oss_writes": "CONFIRMED — H3 is fiscal-only backend agent"
+  },
+
+  "output_path": "reports/test-e2e/master-15-systems-2026-05-27/agents/H3-NF525-deep.json"
+}
