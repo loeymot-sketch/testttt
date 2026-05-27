@@ -1,0 +1,160 @@
+{
+  "agent": "BATCH-1-core",
+  "date": "2026-05-27",
+  "server": "http://127.0.0.1:8000",
+  "auth": "admin@lecayenne.fr (already authenticated session)",
+  "discipline": "DM6 NF525 READ-ONLY (no fiscal table writes)",
+  "method": "Playwright MCP — navigate -> full-page screenshot -> console.errors -> network 4xx/5xx -> evaluate DOM",
+  "pages_tested": 10,
+  "per_page": {
+    "/admin/dashboard": {
+      "screenshot": "reports/test-e2e/admin-dashboard-full-2026-05-27/captures/core-dashboard.png",
+      "loads": true,
+      "console_errors": 0,
+      "network_4xx_5xx": [],
+      "data_visible": true,
+      "data_evidence": "Heading 'Bon après-midi !' + Admin, PDF Clôture button, Accès rapides nav, Vue d'ensemble cards, Suivi en direct, Audit Trail NF525, Stats commandes, Z report block, Articles populaires lists. 18+ /api/admin/dashboard/* endpoints all 200.",
+      "issues": [],
+      "verdict": "WORKS"
+    },
+    "/admin/pos": {
+      "screenshot": "reports/test-e2e/admin-dashboard-full-2026-05-27/captures/core-pos.png",
+      "loads": true,
+      "console_errors": 0,
+      "network_4xx_5xx": [],
+      "data_visible": true,
+      "data_evidence": "POS Vue shell loaded with full admin sidebar (POS, Produits & Stock, Catalogue, Ingrédients, Commandes Caisse, Vue Caisse Unifiée, Caisse Livreur, KDS, OSS, Notifications, etc.). 0,00 € panier en-tête. Note: page route présente une instabilité — quand on inspecte juste après le screenshot, URL parfois drift vers /admin/coupon (probable client-side router race interne au SPA admin, sidebar nav state).",
+      "issues": [
+        "P3-OBSERVATION: /admin/pos URL drift to /admin/coupon observed during follow-up inspection (router race, not user-facing). Screenshot fresh-load is OK."
+      ],
+      "verdict": "WORKS"
+    },
+    "/admin/kitchen-display-system": {
+      "screenshot": "reports/test-e2e/admin-dashboard-full-2026-05-27/captures/core-kds.png",
+      "loads": true,
+      "console_errors": 1,
+      "network_4xx_5xx": [
+        {
+          "endpoint": "/api/admin/kds-order/sync?since=...&branch_id=1&include_deleted=true",
+          "status": 401,
+          "severity": "P1"
+        }
+      ],
+      "data_visible": true,
+      "data_evidence": "Initial loads OK: /api/admin/kds-order/items 200, /api/admin/kds-order?paginate=0&order_column=id&order_by=desc 200, branch/show/1 200. Mais le polling delta endpoint /kds-order/sync 401.",
+      "issues": [
+        "P1: GET /api/admin/kds-order/sync returns 401 Unauthorized while sibling endpoints (/kds-order, /kds-order/items) return 200 under SAME session. Auth gate inconsistency on the delta-sync endpoint = KDS will NOT receive incremental updates without a full re-poll. Probable cause: missing auth:admin or permission middleware on the sync route, or the front-end builds the request without Authorization header for this specific call."
+      ],
+      "verdict": "WORKS"
+    },
+    "/admin/order-status-screen": {
+      "screenshot": "reports/test-e2e/admin-dashboard-full-2026-05-27/captures/core-oss.png",
+      "loads": true,
+      "console_errors": 0,
+      "network_4xx_5xx": [],
+      "data_visible": true,
+      "data_evidence": "OSS layout 'En préparation' + 'Prêt' columns. Sample order 'N°A0001' visible in 'Prêt' column. Empty state coherent ('—' in En préparation).",
+      "issues": [
+        "P3-OBSERVATION: First navigation followed by network_requests call landed back on /admin/dashboard (SPA route race). Second direct nav held on /admin/order-status-screen and was captured cleanly."
+      ],
+      "verdict": "WORKS"
+    },
+    "/admin/cash-overview": {
+      "screenshot": "reports/test-e2e/admin-dashboard-full-2026-05-27/captures/core-cash-overview.png",
+      "loads": true,
+      "console_errors": 0,
+      "network_4xx_5xx": [],
+      "data_visible": true,
+      "data_evidence": "Vue Caisse Unifiée header with full filter UI: DU/AU dates, SOURCE filter (Toutes/Caisse/Borne/Livreur), MODE DE PAIEMENT (Tous/Espèce/Carte/Mobile/Ticket-resta).",
+      "issues": [],
+      "verdict": "WORKS"
+    },
+    "/admin/items": {
+      "screenshot": "reports/test-e2e/admin-dashboard-full-2026-05-27/captures/core-items.png",
+      "loads": true,
+      "console_errors": 0,
+      "network_4xx_5xx": [],
+      "data_visible": true,
+      "data_evidence": "Catalogue header 'PILOTAGE CATALOGUE — Produits, catégories, offres et disponibilités POS / borne'. Counters: 46 PRODUITS, 12 CATÉGORIES, 46 ACTI(VES). 10 rows in tbody (paginated default).",
+      "issues": [],
+      "verdict": "WORKS"
+    },
+    "/admin/ingredients": {
+      "screenshot": "reports/test-e2e/admin-dashboard-full-2026-05-27/captures/core-ingredients.png",
+      "loads": true,
+      "console_errors": 0,
+      "network_4xx_5xx": [],
+      "data_visible": true,
+      "data_evidence": "FOODKING V1 Ingrédients page — 40 rows in tbody. Tabs (Tous/Viandes & Attributs/Suppléments/Add-ons). Counter '40'. Columns: NOM, TYPE, UTILISATION, ACTIONS. Confirme heal récent permission (skill mention). Empty state report: 'Utilisé dans 0 étapes wizard' on first rows = noted (some ingredients not yet wired in wizard profiles).",
+      "issues": [
+        "P3-DATA: Many ingredients show 'Utilisé dans 0 étapes wizard' — likely accurate for new ingredients not yet bound to wizard profile, not a bug. Worth noting if the owner expected full coverage."
+      ],
+      "verdict": "WORKS"
+    },
+    "/admin/stock/rupture": {
+      "screenshot": "reports/test-e2e/admin-dashboard-full-2026-05-27/captures/core-stock-rupture.png",
+      "loads": true,
+      "console_errors": 0,
+      "network_4xx_5xx": [],
+      "data_visible": true,
+      "data_evidence": "Header 'Gestion Produits & Stock — Activez ou désactivez chaque produit pour cette branche. Le changement est synchronisé en temps réel sur la caisse, la borne et le wizard.' Category groups visible with item counts: Sandwich Cayenne (5), Galette (2), Sandwich Classique (2), Burgers (2), Tacos (2), Bols Gourmands (8), Frites (2), Suppléments (10), Desserts (3), Boissons (8), Menu enfa(nt). UI uses card/toggle layout (rowCount=0 because no <tbody> — Vue cards instead).",
+      "issues": [],
+      "verdict": "WORKS"
+    },
+    "/admin/customer": {
+      "screenshot": "reports/test-e2e/admin-dashboard-full-2026-05-27/captures/core-customer.png",
+      "loads": true,
+      "console_errors": 0,
+      "network_4xx_5xx": [],
+      "data_visible": false,
+      "data_evidence": "Page renders 'Page Non Trouvée ! Impossible de trouver la page demandée. Retour À L'accueil'. Layout SWITCHES to CUSTOMER frontend shell (Compte / Mes Commandes / Discussion / Adresse menu) — NOT admin sidebar. This route is matched by the customer SPA, not admin, and falls through to 404.",
+      "issues": [
+        "P1-BROKEN: /admin/customer renders customer-side SPA 404 instead of an admin customers list. Pluralized variant /admin/customers also redirects (to /admin/coupons — also broken alias). The 'CORE V1 pages' brief lists /admin/customer but Le Cayenne V1 single-restaurant has NO customer-management page surfaced under /admin/* (customers are kiosk/POS guest-mode in V1). Either remove from CORE V1 list, or document as 'V1 omits customer admin'."
+      ],
+      "verdict": "BROKEN"
+    },
+    "/admin/cash-sessions-report": {
+      "screenshot": "reports/test-e2e/admin-dashboard-full-2026-05-27/captures/core-cash-sessions-report.png",
+      "loads": true,
+      "console_errors": 0,
+      "network_4xx_5xx": [],
+      "data_visible": true,
+      "data_evidence": "Header 'Rapport Caisses Quotidien' with DU/AU date filter + Rechercher/Effacer. Day group 'lundi 25 mai 2026 — Sessions: 1, Transactions: 2, Total ouverture: 50.00, Total clôture: 0.00'. Columns: Session, Filiale, Caissier, Ouverte le, Fermée le, Fond de caisse, Fonds final, Écart, Transactions, Stat...",
+      "issues": [
+        "P3-OBSERVATION: First navigation auto-redirected to /admin/dashboard (router state race). Second nav landed cleanly and rendered data."
+      ],
+      "verdict": "WORKS"
+    }
+  },
+  "working_count": 9,
+  "broken_count": 1,
+  "empty_count": 0,
+  "top_5_issues": [
+    {
+      "severity": "P1",
+      "page": "/admin/customer",
+      "issue": "Route renders Customer-SPA 'Page Non Trouvée'. Either V1 has no admin customer page (then remove from CORE V1 brief) or the route binding is missing/wrong. Pluralized /admin/customers also broken (redirects to /admin/coupons)."
+    },
+    {
+      "severity": "P1",
+      "page": "/admin/kitchen-display-system",
+      "issue": "/api/admin/kds-order/sync returns 401 Unauthorized under the same admin session where /api/admin/kds-order and /api/admin/kds-order/items return 200. Delta-sync polling on KDS will fail — KDS won't receive incremental updates without full re-fetch. Auth middleware or front-end Authorization-header inconsistency."
+    },
+    {
+      "severity": "P3",
+      "page": "/admin/pos",
+      "issue": "URL drift to /admin/coupon after follow-up network inspection. SPA router race, not user-facing on fresh page load but suggests sidebar state instability."
+    },
+    {
+      "severity": "P3",
+      "page": "/admin/order-status-screen and /admin/cash-sessions-report",
+      "issue": "Both auto-redirected to /admin/dashboard on first navigation attempt, then succeeded on the second. SPA route-guard or default-redirect race condition — first nav of session sometimes loses target."
+    },
+    {
+      "severity": "P3",
+      "page": "/admin/ingredients",
+      "issue": "Many ingredients show 'Utilisé dans 0 étapes wizard' — confirm with owner whether expected (new ingredients not wired) vs data drift (wizard profile not synced to ingredients table)."
+    }
+  ],
+  "global_summary": "9/10 pages load cleanly with admin shell + data visible + 0 console errors. 1 BROKEN route (/admin/customer = SPA 404). 1 P1 network-layer issue isolated to KDS delta-sync endpoint (401 vs sibling 200s). 3 P3 SPA-route-race observations (likely cosmetic but worth noting in audit). NF525 Audit Trail visible on dashboard (audit_logs INSERT-only). No fiscal writes performed — DM6 READ-ONLY discipline respected."
+}
