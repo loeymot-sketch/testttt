@@ -6090,7 +6090,7 @@ var KdsSyncService = /*#__PURE__*/function () {
     value: function () {
       var _forceSync = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
         var _this = this;
-        var signal, branchQuery, response, payload, previousState, gatedIds, orders, syncPayload, _t;
+        var signal, branchQuery, headers, response, payload, previousState, gatedIds, orders, syncPayload, _t;
         return _regenerator().w(function (_context) {
           while (1) switch (_context.p = _context.n) {
             case 0:
@@ -6110,40 +6110,50 @@ var KdsSyncService = /*#__PURE__*/function () {
               signal = this._abortController.signal;
               _context.p = 2;
               branchQuery = this._branchId !== null && this._branchId !== undefined ? "&branch_id=".concat(encodeURIComponent(this._branchId)) : '';
-              _context.n = 3;
+              headers = this._authHeaders(); // [HEAL 2026-05-27] Skip polling tick if auth token not yet hydrated
+              // from Vuex/localStorage. Avoids 401 on the very first poll fired
+              // before Vuex-persistedstate has restored authToken on page load.
+              // Next tick will retry naturally when token is available.
+              if (headers.Authorization) {
+                _context.n = 3;
+                break;
+              }
+              return _context.a(2, null);
+            case 3:
+              _context.n = 4;
               return this.fetchFn("/api/admin/kds-order/sync?since=".concat(encodeURIComponent(this._lastSince)).concat(branchQuery, "&include_deleted=true"), {
                 method: 'GET',
                 credentials: 'same-origin',
-                headers: this._authHeaders(),
+                headers: headers,
                 signal: signal
               });
-            case 3:
+            case 4:
               response = _context.v;
               if (!(signal.aborted || !this._started)) {
-                _context.n = 4;
+                _context.n = 5;
                 break;
               }
               return _context.a(2, null);
-            case 4:
-              if (response.ok) {
-                _context.n = 6;
-                break;
-              }
-              _context.n = 5;
-              return this._handleHttpError(response);
             case 5:
-              return _context.a(2, null);
+              if (response.ok) {
+                _context.n = 7;
+                break;
+              }
+              _context.n = 6;
+              return this._handleHttpError(response);
             case 6:
-              _context.n = 7;
-              return response.json();
+              return _context.a(2, null);
             case 7:
+              _context.n = 8;
+              return response.json();
+            case 8:
               payload = _context.v;
               if (!(signal.aborted || !this._started)) {
-                _context.n = 8;
+                _context.n = 9;
                 break;
               }
               return _context.a(2, null);
-            case 8:
+            case 9:
               this._consecutive5xx = 0;
               previousState = this._state;
               this._setState(KDS_SYNC_STATE.ACTIVE);
@@ -6183,15 +6193,15 @@ var KdsSyncService = /*#__PURE__*/function () {
               this._emit('sync', syncPayload);
               this._recomputeCadence('post_sync');
               return _context.a(2, payload);
-            case 9:
-              _context.p = 9;
+            case 10:
+              _context.p = 10;
               _t = _context.v;
               if (!((_t === null || _t === void 0 ? void 0 : _t.name) === 'AbortError')) {
-                _context.n = 10;
+                _context.n = 11;
                 break;
               }
               return _context.a(2, null);
-            case 10:
+            case 11:
               this._emit('error', {
                 status: null,
                 message: (_t === null || _t === void 0 ? void 0 : _t.message) || 'Sync failed',
@@ -6213,7 +6223,7 @@ var KdsSyncService = /*#__PURE__*/function () {
               // is already scheduled.
               return _context.a(2, null);
           }
-        }, _callee, this, [[2, 9]]);
+        }, _callee, this, [[2, 10]]);
       }));
       function forceSync() {
         return _forceSync.apply(this, arguments);

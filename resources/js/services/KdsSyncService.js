@@ -134,10 +134,18 @@ export class KdsSyncService {
 
         try {
             const branchQuery = this._branchId !== null && this._branchId !== undefined ? `&branch_id=${encodeURIComponent(this._branchId)}` : '';
+            const headers = this._authHeaders();
+            // [HEAL 2026-05-27] Skip polling tick if auth token not yet hydrated
+            // from Vuex/localStorage. Avoids 401 on the very first poll fired
+            // before Vuex-persistedstate has restored authToken on page load.
+            // Next tick will retry naturally when token is available.
+            if (!headers.Authorization) {
+                return null;
+            }
             const response = await this.fetchFn(`/api/admin/kds-order/sync?since=${encodeURIComponent(this._lastSince)}${branchQuery}&include_deleted=true`, {
                 method: 'GET',
                 credentials: 'same-origin',
-                headers: this._authHeaders(),
+                headers,
                 signal,
             });
 

@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Sidebar V1 — Que veux-tu garder dans ton resto ? · Le Cayenne</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0a0a0a;color:#fff;line-height:1.5;padding:20px;padding-bottom:140px}
+
+  .header{max-width:1400px;margin:0 auto 24px}
+  .header h1{font-size:32px;color:#F4501E;margin-bottom:8px;font-weight:900}
+  .header .subtitle{color:#FFCB05;font-size:15px;margin-bottom:16px}
+  .header .meta{color:#999;font-size:13px}
+
+  .vision-box{max-width:1400px;margin:0 auto 24px;background:linear-gradient(135deg,#1a1a1a,#252525);padding:24px;border-radius:12px;border-left:4px solid #F4501E}
+  .vision-box h2{color:#F4501E;font-size:20px;margin-bottom:12px}
+  .vision-box p{color:#ddd;margin-bottom:10px;font-size:14px}
+  .vision-box strong{color:#FFCB05}
+  .vision-box .verdict{color:#1AB759;font-weight:bold;margin-top:12px;font-size:15px}
+
+  .stats-banner{max-width:1400px;margin:0 auto 24px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px;background:#1a1a1a;padding:16px;border-radius:12px;border:1px solid #333}
+  .stat-cell{text-align:center;padding:8px}
+  .stat-cell .label{font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px}
+  .stat-cell .value{font-size:26px;font-weight:900;margin-top:4px}
+  .stat-cell.keep .value{color:#1AB759}
+  .stat-cell.hide .value{color:#FFCB05}
+  .stat-cell.remove .value{color:#DC2626}
+  .stat-cell.pending .value{color:#999}
+  .stat-cell.total .value{color:#F4501E}
+
+  .filters{max-width:1400px;margin:0 auto 24px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .filter-group{display:flex;gap:6px;align-items:center;background:#1a1a1a;padding:8px 12px;border-radius:8px;border:1px solid #333}
+  .filter-group .label{font-size:11px;color:#999;text-transform:uppercase;margin-right:8px}
+  .chip{background:#252525;color:#fff;border:1px solid #444;padding:5px 12px;border-radius:16px;cursor:pointer;font-size:12px;transition:all 0.2s}
+  .chip:hover{border-color:#F4501E}
+  .chip.active{background:#F4501E;border-color:#F4501E;color:#fff}
+  .search-box{background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;min-width:240px;flex:1;max-width:300px}
+  .reset-btn{background:transparent;border:1px solid #666;color:#999;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px}
+  .reset-btn:hover{border-color:#F4501E;color:#F4501E}
+
+  .section-divider{max-width:1400px;margin:36px auto 16px;font-size:20px;color:#FFCB05;font-weight:bold;border-bottom:2px solid #FFCB05;padding-bottom:8px;display:flex;align-items:center;gap:10px}
+  .section-divider .icon{font-size:24px}
+  .section-divider .hint{font-size:13px;color:#999;font-weight:normal;margin-left:auto}
+
+  .cards{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px}
+  .card{background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:18px;position:relative;transition:all 0.2s;display:flex;flex-direction:column}
+  .card:hover{border-color:#F4501E;transform:translateY(-2px)}
+  .card.keep-vote{border-left:4px solid #1AB759;background:#1a2a1a}
+  .card.hide-vote{border-left:4px solid #FFCB05;background:#2a2614}
+  .card.remove-vote{border-left:4px solid #DC2626;background:#2a1a1a;opacity:0.75}
+
+  .card .badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .badge{font-size:10px;padding:3px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:0.5px;font-weight:bold}
+  .badge.core{background:#1AB759;color:#fff}
+  .badge.optional{background:#FFCB05;color:#0a0a0a}
+  .badge.scopecreep{background:#DC2626;color:#fff}
+  .badge.settings{background:#3B82F6;color:#fff}
+  .badge.broken{background:#DC2626;color:#fff;animation:pulse 2s infinite}
+  .badge.empty{background:#666;color:#fff}
+  .badge.sidebar-now{background:#252525;color:#1AB759;border:1px solid #1AB759}
+  .badge.sidebar-hidden{background:#252525;color:#FFCB05;border:1px solid #FFCB05}
+  .badge.path{background:#252525;color:#aaa;border:1px solid #444;font-family:monospace;font-size:9px;text-transform:none;letter-spacing:0}
+
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+  .card h3{font-size:17px;color:#fff;margin-bottom:6px;line-height:1.3}
+  .card .description{font-size:13px;color:#ccc;margin-bottom:12px}
+  .card .description strong{color:#FFCB05}
+  .card .recommendation{background:#0a0a0a;border-left:3px solid #1AB759;padding:10px;border-radius:6px;margin-bottom:12px;font-size:12px;flex-grow:1}
+  .card .recommendation .label{color:#1AB759;font-weight:bold;text-transform:uppercase;font-size:10px;letter-spacing:1px;margin-bottom:4px}
+  .card.opt-hide .recommendation{border-left-color:#FFCB05}
+  .card.opt-hide .recommendation .label{color:#FFCB05}
+  .card.opt-remove .recommendation{border-left-color:#DC2626}
+  .card.opt-remove .recommendation .label{color:#DC2626}
+
+  .actions{display:flex;gap:6px;margin-top:auto}
+  .action-btn{flex:1;padding:9px 8px;border:1px solid #444;background:transparent;color:#fff;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:4px}
+  .action-btn:hover{border-width:2px}
+  .action-btn.keep{border-color:#1AB759;color:#1AB759}
+  .action-btn.keep:hover,.action-btn.keep.selected{background:#1AB759;color:#fff;border-color:#1AB759}
+  .action-btn.hide{border-color:#FFCB05;color:#FFCB05}
+  .action-btn.hide:hover,.action-btn.hide.selected{background:#FFCB05;color:#0a0a0a;border-color:#FFCB05}
+  .action-btn.remove{border-color:#DC2626;color:#DC2626}
+  .action-btn.remove:hover,.action-btn.remove.selected{background:#DC2626;color:#fff;border-color:#DC2626}
+
+  .floating-cta{position:fixed;bottom:24px;right:24px;background:#F4501E;color:#fff;border:none;padding:16px 24px;border-radius:30px;cursor:pointer;font-size:14px;font-weight:bold;box-shadow:0 8px 24px rgba(244,80,30,0.4);z-index:100;display:flex;align-items:center;gap:8px}
+  .floating-cta:hover{transform:scale(1.05)}
+  .floating-cta .count{background:#fff;color:#F4501E;border-radius:12px;padding:2px 10px;font-size:12px}
+
+  .modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-bg.open{display:flex}
+  .modal{background:#1a1a1a;border:1px solid #F4501E;border-radius:12px;padding:24px;max-width:900px;width:100%;max-height:90vh;overflow-y:auto}
+  .modal h2{color:#F4501E;margin-bottom:16px}
+  .modal pre{background:#0a0a0a;padding:16px;border-radius:8px;color:#FFCB05;font-size:12px;white-space:pre-wrap;max-height:55vh;overflow-y:auto;border:1px solid #333;font-family:"SF Mono",Monaco,Consolas,monospace}
+  .modal-actions{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
+  .modal-actions button{flex:1;min-width:140px;padding:12px;background:#F4501E;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold}
+  .modal-actions button.close{background:#333;color:#fff}
+
+  .ratio-bar{max-width:1400px;margin:0 auto 24px;background:#1a1a1a;padding:14px 18px;border-radius:12px;border:1px solid #333}
+  .ratio-bar .label{font-size:12px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+  .ratio-bar .track{height:24px;background:#0a0a0a;border-radius:6px;overflow:hidden;display:flex}
+  .ratio-bar .seg{height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;transition:width 0.3s}
+  .ratio-bar .seg.keep{background:#1AB759}
+  .ratio-bar .seg.hide{background:#FFCB05;color:#0a0a0a}
+  .ratio-bar .seg.remove{background:#DC2626}
+  .ratio-bar .seg.pending{background:#333;color:#999}
+
+  @media (max-width:768px){
+    .stats-banner{grid-template-columns:repeat(2,1fr)}
+    .cards{grid-template-columns:1fr}
+    .floating-cta{bottom:12px;right:12px;padding:12px 18px;font-size:13px}
+    .header h1{font-size:24px}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+<h1>Sidebar V1 — Que veux-tu garder dans ton resto ?</h1>
+<div class="subtitle">Le Cayenne · Décide quoi rester visible dans ton admin V1</div>
+<div class="meta">Date: 2026-05-27 · Branche: heal/cms-pr1-quickwins-2026-05-18 · Sources: INVENTORY (90 routes) + BATCH-1 (10 core) + BATCH-2 (16 optional/scope)</div>
+</div>
+
+<div class="vision-box">
+<h2>Ma vision pour toi</h2>
+<p>Tu as <strong>~30 pages admin</strong> dans la sidebar actuelle (sur 90 routes au total). Beaucoup viennent du template SaaS d'origine et n'ont rien à voir avec ton fast-food.</p>
+<p>Je te montre <strong>quoi est V1 essentiel</strong> (tu en as besoin tous les jours pour faire tourner Le Cayenne), <strong>quoi est V1 optionnel</strong> (utile mais pas vital), et <strong>quoi est V2 SaaS scope-creep</strong> (à supprimer ou cacher — ça pollue ton interface et ça t'embrouille).</p>
+<p><strong>Tu choisis</strong> pour chaque page : <span style="color:#1AB759">✓ Garder</span> dans la sidebar · <span style="color:#FFCB05">○ Cacher</span> (route reste mais hors menu) · <span style="color:#DC2626">✗ Supprimer</span> complètement.</p>
+<p class="verdict">Ma recommandation forte : Garde ~12 pages core dans la sidebar, cache ~8 optionnelles utiles, supprime ~10 V2 scope-creep. Tu obtiens un admin clean fast-food, pas un panneau SaaS générique.</p>
+</div>
+
+<div class="stats-banner">
+<div class="stat-cell total"><div class="label">Total cards</div><div class="value" id="stat-total">0</div></div>
+<div class="stat-cell keep"><div class="label">✓ Garder</div><div class="value" id="stat-keep">0</div></div>
+<div class="stat-cell hide"><div class="label">○ Cacher</div><div class="value" id="stat-hide">0</div></div>
+<div class="stat-cell remove"><div class="label">✗ Supprimer</div><div class="value" id="stat-remove">0</div></div>
+<div class="stat-cell pending"><div class="label">À décider</div><div class="value" id="stat-pending">0</div></div>
+</div>
+
+<div class="ratio-bar">
+<div class="label">Répartition actuelle de tes votes</div>
+<div class="track" id="ratio-track">
+<div class="seg pending" style="width:100%">100% à décider</div>
+</div>
+</div>
+
+<div class="filters">
+<div class="filter-group">
+<span class="label">Catégorie</span>
+<button class="chip active" data-filter="cat" data-value="all">Tous</button>
+<button class="chip" data-filter="cat" data-value="core">Core V1</button>
+<button class="chip" data-filter="cat" data-value="optional">Optionnel V1</button>
+<button class="chip" data-filter="cat" data-value="scopecreep">Scope-creep V2</button>
+<button class="chip" data-filter="cat" data-value="settings">Settings</button>
+</div>
+<div class="filter-group">
+<span class="label">Recommandation</span>
+<button class="chip active" data-filter="rec" data-value="all">Toutes</button>
+<button class="chip" data-filter="rec" data-value="KEEP">✓ Garder</button>
+<button class="chip" data-filter="rec" data-value="HIDE">○ Cacher</button>
+<button class="chip" data-filter="rec" data-value="REMOVE">✗ Supprimer</button>
+</div>
+<input type="text" class="search-box" id="search" placeholder="Rechercher une page...">
+<button class="reset-btn" onclick="resetDecisions()">Reset votes</button>
+</div>
+
+<div class="section-divider">
+<span class="icon">●</span>
+<span>CORE V1 — Essentiel (toujours garder)</span>
+<span class="hint">Tu en as besoin tous les jours pour faire tourner Le Cayenne</span>
+</div>
+<div class="cards" id="cards-core"></div>
+
+<div class="section-divider">
+<span class="icon">●</span>
+<span>OPTIONNEL V1 — Recommandé si tu l'utilises</span>
+<span class="hint">Utile mais pas vital, dépend de ton mode de gestion</span>
+</div>
+<div class="cards" id="cards-optional"></div>
+
+<div class="section-divider">
+<span class="icon">●</span>
+<span>V2 SaaS Scope-creep — Recommandation : CACHER ou SUPPRIMER</span>
+<span class="hint">Ces pages viennent du template, elles polluent ton interface fast-food</span>
+</div>
+<div class="cards" id="cards-scopecreep"></div>
+
+<div class="section-divider">
+<span class="icon">●</span>
+<span>Paramètres — Sous-pages (un par un)</span>
+<span class="hint">À l'intérieur de Configuration > Paramètres</span>
+</div>
+<div class="cards" id="cards-settings"></div>
+
+<button class="floating-cta" onclick="openModal()">Voir mon plan validé <span class="count" id="cta-count">0</span></button>
+
+<div class="modal-bg" id="modal">
+<div class="modal">
+<h2>Plan validé — Récap de tes décisions sidebar V1</h2>
+<pre id="modal-content"></pre>
+<div class="modal-actions">
+<button onclick="copySummary()">Copier dans presse-papier</button>
+<button onclick="downloadSummary()">Télécharger .txt</button>
+<button class="close" onclick="closeModal()">Fermer</button>
+</div>
+</div>
+</div>
+
+<script>
+const DECISIONS = [
+  // ============================================================
+  // CORE V1 — Always KEEP
+  // ============================================================
+  {
+    id:'CORE-01',cat:'core',sidebar:'visible',
+    title:'Tableau de bord',
+    path:'/admin/dashboard',
+    desc:'Ta page d\'accueil quand tu te connectes. CA du jour, commandes en cours, Z report, audit trail NF525, articles populaires.',
+    recommendation:'KEEP',
+    reasoning:'Indispensable. C\'est la première page que tu vois chaque matin. Vue d\'ensemble de ton resto en 5 secondes.'
+  },
+  {
+    id:'CORE-02',cat:'core',sidebar:'visible',
+    title:'POS Caisse',
+    path:'/admin/pos',
+    desc:'L\'écran caisse où ton caissier prend les commandes au comptoir. Wizard produits + encaisser + tiroir.',
+    recommendation:'KEEP',
+    reasoning:'Le cœur opérationnel du resto. Sans ça pas de ventes au comptoir. Frozen-zone protégé (design parfait).'
+  },
+  {
+    id:'CORE-03',cat:'core',sidebar:'visible',
+    title:'Catalogue (Produits & Categories)',
+    path:'/admin/items',
+    desc:'46 produits / 12 catégories visibles. Pilotage produits, disponibilités, composer (étapes wizard), prix, photos.',
+    recommendation:'KEEP',
+    reasoning:'Tu y vas chaque fois que tu changes un prix, ajoutes une nouvelle recette ou photo. Production catalog SSOT.'
+  },
+  {
+    id:'CORE-04',cat:'core',sidebar:'visible',
+    title:'Ingrédients',
+    path:'/admin/ingredients',
+    desc:'40 ingrédients listés (viandes, attributs, suppléments, add-ons). Source pour les étapes wizard (sauces, garnitures).',
+    recommendation:'KEEP',
+    reasoning:'Tu gères tes 13 sauces canoniques, viandes, crudités ici. Source de vérité pour borne + caisse.'
+  },
+  {
+    id:'CORE-05',cat:'core',sidebar:'visible',
+    title:'Gestion Produits & Stock (rupture)',
+    path:'/admin/stock/rupture',
+    desc:'Active / désactive chaque produit. Changement synchronisé temps réel sur caisse + borne + wizard.',
+    recommendation:'KEEP',
+    reasoning:'Quand tu n\'as plus de poulet à 14h, tu coupes ici en 2 secondes. La borne et la caisse mettent à jour direct.'
+  },
+  {
+    id:'CORE-06',cat:'core',sidebar:'visible',
+    title:'Écran Cuisine (KDS)',
+    path:'/admin/kitchen-display-system',
+    desc:'L\'écran que ton cuisinier voit. Commandes en préparation, bump quand prêt. Sidebar cachée auto sur cette page.',
+    recommendation:'KEEP',
+    reasoning:'Indispensable cuisine. Le chef bump les commandes pour passer à OSS "Prêt".'
+  },
+  {
+    id:'CORE-07',cat:'core',sidebar:'visible',
+    title:'Écran Commandes (OSS)',
+    path:'/admin/order-status-screen',
+    desc:'L\'écran public que tes clients voient pour savoir si leur commande est prête (En préparation / Prêt).',
+    recommendation:'KEEP',
+    reasoning:'Le client lève la tête vers cet écran. Indispensable expérience.'
+  },
+  {
+    id:'CORE-08',cat:'core',sidebar:'visible',
+    title:'Commandes Caisse',
+    path:'/admin/pos-orders',
+    desc:'Liste de toutes les commandes passées (POS + borne). Détails, recherche, voir une commande passée.',
+    recommendation:'KEEP',
+    reasoning:'Tu vas y voir l\'historique de la journée, retrouver une commande pour réimpression ou retour client.'
+  },
+  {
+    id:'CORE-09',cat:'core',sidebar:'visible',
+    title:'Vue Caisse Unifiée',
+    path:'/admin/cash-overview',
+    desc:'Vue d\'ensemble caisse : filtres date / source (Caisse / Borne / Livreur) / mode paiement (Espèce / Carte / Mobile / Ticket).',
+    recommendation:'KEEP',
+    reasoning:'Fin de journée tu réconcilies ton fond de caisse ici. Critique pour clôture quotidienne.'
+  },
+  {
+    id:'CORE-10',cat:'core',sidebar:'visible',
+    title:'Caisse Livreur',
+    path:'/admin/delivery-boy-cash-sessions',
+    desc:'Sessions caisse de tes livreurs : départ avec X cash, retour avec Y, réconciliation par session.',
+    recommendation:'KEEP',
+    reasoning:'Si tu fais de la livraison (oui pour Le Cayenne), tu as besoin de tracer le cash des livreurs.'
+  },
+  {
+    id:'CORE-11',cat:'core',sidebar:'visible',
+    title:'Configuration (Paramètres)',
+    path:'/admin/settings',
+    desc:'Branche d\'entrée vers toutes les pages de réglages (entreprise, filiales, bornes, devises, configuration commandes).',
+    recommendation:'KEEP',
+    reasoning:'Tu y vas rarement mais quand tu y vas c\'est important (logo, infos resto, terminal paiement, etc.).'
+  },
+
+  // ============================================================
+  // OPTIONAL V1 — Recommend KEEP if used
+  // ============================================================
+  {
+    id:'OPT-01',cat:'optional',sidebar:'visible',
+    title:'Administrateurs',
+    path:'/admin/administrators',
+    desc:'Gestion des comptes admin du resto (1-2 personnes max chez Le Cayenne).',
+    recommendation:'KEEP',
+    reasoning:'Si tu veux donner un accès admin à un manager ou ton bras droit. Sinon tu n\'y touches jamais.'
+  },
+  {
+    id:'OPT-02',cat:'optional',sidebar:'visible',
+    title:'Employés (Caissiers)',
+    path:'/admin/employees',
+    desc:'Tes caissiers / opérateurs POS. Création de comptes pour login caisse.',
+    recommendation:'KEEP',
+    reasoning:'Tu crées un compte par caissier. Indispensable si tu as plus d\'une personne à la caisse.'
+  },
+  {
+    id:'OPT-03',cat:'optional',sidebar:'visible',
+    title:'Chefs (Cuisine)',
+    path:'/admin/chefs',
+    desc:'Tes cuisiniers pour login KDS. 1 compte existe déjà (chef@lecayenne.fr).',
+    recommendation:'KEEP',
+    reasoning:'Si plusieurs chefs se relaient en cuisine, tu crées un compte par chef. Sinon le 1 existant suffit.'
+  },
+  {
+    id:'OPT-04',cat:'optional',sidebar:'visible',
+    title:'Notifications push',
+    path:'/admin/push-notifications',
+    desc:'Notifications FCM/web push pour alertes staff (nouvelle commande borne, KDS prêt, etc.).',
+    recommendation:'KEEP',
+    reasoning:'Utile si tu veux que ton chef reçoive un ping sur son tel quand une commande tombe. Sinon dispensable.'
+  },
+  {
+    id:'OPT-05',cat:'optional',sidebar:'visible',
+    title:'Messages',
+    path:'/admin/messages',
+    desc:'Messagerie interne entre staff (client comptoir, chef <-> caisse).',
+    recommendation:'KEEP',
+    reasoning:'Honnêtement, vous vous parlez en vrai à 5m de distance. Tu peux cacher si tu ne t\'en sers jamais.'
+  },
+  {
+    id:'OPT-06',cat:'optional',sidebar:'visible',
+    title:'Rapport des Ventes',
+    path:'/admin/sales-report',
+    desc:'Rapport quotidien / périodique des ventes. Export XLS / PDF / Print. 6 rangs visibles dans le test.',
+    recommendation:'KEEP',
+    reasoning:'Indispensable pour comptabilité, déclaration CA, suivi performance hebdo/mensuelle.'
+  },
+  {
+    id:'OPT-07',cat:'optional',sidebar:'visible',
+    title:'Rapport Articles',
+    path:'/admin/items-report',
+    desc:'Quels produits se vendent le mieux / le moins. Top 10 articles, par catégorie, par période.',
+    recommendation:'KEEP',
+    reasoning:'Très utile pour décider quoi mettre en avant ou retirer du menu. Garde-le.'
+  },
+  {
+    id:'OPT-08',cat:'optional',sidebar:'visible',
+    title:'Rapport Caisses Quotidien',
+    path:'/admin/cash-sessions-report',
+    desc:'Sessions caisse par jour : ouvertures, clôtures, fonds, écarts, transactions, status.',
+    recommendation:'KEEP',
+    reasoning:'Couplé à Vue Caisse Unifiée. Très utile pour audit / contrôle écart fond de caisse.'
+  },
+  {
+    id:'OPT-09',cat:'optional',sidebar:'visible',
+    title:'Transactions',
+    path:'/admin/transactions',
+    desc:'Ledger des paiements (espèce, carte, mobile, ticket-resta). Trace fine pour réconciliation.',
+    recommendation:'KEEP',
+    reasoning:'Utile si tu veux retracer un paiement spécifique. Peut être caché si Cash Overview te suffit.'
+  },
+  {
+    id:'OPT-10',cat:'optional',sidebar:'hidden',
+    title:'Livreurs (gestion)',
+    path:'/admin/delivery-boys',
+    desc:'CRUD livreurs : ajouter, modifier, désactiver. Actuellement HORS sidebar mais route fonctionne.',
+    recommendation:'KEEP',
+    reasoning:'Vu que tu fais de la livraison (Caisse Livreur déjà visible), tu devrais AJOUTER cette page au menu pour gérer tes livreurs depuis un seul endroit. Recommandé.'
+  },
+  {
+    id:'OPT-11',cat:'optional',sidebar:'hidden',
+    title:'Commandes en ligne (kiosk + livraison)',
+    path:'/admin/online-orders',
+    desc:'Commandes venant de la borne + (futur) commandes livraison. 5 vraies commandes visibles dans le test.',
+    recommendation:'KEEP',
+    reasoning:'Actuellement caché mais devrait être dans la sidebar. Tu vois les commandes borne / livraison séparées des commandes caisse comptoir. Très utile.'
+  },
+
+  // ============================================================
+  // V2 SCOPE-CREEP — Recommend HIDE or REMOVE
+  // ============================================================
+  {
+    id:'SCOPE-01',cat:'scopecreep',sidebar:'hidden',
+    title:'Coupons (codes promo)',
+    path:'/admin/coupons',
+    desc:'Système de codes promo classiques (CODE10, WELCOME15...). Page existe, fonctionne, hors sidebar.',
+    recommendation:'HIDE',
+    reasoning:'Tu n\'as pas de campagne coupon V1. Le Cayenne utilise KioskPromo intégré côté borne, pas des codes manuels. Cache, ressors si tu veux un jour faire une campagne.'
+  },
+  {
+    id:'SCOPE-02',cat:'scopecreep',sidebar:'hidden',
+    title:'Offres (Offers)',
+    path:'/admin/offers',
+    desc:'Promo offers / packs spéciaux. Hors sidebar V1.',
+    recommendation:'HIDE',
+    reasoning:'Doublon avec KioskPromo. V1 n\'a pas besoin d\'un module promo séparé. Cache.'
+  },
+  {
+    id:'SCOPE-03',cat:'scopecreep',sidebar:'hidden',
+    title:'Serveurs (Waiters)',
+    path:'/admin/waiters',
+    desc:'Gestion serveurs / personnel de salle. Page fonctionne mais inutile.',
+    recommendation:'REMOVE',
+    reasoning:'Tu es en fast-food, pas en restaurant à table. Dine-in désactivé (feature flag). Cette page n\'a aucun sens pour Le Cayenne. Supprime.'
+  },
+  {
+    id:'SCOPE-04',cat:'scopecreep',sidebar:'hidden',
+    title:'Tables (Dining Tables)',
+    path:'/admin/dining-tables',
+    desc:'Plan des tables, numéros de table, gestion service à table.',
+    recommendation:'REMOVE',
+    reasoning:'Pareil que Serveurs. Pas de service à table en V1. Si un jour tu fais du dine-in tu réactiveras. Supprime.'
+  },
+  {
+    id:'SCOPE-05',cat:'scopecreep',sidebar:'hidden',
+    title:'Floor-plan (plan de salle)',
+    path:'/admin/floor-plan',
+    desc:'Plan visuel du restaurant avec tables, espaces, service à table. Route vide actuellement.',
+    recommendation:'REMOVE',
+    reasoning:'Encore une page dine-in. Aucun sens fast-food. Supprime carrément.'
+  },
+  {
+    id:'SCOPE-06',cat:'scopecreep',sidebar:'hidden',
+    title:'Commandes Tables (Table Orders)',
+    path:'/admin/table-orders',
+    desc:'Commandes attachées à des tables (dine-in flow).',
+    recommendation:'REMOVE',
+    reasoning:'Dine-in disabled. Supprime.'
+  },
+  {
+    id:'SCOPE-07',cat:'scopecreep',sidebar:'hidden',
+    title:'Clients (Customer accounts)',
+    path:'/admin/customers',
+    desc:'Comptes clients avec historique, fidélité, etc. Page actuellement renvoie 404 SPA.',
+    recommendation:'HIDE',
+    reasoning:'En fast-food tes clients sont en guest-mode (borne + caisse comptoir). Pas de comptes individuels en V1. Cache (ou supprime si tu es sûr). Si loyalty arrive un jour tu la ressortiras.'
+  },
+  {
+    id:'SCOPE-08',cat:'scopecreep',sidebar:'hidden',
+    title:'Abonnés (Subscribers)',
+    path:'/admin/subscribers',
+    desc:'Liste emails newsletter / marketing.',
+    recommendation:'REMOVE',
+    reasoning:'Marketing newsletter = V2 SaaS. Tu n\'envoies pas de newsletter en V1. Supprime.'
+  },
+  {
+    id:'SCOPE-09',cat:'scopecreep',sidebar:'hidden',
+    title:'Crédit client (Credit balance)',
+    path:'/admin/credit-balance-report',
+    desc:'Rapport solde crédit / prépaiement client.',
+    recommendation:'REMOVE',
+    reasoning:'Pas de système de crédit / portemonnaie client en V1. Supprime.'
+  },
+  {
+    id:'SCOPE-10',cat:'scopecreep',sidebar:'hidden',
+    title:'Observabilité (Outbox / Queue)',
+    path:'/admin/observability/outbox',
+    desc:'Dashboard santé pipeline (queue:work DOWN, websockets:serve DOWN). Vue technique SRE.',
+    recommendation:'HIDE',
+    reasoning:'Page de diagnostic technique. V1 LOCAL utilise file driver / polling, queue+websockets sont DOWN par design. Tu n\'as pas besoin de voir ça dans ta sidebar quotidienne. Cache, garde la route pour support tech.'
+  },
+  {
+    id:'SCOPE-11',cat:'scopecreep',sidebar:'hidden',
+    title:'Audit Trail UI',
+    path:'/admin/audit-trail',
+    desc:'UI pour parcourir audit_logs NF525 chain-signed. Route vide actuellement.',
+    recommendation:'REMOVE',
+    reasoning:'Compliance NF525 = audit accessible via DB (6 ans légal). Pas besoin d\'UI admin. Si contrôle fiscal, c\'est le comptable qui interroge la DB. Supprime.'
+  },
+  {
+    id:'SCOPE-12',cat:'scopecreep',sidebar:'hidden',
+    title:'SLA Dashboard',
+    path:'/admin/sla',
+    desc:'Dashboard SLA / uptime multi-tenant. Route vide.',
+    recommendation:'REMOVE',
+    reasoning:'SLA = concept SaaS multi-tenant. V1 LOCAL single-resto, ça n\'a aucun sens. Supprime sans hésiter.'
+  },
+  {
+    id:'SCOPE-13',cat:'scopecreep',sidebar:'hidden',
+    title:'Backups UI',
+    path:'/admin/backups',
+    desc:'Interface backups DB / fichiers. Route vide.',
+    recommendation:'REMOVE',
+    reasoning:'Tes backups tournent en CLI Laravel (BRAIN: backup automation PASS). UI n\'existe pas, et tu n\'en as pas besoin (cron auto). Supprime l\'aspiration.'
+  },
+
+  // ============================================================
+  // SETTINGS SUB-PAGES
+  // ============================================================
+  {
+    id:'SET-01',cat:'settings',sidebar:'visible',
+    title:'Paramètres > Entreprise',
+    path:'/admin/settings/company',
+    desc:'Infos resto : nom, adresse, SIRET, logo, contacts.',
+    recommendation:'KEEP',
+    reasoning:'Tu y touches au démarrage et plus jamais. Mais indispensable. Garde.'
+  },
+  {
+    id:'SET-02',cat:'settings',sidebar:'visible',
+    title:'Paramètres > Filiales',
+    path:'/admin/settings/branches/list',
+    desc:'Liste des filiales / branches. Le Cayenne = 1 seule branche en V1.',
+    recommendation:'KEEP',
+    reasoning:'Garde même si tu en as 1 seule. Multi-tenant prêt si tu ouvres un 2e resto un jour.'
+  },
+  {
+    id:'SET-03',cat:'settings',sidebar:'visible',
+    title:'Paramètres > Bornes (Kiosk Machines)',
+    path:'/admin/settings/kiosk-machines',
+    desc:'Gestion des bornes physiques connectées. 1 ou plusieurs bornes.',
+    recommendation:'KEEP',
+    reasoning:'Indispensable pour activer / nommer tes bornes physiques.'
+  },
+  {
+    id:'SET-04',cat:'settings',sidebar:'visible',
+    title:'Paramètres > Configuration Borne',
+    path:'/admin/settings/kiosk-setup',
+    desc:'Paramètres comportementaux borne (timeout, langues, etc.).',
+    recommendation:'KEEP',
+    reasoning:'Garde, utile pour tweaker le comportement borne.'
+  },
+  {
+    id:'SET-05',cat:'settings',sidebar:'visible',
+    title:'Paramètres > Configuration Commandes',
+    path:'/admin/settings/order-setup',
+    desc:'Réglages commandes : timing, prefixes, séquences.',
+    recommendation:'KEEP',
+    reasoning:'Garde, configuration de base.'
+  },
+  {
+    id:'SET-06',cat:'settings',sidebar:'visible',
+    title:'Paramètres > Site',
+    path:'/admin/settings/site',
+    desc:'Paramètres site (thèmes, branding global).',
+    recommendation:'KEEP',
+    reasoning:'Utile si tu changes branding. Garde.'
+  },
+  {
+    id:'SET-07',cat:'settings',sidebar:'visible',
+    title:'Paramètres > Devises',
+    path:'/admin/settings/currencies/list',
+    desc:'Liste devises (EUR France).',
+    recommendation:'KEEP',
+    reasoning:'Tu n\'y touches qu\'une fois (EUR). Mais garde la sous-page pour cohérence.'
+  },
+  {
+    id:'SET-08',cat:'settings',sidebar:'visible',
+    title:'Paramètres > Terminaux Paiement',
+    path:'/admin/settings/payment-terminals',
+    desc:'Mapping terminaux TPE physiques (NF525 cash-trail context).',
+    recommendation:'KEEP',
+    reasoning:'Indispensable, lié au TPE physique de ta caisse. Garde.'
+  },
+  {
+    id:'SET-09',cat:'settings',sidebar:'visible',
+    title:'Paramètres > Rôles & Permissions',
+    path:'/admin/settings/role/list',
+    desc:'Gestion rôles Spatie (Admin, Branch Manager, POS Operator, Chef).',
+    recommendation:'KEEP',
+    reasoning:'Garde caché dans Settings. Tu n\'y touches presque jamais (rôles seedés) mais utile à terme.'
+  },
+  {
+    id:'SET-10',cat:'settings',sidebar:'hidden',
+    title:'Paramètres > Fidélité (Loyalty)',
+    path:'/admin/settings/loyalty-setup',
+    desc:'Configuration points fidélité (points par €, etc.).',
+    recommendation:'HIDE',
+    reasoning:'Loyalty reporté V1.0.2 (audit a flagué un P0 sécurité loyalty QR unsigned). Cache pour V1, ressors quand on aura sécurisé.'
+  },
+  {
+    id:'SET-11',cat:'settings',sidebar:'hidden',
+    title:'Paramètres > Catégories articles',
+    path:'/admin/settings/item-categories/list',
+    desc:'Légacy : catégories articles. Maintenant intégré dans /admin/items/studio.',
+    recommendation:'REMOVE',
+    reasoning:'Doublon. Studio catalogue fait déjà ça. Supprime.'
+  },
+  {
+    id:'SET-12',cat:'settings',sidebar:'hidden',
+    title:'Paramètres > TVA / Taxes',
+    path:'/admin/settings/tax/list',
+    desc:'Configuration taxes / TVA. Seedé fixe pour fast-food FR.',
+    recommendation:'HIDE',
+    reasoning:'TVA française seeded une fois. Tu n\'as pas à y toucher. Cache.'
+  },
+  {
+    id:'SET-13',cat:'settings',sidebar:'hidden',
+    title:'Paramètres > Langues',
+    path:'/admin/settings/languages/list',
+    desc:'Gestion langues UI (FR, EN, AR seedés).',
+    recommendation:'HIDE',
+    reasoning:'Langues déjà seedées. Cache, tu n\'as pas à y toucher.'
+  },
+  {
+    id:'SET-14',cat:'settings',sidebar:'hidden',
+    title:'Paramètres > Mail / Notifications / OTP / Theme / Cookies',
+    path:'/admin/settings/{mail,notification,otp,theme,cookies}',
+    desc:'Réglages mail SMTP, notifications email, OTP 2FA, thème UI, cookies banner.',
+    recommendation:'HIDE',
+    reasoning:'Toutes ces pages sont du résidu template SaaS. Cache. Si un jour tu veux activer 2FA OTP, tu ressortiras.'
+  },
+  {
+    id:'SET-15',cat:'settings',sidebar:'hidden',
+    title:'Paramètres > Sliders / Pages CMS / Social Media / SMS Gateway / Analytics / Pages',
+    path:'/admin/settings/{sliders,pages,social-media,sms-gateway,analytics}',
+    desc:'CMS marketing : sliders home, pages statiques (about/contact), réseaux sociaux, SMS provider, Google Analytics.',
+    recommendation:'REMOVE',
+    reasoning:'Tout ça c\'est du SaaS marketing. Pas de marketing site V1 (LOCAL only). Supprime ces pages.'
+  },
+  {
+    id:'SET-16',cat:'settings',sidebar:'hidden',
+    title:'Paramètres > Payment Gateway / License / Time Slots / Notification Alert',
+    path:'/admin/settings/{payment-gateway,license,time-slots,notification-alert}',
+    desc:'Gateway Stripe/SenangPay online, licensing SaaS multi-tenant, créneaux horaires (dine-in), alertes système.',
+    recommendation:'REMOVE',
+    reasoning:'Payment gateway = pour /checkout online (pas V1). License = SaaS V2. Time slots = dine-in. Alerts = template SaaS. Supprime.'
+  }
+];
+
+const SECTION_BY_CAT = {
+  core: 'cards-core',
+  optional: 'cards-optional',
+  scopecreep: 'cards-scopecreep',
+  settings: 'cards-settings'
+};
+
+const SECTION_LABEL = {
+  core: 'CORE V1',
+  optional: 'OPTIONNEL V1',
+  scopecreep: 'SCOPE-CREEP V2',
+  settings: 'SETTINGS'
+};
+
+const REC_LABEL = {
+  KEEP: 'Garder',
+  HIDE: 'Cacher',
+  REMOVE: 'Supprimer'
+};
+
+const STORAGE_KEY = 'foodking-v1-sidebar-decisions-2026-05-27';
+
+let votes = {};
+try {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) votes = JSON.parse(stored);
+} catch(e){ votes = {}; }
+
+let filters = { cat: 'all', rec: 'all', search: '' };
+
+function persist() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(votes)); } catch(e){}
+}
+
+function vote(id, choice) {
+  if (votes[id] === choice) {
+    delete votes[id];
+  } else {
+    votes[id] = choice;
+  }
+  persist();
+  render();
+}
+
+function resetDecisions() {
+  if (!confirm('Effacer tous tes votes ?')) return;
+  votes = {};
+  persist();
+  render();
+}
+
+function matchesFilters(d) {
+  if (filters.cat !== 'all' && d.cat !== filters.cat) return false;
+  if (filters.rec !== 'all' && d.recommendation !== filters.rec) return false;
+  if (filters.search) {
+    const q = filters.search.toLowerCase();
+    const hay = (d.title + ' ' + d.desc + ' ' + d.path + ' ' + d.reasoning).toLowerCase();
+    if (!hay.includes(q)) return false;
+  }
+  return true;
+}
+
+function cardHTML(d) {
+  const v = votes[d.id];
+  const cardCls = v === 'KEEP' ? 'keep-vote' : v === 'HIDE' ? 'hide-vote' : v === 'REMOVE' ? 'remove-vote' : '';
+  const recCls = d.recommendation === 'HIDE' ? 'opt-hide' : d.recommendation === 'REMOVE' ? 'opt-remove' : '';
+  const catBadge = d.cat === 'core' ? '<span class="badge core">CORE V1</span>'
+    : d.cat === 'optional' ? '<span class="badge optional">OPTIONNEL</span>'
+    : d.cat === 'scopecreep' ? '<span class="badge scopecreep">SCOPE-CREEP V2</span>'
+    : '<span class="badge settings">SETTINGS</span>';
+  const sidebarBadge = d.sidebar === 'visible'
+    ? '<span class="badge sidebar-now">DANS SIDEBAR</span>'
+    : '<span class="badge sidebar-hidden">HORS SIDEBAR</span>';
+  const recBadgeMap = {
+    KEEP:  '<span class="badge core">RECO: GARDER</span>',
+    HIDE:  '<span class="badge optional">RECO: CACHER</span>',
+    REMOVE:'<span class="badge scopecreep">RECO: SUPPRIMER</span>'
+  };
+  return `<div class="card ${cardCls} ${recCls}" data-cat="${d.cat}" data-rec="${d.recommendation}" data-id="${d.id}">
+    <div class="badges">
+      ${catBadge}
+      ${sidebarBadge}
+      ${recBadgeMap[d.recommendation]}
+      <span class="badge path">${d.path}</span>
+    </div>
+    <h3>${d.title}</h3>
+    <div class="description"><strong>À quoi ça sert :</strong> ${d.desc}</div>
+    <div class="recommendation">
+      <div class="label">Mon analyse — ${REC_LABEL[d.recommendation]}</div>
+      ${d.reasoning}
+    </div>
+    <div class="actions">
+      <button class="action-btn keep ${v==='KEEP'?'selected':''}" onclick="vote('${d.id}','KEEP')">✓ Garder</button>
+      <button class="action-btn hide ${v==='HIDE'?'selected':''}" onclick="vote('${d.id}','HIDE')">○ Cacher</button>
+      <button class="action-btn remove ${v==='REMOVE'?'selected':''}" onclick="vote('${d.id}','REMOVE')">✗ Supprimer</button>
+    </div>
+  </div>`;
+}
+
+function render() {
+  // Clear all section containers
+  Object.values(SECTION_BY_CAT).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+
+  // Render cards per section
+  let visibleCount = 0;
+  DECISIONS.forEach(d => {
+    if (!matchesFilters(d)) return;
+    visibleCount++;
+    const container = document.getElementById(SECTION_BY_CAT[d.cat]);
+    if (container) container.insertAdjacentHTML('beforeend', cardHTML(d));
+  });
+
+  // Show empty hint per section if filtered out
+  Object.entries(SECTION_BY_CAT).forEach(([cat, id]) => {
+    const el = document.getElementById(id);
+    if (el && el.innerHTML === '') {
+      el.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#666;padding:20px;font-size:13px">— Aucune carte dans cette section avec les filtres actifs —</div>';
+    }
+  });
+
+  // Stats
+  const total = DECISIONS.length;
+  const keepN = Object.values(votes).filter(v => v === 'KEEP').length;
+  const hideN = Object.values(votes).filter(v => v === 'HIDE').length;
+  const removeN = Object.values(votes).filter(v => v === 'REMOVE').length;
+  const decided = keepN + hideN + removeN;
+  const pendingN = total - decided;
+
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-keep').textContent = keepN;
+  document.getElementById('stat-hide').textContent = hideN;
+  document.getElementById('stat-remove').textContent = removeN;
+  document.getElementById('stat-pending').textContent = pendingN;
+  document.getElementById('cta-count').textContent = decided;
+
+  // Ratio bar
+  const track = document.getElementById('ratio-track');
+  if (decided === 0) {
+    track.innerHTML = '<div class="seg pending" style="width:100%">100% à décider</div>';
+  } else {
+    const pct = n => Math.round((n / total) * 100);
+    const parts = [];
+    if (keepN > 0) parts.push(`<div class="seg keep" style="width:${pct(keepN)}%" title="${keepN} Garder">${pct(keepN)}% Garder</div>`);
+    if (hideN > 0) parts.push(`<div class="seg hide" style="width:${pct(hideN)}%" title="${hideN} Cacher">${pct(hideN)}% Cacher</div>`);
+    if (removeN > 0) parts.push(`<div class="seg remove" style="width:${pct(removeN)}%" title="${removeN} Supprimer">${pct(removeN)}% Supprimer</div>`);
+    if (pendingN > 0) parts.push(`<div class="seg pending" style="width:${pct(pendingN)}%" title="${pendingN} À décider">${pct(pendingN)}% À décider</div>`);
+    track.innerHTML = parts.join('');
+  }
+}
+
+// Filter wiring
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const filter = chip.dataset.filter;
+    const value = chip.dataset.value;
+    filters[filter] = value;
+    document.querySelectorAll(`.chip[data-filter="${filter}"]`).forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    render();
+  });
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  filters.search = e.target.value;
+  render();
+});
+
+// Modal logic
+function buildSummary() {
+  const grouped = { KEEP: [], HIDE: [], REMOVE: [], PENDING: [] };
+  DECISIONS.forEach(d => {
+    const v = votes[d.id];
+    if (v === 'KEEP') grouped.KEEP.push(d);
+    else if (v === 'HIDE') grouped.HIDE.push(d);
+    else if (v === 'REMOVE') grouped.REMOVE.push(d);
+    else grouped.PENDING.push(d);
+  });
+
+  const tally = c => `${grouped[c].length}`;
+  let out = `=== SIDEBAR V1 — Plan validé Le Cayenne ===
+Date: ${new Date().toISOString().slice(0,10)}
+Total pages auditées: ${DECISIONS.length}
+
+DÉCISIONS:
+  ✓ Garder (visible sidebar)   : ${tally('KEEP')}
+  ○ Cacher (route OK, hors menu): ${tally('HIDE')}
+  ✗ Supprimer (route + UI)     : ${tally('REMOVE')}
+  ? À décider                   : ${tally('PENDING')}
+
+`;
+
+  const fmt = arr => arr.map(d => `  - [${SECTION_LABEL[d.cat]}] ${d.title}\n      Path: ${d.path}\n      Reco initiale: ${REC_LABEL[d.recommendation]}`).join('\n\n');
+
+  out += `\n--- ✓ GARDER (${grouped.KEEP.length}) ---\n${fmt(grouped.KEEP) || '  (aucune)'}`;
+  out += `\n\n--- ○ CACHER (${grouped.HIDE.length}) ---\n${fmt(grouped.HIDE) || '  (aucune)'}`;
+  out += `\n\n--- ✗ SUPPRIMER (${grouped.REMOVE.length}) ---\n${fmt(grouped.REMOVE) || '  (aucune)'}`;
+
+  if (grouped.PENDING.length > 0) {
+    out += `\n\n--- ? À DÉCIDER (${grouped.PENDING.length}) ---\n${fmt(grouped.PENDING)}`;
+  }
+
+  // Provide developer-friendly file pointer
+  out += `\n\n--- IMPLEMENTATION POINTERS (pour dev) ---
+  - Sidebar component: resources/js/components/layouts/backend/BackendMenuComponent.vue
+  - V1 hide config   : resources/js/config/v1-hidden-modules.js
+  - Router root      : resources/js/router/index.js
+  - Router modules   : resources/js/router/modules/*.js (35 files)
+  - Settings sub-menu: resources/js/components/admin/settings/MenuComponent.vue
+  - DB menu seeder   : database/seeders/MenuTableSeeder.php (for HIDE flag in DB-driven menus)
+
+  HIDE = ajouter dans V1_HIDDEN_MENU_MODULES (config JS) ou V1_HIDDEN_BACKEND_MENU_URLS
+  REMOVE = supprimer aussi le router module + components + controller + migration éventuelle
+
+=== Fin du plan ===`;
+
+  return out;
+}
+
+function openModal() {
+  document.getElementById('modal-content').textContent = buildSummary();
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+function copySummary() {
+  const text = document.getElementById('modal-content').textContent;
+  navigator.clipboard.writeText(text).then(
+    () => { const btn = event.target; const old = btn.textContent; btn.textContent = 'Copié ✓'; setTimeout(() => btn.textContent = old, 1500); },
+    () => alert('Copie échouée — sélectionne le texte manuellement.')
+  );
+}
+function downloadSummary() {
+  const text = document.getElementById('modal-content').textContent;
+  const blob = new Blob([text], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sidebar-v1-plan-${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target.id === 'modal') closeModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+render();
+</script>
+
+</body>
+</html>
