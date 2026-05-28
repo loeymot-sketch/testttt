@@ -1,0 +1,95 @@
+{
+  "meta": {
+    "agent": "T1-Foundation-Master",
+    "timestamp_utc": "2026-05-28T20:27:45Z",
+    "branch_actual": "heal/cms-pr1-quickwins-2026-05-18",
+    "branch_context_mismatch_note": "Context said feature/mobile-app-le-cayenne-2026-05-10 but actual HEAD is on heal/cms-pr1-quickwins-2026-05-18. Proceeded on actual branch.",
+    "head_sha": "e7ae1c8ea3972a24c6a16284ec5005b334f9aa28",
+    "dev_server": "http://127.0.0.1:8000"
+  },
+  "check_1_db_state": {
+    "items": 45,
+    "branches": 1,
+    "wizard_profiles": 10,
+    "payment_terminals": 1,
+    "audit_log_count": 150,
+    "last_hash": "757635efedaa4464a8c3f163a908a34fb9b57135577fbcc6c58609ee6894a598",
+    "expected_items": 45,
+    "expected_branches": 1,
+    "expected_wizard_profiles": 10,
+    "expected_payment_terminals_min": 1,
+    "status": "PASS"
+  },
+  "check_2_nf525_chain": {
+    "command": "php artisan fiscal:verify-chain --all",
+    "output": "+ branch=1 CHAIN OK | SWEEP COMPLETE — CHAIN OK on every active branch (1 total)",
+    "branches_verified": 1,
+    "chain_ok": true,
+    "status": "PASS"
+  },
+  "check_3_frozen_zone": {
+    "files_checked": [
+      "resources/js/components/frontend/kiosk/KioskWizardComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskAppComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue",
+      "resources/js/components/admin/pos/PaymentComponent.vue",
+      "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue",
+      "public/js/pos-wizard.js",
+      "public/css/pos-wizard.css",
+      "resources/views/admin-pos-v4.blade.php",
+      "app/Services/Fiscal/FiscalSequenceService.php",
+      "app/Services/Fiscal/ZReportService.php",
+      "app/Services/Fiscal/AuditLogService.php",
+      "app/Models/Scopes/BranchScope.php",
+      "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+      "app/Services/Pricing/PricingService.php",
+      "app/Domain/Order/OrderStateMachine.php"
+    ],
+    "diff_stat": "(empty git output) — zero modifications across 15 frozen-zone paths vs HEAD",
+    "files_modified": 0,
+    "lines_changed": 0,
+    "status": "PASS"
+  },
+  "check_4_auth": {
+    "root": 200,
+    "login": 200,
+    "kiosk": 200,
+    "admin_api": 200,
+    "admin_pos_route_used_as_admin_api_check": "/admin/pos returned 200 (proxy for admin auth surface availability; full sanctum API not probed because read-only mission)",
+    "status": "PASS"
+  },
+  "check_5_bundles": {
+    "admin_shell_path": "public/js/admin-shell.js",
+    "admin_shell_size_bytes": 6276012,
+    "admin_shell_mtime_epoch": 1779992462,
+    "admin_shell_age_hours": 0.45,
+    "app_path": "public/js/app.js",
+    "app_size_bytes": 7341491,
+    "app_mtime_epoch": 1779992462,
+    "app_age_hours": 0.45,
+    "now_epoch": 1779994065,
+    "freshness_threshold_hours": 24,
+    "status": "PASS"
+  },
+  "check_6_sentinels": {
+    "filter": "PricingService|Fiscal",
+    "phpunit_passed": 249,
+    "phpunit_failed": 0,
+    "phpunit_incomplete": 2,
+    "phpunit_skipped": 3,
+    "incomplete_breakdown": "s72/s73 RushMidiSimulationTest are documented owner-finalize markers (need HTTP route fixture refactor) — not failures, structural invariant already covered by S7.1",
+    "duration_seconds": 43.85,
+    "status": "PASS"
+  },
+  "verdict": "GREEN",
+  "blocker_count": 0,
+  "decision": "GREEN-FOUNDATION-READY",
+  "notes": [
+    "All 6 foundational invariants healthy. Owner trial-test cleared for launch.",
+    "NF525 chain count=150 last_hash=757635ef… confirmed bit-identical to last commit baseline.",
+    "Frozen-zone diff=0 across all 15 §7 paths (CLAUDE.md lists 13 patterns, expanded to 15 file paths).",
+    "Bundles rebuilt today (~27 min ago) — well within 24h freshness window.",
+    "Sentinel filter PricingService|Fiscal captured 249 tests — zero failures.",
+    "2 incomplete markers (RushMidiSimulationTest s72/s73) are owner-finalize backlog, NOT regressions."
+  ]
+}

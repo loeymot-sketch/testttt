@@ -185,9 +185,23 @@ return [
         'cash_no_open_session_blocks_sale' => 'No open cash drawer — open a session before accepting a cash payment.',
         // [W2-livreur 2026-05-21] Admin cash-session UI labels (V1.0.2 Sub-6.3 BUILD-1).
         'delivery_cash_sessions' => 'Delivery boy cash sessions',
+        'delivery_cash_session' => 'Delivery boy cash session',
         'delivery_cash_status_open' => 'Open',
         'delivery_cash_status_closed' => 'Closed',
         'delivery_cash_status_reconciled' => 'Reconciled',
+        // [T2-LIV-P1-01 heal 2026-05-28] FR parity for cash-session UI labels.
+        'cash_session_closed_at' => 'Closed at',
+        'cash_session_reconcile' => 'Reconcile',
+        'direction' => 'Direction',
+        'notes' => 'Notes',
+        'branch' => 'Branch',
+        'type' => 'Type',
+        'delivery_boy' => 'Delivery boy',
+        'delivery_cash_mvt_order_collect' => 'Order collected',
+        'delivery_cash_mvt_change_given' => 'Change given',
+        'delivery_cash_mvt_drawer_open' => 'Drawer opened',
+        'delivery_cash_mvt_drawer_close' => 'Drawer closed',
+        'delivery_cash_mvt_adjustment' => 'Adjustment',
     ],
     'studio' => [
         'eyebrow' => 'Centralized catalog',

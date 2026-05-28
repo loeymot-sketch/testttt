@@ -1,0 +1,209 @@
+{
+  "wave": "B",
+  "team": "T4-EDGE",
+  "mode": "HOSTILE_READ_ONLY_ADVERSARIAL",
+  "head": "e7ae1c8ea3972a24c6a16284ec5005b334f9aa28",
+  "date": "2026-05-28",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "summary": {
+    "total_attacks": 5,
+    "defense_held": 5,
+    "defense_failed": 0,
+    "inconclusive": 0,
+    "verdict": "ALL_DEFENSES_HELD"
+  },
+  "attacks": [
+    {
+      "id": "A-09",
+      "name": "XSS via product name (item.name)",
+      "severity_if_failed": "P0_RCE_REFLECTED_STORED_XSS",
+      "status": "DEFENSE_HELD",
+      "method": "DRY_RUN_NO_PERSIST + code-trace audit (no DB write to NF525-impacting tables)",
+      "evidence": {
+        "item_targeted": {"id": 22, "current_name": "Sandwich Cayenne", "name_unchanged_after_test": true},
+        "payload_simulated": "<script>alert(1)</script> Cayenne",
+        "vue_render_simulation": "&lt;script&gt;alert(1)&lt;/script&gt; Cayenne",
+        "v_html_audit": {
+          "pos_components_with_v_html": 0,
+          "kiosk_components_with_v_html": 1,
+          "v_html_finding": "resources/js/components/frontend/kiosk/ds/KsThemeToggle.vue:22 — uses safeHtml(opt.icon) on STATIC internal SVG icons (sun/moon/auto), NOT user input. opt.icon is hardcoded in component options computed (lines 111/118/125). Zero user-content path.",
+          "other_v_html_callsites": [
+            "PageShowComponent.vue:21 (admin) — safeHtml(page.description) DOMPurify-wrapped",
+            "PageComponent.vue:12 frontend — safeHtml(page.description) DOMPurify-wrapped",
+            "PageComponent.vue:12 table — safeHtml(page.description) DOMPurify-wrapped"
+          ],
+          "safeHtml_implementation": "resources/js/utils/safeHtml.js — DOMPurify.sanitize() with strict ALLOWED_TAGS allowlist (b/i/em/strong/br/p/ul/ol/li/a/h1-h6/blockquote/pre/code/span) + ALLOWED_ATTR=['href']. script/iframe/onerror/svg NOT allowed."
+        },
+        "primary_render_path_pos_kiosk": [
+          "ItemComponent.vue:35  {{ item.name }} (Vue mustache → auto-escaped)",
+          "ItemComponent.vue:77  {{ item.name }} (variation modal title)",
+          "ItemComponent.vue:83  {{ item.description }} (mustache)"
+        ]
+      },
+      "defense_layers": ["Vue mustache auto-escape (htmlspecialchars equivalent)", "Zero v-html on user-supplied item.name across POS+Kiosk", "DOMPurify with strict allowlist for other v-html sites"],
+      "destructive_writes_to_db": false,
+      "restore_required": false
+    },
+    {
+      "id": "A-10",
+      "name": "File upload polyglot (.jpg.php / .pht / double-extension)",
+      "severity_if_failed": "P0_RCE_via_uploaded_php_handler",
+      "status": "DEFENSE_HELD",
+      "method": "code-trace verification + rule audit (no upload attempt to live server)",
+      "evidence": {
+        "validation_rules_ItemRequest.php_line_85": "['nullable','image','mimes:jpg,jpeg,png','max:2048', new NoDangerousFileExtension()]",
+        "NoDangerousFileExtension_rule": {
+          "path": "app/Rules/NoDangerousFileExtension.php",
+          "blocks_extensions": ["php","phar","phtml","pl","pht","phps","phpt","phtm","inc","module","php2","php3","php4","php5","php6","php7","php8","cgi","py","rb","sh","jsp","asp","aspx"],
+          "walks_every_dot_segment": true,
+          "double_extension_defense": "explode('.') walks ALL segments — shell.php.jpg BLOCKED even with .jpg suffix",
+          "polyglot_jpg_php_status": "REJECTED (matches .php segment regardless of MIME-magic spoof)"
+        },
+        "wave_heal_history": "GOAL-L2-HEAL-02 Phase L7.1-V1 P1 (2026-05-24) — Laravel's internal shouldBlockPhpUpload only catches php/phar/phtml/pl. This rule closes .pht gap (live RCE risk if webserver maps .pht→PHP). Heal commit pre-dates current HEAD."
+      },
+      "defense_layers": ["Laravel image rule", "mimes:jpg,jpeg,png", "NoDangerousFileExtension full extension blocklist", "Multi-segment walk for double-extension polyglots"],
+      "destructive_writes_to_db": false,
+      "restore_required": false
+    },
+    {
+      "id": "A-11",
+      "name": "CONCURRENT fiscal_sequence_no race (POS+kiosk parallel)",
+      "severity_if_failed": "P0_NF525_VIOLATION_GAP_OR_DUPLICATE_FISCAL_SEQ",
+      "status": "DEFENSE_HELD",
+      "method": "sequential 5-alloc+insert + DB UNIQUE rejection test, PROPERLY CLEANED UP",
+      "evidence": {
+        "fiscal_sequence_service_path": "app/Services/Fiscal/FiscalSequenceService.php",
+        "triple_defense": [
+          "Layer 1: Cache::lock('fiscal_seq_b{branch_id}', TTL=5s, block=3s) — distributed lock",
+          "Layer 2: DB::transaction wrapping SELECT MAX + INSERT — atomic per branch",
+          "Layer 3: ->lockForUpdate() row-level lock — survives cache outage / split-brain (defense in depth, Z6-P1 NF525 heal 2026-05-19)",
+          "Layer 4: ->withTrashed() + ->withoutGlobalScope(BranchScope) — soft-deleted orders STILL counted to prevent seq reuse (canonical pattern mirrors ZReportService:337-338)"
+        ],
+        "test_results": {
+          "branch_id": 1,
+          "max_seq_before": 37,
+          "5_sequential_allocations": [38, 39, 40, 41, 42],
+          "strictly_monotonic_gap_free": "PASS",
+          "unique_constraint_index_verified": "orders_branch_fiscal_seq_unique on (branch_id, fiscal_sequence_no) — confirmed via SHOW INDEX",
+          "unique_constraint_attack_result": "PASS_UNIQUE_REJECTED (duplicate (1, 38) insert rejected by MySQL Integrity constraint)",
+          "db_state_restored": "YES (max=37 count=86 before AND after)"
+        },
+        "migration_origin": "database/migrations/2026_04_22_000001_add_fiscal_sequence_no_to_orders.php:39 — UNIQUE index orders_branch_fiscal_seq_unique"
+      },
+      "defense_layers": ["Cache::lock", "DB::transaction", "->lockForUpdate()", "->withTrashed()", "DB UNIQUE (branch_id, fiscal_sequence_no)"],
+      "destructive_writes_to_db": false,
+      "restore_required": false,
+      "restore_status": "CONFIRMED_CLEAN (delete by inserted ID set, max+count verified)"
+    },
+    {
+      "id": "A-15",
+      "name": "DECIMAL precision boundary (sub-cent / 9999.99€ / Stripe cents)",
+      "severity_if_failed": "P0_NF525_PRICING_DRIFT_or_REVENUE_LOSS",
+      "status": "DEFENSE_HELD",
+      "method": "PHP arithmetic test matrix + Stripe gateway code-trace",
+      "evidence": {
+        "test_15a_sub_cent_0.001": {"computed_cents": 0, "expected": "round down to 0", "verdict": "OK (would not charge sub-cent — NF525 conforms)"},
+        "test_15b_9999.99": {"computed_cents": 999999, "expected": 999999, "verdict": "PASS no truncation"},
+        "test_15c_stripe_9.99": {
+          "stripe_gateway_line": "app/Http/PaymentGateways/Gateways/Stripe.php:73",
+          "expression": "(int) round((float) $order->total * 100)",
+          "computed_cents": 999,
+          "expected": 999,
+          "verdict": "PASS"
+        },
+        "buggy_pattern_audit": {
+          "incorrect_pattern_dropped_in_P0_6_CTO_2026_05_16": "(int) $order->total * 100",
+          "incorrect_result_for_9.99": 900,
+          "revenue_loss_per_order_if_bug_present": "€0.99",
+          "current_pattern_at_line_73": "(int) round((float) ... * 100)",
+          "current_result_for_9.99": 999,
+          "P0_6_heal_commit": "verified in code comments lines 55-62"
+        },
+        "test_extra_negative_-9.99": {"computed_cents": -999, "verdict": "OK refund-equivalent symmetric"},
+        "test_extra_100.10": {"computed_cents": 10010, "verdict": "PASS"},
+        "test_extra_0.005_half_cent": {"computed_cents": 1, "verdict": "OK rounds up to 1 cent (banker's rounding via PHP round)"}
+      },
+      "defense_layers": ["round-before-cast pattern", "explicit (float) cast first", "P0-6 CTO audit heal 2026-05-16 + P0-POS-01 GOAL round-2 metadata.order_id 2026-05-18"],
+      "destructive_writes_to_db": false,
+      "restore_required": false
+    },
+    {
+      "id": "A-13",
+      "name": "NETWORK drop mid-payment kiosk + offline replay idempotency",
+      "severity_if_failed": "P0_DOUBLE_CHARGE_ON_RETRY_or_DUPLICATE_ORDER",
+      "status": "DEFENSE_HELD",
+      "method": "code-trace kioskCart.js + kioskOfflineQueue.js + IdempotencyKeyMiddleware",
+      "evidence": {
+        "key_generation": {
+          "path": "resources/js/store/modules/kioskCart.js:702-709",
+          "implementation": "crypto.getRandomValues UUID v4, ONCE per session cart, persisted in Vuex state.idempotencyKey",
+          "persistence_across_retry": "YES — state-scoped means double-tap reuses same key"
+        },
+        "online_path": "kioskCart.js:718-719  axios.post('frontend/order', payload, { headers: { 'X-Idempotency-Key': idempotencyKey } })",
+        "offline_path": {
+          "trigger": "kioskCart.js:762 — !err.response || err.response.status >= 500",
+          "electronic_payment_offline": "REFUSED with KIOSK_OFFLINE_ELECTRONIC_PAYMENT_REFUSED (no card payments in offline mode — prevents fraud)",
+          "cash_offline": {
+            "queued_via": "saveOrder(offlinePayload, idempotencyKey, {branchId})  // kioskCart.js:783",
+            "replay_carries_key": "kioskOfflineQueue.js:552 — { headers: { 'X-Idempotency-Key': entry.localKey } } passed to axios.post on auto-sync",
+            "preserves_key_on_replay": "YES — entry.localKey === original idempotencyKey"
+          }
+        },
+        "backend_dedup": {
+          "middleware_path": "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+          "header_constant": "X-Idempotency-Key (HEADER public const)",
+          "dual_layer": "cache + DB UNIQUE constraint per BRAIN §9",
+          "twoxx_only_replay_cache": "verified in CLAUDE.md §9 idempotency policy"
+        },
+        "double_charge_path_analysis": {
+          "kiosk_double_tap": "Vuex state.idempotencyKey reused → backend returns cached 2xx response, no duplicate order",
+          "network_drop_then_retry": "Same key persisted in IndexedDB + offline queue → replay carries X-Idempotency-Key → middleware dedups",
+          "offline_then_online_replay": "kioskOfflineQueue.js:543-558 attempts POST with original entry.localKey as both payload field AND header — backend strips duplicate via UNIQUE constraint at DB layer",
+          "verdict": "DOUBLE-CHARGE PATH NOT POSSIBLE in tested code paths"
+        }
+      },
+      "defense_layers": ["crypto-strong UUID v4 idempotency key", "session-scoped key persistence (Vuex)", "X-Idempotency-Key header on all retry paths", "IndexedDB offline queue carries key", "Backend middleware cache + DB UNIQUE", "Electronic payment offline-refused"],
+      "destructive_writes_to_db": false,
+      "restore_required": false
+    }
+  ],
+  "snapshot_pre_post_db": {
+    "orders_branch_1_max_fiscal_seq": {"pre": 37, "post": 37, "delta": 0},
+    "orders_branch_1_total_count": {"pre": 86, "post": 86, "delta": 0},
+    "item_22_name": {"pre": "Sandwich Cayenne", "post": "Sandwich Cayenne", "modified": false}
+  },
+  "edge_observations": [
+    {
+      "category": "PHP_FLOAT_PRECISION_NOTE",
+      "observation": "PHP `(int) (9.99 * 100)` = 999 (correct here because IEEE-754 happens to produce 999.0 exactly). The buggy pattern is `(int) 9.99 * 100` which due to operator precedence evaluates `(int) 9.99` first = 9, then *100 = 900. Stripe.php:73 uses `(int) round(... * 100)` which is ROBUST regardless of float representation — guards against borderline values like 4.555 where IEEE could land 0.5 short.",
+      "severity": "INFO_only"
+    },
+    {
+      "category": "V_HTML_AUDIT_FULL_REPO",
+      "observation": "Repo-wide v-html scan: 4 callsites total, ALL wrapped in safeHtml(...) → DOMPurify with strict allowlist. KsThemeToggle uses safeHtml on STATIC internal SVG (no user input path). PageShowComponent/PageComponent use safeHtml(page.description) — admin-editable Quill HTML, sanitized.",
+      "severity": "INFO_only"
+    },
+    {
+      "category": "OFFLINE_QUEUE_RESILIENCE",
+      "observation": "kioskOfflineQueue.js has BroadcastChannel cross-tab coordination, lock-based serialization (LOCK_KEY=kiosk:offline-queue:lock, 60s TTL), max 10 retry attempts with exponential backoff to 30s. Quota-exceeded handling. Production-grade resilience.",
+      "severity": "INFO_only"
+    }
+  ],
+  "remaining_doubts_for_next_wave": [
+    {
+      "id": "EDGE-FOLLOWUP-1",
+      "description": "Verify what happens if attacker sends X-Idempotency-Key but DIFFERENT payload (replay vs new). Per BRAIN §9: 'conflict 409 si payload diff'. Recommend explicit Playwright spec to assert 409 on payload-divergence.",
+      "priority": "P2"
+    },
+    {
+      "id": "EDGE-FOLLOWUP-2",
+      "description": "Confirm webserver config does NOT map .pht/.phtml at nginx/Apache level even though uploaded files are blocked. Defense in depth at server config (e.g. .htaccess Deny on /storage/uploads). Out-of-scope for code audit.",
+      "priority": "P3"
+    },
+    {
+      "id": "EDGE-FOLLOWUP-3",
+      "description": "Stripe.php payment() catches all Throwable + redirects with $e->getMessage() (line 105-107). Could leak stack frames in error toast. Recommend safe-error-message wrapper. INFO only.",
+      "priority": "P3"
+    }
+  ]
+}

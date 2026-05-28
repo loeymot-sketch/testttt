@@ -180,9 +180,24 @@ return [
         'cash_no_open_session_blocks_sale' => 'Aucune caisse ouverte — ouvrir une session avant de prendre un paiement espèces.',
         // [W2-livreur 2026-05-21] Libellés UI cash-session admin livreur (V1.0.2 Sub-6.3 BUILD-1).
         'delivery_cash_sessions' => 'Caisses livreur',
+        'delivery_cash_session' => 'Caisse livreur',
         'delivery_cash_status_open' => 'Ouverte',
         'delivery_cash_status_closed' => 'Clôturée',
         'delivery_cash_status_reconciled' => 'Réconciliée',
+        // [T2-LIV-P1-01 heal 2026-05-28] Add missing keys surfaced by MAX TEST i18n sweep
+        // on /admin/delivery-boy-cash-sessions/1 (DeliveryBoyCashSessionShowComponent.vue).
+        'cash_session_closed_at' => 'Fermée le',
+        'cash_session_reconcile' => 'Réconcilier',
+        'direction' => 'Sens',
+        'notes' => 'Notes',
+        'branch' => 'Branche',
+        'type' => 'Type',
+        'delivery_boy' => 'Livreur',
+        'delivery_cash_mvt_order_collect' => 'Encaissement commande livrée',
+        'delivery_cash_mvt_change_given' => 'Rendu de monnaie',
+        'delivery_cash_mvt_drawer_open' => 'Ouverture caisse',
+        'delivery_cash_mvt_drawer_close' => 'Clôture caisse',
+        'delivery_cash_mvt_adjustment' => 'Ajustement',
     ],
     'studio' => [
         'eyebrow' => 'Catalogue centralisé',
