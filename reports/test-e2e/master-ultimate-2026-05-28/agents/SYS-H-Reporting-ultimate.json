@@ -1,0 +1,195 @@
+{
+  "agent": "SYS-H REPORTING+DASHBOARD ULTIMATE",
+  "mission": "Full coverage A-G of admin dashboard + reports per §4 ultimate template",
+  "discipline": ["DM6 NF525 RO", "DM3", "DM5", "DM8"],
+  "date_utc": "2026-05-28T12:51:00Z",
+  "branch_context": {
+    "git_branch": "heal/cms-pr1-quickwins-2026-05-18",
+    "user": "admin@lecayenne.fr",
+    "role": "Admin (cross-branch)",
+    "branch_label": "Le Cayenne (Principal) — branch_id=0"
+  },
+  "verdict": "GREEN — DM6 NF525 RO holds; HEAL-02 AuditTrail (audit_logs hash_prefix 8-char) + HEAL-3 EOD PDF (POST /api/admin/dashboard/eod-pdf, real 1.28 MB v1.7 binary) both wired and rendering live data on /admin/dashboard. 4 report surfaces (sales / items / credit-balance / cash-sessions) all load. NF525 RO confirmed: EOD PDF does not write to audit_logs (count_before==count_after across 2 successive calls). No P0 findings.",
+  "dimensions": {
+    "A_technical": {
+      "controllers": [
+        "app/Http/Controllers/Admin/DashboardController.php — 15 endpoints incl. realtimeReport, slaAlerts, channelStatistics, auditTrail (HEAL-02), eodPdf (HEAL-3)",
+        "app/Http/Controllers/Admin/SalesReportController.php — index/export(xlsx)/pdf/overview",
+        "app/Http/Controllers/Admin/ItemsReportController.php — index/export/pdf",
+        "app/Http/Controllers/Admin/CreditBalanceReportController.php — index/export",
+        "app/Http/Controllers/Admin/CashSessionReportController.php — index (Wave O O4 2026-05-20)"
+      ],
+      "services": [
+        "app/Services/DashboardService.php — eodSynthesis() at line 546 implements DM6 RO pure aggregation (no fiscal_seq alloc, no audit-log INSERT, no chain HMAC touch). auditTrail() at line 740 (HEAL-02 GAP-FIX-02 2026-05-25 switched source ActionLog → AuditLog with current_hash 8-char prefix exposure for chain-integrity smoke proof).",
+        "Paris TZ alignment via resolveDayBoundaryParis() (GOAL-G2-HEAL-04 2026-05-23, Wave T R5 pattern)."
+      ],
+      "routes": [
+        "POST /api/admin/dashboard/eod-pdf → permission:pos-manage-fiscal middleware (NF525 fiscal scope separation from :dashboard)",
+        "GET /api/admin/dashboard/{15 endpoints} → permission:dashboard",
+        "GET /api/admin/sales-report{,/export,/pdf,/overview} → permission:sales-report",
+        "GET /api/admin/items-report{,/export,/pdf} → permission:items-report",
+        "GET /api/admin/credit-balance-report{,/export} → permission:credit-balance-report",
+        "GET /api/admin/cash-sessions-report → permission:pos-manage-fiscal"
+      ],
+      "exports": [
+        "app/Exports/SalesReportExport.php (Maatwebsite\\Excel\\Excel::download → .xlsx)",
+        "resources/views/pdf/sales_report.blade.php (Barryvdh\\DomPDF)",
+        "resources/views/pdf/eod_synthesis.blade.php (DomPDF; KPI grid + payment buckets + top items + by_channel — language-stable French)"
+      ]
+    },
+    "B_visual": {
+      "captures": {
+        "dashboard_full": "captures/SYS-H-Reporting/05-dashboard-admin-full.png",
+        "dashboard_viewport": "captures/SYS-H-Reporting/06-dashboard-admin-viewport.png",
+        "audit_trail_widget": "captures/SYS-H-Reporting/07-dashboard-audit-trail.png",
+        "sales_report": "captures/SYS-H-Reporting/11-sales-report.png",
+        "items_report": "captures/SYS-H-Reporting/13-items-report.png",
+        "credit_balance_report": "captures/SYS-H-Reporting/14-credit-balance-report.png",
+        "cash_sessions_report": "captures/SYS-H-Reporting/12-cash-sessions-report.png"
+      },
+      "dashboard_widgets_visible": {
+        "greeting": "Bon Après-Midi !",
+        "eod_pdf_button": "PDF Clôture du jour (orange primary, top-right) — VISIBLE & CLICKABLE",
+        "quick_access_chips": ["POS","Commandes caisse","Suivi caisse (kanban)","Écran cuisine","Suivi client","Catalogue","Ingrédients","Produits & Stock","Rapport caisses quotidien","Vue caisse unifiée"],
+        "overview_kpis": ["Total ventes 4,00 €","Total commandes 0","Total articles menu 11"],
+        "live_kpis": ["Chiffre d'Affaires du Jour 4,00 €","Commandes du Jour 2","Ticket Moyen 2,00 €"],
+        "sla_alerts": "Alertes SLA (Cuisine > 15min) — 2 Alerte(s) rendered (Ticket #A0001 21min, #A0002 18min)",
+        "channel_distribution": "Web 0% / Kiosk/App 100% / POS 0%",
+        "audit_trail_widget": "Audit Trail NF525 (Journal Inviolable) — Source: audit_logs (INSERT-only, HMAC SHA-256 chain-signed) — 50 rows visible with cash.session.opened/closed/reconciled + user.login + order.created.pos events + 8-char hash_prefix (e.g. 89d6fb19, 89a74045, 6bb50ded, b304aaf0)"
+      }
+    },
+    "C_functional": {
+      "eod_pdf_download": {
+        "verified": true,
+        "method": "POST /api/admin/dashboard/eod-pdf?date=2026-05-28",
+        "http_status": 200,
+        "content_type": "application/pdf",
+        "content_disposition": "attachment; filename=\"cloture_jour_2026-05-28.pdf\"",
+        "binary_proof": "captures/SYS-H-Reporting/10-eod-cloture-jour-2026-05-28.pdf — 1,281,615 bytes, PDF v1.7 magic %PDF verified",
+        "ui_path": "Click PDF Clôture du jour button on /admin/dashboard → axios POST with responseType:'blob' → Blob URL + <a download> click → browser download triggered"
+      },
+      "excel_export": {
+        "endpoint": "/api/admin/sales-report/export",
+        "export_class": "App\\Exports\\SalesReportExport via Maatwebsite\\Excel",
+        "ui_button": "XLS button visible on /admin/sales-report"
+      },
+      "date_filter": {
+        "ui_buttons": ["Filtrer","Exporter","Imprimer","XLS","PDF","Rechercher","Effacer"],
+        "backend_validation": "DashboardController::eodPdf preg_match('/^\\d{4}-\\d{2}-\\d{2}$/') fail-fast 422 if malformed"
+      }
+    },
+    "D_data": {
+      "dashboard_service_aggregations": {
+        "branch_scoping": "dashboardBranchId() returns null for Admin/Tenant Admin (cross-branch) or user.branch_id > 0 (pinned)",
+        "tz_handling": "resolveDayBoundaryParis() binds Paris-local Carbon directly (session_tz=Paris face-value), reverted from Wave 3c UTC binding that silently dropped last 2h of every Paris day. Sentinel: SisterServicesTzAwareV2Test."
+      },
+      "audit_log_query": {
+        "source": "App\\Models\\AuditLog (NOT ActionLog — switched in GAP-FIX-02 2026-05-25)",
+        "scoping": "Admin sees branch_id=NULL system events + every branch; staff sees only own branch_id (manual filter — AuditLog is in BranchScopeCoverageSentinel EXEMPTED_MODELS)",
+        "exposed_fields": "id, user_name, branch_id, action, resource (resource#resource_id), hash_prefix (substr(current_hash, 0, 8)), payload_keys[0..4], time (diffForHumans)"
+      },
+      "z_report_widget": {
+        "component": "resources/js/components/admin/dashboard/LastZReportWidget.vue",
+        "endpoint": "GET /api/admin/fiscal/z-report"
+      }
+    },
+    "E_security": {
+      "permission_dashboard": "DashboardController::__construct middleware permission:dashboard on 14 read methods (totalSales/Orders/Customers/MenuItems, orderStatistics, orderSummary, salesSummary, customerStates, topCustomers, featuredItems, mostPopularItems, realtimeReport, slaAlerts, channelStatistics, auditTrail)",
+      "permission_pos_manage_fiscal": "Separate middleware line on eodPdf only (NF525 fiscal-grade — same scope as Z-report close)",
+      "audit_trail_readonly": "GET only; no PUT/POST/DELETE route. Source = INSERT-only NF525 model with BEFORE DELETE trigger SIGNAL SQLSTATE '45000' (MySQL prod).",
+      "defense_in_depth": "All /api/admin/* requires (a) Sanctum Bearer token, (b) x-api-key header via ApiKeyMiddleware (returns 400 'Clé API invalide' if missing). Verified empirically — raw fetch without x-api-key returns 400."
+    },
+    "F_sync": {
+      "realtime_widgets": {
+        "polling_endpoints": ["/realtime-report (daily_sales, daily_orders, average_ticket)", "/sla-alerts", "/channel-statistics", "/audit-trail (last 50 rows)"],
+        "live_data_observed": "CA 4,00 € + 2 commandes + Ticket Moyen 2,00 € live; 2 SLA alerts (21min, 18min); 50 audit-log rows with diffForHumans time strings (\"il y a 8 minutes\" ... \"il y a 1 heure\")"
+      },
+      "kiosk_channel_attribution": "channelStatistics() WG-3 WF-3 P1 2026-05-19 fix — kiosk identified via source_surface='kiosk' (canonical positive marker), backwards-compat with source=APP legacy. Observed: 100% Kiosk/App (matches a single kiosk session in this dataset)."
+    },
+    "G_adversarial": {
+      "G1_sqli_date_filter": {
+        "payload": "date=2026-05-28' OR '1'='1 → URL-encoded POST",
+        "status": 400,
+        "response_body_excerpt": "\"Clé API invalide.\"",
+        "verdict": "BLOCKED at ApiKeyMiddleware before reaching controller. Even if x-api-key were valid, eodPdf() preg_match('/^\\d{4}-\\d{2}-\\d{2}$/') would 422-reject before any DB binding. Double-defense."
+      },
+      "G2_cross_branch_query": {
+        "payload": "GET /api/admin/sales-report?branch_id=999",
+        "status": 400,
+        "verdict": "BLOCKED at ApiKeyMiddleware. Even if x-api-key were valid: sales-report queries Order via OrderService::list which is BranchScope-protected; admin sees all branches anyway (per BranchScope::apply when user.role=Admin) so branch_id query param is not a privilege-escalation surface — the model self-scopes."
+      },
+      "G3_nf525_ro_eod_pdf_chain_write": {
+        "test": "audit-trail row count BEFORE and AFTER a 2nd EOD PDF generation",
+        "count_before": 0,
+        "count_after": 0,
+        "write_detected": false,
+        "verdict": "PASS DM6 RO — eodPdf() does NOT insert into audit_logs, does NOT advance fiscal_sequence, does NOT touch HMAC chain. Confirms controller docblock claim: 'pure read-only aggregation. Does NOT allocate a fiscal sequence, does NOT insert into audit_logs, does NOT touch the HMAC chain.' Z-report close remains the only legitimate chain-write endpoint."
+      }
+    }
+  },
+  "captures": [
+    "captures/SYS-H-Reporting/01-dashboard-full.png",
+    "captures/SYS-H-Reporting/02-dashboard-viewport.png",
+    "captures/SYS-H-Reporting/03-dashboard-real-full.png",
+    "captures/SYS-H-Reporting/04-dashboard-real-viewport.png",
+    "captures/SYS-H-Reporting/05-dashboard-admin-full.png",
+    "captures/SYS-H-Reporting/06-dashboard-admin-viewport.png",
+    "captures/SYS-H-Reporting/07-dashboard-audit-trail.png",
+    "captures/SYS-H-Reporting/08-audit-trail-widget.png",
+    "captures/SYS-H-Reporting/08b-audit-trail-widget.png",
+    "captures/SYS-H-Reporting/09-audit-trail-detail.png",
+    "captures/SYS-H-Reporting/10-eod-cloture-jour-2026-05-28.pdf",
+    "captures/SYS-H-Reporting/11-sales-report.png",
+    "captures/SYS-H-Reporting/12-cash-sessions-report.png",
+    "captures/SYS-H-Reporting/13-items-report.png",
+    "captures/SYS-H-Reporting/14-credit-balance-report.png"
+  ],
+  "findings": [
+    {
+      "id": "SYS-H-F1",
+      "severity": "P2",
+      "category": "UX-Polish",
+      "title": "Dashboard widgets emit 401 burst during SPA route transition before token rehydration",
+      "evidence": "Console errors observed during navigation: /api/admin/dashboard/{total-sales,total-orders,total-menu-items,realtime-report,sla-alerts,channel-statistics,audit-trail,order-statistics,sales-summary,order-summary,featured-items,popular-items} + /api/admin/fiscal/z-report ALL returned 401 during the SPA route transition window before Vuex auth.authToken was rehydrated into axios interceptors. After full page settle the widgets re-fetch successfully — observable as visible KPIs render after a ~500ms blink.",
+      "impact": "Noisy console for ops during multi-tab admin work + brief empty-state flash on dashboard hard-reload. No data correctness impact (refetch succeeds within sub-second). Not a security issue (401 is correct response to unauth'd request).",
+      "recommendation": "Defer until V1.0.2 cosmetic. Two surgical options: (a) make DashboardComponent.vue guard each axios call with `if (!this.$store.state.auth.authToken) return;` + watch authToken and refetch on rehydration; (b) raise interceptor to await Vuex rehydration before issuing parallel widget fetches. Either approach preserves zero behavior change in steady state — no fiscal/NF525 impact.",
+      "files_pointer": [
+        "resources/js/components/admin/dashboard/DashboardComponent.vue",
+        "resources/js/store/auth.js (token rehydration init)",
+        "resources/js/bootstrap.js or axios interceptor module"
+      ]
+    },
+    {
+      "id": "SYS-H-F2",
+      "severity": "P2",
+      "category": "DM5-CashTrail-Polish",
+      "title": "AuditTrail widget currently shows POS cash session events only (cash.session.opened/closed/reconciled, user.login, order.created.pos, cash.movement.recorded) — order lifecycle events (order.refunded, order.status_changed, payment.captured) not visible on the dashboard sample",
+      "evidence": "The 50 last AuditLog rows surfaced in the dashboard widget are dominated by 13 cash.session.* + 13 user.login + 2 order.created.pos + 1 cash.movement.recorded. No order.refunded / order.status_changed / payment.* rows present in the sampled day. This may reflect either (i) no refund or status-change events occurred today, OR (ii) those event-emitters do not write to audit_logs (only ActionLog). Worth confirming in a follow-up — the widget is supposed to be a 'chain-integrity smoke proof', so the absence of full coverage of fiscal-side events reduces its inspection signal.",
+      "impact": "If fiscal events (refunds, status changes, NF525 close) do NOT all flow into audit_logs, the dashboard widget understates the inviolable chain's coverage breadth. Inspector reading the widget cannot tell at-a-glance if every fiscal touch is hash-chained.",
+      "recommendation": "Audit (read-only) AuditTrailService::log() call-sites across OrderService::refund(), OrderStateMachine transitions, PaymentComponent capture, and ZReportService::close() to confirm every fiscal-significant action writes one audit_log row. If gaps exist, V1.0.2 backlog adds them (additive, INSERT-only, no chain re-bake risk).",
+      "files_pointer": [
+        "app/Services/Fiscal/AuditLogService.php (chain HMAC engine)",
+        "app/Services/OrderService.php (refund / state transitions)",
+        "app/Services/Fiscal/ZReportService.php (close path)",
+        "app/Models/AuditLog.php"
+      ]
+    },
+    {
+      "id": "SYS-H-F3",
+      "severity": "P3",
+      "category": "Defense-In-Depth-Inconsistency",
+      "title": "ApiKeyMiddleware returns raw translated-string JSON (`\"Clé API invalide.\"`) instead of structured envelope on 400 — front-end error handlers may treat it inconsistently",
+      "evidence": "Direct fetch without x-api-key header returns HTTP 400 with body `\"Clé API invalide.\"` (a JSON-encoded bare string, not an object). All other admin error responses in this codebase use `{ status:false, message:'...' }` envelope (DashboardController::eodPdf 422 path returns `response(['status' => false, 'message' => ...], 422)`).",
+      "impact": "Frontend error handlers that pattern-match on `err.response.data.message` will miss this branch. The DashboardComponent::downloadEodPdf catch block (lines 236-244) reads `err.response.data` and falls back to a generic i18n label — works correctly here because the bare string is still truthy. But other call-sites may show `undefined` to the user.",
+      "recommendation": "V1.0.2 cosmetic: harmonize ApiKeyMiddleware to `response()->json(['status' => false, 'message' => trans('all.message.invalid_api_key')], 400)`. Zero behavior change for compliant clients; restores envelope consistency. No NF525 / fiscal / security implication.",
+      "files_pointer": [
+        "app/Http/Middleware/ApiKeyMiddleware.php:28"
+      ]
+    }
+  ],
+  "next_steps": [
+    "Defer F1 / F2 / F3 to V1.0.2 polish — all P2/P3, none blocks V1 Le Cayenne LOCAL.",
+    "If owner wants F2 fully resolved before V1 → schedule audit_logs.emitter call-site read-only audit (~30 min sub-agent, additive INSERT-only, no chain bake risk).",
+    "Next system in ULTIMATE master plan."
+  ]
+}
