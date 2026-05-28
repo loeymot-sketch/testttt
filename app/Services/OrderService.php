@@ -66,7 +66,10 @@ class OrderService
         'payment_status',
         'status',
         'delivery_boy_id',
-        'source'
+        'source',
+        // Cashier searches kiosk pay-at-counter orders by the printed
+        // queue number (e.g. A042) shown on the customer's ticket.
+        'queue_number',
     ];
 
     protected array $exceptFilter = [

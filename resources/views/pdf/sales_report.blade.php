@@ -107,6 +107,17 @@
         <div class="report">
             <p style="margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold">{{ App\Libraries\AppLibrary::textShortener($company['company_name'], 60) }}</p>
             <p>{{ App\Libraries\AppLibrary::textShortener($company['company_address'],60) }}</p>
+            @php
+                $legalParts = array_filter([
+                    $company['company_legal_form'] ?? null,
+                    isset($company['company_siret']) && $company['company_siret'] !== '' ? 'SIRET: ' . $company['company_siret'] : null,
+                    isset($company['company_tva_intra']) && $company['company_tva_intra'] !== '' ? 'TVA: ' . $company['company_tva_intra'] : null,
+                    isset($company['company_naf']) && $company['company_naf'] !== '' ? 'NAF: ' . $company['company_naf'] : null,
+                ]);
+            @endphp
+            @if (!empty($legalParts))
+                <p style="font-size: 10px; color: #555;">{{ implode(' · ', $legalParts) }}</p>
+            @endif
             <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.sales_report', [], 'en') }}</p>
             <table>
                 <thead>

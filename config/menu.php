@@ -68,7 +68,10 @@ return [
     */
     'settings' => [
         'tax_rate'              => 10.00,
-        'default_tax_id'        => 1,
+        // tax_id 3 = VAT-10% row from TaxTableSeeder. NF525 receipts must
+        // display the TVA breakdown; tax_id 1 (No-VAT) silently produced
+        // illegal 0 % tickets for à-emporter food sales.
+        'default_tax_id'        => 3,
         'status_active'         => \App\Enums\Status::ACTIVE,
         'featured_default'      => true,
         'currency_decimals'     => 2,

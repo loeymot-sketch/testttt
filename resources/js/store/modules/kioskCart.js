@@ -5,7 +5,7 @@ import { isSnapshotStale, loadSnapshot } from "../../helpers/kioskMenuCache";
 // Source identique à sourceEnum.WEB (pas de valeur KIOSK côté frontend)
 const SOURCE_KIOSK = 5;
 
-const PAYMENT_METHOD_MAP = { cash: 1, card: 4, tr: 5 };
+const PAYMENT_METHOD_MAP = { cash: 1, card: 4, tr: 5, counter: 6 };
 const MAX_ITEM_QTY = window.foodkingConfig?.maxItemQty ?? 20;
 
 function sanitizeKioskOrderItem(item) {

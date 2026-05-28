@@ -91,6 +91,8 @@
             // [STAFF-ONLY-V1] Feature flags for surface restructuring
             staffOnlyMode: @json((bool) env('STAFF_ONLY_MODE', false)),
             kioskUsePosWizard: @json((bool) env('KIOSK_USE_POS_WIZARD', false)),
+            // V1 launch: kiosk skips TPE, submits unpaid order, customer pays at caisse.
+            kioskPayAtCounterOnly: @json((bool) config('kiosk.pay_at_counter_only', false)),
         };
         // [SEC-30-2] Demo credentials injected server-side — never hardcoded in JS bundle
         // [GAP-32-6] Use config() instead of env() — env() returns null after config:cache in production

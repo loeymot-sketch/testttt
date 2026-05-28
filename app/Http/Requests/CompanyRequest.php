@@ -34,6 +34,13 @@ class CompanyRequest extends FormRequest
             'company_country_code' => ['required', 'string', 'max:190'],
             'company_zip_code'     => ['required', 'string', 'max:190'],
             'company_address'      => ['required', 'string', 'max:500'],
+            // NF525 legal identity printed on every receipt. SIRET is mandatory
+            // for French businesses; the other three are kept nullable so the
+            // form unblocks an empty install without forcing a fake value.
+            'company_siret'        => ['nullable', 'string', 'regex:/^\d{14}$/'],
+            'company_tva_intra'    => ['nullable', 'string', 'regex:/^FR\d{11}$/i', 'max:13'],
+            'company_naf'          => ['nullable', 'string', 'regex:/^\d{4}[A-Z]$/'],
+            'company_legal_form'   => ['nullable', 'string', 'max:30'],
         ];
     }
 }

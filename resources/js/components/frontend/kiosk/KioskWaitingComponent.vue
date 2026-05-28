@@ -36,6 +36,10 @@
           </div>
 
           <p class="kiosk-waiting-hint">{{ $t('kiosk.waiting_ui.preparing_hint') }}</p>
+          <!-- V1 launch — kiosk has no integrated TPE; payment is finalised at the counter. -->
+          <p v-if="payAtCounterOnly" class="kiosk-waiting-hint" style="margin-top:8px;font-weight:600">
+            Présentez ce numéro à la caisse pour payer.
+          </p>
 
           <!-- Barre de progression indéterminée -->
           <div class="kiosk-waiting-progress">
@@ -177,6 +181,7 @@ export default {
       timedOut: false, // [AUDIT-P1-C] true after 15 min timeout
       _eventSub: null,
       _pollInFlight: false, // [AUDIT-P2-G] prevent overlapping poll requests
+      payAtCounterOnly: !!(window.foodkingConfig && window.foodkingConfig.kioskPayAtCounterOnly),
     };
   },
   mounted() {

@@ -8,4 +8,5 @@ interface PaymentGateway
     const PAYPAL            = 3;
     const CARD              = 4;  // TPE / carte bancaire (kiosk)
     const TICKET_RESTAURANT = 5;  // Titre-restaurant (kiosk)
+    const PAY_AT_COUNTER    = 6;  // V1 launch — kiosk submits unpaid order, caisse finalises
 }

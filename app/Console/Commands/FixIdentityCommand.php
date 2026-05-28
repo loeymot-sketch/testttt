@@ -30,6 +30,10 @@ class FixIdentityCommand extends Command
                 'company_country_code' => 'FRA',
                 'company_zip_code'     => '75000',
                 'company_address'      => 'Paris, France',
+                'company_siret'        => '',
+                'company_tva_intra'    => '',
+                'company_naf'          => '',
+                'company_legal_form'   => '',
             ]);
         }
 

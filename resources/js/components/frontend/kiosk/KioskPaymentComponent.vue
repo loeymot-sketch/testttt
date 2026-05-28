@@ -21,8 +21,9 @@
     </div>
 
     <!-- Modes de paiement — grille borne (cartes, pas bandeaux pleine largeur) -->
+    <!-- V1 launch: hidden when KIOSK_PAY_AT_COUNTER_ONLY=true; submission is auto-triggered on mount. -->
     <div
-      v-if="!submitting && !submitted"
+      v-if="!submitting && !submitted && !payAtCounterOnly"
       class="kiosk-pay-methods-outer"
       role="radiogroup"
       :aria-label="$t('kiosk.pay_screen.title')"
@@ -172,8 +173,8 @@
       </div>
     </transition>
 
-    <!-- Bouton confirmer -->
-    <div v-if="!submitting && !submitted && !tpeWaiting" class="kiosk-pay-confirm">
+    <!-- Bouton confirmer (masqué quand pay_at_counter_only — l'envoi est auto) -->
+    <div v-if="!submitting && !submitted && !tpeWaiting && !payAtCounterOnly" class="kiosk-pay-confirm">
       <div
         v-if="error"
         class="kiosk-pay-error"
@@ -249,6 +250,9 @@ export default {
     // [GAP-22-4] Also read orderType so it's passed to submitOrder
     ...mapGetters('kioskCart', ['total', 'branchId', 'orderType']),
     cartTotal() { return this.total; },
+    payAtCounterOnly() {
+      return !!(window.foodkingConfig && window.foodkingConfig.kioskPayAtCounterOnly);
+    },
   },
   mounted() {
     // Kiosk Phase 9.1.8 — prépare le composable TTS (no-op si audio off ou
@@ -256,6 +260,13 @@ export default {
     try {
       this._kioskSpeech = useKioskSpeech({ store: this.$store });
     } catch (_) { this._kioskSpeech = null; }
+    // V1 launch — KIOSK_PAY_AT_COUNTER_ONLY=true: skip the payment-method
+    // grid and submit immediately as PAY_AT_COUNTER (6). Order is created
+    // UNPAID; cashier finalises payment by queue-number lookup at the POS.
+    if (this.payAtCounterOnly) {
+      this.method = 'counter';
+      this.$nextTick(() => { this.confirmPayment(); });
+    }
   },
   beforeUnmount() {
     this._lastOrder = null;
@@ -325,6 +336,8 @@ export default {
         // Step 2 — Payment processing
         if (this.method === 'card' || this.method === 'tr') {
           await this.processCardPayment(navTarget);
+        } else if (this.method === 'counter') {
+          await this.processPayAtCounter(navTarget);
         } else {
           await this.processCashPayment(navTarget);
         }
@@ -489,6 +502,19 @@ export default {
         error: !approved ? (raw.error || result.error || 'declined') : null,
         error_code: raw.error_code || result.error_code || null,
       };
+    },
+
+    async processPayAtCounter(navTarget) {
+      // V1 launch — kiosk has no TPE; order is created UNPAID server-side
+      // (payment_method=PAY_AT_COUNTER=6). Customer brings the queue ticket
+      // to the cashier, who finalises payment via /admin/posOrders lookup.
+      try {
+        kioskAnalytics.track('order_submitted_pay_at_counter', {
+          total_cents: Math.round((this._lastOrder?.total || this.cartTotal) * 100),
+          queue_number: this._lastOrder?.queue_number || null,
+        });
+      } catch (_) {}
+      this.$router.push(navTarget);
     },
 
     async processCashPayment(navTarget) {

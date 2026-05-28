@@ -34,6 +34,10 @@ class CompanyResource extends JsonResource
             "company_country_code" => $this->info['company_country_code'] ?? null,
             "company_zip_code"     => $this->info['company_zip_code'] ?? null,
             "company_address"      => $this->info['company_address'] ?? null,
+            "company_siret"        => $this->info['company_siret'] ?? null,
+            "company_tva_intra"    => $this->info['company_tva_intra'] ?? null,
+            "company_naf"          => $this->info['company_naf'] ?? null,
+            "company_legal_form"   => $this->info['company_legal_form'] ?? null,
         ];
     }
 

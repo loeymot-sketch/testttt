@@ -12,6 +12,7 @@
                     <h3 class="text-2xl font-bold mb-1">{{ company.company_name }}</h3>
                     <h4 class="text-sm font-normal">{{ branch.address }}</h4>
                     <h5 class="text-sm font-normal">Tel: {{ branch.phone }}</h5>
+                    <p v-if="legalFooter" class="text-[10px] leading-snug mt-1 text-heading">{{ legalFooter }}</p>
                 </div>
 
                 <table class="w-full my-1.5">
@@ -215,6 +216,15 @@ export default {
         },
         direction: function () {
             return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
+        },
+        legalFooter: function () {
+            const c = this.company || {};
+            const parts = [];
+            if (c.company_legal_form) parts.push(c.company_legal_form);
+            if (c.company_siret) parts.push('SIRET: ' + c.company_siret);
+            if (c.company_tva_intra) parts.push('TVA: ' + c.company_tva_intra);
+            if (c.company_naf) parts.push('NAF: ' + c.company_naf);
+            return parts.join(' · ');
         },
     },
 };

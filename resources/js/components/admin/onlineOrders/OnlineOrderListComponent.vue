@@ -29,6 +29,12 @@
                         </div>
 
                         <div class="col-12 sm:col-6 md:col-4 xl:col-3">
+                            <label for="queue_number" class="db-field-title after:hidden">N° d'appel (borne)</label>
+                            <input id="queue_number" v-model="props.search.queue_number" type="text"
+                                class="db-field-control" placeholder="A042">
+                        </div>
+
+                        <div class="col-12 sm:col-6 md:col-4 xl:col-3">
                             <label for="searchStatus" class="db-field-title after:hidden">{{
                                 $t('label.status')
                                 }}</label>
@@ -272,6 +278,7 @@ export default {
                     order_column: 'id',
                     order_by: "desc",
                     order_serial_no: "",
+                    queue_number: "",
                     user_id: null,
                     excepts: orderTypeEnum.DINING_TABLE,
                     exceptSource: SourceEnum.POS,
@@ -346,6 +353,7 @@ export default {
             this.props.search.page = 1;
             this.props.search.order_by = "desc";
             this.props.search.order_serial_no = "";
+            this.props.search.queue_number = "";
             this.props.search.status = null;
             this.props.search.excepts = orderTypeEnum.POS + '|' + orderTypeEnum.DINING_TABLE;
             this.props.search.from_date = "";

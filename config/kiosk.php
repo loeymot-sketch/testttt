@@ -46,6 +46,7 @@ if ($requireForm) {
         ],
         'max_item_qty' => (int) env('KIOSK_MAX_ITEM_QTY', 20),
         'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 5),
+        'pay_at_counter_only' => filter_var(env('KIOSK_PAY_AT_COUNTER_ONLY', false), FILTER_VALIDATE_BOOLEAN),
     ];
 }
 
@@ -86,4 +87,8 @@ return [
     ],
     'max_item_qty' => (int) env('KIOSK_MAX_ITEM_QTY', 20),
     'order_rate_limit' => (int) env('KIOSK_ORDER_RATE_LIMIT', 5),
+    // V1 launch: external SumUp terminal at the counter, kiosk has no TPE wired
+    // in. When true, the kiosk skips its payment-method grid entirely and
+    // submits an unpaid order with a queue number; customer pays at caisse.
+    'pay_at_counter_only' => filter_var(env('KIOSK_PAY_AT_COUNTER_ONLY', false), FILTER_VALIDATE_BOOLEAN),
 ];
