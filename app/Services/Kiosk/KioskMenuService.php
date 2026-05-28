@@ -82,6 +82,15 @@ final class KioskMenuService
                     'addons:id,item_id,addon_item_id,addon_item_variation,role',
                     'addons.addonItem:id,name,status,is_available,channels',
                     'allergens:id,code,name_key,icon,sort',
+                    // [DBPERF-P1-01 heal 2026-05-29] Eager-load Item media
+                    // (Spatie polymorphic). Wave D measured 89 queries on
+                    // /api/frontend/menu cold path due to lazy
+                    // getFirstMediaUrl() on Item::thumb accessor. Only Item
+                    // implements HasMedia (verified app/Models/Item.php:15).
+                    // Variations/Extras do NOT have media — those N+1 hits
+                    // come from addonItem.thumb chain which loads Item media.
+                    'media',
+                    'addons.addonItem.media',
                 ])
                 ->where('status', Status::ACTIVE)
                 ->whereIn('item_category_id', $categoryIds)
