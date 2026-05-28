@@ -1,0 +1,388 @@
+{
+  "agent": "REAL-FLOW-TRACKER",
+  "mission": "Pass REAL orders through ALL systems + track sync + analyze max depth",
+  "discipline": "DM6 NF525 RO (no manual INSERT, real PaymentService extends chain)",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "started_at": "2026-05-28T16:26:50Z",
+  "ended_at": "2026-05-28T16:50:00Z",
+  "baseline_db": {
+    "audit_logs_count": 96,
+    "audit_logs_last_hash": "0938b9189900f0f436e1270042e610fd0023893b7eba8a4b20fbc8a1cf0679d8",
+    "orders_count": 83,
+    "cash_movements_count": 4,
+    "domain_events_count": 142,
+    "order_status_transitions_count": 72,
+    "branch_id": 1,
+    "branch_name": "Le Cayenne (principal)"
+  },
+  "final_db": {
+    "audit_logs_count": 101,
+    "audit_logs_last_hash": "14d8f790d8ac0aea42c6e5757167f55c0f4c771c0bb5c77360f63fabc506f081",
+    "orders_count": 85,
+    "cash_movements_count": 6,
+    "domain_events_count": 146,
+    "order_status_transitions_count": 74,
+    "audit_logs_delta": 5,
+    "orders_delta": 2,
+    "cash_movements_delta": 2,
+    "domain_events_delta": 4,
+    "order_status_transitions_delta": 2
+  },
+  "flow_a_pos_direct": {
+    "name": "POS direct sale (cashier flow) — Frites Seules + Boisson Seule = 4.00€ paid cash 20€",
+    "verdict": "AMBER",
+    "phases": {
+      "T0_pos_initial": {
+        "capture": "captures/T0-pos-initial.png",
+        "verdict": "GREEN",
+        "reasoning": "POS V4 loaded admin@lecayenne.fr, branch=1, 19 borne pending orders in left panel, cash session #6 reconciled, drawer prompts open"
+      },
+      "T0b_drawer_opened": {
+        "capture": "captures/T0b-drawer-opened.png",
+        "db_delta": "cash_drawer_sessions #7 created status=open opening_amount=50.00 branch=1",
+        "verdict": "GREEN",
+        "reasoning": "Cash session opened via UI click; DB row persisted instantly; modal switched to 'Session active' view"
+      },
+      "T0c_oss_baseline": {
+        "capture": "captures/T0c-oss-baseline.png",
+        "verdict": "GREEN",
+        "reasoning": "OSS tab pre-mounted before payment to enable real sync-latency measurement (advisor mandate)"
+      },
+      "T0d_kds_baseline": {
+        "capture": "captures/T0d-kds-baseline.png",
+        "verdict": "GREEN",
+        "reasoning": "KDS tab pre-mounted before payment; baseline 8 cards (ids 62-74) visible from Blade server render"
+      },
+      "T1_cart_with_items": {
+        "capture": "captures/T1-cart-with-items.png",
+        "verdict": "GREEN",
+        "reasoning": "Frites Seules + Boisson Seule added via wizard 'Ajouter au panier' (wizard requires confirm even for non-composable items — UX friction); subtotal/total 4.00€ correct"
+      },
+      "T1b_payment_modal_opened": {
+        "capture": "captures/T1b-payment-modal.png",
+        "verdict": "GREEN",
+        "reasoning": "Encaisser button opened SSOT counter-collect modal (Wave X1 unified). Espèces+Carte+Multi-paiement selectable; TOTAL 4.00€ correct"
+      },
+      "T1c_cash_keypad": {
+        "capture": "captures/T1c-cash-modal.png",
+        "verdict": "GREEN",
+        "reasoning": "Espèces selected, MONTANT REÇU numeric keypad active"
+      },
+      "T1d_amount_20": {
+        "capture": "captures/T1d-amount-20.png",
+        "verdict": "GREEN",
+        "reasoning": "20€ entered via 2+0 keypad clicks; change calc visible (16€)"
+      },
+      "T2_payment_confirmed": {
+        "capture": "captures/T2-confirmed.png",
+        "t_ui_payment_clicked_ms": 1779985856471,
+        "db_persist_observed_within_ms": "<1000",
+        "db_delta": {
+          "order_id_created": 111,
+          "order_serial_no": "280526111",
+          "queue_number": "A0078",
+          "fiscal_sequence_no": 36,
+          "subtotal": 4.00,
+          "total": 4.00,
+          "payment_method": 1,
+          "pos_payment_method": 1,
+          "pos_received_amount": 20.00,
+          "status": 7,
+          "payment_status": 5,
+          "order_type": 10,
+          "source_surface": "pos",
+          "source": 15,
+          "created_at": "2026-05-28 18:30:56",
+          "audit_logs_delta": 3,
+          "domain_events_delta": 1,
+          "cash_movements_delta": 1,
+          "order_status_transitions_delta": 1
+        },
+        "verdict": "GREEN",
+        "reasoning": "Real PaymentService extended NF525 chain. Audit_logs went 96->99 (+3: payment ledger + status_change + cash_movement HMAC chain extended). domain_events +1 (order.created or payment_confirmed). cash_movements +1 (drawer increment). order_status_transitions +1 (PENDING->PREPARING). fiscal_sequence_no=36 monotonic. All SSOT writes serialized; chain bit-identical extension verified."
+      },
+      "T3_kds_after_pay": {
+        "capture": "captures/T3-kds-after-pay-MISSING-A0078.png",
+        "found_on_kds": false,
+        "polling_duration_ms_until_found": null,
+        "verdict": "RED",
+        "p1_finding": "P1-SYNC-KDS-001",
+        "reasoning": "DEEP ANALYSIS: Order #111 (status=PREPARING=7, payment=PAID=5, branch=1, business_date=2026-05-28, is_advance_order=NO, order_datetime=2026-05-28 18:30:56) PASSES every backend predicate in KitchenDisplaySystemOrderService::list() — empirically verified via tinker reproduction returning 53 rows including #111. HOWEVER the live KDS view does NOT show A0078: DOM has 8 data-order-id cards (ids 62-74) after navigation, and 0 XHR/fetch polling observed in 10s window. Echo + Pusher present in window but no broker connection seen. /api/kds-order via axios returned data.length=0 (puzzling discrepancy with tinker — suggests SPA cache or auth-context divergence). EFFECTIVE LATENCY: INF (order never appears via passive sync within session). RISK: chef cannot start preparation without manual page refresh, AND refresh may not surface order if server cap=30 fills with stale items (notice 'Liste pleine 30 affichée, max. serveur' visible). MITIGATION HYPOTHESES: (1) Reverb/laravel-websockets broker degraded (verify socket connection), (2) auth role missing 'kitchen-display-system' permission causing zero rows, (3) admin branch_id=0 + API filter divergence. Sentinel test recommended: assert API + DOM contain newly-paid order within 5s on Le Cayenne LOCAL."
+      },
+      "T4_oss_after_pay": {
+        "capture": "captures/T4-oss-A0078-visible.png",
+        "found_on_oss": true,
+        "polling_duration_ms_until_found": 0,
+        "column": "En préparation",
+        "verdict": "GREEN",
+        "reasoning": "OSS shows A0078 in 'En préparation' immediately upon page navigation. OSS is Blade server-rendered with fresh DB query on load (no client polling needed). Sync = pull-on-load mode. Effective latency = navigation round-trip (~600ms). Acceptable for OSS customer-facing display refreshed periodically — but contrasts with KDS gap. Confirms backend writes ARE visible to all downstream consumers using fresh DB queries."
+      },
+      "T5_kds_bump": {
+        "capture": "n/a",
+        "verdict": "BLOCKED",
+        "reasoning": "Step blocked — KDS UI does not surface order #111 (T3 sync gap). Direct axios POST /api/kds-order/change-status/111 blocked by auto-mode classifier (correctly — UI-driven discipline). Step deferred until T3 sync fix verified."
+      },
+      "T6_oss_pret": {
+        "capture": "n/a",
+        "verdict": "BLOCKED",
+        "reasoning": "Cannot measure KDS-bump->OSS-PRET latency because T5 blocked"
+      },
+      "T7_cash_overview": {
+        "capture": "captures/T7-cash-overview.png",
+        "verdict": "AMBER",
+        "p1_finding": "P1-SYNC-CASHOVERVIEW-001",
+        "kpi_observed": {
+          "grand_total_eur": 696.00,
+          "grand_total_tx": 13,
+          "caisse_eur": 0.00,
+          "caisse_tx": 0,
+          "borne_eur": 696.00,
+          "borne_tx": 13,
+          "livreur_eur": 0.00,
+          "livreur_tx": 0,
+          "fond_caisse": 50.00,
+          "especes_encaissees": 696.00,
+          "especes_attendues_tiroir": 746.00
+        },
+        "reasoning": "Cash Overview UI displays. KPI bucket logic divides Source=Caisse vs Borne. Our FLOW A order #111 (4€ cash POS V4 sale) is NOT reflected in 'CAISSE' bucket (still 0,00€/0 tx). DB query confirms: sum(orders.source=1 paid cash today)=117€, sum(source=10)=700€, sum(source=15)=4€. Cash Overview only shows source=1 + source=10 mapped to legacy buckets ('CAISSE' and 'BORNE'). Source=15 (POS V4) created by current PaymentService bypasses the categorization filter. EFFECT: cashier sees 'CAISSE 0€/0tx' even though POS V4 sale just rang up 4€ cash. This is a P1 reporting drift since POS V4 is the active codepath. RISK: end-of-day reconciliation under-reports CAISSE bucket. POTENTIAL FIX: extend Cash Overview filter to include source=15 OR normalize all POS sales to source=1."
+      }
+    }
+  },
+  "flow_b_kiosk_borne": {
+    "name": "Kiosk borne flow — Boisson Seule (Sans menu) = 2.00€ counter-collect",
+    "verdict": "AMBER",
+    "phases": {
+      "T8_kiosk_idle": {
+        "capture": "captures/T8-kiosk-idle.png",
+        "verdict": "GREEN",
+        "reasoning": "Kiosk idle screen shown — 'Bienvenue! Commandez en quelques touches À emporter Je récupère ma commande'"
+      },
+      "T8b_categories": {
+        "capture": "captures/T8b-kiosk-categories.png",
+        "verdict": "GREEN",
+        "reasoning": "11 categories visible: Sandwich Cayenne, Galette, Sandwich Classique, Burgers, Tacos, Bols Gourmands, Menu enfant, Frites, Suppléments, Desserts, Boissons. 'À emporter' radio selected by default."
+      },
+      "T8c_frites_cat_EMPTY": {
+        "capture": "captures/T8c-kiosk-frites-cat.png",
+        "verdict": "AMBER",
+        "p2_finding": "P2-KIOSK-CAT-EMPTY-FRITES",
+        "reasoning": "Frites category shows '0 produit'. But POS V4 has Frites Seules + Menu (Frites + Boisson). This is a category->item mapping gap: kiosk category 7 (Frites) has no items mapped, while same items appear under Sandwich Cayenne in kiosk OR under root in POS. P2 because user can still navigate to find Frites elsewhere."
+      },
+      "T8d_boissons_cat_EMPTY": {
+        "capture": "captures/T8d-kiosk-boissons.png",
+        "verdict": "AMBER",
+        "p2_finding": "P2-KIOSK-CAT-EMPTY-BOISSONS",
+        "reasoning": "Boissons category also '0 produit'. Boisson Seule exists (€2 in POS + visible later under Sandwich Cayenne in kiosk) — but no items mapped to Boissons category. P2 categorization issue, not a P0 blocker."
+      },
+      "T8e_sandwich_cayenne": {
+        "capture": "captures/T8e-kiosk-sandwich.png",
+        "verdict": "GREEN",
+        "reasoning": "Sandwich Cayenne category shows 3 produits: BOISSON SEULE €2, FRITES SEULES €2, MENU (FRITES + BOISSON) €3. Items load correctly."
+      },
+      "T8f_wizard_opened": {
+        "capture": "captures/T8f-kiosk-wizard.png",
+        "verdict": "GREEN",
+        "reasoning": "Boisson Seule wizard opened. Step 1/2: 'QUEL MENU ?' offering Menu Complet, +Frites, Boisson Seule, Sans menu. Step 2: RÉCAP. Multi-step composer correct."
+      },
+      "T8g_recap": {
+        "capture": "captures/T8g-kiosk-recap.png",
+        "verdict": "GREEN",
+        "reasoning": "After 'Sans menu' selected + SUIVANT clicked, RÉCAP shows Boisson Seule × 1 = 2.00€. Quantity widget + special instructions field present. AJOUTER AU PANIER button enabled."
+      },
+      "T8h_cart_page": {
+        "capture": "captures/T8h-kiosk-cart.png",
+        "verdict": "GREEN",
+        "reasoning": "Cart page shows 1 article = 2.00€ subtotal/total. Code promo + loyalty card fields. 'Valider ma commande €2,00' button enabled."
+      },
+      "T8i_upsell": {
+        "capture": "captures/T8i-kiosk-upsell.png",
+        "verdict": "GREEN",
+        "reasoning": "Upsell page shows 6 items (Frites Seules, Fromage supplémentaire, Salade verte, Boursin, Jambon de dinde, Sauce supplémentaire) with 20s auto-skip countdown. 'Non merci, continuer sans' clicked."
+      },
+      "T8j_payment_choice": {
+        "capture": "captures/T8j-kiosk-payment.png",
+        "verdict": "GREEN",
+        "reasoning": "3 payment options: Carte bancaire (Visa/Mastercard/CB), Espèces (Paiement à la caisse), Titre restaurant (Edenred/Swile/Sodexo). TOTAL 2.00€. Espèces clicked."
+      },
+      "T8k_borne_paid": {
+        "capture": "captures/T8k-kiosk-cash-instr.png",
+        "t_ui_paid_ms": 1779986725358,
+        "db_delta": {
+          "order_id_created": 112,
+          "queue_number": "A0079",
+          "status": 4,
+          "payment_status": 15,
+          "total": 2.00,
+          "source_surface": "kiosk",
+          "payment_method": 1,
+          "pos_payment_method": 6,
+          "audit_logs_delta": 2,
+          "domain_events_delta": 3,
+          "cash_movements_delta": 1,
+          "order_status_transitions_delta": 1
+        },
+        "verdict": "GREEN",
+        "reasoning": "Borne order #112 created. status=4 (ACCEPT) payment_status=15 (PENDING_COUNTER) — correctly flagged for cashier to receive cash at counter. domain_events shows 'order.created' aggregate_id=112 on channel private-branch.1 + 'order.status_changed' both at 18:45:25. NF525 chain extended audit_logs 99->101 (+2). cash_movements 5->6 (+1 — drawer counter-entry placeholder?). Confirmation page shows 'Rendez-vous en caisse #A0079 Montant à régler 2,00€ Paiement en espèces uniquement à la caisse' with 32s countdown."
+      },
+      "T9_pos_sees_borne_STALE": {
+        "capture": "captures/T9-pos-after-kiosk-pay.png",
+        "found_on_pos_borne_panel": false,
+        "polling_duration_ms_until_found": null,
+        "verdict": "RED",
+        "p1_finding": "P1-SYNC-POS-BORNE-PANEL-001",
+        "reasoning": "POS V4 'À encaisser' panel still shows count=19 + first 4 queue_numbers A0031/A0033/A0036/A0038 (oldest unpaid borne orders). Order #112 A0079 NOT visible. Even after full page reload (navigation), the count stays at 19 (expected 20). Voir plus (15) button visible but does not trigger update. This is the same SYNC family as T3 KDS — Vue panel did not refresh from backend. PROBABLY: pos-pending-counter endpoint cached server-side OR Vue store hydrated once + no refresh after kiosk POST. RISK: cashier won't see borne order to encaisser; customer waits at counter without recourse. Mitigation: explicit refresh button or 10s polling interval forced. SYNC LATENCY MEASURED: kiosk_pay->pos_pending_visible = INF (in session, manual hard-reload didn't help)."
+      },
+      "T10_pos_encaisse_borne": {
+        "capture": "n/a",
+        "verdict": "BLOCKED",
+        "reasoning": "Cannot encaisser borne order A0079 because it doesn't appear in POS panel. Step blocked by T9 sync gap."
+      }
+    }
+  },
+  "flow_c_refund": {
+    "name": "Refund order #111 (4€ cash POS V4)",
+    "verdict": "RED",
+    "phases": {
+      "T11_pos_orders_list": {
+        "capture": "captures/T11-pos-orders-list.png",
+        "verdict": "GREEN",
+        "reasoning": "pos-orders index lists order #280526111 (order #111) A0078 À emporter Client passage 4,00€ En préparation. Action column: Voir + Supprimer (NO direct 💸 button in list — UI nit: detail page has it but mission expected list-level button per task description T11)."
+      },
+      "T11b_order_detail": {
+        "capture": "captures/T11b-pos-order-detail.png",
+        "verdict": "GREEN",
+        "reasoning": "Show page for order #111: Payé badge, En préparation status, Imprimer la facture, 💸 Rembourser buttons. Items list shows Frites Seules + Boisson Seule with instruction lines preserved."
+      },
+      "T11c_refund_modal_open": {
+        "capture": "captures/T11c-refund-modal.png",
+        "t_ui_refund_clicked_ms": 1779986936598,
+        "verdict": "GREEN",
+        "reasoning": "Refund modal opened. Shows '💰 Rembourser cette commande N°280526111 NF525'. Header 'Total à rembourser 4,00€', mode=Espèces, date. Warning: 'Cette action génère une commande miroir NF525 et un ticket de remboursement. L'opération est irréversible.' Textarea required min 5 chars. Typed reason 'REAL-FLOW-TRACKER live test refund of order #111'."
+      },
+      "T11d_refund_BLOCKED_pre_Z": {
+        "capture": "captures/T11d-refund-confirmed.png",
+        "verdict": "RED",
+        "p1_finding": "P1-REFUND-UX-PRE-Z-001",
+        "error_message_verbatim": "Order 111 is not in a CLOSED Z window — operation 'refund-with-counter-entry' requires a sealed (post-Z) parent. Use the standard pre-Z path instead.",
+        "db_delta": {
+          "no_new_audit_log": true,
+          "no_new_order": true,
+          "no_state_change": true,
+          "reasoning": "Refund POST rejected by SealedOrderGuard at app/Services/Order/RefundWithCounterEntryService.php:59. Order #111 fiscal_sequence_no=36 BUT belongs to currently OPEN Z window (last close not yet executed today). Mirror-order pattern reserved for post-Z (sealed) parents to avoid double-counting two negatives in same Z window."
+        },
+        "reasoning": "DEEP ANALYSIS: The 💸 button is exposed unconditionally on a paid order detail page. Backend invariantly enforces: if parent.fiscal_sequence_no exists AND parent's z_report not yet closed, refund-with-counter-entry must be REJECTED. The proper pre-Z path is OrderStateMachine transition status=PREPARING->RETURNED via standard admin pos-order update endpoint — which the UI does NOT expose as a refund button (no clear pre-Z 'Annuler la commande' or 'Marquer remboursée pre-Z' action). UX GAP: cashier sees Rembourser button, types reason, submits, gets a blocking technical error referring to 'pre-Z path' which is an internal architectural term — not actionable. CORRECT BEHAVIOR: UI should detect pre-Z state and either (a) hide Rembourser entirely until next Z close, (b) swap label to 'Annuler la commande (avant Z)' and route through pre-Z path, or (c) show error in domain language. CURRENT BEHAVIOR: P1 UX failure but P0 fiscal-safety SUCCESS — system correctly prevents double-counting refund."
+      }
+    }
+  },
+  "latencies_summary": {
+    "pos_payment_click_to_db_persist_ms": "<1000 (orders.created_at timestamps within same second as UI click)",
+    "pos_payment_to_kds_visible_ms": "INF — order never appears via passive sync; even page reload shows stale 8 cards (P1-SYNC-KDS-001)",
+    "pos_payment_to_oss_visible_ms": "~600 (navigation round-trip) — OSS Blade re-query catches new order instantly on load",
+    "kds_bump_to_oss_pret_ms": "BLOCKED (T5 blocked by T3 sync gap)",
+    "kiosk_pay_to_pos_borne_panel_ms": "INF — POS borne panel cached at 19, doesn't update to 20 after reload (P1-SYNC-POS-BORNE-PANEL-001)",
+    "kiosk_pay_to_db_persist_ms": "<1000 (order #112 + domain_events #298+#299 visible within next query)",
+    "pos_refund_to_db_persist_ms": "n/a (blocked by SealedOrderGuard correctly)",
+    "notes": "Backend NF525 chain extends bit-identically (101 audit_logs final, last_hash=14d8f790...). DB SSOT writes are sub-second consistent. Frontend sync layer has 2 P1 sync gaps (KDS + POS borne panel) — both rely on passive WebSocket broadcast that empirically doesn't propagate within this session. OSS works because it re-queries on navigation."
+  },
+  "ssot_writes_per_phase": {
+    "flow_a_pos_payment_writes": [
+      {"table": "orders", "delta": 1, "id": 111, "field_summary": "fiscal=36 q=A0078 total=4 cash_pay status=7 ps=5 src=15"},
+      {"table": "order_items", "delta": 2, "field_summary": "item_id=2 Frites + item_id=3 Boisson"},
+      {"table": "audit_logs", "delta": 3, "field_summary": "HMAC chain extended +3 entries"},
+      {"table": "domain_events", "delta": 1, "field_summary": "order.created aggregate_id=111 channel=private-branch.1"},
+      {"table": "cash_movements", "delta": 1, "field_summary": "+4€ drawer entry session=#7"},
+      {"table": "order_status_transitions", "delta": 1, "field_summary": "PENDING(1)->PREPARING(7)"}
+    ],
+    "flow_b_kiosk_payment_writes": [
+      {"table": "orders", "delta": 1, "id": 112, "field_summary": "q=A0079 total=2 status=4 ps=15(PENDING_COUNTER) src=kiosk pp=6"},
+      {"table": "order_items", "delta": 1, "field_summary": "item_id=3 Boisson"},
+      {"table": "audit_logs", "delta": 2, "field_summary": "HMAC chain extended +2 entries"},
+      {"table": "domain_events", "delta": 3, "field_summary": "order.created + order.status_changed + likely fiscal_request"},
+      {"table": "cash_movements", "delta": 1, "field_summary": "+2€ placeholder for counter-collect"},
+      {"table": "order_status_transitions", "delta": 1, "field_summary": "PENDING(1)->ACCEPT(4)"}
+    ],
+    "flow_c_refund_writes": [
+      {"table": "all", "delta": 0, "reasoning": "SealedOrderGuard rejected POST before any write; NF525 chain integrity protected"}
+    ]
+  },
+  "nf525_chain_attestation": {
+    "baseline_count": 96,
+    "baseline_last_hash": "0938b9189900f0f436e1270042e610fd0023893b7eba8a4b20fbc8a1cf0679d8",
+    "final_count": 101,
+    "final_last_hash": "14d8f790d8ac0aea42c6e5757167f55c0f4c771c0bb5c77360f63fabc506f081",
+    "delta": 5,
+    "monotonic_extension": true,
+    "discipline_dm6_held": true,
+    "no_manual_inserts": true,
+    "reasoning": "All 5 audit_log additions came from PaymentService + KioskPaymentService running normal Laravel paths. Chain hash extended bit-identically (no manual SQL run during cycle). DM6 RO discipline preserved."
+  },
+  "verdict_global": "AMBER",
+  "verdict_breakdown": {
+    "backend_writes": "GREEN — NF525 chain bit-identical extension, fiscal_sequence_no monotonic, domain_events dispatched on private-branch.1, cash_movements + status_transitions all written sub-second",
+    "frontend_sync": "RED — 3 distinct P1 findings post advisor probes: (a) KDS Vue page DOES connect to Echo broker (state=connected, broker running on :6001) BUT subscribes to ZERO channels — never calls Echo.private('branch.1').listen; (b) POS V4 borne panel stale after kiosk order even on full reload; (c) Cash Overview omits source=15 — confirmed on fresh navigation. These are NOT broker-config issues (broker probed RUNNING) — they are 3 independent frontend-subscription/server-filter code gaps",
+    "fiscal_safety": "GREEN — SealedOrderGuard correctly blocked pre-Z refund attempt; no double-counting risk",
+    "ux_polish": "AMBER — refund modal opens unconditionally then blocks at submit with internal jargon; kiosk categories Frites/Boissons empty (mapping gap); KDS chef cannot see paid order without refresh"
+  },
+  "p1_findings": [
+    {
+      "id": "P1-SYNC-KDS-001",
+      "title": "KDS page does not subscribe to private-branch.1 Echo channel; backend payload + Blade render also exclude new POS-V4 orders",
+      "evidence_post_advisor_probes": {
+        "broker_status": "RUNNING — node websockets process on localhost:6001 LISTEN + 5 ESTABLISHED Chrome connections (lsof verified). BROADCAST_DRIVER=pusher in .env.",
+        "echo_client_state": "connected — window.Echo.connector.pusher.connection.state == 'connected' on KDS tab.",
+        "echo_subscribed_channels": "[] EMPTY — Object.keys(window.Echo.connector.channels).length == 0. KDS page never calls Echo.private('branch.1').listen(...). This is the actual root cause: client connects but never subscribes.",
+        "html_dom_recheck": "documentElement.innerHTML.includes('A0078') == FALSE. Not a missed selector — A0078 genuinely absent from rendered HTML (411,272 chars searched). DOM has only ids 62-74 (8 data-order-id) AND no other span/badge containing A0078 text.",
+        "backend_filter_passes_111": "Tinker reproduction of full visible-statuses+payment-status+today-range+branch-filter returns 53 rows including #111. Backend QUERY is correct."
+      },
+      "severity": "P1",
+      "narrowed_root_cause": "Frontend Echo subscription gap (page never calls subscribe), NOT broker outage and NOT backend filter. Likely the KDS Blade page uses server-side render only without a JS bootstrap that subscribes. Confirmed: 0 XHR + 0 channels = pure SSR cache.",
+      "impact": "Chef sees stale board until manual full refresh; even refresh sometimes excludes recent orders (DOM cap appears separate Blade pagination + Vue board fallback)",
+      "mitigation_suggested": "(1) Add `window.Echo.private('branch.' + branchId).listen('order.created', refetch)` to KDS bootstrap, (2) Add 5-10s polling fallback for resilience, (3) Sentinel asserting newly-paid order appears within 5s on KDS, (4) Verify SSR Blade controller calls SAME service as Vue board so both contain same orders"
+    },
+    {
+      "id": "P1-SYNC-POS-BORNE-PANEL-001",
+      "title": "POS V4 À encaisser borne panel doesn't update after kiosk borne payment",
+      "evidence": "Kiosk created order #112 A0079 at 18:45:25 with payment_status=PENDING_COUNTER. POS borne panel after reload still shows count=19 (expected 20) and same 4 oldest queues",
+      "severity": "P1",
+      "impact": "Cashier cannot encaisser borne orders; customer waits with no recourse",
+      "mitigation_suggested": "Force panel refetch on tab focus + 10s polling fallback; verify WebSocket pos-pending-counter event subscription"
+    },
+    {
+      "id": "P1-SYNC-CASHOVERVIEW-001",
+      "title": "Cash Overview CAISSE bucket omits POS V4 source=15 cash sales (confirmed on fresh navigation)",
+      "evidence_post_advisor_probe": "Re-navigated to /admin/cash-overview at 16:55:29 (post-payment 18:30:56 local). KPIs identical to first capture: GRAND TOTAL 696,00€/13tx, CAISSE 0,00€/0tx, BORNE 696,00€/13tx, LIVREUR 0,00€/0tx. body.innerText.includes('4,00 €') == FALSE. This is NOT stale Vue state — page re-queried backend on navigate and still omits #111.",
+      "severity": "P1",
+      "impact": "End-of-day reconciliation under-reports CAISSE bucket; cashier sees zero CAISSE despite POS sale; risk of false écart investigation",
+      "mitigation_suggested": "Extend Cash Overview filter to include orders.source IN (1, 15) for CAISSE bucket; OR normalize PaymentService to write source=1 for POS-V4 cash; sentinel test asserting sum(cash_movements) today matches GRAND TOTAL within €0.01"
+    },
+    {
+      "id": "P1-REFUND-UX-PRE-Z-001",
+      "title": "Refund modal opens for pre-Z orders, then blocks at submit with internal jargon",
+      "evidence": "Order #111 fiscal=36 in OPEN Z window. UI shows Rembourser button unconditionally. Submit returns 'requires a sealed (post-Z) parent. Use the standard pre-Z path instead.'",
+      "severity": "P1",
+      "impact": "Cashier cannot complete refund of recent same-day order; error message is architectural jargon, not actionable",
+      "mitigation_suggested": "Detect open-Z state on order detail page; either (a) hide Rembourser before Z-close, (b) swap to 'Annuler la commande (avant Z)' routing through standard RETURNED transition, or (c) translate error to 'Veuillez d'abord clôturer la caisse (rapport Z) pour générer une commande miroir de remboursement'"
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "P2-KIOSK-CAT-FRITES-EMPTY",
+      "title": "Kiosk Frites category shows 0 produit despite POS having Frites Seules",
+      "severity": "P2"
+    },
+    {
+      "id": "P2-KIOSK-CAT-BOISSONS-EMPTY",
+      "title": "Kiosk Boissons category shows 0 produit despite Boisson Seule existing under Sandwich Cayenne",
+      "severity": "P2"
+    }
+  ],
+  "max_reasoning": [
+    "REASONING-1 NF525 chain bit-identical extension: every payment serialised one or more audit_log rows whose current_hash = SHA256(prev_hash || payload). Baseline 96 -> +3 (POS) -> +2 (Kiosk) -> 101 final. Last_hash advances strictly monotonically from 0938b918... to 14d8f790... without gap. No manual writes performed during cycle (DM6 RO discipline). This proves the application code path (PaymentService + KioskPaymentService) is the SOLE producer of audit entries.",
+    "REASONING-2 SSOT write fan-out per payment: 1 click on Confirmer produces 5-6 SSOT writes in deterministic order: (1) orders row insert with fiscal_sequence_no allocated under Cache::lock+FOR UPDATE, (2) order_items rows, (3) audit_logs HMAC chain entry, (4) domain_events dispatched to private-branch.{branchId} channel, (5) cash_movements drawer increment, (6) order_status_transitions row. All within sub-second persist window. Confirms PaymentService internal transaction discipline.",
+    "REASONING-3 Sync mode taxonomy observed: (a) DB-pull-on-navigation (OSS) — works instantly, query fresh on Blade render; (b) Server-rendered-cached-once (POS borne panel, KDS Blade DOM) — stale immediately after any backend change without forced reload; (c) WebSocket-push-only (KDS Vue board) — depends on Echo+Pusher broker; if broker degraded, NO update. The 3 P1 sync findings cluster under (b) and (c). FIX HIERARCHY: enable (a)-style fallback re-query on tab focus + N-sec polling for critical panels, before adding more push.",
+    "REASONING-4 Fiscal safety vs UX trade-off: SealedOrderGuard correctly prevents pre-Z post-Z double-refund pattern. Without this guard, cashier could refund order #111 in current Z window via mirror, then also flip parent.status->RETURNED via OrderStateMachine → 2 negatives for 1 sale ledger violation. Guard is invariant, well-placed at service boundary. The UX gap is upstream: detail-page Vue should observe open-Z state and route refund through pre-Z path OR hide button. The choice to expose button + block at submit is a 'reveal then deny' anti-pattern; cashier wasted 30s typing reason.",
+    "REASONING-5 Cash Overview source=15 omission: PaymentService for POS V4 codepath writes source=15 (POS enum), but Cash Overview controller buckets by legacy source=1=cash_session_id source resolver. The drift is a Wave T or X refactor side-effect — orders.source enum extended without updating the report aggregator query. Sentinel test could compare sum(cash_movements today) vs Cash Overview KPI total — they should match within €0.01.",
+    "REASONING-6 Kiosk category mapping gap: Boisson Seule + Frites Seules show only under Sandwich Cayenne kiosk category, not under their dedicated Boissons/Frites categories. Suggests items.category_id assigned to Sandwich Cayenne (id=1) for legacy POS upsell logic, with kiosk respecting the assignment. Either (a) introduce item↔kiosk_category many-to-many, or (b) reassign these items to their natural category and add upsell_category override for POS. Low priority — kiosk users CAN find items via Sandwich Cayenne, but discovery is poor.",
+    "REASONING-7 (POST ADVISOR PROBE) Broker is NOT the problem: lsof :6001 shows node websockets process LISTEN + 5 ESTABLISHED Chrome connections; window.Echo.connector.pusher.connection.state == 'connected' on KDS+POS+OSS tabs. BROADCAST_DRIVER=pusher in .env. The actual gap: window.Echo.connector.channels == [] EMPTY on KDS tab. Page connects but never subscribes. Backend dispatches order.created event on private-branch.1 (verified domain_events #298+#299 with channel=['private-branch.1']) — message goes to broker but no listener. CONSEQUENCE: 3 frontend findings (KDS no-show, POS panel stale, Cash Overview src=15) are 3 INDEPENDENT code issues NOT 1 config issue. The verdict 'AMBER with 4 P1 code findings' STANDS post-probe."
+  ]
+}
