@@ -105,6 +105,33 @@ Plateforme restaurant fast-food complète :
 
 ## §3 LAST DONE — Auto-managed
 
+**Ultraplan cross-codebase 2026-05-28** (HEAD `d2a18bf31df74587d9c9b5e791b778fd753accf8`,
+branche `heal/cms-pr1-quickwins-2026-05-18`) :
+- 5 sub-agents parallèles convergés (EXEC-1 git init web + EXEC-2 wizard parity audit
+  + EXEC-3 cross-codebase doc + TEST-E2E mobile non-regression + ADVERSARIAL dispute)
+- Phase 1.1 web git init: tag `web-baseline-2026-05-28` (commit a7eeea1, 219 files,
+  0 secrets, IDs canonical 102/501/701 preserved bit-identical mobile)
+- Phase 3 wizard parity audit: kiosk × mobile × web ALIGNED post heal 2026-05-18,
+  5 écarts mineurs V1.0.2 (1 P2 mobile UI "+3.00€" vs calc 2.50€ + 4 P3 cosmetic)
+- Phase 4.1 docs: `docs/CROSS_CODEBASE_STATE.md` 298 LOC (9 sections + annexe)
+  pointer BRAIN §2 ligne 49, 5 honest discrepancies briefing↔réel flaggées
+- Phase 1.2 sentinel parity script + Phase 1.3 anti-drift cron livrés par
+  EXEC-FINALIZE-A (tools/sentinel-codebase-parity.mjs + tools/check-codebase-drift.sh
+  + reports/drift-watch/2026-05-28.md baseline)
+- TEST-E2E: 20/20 specs mobile loyalty + 16/16 PNG baselines préservés,
+  data integrity PASS, HTTP smoke 200 OK, 0 régression observable
+- ADVERSARIAL 22 contestations cumulées (12 plan + 10 exécution) traitées:
+  P0/P1 mitigés ou déférés V1.0.2 documentés
+- Phases DEFERRED V1.0.2: Phase 2 loyalty consolidation (OG-2 owner-gate
+  réversé standalone per adversarial CONT-017), Phase 5 owner gates synthesis
+  (partielle dans docs §9), OG-4 Wallet mirror différé (CONT-021)
+- Frozen-zones diff = 0 LOC, NF525 chain intact, V1 LOCAL Le Cayenne
+  PRODUCTION-READY UNCHANGED dans envelope explicite
+- Owner top-3 actions documentées docs §9: countersign pos-wizard XSS LOCK +
+  décision P11 Refund UI + validation a-posteriori OG-1 git init web
+
+---
+
 **🆕 GAP-HUNT FEATURE SWEEP 2026-05-25** (branche `heal/cms-pr1-quickwins-2026-05-18` HEAD pre-cycle `5e646503b` → HEAD post-cycle `860905b78`, +7 commits) :
 
 After Wave N closed the cycle of test/audit waves, a single-day feature-completeness Gap-Hunt sweep was dispatched to surface user-facing features that V1 LOCAL Le Cayenne is missing — distinct from the prior cycles that focused on heal/regression/security. **18 sub-agents** dispatched across 15 persona-driven sweeps (Kiosk × 2 personas + POS × 2 + KDS × 3 + OSS × 1 + Cash × 2 + Stock × 2 + Admin × 3) + 3 cross-system clusters (kiosk-cash↔POS↔KDS attribution / POS coupon broadcast / Customer SMS+feedback+RGPD+loyalty+SMS-failover). Output: **152 raw gaps → 71 unique master gaps deduped** (P0=14 · P1=31 · P2=21 · P3=5 · 23 owner-cited explicit · 3 frozen-zone touch required).
