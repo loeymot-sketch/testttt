@@ -221,7 +221,7 @@ const PUBLIC_FRIENDLY_AUTH_ROUTES = new Set([
 const isPublicFriendlyAuthRoute = (to) => {
     if (to && to.name && PUBLIC_FRIENDLY_AUTH_ROUTES.has(to.name)) return true;
     const path = (to && to.path) || "";
-    return path === "/admin/order-status-screen" || path === "/order-status";
+    return path === "/admin/order-status-screen" || path === "/order-status-screen" || path === "/order-status";
 };
 
 router.beforeEach((to, from, next) => {

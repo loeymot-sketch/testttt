@@ -179,7 +179,7 @@ export default {
             if (!this.sessionId) return;
             this.loading.isActive = true;
             return axios
-                .get(`/api/admin/delivery-boy/cash-sessions/${this.sessionId}`)
+                .get(`/admin/delivery-boy/cash-sessions/${this.sessionId}`)
                 .then((res) => {
                     this.session = res.data.data || null;
                     this.loading.isActive = false;

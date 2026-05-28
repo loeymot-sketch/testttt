@@ -76807,7 +76807,7 @@ var PUBLIC_FRIENDLY_AUTH_ROUTES = new Set(["admin.order-status-screen"]);
 var isPublicFriendlyAuthRoute = function isPublicFriendlyAuthRoute(to) {
   if (to && to.name && PUBLIC_FRIENDLY_AUTH_ROUTES.has(to.name)) return true;
   var path = to && to.path || "";
-  return path === "/admin/order-status-screen" || path === "/order-status";
+  return path === "/admin/order-status-screen" || path === "/order-status-screen" || path === "/order-status";
 };
 router.beforeEach(function (to, from, next) {
   var isKioskRoute = (to.path || '').startsWith('/kiosk') || to.matched.some(function (record) {
@@ -78772,6 +78772,7 @@ var OrderStatusScreenComponent = function OrderStatusScreenComponent() {
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ([{
   path: "/admin/order-status-screen",
+  alias: "/order-status-screen",
   component: OrderStatusScreenComponent,
   name: "admin.order-status-screen",
   meta: {

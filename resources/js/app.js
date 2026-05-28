@@ -162,7 +162,7 @@ axios.interceptors.response.use(
         // customer-facing order-status wall display) must NEVER bounce to
         // /login on a 401. The screen renders an empty state instead — that's
         // far better UX than leaking the admin login form to a customer.
-        const publicFriendlyPaths = ['/admin/order-status-screen', '/order-status'];
+        const publicFriendlyPaths = ['/admin/order-status-screen', '/order-status-screen', '/order-status'];
         const onPublicFriendly = publicFriendlyPaths.some((p) => path === p || path.startsWith(p + '/'));
         if (onPublicFriendly) {
             return Promise.reject(error);

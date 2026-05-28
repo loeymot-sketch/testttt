@@ -5067,7 +5067,7 @@ __webpack_require__.r(__webpack_exports__);
       if (this.filters.delivery_boy_id) {
         params.delivery_boy_id = this.filters.delivery_boy_id;
       }
-      return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get('/api/admin/delivery-boy/cash-sessions', {
+      return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get('/admin/delivery-boy/cash-sessions', {
         params: params
       }).then(function (res) {
         _this.sessions = res.data.data || [];
@@ -5202,7 +5202,7 @@ __webpack_require__.r(__webpack_exports__);
       var _this = this;
       if (!this.sessionId) return;
       this.loading.isActive = true;
-      return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get("/api/admin/delivery-boy/cash-sessions/".concat(this.sessionId)).then(function (res) {
+      return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get("/admin/delivery-boy/cash-sessions/".concat(this.sessionId)).then(function (res) {
         _this.session = res.data.data || null;
         _this.loading.isActive = false;
       })["catch"](function () {
@@ -12457,7 +12457,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _this2.loading = true;
               _context.p = 2;
               _context.n = 3;
-              return axios.get('/api/admin/observability/outbox');
+              return axios.get('/admin/observability/outbox');
             case 3:
               _yield$axios$get = _context.v;
               data = _yield$axios$get.data;
@@ -12489,7 +12489,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _this3.retrying = true;
               _context2.p = 1;
               _context2.n = 2;
-              return axios.post('/api/admin/observability/outbox/retry-failed');
+              return axios.post('/admin/observability/outbox/retry-failed');
             case 2:
               _context2.n = 3;
               return _this3.loadAll();
@@ -12512,7 +12512,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _this4.draining = true;
               _context3.p = 1;
               _context3.n = 2;
-              return axios.post('/api/admin/observability/outbox/drain-failed', {
+              return axios.post('/admin/observability/outbox/drain-failed', {
                 older_than_hours: 24
               });
             case 2:
@@ -14289,7 +14289,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
                 loyalty_code: (_this2.loyaltyCode || '').trim()
               };
               _context.p = 2;
-              url = "/api/admin/pos-order/".concat(_this2.orderId, "/redeem-loyalty");
+              url = "/admin/pos-order/".concat(_this2.orderId, "/redeem-loyalty");
               headers = {
                 'X-Idempotency-Key': _this2.buildIdempotencyKey()
               };
@@ -33846,7 +33846,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tr", {
       "class": "db-table-body-tr",
       key: deliveryBoy.id
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener(deliveryBoy.name, 20)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(deliveryBoy.email), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(deliveryBoy.phone ? deliveryBoy.country_code + '' + deliveryBoy.phone : ''), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener(deliveryBoy.name, 20)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(deliveryBoy.email), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(deliveryBoy.phone ? (deliveryBoy.country_code || '') + deliveryBoy.phone : ''), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($options.statusClass(deliveryBoy.status))
     }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.statusEnumArray[deliveryBoy.status]), 3 /* TEXT, CLASS */)]), $options.permissionChecker('delivery-boys_show') || $options.permissionChecker('delivery-boys_edit') || $options.permissionChecker('delivery-boys_delete') ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("td", _hoisted_37, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [$options.permissionChecker('delivery-boys_show') ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_SmIconViewComponent, {
       key: 0,

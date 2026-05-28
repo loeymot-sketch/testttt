@@ -298,7 +298,7 @@ export default {
             };
 
             try {
-                const url = `/api/admin/pos-order/${this.orderId}/redeem-loyalty`;
+                const url = `/admin/pos-order/${this.orderId}/redeem-loyalty`;
                 const headers = {
                     'X-Idempotency-Key': this.buildIdempotencyKey(),
                 };

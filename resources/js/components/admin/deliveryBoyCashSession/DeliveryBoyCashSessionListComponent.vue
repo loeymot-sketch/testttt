@@ -177,7 +177,7 @@ export default {
             }
 
             return axios
-                .get('/api/admin/delivery-boy/cash-sessions', { params })
+                .get('/admin/delivery-boy/cash-sessions', { params })
                 .then((res) => {
                     this.sessions = res.data.data || [];
                     this.pagination = res.data.pagination || this.pagination;

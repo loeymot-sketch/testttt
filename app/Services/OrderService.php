@@ -1821,6 +1821,48 @@ class OrderService
                         'order_id' => $cashEscrowMeta['order_id'],
                     ]);
                 }
+
+                // [R2-P1-LIV-DELIVERED-HOOK 2026-05-28] Mirror cash-collection
+                // into DeliveryBoyCashSession when driver has an open shift.
+                // ZReportCashEnrichmentService:489 cross-checks audit_logs
+                // action='cash.delivery.movement.recorded' against
+                // delivery_boy_cash_movements rows; without this call the
+                // count_mismatch / movement_missing_audit_row drift surfaces
+                // on every COD DELIVERED. Best-effort (non-strict) — if no
+                // open shift, skip silently so DELIVERED stays unblocked.
+                try {
+                    if (! empty($cashEscrowMeta['driver_id'])) {
+                        $svc = app(\App\Services\Delivery\DeliveryBoyCashSessionService::class);
+                        $openSession = $svc->findOpenSessionForDeliveryBoy(
+                            (int) $cashEscrowMeta['branch_id'],
+                            (int) $cashEscrowMeta['driver_id'],
+                        );
+                        if ($openSession) {
+                            $svc->recordMovement(
+                                (int) $openSession->id,
+                                \App\Models\DeliveryBoyCashMovement::TYPE_ORDER_COLLECT,
+                                (float) $cashEscrowMeta['amount'],
+                                \App\Models\DeliveryBoyCashMovement::DIRECTION_IN,
+                                (int) $cashEscrowMeta['order_id'],
+                                null,
+                                false,
+                            );
+                        }
+                    }
+                } catch (\Throwable $movementError) {
+                    // [R3-RD-03 2026-05-28] Severity bumped warning→error per
+                    // RED-team dispute: 422 race (session closed between find
+                    // + recordMovement) silently drifts audit_logs vs
+                    // delivery_boy_cash_movements. ZReportCashEnrichmentService
+                    // cross-check surfaces it end-of-day; error log + payload
+                    // give ops earlier signal without blocking DELIVERED.
+                    Log::error('[DeliveryBoy] cash-session recordMovement drift (non-blocking): ' . $movementError->getMessage(), [
+                        'order_id'  => $cashEscrowMeta['order_id'],
+                        'driver_id' => $cashEscrowMeta['driver_id'],
+                        'branch_id' => $cashEscrowMeta['branch_id'],
+                        'amount'    => $cashEscrowMeta['amount'],
+                    ]);
+                }
             }
 
             // Dispatch notifications + broadcast AFTER the transaction has

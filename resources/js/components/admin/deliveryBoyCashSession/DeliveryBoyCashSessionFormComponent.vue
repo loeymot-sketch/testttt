@@ -197,7 +197,7 @@ export default {
             this.errorMessage = '';
             try {
                 const res = await axios.post(
-                    '/api/admin/delivery-boy/cash-sessions/open',
+                    '/admin/delivery-boy/cash-sessions/open',
                     {
                         delivery_boy_id: Number(this.form.delivery_boy_id),
                         opening_amount: Number(this.form.opening_amount),
@@ -220,7 +220,7 @@ export default {
             this.errorMessage = '';
             try {
                 const res = await axios.post(
-                    `/api/admin/delivery-boy/cash-sessions/${this.sessionId}/close`,
+                    `/admin/delivery-boy/cash-sessions/${this.sessionId}/close`,
                     {
                         closing_amount: Number(this.form.closing_amount),
                     },
@@ -242,7 +242,7 @@ export default {
             this.errorMessage = '';
             try {
                 const res = await axios.post(
-                    `/api/admin/delivery-boy/cash-sessions/${this.sessionId}/reconcile`,
+                    `/admin/delivery-boy/cash-sessions/${this.sessionId}/reconcile`,
                     {
                         variance_reason: this.form.variance_reason
                             ? this.form.variance_reason.trim()

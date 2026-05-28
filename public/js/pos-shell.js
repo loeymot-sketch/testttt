@@ -7768,7 +7768,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
                 loyalty_code: (_this2.loyaltyCode || '').trim()
               };
               _context.p = 2;
-              url = "/api/admin/pos-order/".concat(_this2.orderId, "/redeem-loyalty");
+              url = "/admin/pos-order/".concat(_this2.orderId, "/redeem-loyalty");
               headers = {
                 'X-Idempotency-Key': _this2.buildIdempotencyKey()
               };
