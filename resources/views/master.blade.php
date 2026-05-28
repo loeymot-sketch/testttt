@@ -146,6 +146,13 @@
             // docs/adr/ADR-007-kiosk-fr-lock.md pour relax post-V1.
             kioskLocaleSwitchAllowed: @json((bool) config('kiosk.locale_switch_allowed', false)),
             kioskMenuPricing: @json(config('kiosk.menu_pricing', [])),
+            // [SUPERVISOR WAVE C Z1 2026-05-28] Plan B: route ALL kiosk payments to counter.
+            // When true, KioskPaymentComponent skips method selection UI and auto-submits
+            // with payment_method=CASH_ON_DELIVERY (1). Order remains PENDING_COUNTER
+            // until cashier collects at POS. See config/kiosk.php for env override.
+            kiosk: {
+                paymentRouteAllToCounter: @json((bool) config('kiosk.payment_route_all_to_counter', true)),
+            },
             // Borne : une catégorie « Nos Sandwichs » en base, deux lignes sidebar (signatures / froid)
             kioskSandwichSplit: @json(config('kiosk.sandwich_split')),
             maxItemQty: @json((int) config('kiosk.max_item_qty', 20)),

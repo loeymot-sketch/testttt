@@ -31,6 +31,29 @@ if (! in_array($defaultLocale, ['fr', 'en', 'ar'], true)) {
 $localeSwitchAllowed = filter_var(env('KIOSK_LOCALE_SWITCH_ALLOWED', false), FILTER_VALIDATE_BOOLEAN);
 
 /*
+| [SUPERVISOR WAVE C Z1 2026-05-28] Payment route all to counter (Plan B).
+|
+| Owner mandate Le Cayenne V1 LOCAL : tous les paiements de la borne passent
+| par la caisse. La borne crée une commande PENDING_COUNTER (espèces logique
+| CASH_ON_DELIVERY=1) et la caisse choisit espèces (ouvre tiroir) OU carte
+| (imprime ticket + encaisse manuellement terminal). Cash flow kiosk→caisse
+| reste permanent même quand les terminals seront câblés au TPE.
+|
+| Quand true :
+|   - KioskPaymentComponent SKIP l'UI de sélection de méthode (card / cash /
+|     tr) et auto-submit avec payment_method=1 (CASH_ON_DELIVERY).
+|   - Backend FrontendOrderService:186-237 traite déjà ce cas → l'order part
+|     PENDING_COUNTER, fiscal_sequence_no alloué à l'encaissement POS (pas
+|     au create), pas d'appel TPE borne.
+|   - Le client voit un message clair « Veuillez payer à la caisse » +
+|     numéro de commande à donner au caissier.
+|
+| Override via KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER=false pour revenir au
+| flow legacy (sélection card/cash/tr à la borne).
+*/
+$paymentRouteAllToCounter = filter_var(env('KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER', true), FILTER_VALIDATE_BOOLEAN);
+
+/*
 | [MENU-RESET 2026-05-13] Sandwich-split DISABLED — new structure has 3 separate
 | sandwich categories (sandwich-cayenne, galette, sandwich-classique) so no need
 | for cold-vs-signature sidebar split anymore. Kept as empty array for backwards
@@ -120,6 +143,8 @@ if ($requireForm) {
         // [iter15-mega-fix D-001 2026-05-10] Hardware credential, not a brute-force surface.
         'login_rate_limit' => (int) env('KIOSK_LOGIN_RATE_LIMIT', 30),
         'confirmation_auto_return_seconds' => (int) env('KIOSK_CONFIRMATION_AUTO_RETURN_SECONDS', 30),
+        // [SUPERVISOR WAVE C Z1 2026-05-28] Plan B: route ALL kiosk payments to counter (no TPE at kiosk).
+        'payment_route_all_to_counter' => $paymentRouteAllToCounter,
         // [Sprint H1 K-003 2026-05-17] Externalized FRITES_INCLUDED_CATS — see top of file.
         'frites_included_category_ids' => $fritesIncludedCategoryIds,
         // [Sprint H1 K-004 2026-05-17] Wizard template aliases — see top of file.
@@ -208,4 +233,10 @@ return [
     'frites_included_category_ids' => $fritesIncludedCategoryIds,
     // [Sprint H1 K-004 2026-05-17] Wizard template aliases — see top of file.
     'wizard_template_aliases' => $wizardTemplateAliases,
+    // [Z1-RED-08 heal 2026-05-28] Plan B kiosk payment routing — flag MUST
+    // appear in BOTH return branches (requireForm + production default).
+    // Previously only present in $requireForm=true branch (line 147),
+    // breaking env override on production code path (RED-08 P0 caught
+    // by adversarial review during Wave C dispatch).
+    'payment_route_all_to_counter' => $paymentRouteAllToCounter,
 ];

@@ -1694,7 +1694,11 @@
             "payment_cancelled_toast": "Paiement annulé",
             "speech_error": "Paiement refusé. {msg}",
             "offline_alert": "Paiement CB\/TR indisponible hors ligne. Le menu reste consultable; choisissez les espèces au comptoir ou réessayez quand la connexion revient.",
-            "offline_short": "Paiement CB\/TR indisponible hors ligne."
+            "offline_short": "Paiement CB\/TR indisponible hors ligne.",
+            "counter_route_title": "Paiement à la caisse",
+            "counter_route_sub": "Veuillez payer à la caisse",
+            "counter_route_processing": "Enregistrement de votre commande…",
+            "counter_route_confirm_btn": "Confirmer ma commande"
         },
         "upsell_screen": {
             "title": "Et pour terminer ?",
