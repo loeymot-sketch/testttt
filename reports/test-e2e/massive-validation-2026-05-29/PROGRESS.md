@@ -36,6 +36,24 @@ sync-core + intersections-dedup re-ran (run wf_e1092652-950): **0 P0, 0 P1** the
 - **P3:** contract-violation fail-once defeated by rescue lane-A re-driving (DispatchDomainEventsJob:161-166).
 - intersections-dedup: 5 P2/P3 confirmed but the verify agent wrote an EMPTY findings array to disk (capture glitch) — 0 P0/P1; specifics need a re-run to recover (low priority, non-blocking).
 
+## 🎯 ALL 4 CENTRAL P1s CLOSED (update — HEAD 9444a5b50)
+| P1 | Status | Commit |
+|---|---|---|
+| QR-table discount fraud | ✅ FIXED + test | 25c2807bc |
+| Loyalty redeem IDOR | ✅ FIXED + test | 8db38d801 |
+| changePaymentStatus fiscal-seq gap | ✅ FIXED + 2 tests (allocate via FiscalSequenceService::next, null-guarded, PAID-only) | 1808f9494 |
+| z_reports.total_ht stores TTC | ✅ FIXED + test (non-frozen Order::getTotalHtAttribute = total − tax → TTC=HT+TVA; ZReportService untouched) | 9444a5b50 |
+**8 fixes total this campaign** (3 functional + 4 P1 + 1 Pusher robustness), all tested, frozen 15/15, NF525 CHAIN OK, no push. Central audit COMPLETE: 0 P0, 0 open P1.
+
+## 🔒 SECURITY REVIEW — CLEAN (scoped to session heals 525946ec1..9444a5b50)
+Dedicated senior-security-engineer pass on all 5 changed source areas. **RESIDUAL RISK: none.**
+- LoyaltyController IDOR fix: COMPLETE — guest (no KioskMachine row) → owner-check fires; no $isStaff spoof; lookup injection-safe.
+- OrderService tableOrderStore discount: COMPLETE — merge(0) hits BOTH branches; `unset()` strips client amounts; server recomputes from DB prices; coupons server-validated/capped; no under-pay bypass.
+- changePaymentStatus fiscal-seq: SOUND — PAID-only + null-only + terminal PaymentStateMachine (no re-entry → no double-alloc) + gap-free FiscalSequenceService + routes auth-gated (admin group `auth:sanctum`+`apiKey`+`block_kiosk_token_admin`).
+- Order::getTotalHtAttribute: pure arithmetic, not in $appends (no leak).
+- config/broadcasting: no secret exposure.
+(Cloud "ultra review" `/code-review ultra` is owner-triggered/billed — recommend owner fires it pre-cloud.)
+
 ## NEXT (continuation queue)
 1. Loyalty IDOR fix (token-name pattern) + test.
 2. changePaymentStatus fiscal-seq allocation + test.
