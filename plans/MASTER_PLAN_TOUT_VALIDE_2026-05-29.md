@@ -42,3 +42,13 @@ Statut : V1 lancée.
   - **menu backstop polling (kiosk)**: a CatalogChanged swallowed while the kiosk WS never drops -> stale menu / sold-out item still orderable. FIX SPEC: add a low-frequency (e.g. 60-120s) menu cache-version poll on the kiosk as a backstop to the WS cache-invalidation; verify it does NOT touch the frozen Kiosk{Wizard,App,Upsell} components (likely lives in the menu service/store) — if it must touch a frozen component, requires a LOCK. Needs per-item stock seeded to live-validate (currently dormant).
 
 ## V5 — massive validation (next)
+
+## V5 DONE — CONVERGENCE GO (test-e2e massive)
+- Deterministic gates GREEN: vitest 1872/0, PHP 2714/0, NF525 CHAIN OK, frozen 15/15 (ZReportService under owner-LOCK + baseline re-blessed).
+- Adversarial convergence (re-audit of all V1-V4 changes, 5 agents): **0 new P0, 0 new P1** introduced.
+- Visual capstone re-confirmed post-V1-V4: fresh kiosk order A0006 (Coca-Cola, Plan-B) -> cash-instruction -> live on KDS with correct item + composition_snapshot frozen (Kiosk->KDS sync intact after the eventContract dedup change).
+- 2 documented dormant/non-blocking edges: P2 z-membership cron may warn on legit-counted-post-close orders (detect-only review heuristic); P3 refund mirror total_by_tax_rate divergence (dormant 0% VAT, VAT-activation checklist).
+- 3 owner-gated deferrals (not blockers): broadcast_completed_at orphan marker, kiosk menu-backstop polling, F1 PricingService TVA.
+
+## FINAL: TOUT VALIDÉ (blocking tier) — V1 LOCAL Le Cayenne
+CI genuinely green (was a false "all-green" narrative — 24 vitest + 8 PHP reds, ALL stale-test/baseline drift, adversarially verified 0 holes). The 5 weak points from the assessment fixed-or-managed: CI green / NF525 detector cron'd / concurrency F2 locked / auto-86 dedup / fiscal refund-netting (P0 #2, owner-LOCK). 0 new regressions. No push — owner reviews + fires /code-review ultra at discretion.

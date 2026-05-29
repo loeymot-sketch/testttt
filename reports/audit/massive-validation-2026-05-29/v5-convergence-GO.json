@@ -1,0 +1,26 @@
+{
+  "summary": "V5 final convergence: adversarial multi-agent re-audit of the systems changed in V1-V4 (sync/fiscal/order-flow/eventContract/scheduler) hunting NEW regressions, + re-verify the previously-resolved 2 NF525 P0 + weak points stay resolved, + a GStack/Superpower/Adversarial regression lens on each change. Read-only. Produces a final GO/NO-GO. No writes.",
+  "agentCount": 5,
+  "logs": [
+    "V5 convergence: re-auditing 4 V1-V4-changed zones for NEW regressions (adversarial).",
+    "Re-audit complete. Confirmed P0/P1: 0."
+  ],
+  "result": {
+    "verdict": {
+      "verdict": "GO",
+      "summary": "The 4-wave hardening campaign converged clean at the blocking tier: deterministic gates are GREEN (vitest 1872/0, PHP 2714/0, NF525 CHAIN OK confirmed live via fiscal:verify-chain --all, frozen 15/15 — the only frozen-zone touch is the owner-signed LOCK_ZREPORT_REFUND_NETTING ZReportService block, with the baseline SHA re-blessed). Zero new P0/P1 were introduced by V1-V4, so the campaign achieved \"tout validé\" at the tier that matters: CI green plus the targeted weak points (post-Z refund netting, double-PAID race, z-membership detector cron-wiring, auto-86 dedup) fixed or managed. It is not a literally-zero-issue release: two sub-P1 edges were introduced and are managed/documented — P2 (z-membership cron can false-page on legitimately-counted orders modified post-auto-close, a detect-only heuristic) and P3 (refund mirror nets into scalar total_tva but not total_by_tax_rate, an internal divergence that is dormant under V1's 0% VAT and explicitly flagged at LOCK line 43). The three pre-existing deferrals (broadcast_completed_at orphan marker, kiosk menu-backstop polling, F1 PricingService TVA frozen+dormant) remain owner-gated future-cycle items, not failures and not blockers for V1 LOCAL Le Cayenne. Verdict: GO — clean convergence at the P0/P1 tier with two low-severity, documented, dormant-under-V1 edges.",
+      "new_p0": 0,
+      "new_p1": 0,
+      "regressions": [
+        "[P2] app/Console/Commands/VerifyZMembershipCommand.php:71-77 — z-membership cron false-pages on legitimately-counted orders modified after the 23:59 auto-close (new operational surface from V3 cron-wiring; detect-only heuristic, warn-level)",
+        "[P3] app/Services/Fiscal/ZReportService.php:384-390 — Counter-entry refund mirror nets into scalar total_tva but NOT into total_by_tax_rate (internal divergence under non-zero VAT; fix-induced side-effect of the refund-netting block, dormant under V1 0% VAT per LOCK line 43)"
+      ],
+      "residual_known": [
+        "broadcast_completed_at orphan marker — DEFERRED to focused cycle (worker hard-killed at broadcast moment is indistinguishable from success; rare on V1 single-box, staleness monitor covers attempts-climbing cases)",
+        "kiosk menu-backstop polling — DEFERRED (low-freq menu cache-version poll as WS-invalidation backstop; needs per-item stock seeded to live-validate, currently dormant; LOCK required if it touches frozen Kiosk components)",
+        "F1 PricingService TVA (discount unclamped / multi-rate tax breakdown) — frozen-zone owner-gate G2 PENDING, dormant under 0% VAT, stays on VAT-activation checklist (not edited)"
+      ]
+    },
+    "confirmed": []
+  }
+}
