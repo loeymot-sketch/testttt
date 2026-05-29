@@ -1,0 +1,79 @@
+{
+  "audit_id": "full-audit-2026-05-29",
+  "synthesizer_role": "XCUT GStack Architectural + RED Visual cross-cutting",
+  "synthesis_timestamp_utc": "2026-05-29T23:40:00Z",
+  "head_sha": "5032dc158793b678cffa3edf5ed13ca33b1837e2",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "verdict": "ESCALATE",
+  "verdict_reason": "Sibling-agent outputs absent. Synthesis preconditions not met. Per CLAUDE.md section 3ter (Verify before report) and section 13 (Evidence Rules), the XCUT synthesizer refuses to fabricate per-agent findings, P0/P1 counts, or a GREEN/HEAL verdict from non-existent inputs. This is a procedural ESCALATE, not a content judgement on the codebase.",
+  "expected_inputs": {
+    "findings_json_paths": [
+      "reports/test-e2e/full-audit-2026-05-29/POS/findings.json",
+      "reports/test-e2e/full-audit-2026-05-29/KIOSK/findings.json",
+      "reports/test-e2e/full-audit-2026-05-29/KDS/findings.json",
+      "reports/test-e2e/full-audit-2026-05-29/OSS/findings.json",
+      "reports/test-e2e/full-audit-2026-05-29/ADMIN/findings.json",
+      "reports/test-e2e/full-audit-2026-05-29/LIVREUR/findings.json",
+      "reports/test-e2e/full-audit-2026-05-29/SYNC/findings.json",
+      "reports/test-e2e/full-audit-2026-05-29/NF525/findings.json",
+      "reports/test-e2e/full-audit-2026-05-29/SECURITY/findings.json",
+      "reports/test-e2e/full-audit-2026-05-29/PERF/findings.json",
+      "reports/test-e2e/full-audit-2026-05-29/I18N/findings.json",
+      "reports/test-e2e/full-audit-2026-05-29/A11Y/findings.json"
+    ],
+    "screenshot_root": "/tmp/foodking-full-audit-2026-05-29/"
+  },
+  "inputs_inventory": {
+    "findings_json_present_count": 0,
+    "findings_json_missing_count": 12,
+    "findings_json_missing": [
+      "POS", "KIOSK", "KDS", "OSS", "ADMIN", "LIVREUR",
+      "SYNC", "NF525", "SECURITY", "PERF", "I18N", "A11Y"
+    ],
+    "screenshots_present_by_zone": {
+      "POS": {"count": 0, "tmp_artifacts": ["_login.html", "_pos-page.html", "_post-login.html"], "note": "_post-login.html contains JSON error: 'Methode non prise en charge pour cette route.' Suggests agent posted to a route that does not accept POST. Agent likely bailed before screenshotting."},
+      "KIOSK": {"count": 0},
+      "KDS": {"count": 1, "files": ["01-kds-grid-initial.png"], "size_bytes": 41023},
+      "OSS": {"count": 2, "files": ["01-oss-alias-load.png", "02-oss-canonical-admin.png"], "size_bytes_total": 92637},
+      "ADMIN": {"count": 0},
+      "LIVREUR": {"count": 0, "subdirs_empty": ["screenshots", "network"]},
+      "SYNC": {"count": 0, "subdirs_empty": ["screenshots", "raw", "ledger"]},
+      "NF525": {"count": 0, "note": "no subdir created"},
+      "SECURITY": {"count": 0, "note": "no subdir created"},
+      "PERF": {"count": 0, "note": "no subdir created"},
+      "I18N": {"count": 0, "note": "no subdir created"},
+      "A11Y": {"count": 0, "note": "no subdir created"}
+    }
+  },
+  "agent_completion_assessment": {
+    "agents_dispatched_and_completed": 0,
+    "agents_partial_evidence": 3,
+    "agents_no_evidence": 9,
+    "partial_evidence_zones": ["POS", "KDS", "OSS"],
+    "interpretation": "Either the 11 sibling agents were never dispatched, or they were dispatched and failed/aborted before producing findings.json. The presence of empty subdirectories suggests scaffolding ran but per-agent execution did not converge."
+  },
+  "gstack_architectural_review": {
+    "status": "DEFERRED",
+    "reason": "Architectural cross-cut requires sibling-agent findings to triangulate (layer discipline, pattern cohesion, frozen-zone integrity). Synthesizer will not assert frozen-zone 0 LOC, NF525 chain status, /goal LIVING-SYNC integration, or Plan B integration without ground-truth evidence captured by the dispatched specialists."
+  },
+  "red_visual_cross_cut": {
+    "status": "DEFERRED",
+    "reason": "Available screenshot inventory (3 PNGs across 12 zones) is insufficient for cross-surface numeric integrity check (cart=backend=receipt=KDS=audit_log=OSS). No multimodal Read performed: refusing to overclaim from 1 KDS frame and 2 OSS frames."
+  },
+  "operational_signals_observed": [
+    {
+      "signal": "POS agent hit HTTP method error",
+      "evidence": "/tmp/foodking-full-audit-2026-05-29/pos/_post-login.html contains {\"success\":false,\"message\":\"Methode non prise en charge pour cette route.\"}",
+      "interpretation": "Operational issue with the POS sub-agent's Playwright script, not a P0 against the application. Worth flagging so the next dispatch fixes the login-flow code before re-running.",
+      "severity": "OPS"
+    },
+    {
+      "signal": "9 of 12 zones produced zero artifacts",
+      "evidence": "Empty screenshot directories for KIOSK, ADMIN, LIVREUR, SYNC plus no subdir created for NF525, SECURITY, PERF, I18N, A11Y",
+      "interpretation": "Mass non-execution. Re-dispatch required.",
+      "severity": "OPS"
+    }
+  ],
+  "owner_actionable_next_step": "Re-dispatch the 11 sibling agents (POS, KIOSK, KDS, OSS, ADMIN, LIVREUR, SYNC, NF525, SECURITY, PERF, I18N, A11Y) and verify each emits its findings.json before the next XCUT synthesis pass. If a parallel session is already executing them, wait for completion. Do not treat this XCUT pass as a verdict on the codebase.",
+  "discipline_anchor": "CLAUDE.md section 3ter (Verify before report - mandatory for sub-agents) and section 13 (Evidence Rules - never fake certainty, never silently assume success). MEMORY.md START-HERE 2026-05-29 NIGHT NO_GO context: 51-agent campaign already paid for hallucinated convergence with 2 reverted fixes 24h ago - this synthesizer will not repeat that failure mode."
+}

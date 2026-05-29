@@ -1,0 +1,32 @@
+[
+    {
+        "sample": 1,
+        "backend_latency_ms": 1121,
+        "wall_e2e_ms": 857,
+        "status": "OK"
+    },
+    {
+        "sample": 2,
+        "backend_latency_ms": 1141,
+        "wall_e2e_ms": 857,
+        "status": "OK"
+    },
+    {
+        "sample": 3,
+        "backend_latency_ms": 1172,
+        "wall_e2e_ms": 870,
+        "status": "OK"
+    },
+    {
+        "sample": 4,
+        "backend_latency_ms": 1200,
+        "wall_e2e_ms": 880,
+        "status": "OK"
+    },
+    {
+        "sample": 5,
+        "backend_latency_ms": 1213,
+        "wall_e2e_ms": 813,
+        "status": "OK"
+    }
+]

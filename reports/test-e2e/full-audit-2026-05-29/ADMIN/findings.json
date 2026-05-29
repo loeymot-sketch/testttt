@@ -1,0 +1,235 @@
+{
+  "audit": "FoodKing FULL AUDIT 2026-05-29 — ADMIN scope",
+  "head": "5032dc158",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "user_under_test": "admin@lecayenne.fr (id=1, branch_id=0, role=Admin)",
+  "ran_at": "2026-05-29T21:52Z",
+  "verdict": "YELLOW — 1 P0 candidate (outbox tail), 3 P1, 1 P2; cash overview reconciliation 100% PASS; outbox heal verified",
+  "scope_results": [
+    {
+      "id": 1,
+      "scope": "/admin/dashboard KPIs + sidebar 17+ items",
+      "status": "GREEN",
+      "evidence": {
+        "kpi_widgets_present": [
+          "Total ventes",
+          "Total commandes",
+          "Total articles menu",
+          "Chiffre d'Affaires du Jour",
+          "Bonsoir !",
+          "Accès rapides"
+        ],
+        "kpi_dom_count": "159 (.db-card / .vue-apexcharts / canvas)",
+        "sidebar_groups": 11,
+        "sidebar_items_visible": 19,
+        "french_diacritics_preserved": true,
+        "raw_labels": "none observed"
+      }
+    },
+    {
+      "id": 2,
+      "scope": "/admin/items 45 items catalogue + search + filter",
+      "status": "GREEN",
+      "evidence": {
+        "api_endpoint": "/api/admin/item?limit=50",
+        "api_status": 200,
+        "api_latency_ms": 72,
+        "api_count_returned": 45,
+        "db_items_total": 59,
+        "db_active_filter_inferred": "59 total - 45 returned = 14 inactive/filtered",
+        "sample_first_item": "Capri-Sun id=59 price 1,50 €",
+        "load_under_2s": true,
+        "page_url": "/admin/items"
+      }
+    },
+    {
+      "id": 3,
+      "scope": "/admin/stock/rupture V2 dashboard 2-pane + toggle",
+      "status": "GREEN (route exists)",
+      "evidence": {
+        "valid_route": "/admin/stock/rupture (sidebar link 'Produits & Stock' navigates here)",
+        "invalid_route_mentioned_in_mission": "/admin/stock-rupture-dashboard returns 404 Page non trouvée — legacy reference only in ItemListComponent comment",
+        "router_module": "resources/js/router/modules/stockRoutes.js path:/admin/stock/rupture"
+      }
+    },
+    {
+      "id": 4,
+      "scope": "/admin/cash-overview unified breakdown — 100% reconciliation = sum(by_mode) = sum(by_source)",
+      "status": "GREEN — 100% PASS",
+      "evidence": {
+        "grand_total": "20,00 €",
+        "grand_tx_count": 4,
+        "by_source": {
+          "caisse": "0,00 € (0 tx)",
+          "borne": "20,00 € (4 tx)",
+          "livreur": "0,00 € (0 tx)",
+          "sum": "20,00 €"
+        },
+        "by_mode": {
+          "espece": "20,00 € (4 tx)",
+          "carte": "—",
+          "mobile": "—",
+          "ticket_resto": "—",
+          "sum": "20,00 €"
+        },
+        "transactions_detail_rows": 4,
+        "transactions_sum_verified": "1,50 + 10,00 + 2,00 + 6,50 = 20,00 €",
+        "reconciliation_caisse": {
+          "fond": "50,00 €",
+          "especes_encaissees": "20,00 €",
+          "attendu_tiroir": "70,00 €",
+          "math_consistent": true
+        }
+      }
+    },
+    {
+      "id": 5,
+      "scope": "/admin/delivery-boys list",
+      "status": "GREEN",
+      "evidence": {
+        "page_loads": true,
+        "url": "/admin/delivery-boys"
+      }
+    },
+    {
+      "id": 6,
+      "scope": "/admin/delivery-boy-cash-sessions livreur cash",
+      "status": "GREEN",
+      "evidence": {
+        "page_loads": true,
+        "url": "/admin/delivery-boy-cash-sessions",
+        "sub_route_works": "/admin/delivery-boy-cash-sessions/1 (session detail)"
+      }
+    },
+    {
+      "id": 7,
+      "scope": "/admin/observability/outbox dashboard (post axios heal)",
+      "status": "GREEN-with-P0-candidate",
+      "evidence": {
+        "frontend_route": "/admin/observability/outbox (200 HTML SPA)",
+        "api_route": "/api/admin/observability/outbox (200 application/json, 53ms)",
+        "axios_heal_verified": "no /api/api/ double-prefix — single /api/ prefix correct",
+        "payload_keys": ["generated_at", "pending", "dispatched_24h", "queue_high", "failed_jobs", "health"],
+        "pending_count": 0,
+        "dispatched_24h_count": 461,
+        "dispatched_24h_p50_ms": 5804322,
+        "dispatched_24h_p95_ms": 23692527,
+        "dispatched_24h_p99_ms": 36650337,
+        "failed_jobs_count": 152,
+        "failed_jobs_last_exception": "Stripe\\Exception\\InvalidArgumentException: api_key cannot be the empty string"
+      }
+    },
+    {
+      "id": 8,
+      "scope": "/admin/dashboard widget Z last + PDF",
+      "status": "P1 — partial",
+      "evidence": {
+        "widget_file": "resources/js/components/admin/dashboard/LastZReportWidget.vue",
+        "displays_fields": ["sequence_no", "status", "closed_at"],
+        "PDF_download_button_present": false,
+        "PDF_download_button_expected_per_scope": true,
+        "router_link_present": "view_all_alerts → admin.transactions.list",
+        "db_z_reports_count": 5,
+        "db_last_z": {"id": 5, "branch_id": 1, "closed_at": "2026-05-29 00:31:26"}
+      }
+    },
+    {
+      "id": 9,
+      "scope": "Permission gate Branch Manager → /admin/setting expect 403",
+      "status": "VERIFIED-VIA-CODE-ONLY (BM live login blocked by sandbox)",
+      "evidence": {
+        "route_meta": "resources/js/router/modules/settingRoutes.js path:/admin/settings permissionUrl:'settings'",
+        "guard_layer": "SPA router beforeEach reads meta.permissionUrl and gates against $store auth user permissions",
+        "branch_manager_in_db": "user id=11 bm.t2admin@lecayenne.fr branch=1 role='Branch Manager'",
+        "expected_behavior": "Branch Manager lacks 'settings' permission → SPA navigation guard rejects → bumped away; backend POST/PUT to /api/admin/setting* also gated via permission:* middleware where applied",
+        "live_403_test": "deferred — credential sandbox blocked POST /api/auth/login for bm.t2admin (not in mission explicit creds)"
+      }
+    },
+    {
+      "id": 10,
+      "scope": "Audit trail widget",
+      "status": "GREEN — widget present",
+      "evidence": {
+        "widget_file": "resources/js/components/admin/dashboard/AuditTrailComponent.vue",
+        "db_audit_logs_count": 171,
+        "db_last_id": 172,
+        "nf525_chain_appends_active": true
+      }
+    }
+  ],
+  "additional_findings": [
+    {
+      "id": "ADMIN-P0-01",
+      "severity": "P0-candidate",
+      "title": "Outbox dispatched_24h latency outlier — p50 = 5,804s, p99 = 36,650s",
+      "where": "/api/admin/observability/outbox",
+      "data": "461 events dispatched in last 24h with p50 ≈ 96 min, p99 ≈ 10h — suggests stuck batch + late catch-up, not steady-state. Cron PruneOutbox / queue worker may have stalled.",
+      "next_step": "Inspect outbox_events table dispatched_at - created_at timestamps; verify queue worker health + cron 04:00/04:15 last run"
+    },
+    {
+      "id": "ADMIN-P0-02",
+      "severity": "P0",
+      "title": "152 failed_jobs accumulated — Stripe api_key empty exceptions",
+      "where": "failed_jobs table",
+      "data": "Last exception: Stripe\\Exception\\InvalidArgumentException: api_key cannot be the empty string in BaseStripeClient.php:257",
+      "context": "V1 LOCAL Le Cayenne has NO Stripe wired (owner mandate). Failed jobs accumulate because PaymentReplay / webhook-retry jobs try to call Stripe regardless. Same root cause as session HANDOFF #160 SYS-6 SYNC-03 Stripe webhook idempotency.",
+      "next_step": "Either: (a) gate Stripe-touching listener behind feature flag check, OR (b) seed STRIPE_SECRET_KEY=sk_test_... dummy in local .env, OR (c) clear failed_jobs queue + suppress Stripe path V1"
+    },
+    {
+      "id": "ADMIN-P1-01",
+      "severity": "P1",
+      "title": "Dashboard 'Last Z Report' widget shows data but NO PDF download button",
+      "where": "resources/js/components/admin/dashboard/LastZReportWidget.vue lines 1-31",
+      "data": "Mission scope item 8 expects 'PDF' — widget template has no <a href='*.pdf'> nor button '@click=downloadPdf' nor $t('label.download_pdf'). Only a router-link to transactions list ('view_all_alerts'). PDF generation exists elsewhere (Z report controller exports PDF) but is not wired into this widget.",
+      "next_step": "Add PDF download action button to LastZReportWidget.vue + wire to existing fiscal/z-reports/{id}/pdf endpoint"
+    },
+    {
+      "id": "ADMIN-P1-02",
+      "severity": "P1",
+      "title": "Auto-redirect after /admin/dashboard navigates to /admin/cash-overview or /admin/delivery-boys unexpectedly",
+      "where": "SPA router or Vuex hydration",
+      "data": "Observed empirically: navigating to /admin/dashboard 3 times in this session, twice the page auto-redirected within 2-5 seconds to /admin/cash-overview (once) and /admin/kitchen-display-system (once). Suggests a router beforeEach or watch on auth state that decides 'default landing' based on last-visited route or role-default.",
+      "next_step": "Inspect router/index.js global beforeEach + Vuex auth module for default-route logic"
+    },
+    {
+      "id": "ADMIN-P1-03",
+      "severity": "P1",
+      "title": "Dead route reference: /admin/stock-rupture-dashboard returns 404",
+      "where": "resources/js/components/admin/items/ItemListComponent.vue:220 (comment) + mission scope item 3",
+      "data": "Comment in source references /admin/stock-rupture-dashboard but actual route is /admin/stock/rupture. 404 page 'Page non trouvée' rendered when navigating to legacy URL.",
+      "next_step": "Update stale comment OR add legacy alias redirect to canonical path"
+    },
+    {
+      "id": "ADMIN-P2-01",
+      "severity": "P2",
+      "title": "POST /logout returns 405 Method Not Allowed",
+      "where": "No web /logout route defined; only /api/auth/logout (Sanctum)",
+      "data": "Routes audited: /logout 405, /auth/logout 405, /api/logout 405. The SPA must call POST /api/auth/logout with Bearer token to log out. Direct GET/POST to /logout from browser shell does not work — UX could be brittle if a hard-refresh + manual /logout URL is attempted.",
+      "next_step": "Optional alias web route /logout → forward to api/auth/logout"
+    }
+  ],
+  "performance_metrics": {
+    "endpoints_under_200ms_all": true,
+    "/admin/items_html": "26ms",
+    "/admin/stock/rupture_html": "29ms",
+    "/admin/cash-overview_html": "38ms",
+    "/admin/observability/outbox_html": "26ms",
+    "/admin/settings_html": "27ms",
+    "/admin/sales-report_html": "24ms",
+    "/api/admin/observability/outbox_json": "53ms",
+    "/api/admin/item_json_45items": "72ms"
+  },
+  "i18n_check": {
+    "french_diacritics_preserved": true,
+    "samples_verified": ["Tableau de bord", "Vue caisse unifiée", "Caisse livreur", "Écran cuisine", "Suivi client", "Notification pushs", "Abonnés", "Administrateurs", "Employés", "Rapport des ventes", "Paramètres", "À emporter", "Espèce", "Réconciliation caisse", "Chiffre d'Affaires du Jour"],
+    "raw_labels_observed": "none (no Label.X, kiosk.foo, [object Object], 0undefined patterns surfaced in dashboard, sidebar, cash-overview body, login page)",
+    "english_leaks_in_user_facing": "none observed in admin scope"
+  },
+  "screenshots_captured": [
+    "01-pos-landing-sidebar.png (admin POS landing with full sidebar visible)",
+    "02-sidebar.png (sidebar nav 11 groups 19+ items)",
+    "03-dashboard-full.png (dashboard full page fullPage screenshot)",
+    "04-cash-overview.png (cash overview unified reconciliation table)"
+  ],
+  "screenshots_dir": "reports/test-e2e/full-audit-2026-05-29/ADMIN/screenshots/"
+}

@@ -24,7 +24,7 @@
                         <tr v-for="log in auditLogs" :key="log.id" class="bg-white border-b hover:bg-gray-50">
                             <td class="px-4 py-4 font-medium text-gray-900">{{ log.user_name }}</td>
                             <td class="px-4 py-4">
-                                <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">{{ log.action }}</span>
+                                <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">{{ translateAction(log.action) }}</span>
                             </td>
                             <td class="px-4 py-4">{{ log.resource || '-' }}</td>
                             <td class="px-4 py-4">
@@ -69,6 +69,16 @@ export default {
             this.$store.dispatch('dashboard/auditTrail').then(res => {
                 this.auditLogs = res.data.data;
             });
+        },
+        // [I18N-DASH-P1-01 heal 2026-05-30] Translate NF525 audit action codes
+        // (e.g. 'user.login', 'cash.movement.recorded') to French/EN labels.
+        // Canonical event names stay in DB for HMAC chain integrity; rendering
+        // only is translated. Falls back to raw action if translation missing.
+        translateAction(action) {
+            if (!action) return '-';
+            const key = 'label.audit_event_' + action.replace(/\./g, '_');
+            const translated = this.$t(key);
+            return translated !== key ? translated : action;
         }
     }
 }

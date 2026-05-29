@@ -1,0 +1,113 @@
+{
+  "audit": "KDS V2 + LIVE SYNC + chef ergonomics",
+  "date": "2026-05-29T21:50:00Z",
+  "head": "5032dc158",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "scope_label": "KDS",
+  "auditor": "claude-opus-4-7[1m] + Playwright MCP",
+  "viewport": "1920x1080 TV-headed",
+  "credentials_used": "chef@lecayenne.fr / 123456 (Spatie role Chef, branch_id=1, perms=[dashboard,kitchen-display-system,order-status-screen])",
+  "verdict": "AMBER — KDS UI is production-grade; ergonomic + visual layer passes; but the LIVE-SYNC chef WS pipeline was NOT empirically confirmed in this run (auth-session race + chef↔admin swap during Playwright session prevented clean WS measurement). The 3 sub-second latencies advertised in BRAIN/commit 5f2c6947f are NOT independently reproduced here.",
+  "summary": {
+    "kds_ui": "GREEN — V2 grid 4×2, FIFO sort, A–H shortcuts, status banner LOCAL, French i18n strict (no raw labels visible in chef view), recently-served strip rendering 3 orders, empty-state path present.",
+    "kds_data": "GREEN — 3 active orders rendered (A0002, A0003, A0006) all kiosk source, status='Nouvelle' (NEW), badge 'En attente encaissement' for cash-pending Plan B kiosk orders (no bump CTA shown — correct).",
+    "live_sync": "AMBER — UNVERIFIED in this run. Pusher state=connected and Echo did attempt private-branch.1 (channel object created), but in the chef snapshot the subscription showed subscribed:false. Could be transient (auth challenge in flight) or persistent (P-AUTH-SYNC heal regression). REQUIRES a longer dedicated chef-only soak test isolated from any admin session.",
+    "polling_envelope": "OBSERVED — UI is updating from polling (orders are visible even with subscribed:false), consistent with the 30s-60s fallback documented in subscribeEcho().",
+    "frozen_zone_diff": "0 (read-only audit, no code changes)",
+    "nf525_chain": "UNCHANGED (read-only audit)"
+  },
+  "findings": [
+    {
+      "id": "KDS-2026-05-29-01",
+      "priority": "P1-CANDIDATE",
+      "title": "Chef WS subscription to private-branch.1 NOT confirmed subscribed:true within 5s of KDS mount",
+      "evidence_observed": "page.evaluate after chef login showed pusherChannels=[{name:'private-branch.1', subscribed:false}], pusherState='connected', socketId present. UI still rendered 3 active orders → fallback poller is doing the work, not the WS push.",
+      "expected_per_brain": "5f2c6947f promised re-injection of fresh Sanctum token after authLogin so the FIRST subscribe succeeds. BRAIN advertises 6ms WS push, 512ms end-to-end status change.",
+      "actual_behaviour": "subscribed=false at moment of capture. Either (a) initial auth handshake still in flight (race window > 5s) or (b) authStatus snapshot taken transiently false during navigation. CANNOT be confidently called a real defect without a clean isolated chef soak test (admin session re-swap polluted the captured state in this run).",
+      "files_to_inspect": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/bootstrap.js:355-410",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1891-1955"
+      ],
+      "verdict": "NEEDS-RECAPTURE — block on chef-only session, clean cookies, capture pusherChannels at t+1s, t+3s, t+5s, t+10s. Promote to P0 only if subscribed:true never appears.",
+      "screenshot": "screenshots/01-kds-grid-initial.png"
+    },
+    {
+      "id": "KDS-2026-05-29-02",
+      "priority": "P2",
+      "title": "Chef→OSS redirect on initial login bypasses /kds redirect (UX friction, no security impact)",
+      "evidence_observed": "After successful POST /api/auth/login as chef, SPA navigated to /order-status-screen instead of /admin/kitchen-display-system. authenticatedStaffLanding() resolves user.default_permission.url; for chef@lecayenne.fr the default landed on OSS not KDS.",
+      "files_to_inspect": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/router/index.js:52-55 (authenticatedStaffLanding)",
+        "Chef user default-access seed/config — check default_permission_id pointing to kitchen-display-system not order-status-screen"
+      ],
+      "verdict": "P2-COSMETIC — chef CAN navigate to KDS via sidebar link 'Écran cuisine' (visible in snapshot). Default landing should be KDS per role intent. Single seeder/config tweak."
+    },
+    {
+      "id": "KDS-2026-05-29-03",
+      "priority": "P3",
+      "title": "Stuck queue numbers — A0002 (1383min), A0003 (1382min), A0006 (172min) all 'En attente encaissement' for >2h to >23h",
+      "evidence_observed": "Snapshot region labels show 'attente 1383 minutes 14 secondes' (23+ hours) for A0002 and A0003. These are Plan B kiosk orders never collected at counter.",
+      "verdict": "P3-DATA — accumulated stale state from dev runs. Likely needs the V1.0.X PENDING_COUNTER cleanup cron (task #211 in BRAIN backlog). Not a code defect — operational hygiene."
+    },
+    {
+      "id": "KDS-2026-05-29-04-POSITIVE",
+      "priority": "INFO",
+      "title": "V2 grid French i18n strict — no raw labels detected in chef view",
+      "evidence_observed": "Snapshot rendered 100% French strings: 'Tableau de bord', 'Historique', 'Nouvelle', 'Borne', 'Attente', 'En attente encaissement', 'Récemment servies', 'il y a X min'. Zero label.X, kiosk.foo, [object Object], 0undefined detected.",
+      "verdict": "GREEN — i18n discipline confirmed in KDS surface."
+    },
+    {
+      "id": "KDS-2026-05-29-05-POSITIVE",
+      "priority": "INFO",
+      "title": "Cash-pending badge correctly REPLACES bump CTA for kiosk Plan B orders",
+      "evidence_observed": "All 3 active orders are kiosk-source and cash-pending. None of them show a Prêt/bump button — they show the status badge 'En attente encaissement' with icon. Bump CTA is correctly suppressed.",
+      "verdict": "GREEN — Plan B kiosk payment routing UI contract is honored."
+    },
+    {
+      "id": "KDS-2026-05-29-06-POSITIVE",
+      "priority": "INFO",
+      "title": "Recently-served strip rendering with elapsed-since-served",
+      "evidence_observed": "Bottom region 'Récemment servies' shows A0005 (21min), A0004 (461min), A0001 (1377min). 3 pills present, role=region with aria-label, separate from active grid — Wave U bug ('PREPARED stayed greyed in grid') is fixed and stable.",
+      "verdict": "GREEN — Wave U bug remains healed."
+    },
+    {
+      "id": "KDS-2026-05-29-07",
+      "priority": "INSPECTION-DEFERRED",
+      "title": "Bump CTA 52px height — not verified on a NON cash-pending order in this run",
+      "evidence_observed": "All 3 active orders were cash-pending — none showed the bump CTA, so 52px height could NOT be measured visually. Inspection deferred to a session with a counter-collected order in ACCEPT/PREPARING.",
+      "verdict": "DEFER to follow-on session with a non-Plan-B order in queue."
+    },
+    {
+      "id": "KDS-2026-05-29-08",
+      "priority": "INSPECTION-DEFERRED",
+      "title": "Status transition ACCEPT→PREPARING→PREPARED + hostile reverse 422 — not exercised in this run",
+      "evidence_observed": "No actionable order (all cash-pending Plan B). Transition testing requires creating a fresh paid order or finding a PaymentStatus=PAID kiosk order without bump pellet.",
+      "verdict": "DEFER — requires order seeding step before bump tests."
+    },
+    {
+      "id": "KDS-2026-05-29-09",
+      "priority": "INSPECTION-DEFERRED",
+      "title": "Allergens modal + overflow chip +N en attente + banner stacking",
+      "evidence_observed": "Allergens modal needs an order with allergens snapshot non-empty (3 active orders here are simple Galette Normale + Coca — no allergens). Overflow chip requires >8 active orders. Banner stacking requires offline-since/listAtCap/adminPollingHint triggers.",
+      "verdict": "DEFER — UI code reviewed in KdsV2Grid.vue:81-89 (overflow chip implementation looks correct, triggers on overflowActiveCount>0 from activeOrders.length>8). Empirical visual test requires synthetic >8 order seed."
+    }
+  ],
+  "latency_measurements": {
+    "ws_push_t1_post_to_t2_kds_card": "NOT-MEASURED — no actionable paid order to POST",
+    "polling_visible": "Orders refreshed via fallback poller (frontend code path KitchenDisplaySystemComponent.vue:1875 confirms 60s envelope when WS up, 5-30s when WS down)",
+    "ws_subscribed_t_target": "subscribed:true should occur within ~500ms of socket_id assignment per 5f2c6947f, NOT observed in chef snapshot (subscribed:false at capture)"
+  },
+  "playwright_artifacts": {
+    "screenshots": [
+      "screenshots/01-kds-grid-initial.png"
+    ],
+    "console_warnings_seen": 1,
+    "console_errors_seen": [
+      "/api/profile 401 (pre-login probe)",
+      "/api/login 401 (wrong endpoint — should be /api/auth/login)",
+      "/logout 405 (route not configured for GET)",
+      "/login 405 (route not configured for GET)"
+    ]
+  },
+  "recommendation_for_orchestrator": "Re-run KDS audit with a strictly chef-only Playwright session that: (1) launches a fresh incognito context, (2) logs in via /api/auth/login JSON POST directly (not the SPA form, to avoid pre-fill bleed), (3) captures pusherChannels at t+1s/3s/5s/10s/30s, (4) POSTs a counter-collected order so a real bump cycle can be measured. If subscribed:true never appears, Promote KDS-2026-05-29-01 to P0 and re-open WSDC-P0-01 (BRAIN task #210 was DOC-ONLY closed, not code-fixed)."
+}

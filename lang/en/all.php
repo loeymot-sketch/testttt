@@ -202,6 +202,18 @@ return [
         'delivery_cash_mvt_drawer_open' => 'Drawer opened',
         'delivery_cash_mvt_drawer_close' => 'Drawer closed',
         'delivery_cash_mvt_adjustment' => 'Adjustment',
+        // [I18N-DASH-P1-01 heal 2026-05-30] EN parity for dashboard audit event types.
+        'audit_event_user_login' => 'User login',
+        'audit_event_user_logout' => 'User logout',
+        'audit_event_cash_movement_recorded' => 'Cash movement recorded',
+        'audit_event_cash_delivery_session_opened' => 'Delivery cash session opened',
+        'audit_event_cash_delivery_session_closed' => 'Delivery cash session closed',
+        'audit_event_cash_delivery_session_reconciled' => 'Delivery cash session reconciled',
+        'audit_event_order_counter_payment_confirmed' => 'Counter payment confirmed',
+        'audit_event_order_refund_counter_entry' => 'Counter refund recorded',
+        'audit_event_z_report_closed' => 'Z report closed',
+        'audit_event_z_report_opened' => 'Z report opened',
+        'audit_event_outbox_replay' => 'Outbox event replay',
     ],
     'studio' => [
         'eyebrow' => 'Centralized catalog',

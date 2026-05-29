@@ -198,6 +198,20 @@ return [
         'delivery_cash_mvt_drawer_open' => 'Ouverture caisse',
         'delivery_cash_mvt_drawer_close' => 'Clôture caisse',
         'delivery_cash_mvt_adjustment' => 'Ajustement',
+        // [I18N-DASH-P1-01 heal 2026-05-30] Full audit 2026-05-29 i18n agent
+        // caught dashboard AuditTrailComponent rendering audit_logs.action raw.
+        // Translations for displayed NF525 audit event types.
+        'audit_event_user_login' => 'Connexion utilisateur',
+        'audit_event_user_logout' => 'Déconnexion utilisateur',
+        'audit_event_cash_movement_recorded' => 'Mouvement de caisse enregistré',
+        'audit_event_cash_delivery_session_opened' => 'Ouverture caisse livreur',
+        'audit_event_cash_delivery_session_closed' => 'Clôture caisse livreur',
+        'audit_event_cash_delivery_session_reconciled' => 'Réconciliation caisse livreur',
+        'audit_event_order_counter_payment_confirmed' => 'Encaissement comptoir confirmé',
+        'audit_event_order_refund_counter_entry' => 'Remboursement comptoir',
+        'audit_event_z_report_closed' => 'Rapport Z clôturé',
+        'audit_event_z_report_opened' => 'Rapport Z ouvert',
+        'audit_event_outbox_replay' => 'Rejeu événement outbox',
     ],
     'studio' => [
         'eyebrow' => 'Catalogue centralisé',

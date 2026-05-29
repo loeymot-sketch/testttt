@@ -1,0 +1,92 @@
+{
+    "frontend_menu": {
+        "label": "GET /api/frontend/menu (kiosk)",
+        "status": null,
+        "error": "NunoMaduro\\Collision\\Handler::setOutput(): Argument #1 ($output) must be of type Symfony\\Component\\Console\\Output\\OutputInterface, null given, called in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Laravel/ExceptionHandler.php on line 70",
+        "elapsed_ms": 16.2,
+        "query_count": 0,
+        "n_plus_1_suspects": [],
+        "queries_total_ms": 0
+    },
+    "kds_order_sync": {
+        "label": "GET /api/admin/kds-order/sync",
+        "status": null,
+        "error": "NunoMaduro\\Collision\\Handler::setOutput(): Argument #1 ($output) must be of type Symfony\\Component\\Console\\Output\\OutputInterface, null given, called in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Laravel/ExceptionHandler.php on line 70",
+        "elapsed_ms": 0.25,
+        "query_count": 0,
+        "n_plus_1_suspects": [],
+        "queries_total_ms": 0
+    },
+    "kds_order_index": {
+        "label": "GET /api/admin/kds-order (index)",
+        "status": null,
+        "error": "NunoMaduro\\Collision\\Handler::setOutput(): Argument #1 ($output) must be of type Symfony\\Component\\Console\\Output\\OutputInterface, null given, called in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Laravel/ExceptionHandler.php on line 70",
+        "elapsed_ms": 0.13,
+        "query_count": 0,
+        "n_plus_1_suspects": [],
+        "queries_total_ms": 0
+    },
+    "oss_order_index": {
+        "label": "GET /api/admin/oss-order",
+        "status": null,
+        "error": "NunoMaduro\\Collision\\Handler::setOutput(): Argument #1 ($output) must be of type Symfony\\Component\\Console\\Output\\OutputInterface, null given, called in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Laravel/ExceptionHandler.php on line 70",
+        "elapsed_ms": 0.12,
+        "query_count": 0,
+        "n_plus_1_suspects": [],
+        "queries_total_ms": 0
+    },
+    "dashboard_total_sales": {
+        "label": "GET /api/admin/dashboard/total-sales",
+        "status": null,
+        "error": "NunoMaduro\\Collision\\Handler::setOutput(): Argument #1 ($output) must be of type Symfony\\Component\\Console\\Output\\OutputInterface, null given, called in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Laravel/ExceptionHandler.php on line 70",
+        "elapsed_ms": 0.11,
+        "query_count": 0,
+        "n_plus_1_suspects": [],
+        "queries_total_ms": 0
+    },
+    "dashboard_realtime": {
+        "label": "GET /api/admin/dashboard/realtime-report",
+        "status": null,
+        "error": "NunoMaduro\\Collision\\Handler::setOutput(): Argument #1 ($output) must be of type Symfony\\Component\\Console\\Output\\OutputInterface, null given, called in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Laravel/ExceptionHandler.php on line 70",
+        "elapsed_ms": 0.11,
+        "query_count": 0,
+        "n_plus_1_suspects": [],
+        "queries_total_ms": 0
+    },
+    "item_index": {
+        "label": "GET /api/admin/item",
+        "status": null,
+        "error": "NunoMaduro\\Collision\\Handler::setOutput(): Argument #1 ($output) must be of type Symfony\\Component\\Console\\Output\\OutputInterface, null given, called in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Laravel/ExceptionHandler.php on line 70",
+        "elapsed_ms": 0.11,
+        "query_count": 0,
+        "n_plus_1_suspects": [],
+        "queries_total_ms": 0
+    },
+    "pos_order_index": {
+        "label": "GET /api/admin/pos-order",
+        "status": null,
+        "error": "NunoMaduro\\Collision\\Handler::setOutput(): Argument #1 ($output) must be of type Symfony\\Component\\Console\\Output\\OutputInterface, null given, called in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Laravel/ExceptionHandler.php on line 70",
+        "elapsed_ms": 0.1,
+        "query_count": 0,
+        "n_plus_1_suspects": [],
+        "queries_total_ms": 0
+    },
+    "cash_overview": {
+        "label": "GET /api/admin/cash-overview",
+        "status": null,
+        "error": "NunoMaduro\\Collision\\Handler::setOutput(): Argument #1 ($output) must be of type Symfony\\Component\\Console\\Output\\OutputInterface, null given, called in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Laravel/ExceptionHandler.php on line 70",
+        "elapsed_ms": 0.1,
+        "query_count": 0,
+        "n_plus_1_suspects": [],
+        "queries_total_ms": 0
+    },
+    "observability_outbox": {
+        "label": "GET /api/admin/observability/outbox",
+        "status": null,
+        "error": "NunoMaduro\\Collision\\Handler::setOutput(): Argument #1 ($output) must be of type Symfony\\Component\\Console\\Output\\OutputInterface, null given, called in /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/vendor/nunomaduro/collision/src/Adapters/Laravel/ExceptionHandler.php on line 70",
+        "elapsed_ms": 0.1,
+        "query_count": 0,
+        "n_plus_1_suspects": [],
+        "queries_total_ms": 0
+    }
+}

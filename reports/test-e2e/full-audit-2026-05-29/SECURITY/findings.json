@@ -1,0 +1,180 @@
+{
+  "audit": "FULL AUDIT 2026-05-29 — Security Deep + RBAC + Sanctum + Spatie",
+  "head": "5032dc158",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "auditor": "claude-opus-4-7[1m]",
+  "scope": "RBAC + Sanctum kiosk:order + BlockKioskMiddleware + channels.php + Loyalty HMAC + FormRequest authz drift + IDOR + mass-assignment + XSS/v-html",
+  "methodology": "Static analysis only (no live HTTP). All file:line citations grep-confirmed against HEAD 5032dc158. Reproductions described as PHP unit-test-style or curl-equivalent.",
+  "context_v1_local": "V1 Le Cayenne single-branch single-machine (branch_id=1). Multi-branch P0s downgraded to P1 in V1 LOCAL scope but remain P0 for V2 SaaS cutover.",
+  "verdict": "NEW_HOLE",
+  "summary": {
+    "p0": 0,
+    "p1": 1,
+    "p2": 1,
+    "p3_info": 2,
+    "validated_green": 5
+  },
+  "findings": [
+    {
+      "id": "SEC-2026-05-29-NEW-01",
+      "severity": "P1",
+      "title": "Cross-branch staff escalation via mass-assignment of branch_id on /api/admin/{waiter,chef,delivery-boy,employee} CRUD",
+      "category": "RBAC + Mass-assignment + Multi-tenant isolation",
+      "file": "app/Services/WaiterService.php",
+      "line": "72,110",
+      "supporting_files": [
+        "app/Services/ChefService.php:71,109",
+        "app/Services/EmployeeService.php:80,115",
+        "app/Services/DeliveryBoyService.php:72,106",
+        "app/Http/Requests/WaiterRequest.php:58 (branch_id: nullable, numeric)",
+        "app/Http/Requests/ChefRequest.php:58",
+        "app/Http/Requests/EmployeeRequest.php (branch_id: nullable, numeric)",
+        "app/Http/Requests/DeliveryBoyRequest.php (branch_id: nullable, numeric)",
+        "database/seeders/RolePermissionTableSeeder.php:48-67 (Branch Manager grant)"
+      ],
+      "attack": "Branch Manager (or any role granted *_create / *_edit) attaches arbitrary branch_id in JSON body. Service does $request->branch_id verbatim into User::create / $user->save without comparing against Auth::user()->branch_id. Result: a manager of branch=3 can create / migrate a Waiter / Chef / Employee / DeliveryBoy onto branch=5, where that user then logs in, falls under BranchScope for branch=5, and reads / mutates branch=5 orders, cash sessions, KDS queue.",
+      "repro": [
+        "1. Auth as Branch Manager bound to branch=3 (Sanctum or session).",
+        "2. POST /api/admin/waiter with body {name:'Mallory', email:'m@evil.com', phone:'+33000000001', password:'Aaaaaaaaaa1!', password_confirmation:'Aaaaaaaaaa1!', branch_id:5, status:1, country_code:'FR'}.",
+        "3. Permission middleware permission:waiters_create passes (CLAUDE.md §9 + RolePermissionTableSeeder:64).",
+        "4. WaiterRequest::authorize returns true; rule for branch_id is only [nullable, numeric] — no caller-branch validation.",
+        "5. WaiterService::store at line 72 executes User::create([..., 'branch_id' => $request->branch_id, ...]) → user persists with branch_id=5.",
+        "6. Mallory logs in, BranchScope scopes all queries to branch=5 → cross-branch escalation."
+      ],
+      "evidence": "grep -n branch_id app/Services/WaiterService.php → lines 72 ('branch_id' => $request->branch_id) and 110 ($this->waiter->branch_id = $request->branch_id) confirm verbatim assignment. No call to Auth::user()->branch_id or assertSameBranch helper anywhere in WaiterService / ChefService / EmployeeService / DeliveryBoyService.",
+      "v1_local_impact": "ZERO active impact — V1 Le Cayenne is single-branch (branch_id=1). No 'other branches' exist for V1. Branch=0 (admin) is never the target of these endpoints (they assignRole CUSTOMER/WAITER/CHEF etc., never ADMIN — confirmed via $blockRoles guard).",
+      "v2_saas_impact": "P0 — direct cross-branch RBAC escalation when V2 onboards >1 branch. Becomes a tenant-isolation breach the moment a second branch exists.",
+      "status": "NEW",
+      "fix_suggestion": "In each *Service::store|update, before User::create / save: if (Auth::user()->branch_id !== 0 && (int)$request->branch_id !== (int)Auth::user()->branch_id) abort(403, 'Cross-branch staff assignment denied'). Admin (branch_id=0) remains unconstrained. Mirror PosLoyaltyController:53-56 pattern."
+    },
+    {
+      "id": "SEC-2026-05-29-NEW-02",
+      "severity": "P2",
+      "title": "FormRequest authorize() return-true drift — actual count 75 vs CLAUDE.md baseline 66 (sentinel ceiling 69)",
+      "category": "Authz drift / sentinel",
+      "file": "app/Http/Requests/",
+      "line": "75 files matching `return true;` (counted at HEAD 5032dc158)",
+      "supporting_files": [
+        "tests/Feature/FormRequestAuthzDriftSentinelTest.php (sentinel ceiling 69)",
+        "CLAUDE.md §9 lines stating 'observed today=66'"
+      ],
+      "attack": "Not a single-exploit per se — each `return true;` defers authorization to whatever (if any) Spatie middleware sits on the route. If a NEW FormRequest with `return true;` is wired to a route WITHOUT `permission:*`, the call is wide-open. The drift from baseline 66 → 75 (delta +9) indicates 9 new authorize-true FormRequests added since 2026-05-21 and the sentinel constant 69 was not raised, but more importantly the count exceeds the sentinel — the sentinel would FAIL on this branch.",
+      "repro": "grep -rE 'return true;' app/Http/Requests/ | wc -l → returns 75. CLAUDE.md §9 baseline=66, sentinel constant=69. count > ceiling → sentinel fails (count<=baseline rule from CLAUDE.md §9).",
+      "evidence": "75 files listed by grep -rln 'return true;' app/Http/Requests/. None of the 9 new files were inspected for route binding — many may be permission-gated at controller level (defense in depth).",
+      "v1_local_impact": "LOW — V1 LOCAL has single admin; sensitive routes are double-gated by Spatie permission:* at controller level. But sentinel test is RED on this branch, blocking CI / GO-CONDITIONAL.",
+      "v2_saas_impact": "P1 — drift accumulation surface grows; one new endpoint without a route-level permission middleware becomes an open door.",
+      "status": "NEW (sentinel-fail signal)",
+      "fix_suggestion": "Option A (preferred): identify the 9 new files, refactor each authorize() to `return (bool) $this->user()?->can('<perm>')` if route lacks permission middleware. Option B (interim): lower sentinel RETURN_TRUE_BASELINE constant from 69 to actual 75 after audit confirms each new file is route-gated. Option B is technical-debt accrual."
+    },
+    {
+      "id": "SEC-2026-05-29-INFO-03",
+      "severity": "INFO",
+      "title": "ABSENCE of `abilities:kiosk:order` route-level middleware on /api/frontend/order/* group — design choice but worth surfacing",
+      "category": "Sanctum scope enforcement",
+      "file": "routes/api.php",
+      "line": "1269 (route group declaration with comment explaining the omission)",
+      "attack": "If FormRequest authorize() ever drifts to `return true;` on OrderRequest / OrderStatusRequest / PaymentConfirmRequest / PromoValidateRequest / PricingPreviewRequest, ability scoping is lost. Currently OrderRequest:46-83, OrderStatusRequest:93, PaymentConfirmRequest:20, PromoValidateRequest:19, PricingPreviewRequest:30 all check tokenCan('kiosk:order') — defense holds, but it is a FORM-REQUEST-ONLY layer. The route comment at api.php:1263-1267 explains the choice (session auth has no token, abilities middleware throws 401). Acceptable tradeoff but worth a sentinel.",
+      "repro": "Static — n/a.",
+      "evidence": "grep -B1 -A15 'ability:kiosk:order' routes/api.php returns the comment at lines 1263-1267 acknowledging the design.",
+      "v1_local_impact": "ZERO. All five FormRequests confirmed to enforce tokenCan today.",
+      "status": "VALIDATED — defense in depth via FormRequest layer is intact. Recommend a sentinel test that the five FormRequests retain their tokenCan('kiosk:order') discriminator.",
+      "fix_suggestion": "Add sentinel: tests/Feature/Security/KioskOrderAbilitySentinelTest that asserts OrderRequest::authorize / OrderStatusRequest::authorize / PaymentConfirmRequest::authorize / PromoValidateRequest::authorize / PricingPreviewRequest::authorize all explicitly call tokenCan('kiosk:order')."
+    },
+    {
+      "id": "SEC-2026-05-29-INFO-04",
+      "severity": "INFO",
+      "title": "User.php $fillable exposes branch_id + status + email_verified_at — relies on caller discipline at service layer",
+      "category": "Mass-assignment fillable",
+      "file": "app/Models/User.php",
+      "line": "$fillable array (verified via grep)",
+      "attack": "If any new controller/service ever does User::create($request->all()) or $user->fill($request->validated()) on a route bound to a permissive FormRequest, branch_id / status / email_verified_at become user-settable. Today every observed call site (SignupController:86, GuestSignupController:116, CustomerService:65, WaiterService:66, ChefService, EmployeeService, DeliveryBoyService) uses an EXPLICIT field list — no ::create($request->all()) found. Discipline is intact, but the fillable surface is broad.",
+      "repro": "Static. No actual exploit path today.",
+      "evidence": "grep -rn '->fill(\\$request' app/ → zero hits. grep -rn 'User::create' → six hits, all with explicit hand-built arrays.",
+      "v1_local_impact": "ZERO. Discipline preserved.",
+      "status": "VALIDATED — informational. Recommend a sentinel grep-test that no ::create(\\$request->all()) or fill(\\$request->validated()) targeting User exists.",
+      "fix_suggestion": "Optional — narrow User $fillable to exclude branch_id + email_verified_at + status; force services to set those via explicit property assignment. Cost: minor — must audit every User::create call. Benefit: defense in depth against future drift."
+    },
+    {
+      "id": "SEC-2026-05-29-VALIDATED-A",
+      "severity": "GREEN",
+      "title": "BlockKioskTokenFromAdminRoutes middleware is wired on both /api/admin/* groups",
+      "category": "RBAC / Sanctum",
+      "file": "routes/api.php",
+      "line": "273, 294",
+      "evidence": "grep 'block_kiosk_token_admin' routes/api.php returns 4 hits including 2 actual route group middleware arrays at lines 273 and 294. Middleware alias defined at app/Http/Kernel.php:146.",
+      "status": "VALIDATED — Layer 1 of J-ADV-6 PATH-1 fix is live, not dead code."
+    },
+    {
+      "id": "SEC-2026-05-29-VALIDATED-B",
+      "severity": "GREEN",
+      "title": "channels.php branch.{branchId} uses token NAME discriminator immune to Sanctum '*' wildcard",
+      "category": "Broadcasting / Echo",
+      "file": "routes/channels.php",
+      "line": "41-62",
+      "evidence": "Lines 44-50 read $user->currentAccessToken()?->name and compare to literal 'kiosk-token'. Wildcard tokens never match because they are named 'auth_token' (LoginController:113 pattern). Admin/Tenant Admin branch fan-out gated by hasRole at line 56 (not bare branch_id===0) closing the guest-Echo-bypass.",
+      "status": "VALIDATED — R3 T-3.2.2 Sec F-SEC-W6-01/02 fixes intact."
+    },
+    {
+      "id": "SEC-2026-05-29-VALIDATED-C",
+      "severity": "GREEN",
+      "title": "LOYALTY_QR_SECRET strength enforced at boot (production guard)",
+      "category": "Cryptography / HMAC",
+      "file": "app/Providers/AppServiceProvider.php",
+      "line": "241",
+      "supporting_files": [
+        "app/Services/Loyalty/LoyaltyQrSigner.php:221-241 (boot check)",
+        "config/loyalty.php:32, 84-91, 98"
+      ],
+      "evidence": "Boot guard at AppServiceProvider.php:241 reads config('loyalty.qr.secret') and throws RuntimeException if empty in production. LoyaltyQrSigner.php:221-241 enforces min 32-char length AND rejects dev sentinels (changeme, test, dev, secret, dev-loyalty-qr-secret-do-not-use-in-prod). LoyaltyController.php:736 has a defense-in-depth fallback to app.key if config is unset (only reached if boot guard somehow allowed empty — defensive).",
+      "status": "VALIDATED — LCS-S-001 hardening intact."
+    },
+    {
+      "id": "SEC-2026-05-29-VALIDATED-D",
+      "severity": "GREEN",
+      "title": "PosLoyaltyController + PosOrderController post-fetch branch check on withoutGlobalScope(BranchScope)",
+      "category": "IDOR / withoutGlobalScope discipline",
+      "file": "app/Http/Controllers/Admin/PosLoyaltyController.php",
+      "line": "45-56",
+      "supporting_files": [
+        "app/Http/Controllers/Admin/PosOrderController.php:150-158 (mirror pattern with 403 on cross-branch and on ModelNotFoundException — timing-leak fix)"
+      ],
+      "evidence": "Both controllers use Order::withoutGlobalScope(BranchScope::class) for the cross-branch-aware lookup then immediately check $userBranchId !== 0 && !== $order->branch_id → 403. PosOrderController:151 also catches ModelNotFoundException and rewraps as 403 to prevent existence enumeration.",
+      "status": "VALIDATED — HEAL-A.1 + RED-team Wave 5I A.1 fixes intact."
+    },
+    {
+      "id": "SEC-2026-05-29-VALIDATED-E",
+      "severity": "GREEN",
+      "title": "v-html sinks in Vue components all use safeHtml() / DOMPurify",
+      "category": "XSS",
+      "file": "resources/js/components/frontend/page/PageComponent.vue",
+      "line": "12",
+      "supporting_files": [
+        "resources/js/components/frontend/kiosk/ds/KsThemeToggle.vue:22",
+        "resources/js/components/admin/settings/Page/PageShowComponent.vue:21",
+        "resources/js/components/table/page/PageComponent.vue:12"
+      ],
+      "evidence": "All four v-html bindings prefix the expression with safeHtml(...) helper. eslint-disable comments at each site reference 'sanitized via DOMPurify'. Vue's {{ }} auto-escape protects the rest of the templates.",
+      "status": "VALIDATED — no raw user-data sink in v-html."
+    }
+  ],
+  "out_of_scope_no_evidence": [
+    {
+      "topic": "Live HTTP attack repro (pre-auth IDOR GET /api/frontend/order/{N} → expect 401, kiosk token on /api/admin/* → expect 403, token refresh race)",
+      "reason": "Audit conducted as static analysis only (no live server / Playwright budget in this 45-min slice). Static evidence strongly suggests both attacks are blocked (FrontendOrderService::show:659 ownership check; BlockKiosk middleware wired on api.php:273+294). Recommend a dedicated 15-min Playwright pass to confirm HTTP responses match expectation."
+    },
+    {
+      "topic": "GDPR phone gate DELIVERY-only verification",
+      "reason": "Not exhaustively traced in this slice; CLAUDE.md and prior SYS-3 KDS-03 task indicates the gate exists. Would require dedicated audit of KDS order resource serialization to confirm phone is gated by order_type === DELIVERY only."
+    },
+    {
+      "topic": "CSRF on session-auth admin endpoints (VerifyCsrfToken.php exists)",
+      "reason": "Standard Laravel CSRF token middleware is in place; no anomaly visible at routes/api.php level. Recommend separate spot-check if scope expands."
+    }
+  ],
+  "discipline_compliance": {
+    "claude_md_3ter_verify_before_report": "Every finding cited file:line was grep-confirmed at HEAD 5032dc158. No hallucinated paths.",
+    "no_writes": "Read-only audit. No source files modified.",
+    "no_force_branch_change": "Branch unchanged. No git operations performed.",
+    "evidence_format": "Each finding includes file:line + grep/Read-confirmed evidence + repro steps."
+  }
+}
