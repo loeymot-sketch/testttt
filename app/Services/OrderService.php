@@ -1245,6 +1245,19 @@ class OrderService
      */
     public function tableOrderStore(TableOrderRequest $request): object
     {
+        // [GOAL-2026-05-29 SEC-P1 QR-DISCOUNT] The table-order endpoint
+        // (POST /api/.../dining-order/) is UNAUTHENTICATED (QR code, apiKey only).
+        // The POS paths gate manual discounts via assertPosManualDiscountAllowed
+        // (which fails-closed without an authenticated staff user), but the table
+        // path had NO such gate — an anonymous customer could self-apply an
+        // arbitrary manual discount up to 100% of subtotal (pricing-SSOT
+        // authorization bypass; the under-priced total can reach the signed
+        // NF525 Z-report if the order is later counter-paid). A QR customer can
+        // never authorize a staff discount, so we neutralize the request-supplied
+        // manual discount at the source. Coupons (coupon_id, server-validated by
+        // CouponService) are unaffected — only the staff-only manual discount.
+        $request->merge(['discount' => 0]);
+
         try {
             DB::transaction(function () use ($request) {
                 $validated = $request->validated();
