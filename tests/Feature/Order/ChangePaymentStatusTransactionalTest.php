@@ -62,6 +62,47 @@ class ChangePaymentStatusTransactionalTest extends TestCase
         ]);
     }
 
+    /**
+     * [GOAL-2026-05-29 F2] Concurrency guard. A second (stale) staff request whose
+     * target equals what a concurrent request already persisted must idempotent-SKIP
+     * inside the lockForUpdate — NO re-save, NO duplicate ActionLog/AuditLog/
+     * OrderPaymentStatusChanged (which would double-hit outbox/KDS/Z). Pre-fix the
+     * staff path had no lockForUpdate, so two concurrent flips both processed.
+     */
+    public function test_concurrent_flip_to_target_is_idempotent_no_double_effect(): void
+    {
+        Event::fake([OrderPaymentStatusChanged::class]);
+        $this->actingAs($this->cashier, 'sanctum');
+
+        $order = $this->makeOrder(PaymentStatus::UNPAID);
+
+        // Concurrent winner: another request already flipped the DB row to PAID
+        // out-of-band; the route-bound $order in memory still reads UNPAID.
+        Order::withoutGlobalScopes()->where('id', $order->id)
+            ->update(['payment_status' => PaymentStatus::PAID]);
+
+        $auditBefore = AuditLog::query()
+            ->where('action', 'order.payment_status_changed')->where('resource_id', $order->id)->count();
+
+        $request = new \App\Http\Requests\PaymentStatusRequest();
+        $request->merge(['payment_status' => PaymentStatus::PAID]);
+
+        app(\App\Services\OrderService::class)->changePaymentStatus($order, $request, false);
+
+        // In-lock freshOld=PAID===target -> idempotent skip: no new event, no new audit.
+        Event::assertNotDispatched(OrderPaymentStatusChanged::class);
+        $this->assertSame(
+            $auditBefore,
+            AuditLog::query()->where('action', 'order.payment_status_changed')->where('resource_id', $order->id)->count(),
+            'In-lock idempotent skip must NOT write a duplicate audit row.'
+        );
+        $this->assertSame(
+            PaymentStatus::PAID,
+            (int) Order::withoutGlobalScopes()->find($order->id)->payment_status,
+            'Row stays at the concurrent winner state (PAID), not double-processed.'
+        );
+    }
+
     public function test_it_rolls_back_when_audit_log_write_fails(): void
     {
         $order = $this->makeOrder();

@@ -2292,19 +2292,40 @@ class OrderService
             DB::transaction(function () use (
                 $order,
                 $request,
-                $oldPaymentStatus,
                 $targetPaymentStatus
             ): void {
-                $order->payment_status = $request->payment_status;
-                $order->save();
+                // [GOAL-2026-05-29 F2] Re-fetch the row WITH lockForUpdate so two
+                // concurrent staff requests (distinct idempotency keys) cannot BOTH
+                // flip the same order — which previously produced a double-PAID effect
+                // plus duplicate ActionLog + AuditLog + OrderPaymentStatusChanged
+                // (double outbox/KDS/Z impact). The route-bound $order is stale; we
+                // serialize on the locked row. Mirrors the auth self-service path
+                // above + changeStatus/deliveryBoyOrderChangeStatus.
+                $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+                $freshOld = (int) $locked->payment_status;
+
+                // Idempotent: a concurrent request already reached the target. Sync the
+                // route model so the caller observes the persisted state, and skip the
+                // (already-emitted) side effects — no double log/audit/dispatch.
+                if ($freshOld === $targetPaymentStatus) {
+                    $order->setRawAttributes($locked->getAttributes(), true);
+                    return;
+                }
+
+                // Re-validate the transition against the FRESH locked status — the
+                // pre-lock guard used the possibly-superseded route status.
+                \App\Domain\Order\PaymentStateMachine::assertCanTransition($freshOld, $targetPaymentStatus);
+
+                $locked->payment_status = $request->payment_status;
+                $locked->save();
 
                 \App\Models\ActionLog::create([
                     'user_id'  => Auth::check() ? Auth::id() : null,
                     'action'   => 'Statut paiement modifié',
-                    'resource' => 'Commande #' . $order->order_serial_no,
+                    'resource' => 'Commande #' . $locked->order_serial_no,
                     'details'  => sprintf(
                         'Statut paiement: %d → %d | Par: %s (branch_id=%s)',
-                        $oldPaymentStatus,
+                        $freshOld,
                         $targetPaymentStatus,
                         Auth::check() ? Auth::user()->name : 'Système',
                         Auth::check() ? (Auth::user()->branch_id ?? 'admin') : '?'
@@ -2316,17 +2337,17 @@ class OrderService
                 // impact Z report totals — but blocked under Option B by the
                 // state machine guard above).
                 app(AuditLogService::class)->write([
-                    'branch_id'   => (int) $order->branch_id,
+                    'branch_id'   => (int) $locked->branch_id,
                     'user_id'     => Auth::check() ? (int) Auth::id() : null,
                     'action'      => 'order.payment_status_changed',
                     'resource'    => 'order',
-                    'resource_id' => (int) $order->id,
+                    'resource_id' => (int) $locked->id,
                     'payload'     => [
-                        'order_serial_no'      => $order->order_serial_no,
-                        'from_payment_status'  => $oldPaymentStatus,
+                        'order_serial_no'      => $locked->order_serial_no,
+                        'from_payment_status'  => $freshOld,
                         'to_payment_status'    => $targetPaymentStatus,
-                        'total'                => round((float) $order->total, 2),
-                        'fiscal_sequence_no'   => $order->fiscal_sequence_no,
+                        'total'                => round((float) $locked->total, 2),
+                        'fiscal_sequence_no'   => $locked->fiscal_sequence_no,
                     ],
                 ]);
 
@@ -2334,10 +2355,14 @@ class OrderService
                 // DispatchableAfterCommit defers the dispatch until commit, so
                 // a rollback of any earlier statement above drops the event.
                 \App\Events\OrderPaymentStatusChanged::dispatch(
-                    $order,
-                    $oldPaymentStatus,
+                    $locked,
+                    $freshOld,
                     $targetPaymentStatus
                 );
+
+                // Sync the route-bound model so the outer `return $order` + cache
+                // marker reflect the persisted state.
+                $order->setRawAttributes($locked->getAttributes(), true);
             });
 
             // [F-VERIFY-09-01 P13] Persist Idempotency-Key replay marker (TTL 24h).
