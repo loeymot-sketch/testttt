@@ -1,0 +1,29 @@
+{
+  "captured_at": "2026-05-28T19:04:51+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "2bb6f1113",
+  "env": {
+    "POS_SIMULATION_HARDWARE": true,
+    "APP_DEBUG_unknown_here": null
+  },
+  "nf525_baseline": {
+    "audit_logs_count": 101,
+    "last_audit_id": 101,
+    "last_audit_hash": "14d8f790d8ac0aea42c6e5757167f55c0f4c771c0bb5c77360f63fabc506f081",
+    "orders_count": 85,
+    "last_order_id": 112,
+    "last_fiscal_seq": 37,
+    "cash_drawer_sessions_open": 2,
+    "z_reports_count": 1
+  },
+  "db_observations": {
+    "items_total": 11,
+    "items_list_summary": "Only 5 base items (Menu/Frites/Boisson/Sauce/Fromage) + 6 suppléments (Jambon/Boursin/Raclette/Œuf/Galette/Salade) — DB does NOT contain Sandwich Cayenne / Burgers / Tacos / Bols as expected by mission narrative. Database appears stripped/reset.",
+    "schema_mismatch_with_mission": {
+      "fiscal_sequences_table_expected": false,
+      "fiscal_sequences_actual": "column orders.fiscal_sequence_no (denormalized)",
+      "z_reports_table_present": true
+    },
+    "open_cash_sessions_anomaly": "2 cash_drawer_sessions left open (closed_at IS NULL). Will use existing or open new test session."
+  }
+}

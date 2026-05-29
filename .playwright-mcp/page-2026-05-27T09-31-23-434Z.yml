@@ -1,0 +1,51 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - button "Plein écran" [ref=e11] [cursor=pointer]:
+          - generic [ref=e12]: 
+        - link " Tableau de bord" [ref=e15] [cursor=pointer]:
+          - /url: /admin/dashboard
+          - generic [ref=e16]: 
+          - generic [ref=e17]: Tableau de bord
+      - generic [ref=e18]:
+        - button "avatar Bonjour Admin" [ref=e19] [cursor=pointer]:
+          - img "avatar" [ref=e20]
+          - heading "Bonjour Admin" [level=3] [ref=e21]:
+            - text: Bonjour
+            - generic "Admin" [ref=e22]
+          - generic [ref=e23]: 
+        - menu "avatar Bonjour Admin":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:                     
+  - main "Écran de statut des commandes" [ref=e24]:
+    - region "En préparation" [ref=e31]:
+      - heading "En préparation" [level=3] [ref=e32]
+      - generic [ref=e33]:
+        - list
+        - paragraph [ref=e34]: —
+    - region "Prêt" [ref=e35]:
+      - heading "Prêt" [level=3] [ref=e36]
+      - list [ref=e38]:
+        - listitem [ref=e39]: N°A0001

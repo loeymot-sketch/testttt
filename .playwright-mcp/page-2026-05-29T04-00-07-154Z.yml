@@ -1,0 +1,155 @@
+- generic [ref=e1]:
+  - generic [ref=e43]:
+    - generic [ref=e44]:
+      - generic [ref=e45]:
+        - img [ref=e47]
+        - generic [ref=e48]:
+          - generic [ref=e49]: Nos
+          - generic [ref=e50]: Tacos
+      - button "Mon compte" [ref=e52] [cursor=pointer]:
+        - generic [ref=e53]: 👤
+        - text: Mon compte
+    - generic [ref=e54]:
+      - navigation "Navigation catégories" [ref=e55]:
+        - button "Sandwich Cayenne" [ref=e56] [cursor=pointer]:
+          - generic [ref=e57]: Sandwich Cayenne
+        - button "Galette" [ref=e59] [cursor=pointer]:
+          - generic [ref=e60]: Galette
+        - button "Sandwich Classique" [ref=e62] [cursor=pointer]:
+          - generic [ref=e63]: Sandwich Classique
+        - button "Burgers" [ref=e65] [cursor=pointer]:
+          - generic [ref=e66]: Burgers
+        - button "Tacos" [ref=e68] [cursor=pointer]:
+          - generic [ref=e69]: Tacos
+        - button "Bols Gourmands" [ref=e71] [cursor=pointer]:
+          - generic [ref=e72]: Bols Gourmands
+        - button "Menu enfant" [ref=e74] [cursor=pointer]:
+          - generic [ref=e75]: Menu enfant
+        - button "Frites" [ref=e77] [cursor=pointer]:
+          - generic [ref=e78]: Frites
+        - button "Suppléments" [ref=e80] [cursor=pointer]:
+          - generic [ref=e81]: Suppléments
+        - button "Desserts" [ref=e83] [cursor=pointer]:
+          - generic [ref=e84]: Desserts
+        - button "Boissons" [ref=e86] [cursor=pointer]:
+          - generic [ref=e87]: Boissons
+      - main [ref=e89]:
+        - generic [ref=e241]:
+          - generic [ref=e242]:
+            - heading "Tacos" [level=1] [ref=e243]
+            - paragraph [ref=e244]: 2 produits
+          - list [ref=e245]:
+            - listitem [ref=e246] [cursor=pointer]:
+              - generic [ref=e247]:
+                - img [ref=e248]
+                - generic [ref=e249]: Personnaliser
+                - button "Ajouter Tacos" [ref=e250]:
+                  - generic [ref=e270]: +
+              - generic [ref=e252]:
+                - heading "Tacos" [level=2] [ref=e253]
+                - paragraph [ref=e254]: 1 viande au choix + frites maison + sauce fromagère maison.
+                - generic [ref=e255]: €8,50
+            - listitem [ref=e256] [cursor=pointer]:
+              - generic [ref=e257]:
+                - img [ref=e258]
+                - generic [ref=e259]: Personnaliser
+                - button "Ajouter Big Tacos" [ref=e260]:
+                  - generic [ref=e261]: +
+              - generic [ref=e262]:
+                - heading "Big Tacos" [level=2] [ref=e263]
+                - paragraph [ref=e264]: 2 viandes au choix + frites maison + sauce fromagère maison.
+                - generic [ref=e265]: €11,50
+    - region "Aperçu de votre panier" [ref=e221]:
+      - generic [ref=e222]:
+        - generic [ref=e223]: Votre commande
+        - generic [ref=e224]: 1 article
+      - list [ref=e225]:
+        - listitem [ref=e226]:
+          - img "Coca-Cola 33cl" [ref=e228]
+          - generic [ref=e229]:
+            - generic [ref=e230]: Coca-Cola 33cl
+            - generic [ref=e231]: €1,50
+          - group "Quantité de Coca-Cola 33cl" [ref=e232]:
+            - button "Supprimer Coca-Cola 33cl du panier" [ref=e233] [cursor=pointer]:
+              - img [ref=e234]
+            - generic [ref=e236]: "1"
+            - button "Ajouter un Coca-Cola 33cl" [ref=e237] [cursor=pointer]:
+              - img [ref=e238]
+    - region "Panier et paiement" [ref=e207]:
+      - generic [ref=e208]:
+        - button "Ouvrir le panier — 1 articles" [ref=e240] [cursor=pointer]:
+          - img [ref=e211]
+          - generic [ref=e215]: 1 article
+        - generic [ref=e216]: €1,50
+      - generic [ref=e217]:
+        - button "Abandonner ma commande" [ref=e218] [cursor=pointer]
+        - button "Payer" [ref=e219] [cursor=pointer]
+    - dialog "Tacos" [active] [ref=e272]:
+      - heading "Tacos" [level=1] [ref=e273]
+      - generic [ref=e274]:
+        - generic [ref=e275]:
+          - text: Vous composez
+          - heading "Tacos" [level=2] [ref=e276]
+        - button "Fermer la personnalisation" [ref=e277] [cursor=pointer]: ×
+      - generic [ref=e278]:
+        - generic [ref=e279]:
+          - generic [ref=e280]:
+            - img "QUELLE VIANDE ?" [ref=e281]
+            - text: ✓
+          - generic [ref=e282]: QUELLE VIANDE ?
+        - generic [ref=e283]:
+          - generic [ref=e284]:
+            - img "QUELLE SAUCE ?" [ref=e285]
+            - text: ✓
+          - generic [ref=e286]: QUELLE SAUCE ?
+        - generic [ref=e287]:
+          - generic [ref=e288]:
+            - img "QUEL MENU ?" [ref=e289]
+            - text: ✓
+          - generic [ref=e290]: QUEL MENU ?
+        - generic [ref=e291]:
+          - generic [ref=e292]:
+            - img "RÉCAP" [ref=e293]
+            - text: ✓
+          - generic [ref=e294]: RÉCAP
+      - generic [ref=e295]:
+        - button "PRÉCÉDENT" [disabled] [ref=e296] [cursor=pointer]: ‹
+        - generic [ref=e297]:
+          - generic [ref=e299]: "1"
+          - generic [ref=e301]: "2"
+          - generic [ref=e303]: "3"
+          - generic [ref=e305]: "4"
+        - button "SUIVANT" [disabled] [ref=e306] [cursor=pointer]: ›
+      - region "Composition en direct" [ref=e307]:
+        - generic [ref=e308]: Votre composition
+        - generic [ref=e310]: Vos choix s'ajoutent ici au fur et à mesure.
+      - generic [ref=e311]: QUELLE VIANDE ?
+      - generic [ref=e313]:
+        - generic [ref=e315]: 0 / 1
+        - status [ref=e316]: "Choisissez 1 viande : touchez celle que vous voulez."
+        - generic [ref=e317]:
+          - group "Poulet mariné, 0" [ref=e318] [cursor=pointer]:
+            - img "Poulet mariné" [ref=e320]
+            - generic [ref=e321]: Poulet mariné
+            - generic [ref=e322]: Choisir
+          - group "Poulet curry, 0" [ref=e323] [cursor=pointer]:
+            - img "Poulet curry" [ref=e325]
+            - generic [ref=e326]: Poulet curry
+            - generic [ref=e327]: Choisir
+          - group "Poulet tandoori, 0" [ref=e328] [cursor=pointer]:
+            - img "Poulet tandoori" [ref=e330]
+            - generic [ref=e331]: Poulet tandoori
+            - generic [ref=e332]: Choisir
+          - group "Poulet crispy, 0" [ref=e333] [cursor=pointer]:
+            - img "Poulet crispy" [ref=e335]
+            - generic [ref=e336]: Poulet crispy
+            - generic [ref=e337]: Choisir
+        - status [ref=e338]: Sélectionnez 1 viande pour continuer
+      - generic [ref=e339]:
+        - generic [ref=e340]:
+          - button "ABANDONNER L'ARTICLE" [ref=e341] [cursor=pointer]
+          - button "PRÉCÉDENT" [disabled] [ref=e342]
+          - button "SUIVANT" [disabled] [ref=e343]:
+            - generic [ref=e344]: SUIVANT
+        - generic [ref=e345]: Total €8,50
+  - status

@@ -1,0 +1,656 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - link "POS" [ref=e13] [cursor=pointer]:
+        - /url: /admin/pos
+        - generic [ref=e14]: 
+      - button "Fermer" [ref=e15] [cursor=pointer]: 
+      - generic [ref=e16]:
+        - button "avatar Bonjour Admin" [ref=e17] [cursor=pointer]:
+          - img "avatar" [ref=e18]
+          - heading "Bonjour Admin" [level=3] [ref=e19]:
+            - text: Bonjour
+            - generic "Admin" [ref=e20]
+          - generic [ref=e21]: 
+        - menu "avatar Bonjour Admin":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=e22]:
+    - text: 
+    - navigation [ref=e23]:
+      - list [ref=e24]:
+        - listitem [ref=e25]:
+          - link " Tableau de bord" [ref=e26] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e27]: 
+            - generic [ref=e28]: Tableau de bord
+      - list [ref=e29]:
+        - listitem [ref=e30]:
+          - link " POS" [ref=e31] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e32]: 
+            - generic [ref=e33]: POS
+      - list [ref=e34]:
+        - listitem [ref=e35]:
+          - link "Produits & Stock" [ref=e36] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=e37]: Produits & Stock
+      - list [ref=e38]:
+        - listitem [ref=e39]:
+          - link " Catalogue" [ref=e40] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=e41]: 
+            - generic [ref=e42]: Catalogue
+        - listitem [ref=e43]:
+          - link " Attribut d’articles" [ref=e44] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=e45]: 
+            - generic [ref=e46]: Attribut d’articles
+      - list [ref=e47]:
+        - listitem [ref=e48]:
+          - link " Ingrédients" [ref=e49] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=e50]: 
+            - generic [ref=e51]: Ingrédients
+      - list [ref=e52]:
+        - listitem [ref=e53]:
+          - link " Commandes caisse" [ref=e54] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=e55]: 
+            - generic [ref=e56]: Commandes caisse
+      - list [ref=e57]:
+        - listitem [ref=e58]:
+          - link " Vue caisse unifiée" [ref=e59] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=e60]: 
+            - generic [ref=e61]: Vue caisse unifiée
+      - list [ref=e62]:
+        - listitem [ref=e63]:
+          - link " Caisse livreur" [ref=e64] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=e65]: 
+            - generic [ref=e66]: Caisse livreur
+      - list [ref=e67]:
+        - listitem [ref=e68]:
+          - button "Caisse et commandes" [ref=e69] [cursor=pointer]
+        - listitem [ref=e70]:
+          - link " Écran cuisine" [ref=e71] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=e72]: 
+            - generic [ref=e73]: Écran cuisine
+        - listitem [ref=e74]:
+          - link " Suivi client" [ref=e75] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=e76]: 
+            - generic [ref=e77]: Suivi client
+      - list [ref=e78]:
+        - listitem [ref=e79]:
+          - button "Communications" [ref=e80] [cursor=pointer]
+        - listitem [ref=e81]:
+          - link " Notification pushs" [ref=e82] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=e83]: 
+            - generic [ref=e84]: Notification pushs
+        - listitem [ref=e85]:
+          - link " Messages" [ref=e86] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=e87]: 
+            - generic [ref=e88]: Messages
+        - listitem [ref=e89]:
+          - link " Abonnés" [ref=e90] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=e91]: 
+            - generic [ref=e92]: Abonnés
+      - list [ref=e93]:
+        - listitem [ref=e94]:
+          - button "Utilisateurs" [ref=e95] [cursor=pointer]
+        - listitem [ref=e96]:
+          - link " Administrateurs" [ref=e97] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=e98]: 
+            - generic [ref=e99]: Administrateurs
+        - listitem [ref=e100]:
+          - link " Employés" [ref=e101] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=e102]: 
+            - generic [ref=e103]: Employés
+        - listitem [ref=e104]:
+          - link " Chefs" [ref=e105] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=e106]: 
+            - generic [ref=e107]: Chefs
+      - list [ref=e108]:
+        - listitem [ref=e109]:
+          - button "Comptes" [ref=e110] [cursor=pointer]
+        - listitem [ref=e111]:
+          - link " Transactions" [ref=e112] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=e113]: 
+            - generic [ref=e114]: Transactions
+      - list [ref=e115]:
+        - listitem [ref=e116]:
+          - button "Rapports" [ref=e117] [cursor=pointer]
+        - listitem [ref=e118]:
+          - link " Rapport des ventes" [ref=e119] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=e120]: 
+            - generic [ref=e121]: Rapport des ventes
+        - listitem [ref=e122]:
+          - link " Rapport articles" [ref=e123] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=e124]: 
+            - generic [ref=e125]: Rapport articles
+      - list [ref=e126]:
+        - listitem [ref=e127]:
+          - button "Configuration" [ref=e128] [cursor=pointer]
+        - listitem [ref=e129]:
+          - link " Paramètres" [ref=e130] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=e131]: 
+            - generic [ref=e132]: Paramètres
+  - generic [ref=e133]:
+    - generic [ref=e134]:
+      - heading "Bon après-midi !" [level=3] [ref=e135]
+      - heading "Admin" [level=4] [ref=e136]
+    - button "PDF Clôture du jour" [ref=e137] [cursor=pointer]:
+      - generic [ref=e138]: 
+      - generic [ref=e139]: PDF Clôture du jour
+  - navigation "Accès rapides" [ref=e140]:
+    - heading "Accès rapides" [level=3] [ref=e141]
+    - generic [ref=e142]:
+      - link "POS" [ref=e143] [cursor=pointer]:
+        - /url: /admin/pos
+        - generic [ref=e144]: 
+        - generic [ref=e145]: POS
+      - link "Commandes caisse" [ref=e146] [cursor=pointer]:
+        - /url: /admin/pos-orders
+        - generic [ref=e147]: 
+        - generic [ref=e148]: Commandes caisse
+      - link "Suivi caisse (kanban)" [ref=e149] [cursor=pointer]:
+        - /url: /admin/pos-orders-tracker
+        - generic [ref=e150]: 
+        - generic [ref=e151]: Suivi caisse (kanban)
+      - link "Écran cuisine" [ref=e152] [cursor=pointer]:
+        - /url: /admin/kitchen-display-system
+        - generic [ref=e153]: 
+        - generic [ref=e154]: Écran cuisine
+      - link "Suivi client" [ref=e155] [cursor=pointer]:
+        - /url: /admin/order-status-screen
+        - generic [ref=e156]: 
+        - generic [ref=e157]: Suivi client
+      - link "Catalogue" [ref=e158] [cursor=pointer]:
+        - /url: /admin/items/studio
+        - generic [ref=e159]: 
+        - generic [ref=e160]: Catalogue
+      - link "Ingrédients" [ref=e161] [cursor=pointer]:
+        - /url: /admin/ingredients
+        - generic [ref=e162]: 
+        - generic [ref=e163]: Ingrédients
+      - link "Produits & Stock" [ref=e164] [cursor=pointer]:
+        - /url: /admin/stock/rupture
+        - generic [ref=e165]: Produits & Stock
+      - link "Rapport caisses quotidien" [ref=e166] [cursor=pointer]:
+        - /url: /admin/cash-sessions-report
+        - generic [ref=e167]: 
+        - generic [ref=e168]: Rapport caisses quotidien
+      - link "Vue caisse unifiée" [ref=e169] [cursor=pointer]:
+        - /url: /admin/cash-overview
+        - generic [ref=e170]: 
+        - generic [ref=e171]: Vue caisse unifiée
+  - img [ref=e174]
+  - generic [ref=e178]:
+    - heading "Vue d’ensemble" [level=4] [ref=e179]
+    - generic [ref=e180]:
+      - generic [ref=e182]:
+        - generic [ref=e184]: 
+        - generic [ref=e185]:
+          - heading "Total ventes" [level=3] [ref=e186]
+          - heading "136,10 €" [level=4] [ref=e187]
+      - generic [ref=e189]:
+        - generic [ref=e191]: 
+        - generic [ref=e192]:
+          - heading "Total commandes" [level=3] [ref=e193]
+          - heading "0" [level=4] [ref=e194]
+      - generic [ref=e196]:
+        - generic [ref=e198]: 
+        - generic [ref=e199]:
+          - heading "Total articles menu" [level=3] [ref=e200]
+          - heading "45" [level=4] [ref=e201]
+  - generic [ref=e202]:
+    - heading "Suivi en direct" [level=4] [ref=e203]
+    - generic [ref=e204]:
+      - generic [ref=e206]:
+        - heading "Chiffre d'Affaires du Jour" [level=3] [ref=e207]
+        - heading "120,50 €" [level=4] [ref=e208]
+      - generic [ref=e210]:
+        - heading "Commandes du Jour" [level=3] [ref=e211]
+        - heading "10" [level=4] [ref=e212]
+      - generic [ref=e214]:
+        - heading "Ticket Moyen" [level=3] [ref=e215]
+        - heading "12,05 €" [level=4] [ref=e216]
+  - generic [ref=e217]:
+    - generic [ref=e219]:
+      - generic [ref=e220]:
+        - heading "Alertes SLA (Cuisine > 15min)" [level=4] [ref=e221]: Alertes SLA (Cuisine > 15min)
+        - generic [ref=e225]: 3 Alerte(s)
+      - generic [ref=e226]:
+        - generic [ref=e228]:
+          - 'heading "Ticket #A0002 (27052679)" [level=5] [ref=e229]'
+          - paragraph [ref=e230]: En attente depuis 25 minutes
+        - generic [ref=e233]:
+          - 'heading "Ticket #A0003 (27052681)" [level=5] [ref=e234]'
+          - paragraph [ref=e235]: En attente depuis 19 minutes
+        - generic [ref=e238]:
+          - 'heading "Ticket #A0004 (27052682)" [level=5] [ref=e239]'
+          - paragraph [ref=e240]: En attente depuis 18 minutes
+    - generic [ref=e243]:
+      - heading "Répartition par Canal (Aujourd'hui)" [level=4] [ref=e244]
+      - generic [ref=e245]:
+        - generic [ref=e247]:
+          - generic [ref=e248]: Web
+          - generic [ref=e249]: 0%
+        - generic [ref=e252]:
+          - generic [ref=e253]: Kiosk/App
+          - generic [ref=e254]: 40%
+        - generic [ref=e258]:
+          - generic [ref=e259]: POS
+          - generic [ref=e260]: 0%
+  - generic [ref=e263]:
+    - heading "Audit Trail NF525 (Journal Inviolable)" [level=4] [ref=e264]: Audit Trail NF525 (Journal Inviolable)
+    - paragraph [ref=e265]:
+      - text: "Source :"
+      - code [ref=e266]: audit_logs
+      - text: (INSERT-only, HMAC SHA-256 chain-signed). Le préfixe de hash atteste l'intégrité de la chaîne.
+    - table [ref=e268]:
+      - rowgroup [ref=e269]:
+        - row "Utilisateur Action Ressource Hash Temps" [ref=e270]:
+          - columnheader "Utilisateur" [ref=e271]
+          - columnheader "Action" [ref=e272]
+          - columnheader "Ressource" [ref=e273]
+          - columnheader "Hash" [ref=e274]
+          - columnheader "Temps" [ref=e275]
+      - rowgroup [ref=e276]:
+        - row "Admin cash.movement.recorded cash_drawer_session#1 5482b033 il y a 10 minutes" [ref=e277]:
+          - cell "Admin" [ref=e278]
+          - cell "cash.movement.recorded" [ref=e279]:
+            - generic [ref=e280]: cash.movement.recorded
+          - cell "cash_drawer_session#1" [ref=e281]
+          - cell "5482b033" [ref=e282]:
+            - code [ref=e283]: 5482b033
+          - cell "il y a 10 minutes" [ref=e284]
+        - row "Admin order.created.pos order#85 b681ecc1 il y a 10 minutes" [ref=e285]:
+          - cell "Admin" [ref=e286]
+          - cell "order.created.pos" [ref=e287]:
+            - generic [ref=e288]: order.created.pos
+          - cell "order#85" [ref=e289]
+          - cell "b681ecc1" [ref=e290]:
+            - code [ref=e291]: b681ecc1
+          - cell "il y a 10 minutes" [ref=e292]
+        - row "Admin cash.movement.recorded cash_drawer_session#1 5473957e il y a 10 minutes" [ref=e293]:
+          - cell "Admin" [ref=e294]
+          - cell "cash.movement.recorded" [ref=e295]:
+            - generic [ref=e296]: cash.movement.recorded
+          - cell "cash_drawer_session#1" [ref=e297]
+          - cell "5473957e" [ref=e298]:
+            - code [ref=e299]: 5473957e
+          - cell "il y a 10 minutes" [ref=e300]
+        - row "Admin order.created.pos order#84 ed94390e il y a 10 minutes" [ref=e301]:
+          - cell "Admin" [ref=e302]
+          - cell "order.created.pos" [ref=e303]:
+            - generic [ref=e304]: order.created.pos
+          - cell "order#84" [ref=e305]
+          - cell "ed94390e" [ref=e306]:
+            - code [ref=e307]: ed94390e
+          - cell "il y a 10 minutes" [ref=e308]
+        - row "Admin order.refund.counter_entry order#83 7a1d6be8 il y a 15 minutes" [ref=e309]:
+          - cell "Admin" [ref=e310]
+          - cell "order.refund.counter_entry" [ref=e311]:
+            - generic [ref=e312]: order.refund.counter_entry
+          - cell "order#83" [ref=e313]
+          - cell "7a1d6be8" [ref=e314]:
+            - code [ref=e315]: 7a1d6be8
+          - cell "il y a 15 minutes" [ref=e316]
+        - row "Admin z_report.closed z_report#2 3b461803 il y a 16 minutes" [ref=e317]:
+          - cell "Admin" [ref=e318]
+          - cell "z_report.closed" [ref=e319]:
+            - generic [ref=e320]: z_report.closed
+          - cell "z_report#2" [ref=e321]
+          - cell "3b461803" [ref=e322]:
+            - code [ref=e323]: 3b461803
+          - cell "il y a 16 minutes" [ref=e324]
+        - row "Admin cash.movement.recorded cash_drawer_session#1 33122db0 il y a 18 minutes" [ref=e325]:
+          - cell "Admin" [ref=e326]
+          - cell "cash.movement.recorded" [ref=e327]:
+            - generic [ref=e328]: cash.movement.recorded
+          - cell "cash_drawer_session#1" [ref=e329]
+          - cell "33122db0" [ref=e330]:
+            - code [ref=e331]: 33122db0
+          - cell "il y a 18 minutes" [ref=e332]
+        - row "Admin order.created.pos order#82 e783f117 il y a 18 minutes" [ref=e333]:
+          - cell "Admin" [ref=e334]
+          - cell "order.created.pos" [ref=e335]:
+            - generic [ref=e336]: order.created.pos
+          - cell "order#82" [ref=e337]
+          - cell "e783f117" [ref=e338]:
+            - code [ref=e339]: e783f117
+          - cell "il y a 18 minutes" [ref=e340]
+        - row "Admin cash.movement.recorded cash_drawer_session#1 471b5225 il y a 19 minutes" [ref=e341]:
+          - cell "Admin" [ref=e342]
+          - cell "cash.movement.recorded" [ref=e343]:
+            - generic [ref=e344]: cash.movement.recorded
+          - cell "cash_drawer_session#1" [ref=e345]
+          - cell "471b5225" [ref=e346]:
+            - code [ref=e347]: 471b5225
+          - cell "il y a 19 minutes" [ref=e348]
+        - row "Admin order.created.pos order#81 d4dd25a0 il y a 19 minutes" [ref=e349]:
+          - cell "Admin" [ref=e350]
+          - cell "order.created.pos" [ref=e351]:
+            - generic [ref=e352]: order.created.pos
+          - cell "order#81" [ref=e353]
+          - cell "d4dd25a0" [ref=e354]:
+            - code [ref=e355]: d4dd25a0
+          - cell "il y a 19 minutes" [ref=e356]
+        - row "Admin cash.movement.recorded cash_drawer_session#1 07724f6f il y a 25 minutes" [ref=e357]:
+          - cell "Admin" [ref=e358]
+          - cell "cash.movement.recorded" [ref=e359]:
+            - generic [ref=e360]: cash.movement.recorded
+          - cell "cash_drawer_session#1" [ref=e361]
+          - cell "07724f6f" [ref=e362]:
+            - code [ref=e363]: 07724f6f
+          - cell "il y a 25 minutes" [ref=e364]
+        - row "Admin order.created.pos order#79 1cf91fed il y a 25 minutes" [ref=e365]:
+          - cell "Admin" [ref=e366]
+          - cell "order.created.pos" [ref=e367]:
+            - generic [ref=e368]: order.created.pos
+          - cell "order#79" [ref=e369]
+          - cell "1cf91fed" [ref=e370]:
+            - code [ref=e371]: 1cf91fed
+          - cell "il y a 25 minutes" [ref=e372]
+        - row "Caissier order.counter_payment_confirmed order#77 c1739d14 il y a 33 minutes" [ref=e373]:
+          - cell "Caissier" [ref=e374]
+          - cell "order.counter_payment_confirmed" [ref=e375]:
+            - generic [ref=e376]: order.counter_payment_confirmed
+          - cell "order#77" [ref=e377]
+          - cell "c1739d14" [ref=e378]:
+            - code [ref=e379]: c1739d14
+          - cell "il y a 33 minutes" [ref=e380]
+        - row "Caissier order.counter_payment_confirmed order#76 0ce73219 il y a 35 minutes" [ref=e381]:
+          - cell "Caissier" [ref=e382]
+          - cell "order.counter_payment_confirmed" [ref=e383]:
+            - generic [ref=e384]: order.counter_payment_confirmed
+          - cell "order#76" [ref=e385]
+          - cell "0ce73219" [ref=e386]:
+            - code [ref=e387]: 0ce73219
+          - cell "il y a 35 minutes" [ref=e388]
+        - row "Test Cashier order.counter_payment_confirmed order#75 189acd6c il y a 35 minutes" [ref=e389]:
+          - cell "Test Cashier" [ref=e390]
+          - cell "order.counter_payment_confirmed" [ref=e391]:
+            - generic [ref=e392]: order.counter_payment_confirmed
+          - cell "order#75" [ref=e393]
+          - cell "189acd6c" [ref=e394]:
+            - code [ref=e395]: 189acd6c
+          - cell "il y a 35 minutes" [ref=e396]
+        - row "Admin user.login user#2 aca810ee il y a 1 heure" [ref=e397]:
+          - cell "Admin" [ref=e398]
+          - cell "user.login" [ref=e399]:
+            - generic [ref=e400]: user.login
+          - cell "user#2" [ref=e401]
+          - cell "aca810ee" [ref=e402]:
+            - code [ref=e403]: aca810ee
+          - cell "il y a 1 heure" [ref=e404]
+        - row "Admin user.logout user#2 8fc20fec il y a 1 heure" [ref=e405]:
+          - cell "Admin" [ref=e406]
+          - cell "user.logout" [ref=e407]:
+            - generic [ref=e408]: user.logout
+          - cell "user#2" [ref=e409]
+          - cell "8fc20fec" [ref=e410]:
+            - code [ref=e411]: 8fc20fec
+          - cell "il y a 1 heure" [ref=e412]
+        - row "Admin user.login user#2 745428da il y a 1 heure" [ref=e413]:
+          - cell "Admin" [ref=e414]
+          - cell "user.login" [ref=e415]:
+            - generic [ref=e416]: user.login
+          - cell "user#2" [ref=e417]
+          - cell "745428da" [ref=e418]:
+            - code [ref=e419]: 745428da
+          - cell "il y a 1 heure" [ref=e420]
+        - row "Admin user.login user#2 d5d7c9c4 il y a 1 heure" [ref=e421]:
+          - cell "Admin" [ref=e422]
+          - cell "user.login" [ref=e423]:
+            - generic [ref=e424]: user.login
+          - cell "user#2" [ref=e425]
+          - cell "d5d7c9c4" [ref=e426]:
+            - code [ref=e427]: d5d7c9c4
+          - cell "il y a 1 heure" [ref=e428]
+  - img [ref=e431]
+  - generic [ref=e435]:
+    - heading "Statistiques des commandes" [level=4] [ref=e436]
+    - generic [ref=e437] [cursor=pointer]:
+      - generic [ref=e438]: Date
+      - textbox "Date" [ref=e440]:
+        - generic [ref=e441]:
+          - textbox "Date" [ref=e442]:
+            - /placeholder: ""
+            - text: 05/27/2026 - 05/27/2026
+          - img [ref=e443]
+  - generic [ref=e446]:
+    - generic [ref=e448]:
+      - generic [ref=e450]: 
+      - generic [ref=e451]:
+        - heading "Total commandes" [level=3] [ref=e452]
+        - heading "10" [level=4] [ref=e453]
+    - generic [ref=e455]:
+      - generic [ref=e457]: 
+      - generic [ref=e458]:
+        - heading "En attente" [level=3] [ref=e459]
+        - heading "0" [level=4] [ref=e460]
+    - generic [ref=e462]:
+      - generic [ref=e464]: 
+      - generic [ref=e465]:
+        - heading "Accepter" [level=3] [ref=e466]
+        - heading "3" [level=4] [ref=e467]
+    - generic [ref=e469]:
+      - generic [ref=e471]: 
+      - generic [ref=e472]:
+        - heading "En préparation" [level=3] [ref=e473]
+        - heading "5" [level=4] [ref=e474]
+    - generic [ref=e476]:
+      - generic [ref=e478]: 
+      - generic [ref=e479]:
+        - heading "Préparée" [level=3] [ref=e480]
+        - heading "1" [level=4] [ref=e481]
+    - generic [ref=e483]:
+      - generic [ref=e485]: 
+      - generic [ref=e486]:
+        - heading "En livraison" [level=3] [ref=e487]
+        - heading "0" [level=4] [ref=e488]
+    - generic [ref=e490]:
+      - generic [ref=e492]: 
+      - generic [ref=e493]:
+        - heading "Livré" [level=3] [ref=e494]
+        - heading "0" [level=4] [ref=e495]
+    - generic [ref=e497]:
+      - generic [ref=e499]: 
+      - generic [ref=e500]:
+        - heading "Annulé" [level=3] [ref=e501]
+        - heading "0" [level=4] [ref=e502]
+    - generic [ref=e504]:
+      - generic [ref=e506]: 
+      - generic [ref=e507]:
+        - heading "Retournée" [level=3] [ref=e508]
+        - heading "1" [level=4] [ref=e509]
+    - generic [ref=e511]:
+      - generic [ref=e513]: 
+      - generic [ref=e514]:
+        - heading "Refusée" [level=3] [ref=e515]
+        - heading "0" [level=4] [ref=e516]
+  - generic [ref=e517]:
+    - img [ref=e520]
+    - generic [ref=e525]:
+      - generic [ref=e526]:
+        - heading "Résumé des ventes" [level=3] [ref=e527]
+        - generic [ref=e528] [cursor=pointer]:
+          - generic [ref=e529]: Date
+          - textbox "Date" [ref=e531]:
+            - generic [ref=e532]:
+              - textbox "Date" [ref=e533]:
+                - /placeholder: ""
+                - text: 05/01/2026 - 05/31/2026
+              - img [ref=e534]
+          - generic [ref=e537]: 
+      - generic [ref=e538]:
+        - list [ref=e539]:
+          - listitem [ref=e540]:
+            - generic [ref=e541]:
+              - generic [ref=e542]: 
+              - heading "136,10 €" [level=3] [ref=e543]
+            - paragraph [ref=e544]: Total ventes
+          - listitem [ref=e545]:
+            - generic [ref=e546]:
+              - generic [ref=e547]: 
+              - heading "4,54 €" [level=3] [ref=e548]
+            - paragraph [ref=e549]: Ventes moyennes par jour
+        - generic [ref=e551]:
+          - img [ref=e552]:
+            - generic [ref=e559]:
+              - generic "1" [ref=e560]
+              - generic "2" [ref=e561]
+              - generic "3" [ref=e562]
+              - generic "4" [ref=e563]
+              - generic "5" [ref=e564]
+              - generic "6" [ref=e565]
+              - generic "7" [ref=e566]
+              - generic "8" [ref=e567]
+              - generic "9" [ref=e568]
+              - generic "10" [ref=e569]
+              - generic "11" [ref=e570]
+              - generic "12" [ref=e571]
+              - generic "13" [ref=e572]
+              - generic "14" [ref=e573]
+              - generic "15" [ref=e574]
+              - generic "16" [ref=e575]
+              - generic "17" [ref=e576]
+              - generic "18" [ref=e577]
+              - generic "19" [ref=e578]
+              - generic "20" [ref=e579]
+              - generic "21" [ref=e580]
+              - generic "22" [ref=e581]
+              - generic "23" [ref=e582]
+              - generic "24" [ref=e583]
+              - generic "25" [ref=e584]
+              - generic "26" [ref=e585]
+              - generic "27" [ref=e586]
+              - generic "28" [ref=e587]
+              - generic "29" [ref=e588]
+              - generic "30" [ref=e589]
+              - generic "31" [ref=e590]
+          - generic: ●
+    - img [ref=e593]
+    - generic [ref=e598]:
+      - generic [ref=e599]:
+        - heading "Résumé des commandes" [level=3] [ref=e600]
+        - generic [ref=e601] [cursor=pointer]:
+          - generic [ref=e602]: Date
+          - textbox "Date" [ref=e604]:
+            - generic [ref=e605]:
+              - textbox "Date" [ref=e606]:
+                - /placeholder: ""
+                - text: 05/01/2026 - 05/31/2026
+              - img [ref=e607]
+          - generic [ref=e610]: 
+      - generic [ref=e612]:
+        - img [ref=e615]:
+          - generic [ref=e631]:
+            - generic: Total
+            - generic: "7"
+        - list [ref=e632]:
+          - listitem [ref=e633]:
+            - generic [ref=e634]: Livré (0%)
+          - listitem [ref=e636]:
+            - generic [ref=e637]: Retournée (7%)
+          - listitem [ref=e639]:
+            - generic [ref=e640]: Annulé (0%)
+          - listitem [ref=e642]:
+            - generic [ref=e643]: Refusée (0%)
+    - img [ref=e647]
+    - generic [ref=e652]:
+      - heading "Dernier rapport Z" [level=3] [ref=e654]
+      - generic [ref=e655]:
+        - paragraph [ref=e656]: "Dernier rapport Z #2"
+        - paragraph [ref=e657]: closed
+        - paragraph [ref=e658]: 27/05/2026 14:12:43
+        - link "Voir toutes" [ref=e659] [cursor=pointer]:
+          - /url: /admin/transactions
+    - img [ref=e662]
+    - generic [ref=e667]:
+      - generic [ref=e669]: Articles mis en avant
+      - list [ref=e671]:
+        - listitem [ref=e672]:
+          - img "product" [ref=e673]
+          - heading "Frites Seules" [level=4] [ref=e674]
+        - listitem [ref=e675]:
+          - img "product" [ref=e676]
+          - heading "Boisson Seule" [level=4] [ref=e677]
+        - listitem [ref=e678]:
+          - img "product" [ref=e679]
+          - heading "Menu (Frites + Boisson)" [level=4] [ref=e680]
+    - img [ref=e683]
+    - generic [ref=e688]:
+      - generic [ref=e690]: Articles les plus populaires
+      - list [ref=e692]:
+        - listitem [ref=e693]:
+          - img "product" [ref=e694]
+          - generic [ref=e695]:
+            - heading "Frites Seules" [level=4] [ref=e696]
+            - heading "Sandwich Cayenne" [level=5] [ref=e697]
+            - heading "2,50 €" [level=6] [ref=e698]
+        - listitem [ref=e699]:
+          - img "product" [ref=e700]
+          - generic [ref=e701]:
+            - heading "Cheddar" [level=4] [ref=e702]
+            - heading "Suppléments" [level=5] [ref=e703]
+            - heading "0,90 €" [level=6] [ref=e704]
+        - listitem [ref=e705]:
+          - img "product" [ref=e706]
+          - generic [ref=e707]:
+            - heading "Tacos" [level=4] [ref=e708]
+            - heading "Tacos" [level=5] [ref=e709]
+            - heading "6,90 €" [level=6] [ref=e710]
+        - listitem [ref=e711]:
+          - img "product" [ref=e712]
+          - generic [ref=e713]:
+            - heading "Chicken Burger" [level=4] [ref=e714]
+            - heading "Burgers" [level=5] [ref=e715]
+            - heading "4,90 €" [level=6] [ref=e716]
+        - listitem [ref=e717]:
+          - img "product" [ref=e718]
+          - generic [ref=e719]:
+            - heading "Boisson Seule" [level=4] [ref=e720]
+            - heading "Sandwich Cayenne" [level=5] [ref=e721]
+            - heading "1,90 €" [level=6] [ref=e722]
+        - listitem [ref=e723]:
+          - img "product" [ref=e724]
+          - generic [ref=e725]:
+            - heading "Emmental" [level=4] [ref=e726]
+            - heading "Suppléments" [level=5] [ref=e727]
+            - heading "0,90 €" [level=6] [ref=e728]

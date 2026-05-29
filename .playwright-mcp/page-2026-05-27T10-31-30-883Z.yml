@@ -1,0 +1,533 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - link "POS" [ref=e13] [cursor=pointer]:
+        - /url: /admin/pos
+        - generic [ref=e14]: 
+      - button "Fermer" [ref=e15] [cursor=pointer]: 
+      - generic [ref=e16]:
+        - button "avatar Bonjour Admin" [ref=e17] [cursor=pointer]:
+          - img "avatar" [ref=e18]
+          - heading "Bonjour Admin" [level=3] [ref=e19]:
+            - text: Bonjour
+            - generic "Admin" [ref=e20]
+          - generic [ref=e21]: 
+        - menu "avatar Bonjour Admin":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=e22]:
+    - text: 
+    - navigation [ref=e23]:
+      - list [ref=e24]:
+        - listitem [ref=e25]:
+          - link " Tableau de bord" [ref=e26] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e27]: 
+            - generic [ref=e28]: Tableau de bord
+      - list [ref=e29]:
+        - listitem [ref=e30]:
+          - link " POS" [ref=e31] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e32]: 
+            - generic [ref=e33]: POS
+      - list [ref=e34]:
+        - listitem [ref=e35]:
+          - link "Produits & Stock" [ref=e36] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=e37]: Produits & Stock
+      - list [ref=e38]:
+        - listitem [ref=e39]:
+          - link " Catalogue" [ref=e40] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=e41]: 
+            - generic [ref=e42]: Catalogue
+        - listitem [ref=e43]:
+          - link " Attribut d’articles" [ref=e44] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=e45]: 
+            - generic [ref=e46]: Attribut d’articles
+      - list [ref=e47]:
+        - listitem [ref=e48]:
+          - link " Ingrédients" [ref=e49] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=e50]: 
+            - generic [ref=e51]: Ingrédients
+      - list [ref=e52]:
+        - listitem [ref=e53]:
+          - link " Commandes caisse" [ref=e54] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=e55]: 
+            - generic [ref=e56]: Commandes caisse
+      - list [ref=e57]:
+        - listitem [ref=e58]:
+          - link " Vue caisse unifiée" [ref=e59] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=e60]: 
+            - generic [ref=e61]: Vue caisse unifiée
+      - list [ref=e62]:
+        - listitem [ref=e63]:
+          - link " Caisse livreur" [ref=e64] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=e65]: 
+            - generic [ref=e66]: Caisse livreur
+      - list [ref=e67]:
+        - listitem [ref=e68]:
+          - button "Caisse et commandes" [ref=e69] [cursor=pointer]
+        - listitem [ref=e70]:
+          - link " Écran cuisine" [ref=e71] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=e72]: 
+            - generic [ref=e73]: Écran cuisine
+        - listitem [ref=e74]:
+          - link " Suivi client" [ref=e75] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=e76]: 
+            - generic [ref=e77]: Suivi client
+      - list [ref=e78]:
+        - listitem [ref=e79]:
+          - button "Communications" [ref=e80] [cursor=pointer]
+        - listitem [ref=e81]:
+          - link " Notification pushs" [ref=e82] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=e83]: 
+            - generic [ref=e84]: Notification pushs
+        - listitem [ref=e85]:
+          - link " Messages" [ref=e86] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=e87]: 
+            - generic [ref=e88]: Messages
+        - listitem [ref=e89]:
+          - link " Abonnés" [ref=e90] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=e91]: 
+            - generic [ref=e92]: Abonnés
+      - list [ref=e93]:
+        - listitem [ref=e94]:
+          - button "Utilisateurs" [ref=e95] [cursor=pointer]
+        - listitem [ref=e96]:
+          - link " Administrateurs" [ref=e97] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=e98]: 
+            - generic [ref=e99]: Administrateurs
+        - listitem [ref=e100]:
+          - link " Employés" [ref=e101] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=e102]: 
+            - generic [ref=e103]: Employés
+        - listitem [ref=e104]:
+          - link " Chefs" [ref=e105] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=e106]: 
+            - generic [ref=e107]: Chefs
+      - list [ref=e108]:
+        - listitem [ref=e109]:
+          - button "Comptes" [ref=e110] [cursor=pointer]
+        - listitem [ref=e111]:
+          - link " Transactions" [ref=e112] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=e113]: 
+            - generic [ref=e114]: Transactions
+      - list [ref=e115]:
+        - listitem [ref=e116]:
+          - button "Rapports" [ref=e117] [cursor=pointer]
+        - listitem [ref=e118]:
+          - link " Rapport des ventes" [ref=e119] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=e120]: 
+            - generic [ref=e121]: Rapport des ventes
+        - listitem [ref=e122]:
+          - link " Rapport articles" [ref=e123] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=e124]: 
+            - generic [ref=e125]: Rapport articles
+      - list [ref=e126]:
+        - listitem [ref=e127]:
+          - button "Configuration" [ref=e128] [cursor=pointer]
+        - listitem [ref=e129]:
+          - link " Paramètres" [ref=e130] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=e131]: 
+            - generic [ref=e132]: Paramètres
+  - generic [ref=e133]:
+    - generic [ref=e135]:
+      - generic [ref=e136]:
+        - paragraph [ref=e137]: FoodKing V1
+        - heading "Ingrédients" [level=1] [ref=e138]
+        - paragraph [ref=e139]: Gestion des viandes, sauces, suppléments et add-ons
+      - generic [ref=e140]: "40"
+    - tablist "Filtre par type d'ingrédient" [ref=e141]:
+      - tab "Tous" [selected] [ref=e142] [cursor=pointer]
+      - tab "Viandes & Attributs" [ref=e143] [cursor=pointer]
+      - tab "Suppléments" [ref=e144] [cursor=pointer]
+      - tab "Add-ons" [ref=e145] [cursor=pointer]
+    - tabpanel "Tous" [ref=e146]:
+      - table "Liste des ingrédients avec leur statut de disponibilité" [ref=e150]:
+        - caption [ref=e151]: Liste des ingrédients avec leur statut de disponibilité
+        - rowgroup [ref=e152]:
+          - row "Nom Type Utilisation Actions" [ref=e153]:
+            - columnheader "Nom" [ref=e154]
+            - columnheader "Type" [ref=e155]
+            - columnheader "Utilisation" [ref=e156]
+            - columnheader "Actions" [ref=e157]
+        - rowgroup [ref=e158]:
+          - row "Viande 1 Viandes & Attributs Utilisé dans 0 étapes wizard Voir les détails" [ref=e159]:
+            - rowheader "Viande 1" [ref=e160]:
+              - paragraph [ref=e161]: Viande 1
+            - cell "Viandes & Attributs" [ref=e162]:
+              - generic [ref=e163]: Viandes & Attributs
+            - cell "Utilisé dans 0 étapes wizard" [ref=e164]
+            - cell "Voir les détails" [ref=e165]:
+              - button "Voir les détails" [ref=e166] [cursor=pointer]
+          - row "Viande 2 Viandes & Attributs Utilisé dans 0 étapes wizard Voir les détails" [ref=e167]:
+            - rowheader "Viande 2" [ref=e168]:
+              - paragraph [ref=e169]: Viande 2
+            - cell "Viandes & Attributs" [ref=e170]:
+              - generic [ref=e171]: Viandes & Attributs
+            - cell "Utilisé dans 0 étapes wizard" [ref=e172]
+            - cell "Voir les détails" [ref=e173]:
+              - button "Voir les détails" [ref=e174] [cursor=pointer]
+          - row "Viande 3 Viandes & Attributs Utilisé dans 0 étapes wizard Voir les détails" [ref=e175]:
+            - rowheader "Viande 3" [ref=e176]:
+              - paragraph [ref=e177]: Viande 3
+            - cell "Viandes & Attributs" [ref=e178]:
+              - generic [ref=e179]: Viandes & Attributs
+            - cell "Utilisé dans 0 étapes wizard" [ref=e180]
+            - cell "Voir les détails" [ref=e181]:
+              - button "Voir les détails" [ref=e182] [cursor=pointer]
+          - row "Viande 4 Viandes & Attributs Utilisé dans 0 étapes wizard Voir les détails" [ref=e183]:
+            - rowheader "Viande 4" [ref=e184]:
+              - paragraph [ref=e185]: Viande 4
+            - cell "Viandes & Attributs" [ref=e186]:
+              - generic [ref=e187]: Viandes & Attributs
+            - cell "Utilisé dans 0 étapes wizard" [ref=e188]
+            - cell "Voir les détails" [ref=e189]:
+              - button "Voir les détails" [ref=e190] [cursor=pointer]
+          - row "Sauce (1ère Gratuite) Viandes & Attributs Utilisé dans 0 étapes wizard Voir les détails" [ref=e191]:
+            - rowheader "Sauce (1ère Gratuite)" [ref=e192]:
+              - paragraph [ref=e193]: Sauce (1ère Gratuite)
+            - cell "Viandes & Attributs" [ref=e194]:
+              - generic [ref=e195]: Viandes & Attributs
+            - cell "Utilisé dans 0 étapes wizard" [ref=e196]
+            - cell "Voir les détails" [ref=e197]:
+              - button "Voir les détails" [ref=e198] [cursor=pointer]
+          - row "Type de Pain Viandes & Attributs Utilisé dans 0 étapes wizard Voir les détails" [ref=e199]:
+            - rowheader "Type de Pain" [ref=e200]:
+              - paragraph [ref=e201]: Type de Pain
+            - cell "Viandes & Attributs" [ref=e202]:
+              - generic [ref=e203]: Viandes & Attributs
+            - cell "Utilisé dans 0 étapes wizard" [ref=e204]
+            - cell "Voir les détails" [ref=e205]:
+              - button "Voir les détails" [ref=e206] [cursor=pointer]
+          - row "Base bol Viandes & Attributs Utilisé dans 0 étapes wizard Voir les détails" [ref=e207]:
+            - rowheader "Base bol" [ref=e208]:
+              - paragraph [ref=e209]: Base bol
+            - cell "Viandes & Attributs" [ref=e210]:
+              - generic [ref=e211]: Viandes & Attributs
+            - cell "Utilisé dans 0 étapes wizard" [ref=e212]
+            - cell "Voir les détails" [ref=e213]:
+              - button "Voir les détails" [ref=e214] [cursor=pointer]
+          - row "Sauce bol Viandes & Attributs Utilisé dans 8 étapes wizard Voir les détails" [ref=e215]:
+            - rowheader "Sauce bol" [ref=e216]:
+              - paragraph [ref=e217]: Sauce bol
+            - cell "Viandes & Attributs" [ref=e218]:
+              - generic [ref=e219]: Viandes & Attributs
+            - cell "Utilisé dans 8 étapes wizard" [ref=e220]
+            - cell "Voir les détails" [ref=e221]:
+              - button "Voir les détails" [ref=e222] [cursor=pointer]
+          - row "Style frites Viandes & Attributs Utilisé dans 2 étapes wizard Voir les détails" [ref=e223]:
+            - rowheader "Style frites" [ref=e224]:
+              - paragraph [ref=e225]: Style frites
+            - cell "Viandes & Attributs" [ref=e226]:
+              - generic [ref=e227]: Viandes & Attributs
+            - cell "Utilisé dans 2 étapes wizard" [ref=e228]
+            - cell "Voir les détails" [ref=e229]:
+              - button "Voir les détails" [ref=e230] [cursor=pointer]
+          - row "E2E_PLAYWRIGHT_ATTRIBUTE_TOGGLE Viandes & Attributs Utilisé dans 0 étapes wizard Voir les détails" [ref=e231]:
+            - rowheader "E2E_PLAYWRIGHT_ATTRIBUTE_TOGGLE" [ref=e232]:
+              - paragraph [ref=e233]: E2E_PLAYWRIGHT_ATTRIBUTE_TOGGLE
+            - cell "Viandes & Attributs" [ref=e234]:
+              - generic [ref=e235]: Viandes & Attributs
+            - cell "Utilisé dans 0 étapes wizard" [ref=e236]
+            - cell "Voir les détails" [ref=e237]:
+              - button "Voir les détails" [ref=e238] [cursor=pointer]
+          - row "Jambon de dinde Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e239]:
+            - rowheader "Jambon de dinde" [ref=e240]:
+              - paragraph [ref=e241]: Jambon de dinde
+            - cell "Suppléments" [ref=e242]:
+              - generic [ref=e243]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e244]
+            - cell "Voir les détails" [ref=e245]:
+              - button "Voir les détails" [ref=e246] [cursor=pointer]
+          - row "Boursin Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e247]:
+            - rowheader "Boursin" [ref=e248]:
+              - paragraph [ref=e249]: Boursin
+            - cell "Suppléments" [ref=e250]:
+              - generic [ref=e251]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e252]
+            - cell "Voir les détails" [ref=e253]:
+              - button "Voir les détails" [ref=e254] [cursor=pointer]
+          - row "Fromage a raclette Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e255]:
+            - rowheader "Fromage a raclette" [ref=e256]:
+              - paragraph [ref=e257]: Fromage a raclette
+            - cell "Suppléments" [ref=e258]:
+              - generic [ref=e259]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e260]
+            - cell "Voir les détails" [ref=e261]:
+              - button "Voir les détails" [ref=e262] [cursor=pointer]
+          - row "Œuf Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e263]:
+            - rowheader "Œuf" [ref=e264]:
+              - paragraph [ref=e265]: Œuf
+            - cell "Suppléments" [ref=e266]:
+              - generic [ref=e267]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e268]
+            - cell "Voir les détails" [ref=e269]:
+              - button "Voir les détails" [ref=e270] [cursor=pointer]
+          - row "Fromage Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e271]:
+            - rowheader "Fromage" [ref=e272]:
+              - paragraph [ref=e273]: Fromage
+            - cell "Suppléments" [ref=e274]:
+              - generic [ref=e275]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e276]
+            - cell "Voir les détails" [ref=e277]:
+              - button "Voir les détails" [ref=e278] [cursor=pointer]
+          - row "Galette pommes de terre Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e279]:
+            - rowheader "Galette pommes de terre" [ref=e280]:
+              - paragraph [ref=e281]: Galette pommes de terre
+            - cell "Suppléments" [ref=e282]:
+              - generic [ref=e283]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e284]
+            - cell "Voir les détails" [ref=e285]:
+              - button "Voir les détails" [ref=e286] [cursor=pointer]
+          - row "Salade crudite Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e287]:
+            - rowheader "Salade crudite" [ref=e288]:
+              - paragraph [ref=e289]: Salade
+              - paragraph [ref=e290]: crudite
+            - cell "Suppléments" [ref=e291]:
+              - generic [ref=e292]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e293]
+            - cell "Voir les détails" [ref=e294]:
+              - button "Voir les détails" [ref=e295] [cursor=pointer]
+          - row "Tomate crudite Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e296]:
+            - rowheader "Tomate crudite" [ref=e297]:
+              - paragraph [ref=e298]: Tomate
+              - paragraph [ref=e299]: crudite
+            - cell "Suppléments" [ref=e300]:
+              - generic [ref=e301]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e302]
+            - cell "Voir les détails" [ref=e303]:
+              - button "Voir les détails" [ref=e304] [cursor=pointer]
+          - row "Oignon crudite Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e305]:
+            - rowheader "Oignon crudite" [ref=e306]:
+              - paragraph [ref=e307]: Oignon
+              - paragraph [ref=e308]: crudite
+            - cell "Suppléments" [ref=e309]:
+              - generic [ref=e310]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e311]
+            - cell "Voir les détails" [ref=e312]:
+              - button "Voir les détails" [ref=e313] [cursor=pointer]
+          - row "Cornichon crudite Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e314]:
+            - rowheader "Cornichon crudite" [ref=e315]:
+              - paragraph [ref=e316]: Cornichon
+              - paragraph [ref=e317]: crudite
+            - cell "Suppléments" [ref=e318]:
+              - generic [ref=e319]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e320]
+            - cell "Voir les détails" [ref=e321]:
+              - button "Voir les détails" [ref=e322] [cursor=pointer]
+          - row "Cheddar supplement Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e323]:
+            - rowheader "Cheddar supplement" [ref=e324]:
+              - paragraph [ref=e325]: Cheddar
+              - paragraph [ref=e326]: supplement
+            - cell "Suppléments" [ref=e327]:
+              - generic [ref=e328]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e329]
+            - cell "Voir les détails" [ref=e330]:
+              - button "Voir les détails" [ref=e331] [cursor=pointer]
+          - row "Raclette supplement Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e332]:
+            - rowheader "Raclette supplement" [ref=e333]:
+              - paragraph [ref=e334]: Raclette
+              - paragraph [ref=e335]: supplement
+            - cell "Suppléments" [ref=e336]:
+              - generic [ref=e337]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e338]
+            - cell "Voir les détails" [ref=e339]:
+              - button "Voir les détails" [ref=e340] [cursor=pointer]
+          - row "Emmental supplement Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e341]:
+            - rowheader "Emmental supplement" [ref=e342]:
+              - paragraph [ref=e343]: Emmental
+              - paragraph [ref=e344]: supplement
+            - cell "Suppléments" [ref=e345]:
+              - generic [ref=e346]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e347]
+            - cell "Voir les détails" [ref=e348]:
+              - button "Voir les détails" [ref=e349] [cursor=pointer]
+          - row "Œuf supplement Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e350]:
+            - rowheader "Œuf supplement" [ref=e351]:
+              - paragraph [ref=e352]: Œuf
+              - paragraph [ref=e353]: supplement
+            - cell "Suppléments" [ref=e354]:
+              - generic [ref=e355]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e356]
+            - cell "Voir les détails" [ref=e357]:
+              - button "Voir les détails" [ref=e358] [cursor=pointer]
+          - row "Légumes sautés supplement Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e359]:
+            - rowheader "Légumes sautés supplement" [ref=e360]:
+              - paragraph [ref=e361]: Légumes sautés
+              - paragraph [ref=e362]: supplement
+            - cell "Suppléments" [ref=e363]:
+              - generic [ref=e364]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e365]
+            - cell "Voir les détails" [ref=e366]:
+              - button "Voir les détails" [ref=e367] [cursor=pointer]
+          - row "Jambon supplement Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e368]:
+            - rowheader "Jambon supplement" [ref=e369]:
+              - paragraph [ref=e370]: Jambon
+              - paragraph [ref=e371]: supplement
+            - cell "Suppléments" [ref=e372]:
+              - generic [ref=e373]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e374]
+            - cell "Voir les détails" [ref=e375]:
+              - button "Voir les détails" [ref=e376] [cursor=pointer]
+          - row "Oignon frais supplement Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e377]:
+            - rowheader "Oignon frais supplement" [ref=e378]:
+              - paragraph [ref=e379]: Oignon frais
+              - paragraph [ref=e380]: supplement
+            - cell "Suppléments" [ref=e381]:
+              - generic [ref=e382]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e383]
+            - cell "Voir les détails" [ref=e384]:
+              - button "Voir les détails" [ref=e385] [cursor=pointer]
+          - row "Champignons supplement Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e386]:
+            - rowheader "Champignons supplement" [ref=e387]:
+              - paragraph [ref=e388]: Champignons
+              - paragraph [ref=e389]: supplement
+            - cell "Suppléments" [ref=e390]:
+              - generic [ref=e391]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e392]
+            - cell "Voir les détails" [ref=e393]:
+              - button "Voir les détails" [ref=e394] [cursor=pointer]
+          - row "Boule gratinée supplement Suppléments Utilisé dans 4 étapes wizard Voir les détails" [ref=e395]:
+            - rowheader "Boule gratinée supplement" [ref=e396]:
+              - paragraph [ref=e397]: Boule gratinée
+              - paragraph [ref=e398]: supplement
+            - cell "Suppléments" [ref=e399]:
+              - generic [ref=e400]: Suppléments
+            - cell "Utilisé dans 4 étapes wizard" [ref=e401]
+            - cell "Voir les détails" [ref=e402]:
+              - button "Voir les détails" [ref=e403] [cursor=pointer]
+          - row "Oignons frits supplement_bol Suppléments Utilisé dans 5 étapes wizard Voir les détails" [ref=e404]:
+            - rowheader "Oignons frits supplement_bol" [ref=e405]:
+              - paragraph [ref=e406]: Oignons frits
+              - paragraph [ref=e407]: supplement_bol
+            - cell "Suppléments" [ref=e408]:
+              - generic [ref=e409]: Suppléments
+            - cell "Utilisé dans 5 étapes wizard" [ref=e410]
+            - cell "Voir les détails" [ref=e411]:
+              - button "Voir les détails" [ref=e412] [cursor=pointer]
+          - row "Jambon supplement_bol Suppléments Utilisé dans 13 étapes wizard Voir les détails" [ref=e413]:
+            - rowheader "Jambon supplement_bol" [ref=e414]:
+              - paragraph [ref=e415]: Jambon
+              - paragraph [ref=e416]: supplement_bol
+            - cell "Suppléments" [ref=e417]:
+              - generic [ref=e418]: Suppléments
+            - cell "Utilisé dans 13 étapes wizard" [ref=e419]
+            - cell "Voir les détails" [ref=e420]:
+              - button "Voir les détails" [ref=e421] [cursor=pointer]
+          - row "Champignons supplement_bol Suppléments Utilisé dans 13 étapes wizard Voir les détails" [ref=e422]:
+            - rowheader "Champignons supplement_bol" [ref=e423]:
+              - paragraph [ref=e424]: Champignons
+              - paragraph [ref=e425]: supplement_bol
+            - cell "Suppléments" [ref=e426]:
+              - generic [ref=e427]: Suppléments
+            - cell "Utilisé dans 13 étapes wizard" [ref=e428]
+            - cell "Voir les détails" [ref=e429]:
+              - button "Voir les détails" [ref=e430] [cursor=pointer]
+          - row "Boule gratinée supplement_bol Suppléments Utilisé dans 13 étapes wizard Voir les détails" [ref=e431]:
+            - rowheader "Boule gratinée supplement_bol" [ref=e432]:
+              - paragraph [ref=e433]: Boule gratinée
+              - paragraph [ref=e434]: supplement_bol
+            - cell "Suppléments" [ref=e435]:
+              - generic [ref=e436]: Suppléments
+            - cell "Utilisé dans 13 étapes wizard" [ref=e437]
+            - cell "Voir les détails" [ref=e438]:
+              - button "Voir les détails" [ref=e439] [cursor=pointer]
+          - row "Boursin supplement Suppléments Utilisé dans 4 étapes wizard Voir les détails" [ref=e440]:
+            - rowheader "Boursin supplement" [ref=e441]:
+              - paragraph [ref=e442]: Boursin
+              - paragraph [ref=e443]: supplement
+            - cell "Suppléments" [ref=e444]:
+              - generic [ref=e445]: Suppléments
+            - cell "Utilisé dans 4 étapes wizard" [ref=e446]
+            - cell "Voir les détails" [ref=e447]:
+              - button "Voir les détails" [ref=e448] [cursor=pointer]
+          - row "Oignon frais supplement_bol Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e449]:
+            - rowheader "Oignon frais supplement_bol" [ref=e450]:
+              - paragraph [ref=e451]: Oignon frais
+              - paragraph [ref=e452]: supplement_bol
+            - cell "Suppléments" [ref=e453]:
+              - generic [ref=e454]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e455]
+            - cell "Voir les détails" [ref=e456]:
+              - button "Voir les détails" [ref=e457] [cursor=pointer]
+          - row "Option Gratiné supplement_bol Suppléments Utilisé dans 8 étapes wizard Voir les détails" [ref=e458]:
+            - rowheader "Option Gratiné supplement_bol" [ref=e459]:
+              - paragraph [ref=e460]: Option Gratiné
+              - paragraph [ref=e461]: supplement_bol
+            - cell "Suppléments" [ref=e462]:
+              - generic [ref=e463]: Suppléments
+            - cell "Utilisé dans 8 étapes wizard" [ref=e464]
+            - cell "Voir les détails" [ref=e465]:
+              - button "Voir les détails" [ref=e466] [cursor=pointer]
+          - row "E2E_PLAYWRIGHT_EXTRA_TOGGLE Suppléments Utilisé dans 1 étapes wizard Voir les détails" [ref=e467]:
+            - rowheader "E2E_PLAYWRIGHT_EXTRA_TOGGLE" [ref=e468]:
+              - paragraph [ref=e469]: E2E_PLAYWRIGHT_EXTRA_TOGGLE
+            - cell "Suppléments" [ref=e470]:
+              - generic [ref=e471]: Suppléments
+            - cell "Utilisé dans 1 étapes wizard" [ref=e472]
+            - cell "Voir les détails" [ref=e473]:
+              - button "Voir les détails" [ref=e474] [cursor=pointer]
+          - row "Menu (Frites + Boisson) Add-ons Utilisé dans 18 étapes wizard Voir les détails" [ref=e475]:
+            - rowheader "Menu (Frites + Boisson)" [ref=e476]:
+              - paragraph [ref=e477]: Menu (Frites + Boisson)
+            - cell "Add-ons" [ref=e478]:
+              - generic [ref=e479]: Add-ons
+            - cell "Utilisé dans 18 étapes wizard" [ref=e480]
+            - cell "Voir les détails" [ref=e481]:
+              - button "Voir les détails" [ref=e482] [cursor=pointer]
+          - row "Frites Seules Add-ons Utilisé dans 18 étapes wizard Voir les détails" [ref=e483]:
+            - rowheader "Frites Seules" [ref=e484]:
+              - paragraph [ref=e485]: Frites Seules
+            - cell "Add-ons" [ref=e486]:
+              - generic [ref=e487]: Add-ons
+            - cell "Utilisé dans 18 étapes wizard" [ref=e488]
+            - cell "Voir les détails" [ref=e489]:
+              - button "Voir les détails" [ref=e490] [cursor=pointer]
+          - row "Boisson Seule Add-ons Utilisé dans 31 étapes wizard Voir les détails" [ref=e491]:
+            - rowheader "Boisson Seule" [ref=e492]:
+              - paragraph [ref=e493]: Boisson Seule
+            - cell "Add-ons" [ref=e494]:
+              - generic [ref=e495]: Add-ons
+            - cell "Utilisé dans 31 étapes wizard" [ref=e496]
+            - cell "Voir les détails" [ref=e497]:
+              - button "Voir les détails" [ref=e498] [cursor=pointer]
+    - paragraph [ref=e148]

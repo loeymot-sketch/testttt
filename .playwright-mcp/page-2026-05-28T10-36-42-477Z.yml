@@ -1,0 +1,67 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - button "Plein écran" [ref=e139] [cursor=pointer]:
+          - generic [ref=e140]: 
+        - generic [ref=e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=e141] [cursor=pointer]:
+            - generic [ref=e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=e142]:
+              - generic [ref=e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=e17]:
+          - link " Tableau de bord" [ref=e144] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e145]: 
+            - generic [ref=e146]: Tableau de bord
+          - button "flag" [ref=e148] [cursor=pointer]:
+            - img "flag" [ref=e149]
+      - generic [ref=e22]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=e23] [cursor=pointer]:
+          - img "avatar" [ref=e24]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=e25]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=e26]
+          - generic [ref=e27]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:                     
+  - main "Écran de statut des commandes" [ref=e150]:
+    - img [ref=e153]
+    - region "En préparation" [ref=e157]:
+      - heading "En préparation" [level=3] [ref=e158]
+      - generic [ref=e159]:
+        - list
+        - paragraph [ref=e160]: —
+    - region "Prêt" [ref=e161]:
+      - heading "Prêt" [level=3] [ref=e162]
+      - generic [ref=e163]:
+        - list
+        - paragraph [ref=e164]: —

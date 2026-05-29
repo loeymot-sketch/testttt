@@ -1,0 +1,61 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - link " Tableau de bord" [ref=e13] [cursor=pointer]:
+        - /url: /admin/dashboard
+        - generic [ref=e14]: 
+        - generic [ref=e15]: Tableau de bord
+      - generic [ref=e16]:
+        - button "avatar Bonjour Admin" [ref=e17] [cursor=pointer]:
+          - img "avatar" [ref=e18]
+          - heading "Bonjour Admin" [level=3] [ref=e19]:
+            - text: Bonjour
+            - generic "Admin" [ref=e20]
+          - generic [ref=e21]: 
+        - menu "avatar Bonjour Admin":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:                     
+  - button "Ouvrir l'historique des commandes du jour" [active] [ref=e23] [cursor=pointer]:
+    - generic [ref=e24]: 📚
+    - generic [ref=e25]: Historique
+  - dialog "Ouvrir l'historique des commandes du jour":
+    - generic [ref=e48]:
+      - generic [ref=e49]:
+        - heading "Historique du jour (0)" [level=2] [ref=e50]:
+          - generic [ref=e51]: 📚
+          - text: Historique du jour
+          - generic [ref=e52]: (0)
+        - button "Fermer" [ref=e53] [cursor=pointer]:
+          - generic [ref=e54]: ✕
+      - generic [ref=e55]: Aucune commande historique aujourd'hui
+  - generic [ref=e26]:
+    - status [ref=e27]:
+      - generic [ref=e28]:
+        - img [ref=e30]
+        - generic [ref=e32]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=e33]: LOCAL
+    - generic [ref=e34]:
+      - img [ref=e37]
+      - generic [ref=e44]: Aucune commande en cours
+      - generic [ref=e45]: Les nouvelles commandes apparaîtront ici

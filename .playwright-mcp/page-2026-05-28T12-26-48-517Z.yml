@@ -1,0 +1,66 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=e139] [cursor=pointer]:
+            - generic [ref=e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=e140]:
+              - generic [ref=e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=e17]:
+          - link " Tableau de bord" [ref=e142] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e143]: 
+            - generic [ref=e144]: Tableau de bord
+          - button "flag" [ref=e146] [cursor=pointer]:
+            - img "flag" [ref=e147]
+      - generic [ref=e22]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=e23] [cursor=pointer]:
+          - img "avatar" [ref=e24]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=e25]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=e26]
+          - generic [ref=e27]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:                     
+  - button "Ouvrir l'historique des commandes du jour" [ref=e149] [cursor=pointer]:
+    - generic [ref=e150]: 📚
+    - generic [ref=e151]: Historique
+  - generic [ref=e152]:
+    - status [ref=e153]:
+      - generic [ref=e154]:
+        - img [ref=e156]
+        - generic [ref=e158]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=e159]: LOCAL
+    - generic [ref=e160]:
+      - img [ref=e163]
+      - generic [ref=e170]: Aucune commande en cours
+      - generic [ref=e171]: Les nouvelles commandes apparaîtront ici

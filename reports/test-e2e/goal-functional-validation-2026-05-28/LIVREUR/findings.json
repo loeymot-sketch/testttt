@@ -1,0 +1,177 @@
+{
+  "ts": "2026-05-28T19:30:00+02:00",
+  "surface": "LIVREUR",
+  "surface_kind": "API-only (mobile-app pattern, NO web UI)",
+  "audit_disclaimer": "Livreur is a mobile-app surface. No web pages exist for the driver. This audit validates the API contract + admin-side cash-session cockpit. Full pickup/delivery user journey requires the React Native client (out of scope for this codebase).",
+  "livreur_user": {
+    "id": 10,
+    "email": "livreur.e2e@lecayenne.test",
+    "branch_id": 1,
+    "role": "Delivery Boy",
+    "status_int": 5
+  },
+  "test_order": {
+    "id": 113,
+    "order_serial_no": "LIV-E2E-20260528190638",
+    "order_type": 5,
+    "delivery_boy_id": 10,
+    "initial_status": "PREPARED (8)",
+    "final_status_after_E2E": "DELIVERED (13)"
+  },
+  "summary": {
+    "api_tests_run": 7,
+    "api_tests_passed": 7,
+    "api_tests_failed": 0,
+    "visual_tests_skipped": 3,
+    "total_findings": 4,
+    "p0": 0,
+    "p1": 2,
+    "p2": 1,
+    "p3": 1
+  },
+  "findings": [
+    {
+      "id": "LIV-FN-001",
+      "severity": "P1",
+      "area": "Backlog gap",
+      "title": "Livreur self-service cash-session API not implemented",
+      "evidence_file": "app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php:20-22",
+      "evidence_quote": "The livreur self-service surface (`/api/frontend/delivery-boy-shift/*`) is a separate controller (Wave 6b-1.3b) — not part of this BUILD-1 scope.",
+      "impact": "In production a livreur cannot start a shift without an admin physically opening their session. Breaks the BUILD-5 cash-trail model where the driver collects cash door-to-door and reconciles at end of shift.",
+      "recommendation": "V1.0.2 — add Wave 6b-1.3b FrontendDeliveryBoyCashSessionController scoped to Auth::user() with same NF525 audit + variance gates."
+    },
+    {
+      "id": "LIV-FN-002",
+      "severity": "P1",
+      "area": "i18n",
+      "title": "Ten hardcoded English `abort(403, 'Access denied: ...')` reach livreur response body",
+      "evidence_file": "app/Services/OrderService.php",
+      "evidence_lines": [1542, 1565, 1585, 1604, 1648, 1653, 1925, 2135, 2290, 2336],
+      "driver_specific_lines": [1648, 1653],
+      "impact": "Inconsistent UX in French-only product. lang/fr/all.php has full coverage for other paths (invalid_status_transition L266, kiosk_machine_inactive L219) but not these.",
+      "recommendation": "Add lang/fr/all.php keys `access_denied_order_not_yours`, `access_denied_outside_branch` etc. Replace string literals with trans('all.message.access_denied_*')."
+    },
+    {
+      "id": "LIV-FN-003",
+      "severity": "P2",
+      "area": "API contract",
+      "title": "SimpleDeliveryBoyOrderResource.order_address emitted as null silently for DELIVERY orders without Address relation",
+      "evidence_file": "app/Http/Resources/SimpleDeliveryBoyOrderResource.php:37",
+      "evidence_quote": "'order_address' => new AddressResource($this->address)",
+      "impact": "Mobile-app driver UI sees blank address card with no actionable signal. No fail-fast or fallback to user.address.",
+      "recommendation": "Either (a) fail-fast at OrderService boundary if a DELIVERY order lacks an address, or (b) add `address_required_for_delivery: true` flag to the resource so the mobile app can show a blocker UI."
+    },
+    {
+      "id": "LIV-FN-004",
+      "severity": "P3",
+      "area": "Pre-condition",
+      "title": "User.status legacy value 1 silently 401s Sanctum bearer despite valid token — Status::ACTIVE=5 mismatch",
+      "evidence_file": "app/Http/Middleware/EnsureUserStatusActive.php:72",
+      "evidence_quote": "(int) $statusFresh !== (int) Status::ACTIVE",
+      "impact": "Any user seeded by legacy fixtures (status=1) is locked out until manually UPDATE users SET status=5. Confusing diagnostics — middleware returns generic Unauthenticated. at token-resolution layer rather than User account inactive at the explicit check.",
+      "recommendation": "Add migration sentinel UPDATE users SET status=5 WHERE status IN (1) AND deleted_at IS NULL with audit comment. Document Status enum mapping clearly."
+    }
+  ],
+  "verified_invariants": [
+    {
+      "id": "INV-LIV-01",
+      "name": "Status whitelist defense-in-depth (GOAL-COMPLEMENT P1)",
+      "evidence_file": "app/Http/Controllers/Frontend/DeliveryBoyOrderController.php:71-74",
+      "evidence": "POST /change-status with status=99 returned 422"
+    },
+    {
+      "id": "INV-LIV-02",
+      "name": "PREPARED -> OUT_FOR_DELIVERY -> DELIVERED transition chain (FIX-54-1)",
+      "evidence_file": "app/Services/OrderService.php:1657",
+      "evidence": "Both 200 with OrderDetailsResource; out-of-sequence returns 422 'Transition de statut invalide.'"
+    },
+    {
+      "id": "INV-LIV-03",
+      "name": "Ownership check 403 (FIX-54-1)",
+      "evidence_file": "app/Services/OrderService.php:1647-1648",
+      "evidence": "delivery_boy_id != user.id => 403"
+    },
+    {
+      "id": "INV-LIV-04",
+      "name": "Cash session BranchScope (BUILD-1)",
+      "evidence_file": "app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php:140",
+      "evidence": "POST /api/admin/delivery-boy/cash-sessions/open returned 201 with session id=1, branch_id=1 sourced from livreur user row (not caller)"
+    },
+    {
+      "id": "INV-LIV-05",
+      "name": "DEL-5 branch-configurable delivery fee (Sprint H3)",
+      "evidence_file": "app/Services/Delivery/DeliveryFeeService.php:33-41",
+      "evidence": "fromDistanceKm(3, $branch)=3.5 with base=2,per_km=0.5,min=3.5; fromDistanceKm(10, $branch)=7.0; legacy fallback max(5, ceil(d/5)*5) preserved when columns NULL"
+    },
+    {
+      "id": "INV-LIV-06",
+      "name": "DEL-8 minimum order amount (Sprint H3)",
+      "evidence_file": "app/Http/Requests/OrderRequest.php:276-300",
+      "evidence": "French error 'Le montant minimum pour la livraison est de %.2f€ (sous-total actuel : %.2f€).' Le Cayenne currently NULL = no minimum enforced"
+    },
+    {
+      "id": "INV-LIV-07",
+      "name": "N+1 sentinel (Wave H bug_005 heal)",
+      "evidence_file": "app/Services/OrderService.php:301",
+      "evidence": ".with(['transaction', 'orderItems.orderItem', 'branch', 'user']) — dotted eager-load. items[] field populated in A1 test response."
+    },
+    {
+      "id": "INV-LIV-08",
+      "name": "Idempotency middleware on change-status (V1.0.2-IDEMP-01)",
+      "evidence_file": "routes/api.php:1364-1365",
+      "evidence": "Route::post('/change-status/{order}', ...)->middleware('idempotency') — code path verified"
+    },
+    {
+      "id": "INV-LIV-09",
+      "name": "SendOrderDeliveryBoyPush listener wiring + non-blocking",
+      "evidence_file": "app/Listeners/SendOrderDeliveryBoyPushNotification.php:14-22",
+      "evidence": "Catches exceptions and logs; never blocks. push_notifications table written by builder."
+    }
+  ],
+  "test_artifacts": {
+    "spec": "tests/e2e/goal-functional-livreur-2026-05-28.spec.js",
+    "spec_run_result": "RC=0, 7 passed, 3 skipped, 0 failed, 1.9s",
+    "test_breakdown": {
+      "A1_index_assigned_orders_items_lean": "PASS",
+      "A2_count_endpoint_tallies": "PASS",
+      "A3_show_full_order_detail_address": "PASS",
+      "A4_422_out_of_range_status_whitelist": "PASS",
+      "A5_PREPARED_to_OUT_FOR_DELIVERY": "PASS",
+      "A6_OUT_FOR_DELIVERY_to_DELIVERED": "PASS",
+      "A7_401_unauthenticated_access": "PASS",
+      "A8_admin_cockpit_delivery_boys_list_visual": "SKIPPED (admin SPA login hung; ADMIN spec covers)",
+      "A9_admin_cockpit_cash_session_list_visual": "SKIPPED (admin SPA login hung)",
+      "A10_cash_session_open_via_api_admin": "SKIPPED in spec; manually validated via curl + admin token (201 response, see INV-LIV-04)"
+    }
+  },
+  "files_modified_or_inspected_during_audit": {
+    "audit_only_read_only": [
+      "app/Http/Controllers/Frontend/DeliveryBoyOrderController.php",
+      "app/Http/Controllers/Admin/DeliveryBoyOrderController.php",
+      "app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php",
+      "app/Http/Resources/SimpleDeliveryBoyOrderResource.php",
+      "app/Services/OrderService.php (L283, L1642 etc)",
+      "app/Services/Delivery/DeliveryFeeService.php",
+      "app/Http/Requests/OrderRequest.php",
+      "app/Listeners/SendOrderDeliveryBoyPushNotification.php",
+      "app/Http/Middleware/EnsureUserStatusActive.php",
+      "app/Http/Middleware/ApiKeyMiddleware.php",
+      "routes/api.php"
+    ],
+    "created_in_audit": [
+      "tests/e2e/goal-functional-livreur-2026-05-28.spec.js",
+      "reports/test-e2e/goal-functional-validation-2026-05-28/LIVREUR/findings.json"
+    ],
+    "db_preseed_mutations": [
+      "users id=10 created (livreur.e2e@lecayenne.test) status=5",
+      "model_has_roles (10, Delivery Boy)",
+      "personal_access_tokens (livreur token id=234, admin token for cash-session)",
+      "orders id=113 (LIV-E2E-...) order_type=DELIVERY status=PREPARED",
+      "order_items (order 113, item 1, qty 2, price 12.50)",
+      "branches.delivery_fee_base=2.0/per_km=0.5/minimum=3.5 updated during DEL-5 validation — owner should reset if needed"
+    ],
+    "frozen_zone_touch": "NONE",
+    "production_code_modified": "NONE"
+  },
+  "verdict": "GREEN-LOCAL — API contract solid, 9 invariants verified, 0 P0 found. 4 backlog items for V1.0.2 (2 P1, 1 P2, 1 P3). NO frozen-zone touch, NO production code modified, NO push. Mobile-app surface gap is the load-bearing observation: there is NO livreur web UI in foodking-web — full E2E pickup/delivery user journey requires the React Native app."
+}

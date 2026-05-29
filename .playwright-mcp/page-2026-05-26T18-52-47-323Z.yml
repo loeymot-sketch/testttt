@@ -1,0 +1,1 @@
+- generic [ref=e2]: "{\"status\":\"degraded\",\"checks\":{\"db\":\"ok\",\"redis\":\"ok\",\"websocket\":\"ok\",\"fiscal_chain\":\"fail\",\"queue_pending\":0},\"timestamp\":\"2026-05-26T20:52:47+02:00\"}"

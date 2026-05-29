@@ -1,0 +1,15 @@
+- generic [ref=e1]:
+  - paragraph [ref=e4]: Démarrage en cours…
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e9]: 🍽️
+        - generic [ref=e10]:
+          - generic [ref=e11]: Nos
+          - generic [ref=e12]: Menu
+      - button "Mon compte" [ref=e14] [cursor=pointer]:
+        - generic [ref=e15]: 👤
+        - text: Mon compte
+    - status [ref=e16]:
+      - paragraph [ref=e18]: Chargement du menu…
+  - status

@@ -1,0 +1,167 @@
+[
+  {
+    "id": "OSS-R2-T-09",
+    "level": "P1",
+    "kind": "defect",
+    "title": "Mission URL /order-status-screen probe — outcome=blank_or_404",
+    "evidence": {
+      "initial_http_status": 200,
+      "final_url": "http://127.0.0.1:8000/order-status-screen",
+      "final_path": "/order-status-screen",
+      "body_chars": 115,
+      "oss_columns_visible": 0,
+      "login_form_present": false,
+      "nav_trail": [
+        "http://127.0.0.1:8000/order-status-screen",
+        "http://127.0.0.1:8000/order-status-screen",
+        "http://127.0.0.1:8000/order-status-screen"
+      ],
+      "body_excerpt": "Français\nAnglais\nFrançais\nConnexion\nPage Non Trouvée !\n\nImpossible de trouver la page demandée.\n\nRetour À L’accueil",
+      "spa_router_evidence": {
+        "router_modules_path": "resources/js/router/modules/orderStatusScreenRoutes.js",
+        "registered_path_line": 8,
+        "registered_path_value": "/admin/order-status-screen",
+        "public_friendly_paths_file": "resources/js/app.js",
+        "public_friendly_paths_line": 165,
+        "public_friendly_paths_value": "['/admin/order-status-screen', '/order-status']"
+      },
+      "remediation": "Either (a) register /order-status-screen as an alias of admin.order-status-screen in router/modules/orderStatusScreenRoutes.js, or (b) add a server-side 301 redirect /order-status-screen → /admin/order-status-screen. Currently the plain mission URL appears to leak to login OR render blank shell."
+    },
+    "ts": "2026-05-28T17:42:43.081Z"
+  },
+  {
+    "id": "OSS-R2-T-10-1",
+    "level": "P2",
+    "kind": "defect",
+    "title": "Column header \"Prêt\" contrast 6.06:1 below AAA 7:1",
+    "evidence": {
+      "header_text": "Prêt",
+      "bg_rgb": [
+        26,
+        183,
+        89
+      ],
+      "fg_rgb": [
+        31,
+        31,
+        57
+      ],
+      "ratio": 6.062090905217421,
+      "font_size": "40px",
+      "font_weight": "700",
+      "aaa_pass": false,
+      "aa_pass": true,
+      "target_aaa": 7,
+      "target_aa": 4.5
+    },
+    "ts": "2026-05-28T17:42:44.349Z"
+  },
+  {
+    "id": "OSS-R2-T-10-SUMMARY",
+    "level": "INFO",
+    "kind": "attestation",
+    "title": "Contrast ratios computed for column headers (WCAG 2.x relative luminance).",
+    "evidence": {
+      "headers": [
+        {
+          "header_text": "En préparation",
+          "bg_rgb": [
+            176,
+            0,
+            77
+          ],
+          "fg_rgb": [
+            255,
+            255,
+            255
+          ],
+          "ratio": 7.110965060151718,
+          "font_size": "40px",
+          "font_weight": "700",
+          "aaa_pass": true,
+          "aa_pass": true
+        },
+        {
+          "header_text": "Prêt",
+          "bg_rgb": [
+            26,
+            183,
+            89
+          ],
+          "fg_rgb": [
+            31,
+            31,
+            57
+          ],
+          "ratio": 6.062090905217421,
+          "font_size": "40px",
+          "font_weight": "700",
+          "aaa_pass": false,
+          "aa_pass": true
+        }
+      ]
+    },
+    "ts": "2026-05-28T17:42:44.349Z"
+  },
+  {
+    "id": "OSS-R2-T-11",
+    "level": "P1",
+    "kind": "defect",
+    "title": "CARRYOVER STILL_PRESENT — mobile header still truncates at 390×844 (Round 1 OSS-VISUAL-01)",
+    "evidence": {
+      "text": "En préparation",
+      "scrollWidth": 264,
+      "clientWidth": 187,
+      "offsetWidth": 187,
+      "rect_w": 187,
+      "is_truncated": true,
+      "font_size": "40px",
+      "overflow": "visible",
+      "text_overflow": "clip",
+      "white_space": "normal",
+      "carryover_from": "reports/test-e2e/goal-functional-validation-2026-05-28/OSS/findings.json#OSS-VISUAL-01",
+      "owner_caveat_round1": "OSS is a TV wall — mobile may be out of scope for V1. Confirm with owner before patching."
+    },
+    "ts": "2026-05-28T17:42:45.743Z"
+  },
+  {
+    "id": "OSS-R2-T-12-FS-OK",
+    "level": "INFO",
+    "kind": "attestation",
+    "title": "Order token font-size 56px meets ≥40px TV-wall mandate",
+    "evidence": {
+      "observed_px": 56
+    },
+    "ts": "2026-05-28T17:42:46.988Z"
+  },
+  {
+    "id": "OSS-R2-T-13-OK",
+    "level": "INFO",
+    "kind": "attestation",
+    "title": "No receipt/order-detail modal on customer wall — read-only public surface confirmed",
+    "evidence": {
+      "selectors_probed": [
+        ".modal.show",
+        ".modal.is-open",
+        "[role=\"dialog\"]",
+        ".receipt-modal",
+        ".invoice-modal",
+        ".order-detail-modal"
+      ]
+    },
+    "ts": "2026-05-28T17:42:50.348Z"
+  },
+  {
+    "id": "OSS-R2-T-14-OK",
+    "level": "INFO",
+    "kind": "attestation",
+    "title": "wakelock visibilitychange wiring confirmed at TV viewport (listeners=3)",
+    "evidence": {
+      "observed_listeners": 3,
+      "file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+      "acquire_line": 198,
+      "visibility_attach_line": 150
+    },
+    "ts": "2026-05-28T17:42:51.719Z"
+  }
+]

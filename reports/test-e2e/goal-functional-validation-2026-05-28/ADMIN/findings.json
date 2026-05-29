@@ -1,0 +1,31 @@
+{
+  "agent": "gstack-e2e-admin",
+  "surface": "ADMIN manager",
+  "generated_at": "2026-05-28T17:11:50.787Z",
+  "findings": [
+    {
+      "id": "A4-P1-event",
+      "severity": "P1",
+      "surface": "admin/settings",
+      "file": "app/Listeners/PersistSettingsUpdatedToOutbox.php",
+      "desc": "SettingsUpdated dispatched but no domain_events.settings.updated row appended. Constructor signature: [\"changedKeys\",\"branchId\"]. Listener may need real settings save via SettingController, not synthetic dispatch."
+    },
+    {
+      "id": "A5-P1",
+      "severity": "P1",
+      "surface": "admin/branches",
+      "desc": "Branches list not mounted (no branch keyword detected)"
+    },
+    {
+      "id": "A7-P1",
+      "severity": "P1",
+      "surface": "admin/z-reports",
+      "desc": "Z reports page not found at any candidate route: /admin/cash-session-report, /admin/z-reports, /admin/fiscal/z-reports, /admin/reports/z"
+    }
+  ],
+  "counts": {
+    "P0": 0,
+    "P1": 3,
+    "P2": 0
+  }
+}

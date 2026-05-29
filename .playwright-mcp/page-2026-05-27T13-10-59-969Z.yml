@@ -1,0 +1,24 @@
+- generic [ref=e42]:
+  - alert [ref=e43]:
+    - generic [ref=e44]: Session expirée. Reconnectez-vous pour continuer.
+    - button "Se reconnecter" [ref=e45] [cursor=pointer]
+  - generic [ref=e46] [cursor=pointer]:
+    - button "Paramètres d'accessibilité" [ref=e48]:
+      - img [ref=e49]
+    - generic:
+      - generic: 🌮
+      - generic: 🍔
+      - generic: 🍟
+    - generic [ref=e55]:
+      - generic [ref=e58]:
+        - heading "Bienvenue !" [level=2] [ref=e59]
+        - paragraph [ref=e60]: Commandez en quelques touches
+      - img [ref=e65]
+      - group "Choisir le mode de commande" [ref=e67]:
+        - button "À emporter Je récupère ma commande" [ref=e68]:
+          - img [ref=e70]
+          - generic [ref=e72]:
+            - generic [ref=e73]: À emporter
+            - generic [ref=e74]: Je récupère ma commande
+      - paragraph [ref=e75]: Choisissez une option pour commencer
+  - status

@@ -1,0 +1,58 @@
+- generic [ref=e4]:
+  - banner [ref=e11]:
+    - generic [ref=e12]:
+      - link "logo" [ref=e14] [cursor=pointer]:
+        - /url: /admin/dashboard
+        - img "logo" [ref=e15]
+      - generic [ref=e17]:
+        - button " Compte " [ref=e18] [cursor=pointer]:
+          - generic [ref=e19]: 
+          - generic [ref=e20]: Compte
+          - generic [ref=e21]: 
+        - generic:
+          - generic:
+            - figure:
+              - generic:
+                - img "avatar"
+                - generic:
+                  - img
+                  - button
+            - figure "Admin admin@lecayenne.fr 0,00 €":
+              - generic:
+                - heading "Admin" [level=3]
+                - heading "admin@lecayenne.fr" [level=4]
+                - heading "0,00 €" [level=5]
+          - navigation:
+            - link " Tableau de bord":
+              - /url: /admin/dashboard
+              - generic: 
+              - generic: Tableau de bord
+            - link " Mes commandes":
+              - /url: /my-orders
+              - generic: 
+              - generic: Mes commandes
+            - link " Modifier le profil":
+              - /url: /edit-profile
+              - generic: 
+              - generic: Modifier le profil
+            - link " Discussion":
+              - /url: /chat
+              - generic: 
+              - generic: Discussion
+            - link " Adresse":
+              - /url: /address
+              - generic: 
+              - generic: Adresse
+            - link " Changer le mot de passe":
+              - /url: /change-password
+              - generic: 
+              - generic: Changer le mot de passe
+            - button " Déconnexion":
+              - generic: 
+              - generic: Déconnexion
+  - generic [ref=e22]:
+    - img "404" [ref=e23]
+    - heading "Page non trouvée !" [level=3] [ref=e24]
+    - paragraph [ref=e25]: Impossible de trouver la page demandée.
+    - link "Retour à l’accueil" [ref=e26] [cursor=pointer]:
+      - /url: /home

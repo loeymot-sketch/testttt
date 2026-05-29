@@ -1,0 +1,203 @@
+{
+  "generated_at": "2026-05-28T17:14:25.000Z",
+  "spec": "tests/e2e/goal-functional-cross-2026-05-28.spec.js",
+  "scope": "cross-system POS→KDS→OSS + Kiosk DELIVERY→KDS→OSS→Livreur",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "commit_at_run": "2bb6f1113",
+  "run_outcome": {
+    "spec_pass_fail": "PASS (both scenarios green at expect-level)",
+    "real_world_outcome": "RED — multiple P0/P1 defects detected via screenshots + DB introspection",
+    "tests_total": 2,
+    "tests_passed": 2,
+    "tests_failed": 0,
+    "screenshots_captured": 11
+  },
+  "latencies_observed_ms": {
+    "s1_db_seed_to_persist": 798,
+    "s1_pos_to_kds_visible": -1,
+    "s1_kds_bump_accept_to_preparing": 957,
+    "s1_kds_bump_preparing_to_prepared": 814,
+    "s1_oss_total_with_auth_bounce": 7839,
+    "s2_db_seed_to_persist": 1011,
+    "s2_kiosk_to_kds_visible": -1,
+    "s2_kiosk_to_oss_attempted": 7286,
+    "s2_livreur_dashboard_load": 6299
+  },
+  "latency_budgets_assessment": {
+    "pos_to_kds_visible_lt_1000ms_websocket": "FAIL (-1 = never visible during 15s window because KDS hit 31-order capacity ceiling)",
+    "pos_to_kds_visible_lt_30000ms_polling": "FAIL (same root cause)",
+    "kds_to_oss_lt_3000ms": "INDETERMINATE (S1 PA5B8 visible on OSS at S2-04 capture, but post-bounce timing; cannot assert <3s)",
+    "kds_bump_service_layer": "PASS — 957ms / 814ms ACCEPT→PREPARING→PREPARED",
+    "livreur_dashboard_load_lt_8000ms": "PASS — 6299ms"
+  },
+  "findings": [
+    {
+      "severity": "P0",
+      "code": "DATA-STATE-CATALOG-RESET",
+      "surface": "admin/items",
+      "title": "Catalog reset to 11 upsell items only — no Sandwich Cayenne / Tacos / Bols / Big Cayenne",
+      "detail": "php artisan tinker SELECT MAX(id) FROM items returned 11 at run-start (2026-05-28). Mission brief specifies \"Sandwich Cayenne via wizard\" — currently impossible: only Menu (Frites + Boisson) id=1, Frites Seules id=2, Boisson Seule id=3, Sauce/Fromage/Jambon/Boursin/Raclette/Œuf/Galette/Salade (4–11) exist. Spec adapts via seeded fixtures using items 1/2/3 to drive cross-system propagation evidence. Run db:seed --class=LeCayenneMenuSeeder to restore catalog before any user-facing E2E.",
+      "file_ref": "database/seeders/LeCayenneMenuSeeder.php",
+      "evidence": "tinker MAX(id)=11; items table column listing confirmed (no category_id, only item_category_id); no Cayenne/Tacos/Bols names match",
+      "captured_at": "2026-05-28T17:12:29.818Z"
+    },
+    {
+      "severity": "P0",
+      "code": "DATA-SCHEMA-PHONE-COLUMNS-MISSING",
+      "surface": "database/orders",
+      "title": "orders table lacks ALL phone storage columns — GDPR DELIVERY phone gate has no path",
+      "detail": "php artisan tinker Schema::getColumnListing('orders') matched ['delivery_boy_id','delivery_charge','delivery_time','loyalty_customer_code'] for the regex /phone|mobile|delivery|address|contact|customer|meta/i. NO mobile_number / phone / delivery_address / order_meta column exists. Z9-P0-03 GDPR requirement = “DELIVERY orders MUST surface customer phone on KDS card, MUST NOT surface on OSS”. Without a storage column, the requirement is structurally unsatisfiable. Either (a) schema migration was rolled back, (b) customers normalized into customers/order_addresses, or (c) feature never implemented at this branch state.",
+      "file_ref": "database/migrations/ — missing add_phone_to_orders or add_delivery_address_to_orders",
+      "evidence": "orders.columns = [actor_id, branch_id, business_date, delivery_boy_id, delivery_charge, delivery_time, discount, fiscal_sequence_no, id, idempotency_key, is_advance_order, loyalty_customer_code, order_datetime, order_serial_no, order_type, payment_method, payment_status, queue_number, source, source_surface, status, subtotal, token, total, total_tax, updated_at, user_id, ...]",
+      "captured_at": "2026-05-28T17:13:48.000Z"
+    },
+    {
+      "severity": "P0",
+      "code": "CROSS-KDS-QUEUE-CAP-OVERFLOW",
+      "surface": "/kds (KdsV2Grid)",
+      "title": "KDS queue saturated at 31 cards + 23 waiting — seeded order PA5B8 invisible inside cap",
+      "detail": "Visual evidence (screenshots/S1-03-kds-order-visible.png + S2-02-kds-initial.png): KDS banner reads “Liste pleine (31 affichée(s), max. serveur) : d'autres commandes actives existent peut-être — filtrez par statut ou cherchez un n° de ticket”. Counter “+23 en attente” top-right. All cards = “BORNE NOUVELLE” A0033…A0078, attente 70:00–71:50 (orders queued for >70 minutes). The seeded PA5B8 / GFCROSS-S1 order exists in DB at status=4 ACCEPT but the KDS surface caps the visible window. Real-world impact: a fresh paid POS order is invisible to kitchen if backlog >31 — customer waits, kitchen does not see ticket. Search box mentioned in banner but not used in test — deserves a 'recent first' or 'POS surface bias' sort to surface fresh orders. The +23 counter indicates server-side filter works; the 31-cap is a frontend display cap.",
+      "file_ref": "resources/js/components/admin/kds/KdsV2Grid.vue + app/Http/Controllers/admin/KitchenDisplaySystemController.php",
+      "evidence": "screenshots/S1-03-kds-order-visible.png + S2-02-kds-initial.png + S2-03-kds-delivery-visible.png all show identical 31-cap banner",
+      "captured_at": "2026-05-28T17:13:12.218Z"
+    },
+    {
+      "severity": "P0",
+      "code": "CROSS-OSS-AUTH-BOUNCE",
+      "surface": "/admin/order-status-screen",
+      "title": "OSS surface bounced 3rd admin context to /login mid-test",
+      "detail": "screenshots/S1-06-oss-screen.png URL ended on http://localhost:8000/login. The admin session opened concurrently with 2 other contexts (POS, KDS) was kicked back to the login form on OSS navigation, even though /admin/dashboard had loaded in the ensureAdmin() pre-step on the same context. Console produced 21 consecutive 401 Unauthorized errors immediately before. Possible root cause: SPA fetches /api/* with stale Sanctum cookie, gets 401, redirects router to /login. Triple-context fanout amplifies the race. NOTE: S2-04 OSS capture (later, dedicated context) DID render “Prêt N°PA5B8” in the ready column, so the cross-system chain DID propagate — the S1 assertion was a false negative caused by the auth race, not a chain break.",
+      "file_ref": "resources/js/router/middleware/auth.js + app/Http/Middleware/EnsureUserStatusActive.php",
+      "evidence": "screenshots/S1-06-oss-screen.png shows /login form; capture-meta.json scenario1.consoleErrors = 21 × 401",
+      "captured_at": "2026-05-28T17:13:27.944Z"
+    },
+    {
+      "severity": "P0",
+      "code": "CROSS-KDS-VISIBILITY-FAIL-SECONDARY",
+      "surface": "/kds",
+      "title": "KDS did not show seeded POS order GFCROSS-S1 within 15s (downstream of cap)",
+      "detail": "Order 123 (serial GFCROSS-S1-2026-05-28-A-62FC, queue PA5B8) status=4 PAID TAKEAWAY persisted in DB (attestation OK). KDS page text never contained the marker. Direct downstream effect of CROSS-KDS-QUEUE-CAP-OVERFLOW. Workaround would be to bump existing top-of-queue cards to PREPARED to free slots, or extend the KDS visible window above 31.",
+      "file_ref": "resources/js/components/admin/kds/KdsV2Grid.vue",
+      "evidence": "latencies.s1_pos_to_kds_visible_ms = -1; attestation.order_id=123 PAID TAKEAWAY status=8",
+      "captured_at": "2026-05-28T17:13:12.218Z"
+    },
+    {
+      "severity": "P0",
+      "code": "CROSS-KDS-DELIVERY-VISIBILITY-FAIL",
+      "surface": "/kds",
+      "title": "KDS did not show seeded DELIVERY order GFCROSS-S2 within 15s",
+      "detail": "Order 125 order_type=5 (DELIVERY) PAID — KDS bodyText never contained marker. Same overflow root cause as S1, plus no phone column means even if visible the GDPR card would lack the phone.",
+      "file_ref": "app/Http/Controllers/admin/KitchenDisplaySystemController.php",
+      "evidence": "latencies.s2_kiosk_to_kds_visible_ms = -1; attestation.order_id=125 order_type=5 status=4",
+      "captured_at": "2026-05-28T17:14:10.875Z"
+    },
+    {
+      "severity": "P1",
+      "code": "CROSS-GDPR-KDS-PHONE-MISSING",
+      "surface": "/kds (DELIVERY card)",
+      "title": "KDS DELIVERY card did not surface phone 0600000001 — storage gap blocks GDPR test",
+      "detail": "Z9-P0-03 GDPR phone gate states: DELIVERY orders MUST surface customer phone on KDS cards (deliverer needs it). The marker phone was attempted on columns mobile_number, phone, delivery_address, order_meta — phone_stored_on_cols = [] (NONE matched). The order was created with order_type=5 DELIVERY but no column accepted the phone. Combined with CROSS-KDS-QUEUE-CAP-OVERFLOW the card was not even visible. Cannot assert GDPR rule until DATA-SCHEMA-PHONE-COLUMNS-MISSING is resolved.",
+      "file_ref": "resources/js/components/admin/kds/KdsOrderCard.vue + database/migrations/",
+      "evidence": "scenario2.phoneColumnsUsed=[]; kds_phone_visible_delivery=false",
+      "captured_at": "2026-05-28T17:14:10.889Z"
+    },
+    {
+      "severity": "P1",
+      "code": "CROSS-OSS-PRET-MISS-S1",
+      "surface": "/admin/order-status-screen",
+      "title": "S1 OSS PRÊT locator missed PA5B8 due to auth-bounce, not chain break",
+      "detail": "Asserted via 'role=region name=pret|ready' selector against PA5B8. Returned false. However in S2-04 capture (next test, fresh context, S1 order already PREPARED) the OSS DID render “N°PA5B8” in the right-side Prêt column. So the chain works — the S1 false negative is collateral damage from CROSS-OSS-AUTH-BOUNCE. Test resilience: re-arm auth on the OSS context before assertion.",
+      "file_ref": "tests/e2e/goal-functional-cross-2026-05-28.spec.js:583",
+      "evidence": "screenshots/S2-04-oss-delivery.png clearly shows “Prêt → N°PA5B8” on right column",
+      "captured_at": "2026-05-28T17:13:27.962Z"
+    },
+    {
+      "severity": "P1",
+      "code": "CROSS-OSS-DELIVERY-MISS-S2",
+      "surface": "/admin/order-status-screen",
+      "title": "OSS did not show seeded DELIVERY order GFCROSS-S2 in PRÉPARATION column",
+      "detail": "S2-04 capture shows OSS “En préparation” column with only A0001, A0002, A0078. Our DELIVERY order D156F (status=4 ACCEPT, not yet PREPARED) was not surfaced. Either OSS filters DELIVERY out of En préparation column (intentional? not documented), or the queue_number 'D156F' format does not match the OSS regex/contract.",
+      "file_ref": "resources/js/components/admin/order-status-screen/OrderStatusScreen.vue",
+      "evidence": "screenshots/S2-04-oss-delivery.png En préparation column lacks D156F",
+      "captured_at": "2026-05-28T17:14:18.176Z"
+    },
+    {
+      "severity": "P2",
+      "code": "CROSS-CONSOLE-401-FLOOD",
+      "surface": "/admin/* (all admin SPA routes during S1)",
+      "title": "21 console 401 Unauthorized errors in S1 during cross-context fanout",
+      "detail": "All 21 errors fired in a 1-second window 2026-05-28T17:13:23–24 immediately preceding the OSS auth bounce. Likely a barrage of /api/me or /api/preview/* fetches after Sanctum cookie partial-acceptance. Should be reproduced isolated and either (a) deduped client-side, or (b) fixed in middleware (return 200 with empty payload when partial-auth so SPA stays mounted).",
+      "file_ref": "resources/js/api/*.js + app/Http/Middleware/Authenticate.php",
+      "evidence": "capture-meta.json scenario1.consoleErrors[0..20]",
+      "captured_at": "2026-05-28T17:13:23.647Z"
+    }
+  ],
+  "attestations": {
+    "listener_guards_fired_correctly": {
+      "scenario_1_pos": {
+        "order_status_transitions": 2,
+        "domain_events": 2,
+        "wasRecentlyCreated_guard": "fired correctly — 2 transitions logged for 2 bump calls (ACCEPT→PREPARING + PREPARING→PREPARED), 2 domain_events rows for the same",
+        "verdict": "PASS"
+      },
+      "scenario_2_delivery": {
+        "order_status_transitions": 0,
+        "domain_events": 0,
+        "wasRecentlyCreated_guard": "not exercised — no bump was performed in S2; the order was checked at the post-create state only",
+        "verdict": "N/A"
+      }
+    },
+    "composition_summary_identity": {
+      "scenario_1_pos": "Menu (Frites + Boisson) + Frites Seules + Boisson Seule",
+      "scenario_2_delivery": "Menu (Frites + Boisson) + Frites Seules",
+      "ssot_principle": "DB-as-source-of-truth — OrderItem.composition_snapshot row is identical for every surface that reads it (KDS, OSS, Receipt, KDS history). No client-side mutation possible.",
+      "verdict": "PASS (DB-level)"
+    },
+    "broadcast_channel_contract": {
+      "expected": "private-branch.1 PrivateChannel for order events",
+      "observed": "channel events not directly subscribed in this spec; presence inferred via domain_events table (each row has 'channel' column for outbox routing). domain_events_count=2 confirms outbox path active.",
+      "verdict": "PASS by proxy (outbox-driven)"
+    },
+    "order_state_machine": {
+      "pos_order_path": "ACCEPT(4) → PREPARING(7) → PREPARED(8) via KitchenDisplaySystemOrderService::changeStatus",
+      "delivery_order_path": "ACCEPT(4) only (not bumped in this spec)",
+      "verdict": "PASS"
+    }
+  },
+  "p95_summary": {
+    "samples": 2,
+    "note": "p95 not statistically meaningful at n=2. Bump latency single-sample p95 ≈ 957ms (S1 transition #1) and 814ms (S1 transition #2). Seed-to-persist p95 ≈ 1011ms (S2). The chain is fast; the visibility bottleneck is the 31-card display cap, not network/DB.",
+    "recommended_p95_targets_when_n>=20": {
+      "pos_submit_to_kds_visible_ws": "<1000ms",
+      "pos_submit_to_kds_visible_polling_fallback": "<30000ms",
+      "kds_bump_to_oss_pret": "<3000ms",
+      "oss_pickup_to_remove": "<2000ms"
+    }
+  },
+  "actions_for_consolidation_wave": [
+    {
+      "priority": "P0",
+      "action": "Run `php artisan db:seed --class=LeCayenneMenuSeeder` to restore Sandwich Cayenne / Tacos / Bols / Big Cayenne catalogue before next E2E mass-run."
+    },
+    {
+      "priority": "P0",
+      "action": "Restore phone storage on orders table (audit which migration was rolled back; re-apply add_phone_to_orders or its modern equivalent add_delivery_address_to_orders)."
+    },
+    {
+      "priority": "P0",
+      "action": "Sweep stale KDS queue — 31 cards + 23 waiting = 54 backlog. Bump or pickup them all (`UPDATE orders SET deleted_at=NOW() WHERE branch_id=1 AND status IN (4,5,6,7,8) AND order_datetime < NOW() - INTERVAL 1 HOUR;` then `Cache::flush()`)."
+    },
+    {
+      "priority": "P0",
+      "action": "Audit OSS auth path — add a fresh /api/me ping on OSS mount; if 401, force re-login dialog instead of bouncing to /login. Or add a 'reuse session' guard in router."
+    },
+    {
+      "priority": "P1",
+      "action": "Re-arm cross-system spec with auth-resilient locators (poll page.url() before assert; if it lands on /login, re-call ensureAdmin(page) and retry once)."
+    },
+    {
+      "priority": "P1",
+      "action": "Document OSS En préparation column filter contract. Is DELIVERY excluded? If yes, document; if no, fix filter to surface DELIVERY orders."
+    }
+  ]
+}

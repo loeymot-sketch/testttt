@@ -1,0 +1,906 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=e12] [cursor=pointer]:
+            - generic [ref=e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=e14]:
+              - generic [ref=e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=e18]:
+          - button "flag" [ref=e20] [cursor=pointer]:
+            - img "flag" [ref=e21]
+          - link "POS" [ref=e22] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e23]: 
+      - button "Fermer" [ref=e24] [cursor=pointer]: 
+      - generic [ref=e25]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=e26] [cursor=pointer]:
+          - img "avatar" [ref=e27]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=e28]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=e29]
+          - generic [ref=e30]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=e31]:
+    - text: 
+    - navigation [ref=e32]:
+      - list [ref=e33]:
+        - listitem [ref=e34]:
+          - link " Tableau de bord" [ref=e35] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e36]: 
+            - generic [ref=e37]: Tableau de bord
+      - list [ref=e38]:
+        - listitem [ref=e39]:
+          - link " POS" [ref=e40] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e41]: 
+            - generic [ref=e42]: POS
+      - list [ref=e43]:
+        - listitem [ref=e44]:
+          - link "Produits & Stock" [ref=e45] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=e46]: Produits & Stock
+      - list [ref=e47]:
+        - listitem [ref=e48]:
+          - link " Catalogue" [ref=e49] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=e50]: 
+            - generic [ref=e51]: Catalogue
+        - listitem [ref=e52]:
+          - link " Attribut d’articles" [ref=e53] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=e54]: 
+            - generic [ref=e55]: Attribut d’articles
+      - list [ref=e56]:
+        - listitem [ref=e57]:
+          - link " Ingrédients" [ref=e58] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=e59]: 
+            - generic [ref=e60]: Ingrédients
+      - list [ref=e61]:
+        - listitem [ref=e62]:
+          - link " Commandes caisse" [ref=e63] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=e64]: 
+            - generic [ref=e65]: Commandes caisse
+      - list [ref=e66]:
+        - listitem [ref=e67]:
+          - link " Vue caisse unifiée" [ref=e68] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=e69]: 
+            - generic [ref=e70]: Vue caisse unifiée
+      - list [ref=e71]:
+        - listitem [ref=e72]:
+          - link " Caisse livreur" [ref=e73] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=e74]: 
+            - generic [ref=e75]: Caisse livreur
+      - list [ref=e76]:
+        - listitem [ref=e77]:
+          - button "Caisse et commandes" [ref=e78] [cursor=pointer]
+        - listitem [ref=e79]:
+          - link " Écran cuisine" [ref=e80] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=e81]: 
+            - generic [ref=e82]: Écran cuisine
+        - listitem [ref=e83]:
+          - link " Suivi client" [ref=e84] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=e85]: 
+            - generic [ref=e86]: Suivi client
+      - list [ref=e87]:
+        - listitem [ref=e88]:
+          - button "Communications" [ref=e89] [cursor=pointer]
+        - listitem [ref=e90]:
+          - link " Notification pushs" [ref=e91] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=e92]: 
+            - generic [ref=e93]: Notification pushs
+        - listitem [ref=e94]:
+          - link " Messages" [ref=e95] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=e96]: 
+            - generic [ref=e97]: Messages
+        - listitem [ref=e98]:
+          - link " Abonnés" [ref=e99] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=e100]: 
+            - generic [ref=e101]: Abonnés
+      - list [ref=e102]:
+        - listitem [ref=e103]:
+          - button "Utilisateurs" [ref=e104] [cursor=pointer]
+        - listitem [ref=e105]:
+          - link " Administrateurs" [ref=e106] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=e107]: 
+            - generic [ref=e108]: Administrateurs
+        - listitem [ref=e109]:
+          - link " Employés" [ref=e110] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=e111]: 
+            - generic [ref=e112]: Employés
+        - listitem [ref=e113]:
+          - link " Chefs" [ref=e114] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=e115]: 
+            - generic [ref=e116]: Chefs
+      - list [ref=e117]:
+        - listitem [ref=e118]:
+          - button "Comptes" [ref=e119] [cursor=pointer]
+        - listitem [ref=e120]:
+          - link " Transactions" [ref=e121] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=e122]: 
+            - generic [ref=e123]: Transactions
+      - list [ref=e124]:
+        - listitem [ref=e125]:
+          - button "Rapports" [ref=e126] [cursor=pointer]
+        - listitem [ref=e127]:
+          - link " Rapport des ventes" [ref=e128] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=e129]: 
+            - generic [ref=e130]: Rapport des ventes
+        - listitem [ref=e131]:
+          - link " Rapport articles" [ref=e132] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=e133]: 
+            - generic [ref=e134]: Rapport articles
+      - list [ref=e135]:
+        - listitem [ref=e136]:
+          - button "Configuration" [ref=e137] [cursor=pointer]
+        - listitem [ref=e138]:
+          - link " Paramètres" [ref=e139] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=e140]: 
+            - generic [ref=e141]: Paramètres
+  - generic [ref=e142]:
+    - generic [ref=e143]:
+      - heading "Bon après-midi !" [level=3] [ref=e144]
+      - heading "Admin Le Cayenne" [level=4] [ref=e145]
+    - button "PDF Clôture du jour" [ref=e146] [cursor=pointer]:
+      - generic [ref=e147]: 
+      - generic [ref=e148]: PDF Clôture du jour
+  - navigation "Accès rapides" [ref=e149]:
+    - heading "Accès rapides" [level=3] [ref=e150]
+    - generic [ref=e151]:
+      - link "POS" [ref=e152] [cursor=pointer]:
+        - /url: /admin/pos
+        - generic [ref=e153]: 
+        - generic [ref=e154]: POS
+      - link "Commandes caisse" [ref=e155] [cursor=pointer]:
+        - /url: /admin/pos-orders
+        - generic [ref=e156]: 
+        - generic [ref=e157]: Commandes caisse
+      - link "Suivi caisse (kanban)" [ref=e158] [cursor=pointer]:
+        - /url: /admin/pos-orders-tracker
+        - generic [ref=e159]: 
+        - generic [ref=e160]: Suivi caisse (kanban)
+      - link "Écran cuisine" [ref=e161] [cursor=pointer]:
+        - /url: /admin/kitchen-display-system
+        - generic [ref=e162]: 
+        - generic [ref=e163]: Écran cuisine
+      - link "Suivi client" [ref=e164] [cursor=pointer]:
+        - /url: /admin/order-status-screen
+        - generic [ref=e165]: 
+        - generic [ref=e166]: Suivi client
+      - link "Catalogue" [ref=e167] [cursor=pointer]:
+        - /url: /admin/items/studio
+        - generic [ref=e168]: 
+        - generic [ref=e169]: Catalogue
+      - link "Ingrédients" [ref=e170] [cursor=pointer]:
+        - /url: /admin/ingredients
+        - generic [ref=e171]: 
+        - generic [ref=e172]: Ingrédients
+      - link "Produits & Stock" [ref=e173] [cursor=pointer]:
+        - /url: /admin/stock/rupture
+        - generic [ref=e174]: Produits & Stock
+      - link "Rapport caisses quotidien" [ref=e175] [cursor=pointer]:
+        - /url: /admin/cash-sessions-report
+        - generic [ref=e176]: 
+        - generic [ref=e177]: Rapport caisses quotidien
+      - link "Vue caisse unifiée" [ref=e178] [cursor=pointer]:
+        - /url: /admin/cash-overview
+        - generic [ref=e179]: 
+        - generic [ref=e180]: Vue caisse unifiée
+  - generic [ref=e187]:
+    - heading "Vue d’ensemble" [level=4] [ref=e188]
+    - generic [ref=e189]:
+      - generic [ref=e191]:
+        - generic [ref=e193]: 
+        - generic [ref=e194]:
+          - heading "Total ventes" [level=3] [ref=e195]
+          - heading "4,00 €" [level=4] [ref=e196]
+      - generic [ref=e198]:
+        - generic [ref=e200]: 
+        - generic [ref=e201]:
+          - heading "Total commandes" [level=3] [ref=e202]
+          - heading "0" [level=4] [ref=e203]
+      - generic [ref=e205]:
+        - generic [ref=e207]: 
+        - generic [ref=e208]:
+          - heading "Total articles menu" [level=3] [ref=e209]
+          - heading "11" [level=4] [ref=e210]
+  - generic [ref=e211]:
+    - heading "Suivi en direct" [level=4] [ref=e212]
+    - generic [ref=e213]:
+      - generic [ref=e215]:
+        - heading "Chiffre d'Affaires du Jour" [level=3] [ref=e216]
+        - heading "4,00 €" [level=4] [ref=e217]
+      - generic [ref=e219]:
+        - heading "Commandes du Jour" [level=3] [ref=e220]
+        - heading "2" [level=4] [ref=e221]
+      - generic [ref=e223]:
+        - heading "Ticket Moyen" [level=3] [ref=e224]
+        - heading "2,00 €" [level=4] [ref=e225]
+  - generic [ref=e226]:
+    - generic [ref=e228]:
+      - generic [ref=e229]:
+        - heading "Alertes SLA (Cuisine > 15min)" [level=4] [ref=e230]: Alertes SLA (Cuisine > 15min)
+        - generic [ref=e234]: 2 Alerte(s)
+      - generic [ref=e235]:
+        - generic [ref=e237]:
+          - 'heading "Ticket #A0001 (2805266)" [level=5] [ref=e238]'
+          - paragraph [ref=e239]: En attente depuis 19 minutes
+        - generic [ref=e242]:
+          - 'heading "Ticket #A0002 (2805267)" [level=5] [ref=e243]'
+          - paragraph [ref=e244]: En attente depuis 16 minutes
+    - generic [ref=e247]:
+      - heading "Répartition par Canal (Aujourd'hui)" [level=4] [ref=e248]
+      - generic [ref=e249]:
+        - generic [ref=e251]:
+          - generic [ref=e252]: Web
+          - generic [ref=e253]: 0%
+        - generic [ref=e256]:
+          - generic [ref=e257]: Kiosk/App
+          - generic [ref=e258]: 100%
+        - generic [ref=e262]:
+          - generic [ref=e263]: POS
+          - generic [ref=e264]: 0%
+  - generic [ref=e267]:
+    - heading "Audit Trail NF525 (Journal Inviolable)" [level=4] [ref=e268]: Audit Trail NF525 (Journal Inviolable)
+    - paragraph [ref=e269]:
+      - text: "Source :"
+      - code [ref=e270]: audit_logs
+      - text: (INSERT-only, HMAC SHA-256 chain-signed). Le préfixe de hash atteste l'intégrité de la chaîne.
+    - table [ref=e272]:
+      - rowgroup [ref=e273]:
+        - row "Utilisateur Action Ressource Hash Temps" [ref=e274]:
+          - columnheader "Utilisateur" [ref=e275]
+          - columnheader "Action" [ref=e276]
+          - columnheader "Ressource" [ref=e277]
+          - columnheader "Hash" [ref=e278]
+          - columnheader "Temps" [ref=e279]
+      - rowgroup [ref=e280]:
+        - row "Admin Le Cayenne cash.session.reconciled cash_drawer_session#6 89d6fb19 il y a 9 minutes" [ref=e281]:
+          - cell "Admin Le Cayenne" [ref=e282]
+          - cell "cash.session.reconciled" [ref=e283]:
+            - generic [ref=e284]: cash.session.reconciled
+          - cell "cash_drawer_session#6" [ref=e285]
+          - cell "89d6fb19" [ref=e286]:
+            - code [ref=e287]: 89d6fb19
+          - cell "il y a 9 minutes" [ref=e288]
+        - row "Admin Le Cayenne cash.session.closed cash_drawer_session#6 89a74045 il y a 9 minutes" [ref=e289]:
+          - cell "Admin Le Cayenne" [ref=e290]
+          - cell "cash.session.closed" [ref=e291]:
+            - generic [ref=e292]: cash.session.closed
+          - cell "cash_drawer_session#6" [ref=e293]
+          - cell "89a74045" [ref=e294]:
+            - code [ref=e295]: 89a74045
+          - cell "il y a 9 minutes" [ref=e296]
+        - row "Admin Le Cayenne cash.session.opened cash_drawer_session#6 6bb50ded il y a 10 minutes" [ref=e297]:
+          - cell "Admin Le Cayenne" [ref=e298]
+          - cell "cash.session.opened" [ref=e299]:
+            - generic [ref=e300]: cash.session.opened
+          - cell "cash_drawer_session#6" [ref=e301]
+          - cell "6bb50ded" [ref=e302]:
+            - code [ref=e303]: 6bb50ded
+          - cell "il y a 10 minutes" [ref=e304]
+        - row "Admin Le Cayenne cash.session.reconciled cash_drawer_session#5 b304aaf0 il y a 10 minutes" [ref=e305]:
+          - cell "Admin Le Cayenne" [ref=e306]
+          - cell "cash.session.reconciled" [ref=e307]:
+            - generic [ref=e308]: cash.session.reconciled
+          - cell "cash_drawer_session#5" [ref=e309]
+          - cell "b304aaf0" [ref=e310]:
+            - code [ref=e311]: b304aaf0
+          - cell "il y a 10 minutes" [ref=e312]
+        - row "Admin Le Cayenne cash.session.closed cash_drawer_session#5 2683a6a9 il y a 10 minutes" [ref=e313]:
+          - cell "Admin Le Cayenne" [ref=e314]
+          - cell "cash.session.closed" [ref=e315]:
+            - generic [ref=e316]: cash.session.closed
+          - cell "cash_drawer_session#5" [ref=e317]
+          - cell "2683a6a9" [ref=e318]:
+            - code [ref=e319]: 2683a6a9
+          - cell "il y a 10 minutes" [ref=e320]
+        - row "Caissier Le Cayenne cash.movement.recorded cash_drawer_session#4 59543846 il y a 16 minutes" [ref=e321]:
+          - cell "Caissier Le Cayenne" [ref=e322]
+          - cell "cash.movement.recorded" [ref=e323]:
+            - generic [ref=e324]: cash.movement.recorded
+          - cell "cash_drawer_session#4" [ref=e325]
+          - cell "59543846" [ref=e326]:
+            - code [ref=e327]: "59543846"
+          - cell "il y a 16 minutes" [ref=e328]
+        - row "Caissier Le Cayenne order.created.pos order#7 977e378e il y a 16 minutes" [ref=e329]:
+          - cell "Caissier Le Cayenne" [ref=e330]
+          - cell "order.created.pos" [ref=e331]:
+            - generic [ref=e332]: order.created.pos
+          - cell "order#7" [ref=e333]
+          - cell "977e378e" [ref=e334]:
+            - code [ref=e335]: 977e378e
+          - cell "il y a 16 minutes" [ref=e336]
+        - row "Caissier Le Cayenne user.login user#3 e16c4957 il y a 16 minutes" [ref=e337]:
+          - cell "Caissier Le Cayenne" [ref=e338]
+          - cell "user.login" [ref=e339]:
+            - generic [ref=e340]: user.login
+          - cell "user#3" [ref=e341]
+          - cell "e16c4957" [ref=e342]:
+            - code [ref=e343]: e16c4957
+          - cell "il y a 16 minutes" [ref=e344]
+        - row "Admin Le Cayenne cash.session.opened cash_drawer_session#5 0311409e il y a 17 minutes" [ref=e345]:
+          - cell "Admin Le Cayenne" [ref=e346]
+          - cell "cash.session.opened" [ref=e347]:
+            - generic [ref=e348]: cash.session.opened
+          - cell "cash_drawer_session#5" [ref=e349]
+          - cell "0311409e" [ref=e350]:
+            - code [ref=e351]: 0311409e
+          - cell "il y a 17 minutes" [ref=e352]
+        - row "Caissier Le Cayenne user.login user#3 4c71d1cc il y a 17 minutes" [ref=e353]:
+          - cell "Caissier Le Cayenne" [ref=e354]
+          - cell "user.login" [ref=e355]:
+            - generic [ref=e356]: user.login
+          - cell "user#3" [ref=e357]
+          - cell "4c71d1cc" [ref=e358]:
+            - code [ref=e359]: 4c71d1cc
+          - cell "il y a 17 minutes" [ref=e360]
+        - row "Caissier Le Cayenne cash.session.opened cash_drawer_session#4 7feb3eb0 il y a 17 minutes" [ref=e361]:
+          - cell "Caissier Le Cayenne" [ref=e362]
+          - cell "cash.session.opened" [ref=e363]:
+            - generic [ref=e364]: cash.session.opened
+          - cell "cash_drawer_session#4" [ref=e365]
+          - cell "7feb3eb0" [ref=e366]:
+            - code [ref=e367]: 7feb3eb0
+          - cell "il y a 17 minutes" [ref=e368]
+        - row "Caissier Le Cayenne user.login user#3 9276fdcf il y a 17 minutes" [ref=e369]:
+          - cell "Caissier Le Cayenne" [ref=e370]
+          - cell "user.login" [ref=e371]:
+            - generic [ref=e372]: user.login
+          - cell "user#3" [ref=e373]
+          - cell "9276fdcf" [ref=e374]:
+            - code [ref=e375]: 9276fdcf
+          - cell "il y a 17 minutes" [ref=e376]
+        - row "Caissier Le Cayenne user.login user#3 7a16b5e6 il y a 18 minutes" [ref=e377]:
+          - cell "Caissier Le Cayenne" [ref=e378]
+          - cell "user.login" [ref=e379]:
+            - generic [ref=e380]: user.login
+          - cell "user#3" [ref=e381]
+          - cell "7a16b5e6" [ref=e382]:
+            - code [ref=e383]: 7a16b5e6
+          - cell "il y a 18 minutes" [ref=e384]
+        - row "Admin Le Cayenne user.login user#1 0fe7f6fe il y a 18 minutes" [ref=e385]:
+          - cell "Admin Le Cayenne" [ref=e386]
+          - cell "user.login" [ref=e387]:
+            - generic [ref=e388]: user.login
+          - cell "user#1" [ref=e389]
+          - cell "0fe7f6fe" [ref=e390]:
+            - code [ref=e391]: 0fe7f6fe
+          - cell "il y a 18 minutes" [ref=e392]
+        - row "Admin Le Cayenne user.login user#1 ba4e859f il y a 18 minutes" [ref=e393]:
+          - cell "Admin Le Cayenne" [ref=e394]
+          - cell "user.login" [ref=e395]:
+            - generic [ref=e396]: user.login
+          - cell "user#1" [ref=e397]
+          - cell "ba4e859f" [ref=e398]:
+            - code [ref=e399]: ba4e859f
+          - cell "il y a 18 minutes" [ref=e400]
+        - row "Caissier Le Cayenne order.created.pos order#6 aedcfd29 il y a 19 minutes" [ref=e401]:
+          - cell "Caissier Le Cayenne" [ref=e402]
+          - cell "order.created.pos" [ref=e403]:
+            - generic [ref=e404]: order.created.pos
+          - cell "order#6" [ref=e405]
+          - cell "aedcfd29" [ref=e406]:
+            - code [ref=e407]: aedcfd29
+          - cell "il y a 19 minutes" [ref=e408]
+        - row "Caissier Le Cayenne user.login user#3 0b920965 il y a 19 minutes" [ref=e409]:
+          - cell "Caissier Le Cayenne" [ref=e410]
+          - cell "user.login" [ref=e411]:
+            - generic [ref=e412]: user.login
+          - cell "user#3" [ref=e413]
+          - cell "0b920965" [ref=e414]:
+            - code [ref=e415]: 0b920965
+          - cell "il y a 19 minutes" [ref=e416]
+        - row "Caissier Le Cayenne user.login user#3 b536d6fa il y a 19 minutes" [ref=e417]:
+          - cell "Caissier Le Cayenne" [ref=e418]
+          - cell "user.login" [ref=e419]:
+            - generic [ref=e420]: user.login
+          - cell "user#3" [ref=e421]
+          - cell "b536d6fa" [ref=e422]:
+            - code [ref=e423]: b536d6fa
+          - cell "il y a 19 minutes" [ref=e424]
+        - row "Caissier Le Cayenne user.login user#3 62d03ec1 il y a 20 minutes" [ref=e425]:
+          - cell "Caissier Le Cayenne" [ref=e426]
+          - cell "user.login" [ref=e427]:
+            - generic [ref=e428]: user.login
+          - cell "user#3" [ref=e429]
+          - cell "62d03ec1" [ref=e430]:
+            - code [ref=e431]: 62d03ec1
+          - cell "il y a 20 minutes" [ref=e432]
+        - row "Caissier Le Cayenne user.login user#3 37b386d9 il y a 20 minutes" [ref=e433]:
+          - cell "Caissier Le Cayenne" [ref=e434]
+          - cell "user.login" [ref=e435]:
+            - generic [ref=e436]: user.login
+          - cell "user#3" [ref=e437]
+          - cell "37b386d9" [ref=e438]:
+            - code [ref=e439]: 37b386d9
+          - cell "il y a 20 minutes" [ref=e440]
+        - row "Caissier Le Cayenne user.login user#3 860704ac il y a 20 minutes" [ref=e441]:
+          - cell "Caissier Le Cayenne" [ref=e442]
+          - cell "user.login" [ref=e443]:
+            - generic [ref=e444]: user.login
+          - cell "user#3" [ref=e445]
+          - cell "860704ac" [ref=e446]:
+            - code [ref=e447]: 860704ac
+          - cell "il y a 20 minutes" [ref=e448]
+        - row "Admin Le Cayenne user.login user#1 f8781518 il y a 21 minutes" [ref=e449]:
+          - cell "Admin Le Cayenne" [ref=e450]
+          - cell "user.login" [ref=e451]:
+            - generic [ref=e452]: user.login
+          - cell "user#1" [ref=e453]
+          - cell "f8781518" [ref=e454]:
+            - code [ref=e455]: f8781518
+          - cell "il y a 21 minutes" [ref=e456]
+        - row "Caissier Le Cayenne user.login user#3 fd008ed2 il y a 21 minutes" [ref=e457]:
+          - cell "Caissier Le Cayenne" [ref=e458]
+          - cell "user.login" [ref=e459]:
+            - generic [ref=e460]: user.login
+          - cell "user#3" [ref=e461]
+          - cell "fd008ed2" [ref=e462]:
+            - code [ref=e463]: fd008ed2
+          - cell "il y a 21 minutes" [ref=e464]
+        - row "Admin Le Cayenne user.login user#1 421a8ef2 il y a 22 minutes" [ref=e465]:
+          - cell "Admin Le Cayenne" [ref=e466]
+          - cell "user.login" [ref=e467]:
+            - generic [ref=e468]: user.login
+          - cell "user#1" [ref=e469]
+          - cell "421a8ef2" [ref=e470]:
+            - code [ref=e471]: 421a8ef2
+          - cell "il y a 22 minutes" [ref=e472]
+        - row "Admin Le Cayenne user.login user#1 0e011af1 il y a 22 minutes" [ref=e473]:
+          - cell "Admin Le Cayenne" [ref=e474]
+          - cell "user.login" [ref=e475]:
+            - generic [ref=e476]: user.login
+          - cell "user#1" [ref=e477]
+          - cell "0e011af1" [ref=e478]:
+            - code [ref=e479]: 0e011af1
+          - cell "il y a 22 minutes" [ref=e480]
+        - row "Admin Le Cayenne user.login user#1 b3d50727 il y a 23 minutes" [ref=e481]:
+          - cell "Admin Le Cayenne" [ref=e482]
+          - cell "user.login" [ref=e483]:
+            - generic [ref=e484]: user.login
+          - cell "user#1" [ref=e485]
+          - cell "b3d50727" [ref=e486]:
+            - code [ref=e487]: b3d50727
+          - cell "il y a 23 minutes" [ref=e488]
+        - row "Admin Le Cayenne user.login user#1 e7f1cfe1 il y a 23 minutes" [ref=e489]:
+          - cell "Admin Le Cayenne" [ref=e490]
+          - cell "user.login" [ref=e491]:
+            - generic [ref=e492]: user.login
+          - cell "user#1" [ref=e493]
+          - cell "e7f1cfe1" [ref=e494]:
+            - code [ref=e495]: e7f1cfe1
+          - cell "il y a 23 minutes" [ref=e496]
+        - row "Admin Le Cayenne user.login user#1 fd06465e il y a 26 minutes" [ref=e497]:
+          - cell "Admin Le Cayenne" [ref=e498]
+          - cell "user.login" [ref=e499]:
+            - generic [ref=e500]: user.login
+          - cell "user#1" [ref=e501]
+          - cell "fd06465e" [ref=e502]:
+            - code [ref=e503]: fd06465e
+          - cell "il y a 26 minutes" [ref=e504]
+        - row "Admin Le Cayenne user.login user#1 14ea99eb il y a 1 heure" [ref=e505]:
+          - cell "Admin Le Cayenne" [ref=e506]
+          - cell "user.login" [ref=e507]:
+            - generic [ref=e508]: user.login
+          - cell "user#1" [ref=e509]
+          - cell "14ea99eb" [ref=e510]:
+            - code [ref=e511]: 14ea99eb
+          - cell "il y a 1 heure" [ref=e512]
+        - row "Admin Le Cayenne cash.session.reconciled cash_drawer_session#3 c98e7cb9 il y a 1 heure" [ref=e513]:
+          - cell "Admin Le Cayenne" [ref=e514]
+          - cell "cash.session.reconciled" [ref=e515]:
+            - generic [ref=e516]: cash.session.reconciled
+          - cell "cash_drawer_session#3" [ref=e517]
+          - cell "c98e7cb9" [ref=e518]:
+            - code [ref=e519]: c98e7cb9
+          - cell "il y a 1 heure" [ref=e520]
+        - row "Admin Le Cayenne cash.session.closed cash_drawer_session#3 e4371ad5 il y a 1 heure" [ref=e521]:
+          - cell "Admin Le Cayenne" [ref=e522]
+          - cell "cash.session.closed" [ref=e523]:
+            - generic [ref=e524]: cash.session.closed
+          - cell "cash_drawer_session#3" [ref=e525]
+          - cell "e4371ad5" [ref=e526]:
+            - code [ref=e527]: e4371ad5
+          - cell "il y a 1 heure" [ref=e528]
+        - row "Admin Le Cayenne cash.session.opened cash_drawer_session#3 5abf4138 il y a 1 heure" [ref=e529]:
+          - cell "Admin Le Cayenne" [ref=e530]
+          - cell "cash.session.opened" [ref=e531]:
+            - generic [ref=e532]: cash.session.opened
+          - cell "cash_drawer_session#3" [ref=e533]
+          - cell "5abf4138" [ref=e534]:
+            - code [ref=e535]: 5abf4138
+          - cell "il y a 1 heure" [ref=e536]
+        - row "Admin Le Cayenne user.login user#1 d645a88e il y a 1 heure" [ref=e537]:
+          - cell "Admin Le Cayenne" [ref=e538]
+          - cell "user.login" [ref=e539]:
+            - generic [ref=e540]: user.login
+          - cell "user#1" [ref=e541]
+          - cell "d645a88e" [ref=e542]:
+            - code [ref=e543]: d645a88e
+          - cell "il y a 1 heure" [ref=e544]
+        - row "Admin Le Cayenne user.login user#1 da4b2ab1 il y a 1 heure" [ref=e545]:
+          - cell "Admin Le Cayenne" [ref=e546]
+          - cell "user.login" [ref=e547]:
+            - generic [ref=e548]: user.login
+          - cell "user#1" [ref=e549]
+          - cell "da4b2ab1" [ref=e550]:
+            - code [ref=e551]: da4b2ab1
+          - cell "il y a 1 heure" [ref=e552]
+        - row "Admin Le Cayenne cash.session.reconciled cash_drawer_session#2 06197ded il y a 1 heure" [ref=e553]:
+          - cell "Admin Le Cayenne" [ref=e554]
+          - cell "cash.session.reconciled" [ref=e555]:
+            - generic [ref=e556]: cash.session.reconciled
+          - cell "cash_drawer_session#2" [ref=e557]
+          - cell "06197ded" [ref=e558]:
+            - code [ref=e559]: 06197ded
+          - cell "il y a 1 heure" [ref=e560]
+        - row "Admin Le Cayenne cash.session.closed cash_drawer_session#2 732da87d il y a 1 heure" [ref=e561]:
+          - cell "Admin Le Cayenne" [ref=e562]
+          - cell "cash.session.closed" [ref=e563]:
+            - generic [ref=e564]: cash.session.closed
+          - cell "cash_drawer_session#2" [ref=e565]
+          - cell "732da87d" [ref=e566]:
+            - code [ref=e567]: 732da87d
+          - cell "il y a 1 heure" [ref=e568]
+        - row "Admin Le Cayenne cash.session.opened cash_drawer_session#2 fce3796b il y a 1 heure" [ref=e569]:
+          - cell "Admin Le Cayenne" [ref=e570]
+          - cell "cash.session.opened" [ref=e571]:
+            - generic [ref=e572]: cash.session.opened
+          - cell "cash_drawer_session#2" [ref=e573]
+          - cell "fce3796b" [ref=e574]:
+            - code [ref=e575]: fce3796b
+          - cell "il y a 1 heure" [ref=e576]
+        - row "Admin Le Cayenne user.login user#1 04228e6c il y a 1 heure" [ref=e577]:
+          - cell "Admin Le Cayenne" [ref=e578]
+          - cell "user.login" [ref=e579]:
+            - generic [ref=e580]: user.login
+          - cell "user#1" [ref=e581]
+          - cell "04228e6c" [ref=e582]:
+            - code [ref=e583]: 04228e6c
+          - cell "il y a 1 heure" [ref=e584]
+        - row "Admin Le Cayenne cash.session.reconciled cash_drawer_session#1 be5ebfb5 il y a 1 heure" [ref=e585]:
+          - cell "Admin Le Cayenne" [ref=e586]
+          - cell "cash.session.reconciled" [ref=e587]:
+            - generic [ref=e588]: cash.session.reconciled
+          - cell "cash_drawer_session#1" [ref=e589]
+          - cell "be5ebfb5" [ref=e590]:
+            - code [ref=e591]: be5ebfb5
+          - cell "il y a 1 heure" [ref=e592]
+        - row "Admin Le Cayenne cash.session.closed cash_drawer_session#1 83f02f5e il y a 1 heure" [ref=e593]:
+          - cell "Admin Le Cayenne" [ref=e594]
+          - cell "cash.session.closed" [ref=e595]:
+            - generic [ref=e596]: cash.session.closed
+          - cell "cash_drawer_session#1" [ref=e597]
+          - cell "83f02f5e" [ref=e598]:
+            - code [ref=e599]: 83f02f5e
+          - cell "il y a 1 heure" [ref=e600]
+        - row "Admin Le Cayenne user.login user#1 bfff3c2e il y a 1 heure" [ref=e601]:
+          - cell "Admin Le Cayenne" [ref=e602]
+          - cell "user.login" [ref=e603]:
+            - generic [ref=e604]: user.login
+          - cell "user#1" [ref=e605]
+          - cell "bfff3c2e" [ref=e606]:
+            - code [ref=e607]: bfff3c2e
+          - cell "il y a 1 heure" [ref=e608]
+        - row "Admin Le Cayenne user.login user#1 0ab64536 il y a 1 heure" [ref=e609]:
+          - cell "Admin Le Cayenne" [ref=e610]
+          - cell "user.login" [ref=e611]:
+            - generic [ref=e612]: user.login
+          - cell "user#1" [ref=e613]
+          - cell "0ab64536" [ref=e614]:
+            - code [ref=e615]: 0ab64536
+          - cell "il y a 1 heure" [ref=e616]
+        - row "Admin Le Cayenne user.login user#1 05bd1aa7 il y a 1 heure" [ref=e617]:
+          - cell "Admin Le Cayenne" [ref=e618]
+          - cell "user.login" [ref=e619]:
+            - generic [ref=e620]: user.login
+          - cell "user#1" [ref=e621]
+          - cell "05bd1aa7" [ref=e622]:
+            - code [ref=e623]: 05bd1aa7
+          - cell "il y a 1 heure" [ref=e624]
+        - row "Admin Le Cayenne user.login user#1 7d83c597 il y a 2 heures" [ref=e625]:
+          - cell "Admin Le Cayenne" [ref=e626]
+          - cell "user.login" [ref=e627]:
+            - generic [ref=e628]: user.login
+          - cell "user#1" [ref=e629]
+          - cell "7d83c597" [ref=e630]:
+            - code [ref=e631]: 7d83c597
+          - cell "il y a 2 heures" [ref=e632]
+        - row "Admin Le Cayenne cash.session.opened cash_drawer_session#1 2ddb5cb6 il y a 2 heures" [ref=e633]:
+          - cell "Admin Le Cayenne" [ref=e634]
+          - cell "cash.session.opened" [ref=e635]:
+            - generic [ref=e636]: cash.session.opened
+          - cell "cash_drawer_session#1" [ref=e637]
+          - cell "2ddb5cb6" [ref=e638]:
+            - code [ref=e639]: 2ddb5cb6
+          - cell "il y a 2 heures" [ref=e640]
+        - row "Admin Le Cayenne user.login user#1 0df5995c il y a 2 heures" [ref=e641]:
+          - cell "Admin Le Cayenne" [ref=e642]
+          - cell "user.login" [ref=e643]:
+            - generic [ref=e644]: user.login
+          - cell "user#1" [ref=e645]
+          - cell "0df5995c" [ref=e646]:
+            - code [ref=e647]: 0df5995c
+          - cell "il y a 2 heures" [ref=e648]
+        - row "Admin Le Cayenne user.login user#1 57f382a3 il y a 2 heures" [ref=e649]:
+          - cell "Admin Le Cayenne" [ref=e650]
+          - cell "user.login" [ref=e651]:
+            - generic [ref=e652]: user.login
+          - cell "user#1" [ref=e653]
+          - cell "57f382a3" [ref=e654]:
+            - code [ref=e655]: 57f382a3
+          - cell "il y a 2 heures" [ref=e656]
+        - row "Admin Le Cayenne user.login user#1 c1fa32dd il y a 3 heures" [ref=e657]:
+          - cell "Admin Le Cayenne" [ref=e658]
+          - cell "user.login" [ref=e659]:
+            - generic [ref=e660]: user.login
+          - cell "user#1" [ref=e661]
+          - cell "c1fa32dd" [ref=e662]:
+            - code [ref=e663]: c1fa32dd
+          - cell "il y a 3 heures" [ref=e664]
+  - generic [ref=e671]:
+    - heading "Statistiques des commandes" [level=4] [ref=e672]
+    - generic [ref=e673] [cursor=pointer]:
+      - generic [ref=e674]: Date
+      - textbox "Date" [ref=e676]:
+        - generic [ref=e677]:
+          - textbox "Date" [ref=e678]:
+            - /placeholder: ""
+            - text: 05/28/2026 - 05/28/2026
+          - img [ref=e679]
+  - generic [ref=e682]:
+    - generic [ref=e684]:
+      - generic [ref=e686]: 
+      - generic [ref=e687]:
+        - heading "Total commandes" [level=3] [ref=e688]
+        - heading "2" [level=4] [ref=e689]
+    - generic [ref=e691]:
+      - generic [ref=e693]: 
+      - generic [ref=e694]:
+        - heading "En attente" [level=3] [ref=e695]
+        - heading "0" [level=4] [ref=e696]
+    - generic [ref=e698]:
+      - generic [ref=e700]: 
+      - generic [ref=e701]:
+        - heading "Accepter" [level=3] [ref=e702]
+        - heading "0" [level=4] [ref=e703]
+    - generic [ref=e705]:
+      - generic [ref=e707]: 
+      - generic [ref=e708]:
+        - heading "En préparation" [level=3] [ref=e709]
+        - heading "2" [level=4] [ref=e710]
+    - generic [ref=e712]:
+      - generic [ref=e714]: 
+      - generic [ref=e715]:
+        - heading "Préparée" [level=3] [ref=e716]
+        - heading "0" [level=4] [ref=e717]
+    - generic [ref=e719]:
+      - generic [ref=e721]: 
+      - generic [ref=e722]:
+        - heading "En livraison" [level=3] [ref=e723]
+        - heading "0" [level=4] [ref=e724]
+    - generic [ref=e726]:
+      - generic [ref=e728]: 
+      - generic [ref=e729]:
+        - heading "Livré" [level=3] [ref=e730]
+        - heading "0" [level=4] [ref=e731]
+    - generic [ref=e733]:
+      - generic [ref=e735]: 
+      - generic [ref=e736]:
+        - heading "Annulé" [level=3] [ref=e737]
+        - heading "0" [level=4] [ref=e738]
+    - generic [ref=e740]:
+      - generic [ref=e742]: 
+      - generic [ref=e743]:
+        - heading "Retournée" [level=3] [ref=e744]
+        - heading "0" [level=4] [ref=e745]
+    - generic [ref=e747]:
+      - generic [ref=e749]: 
+      - generic [ref=e750]:
+        - heading "Refusée" [level=3] [ref=e751]
+        - heading "0" [level=4] [ref=e752]
+  - generic [ref=e753]:
+    - generic [ref=e761]:
+      - generic [ref=e762]:
+        - heading "Résumé des ventes" [level=3] [ref=e763]
+        - generic [ref=e764] [cursor=pointer]:
+          - generic [ref=e765]: Date
+          - textbox "Date" [ref=e767]:
+            - generic [ref=e768]:
+              - textbox "Date" [ref=e769]:
+                - /placeholder: ""
+                - text: 05/01/2026 - 05/31/2026
+              - img [ref=e770]
+          - generic [ref=e773]: 
+      - generic [ref=e774]:
+        - list [ref=e775]:
+          - listitem [ref=e776]:
+            - generic [ref=e777]:
+              - generic [ref=e778]: 
+              - heading "4,00 €" [level=3] [ref=e779]
+            - paragraph [ref=e780]: Total ventes
+          - listitem [ref=e781]:
+            - generic [ref=e782]:
+              - generic [ref=e783]: 
+              - heading "0,13 €" [level=3] [ref=e784]
+            - paragraph [ref=e785]: Ventes moyennes par jour
+        - generic [ref=e787]:
+          - img [ref=e788]:
+            - generic [ref=e795]:
+              - generic "1" [ref=e796]
+              - generic "2" [ref=e797]
+              - generic "3" [ref=e798]
+              - generic "4" [ref=e799]
+              - generic "5" [ref=e800]
+              - generic "6" [ref=e801]
+              - generic "7" [ref=e802]
+              - generic "8" [ref=e803]
+              - generic "9" [ref=e804]
+              - generic "10" [ref=e805]
+              - generic "11" [ref=e806]
+              - generic "12" [ref=e807]
+              - generic "13" [ref=e808]
+              - generic "14" [ref=e809]
+              - generic "15" [ref=e810]
+              - generic "16" [ref=e811]
+              - generic "17" [ref=e812]
+              - generic "18" [ref=e813]
+              - generic "19" [ref=e814]
+              - generic "20" [ref=e815]
+              - generic "21" [ref=e816]
+              - generic "22" [ref=e817]
+              - generic "23" [ref=e818]
+              - generic "24" [ref=e819]
+              - generic "25" [ref=e820]
+              - generic "26" [ref=e821]
+              - generic "27" [ref=e822]
+              - generic "28" [ref=e823]
+              - generic "29" [ref=e824]
+              - generic "30" [ref=e825]
+              - generic "31" [ref=e826]
+          - generic: ●
+    - generic [ref=e834]:
+      - generic [ref=e835]:
+        - heading "Résumé des commandes" [level=3] [ref=e836]
+        - generic [ref=e837] [cursor=pointer]:
+          - generic [ref=e838]: Date
+          - textbox "Date" [ref=e840]:
+            - generic [ref=e841]:
+              - textbox "Date" [ref=e842]:
+                - /placeholder: ""
+                - text: 05/01/2026 - 05/31/2026
+              - img [ref=e843]
+          - generic [ref=e846]: 
+      - generic [ref=e848]:
+        - img [ref=e851]:
+          - generic [ref=e867]:
+            - generic: Total
+            - generic: "0"
+        - list [ref=e868]:
+          - listitem [ref=e869]:
+            - generic [ref=e870]: Livré (0%)
+          - listitem [ref=e872]:
+            - generic [ref=e873]: Retournée (0%)
+          - listitem [ref=e875]:
+            - generic [ref=e876]: Annulé (0%)
+          - listitem [ref=e878]:
+            - generic [ref=e879]: Refusée (0%)
+    - generic [ref=e888]:
+      - heading "Dernier rapport Z" [level=3] [ref=e890]
+      - generic [ref=e891]:
+        - paragraph [ref=e892]: Aucune donnée
+        - link "Voir toutes" [ref=e893] [cursor=pointer]:
+          - /url: /admin/transactions
+    - generic [ref=e901]:
+      - generic [ref=e903]: Articles mis en avant
+      - list [ref=e905]:
+        - listitem [ref=e906]:
+          - img "product" [ref=e907]
+          - heading "Frites Seules" [level=4] [ref=e908]
+        - listitem [ref=e909]:
+          - img "product" [ref=e910]
+          - heading "Menu (Frites + Boisson)" [level=4] [ref=e911]
+        - listitem [ref=e912]:
+          - img "product" [ref=e913]
+          - heading "Jambon de dinde" [level=4] [ref=e914]
+        - listitem [ref=e915]:
+          - img "product" [ref=e916]
+          - heading "Fromage à raclette" [level=4] [ref=e917]
+        - listitem [ref=e918]:
+          - img "product" [ref=e919]
+          - heading "Œuf" [level=4] [ref=e920]
+        - listitem [ref=e921]:
+          - img "product" [ref=e922]
+          - heading "Salade verte" [level=4] [ref=e923]
+        - listitem [ref=e924]:
+          - img "product" [ref=e925]
+          - heading "Sauce supplémentaire" [level=4] [ref=e926]
+        - listitem [ref=e927]:
+          - img "product" [ref=e928]
+          - heading "Boursin" [level=4] [ref=e929]
+    - generic [ref=e937]:
+      - generic [ref=e939]: Articles les plus populaires
+      - list [ref=e941]:
+        - listitem [ref=e942]:
+          - img "product" [ref=e943]
+          - generic [ref=e944]:
+            - heading "Frites Seules" [level=4] [ref=e945]
+            - heading "Sandwich Cayenne" [level=5] [ref=e946]
+            - heading "2,00 €" [level=6] [ref=e947]
+        - listitem [ref=e948]:
+          - img "product" [ref=e949]
+          - generic [ref=e950]:
+            - heading "Boisson Seule" [level=4] [ref=e951]
+            - heading "Sandwich Cayenne" [level=5] [ref=e952]
+            - heading "2,00 €" [level=6] [ref=e953]
+        - listitem [ref=e954]:
+          - img "product" [ref=e955]
+          - generic [ref=e956]:
+            - heading "Menu (Frites + Boisson)" [level=4] [ref=e957]
+            - heading "Sandwich Cayenne" [level=5] [ref=e958]
+            - heading "3,00 €" [level=6] [ref=e959]
+        - listitem [ref=e960]:
+          - img "product" [ref=e961]
+          - generic [ref=e962]:
+            - heading "Sauce supplémentaire" [level=4] [ref=e963]
+            - heading "Suppléments" [level=5] [ref=e964]
+            - heading "0,50 €" [level=6] [ref=e965]
+        - listitem [ref=e966]:
+          - img "product" [ref=e967]
+          - generic [ref=e968]:
+            - heading "Fromage supplémentaire" [level=4] [ref=e969]
+            - heading "Suppléments" [level=5] [ref=e970]
+            - heading "1,00 €" [level=6] [ref=e971]
+        - listitem [ref=e972]:
+          - img "product" [ref=e973]
+          - generic [ref=e974]:
+            - heading "Jambon de dinde" [level=4] [ref=e975]
+            - heading "Suppléments" [level=5] [ref=e976]
+            - heading "1,00 €" [level=6] [ref=e977]

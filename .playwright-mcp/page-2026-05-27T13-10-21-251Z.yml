@@ -1,0 +1,10 @@
+- main "Écran de statut des commandes" [ref=e44]:
+  - region "En préparation" [ref=e45]:
+    - heading "En préparation" [level=3] [ref=e46]
+    - generic [ref=e47]:
+      - list
+      - paragraph [ref=e48]: —
+  - region "Prêt" [ref=e49]:
+    - heading "Prêt" [level=3] [ref=e50]
+    - list [ref=e52]:
+      - listitem [ref=e53]: N°A0001

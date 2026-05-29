@@ -1,0 +1,26 @@
+- generic [ref=e1]:
+  - generic [ref=e2] [cursor=pointer]:
+    - generic [ref=e3]:
+      - group "Choisissez votre langue" [ref=e4]:
+        - button "FR" [pressed] [ref=e5]
+        - button "EN" [ref=e6]
+      - button "Paramètres d'accessibilité" [ref=e7]:
+        - img [ref=e8]
+    - generic:
+      - generic: 🌮
+      - generic: 🍔
+      - generic: 🍟
+    - generic [ref=e14]:
+      - heading "Notre restaurant" [level=1] [ref=e16]
+      - generic [ref=e17]:
+        - heading "Bienvenue !" [level=2] [ref=e18]
+        - paragraph [ref=e19]: Commandez en quelques touches
+      - img [ref=e24]
+      - group "Choisir le mode de commande" [ref=e26]:
+        - button "À emporter Je récupère ma commande" [ref=e27]:
+          - img [ref=e29]
+          - generic [ref=e31]:
+            - generic [ref=e32]: À emporter
+            - generic [ref=e33]: Je récupère ma commande
+      - paragraph [ref=e34]: Choisissez une option pour commencer
+  - status

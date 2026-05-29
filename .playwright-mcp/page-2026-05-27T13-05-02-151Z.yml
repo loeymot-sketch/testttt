@@ -1,0 +1,56 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - link " Tableau de bord" [ref=e578] [cursor=pointer]:
+        - /url: /admin/dashboard
+        - generic [ref=e579]: 
+        - generic [ref=e580]: Tableau de bord
+      - generic [ref=e16]:
+        - button "avatar Bonjour Admin" [ref=e17] [cursor=pointer]:
+          - img "avatar" [ref=e18]
+          - heading "Bonjour Admin" [level=3] [ref=e19]:
+            - text: Bonjour
+            - generic "Admin" [ref=e20]
+          - generic [ref=e21]: 
+        - menu "avatar Bonjour Admin":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:                     
+  - button "Ouvrir l'historique des commandes du jour" [ref=e582] [cursor=pointer]:
+    - generic [ref=e583]: 📚
+    - generic [ref=e584]: Historique
+  - generic [ref=e585]:
+    - status [ref=e586]:
+      - generic [ref=e587]:
+        - img [ref=e589]
+        - generic [ref=e591]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=e592]: LOCAL
+    - generic [ref=e593]:
+      - img [ref=e596]
+      - generic [ref=e603]: Aucune commande en cours
+      - generic [ref=e604]: Les nouvelles commandes apparaîtront ici
+    - region "Récemment servies" [ref=e605]:
+      - generic [ref=e606]: Récemment servies
+      - generic "Commande N°A0001 servie" [ref=e608]:
+        - generic [ref=e609]: N°A0001
+        - generic [ref=e610]: il y a 215 min

@@ -1,0 +1,898 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - link "POS" [ref=e13] [cursor=pointer]:
+        - /url: /admin/pos
+        - generic [ref=e14]: 
+      - button "Fermer" [ref=e15] [cursor=pointer]: 
+      - generic [ref=e16]:
+        - button "avatar Bonjour Admin" [ref=e17] [cursor=pointer]:
+          - img "avatar" [ref=e18]
+          - heading "Bonjour Admin" [level=3] [ref=e19]:
+            - text: Bonjour
+            - generic "Admin" [ref=e20]
+          - generic [ref=e21]: 
+        - menu "avatar Bonjour Admin":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=e22]:
+    - text: 
+    - navigation [ref=e23]:
+      - list [ref=e24]:
+        - listitem [ref=e25]:
+          - link " Tableau de bord" [ref=e26] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e27]: 
+            - generic [ref=e28]: Tableau de bord
+      - list [ref=e29]:
+        - listitem [ref=e30]:
+          - link " POS" [ref=e31] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e32]: 
+            - generic [ref=e33]: POS
+      - list [ref=e34]:
+        - listitem [ref=e35]:
+          - link "Produits & Stock" [ref=e36] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=e37]: Produits & Stock
+      - list [ref=e38]:
+        - listitem [ref=e39]:
+          - link " Catalogue" [ref=e40] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=e41]: 
+            - generic [ref=e42]: Catalogue
+        - listitem [ref=e43]:
+          - link " Attribut d’articles" [ref=e44] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=e45]: 
+            - generic [ref=e46]: Attribut d’articles
+      - list [ref=e47]:
+        - listitem [ref=e48]:
+          - link " Ingrédients" [ref=e49] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=e50]: 
+            - generic [ref=e51]: Ingrédients
+      - list [ref=e52]:
+        - listitem [ref=e53]:
+          - link " Commandes caisse" [ref=e54] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=e55]: 
+            - generic [ref=e56]: Commandes caisse
+      - list [ref=e57]:
+        - listitem [ref=e58]:
+          - link " Vue caisse unifiée" [ref=e59] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=e60]: 
+            - generic [ref=e61]: Vue caisse unifiée
+      - list [ref=e62]:
+        - listitem [ref=e63]:
+          - link " Caisse livreur" [ref=e64] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=e65]: 
+            - generic [ref=e66]: Caisse livreur
+      - list [ref=e67]:
+        - listitem [ref=e68]:
+          - button "Caisse et commandes" [ref=e69] [cursor=pointer]
+        - listitem [ref=e70]:
+          - link " Écran cuisine" [ref=e71] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=e72]: 
+            - generic [ref=e73]: Écran cuisine
+        - listitem [ref=e74]:
+          - link " Suivi client" [ref=e75] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=e76]: 
+            - generic [ref=e77]: Suivi client
+      - list [ref=e78]:
+        - listitem [ref=e79]:
+          - button "Communications" [ref=e80] [cursor=pointer]
+        - listitem [ref=e81]:
+          - link " Notification pushs" [ref=e82] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=e83]: 
+            - generic [ref=e84]: Notification pushs
+        - listitem [ref=e85]:
+          - link " Messages" [ref=e86] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=e87]: 
+            - generic [ref=e88]: Messages
+        - listitem [ref=e89]:
+          - link " Abonnés" [ref=e90] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=e91]: 
+            - generic [ref=e92]: Abonnés
+      - list [ref=e93]:
+        - listitem [ref=e94]:
+          - button "Utilisateurs" [ref=e95] [cursor=pointer]
+        - listitem [ref=e96]:
+          - link " Administrateurs" [ref=e97] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=e98]: 
+            - generic [ref=e99]: Administrateurs
+        - listitem [ref=e100]:
+          - link " Employés" [ref=e101] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=e102]: 
+            - generic [ref=e103]: Employés
+        - listitem [ref=e104]:
+          - link " Chefs" [ref=e105] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=e106]: 
+            - generic [ref=e107]: Chefs
+      - list [ref=e108]:
+        - listitem [ref=e109]:
+          - button "Comptes" [ref=e110] [cursor=pointer]
+        - listitem [ref=e111]:
+          - link " Transactions" [ref=e112] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=e113]: 
+            - generic [ref=e114]: Transactions
+      - list [ref=e115]:
+        - listitem [ref=e116]:
+          - button "Rapports" [ref=e117] [cursor=pointer]
+        - listitem [ref=e118]:
+          - link " Rapport des ventes" [ref=e119] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=e120]: 
+            - generic [ref=e121]: Rapport des ventes
+        - listitem [ref=e122]:
+          - link " Rapport articles" [ref=e123] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=e124]: 
+            - generic [ref=e125]: Rapport articles
+      - list [ref=e126]:
+        - listitem [ref=e127]:
+          - button "Configuration" [ref=e128] [cursor=pointer]
+        - listitem [ref=e129]:
+          - link " Paramètres" [ref=e130] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=e131]: 
+            - generic [ref=e132]: Paramètres
+  - generic [ref=e133]:
+    - generic [ref=e134]:
+      - heading "Bon après-midi !" [level=3] [ref=e135]
+      - heading "Admin" [level=4] [ref=e136]
+    - button "PDF Clôture du jour" [ref=e137] [cursor=pointer]:
+      - generic [ref=e138]: 
+      - generic [ref=e139]: PDF Clôture du jour
+  - navigation "Accès rapides" [ref=e140]:
+    - heading "Accès rapides" [level=3] [ref=e141]
+    - generic [ref=e142]:
+      - link "POS" [ref=e143] [cursor=pointer]:
+        - /url: /admin/pos
+        - generic [ref=e144]: 
+        - generic [ref=e145]: POS
+      - link "Commandes caisse" [ref=e146] [cursor=pointer]:
+        - /url: /admin/pos-orders
+        - generic [ref=e147]: 
+        - generic [ref=e148]: Commandes caisse
+      - link "Suivi caisse (kanban)" [ref=e149] [cursor=pointer]:
+        - /url: /admin/pos-orders-tracker
+        - generic [ref=e150]: 
+        - generic [ref=e151]: Suivi caisse (kanban)
+      - link "Écran cuisine" [ref=e152] [cursor=pointer]:
+        - /url: /admin/kitchen-display-system
+        - generic [ref=e153]: 
+        - generic [ref=e154]: Écran cuisine
+      - link "Suivi client" [ref=e155] [cursor=pointer]:
+        - /url: /admin/order-status-screen
+        - generic [ref=e156]: 
+        - generic [ref=e157]: Suivi client
+      - link "Catalogue" [ref=e158] [cursor=pointer]:
+        - /url: /admin/items/studio
+        - generic [ref=e159]: 
+        - generic [ref=e160]: Catalogue
+      - link "Ingrédients" [ref=e161] [cursor=pointer]:
+        - /url: /admin/ingredients
+        - generic [ref=e162]: 
+        - generic [ref=e163]: Ingrédients
+      - link "Produits & Stock" [ref=e164] [cursor=pointer]:
+        - /url: /admin/stock/rupture
+        - generic [ref=e165]: Produits & Stock
+      - link "Rapport caisses quotidien" [ref=e166] [cursor=pointer]:
+        - /url: /admin/cash-sessions-report
+        - generic [ref=e167]: 
+        - generic [ref=e168]: Rapport caisses quotidien
+      - link "Vue caisse unifiée" [ref=e169] [cursor=pointer]:
+        - /url: /admin/cash-overview
+        - generic [ref=e170]: 
+        - generic [ref=e171]: Vue caisse unifiée
+  - img [ref=e174]
+  - generic [ref=e178]:
+    - heading "Vue d’ensemble" [level=4] [ref=e179]
+    - generic [ref=e180]:
+      - generic [ref=e182]:
+        - generic [ref=e184]: 
+        - generic [ref=e185]:
+          - heading "Total ventes" [level=3] [ref=e186]
+          - heading "17,50 €" [level=4] [ref=e187]
+      - generic [ref=e189]:
+        - generic [ref=e191]: 
+        - generic [ref=e192]:
+          - heading "Total commandes" [level=3] [ref=e193]
+          - heading "0" [level=4] [ref=e194]
+      - generic [ref=e196]:
+        - generic [ref=e198]: 
+        - generic [ref=e199]:
+          - heading "Total articles menu" [level=3] [ref=e200]
+          - heading "46" [level=4] [ref=e201]
+  - generic [ref=e202]:
+    - heading "Suivi en direct" [level=4] [ref=e203]
+    - generic [ref=e204]:
+      - generic [ref=e206]:
+        - heading "Chiffre d'Affaires du Jour" [level=3] [ref=e207]
+        - heading "1,90 €" [level=4] [ref=e208]
+      - generic [ref=e210]:
+        - heading "Commandes du Jour" [level=3] [ref=e211]
+        - heading "1" [level=4] [ref=e212]
+      - generic [ref=e214]:
+        - heading "Ticket Moyen" [level=3] [ref=e215]
+        - heading "1,90 €" [level=4] [ref=e216]
+  - generic [ref=e217]:
+    - generic [ref=e219]:
+      - generic [ref=e220]:
+        - heading "Alertes SLA (Cuisine > 15min)" [level=4] [ref=e221]
+        - generic [ref=e222]: 0 Alerte(s)
+      - paragraph [ref=e224]: Aucune alerte SLA. Flux de cuisine optimal.
+    - generic [ref=e226]:
+      - heading "Répartition par Canal (Aujourd'hui)" [level=4] [ref=e227]
+      - generic [ref=e228]:
+        - generic [ref=e230]:
+          - generic [ref=e231]: Web
+          - generic [ref=e232]: 0%
+        - generic [ref=e235]:
+          - generic [ref=e236]: Kiosk/App
+          - generic [ref=e237]: 100%
+        - generic [ref=e241]:
+          - generic [ref=e242]: POS
+          - generic [ref=e243]: 0%
+  - generic [ref=e246]:
+    - heading "Audit Trail NF525 (Journal Inviolable)" [level=4] [ref=e247]: Audit Trail NF525 (Journal Inviolable)
+    - paragraph [ref=e248]:
+      - text: "Source :"
+      - code [ref=e249]: audit_logs
+      - text: (INSERT-only, HMAC SHA-256 chain-signed). Le préfixe de hash atteste l'intégrité de la chaîne.
+    - table [ref=e251]:
+      - rowgroup [ref=e252]:
+        - row "Utilisateur Action Ressource Hash Temps" [ref=e253]:
+          - columnheader "Utilisateur" [ref=e254]
+          - columnheader "Action" [ref=e255]
+          - columnheader "Ressource" [ref=e256]
+          - columnheader "Hash" [ref=e257]
+          - columnheader "Temps" [ref=e258]
+      - rowgroup [ref=e259]:
+        - row "Admin user.login user#2 e3a9d18b il y a 5 minutes" [ref=e260]:
+          - cell "Admin" [ref=e261]
+          - cell "user.login" [ref=e262]:
+            - generic [ref=e263]: user.login
+          - cell "user#2" [ref=e264]
+          - cell "e3a9d18b" [ref=e265]:
+            - code [ref=e266]: e3a9d18b
+          - cell "il y a 5 minutes" [ref=e267]
+        - row "Admin user.login user#2 3ba0fb6b il y a 6 minutes" [ref=e268]:
+          - cell "Admin" [ref=e269]
+          - cell "user.login" [ref=e270]:
+            - generic [ref=e271]: user.login
+          - cell "user#2" [ref=e272]
+          - cell "3ba0fb6b" [ref=e273]:
+            - code [ref=e274]: 3ba0fb6b
+          - cell "il y a 6 minutes" [ref=e275]
+        - row "Admin user.login user#2 00ef64df il y a 43 minutes" [ref=e276]:
+          - cell "Admin" [ref=e277]
+          - cell "user.login" [ref=e278]:
+            - generic [ref=e279]: user.login
+          - cell "user#2" [ref=e280]
+          - cell "00ef64df" [ref=e281]:
+            - code [ref=e282]: 00ef64df
+          - cell "il y a 43 minutes" [ref=e283]
+        - row "Admin user.logout user#2 9d544b94 il y a 43 minutes" [ref=e284]:
+          - cell "Admin" [ref=e285]
+          - cell "user.logout" [ref=e286]:
+            - generic [ref=e287]: user.logout
+          - cell "user#2" [ref=e288]
+          - cell "9d544b94" [ref=e289]:
+            - code [ref=e290]: 9d544b94
+          - cell "il y a 43 minutes" [ref=e291]
+        - row "Système order.counter_payment_confirmed order#73 32f1a98b il y a 1 heure" [ref=e292]:
+          - cell "Système" [ref=e293]
+          - cell "order.counter_payment_confirmed" [ref=e294]:
+            - generic [ref=e295]: order.counter_payment_confirmed
+          - cell "order#73" [ref=e296]
+          - cell "32f1a98b" [ref=e297]:
+            - code [ref=e298]: 32f1a98b
+          - cell "il y a 1 heure" [ref=e299]
+        - row "Admin user.login user#2 e58d25d8 il y a 1 heure" [ref=e300]:
+          - cell "Admin" [ref=e301]
+          - cell "user.login" [ref=e302]:
+            - generic [ref=e303]: user.login
+          - cell "user#2" [ref=e304]
+          - cell "e58d25d8" [ref=e305]:
+            - code [ref=e306]: e58d25d8
+          - cell "il y a 1 heure" [ref=e307]
+        - row "Admin user.logout user#2 19221fb8 il y a 1 heure" [ref=e308]:
+          - cell "Admin" [ref=e309]
+          - cell "user.logout" [ref=e310]:
+            - generic [ref=e311]: user.logout
+          - cell "user#2" [ref=e312]
+          - cell "19221fb8" [ref=e313]:
+            - code [ref=e314]: 19221fb8
+          - cell "il y a 1 heure" [ref=e315]
+        - row "Admin cash.movement.recorded cash_drawer_session#1 cd458810 il y a 1 heure" [ref=e316]:
+          - cell "Admin" [ref=e317]
+          - cell "cash.movement.recorded" [ref=e318]:
+            - generic [ref=e319]: cash.movement.recorded
+          - cell "cash_drawer_session#1" [ref=e320]
+          - cell "cd458810" [ref=e321]:
+            - code [ref=e322]: cd458810
+          - cell "il y a 1 heure" [ref=e323]
+        - row "Admin order.counter_payment_confirmed order#72 4636f59d il y a 1 heure" [ref=e324]:
+          - cell "Admin" [ref=e325]
+          - cell "order.counter_payment_confirmed" [ref=e326]:
+            - generic [ref=e327]: order.counter_payment_confirmed
+          - cell "order#72" [ref=e328]
+          - cell "4636f59d" [ref=e329]:
+            - code [ref=e330]: 4636f59d
+          - cell "il y a 1 heure" [ref=e331]
+        - row "Admin cash.movement.recorded cash_drawer_session#1 5965825a il y a 1 heure" [ref=e332]:
+          - cell "Admin" [ref=e333]
+          - cell "cash.movement.recorded" [ref=e334]:
+            - generic [ref=e335]: cash.movement.recorded
+          - cell "cash_drawer_session#1" [ref=e336]
+          - cell "5965825a" [ref=e337]:
+            - code [ref=e338]: 5965825a
+          - cell "il y a 1 heure" [ref=e339]
+        - row "Admin order.counter_payment_confirmed order#71 5455057e il y a 1 heure" [ref=e340]:
+          - cell "Admin" [ref=e341]
+          - cell "order.counter_payment_confirmed" [ref=e342]:
+            - generic [ref=e343]: order.counter_payment_confirmed
+          - cell "order#71" [ref=e344]
+          - cell "5455057e" [ref=e345]:
+            - code [ref=e346]: 5455057e
+          - cell "il y a 1 heure" [ref=e347]
+        - row "Admin user.login user#2 adc87ba7 il y a 2 heures" [ref=e348]:
+          - cell "Admin" [ref=e349]
+          - cell "user.login" [ref=e350]:
+            - generic [ref=e351]: user.login
+          - cell "user#2" [ref=e352]
+          - cell "adc87ba7" [ref=e353]:
+            - code [ref=e354]: adc87ba7
+          - cell "il y a 2 heures" [ref=e355]
+        - row "Admin user.login user#2 8d2fdec2 il y a 18 heures" [ref=e356]:
+          - cell "Admin" [ref=e357]
+          - cell "user.login" [ref=e358]:
+            - generic [ref=e359]: user.login
+          - cell "user#2" [ref=e360]
+          - cell "8d2fdec2" [ref=e361]:
+            - code [ref=e362]: 8d2fdec2
+          - cell "il y a 18 heures" [ref=e363]
+        - row "Admin user.login user#2 56436a46 il y a 18 heures" [ref=e364]:
+          - cell "Admin" [ref=e365]
+          - cell "user.login" [ref=e366]:
+            - generic [ref=e367]: user.login
+          - cell "user#2" [ref=e368]
+          - cell "56436a46" [ref=e369]:
+            - code [ref=e370]: 56436a46
+          - cell "il y a 18 heures" [ref=e371]
+        - row "Admin user.login user#2 f5e46c2b il y a 1 jour" [ref=e372]:
+          - cell "Admin" [ref=e373]
+          - cell "user.login" [ref=e374]:
+            - generic [ref=e375]: user.login
+          - cell "user#2" [ref=e376]
+          - cell "f5e46c2b" [ref=e377]:
+            - code [ref=e378]: f5e46c2b
+          - cell "il y a 1 jour" [ref=e379]
+        - row "Admin user.logout user#2 ca10f3ac il y a 1 jour" [ref=e380]:
+          - cell "Admin" [ref=e381]
+          - cell "user.logout" [ref=e382]:
+            - generic [ref=e383]: user.logout
+          - cell "user#2" [ref=e384]
+          - cell "ca10f3ac" [ref=e385]:
+            - code [ref=e386]: ca10f3ac
+          - cell "il y a 1 jour" [ref=e387]
+        - row "Admin user.login user#2 8ab3ed35 il y a 1 jour" [ref=e388]:
+          - cell "Admin" [ref=e389]
+          - cell "user.login" [ref=e390]:
+            - generic [ref=e391]: user.login
+          - cell "user#2" [ref=e392]
+          - cell "8ab3ed35" [ref=e393]:
+            - code [ref=e394]: 8ab3ed35
+          - cell "il y a 1 jour" [ref=e395]
+        - row "Admin user.login user#2 6a7e8bb9 il y a 1 jour" [ref=e396]:
+          - cell "Admin" [ref=e397]
+          - cell "user.login" [ref=e398]:
+            - generic [ref=e399]: user.login
+          - cell "user#2" [ref=e400]
+          - cell "6a7e8bb9" [ref=e401]:
+            - code [ref=e402]: 6a7e8bb9
+          - cell "il y a 1 jour" [ref=e403]
+        - row "Admin user.login user#2 a890d3c4 il y a 1 jour" [ref=e404]:
+          - cell "Admin" [ref=e405]
+          - cell "user.login" [ref=e406]:
+            - generic [ref=e407]: user.login
+          - cell "user#2" [ref=e408]
+          - cell "a890d3c4" [ref=e409]:
+            - code [ref=e410]: a890d3c4
+          - cell "il y a 1 jour" [ref=e411]
+        - row "Admin user.login user#2 082c920f il y a 1 jour" [ref=e412]:
+          - cell "Admin" [ref=e413]
+          - cell "user.login" [ref=e414]:
+            - generic [ref=e415]: user.login
+          - cell "user#2" [ref=e416]
+          - cell "082c920f" [ref=e417]:
+            - code [ref=e418]: 082c920f
+          - cell "il y a 1 jour" [ref=e419]
+        - row "Admin user.login user#2 cbb5fd1b il y a 1 jour" [ref=e420]:
+          - cell "Admin" [ref=e421]
+          - cell "user.login" [ref=e422]:
+            - generic [ref=e423]: user.login
+          - cell "user#2" [ref=e424]
+          - cell "cbb5fd1b" [ref=e425]:
+            - code [ref=e426]: cbb5fd1b
+          - cell "il y a 1 jour" [ref=e427]
+        - row "Admin user.login user#2 d0b9ed22 il y a 1 jour" [ref=e428]:
+          - cell "Admin" [ref=e429]
+          - cell "user.login" [ref=e430]:
+            - generic [ref=e431]: user.login
+          - cell "user#2" [ref=e432]
+          - cell "d0b9ed22" [ref=e433]:
+            - code [ref=e434]: d0b9ed22
+          - cell "il y a 1 jour" [ref=e435]
+        - row "Admin user.login user#2 a59e47cb il y a 1 jour" [ref=e436]:
+          - cell "Admin" [ref=e437]
+          - cell "user.login" [ref=e438]:
+            - generic [ref=e439]: user.login
+          - cell "user#2" [ref=e440]
+          - cell "a59e47cb" [ref=e441]:
+            - code [ref=e442]: a59e47cb
+          - cell "il y a 1 jour" [ref=e443]
+        - row "Admin user.login user#2 8b9ae61e il y a 1 jour" [ref=e444]:
+          - cell "Admin" [ref=e445]
+          - cell "user.login" [ref=e446]:
+            - generic [ref=e447]: user.login
+          - cell "user#2" [ref=e448]
+          - cell "8b9ae61e" [ref=e449]:
+            - code [ref=e450]: 8b9ae61e
+          - cell "il y a 1 jour" [ref=e451]
+        - row "Admin user.login user#2 289d15c5 il y a 1 jour" [ref=e452]:
+          - cell "Admin" [ref=e453]
+          - cell "user.login" [ref=e454]:
+            - generic [ref=e455]: user.login
+          - cell "user#2" [ref=e456]
+          - cell "289d15c5" [ref=e457]:
+            - code [ref=e458]: 289d15c5
+          - cell "il y a 1 jour" [ref=e459]
+        - row "Admin user.login user#2 0796c86d il y a 1 jour" [ref=e460]:
+          - cell "Admin" [ref=e461]
+          - cell "user.login" [ref=e462]:
+            - generic [ref=e463]: user.login
+          - cell "user#2" [ref=e464]
+          - cell "0796c86d" [ref=e465]:
+            - code [ref=e466]: 0796c86d
+          - cell "il y a 1 jour" [ref=e467]
+        - row "Admin user.login user#2 13e3a318 il y a 1 jour" [ref=e468]:
+          - cell "Admin" [ref=e469]
+          - cell "user.login" [ref=e470]:
+            - generic [ref=e471]: user.login
+          - cell "user#2" [ref=e472]
+          - cell "13e3a318" [ref=e473]:
+            - code [ref=e474]: 13e3a318
+          - cell "il y a 1 jour" [ref=e475]
+        - row "Admin user.login user#2 5039bc0f il y a 1 jour" [ref=e476]:
+          - cell "Admin" [ref=e477]
+          - cell "user.login" [ref=e478]:
+            - generic [ref=e479]: user.login
+          - cell "user#2" [ref=e480]
+          - cell "5039bc0f" [ref=e481]:
+            - code [ref=e482]: 5039bc0f
+          - cell "il y a 1 jour" [ref=e483]
+        - row "Admin user.login user#2 25f200b5 il y a 1 jour" [ref=e484]:
+          - cell "Admin" [ref=e485]
+          - cell "user.login" [ref=e486]:
+            - generic [ref=e487]: user.login
+          - cell "user#2" [ref=e488]
+          - cell "25f200b5" [ref=e489]:
+            - code [ref=e490]: 25f200b5
+          - cell "il y a 1 jour" [ref=e491]
+        - row "Admin user.login user#2 88e15a40 il y a 1 jour" [ref=e492]:
+          - cell "Admin" [ref=e493]
+          - cell "user.login" [ref=e494]:
+            - generic [ref=e495]: user.login
+          - cell "user#2" [ref=e496]
+          - cell "88e15a40" [ref=e497]:
+            - code [ref=e498]: 88e15a40
+          - cell "il y a 1 jour" [ref=e499]
+        - row "Admin user.login user#2 f70b62a8 il y a 1 jour" [ref=e500]:
+          - cell "Admin" [ref=e501]
+          - cell "user.login" [ref=e502]:
+            - generic [ref=e503]: user.login
+          - cell "user#2" [ref=e504]
+          - cell "f70b62a8" [ref=e505]:
+            - code [ref=e506]: f70b62a8
+          - cell "il y a 1 jour" [ref=e507]
+        - row "Admin user.login user#2 1908204f il y a 1 jour" [ref=e508]:
+          - cell "Admin" [ref=e509]
+          - cell "user.login" [ref=e510]:
+            - generic [ref=e511]: user.login
+          - cell "user#2" [ref=e512]
+          - cell "1908204f" [ref=e513]:
+            - code [ref=e514]: 1908204f
+          - cell "il y a 1 jour" [ref=e515]
+        - row "Admin user.login user#2 fd18de19 il y a 1 jour" [ref=e516]:
+          - cell "Admin" [ref=e517]
+          - cell "user.login" [ref=e518]:
+            - generic [ref=e519]: user.login
+          - cell "user#2" [ref=e520]
+          - cell "fd18de19" [ref=e521]:
+            - code [ref=e522]: fd18de19
+          - cell "il y a 1 jour" [ref=e523]
+        - row "Admin user.login user#2 927a15ee il y a 1 jour" [ref=e524]:
+          - cell "Admin" [ref=e525]
+          - cell "user.login" [ref=e526]:
+            - generic [ref=e527]: user.login
+          - cell "user#2" [ref=e528]
+          - cell "927a15ee" [ref=e529]:
+            - code [ref=e530]: 927a15ee
+          - cell "il y a 1 jour" [ref=e531]
+        - row "Admin user.login user#2 f0b86755 il y a 1 jour" [ref=e532]:
+          - cell "Admin" [ref=e533]
+          - cell "user.login" [ref=e534]:
+            - generic [ref=e535]: user.login
+          - cell "user#2" [ref=e536]
+          - cell "f0b86755" [ref=e537]:
+            - code [ref=e538]: f0b86755
+          - cell "il y a 1 jour" [ref=e539]
+        - row "Admin user.login user#2 a4eb1d12 il y a 1 jour" [ref=e540]:
+          - cell "Admin" [ref=e541]
+          - cell "user.login" [ref=e542]:
+            - generic [ref=e543]: user.login
+          - cell "user#2" [ref=e544]
+          - cell "a4eb1d12" [ref=e545]:
+            - code [ref=e546]: a4eb1d12
+          - cell "il y a 1 jour" [ref=e547]
+        - row "Admin user.login user#2 6e63acd4 il y a 1 jour" [ref=e548]:
+          - cell "Admin" [ref=e549]
+          - cell "user.login" [ref=e550]:
+            - generic [ref=e551]: user.login
+          - cell "user#2" [ref=e552]
+          - cell "6e63acd4" [ref=e553]:
+            - code [ref=e554]: 6e63acd4
+          - cell "il y a 1 jour" [ref=e555]
+        - row "Admin user.login user#2 7ec89b15 il y a 1 jour" [ref=e556]:
+          - cell "Admin" [ref=e557]
+          - cell "user.login" [ref=e558]:
+            - generic [ref=e559]: user.login
+          - cell "user#2" [ref=e560]
+          - cell "7ec89b15" [ref=e561]:
+            - code [ref=e562]: 7ec89b15
+          - cell "il y a 1 jour" [ref=e563]
+        - row "Admin user.login user#2 32cd1a6d il y a 1 jour" [ref=e564]:
+          - cell "Admin" [ref=e565]
+          - cell "user.login" [ref=e566]:
+            - generic [ref=e567]: user.login
+          - cell "user#2" [ref=e568]
+          - cell "32cd1a6d" [ref=e569]:
+            - code [ref=e570]: 32cd1a6d
+          - cell "il y a 1 jour" [ref=e571]
+        - row "Admin user.login user#2 88a260d0 il y a 1 jour" [ref=e572]:
+          - cell "Admin" [ref=e573]
+          - cell "user.login" [ref=e574]:
+            - generic [ref=e575]: user.login
+          - cell "user#2" [ref=e576]
+          - cell "88a260d0" [ref=e577]:
+            - code [ref=e578]: 88a260d0
+          - cell "il y a 1 jour" [ref=e579]
+        - row "Admin user.login user#2 ab4b1468 il y a 1 jour" [ref=e580]:
+          - cell "Admin" [ref=e581]
+          - cell "user.login" [ref=e582]:
+            - generic [ref=e583]: user.login
+          - cell "user#2" [ref=e584]
+          - cell "ab4b1468" [ref=e585]:
+            - code [ref=e586]: ab4b1468
+          - cell "il y a 1 jour" [ref=e587]
+        - row "Admin user.login user#2 7b98e452 il y a 1 jour" [ref=e588]:
+          - cell "Admin" [ref=e589]
+          - cell "user.login" [ref=e590]:
+            - generic [ref=e591]: user.login
+          - cell "user#2" [ref=e592]
+          - cell "7b98e452" [ref=e593]:
+            - code [ref=e594]: 7b98e452
+          - cell "il y a 1 jour" [ref=e595]
+        - row "Admin user.login user#2 42770277 il y a 1 jour" [ref=e596]:
+          - cell "Admin" [ref=e597]
+          - cell "user.login" [ref=e598]:
+            - generic [ref=e599]: user.login
+          - cell "user#2" [ref=e600]
+          - cell "42770277" [ref=e601]:
+            - code [ref=e602]: "42770277"
+          - cell "il y a 1 jour" [ref=e603]
+        - row "Admin user.login user#2 fec23925 il y a 1 jour" [ref=e604]:
+          - cell "Admin" [ref=e605]
+          - cell "user.login" [ref=e606]:
+            - generic [ref=e607]: user.login
+          - cell "user#2" [ref=e608]
+          - cell "fec23925" [ref=e609]:
+            - code [ref=e610]: fec23925
+          - cell "il y a 1 jour" [ref=e611]
+        - row "Admin user.login user#2 6a531174 il y a 1 jour" [ref=e612]:
+          - cell "Admin" [ref=e613]
+          - cell "user.login" [ref=e614]:
+            - generic [ref=e615]: user.login
+          - cell "user#2" [ref=e616]
+          - cell "6a531174" [ref=e617]:
+            - code [ref=e618]: 6a531174
+          - cell "il y a 1 jour" [ref=e619]
+        - row "Admin user.login user#2 a27906c8 il y a 1 jour" [ref=e620]:
+          - cell "Admin" [ref=e621]
+          - cell "user.login" [ref=e622]:
+            - generic [ref=e623]: user.login
+          - cell "user#2" [ref=e624]
+          - cell "a27906c8" [ref=e625]:
+            - code [ref=e626]: a27906c8
+          - cell "il y a 1 jour" [ref=e627]
+        - row "Admin user.login user#2 8be7f6bc il y a 1 jour" [ref=e628]:
+          - cell "Admin" [ref=e629]
+          - cell "user.login" [ref=e630]:
+            - generic [ref=e631]: user.login
+          - cell "user#2" [ref=e632]
+          - cell "8be7f6bc" [ref=e633]:
+            - code [ref=e634]: 8be7f6bc
+          - cell "il y a 1 jour" [ref=e635]
+        - row "Admin user.login user#2 dbc497ef il y a 1 jour" [ref=e636]:
+          - cell "Admin" [ref=e637]
+          - cell "user.login" [ref=e638]:
+            - generic [ref=e639]: user.login
+          - cell "user#2" [ref=e640]
+          - cell "dbc497ef" [ref=e641]:
+            - code [ref=e642]: dbc497ef
+          - cell "il y a 1 jour" [ref=e643]
+        - row "Admin user.login user#2 07e52aca il y a 1 jour" [ref=e644]:
+          - cell "Admin" [ref=e645]
+          - cell "user.login" [ref=e646]:
+            - generic [ref=e647]: user.login
+          - cell "user#2" [ref=e648]
+          - cell "07e52aca" [ref=e649]:
+            - code [ref=e650]: 07e52aca
+          - cell "il y a 1 jour" [ref=e651]
+        - row "Admin user.login user#2 5946ecbb il y a 1 jour" [ref=e652]:
+          - cell "Admin" [ref=e653]
+          - cell "user.login" [ref=e654]:
+            - generic [ref=e655]: user.login
+          - cell "user#2" [ref=e656]
+          - cell "5946ecbb" [ref=e657]:
+            - code [ref=e658]: 5946ecbb
+          - cell "il y a 1 jour" [ref=e659]
+  - img [ref=e662]
+  - generic [ref=e666]:
+    - heading "Statistiques des commandes" [level=4] [ref=e667]
+    - generic [ref=e668] [cursor=pointer]:
+      - generic [ref=e669]: Date
+      - textbox "Date" [ref=e671]:
+        - generic [ref=e672]:
+          - textbox "Date" [ref=e673]:
+            - /placeholder: ""
+            - text: 05/27/2026 - 05/27/2026
+          - img [ref=e674]
+  - generic [ref=e677]:
+    - generic [ref=e679]:
+      - generic [ref=e681]: 
+      - generic [ref=e682]:
+        - heading "Total commandes" [level=3] [ref=e683]
+        - heading "1" [level=4] [ref=e684]
+    - generic [ref=e686]:
+      - generic [ref=e688]: 
+      - generic [ref=e689]:
+        - heading "En attente" [level=3] [ref=e690]
+        - heading "0" [level=4] [ref=e691]
+    - generic [ref=e693]:
+      - generic [ref=e695]: 
+      - generic [ref=e696]:
+        - heading "Accepter" [level=3] [ref=e697]
+        - heading "0" [level=4] [ref=e698]
+    - generic [ref=e700]:
+      - generic [ref=e702]: 
+      - generic [ref=e703]:
+        - heading "En préparation" [level=3] [ref=e704]
+        - heading "0" [level=4] [ref=e705]
+    - generic [ref=e707]:
+      - generic [ref=e709]: 
+      - generic [ref=e710]:
+        - heading "Préparée" [level=3] [ref=e711]
+        - heading "1" [level=4] [ref=e712]
+    - generic [ref=e714]:
+      - generic [ref=e716]: 
+      - generic [ref=e717]:
+        - heading "En livraison" [level=3] [ref=e718]
+        - heading "0" [level=4] [ref=e719]
+    - generic [ref=e721]:
+      - generic [ref=e723]: 
+      - generic [ref=e724]:
+        - heading "Livré" [level=3] [ref=e725]
+        - heading "0" [level=4] [ref=e726]
+    - generic [ref=e728]:
+      - generic [ref=e730]: 
+      - generic [ref=e731]:
+        - heading "Annulé" [level=3] [ref=e732]
+        - heading "0" [level=4] [ref=e733]
+    - generic [ref=e735]:
+      - generic [ref=e737]: 
+      - generic [ref=e738]:
+        - heading "Retournée" [level=3] [ref=e739]
+        - heading "0" [level=4] [ref=e740]
+    - generic [ref=e742]:
+      - generic [ref=e744]: 
+      - generic [ref=e745]:
+        - heading "Refusée" [level=3] [ref=e746]
+        - heading "0" [level=4] [ref=e747]
+  - generic [ref=e748]:
+    - img [ref=e751]
+    - generic [ref=e756]:
+      - generic [ref=e757]:
+        - heading "Résumé des ventes" [level=3] [ref=e758]
+        - generic [ref=e759] [cursor=pointer]:
+          - generic [ref=e760]: Date
+          - textbox "Date" [ref=e762]:
+            - generic [ref=e763]:
+              - textbox "Date" [ref=e764]:
+                - /placeholder: ""
+                - text: 05/01/2026 - 05/31/2026
+              - img [ref=e765]
+          - generic [ref=e768]: 
+      - generic [ref=e769]:
+        - list [ref=e770]:
+          - listitem [ref=e771]:
+            - generic [ref=e772]:
+              - generic [ref=e773]: 
+              - heading "17,50 €" [level=3] [ref=e774]
+            - paragraph [ref=e775]: Total ventes
+          - listitem [ref=e776]:
+            - generic [ref=e777]:
+              - generic [ref=e778]: 
+              - heading "0,58 €" [level=3] [ref=e779]
+            - paragraph [ref=e780]: Ventes moyennes par jour
+        - generic [ref=e782]:
+          - img [ref=e783]:
+            - generic [ref=e790]:
+              - generic "1" [ref=e791]
+              - generic "2" [ref=e792]
+              - generic "3" [ref=e793]
+              - generic "4" [ref=e794]
+              - generic "5" [ref=e795]
+              - generic "6" [ref=e796]
+              - generic "7" [ref=e797]
+              - generic "8" [ref=e798]
+              - generic "9" [ref=e799]
+              - generic "10" [ref=e800]
+              - generic "11" [ref=e801]
+              - generic "12" [ref=e802]
+              - generic "13" [ref=e803]
+              - generic "14" [ref=e804]
+              - generic "15" [ref=e805]
+              - generic "16" [ref=e806]
+              - generic "17" [ref=e807]
+              - generic "18" [ref=e808]
+              - generic "19" [ref=e809]
+              - generic "20" [ref=e810]
+              - generic "21" [ref=e811]
+              - generic "22" [ref=e812]
+              - generic "23" [ref=e813]
+              - generic "24" [ref=e814]
+              - generic "25" [ref=e815]
+              - generic "26" [ref=e816]
+              - generic "27" [ref=e817]
+              - generic "28" [ref=e818]
+              - generic "29" [ref=e819]
+              - generic "30" [ref=e820]
+              - generic "31" [ref=e821]
+          - generic: ●
+    - img [ref=e824]
+    - generic [ref=e829]:
+      - generic [ref=e830]:
+        - heading "Résumé des commandes" [level=3] [ref=e831]
+        - generic [ref=e832] [cursor=pointer]:
+          - generic [ref=e833]: Date
+          - textbox "Date" [ref=e835]:
+            - generic [ref=e836]:
+              - textbox "Date" [ref=e837]:
+                - /placeholder: ""
+                - text: 05/01/2026 - 05/31/2026
+              - img [ref=e838]
+          - generic [ref=e841]: 
+      - generic [ref=e843]:
+        - img [ref=e846]:
+          - generic [ref=e862]:
+            - generic: Total
+            - generic: "0"
+        - list [ref=e863]:
+          - listitem [ref=e864]:
+            - generic [ref=e865]: Livré (0%)
+          - listitem [ref=e867]:
+            - generic [ref=e868]: Retournée (0%)
+          - listitem [ref=e870]:
+            - generic [ref=e871]: Annulé (0%)
+          - listitem [ref=e873]:
+            - generic [ref=e874]: Refusée (0%)
+    - img [ref=e878]
+    - generic [ref=e883]:
+      - heading "Dernier rapport Z" [level=3] [ref=e885]
+      - generic [ref=e886]:
+        - paragraph [ref=e887]: "Dernier rapport Z #1"
+        - paragraph [ref=e888]: closed
+        - paragraph [ref=e889]: 25/05/2026 12:49:39
+        - link "Voir toutes" [ref=e890] [cursor=pointer]:
+          - /url: /admin/transactions
+    - img [ref=e893]
+    - generic [ref=e898]:
+      - generic [ref=e900]: Articles mis en avant
+      - list [ref=e902]:
+        - listitem [ref=e903]:
+          - img "product" [ref=e904]
+          - heading "Menu (Frites + Boisson)" [level=4] [ref=e905]
+        - listitem [ref=e906]:
+          - img "product" [ref=e907]
+          - heading "Boisson Seule" [level=4] [ref=e908]
+        - listitem [ref=e909]:
+          - img "product" [ref=e910]
+          - heading "E2E_PLAYWRIGHT_STUDIO_ITEM" [level=4] [ref=e911]
+        - listitem [ref=e912]:
+          - img "product" [ref=e913]
+          - heading "Frites Seules" [level=4] [ref=e914]
+    - img [ref=e917]
+    - generic [ref=e922]:
+      - generic [ref=e924]: Articles les plus populaires
+      - list [ref=e926]:
+        - listitem [ref=e927]:
+          - img "product" [ref=e928]
+          - generic [ref=e929]:
+            - heading "Tacos" [level=4] [ref=e930]
+            - heading "Tacos" [level=5] [ref=e931]
+            - heading "6,90 €" [level=6] [ref=e932]
+        - listitem [ref=e933]:
+          - img "product" [ref=e934]
+          - generic [ref=e935]:
+            - heading "Cheddar" [level=4] [ref=e936]
+            - heading "Suppléments" [level=5] [ref=e937]
+            - heading "0,90 €" [level=6] [ref=e938]
+        - listitem [ref=e939]:
+          - img "product" [ref=e940]
+          - generic [ref=e941]:
+            - heading "Boisson Seule" [level=4] [ref=e942]
+            - heading "Sandwich Cayenne" [level=5] [ref=e943]
+            - heading "1,90 €" [level=6] [ref=e944]
+        - listitem [ref=e945]:
+          - img "product" [ref=e946]
+          - generic [ref=e947]:
+            - heading "Frites Seules" [level=4] [ref=e948]
+            - heading "Sandwich Cayenne" [level=5] [ref=e949]
+            - heading "2,50 €" [level=6] [ref=e950]
+        - listitem [ref=e951]:
+          - img "product" [ref=e952]
+          - generic [ref=e953]:
+            - heading "Raclette" [level=4] [ref=e954]
+            - heading "Suppléments" [level=5] [ref=e955]
+            - heading "0,90 €" [level=6] [ref=e956]
+        - listitem [ref=e957]:
+          - img "product" [ref=e958]
+          - generic [ref=e959]:
+            - heading "Emmental" [level=4] [ref=e960]
+            - heading "Suppléments" [level=5] [ref=e961]
+            - heading "0,90 €" [level=6] [ref=e962]

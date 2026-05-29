@@ -1,0 +1,158 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=e12] [cursor=pointer]:
+            - generic [ref=e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=e14]:
+              - generic [ref=e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=e17]:
+          - link " Tableau de bord" [ref=e19] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e20]: 
+            - generic [ref=e21]: Tableau de bord
+          - button "flag" [ref=e24] [cursor=pointer]:
+            - img "flag" [ref=e25]
+      - generic [ref=e26]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=e27] [cursor=pointer]:
+          - img "avatar" [ref=e28]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=e29]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=e30]
+          - generic [ref=e31]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:                     
+  - button "Ouvrir l'historique des commandes du jour" [active] [ref=e33] [cursor=pointer]:
+    - generic [ref=e34]: 📚
+    - generic [ref=e35]: Historique
+  - dialog "Ouvrir l'historique des commandes du jour":
+    - generic [ref=e241]:
+      - generic [ref=e242]:
+        - heading "Historique du jour (2)" [level=2] [ref=e243]:
+          - generic [ref=e244]: 📚
+          - text: Historique du jour
+          - generic [ref=e245]: (2)
+        - button "Fermer" [ref=e246] [cursor=pointer]:
+          - generic [ref=e247]: ✕
+      - list [ref=e248]:
+        - listitem [ref=e249]:
+          - generic [ref=e250]:
+            - generic [ref=e251]: N°A0004
+            - generic [ref=e252]: Prêt
+            - time [ref=e253]: 15:58
+          - list [ref=e254]:
+            - listitem [ref=e255]:
+              - generic [ref=e256]: 1×
+              - generic [ref=e257]: Coca-Cola 33cl
+            - listitem [ref=e258]:
+              - generic [ref=e259]: 1×
+              - generic [ref=e260]: Tacos
+              - generic [ref=e261]:
+                - emphasis [ref=e262]:
+                  - text: —
+                  - generic [ref=e263]: ","
+                - emphasis [ref=e264]: —
+          - generic [ref=e265]:
+            - button "Annuler le bump de la commande N°A0004 — disponible 60 secondes" [ref=e266] [cursor=pointer]: ↶ Annuler bump
+            - generic [ref=e267]: 38s
+        - listitem [ref=e268]:
+          - generic [ref=e269]:
+            - generic [ref=e270]: N°A0001
+            - generic [ref=e271]: Prêt
+            - time [ref=e272]: 00:42
+          - list [ref=e273]:
+            - listitem [ref=e274]:
+              - generic [ref=e275]: 1×
+              - generic [ref=e276]: Galette Normale
+  - generic [ref=e36]:
+    - status [ref=e37]:
+      - generic [ref=e38]:
+        - img [ref=e40]
+        - generic [ref=e42]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+      - generic [ref=e43]: LOCAL
+    - generic [ref=e172]:
+      - region "Commande A0002, source Borne, Nouvelle, attente 922 minutes 36 secondes" [ref=e277]:
+        - generic [ref=e175]:
+          - generic [ref=e176]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e177]: "[A]"
+            - generic [ref=e178]:
+              - generic [ref=e179]: Nouvelle
+              - generic [ref=e182]: Borne
+          - generic [ref=e183]:
+            - generic [ref=e184]:
+              - generic [ref=e185]: N°
+              - text: A0002
+            - generic [ref=e186]:
+              - generic [ref=e187]: Attente
+              - generic [ref=e188]: 922:36
+        - region "Détails de la commande A0002, défilable au clavier" [ref=e189]:
+          - generic [ref=e192]:
+            - generic [ref=e193]:
+              - text: "1"
+              - generic [ref=e194]: ×
+            - generic [ref=e195]: Galette Normale
+        - status "Commande en attente d'encaissement par le caissier — préparation en attente" [ref=e196]:
+          - img [ref=e197]
+          - generic [ref=e200]: En attente encaissement
+      - region "Commande A0003, source Borne, Nouvelle, attente 922 minutes 12 secondes" [ref=e278]:
+        - generic [ref=e203]:
+          - generic [ref=e204]:
+            - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e205]: "[B]"
+            - generic [ref=e206]:
+              - generic [ref=e207]: Nouvelle
+              - generic [ref=e210]: Borne
+          - generic [ref=e211]:
+            - generic [ref=e212]:
+              - generic [ref=e213]: N°
+              - text: A0003
+            - generic [ref=e214]:
+              - generic [ref=e215]: Attente
+              - generic [ref=e216]: 922:12
+        - region "Détails de la commande A0003, défilable au clavier" [ref=e217]:
+          - generic [ref=e220]:
+            - generic [ref=e221]:
+              - text: "1"
+              - generic [ref=e222]: ×
+            - generic [ref=e223]: Galette Normale
+        - status "Commande en attente d'encaissement par le caissier — préparation en attente" [ref=e224]:
+          - img [ref=e225]
+          - generic [ref=e228]: En attente encaissement
+    - region "Récemment servies" [ref=e166]:
+      - generic [ref=e167]: Récemment servies
+      - generic [ref=e168]:
+        - generic "Commande N°A0004 servie" [ref=e235]:
+          - generic [ref=e236]: N°A0004
+          - generic [ref=e237]: à l'instant
+        - generic "Commande N°A0001 servie" [ref=e169]:
+          - generic [ref=e170]: N°A0001
+          - generic [ref=e171]: il y a 917 min
+    - generic [ref=e56]: "Commande #A0004 prête"

@@ -1,0 +1,36 @@
+- generic [ref=e1]:
+  - generic [ref=e377]:
+    - generic [ref=e378]:
+      - button "Retour" [ref=e379] [cursor=pointer]:
+        - img [ref=e380]
+      - generic [ref=e382]:
+        - heading "Choisissez votre paiement" [level=1] [ref=e383]
+        - paragraph [ref=e384]:
+          - text: "Total à régler :"
+          - strong [ref=e385]: €1,90
+    - status [ref=e386]:
+      - generic [ref=e387]: "Total à régler :"
+      - strong [ref=e388]: €1,90
+    - radiogroup "Choisissez votre paiement" [ref=e389]:
+      - generic [ref=e390]:
+        - radio "Carte bancaire Visa · Mastercard · Carte bleue" [ref=e391] [cursor=pointer]:
+          - img [ref=e393]
+          - generic [ref=e398]:
+            - heading "Carte bancaire" [level=3] [ref=e399]
+            - paragraph [ref=e400]: Visa · Mastercard · Carte bleue
+        - radio "Espèces Paiement à la caisse" [checked] [active] [ref=e401] [cursor=pointer]:
+          - img [ref=e403]:
+            - generic [ref=e406]: €
+          - generic [ref=e407]:
+            - heading "Espèces" [level=3] [ref=e408]
+            - paragraph [ref=e409]: Paiement à la caisse
+          - img [ref=e426]
+        - radio "Titre restaurant Edenred · Swile · Sodexo" [ref=e410] [cursor=pointer]:
+          - img [ref=e412]
+          - generic [ref=e416]:
+            - heading "Titre restaurant" [level=3] [ref=e417]
+            - paragraph [ref=e418]: Edenred · Swile · Sodexo
+    - button "Confirmer — €1,90" [ref=e421] [cursor=pointer]:
+      - generic [ref=e422]: Confirmer — €1,90
+      - img [ref=e423]
+  - status
