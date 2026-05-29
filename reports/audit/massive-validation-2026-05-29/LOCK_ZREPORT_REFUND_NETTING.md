@@ -61,5 +61,12 @@ Orchestrator applies directly (surgical, single block) — NOT delegated.
 ## 9. NF525 attestation
 Pre + post: `php artisan fiscal:verify-chain --all` must report CHAIN OK. The patch does NOT delete/mutate any existing `z_reports`/`audit_logs` row.
 
-## 10. Human gate — OWNER SIGN-OFF
-✅ **SIGNED 2026-05-29** via chat AskUserQuestion: owner selected "Aggregate-side netting" for P0 #2 and "Authorize me under lock-plan" for the frozen-zone gate. Implementation authorized under the §6 protocol; owner reviews the committed diff post-hoc (no push).
+## 10. Human gate — OWNER SIGN-OFF → ✅ CLOSED
+✅ **SIGNED + CLOSED 2026-05-29** via chat AskUserQuestion: owner selected "Aggregate-side netting" for P0 #2 and "Authorize me under lock-plan" for the frozen-zone gate (a valid in-chat user instruction = the §10 sign-off). Implementation completed under the §6 protocol and **all §6 gates passed**:
+- TDD synthetic test RED→GREEN + **real-`RefundWithCounterEntryService` integration test** GREEN (commits `5ff8144c3`, `d9b57d4ed`).
+- `RefundPostZTest` + full Fiscal+Unit suite **183 passed, 0 regression**.
+- `php artisan fiscal:verify-chain --all` → **CHAIN OK**.
+- Frozen diff = **+21 LOC** (this §3 block only); the other 12 §7 files byte-identical.
+- Advisor-reviewed (fix confirmed correct + the integration-test gap closed).
+- Pre-commit frozen-gate satisfied via LOCK citation (**no `--no-verify`**).
+**LOCK CLOSED.** The committed diff is the owner's informational record (not push-gating; nothing pushed). Rollback (§7) remains `git revert` if ever needed.
