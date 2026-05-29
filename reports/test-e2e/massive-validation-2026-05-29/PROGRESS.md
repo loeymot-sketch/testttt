@@ -74,8 +74,17 @@ Artifacts: `reports/audit/surface-buttons-2026-05-29/*.json`. HEAL PRIORITY:
 | P3 | misc | delivery autocomplete needs Google SDK; kiosk menu-unavailable retry dead (orphaned); hardcoded "Voir" label; outbox missing success-state | various | low. |
 **Confirmed: tracker Encaisser fix is sound** (the leftover CustomEvent is harmless dead-code, not a dead button — reclassified P3).
 
+## BUTTON-AUDIT HEAL STATUS (post-fix)
+- ✅ **FIXED** Kiosk payment-refused CTAs (P1) → router fallback, sentinel 3/3, build OK — `75029c7ef`. (Latent under Plan B; live when TPE wired.)
+- ✅ **FIXED** OSS fullscreen ReferenceError (P2) → removed 3 dangling handleMouseMove refs, sentinel 2/2, build OK — `a2713f999`.
+- ✅ Tracker Encaisser (P1) already fixed — modal wired (`5a0e6b220`/`d55373a86`); audit confirmed sound.
+- ⏳ **NEEDS A FOCUSED CYCLE** Livreur P1×3 — View/Close/Reconcile emit-to-nobody + Form orphaned. Needs backend close/reconcile endpoint wiring + mounting `DeliveryBoyCashSessionFormComponent` into list/show. KNOWN-deferred partial (livreur cash-session UI deferred V1.0.X). Cycle: 1) confirm `DeliveryBoyCashSessionController` open/close/reconcile endpoints, 2) wire 3 buttons + mount Form, 3) live-drive, 4) sentinel.
+- ⏳ Outbox "Vider les échecs" no-confirm (P2) — add confirm dialog (1 edit). P3s (KDS legacy tabs, delivery autocomplete, kiosk orphaned error screens, livreur raw IDs) batch later.
+
 ## NEXT (continuation queue)
-- **FIX the 4 P1 dead buttons** (kiosk payment-refused CTAs, livreur View/Close/Reconcile + Form mount) + OSS fullscreen P2 + outbox-confirm P2 — each: wire handler → test → live-verify → commit, frozen-safe.
+- **Livreur wiring cycle** (remaining substantive button work — endpoint check + 3 buttons + Form mount + live-drive).
+- Fresh borne order → OSS wall capstone + livreur visual + outbox confirm-dialog P2.
+- Two-identical-green convergence + final GO/NO-GO. Owner fires `/code-review ultra` (cloud, user-billed — I cannot).
 1. Loyalty IDOR fix (token-name pattern) + test.
 2. changePaymentStatus fiscal-seq allocation + test.
 3. z_reports.total_ht accessor (non-frozen) + test.
