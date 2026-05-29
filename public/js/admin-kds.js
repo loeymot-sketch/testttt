@@ -383,7 +383,7 @@ var STATUS_DELIVERED = 13;
     recall: function recall(order) {
       var _this3 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
-        var response, recalledAt, _e$response, _e$response2, _window, status, message, _t2;
+        var idempotencyKey, response, recalledAt, _e$response, _e$response2, _window, status, message, _t2;
         return _regenerator().w(function (_context2) {
           while (1) switch (_context2.p = _context2.n) {
             case 0:
@@ -401,8 +401,19 @@ var STATUS_DELIVERED = 13;
             case 2:
               _this3.recallingIds = [].concat(_toConsumableArray(_this3.recallingIds), [order.id]);
               _context2.p = 3;
+              // [GOAL-2026-05-29 F6] The /recall route carries the `idempotency`
+              // middleware (routes/api.php:1160) which REQUIRES X-Idempotency-Key —
+              // the POST omitted it, so it ALWAYS 422'd and the catch faked a RAPPELÉ
+              // badge while the order was never recalled. Send a stable per-minute key
+              // (mirrors POS counter-collect): a network retry within the minute
+              // dedupes server-side; the 60s recall window aligns with the bucket.
+              idempotencyKey = "kds-recall-".concat(order.id, "-").concat(Math.floor(Date.now() / 60000));
               _context2.n = 4;
-              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/kds-order/recall/".concat(order.id));
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/kds-order/recall/".concat(order.id), null, {
+                headers: {
+                  'X-Idempotency-Key': idempotencyKey
+                }
+              });
             case 4:
               response = _context2.v;
               recalledAt = Date.now();
@@ -424,12 +435,14 @@ var STATUS_DELIVERED = 13;
               // entries are pruned.
               status = _t2 === null || _t2 === void 0 || (_e$response = _t2.response) === null || _e$response === void 0 ? void 0 : _e$response.status;
               message = _t2 === null || _t2 === void 0 || (_e$response2 = _t2.response) === null || _e$response2 === void 0 || (_e$response2 = _e$response2.data) === null || _e$response2 === void 0 ? void 0 : _e$response2.message;
-              if (status === 409 || status === 422) {
-                // Mark as recalled locally so the button hides until the next
-                // fetch reconciles. Avoids the chef hammering a button that the
-                // backend has already gated.
+              if (status === 409) {
+                // 409 = already recalled by another chef on this branch → it genuinely
+                // IS recalled, so mark locally (button hides until the next fetch).
                 _this3.recalledMap = _objectSpread(_objectSpread({}, _this3.recalledMap), {}, _defineProperty({}, order.id, Date.now()));
               }
+              // [GOAL-2026-05-29 F6] 422 = recall window expired → the recall did NOT
+              // happen, so do NOT fake a RAPPELÉ badge (the old code did, masking the
+              // failure). Just surface the message below; the next fetch prunes the row.
               // Defensive surfacing via the existing toast helper if available.
               // Falls back to console.warn so the failure is observable in dev.
               if ((_window = window) !== null && _window !== void 0 && (_window = _window.toastr) !== null && _window !== void 0 && _window.error && message) {
