@@ -28,3 +28,17 @@ Statut : V1 lancée.
 - ALL stale-test/baseline drift behind real security+feature hardening; adversarially verified 0 holes; ZERO source/frozen changes (except owner-LOCKed ZReportService baseline bump).
 - Commits: 262662563 (vitest x14), aefce71d8 (frozen baseline), 57fbf29bb (php x3).
 - → V2 concurrency F2 next.
+
+## V2 DONE — F2 concurrency
+- changePaymentStatus staff path: lockForUpdate + in-lock idempotent-skip + fresh re-validate (double-PAID race). Race test green. Commit 4581043d1.
+
+## V3 DONE — NF525 robustness
+- fiscal:verify-z-membership cron-wired dailyAt(06:05) + pageable onFailure + sentinel. confirmCounterPayment cross-window exposure confirmed + COVERED by the detector (detect-only per owner). F1 TVA frozen+dormant stays on VAT-activation checklist. Commit 00a628e48.
+
+## V4 — silent failures
+- ✅ F4 auto-86 multi-item dedup (aggregate_id in correlation key), DORMANT-but-correct, 10 tests green. Commit 39257646f.
+- ⏳ DEFERRED to a focused cycle (invasive for rare/dormant edges — NOT V1-LOCAL blockers; rushing a schema migration + sync-critical job rewrite + frozen-adjacent kiosk feature at this depth = regression risk):
+  - **broadcast_completed_at orphan marker**: a worker hard-killed at the exact broadcast moment leaves dispatched_at SET + last_error NULL = identical to success -> escapes rescue/monitor/orphan-alarm. FIX SPEC: migration adds `domain_events.broadcast_completed_at` (nullable timestamp); DispatchDomainEventsJob Phase-3a sets it on successful broadcast; OutboxRescueCommand lane-B + MonitorOutboxStaleness use `broadcast_completed_at IS NULL` as the positive "not yet broadcast" discriminator (replacing the dispatched_at overload). RARE in V1 single-box; staleness monitor covers attempts-climbing cases.
+  - **menu backstop polling (kiosk)**: a CatalogChanged swallowed while the kiosk WS never drops -> stale menu / sold-out item still orderable. FIX SPEC: add a low-frequency (e.g. 60-120s) menu cache-version poll on the kiosk as a backstop to the WS cache-invalidation; verify it does NOT touch the frozen Kiosk{Wizard,App,Upsell} components (likely lives in the menu service/store) — if it must touch a frozen component, requires a LOCK. Needs per-item stock seeded to live-validate (currently dormant).
+
+## V5 — massive validation (next)
