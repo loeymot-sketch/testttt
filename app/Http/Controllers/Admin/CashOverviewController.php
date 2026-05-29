@@ -142,8 +142,9 @@ class CashOverviewController extends AdminController
                 }
             })
             ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->limit(self::MAX_ROWS);
+            ->orderByDesc('id');
+        // [GOAL-2026-05-29 F7] MAX_ROWS cap moved to the rendered LIST only (below),
+        // NOT the builder — the summary must aggregate ALL matching rows.
 
         // Mode filter (normalized bucket) — applied via raw payment_method LIKE.
         if ($modeRaw = $request->query('mode')) {
@@ -195,11 +196,16 @@ class CashOverviewController extends AdminController
             });
         }
 
-        $transactions = $query->get();
+        // [GOAL-2026-05-29 F7] Summary aggregates the FULL filtered (date-bounded)
+        // set so grand_total / by_source / by_mode are correct even on a
+        // >MAX_ROWS window — the previous code summed only the capped list,
+        // silently under-reporting reconciliation totals. The window is
+        // day-bounded by default (whereBetween created_at), so this is cheap.
+        $summary = $this->summarize((clone $query)->get());
 
-        // Aggregate per source + per mode bucket — server-side so the UI
-        // never has to compute (Vue page is a pure renderer).
-        $summary = $this->summarize($transactions);
+        // Rendered list stays capped for performance (UI table only). The
+        // summary above is NOT affected by this cap.
+        $transactions = $query->limit(self::MAX_ROWS)->get();
 
         // Cash drawer reconciliation column. Branch Manager / cashier sees
         // their open session. Admin sees the session of the filtered branch

@@ -134,6 +134,33 @@ class CashOverviewControllerTest extends TestCase
         return $txn->fresh();
     }
 
+    /**
+     * [GOAL-2026-05-29 F7] Summary totals MUST cover ALL matching rows in the
+     * window, not just the MAX_ROWS-capped rendered list. Pre-fix, summarize()
+     * iterated the capped collection → grand_total under-reported on a
+     * >500-transaction window (wrong reconciliation). Proven here with 501 rows:
+     * summary aggregates all 501 while the rendered list stays capped at 500.
+     */
+    public function test_summary_aggregates_beyond_the_rendered_list_cap(): void
+    {
+        $today = Carbon::now('Europe/Paris')->startOfDay()->addHours(10);
+        $count = 501; // > CashOverviewController::MAX_ROWS (500)
+
+        for ($i = 0; $i < $count; $i++) {
+            $this->makeOrderTransaction($this->branchA, 'caisse', 'cash', 1.00, $today);
+        }
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+            ->getJson('/api/admin/cash-overview');
+
+        $response->assertOk();
+        // Summary covers ALL 501 (uncapped) — the bug summed only the capped 500.
+        $this->assertSame($count, (int) $response->json('summary.count'));
+        $this->assertEquals(501.00, (float) $response->json('summary.total'));
+        // The rendered list stays capped for performance.
+        $this->assertLessThanOrEqual(500, count($response->json('data')));
+    }
+
     public function test_rejects_unauthenticated(): void
     {
         $this->getJson('/api/admin/cash-overview')->assertStatus(401);
