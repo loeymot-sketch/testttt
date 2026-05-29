@@ -118,6 +118,7 @@
 
           <PosV5Numpad
             :aria-label="$t('label.received_amount')"
+            :decimal-separator="','"
             @input="numpadInput"
             @back="numpadBack"
             @clear="numpadClear"
@@ -227,6 +228,11 @@ export default {
     return {
       selectedMode: 'CASH',
       cashReceivedRaw: '',
+      // [GOAL-2026-05-29 BUG-CASH-KEYPAD] true while the received field still
+      // holds the auto-pre-filled order total untouched. The FIRST numpad/key
+      // press then starts a FRESH entry instead of appending onto "8,50"
+      // (owner-reported "chiffres bizarres": pre-filled 8,50 + tap 1 → 8,501).
+      cashFieldPristine: true,
       submitting: false,
       // Static mode list — kept inside data to ease i18n key reference;
       // intentionally NOT a computed because keys never change.
@@ -299,6 +305,7 @@ export default {
           // so the cashier sees "8,50" instead of "8.50". Parser at
           // cashReceivedNumber accepts both `,` and `.`.
           this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
+          this.cashFieldPristine = true;
           this.selectedMode = 'CASH';
           this.submitting = false;
           // [GOAL-M-POS-2 2026-05-24] Auto-focus receivedInput on modal
@@ -338,21 +345,40 @@ export default {
       if (modeId === 'CASH' && (this.cashReceivedRaw === '' || Number(String(this.cashReceivedRaw).replace(',', '.')) <= 0)) {
         // [GOAL-D2 2026-05-23] FR decimal pre-fill (see watcher comment).
         this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
+        this.cashFieldPristine = true;
       }
     },
     onReceivedInput(e) {
+      // Physical-keyboard edit → the field is now user-owned (not pristine).
+      this.cashFieldPristine = false;
       this.cashReceivedRaw = e.target.value;
     },
     numpadInput(val) {
       if (this.submitting) return;
-      this.cashReceivedRaw = String(this.cashReceivedRaw || '') + val;
+      // [GOAL-2026-05-29 BUG-CASH-KEYPAD] First tap after the auto-pre-fill
+      // starts a FRESH amount (the pre-fill is a one-tap-confirm convenience).
+      // Appending onto the pre-filled "8,50" produced "8,501" — the
+      // owner-reported "chiffres bizarres". Physical typing already replaces
+      // via the input's auto-select; the custom numpad must mirror that.
+      let base = this.cashFieldPristine ? '' : String(this.cashReceivedRaw || '');
+      this.cashFieldPristine = false;
+
+      // One decimal separator only — ignore a 2nd ','/'.' (was "8,50," → NaN).
+      if (val === ',' || val === '.') {
+        if (base.includes(',') || base.includes('.')) return;
+        if (base === '') base = '0'; // leading separator → "0,"
+      }
+      this.cashReceivedRaw = base + val;
     },
     numpadBack() {
       if (this.submitting) return;
+      // Backspace on the pristine pre-fill: begin editing the existing value.
+      this.cashFieldPristine = false;
       this.cashReceivedRaw = String(this.cashReceivedRaw || '').slice(0, -1);
     },
     numpadClear() {
       if (this.submitting) return;
+      this.cashFieldPristine = false;
       this.cashReceivedRaw = '';
     },
     onlyFloat(e) {
