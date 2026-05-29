@@ -70259,7 +70259,13 @@ if (_MIX_PUSHER_APP_KEY) {
   // we (1) reinject the latest local token (cheap retry — handles login-token rotation),
   // (2) forward the failure to wsService which tracks a sliding-window counter and
   // promotes the connection to SESSION_INVALID after 3 failures within 60s.
-  // No timer-based proactive refresh: there is no backend refresh-token endpoint.
+  // [GOAL-2026-05-29 P-AUTH] Proactive refresh IS now wired (app.js/pos-app.js: a 2h
+  // timer dispatches the 'refreshAuthToken' Vuex action -> POST /api/refresh-token,
+  // re-issuing a fresh abilities-preserved Bearer) so always-on KDS/OSS/POS survive
+  // past the 480-min TTL — both WS channel-auth and the delta-poll use this token.
+  // This reactive handler remains the secondary net (re-inject local token + the
+  // sliding-window SESSION_INVALID promotion). (The earlier "no refresh endpoint"
+  // note was stale — RefreshTokenController has existed at routes/api.php:155.)
   var _bindSubscriptionErrorHandler = function _bindSubscriptionErrorHandler(channel) {
     if (!channel || channel.__hasAuthErrorBinding) return channel;
     var subscription = channel.subscription || channel;
@@ -76563,6 +76569,19 @@ app.use(vue_toastification__WEBPACK_IMPORTED_MODULE_7__["default"], {
   rtl: false
 });
 app.mount('#app');
+
+// [GOAL-2026-05-29 P-AUTH] Proactive Sanctum token refresh — the POS is an always-on
+// surface; its Bearer (sanctum.expiration = 480min) is used by every axios call + the
+// WS channel-auth. Without a refresh it dies at ~8h mid service-day. Refresh every 2h
+// via /api/refresh-token (abilities preserved). Mirrors app.js (KDS/OSS/admin).
+var POS_TOKEN_REFRESH_INTERVAL_MS = 2 * 60 * 60 * 1000;
+setInterval(function () {
+  try {
+    if (_store__WEBPACK_IMPORTED_MODULE_5__["default"].state.auth && _store__WEBPACK_IMPORTED_MODULE_5__["default"].state.auth.authToken) {
+      _store__WEBPACK_IMPORTED_MODULE_5__["default"].dispatch('refreshAuthToken')["catch"](function () {});
+    }
+  } catch (_) {/* never let the refresh timer break the app */}
+}, POS_TOKEN_REFRESH_INTERVAL_MS);
 
 /***/ },
 
@@ -84010,6 +84029,31 @@ var auth = {
         });
       });
     },
+    // [GOAL-2026-05-29 P-AUTH] Proactively re-issue the Sanctum Bearer BEFORE its
+    // 480-min TTL expires. The SPA is Bearer-everywhere: the delta-poll AND the
+    // WebSocket channel-auth both use this token, so without a refresh the ENTIRE
+    // sync (WS + poll) dies at ~8h — an always-on KDS/OSS would silently go stale
+    // mid-service. /api/refresh-token (RefreshTokenController) re-issues a fresh
+    // token preserving abilities. On failure we keep the existing token (the
+    // reactive subscription_error handler + 401->login remain the safety net).
+    refreshAuthToken: function refreshAuthToken(context) {
+      var current = context.state.authToken;
+      if (!current) {
+        return Promise.resolve(false);
+      }
+      return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post('refresh-token', {
+        token: current
+      }).then(function (res) {
+        var fresh = res && res.data && res.data.token ? res.data.token : null;
+        if (fresh) {
+          context.commit('authTokenRefreshed', fresh);
+          return true;
+        }
+        return false;
+      })["catch"](function () {
+        return false;
+      });
+    },
     logout: function logout(context) {
       return new Promise(function (resolve, reject) {
         axios__WEBPACK_IMPORTED_MODULE_0__["default"].post('auth/logout').then(function (res) {
@@ -84092,6 +84136,16 @@ var auth = {
       // [GAP-34-2] Re-inject the new token into Echo auth headers after login.
       // Echo is initialized at page load before the token exists — this ensures
       // private channel auth works immediately after login without page reload.
+      if (typeof window !== 'undefined' && typeof window._refreshEchoAuth === 'function') {
+        window._refreshEchoAuth();
+      }
+    },
+    // [GOAL-2026-05-29 P-AUTH] Store the proactively-refreshed Bearer + re-inject it
+    // into Echo so the live WS channel-auth keeps working across the refresh. The
+    // axios interceptor reads state.authToken, so it picks up the fresh token on the
+    // next request; vuex-persist writes it to localStorage for reloads.
+    authTokenRefreshed: function authTokenRefreshed(state, token) {
+      state.authToken = token;
       if (typeof window !== 'undefined' && typeof window._refreshEchoAuth === 'function') {
         window._refreshEchoAuth();
       }

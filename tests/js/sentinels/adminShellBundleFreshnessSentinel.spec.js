@@ -4,12 +4,26 @@
 // PENDING_ sanitization, etc.).
 //
 // Trigger 1: anchor Vue files lazy-imported into the admin-shell chunk
-//           (MessageListComponent, ProfileEditProfileComponent) whose mtime
-//           is greater than public/js/admin-shell.js.
-// Trigger 2: cross-bundle layouts/auth/helpers that DefaultComponent embeds
-//           in admin-shell at build time (BackendNavbarComponent.vue,
-//           store/modules/auth.js, helpers/phoneDisplay.js).
-// Trigger 3: i18n catalogs fr.json / en.json / ar.json.
+//           (MessageListComponent, ProfileEditProfileComponent,
+//           OnlineOrderReceiptComponent) whose mtime is greater than
+//           public/js/admin-shell.js. (Verified still embedded — grep
+//           2026-05-29: MessageListComponent x29, ProfileEditProfile x18,
+//           OnlineOrderReceipt x22 in public/js/admin-shell.js.)
+// Trigger 2: i18n catalogs fr.json / en.json / ar.json.
+//
+// [GOAL-2026-05-29 P-AUTH] The former "Trigger 2" group (BackendNavbarComponent.vue
+// + store/modules/auth.js + helpers/phoneDisplay.js) was REMOVED. Those modules
+// USED to be duplicated into admin-shell.js (commit 272dfdffa: sanitizePendingPhone
+// x7 in admin-shell.js), but the W1B vendor-chunk extraction (webpack.mix.js:33-40)
+// hoisted the eagerly-imported store + DefaultComponent-static chrome into the entry
+// (app.js/pos-app.js) + vendor.js. They no longer ship inside admin-shell.js —
+// verified by grep on a clean rebuild (auth/phoneDisplay/BackendNavbar all x0 in
+// public/js/admin-shell.js, while authTokenRefreshed/sanitizePendingPhone ARE in
+// app.js + pos-app.js). Keeping them here produced a FALSE staleness whenever auth.js
+// or phoneDisplay was touched (the bundle that needs no rebuild flagged stale). Their
+// freshness is enforced where the code actually lives: appBundleFreshnessSentinel +
+// posAppBundleFreshnessSentinel both list all three (lines 90/97/98). Net coverage
+// is unchanged; the false-positive is gone.
 //
 // Fix: npm run development (dev) or npm run production (prod-style)
 //
@@ -87,28 +101,21 @@ describe('Build integrity — admin-shell bundle freshness (FK-V1-0-2-WAVE-B2)',
         resolve(root, 'resources/js/components/admin/onlineOrders/OnlineOrderReceiptComponent.vue'),
     ];
 
-    // --- Group 2: layouts/store/helpers embedded transitively at build time
-    // BackendNavbarComponent is statically imported by DefaultComponent;
-    // store/modules/auth.js + helpers/phoneDisplay.js were Wave A1/B1 fixes
-    // that rebuilt admin-shell.js (verified commits 62f90b2b4 + 272dfdffa).
-    const transitive = [
-        resolve(root, 'resources/js/components/layouts/backend/BackendNavbarComponent.vue'),
-        resolve(root, 'resources/js/store/modules/auth.js'),
-        resolve(root, 'resources/js/helpers/phoneDisplay.js'),
-    ];
-
-    // --- Group 3: i18n catalogs ---
+    // --- Group 2: i18n catalogs ---
+    // (The former store/helper/navbar "transitive" group was removed — see the
+    //  [GOAL-2026-05-29 P-AUTH] header note. Those modules no longer ship in
+    //  admin-shell.js post vendor-chunk extraction; they are guarded by the
+    //  app + pos-app freshness sentinels where they actually compile.)
     const i18nDir = resolve(root, 'resources/js/languages');
     const i18nSources = ['fr', 'en', 'ar'].map((l) => resolve(i18nDir, `${l}.json`));
 
     const sourceGroups = [
         { label: 'admin-shell-anchor-vue', paths: anchorVue },
-        { label: 'admin-shell-transitive', paths: transitive },
         { label: 'i18n-catalogs', paths: i18nSources },
     ];
 
     it('discovers admin-shell anchor source files (smoke — guards against empty-set bug)', () => {
-        for (const p of [...anchorVue, ...transitive, ...i18nSources]) {
+        for (const p of [...anchorVue, ...i18nSources]) {
             expect(existsSync(p), `missing anchor source ${p}`).toBe(true);
         }
     });

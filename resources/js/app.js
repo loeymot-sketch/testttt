@@ -206,3 +206,20 @@ router.afterEach(() => {
 });
 
 app.mount('#app');
+
+// [GOAL-2026-05-29 P-AUTH] Proactive Sanctum token refresh. The SPA is Bearer-
+// everywhere: the KDS/OSS delta-poll AND the WebSocket channel-auth both use this
+// token (sanctum.expiration = 480min). Without a refresh the ENTIRE live sync (WS +
+// poll) dies at ~8h — an always-on KDS/OSS would silently stop receiving orders mid
+// service-day until a manual re-login. Refresh every 2h (4 refreshes per TTL, ample
+// margin, robust to a missed tick) via the existing /api/refresh-token endpoint
+// (abilities preserved). (bootstrap.js's "no backend refresh-token endpoint" comment
+// was stale — the endpoint exists at routes/api.php:155.)
+const TOKEN_REFRESH_INTERVAL_MS = 2 * 60 * 60 * 1000;
+setInterval(() => {
+    try {
+        if (store.state.auth && store.state.auth.authToken) {
+            store.dispatch('refreshAuthToken').catch(() => {});
+        }
+    } catch (_) { /* never let the refresh timer break the app */ }
+}, TOKEN_REFRESH_INTERVAL_MS);

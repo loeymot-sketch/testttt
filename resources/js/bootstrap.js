@@ -364,7 +364,13 @@ if (_MIX_PUSHER_APP_KEY) {
     // we (1) reinject the latest local token (cheap retry — handles login-token rotation),
     // (2) forward the failure to wsService which tracks a sliding-window counter and
     // promotes the connection to SESSION_INVALID after 3 failures within 60s.
-    // No timer-based proactive refresh: there is no backend refresh-token endpoint.
+    // [GOAL-2026-05-29 P-AUTH] Proactive refresh IS now wired (app.js/pos-app.js: a 2h
+    // timer dispatches the 'refreshAuthToken' Vuex action -> POST /api/refresh-token,
+    // re-issuing a fresh abilities-preserved Bearer) so always-on KDS/OSS/POS survive
+    // past the 480-min TTL — both WS channel-auth and the delta-poll use this token.
+    // This reactive handler remains the secondary net (re-inject local token + the
+    // sliding-window SESSION_INVALID promotion). (The earlier "no refresh endpoint"
+    // note was stale — RefreshTokenController has existed at routes/api.php:155.)
     function _bindSubscriptionErrorHandler(channel) {
         if (!channel || channel.__hasAuthErrorBinding) return channel;
         const subscription = channel.subscription || channel;

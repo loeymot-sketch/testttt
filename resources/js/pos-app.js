@@ -190,3 +190,16 @@ app.use(Toast, {
 });
 
 app.mount('#app');
+
+// [GOAL-2026-05-29 P-AUTH] Proactive Sanctum token refresh — the POS is an always-on
+// surface; its Bearer (sanctum.expiration = 480min) is used by every axios call + the
+// WS channel-auth. Without a refresh it dies at ~8h mid service-day. Refresh every 2h
+// via /api/refresh-token (abilities preserved). Mirrors app.js (KDS/OSS/admin).
+const POS_TOKEN_REFRESH_INTERVAL_MS = 2 * 60 * 60 * 1000;
+setInterval(() => {
+    try {
+        if (store.state.auth && store.state.auth.authToken) {
+            store.dispatch('refreshAuthToken').catch(() => {});
+        }
+    } catch (_) { /* never let the refresh timer break the app */ }
+}, POS_TOKEN_REFRESH_INTERVAL_MS);
