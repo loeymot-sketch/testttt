@@ -394,6 +394,15 @@
           for the actual paper output.
         -->
         <ReceiptComponent v-if="reprintOrder && reprintOrder.id" :order="reprintOrder" />
+
+        <!-- [GOAL-2026-05-29 DEAD-BUTTON-FIX] Shared counter-collect modal so the
+             tracker's "Encaisser" CTA actually opens the encashment flow
+             (previously a dead button — un-listened CustomEvent only). -->
+        <PosCounterCollectModal
+            :order="encaisseOrder"
+            @confirmed="onEncaisseConfirmed"
+            @cancel="encaisseOrder = null"
+        />
     </section>
 </template>
 
@@ -405,6 +414,10 @@ import alertService from '../../../services/alertService';
 import appService from '../../../services/appService';
 import ConnectionStatusBanner from '../../common/ConnectionStatusBanner.vue';
 import ReceiptComponent from './ReceiptComponent.vue';
+// [GOAL-2026-05-29 DEAD-BUTTON-FIX] Shared counter-collect modal — the tracker
+// must be self-sufficient for encashment (its Encaisser CTA was previously a
+// dead button: it only dispatched an un-listened CustomEvent).
+import PosCounterCollectModal from './PosCounterCollectModal.vue';
 // [WT-D-R1-F4 2026-05-20] Shared admin FR EUR price formatter — canonical
 // "19,00 €" rendering shared with PosOrderList / PosOrderShow.
 import { adminPriceMixin } from '../../../helpers/formatPrice';
@@ -422,7 +435,7 @@ const FRESH_HIGHLIGHT_MS = 6000;
  */
 export default {
     name: 'PosOrdersTrackerComponent',
-    components: { ConnectionStatusBanner, ReceiptComponent },
+    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal },
     mixins: [adminPriceMixin],
     data() {
         return {
@@ -453,6 +466,9 @@ export default {
                 error: '',
                 busy: false,
             },
+            // [GOAL-2026-05-29 DEAD-BUTTON-FIX] Order currently being encashed
+            // via the shared PosCounterCollectModal (null = modal closed).
+            encaisseOrder: null,
         };
     },
     computed: {
@@ -505,6 +521,20 @@ export default {
                 if (s === orderStatusEnum.ACCEPT) {
                     if (this.isCashPending(o)) {
                         buckets.accept.push(o);
+                    } else {
+                        // [GOAL-2026-05-29 TRACKER-CONTINUITY-FIX] A paid order
+                        // still at ACCEPT is the CASH counter-collect case: the
+                        // S-5 carve-out (AutoPrepareOnPaidPolicy::shouldPromote
+                        // === false for isCounterCollect+CASH) intentionally does
+                        // NOT auto-promote it to PREPARING — it waits for the chef
+                        // to bump it on the KDS, which DOES show it (KitchenRelease
+                        // Rule: PAID → released, "Prêt" action). The old code
+                        // assumed every paid order auto-promotes and silently
+                        // DROPPED this one → the paid order VANISHED from the
+                        // tracker board while the kitchen was still cooking it.
+                        // Surface it in the kitchen-active lane so the tracker
+                        // stays consistent with the KDS.
+                        buckets.preparing.push(o);
                     }
                 }
                 else if (s === orderStatusEnum.PREPARING) buckets.preparing.push(o);
@@ -878,11 +908,31 @@ export default {
         // parallel. Fallback: deep-link to the POS payment screen.
         openEncaissement(order) {
             if (!order || !order.id) return;
+            // [GOAL-2026-05-29 DEAD-BUTTON-FIX] Previously this ONLY dispatched a
+            // `foodking:pos:open-encaissement` CustomEvent expecting a global
+            // listener (PosShell/PosComponent) — but nothing in the app ever
+            // listened for it, and on the standalone /admin/pos-orders-tracker
+            // page PosComponent is not mounted, so the Encaisser CTA was a DEAD
+            // BUTTON. We now open the shared PosCounterCollectModal locally; it
+            // POSTs admin/pos/counter-collect/{id}/confirm itself, and on
+            // @confirmed we refresh the board. The modal reads `order.total`, so
+            // we map the cash-pending amount onto it.
+            const amount = order.cash_pending_amount ?? order.total_amount_price ?? order.total ?? order.order_amount ?? 0;
+            this.encaisseOrder = { ...order, total: amount };
+            // Keep the decoupled CustomEvent (harmless) for any future global host.
             try {
                 window.dispatchEvent(new CustomEvent('foodking:pos:open-encaissement', {
-                    detail: { orderId: order.id, amount: order.cash_pending_amount ?? order.total_amount_price },
+                    detail: { orderId: order.id, amount },
                 }));
             } catch (_e) { /* defensive — environment without CustomEvent */ }
+        },
+        // [GOAL-2026-05-29 DEAD-BUTTON-FIX] PosCounterCollectModal already POSTed
+        // the counter-collect; clear it + refresh so the now-paid order leaves
+        // the "À encaisser" lane (the OrderPaidAtCounter broadcast also triggers
+        // fetchOrders, but we refresh immediately for local responsiveness).
+        onEncaisseConfirmed() {
+            this.encaisseOrder = null;
+            this.fetchOrders();
         },
         sourceOf(o) {
             const surface = String(o.source_surface || o._origin || '').toLowerCase();
