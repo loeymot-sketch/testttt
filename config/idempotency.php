@@ -61,6 +61,13 @@ return [
         'api/admin/online-order/change-status/*',
         'api/admin/table-order/change-status/*',
         'api/admin/kds-order/change-status/*',
+        // [Audit 2026-05-29 SUP-2 — IdempotencyRequiredRoutesCoverageTest fix]
+        // KDS chef "Annuler bump" / recall route (heal-5 / Wave Polish Final
+        // 2026-05-21) ships `idempotency` middleware at routes/api.php:1159
+        // but was missing from required_routes — sentinel rouge en CI.
+        // Identique au pattern change-status/* ci-dessus + même defense-in-depth
+        // (idempotency + throttle:kds-bump) au router.
+        'api/admin/kds-order/recall/*',
         'api/frontend/order/change-status/*',
         'api/frontend/delivery-boy-order/change-status/*',
         // Livreur cash-session routes (new V1.0.2-sub6-3 NF525 cash session

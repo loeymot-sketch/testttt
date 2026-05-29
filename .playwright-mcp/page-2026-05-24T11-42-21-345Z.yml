@@ -1,6 +1,0 @@
-- generic [ref=e3]:
-  - img "404" [ref=e4]
-  - heading "Page non trouvée !" [level=3] [ref=e5]
-  - paragraph [ref=e6]: Impossible de trouver la page demandée.
-  - link "Retour à l’accueil" [ref=e7] [cursor=pointer]:
-    - /url: /home

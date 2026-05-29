@@ -27,13 +27,17 @@ use Tests\TestCase;
 class FormRequestAuthzDriftSentinelTest extends TestCase
 {
     /**
-     * Baseline = 69 (2026-05-18 post V1.0.2 BUILD-6 critical subset).
+     * Baseline = 66 (2026-05-29 SUP-2 ratchet — actual count -3 vs prior 69 ceiling).
      *
      * History:
      *   - 77 initial Wave 8 (commit 68b63c090) — sentinel baseline establishment.
      *   - 74 post Wave 5H (commit 46fb4ef2d) — 5 admin-write FormRequests refactored
      *     to $this->user()?->can('xxx') (Currency, Tax, Branch, Role, Administrator).
-     *   - 69 post BUILD-6 (this wave) — 8 critical FormRequests refactored:
+     *   - 69 post BUILD-6 — 8 critical FormRequests refactored.
+     *   - 66 ratchet 2026-05-29 SUP-2 audit — actual count had drifted -3 since
+     *     BUILD-6 without baseline update (subsequent wave fixes uncounted).
+     *     Ratchet cements progress so regression cannot re-introduce.
+     *   - 69 post BUILD-6 — 8 critical FormRequests refactored:
      *       * PosOrderRequest   → can('pos')                              (POS order create)
      *       * DeliveryBoyRequest→ can('delivery-boys_create|edit')
      *       * CouponRequest     → can('coupons_create|edit')
@@ -58,7 +62,7 @@ class FormRequestAuthzDriftSentinelTest extends TestCase
      *   - ItemCategoryRequest, ItemAttributeRequest, ItemExtraRequest, ItemAddonRequest,
      *     ItemVariationRequest, MenuTemplateRequest, OfferItemRequest (catalog family)
      */
-    private const RETURN_TRUE_BASELINE = 69;
+    private const RETURN_TRUE_BASELINE = 66;
 
     public function test_form_request_return_true_count_does_not_grow_past_baseline(): void
     {
