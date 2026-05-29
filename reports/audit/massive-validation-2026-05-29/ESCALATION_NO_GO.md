@@ -4,7 +4,15 @@
 > - **P0 #2 (frozen ZReportService refund-in-Z) — ✅ FIXED + real-path-proven.** Owner authorized "aggregate-side netting" under lock-plan (`LOCK_ZREPORT_REFUND_NETTING.md`, owner-signed). In-window counter-entry mirrors now net into the signed Z. TDD: synthetic + **real-`RefundWithCounterEntryService` integration test** RED→GREEN; full Fiscal+Unit suite **183 passed, 0 regression**; NF525 CHAIN OK; frozen diff = +21 LOC (LOCK block only). Commits `830dc9234` (LOCK), `5ff8144c3` (patch), `d9b57d4ed` (integration test). Advisor-reviewed.
 > - **P0 #1 (cross-Z-window settlement orphan) — ✅ RISK-MANAGED per owner "detect-only".** Harmful numbering already reverted (`3a4744e63`); added read-only `fiscal:verify-z-membership` detector (commit `b6a1cf81a`, runs clean on live DB). Full cross-window policy (reject-late vs counter-entry) deferred per owner — the detector surfaces any orphan before close.
 > - **F1 (TVA/HT split, frozen, dormant 0% VAT) — VAT-ACTIVATION CHECKLIST (do NOT ship a non-zero VAT rate until done):** (a) fix the discount→HT/TVA split in PricingService/ZReportService:634 under lock-plan; (b) verify `Order::getTotalHtAttribute` against discounted orders; (c) ⚠️ the new refund-netting block adds the mirror's negated `total_tva` via `applyOrderToTotals`, but the mirror's `order_items` do NOT flow into `taxBreakdownForOrders` — under non-zero VAT `total_tva` and `total_by_tax_rate` would diverge for refunds; reconcile both before VAT goes live.
-> **Net: the 2 NF525 stop-ships are cleared/risk-managed. Residual = non-frozen P1s (F2/F3/F5/F7) + dormant F1 = a focused hardening cycle, NOT V1-LOCAL blockers. Owner still fires `/code-review ultra` (cloud) at his discretion.**
+> **Net: the 2 NF525 stop-ships are cleared/risk-managed.**
+> **UPDATE++ — all confirmed non-frozen P1s now CLEARED too (each fixed + tested):**
+> - ✅ **F6** KDS "Annuler bump" recall dead button — idempotency header, **live-proven** (`5ee1df127`).
+> - ✅ **F7** cash-overview totals truncated to 500 rows — summary now over full filtered set, 501-row test (`176bbcb8a`).
+> - ✅ **F5** "Retry failed" infinite resurrection — attempts(<5)+age(7d) caps, test (`895df01b9`).
+> - ✅ **F3** changeStatus TOCTOU — in-lock re-validation on all 3 lock blocks, deterministic race test (`561b9b553`); Order 35 + delivery/status 79 green.
+> - ⚪ **F2** (changePaymentStatus seq-gap) — **moot**: the seq allocation was reverted (`3a4744e63`).
+> - ⚪ **F1** (TVA/HT split, frozen) + **F4** (multi-item auto-86) — **DORMANT** in V1 config (0% VAT / stock-tracking off); F1 on the VAT-activation checklist above.
+> **Remaining = only DORMANT items (can't manifest in current V1 config) + the campaign's verify-later completeness gaps. V1 LOCAL is GO for ship; `/code-review ultra` (cloud) is the owner's optional external pass.**
 
 ---
 
