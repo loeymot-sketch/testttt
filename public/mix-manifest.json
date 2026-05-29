@@ -2,7 +2,7 @@
     "/js/pos-app.js": "/js/pos-app.js?id=dd7d38c9b9be5eeff0ff0b57062e511f",
     "/js/app.js": "/js/app.js?id=b3c0caaf0ffd6f8b203946988efe66b5",
     "/js/manifest.js": "/js/manifest.js?id=6ef4009a40f250662227149f6928fc8e",
-    "/js/pos-shell.js": "/js/pos-shell.js?id=ef9c011b6c2a8ff7992dc23cd664fd7d",
+    "/js/pos-shell.js": "/js/pos-shell.js?id=01641b83b9c5106b5abf6ec0b7edf31d",
     "/js/admin-shell.js": "/js/admin-shell.js?id=e7b4bef9d19e876e2707f77f9755a491",
     "/js/admin-reports.js": "/js/admin-reports.js?id=1efce6364cddef406e24ec9d5297f42c",
     "/js/admin-kds.js": "/js/admin-kds.js?id=683814612d841e8fcb963fb7845d7f8c",
@@ -11,6 +11,6 @@
     "/js/kiosk-wizard.js": "/js/kiosk-wizard.js?id=4bc19506cd7eb1678bcfa98128babefe",
     "/js/kiosk-errors.js": "/js/kiosk-errors.js?id=1182220e58ee279cb1edd2239cfbae78",
     "/js/kiosk-wizard-step.js": "/js/kiosk-wizard-step.js?id=dd22936dfb4580d18eca41f087948730",
-    "/css/app.css": "/css/app.css?id=0fed80efe5f70df9c65f58914de9763c",
+    "/css/app.css": "/css/app.css?id=9e72d491df5ebafdf3f7a81b8aeebf37",
     "/js/vendor.js": "/js/vendor.js?id=0700986e06877b444d68a7add07dcb75"
 }

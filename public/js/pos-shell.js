@@ -7302,6 +7302,11 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     return {
       selectedMode: 'CASH',
       cashReceivedRaw: '',
+      // [GOAL-2026-05-29 BUG-CASH-KEYPAD] true while the received field still
+      // holds the auto-pre-filled order total untouched. The FIRST numpad/key
+      // press then starts a FRESH entry instead of appending onto "8,50"
+      // (owner-reported "chiffres bizarres": pre-filled 8,50 + tap 1 → 8,501).
+      cashFieldPristine: true,
       submitting: false,
       // Static mode list — kept inside data to ease i18n key reference;
       // intentionally NOT a computed because keys never change.
@@ -7391,6 +7396,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
           // so the cashier sees "8,50" instead of "8.50". Parser at
           // cashReceivedNumber accepts both `,` and `.`.
           this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
+          this.cashFieldPristine = true;
           this.selectedMode = 'CASH';
           this.submitting = false;
           // [GOAL-M-POS-2 2026-05-24] Auto-focus receivedInput on modal
@@ -7430,21 +7436,40 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       if (modeId === 'CASH' && (this.cashReceivedRaw === '' || Number(String(this.cashReceivedRaw).replace(',', '.')) <= 0)) {
         // [GOAL-D2 2026-05-23] FR decimal pre-fill (see watcher comment).
         this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
+        this.cashFieldPristine = true;
       }
     },
     onReceivedInput: function onReceivedInput(e) {
+      // Physical-keyboard edit → the field is now user-owned (not pristine).
+      this.cashFieldPristine = false;
       this.cashReceivedRaw = e.target.value;
     },
     numpadInput: function numpadInput(val) {
       if (this.submitting) return;
-      this.cashReceivedRaw = String(this.cashReceivedRaw || '') + val;
+      // [GOAL-2026-05-29 BUG-CASH-KEYPAD] First tap after the auto-pre-fill
+      // starts a FRESH amount (the pre-fill is a one-tap-confirm convenience).
+      // Appending onto the pre-filled "8,50" produced "8,501" — the
+      // owner-reported "chiffres bizarres". Physical typing already replaces
+      // via the input's auto-select; the custom numpad must mirror that.
+      var base = this.cashFieldPristine ? '' : String(this.cashReceivedRaw || '');
+      this.cashFieldPristine = false;
+
+      // One decimal separator only — ignore a 2nd ','/'.' (was "8,50," → NaN).
+      if (val === ',' || val === '.') {
+        if (base.includes(',') || base.includes('.')) return;
+        if (base === '') base = '0'; // leading separator → "0,"
+      }
+      this.cashReceivedRaw = base + val;
     },
     numpadBack: function numpadBack() {
       if (this.submitting) return;
+      // Backspace on the pristine pre-fill: begin editing the existing value.
+      this.cashFieldPristine = false;
       this.cashReceivedRaw = String(this.cashReceivedRaw || '').slice(0, -1);
     },
     numpadClear: function numpadClear() {
       if (this.submitting) return;
+      this.cashFieldPristine = false;
       this.cashReceivedRaw = '';
     },
     onlyFloat: function onlyFloat(e) {
@@ -7836,7 +7861,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _services_appService__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../services/appService */ "./resources/js/services/appService.js");
 /* harmony import */ var _common_ConnectionStatusBanner_vue__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../common/ConnectionStatusBanner.vue */ "./resources/js/components/common/ConnectionStatusBanner.vue");
 /* harmony import */ var _ReceiptComponent_vue__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./ReceiptComponent.vue */ "./resources/js/components/admin/pos/ReceiptComponent.vue");
-/* harmony import */ var _helpers_formatPrice__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../helpers/formatPrice */ "./resources/js/helpers/formatPrice.js");
+/* harmony import */ var _PosCounterCollectModal_vue__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./PosCounterCollectModal.vue */ "./resources/js/components/admin/pos/PosCounterCollectModal.vue");
+/* harmony import */ var _helpers_formatPrice__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../../helpers/formatPrice */ "./resources/js/helpers/formatPrice.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
 function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
@@ -7854,6 +7886,10 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
 
 
 
+
+// [GOAL-2026-05-29 DEAD-BUTTON-FIX] Shared counter-collect modal — the tracker
+// must be self-sufficient for encashment (its Encaisser CTA was previously a
+// dead button: it only dispatched an un-listened CustomEvent).
 
 // [WT-D-R1-F4 2026-05-20] Shared admin FR EUR price formatter — canonical
 // "19,00 €" rendering shared with PosOrderList / PosOrderShow.
@@ -7873,9 +7909,10 @@ var FRESH_HIGHLIGHT_MS = 6000;
   name: 'PosOrdersTrackerComponent',
   components: {
     ConnectionStatusBanner: _common_ConnectionStatusBanner_vue__WEBPACK_IMPORTED_MODULE_4__["default"],
-    ReceiptComponent: _ReceiptComponent_vue__WEBPACK_IMPORTED_MODULE_5__["default"]
+    ReceiptComponent: _ReceiptComponent_vue__WEBPACK_IMPORTED_MODULE_5__["default"],
+    PosCounterCollectModal: _PosCounterCollectModal_vue__WEBPACK_IMPORTED_MODULE_6__["default"]
   },
-  mixins: [_helpers_formatPrice__WEBPACK_IMPORTED_MODULE_6__.adminPriceMixin],
+  mixins: [_helpers_formatPrice__WEBPACK_IMPORTED_MODULE_7__.adminPriceMixin],
   data: function data() {
     var _window$_wsService;
     return {
@@ -7907,7 +7944,10 @@ var FRESH_HIGHLIGHT_MS = 6000;
         reason: '',
         error: '',
         busy: false
-      }
+      },
+      // [GOAL-2026-05-29 DEAD-BUTTON-FIX] Order currently being encashed
+      // via the shared PosCounterCollectModal (null = modal closed).
+      encaisseOrder: null
     };
   },
   computed: {
@@ -7986,6 +8026,20 @@ var FRESH_HIGHLIGHT_MS = 6000;
           if (s === _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_0__["default"].ACCEPT) {
             if (this.isCashPending(o)) {
               buckets.accept.push(o);
+            } else {
+              // [GOAL-2026-05-29 TRACKER-CONTINUITY-FIX] A paid order
+              // still at ACCEPT is the CASH counter-collect case: the
+              // S-5 carve-out (AutoPrepareOnPaidPolicy::shouldPromote
+              // === false for isCounterCollect+CASH) intentionally does
+              // NOT auto-promote it to PREPARING — it waits for the chef
+              // to bump it on the KDS, which DOES show it (KitchenRelease
+              // Rule: PAID → released, "Prêt" action). The old code
+              // assumed every paid order auto-promotes and silently
+              // DROPPED this one → the paid order VANISHED from the
+              // tracker board while the kitchen was still cooking it.
+              // Surface it in the kitchen-active lane so the tracker
+              // stays consistent with the KDS.
+              buckets.preparing.push(o);
             }
           } else if (s === _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_0__["default"].PREPARING) buckets.preparing.push(o);else if (s === _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_0__["default"].PREPARED) buckets.prepared.push(o);
           // [Wave T R1 F1 P0 2026-05-20] EN LIVRAISON lane: any order at
@@ -8488,16 +8542,38 @@ var FRESH_HIGHLIGHT_MS = 6000;
     // CustomEvent keeps the tracker decoupled while Wave S-5 lands in
     // parallel. Fallback: deep-link to the POS payment screen.
     openEncaissement: function openEncaissement(order) {
+      var _ref2, _ref3, _ref4, _order$cash_pending_a;
       if (!order || !order.id) return;
+      // [GOAL-2026-05-29 DEAD-BUTTON-FIX] Previously this ONLY dispatched a
+      // `foodking:pos:open-encaissement` CustomEvent expecting a global
+      // listener (PosShell/PosComponent) — but nothing in the app ever
+      // listened for it, and on the standalone /admin/pos-orders-tracker
+      // page PosComponent is not mounted, so the Encaisser CTA was a DEAD
+      // BUTTON. We now open the shared PosCounterCollectModal locally; it
+      // POSTs admin/pos/counter-collect/{id}/confirm itself, and on
+      // @confirmed we refresh the board. The modal reads `order.total`, so
+      // we map the cash-pending amount onto it.
+      var amount = (_ref2 = (_ref3 = (_ref4 = (_order$cash_pending_a = order.cash_pending_amount) !== null && _order$cash_pending_a !== void 0 ? _order$cash_pending_a : order.total_amount_price) !== null && _ref4 !== void 0 ? _ref4 : order.total) !== null && _ref3 !== void 0 ? _ref3 : order.order_amount) !== null && _ref2 !== void 0 ? _ref2 : 0;
+      this.encaisseOrder = _objectSpread(_objectSpread({}, order), {}, {
+        total: amount
+      });
+      // Keep the decoupled CustomEvent (harmless) for any future global host.
       try {
-        var _order$cash_pending_a;
         window.dispatchEvent(new CustomEvent('foodking:pos:open-encaissement', {
           detail: {
             orderId: order.id,
-            amount: (_order$cash_pending_a = order.cash_pending_amount) !== null && _order$cash_pending_a !== void 0 ? _order$cash_pending_a : order.total_amount_price
+            amount: amount
           }
         }));
       } catch (_e) {/* defensive — environment without CustomEvent */}
+    },
+    // [GOAL-2026-05-29 DEAD-BUTTON-FIX] PosCounterCollectModal already POSTed
+    // the counter-collect; clear it + refresh so the now-paid order leaves
+    // the "À encaisser" lane (the OrderPaidAtCounter broadcast also triggers
+    // fetchOrders, but we refresh immediately for local responsiveness).
+    onEncaisseConfirmed: function onEncaisseConfirmed() {
+      this.encaisseOrder = null;
+      this.fetchOrders();
     },
     sourceOf: function sourceOf(o) {
       var surface = String(o.source_surface || o._origin || '').toLowerCase();
@@ -13795,6 +13871,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         "data-testid": "pos-counter-collect-received-input"
       }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_21), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Numpad, {
         "aria-label": _ctx.$t('label.received_amount'),
+        "decimal-separator": ',',
         onInput: $options.numpadInput,
         onBack: $options.numpadBack,
         onClear: $options.numpadClear
@@ -14172,15 +14249,16 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_ConnectionStatusBanner = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("ConnectionStatusBanner");
   var _component_router_link = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("router-link");
   var _component_ReceiptComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("ReceiptComponent");
+  var _component_PosCounterCollectModal = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PosCounterCollectModal");
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [POS-V4-ORDERS-TRACKER 2026-05-02]\n      Écran caisse plein écran : kanban des commandes actives (POS + borne + online)\n      pour le caissier, avec live update Echo. Aucune logique de pricing — affichage\n      des totaux renvoyés par le backend (invariant FoodKing : pricing SSOT).\n      L'écran client (OSS) reste séparé : route admin.order-status-screen.\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("section", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ConnectionStatusBanner, {
     "suppress-transient": "",
     "suppress-session-invalid": ""
-  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", {
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", {
     "class": "pos-tracker-eyebrow"
-  }, "Caisse Le Cayenne", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.stats.active), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.active_orders')), 1 /* TEXT */)]), $options.stats.ready > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_6, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, "Caisse Le Cayenne", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.stats.active), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.active_orders')), 1 /* TEXT */)]), $options.stats.ready > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_6, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "fa-solid fa-bell-concierge",
     "aria-hidden": "true"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.stats.ready) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.ready_short')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.stats.todayCount) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.today_total')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.stats.ready) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.ready_short')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.stats.todayCount) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.today_total')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-search-normal",
     "aria-hidden": "true"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
@@ -14224,7 +14302,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "data-testid": "pos-tracker-history"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      return [_cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
         "class": "fa-solid fa-list-ul",
         "aria-hidden": "true"
       }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.history')), 1 /* TEXT */)];
@@ -14240,7 +14318,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     title: _ctx.$t('pos.tracker.customer_screen_hint')
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [_cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      return [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
         "class": "fa-solid fa-display",
         "aria-hidden": "true"
       }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.customer_screen')), 1 /* TEXT */)];
@@ -14253,7 +14331,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "pos-tracker-back-link"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+      return [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
         "class": "fa-solid fa-arrow-left",
         "aria-hidden": "true"
       }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.back_to_pos')), 1 /* TEXT */)];
@@ -14293,7 +14371,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sourceIcon(order)), 11 /* TEXT, CLASS, PROPS */, _hoisted_26), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
             "class": "pos-tracker-card-time",
             title: $options.formatTime(order.created_at)
-          }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.elapsedShort(order.created_at)), 9 /* TEXT, PROPS */, _hoisted_27)]), $options.customerLabel(order) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_28, [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+          }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.elapsedShort(order.created_at)), 9 /* TEXT, PROPS */, _hoisted_27)]), $options.customerLabel(order) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_28, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
             "class": "fa-solid fa-user",
             "aria-hidden": "true"
           }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerLabel(order)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_29, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.itemsPreview(order), function (item, idx) {
@@ -14312,7 +14390,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
             onClick: function onClick($event) {
               return $options.openEncaissement(order);
             }
-          }, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+          }, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
             "class": "fa-solid fa-cash-register",
             "aria-hidden": "true"
           }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_38, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.cash_collect_cta')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_37)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_router_link, {
@@ -14326,7 +14404,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
             title: _ctx.$t('pos.tracker.view_details')
           }, {
             "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-              return _toConsumableArray(_cache[16] || (_cache[16] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+              return _toConsumableArray(_cache[17] || (_cache[17] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
                 "class": "fa-solid fa-eye",
                 "aria-hidden": "true"
               }, null, -1 /* CACHED */)]));
@@ -14341,7 +14419,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
             onClick: function onClick($event) {
               return $options.requestReprint(order);
             }
-          }, _toConsumableArray(_cache[17] || (_cache[17] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+          }, _toConsumableArray(_cache[18] || (_cache[18] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
             "class": "fa-solid fa-print",
             "aria-hidden": "true"
           }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_39), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                                      [POS-V4-CASHIER-OPS 2026-05-02] Cancel with reason.\n                                      Visible only for non-final statuses (ACCEPT/PREPARING/PREPARED).\n                                      Backend OrderService L1546-1551 already enforces the reason\n                                      (required, max 700) — we duplicate the rule client-side\n                                      to short-circuit the round-trip + give immediate UX feedback.\n                                    "), col.id !== 'delivered' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
@@ -14353,7 +14431,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
             onClick: function onClick($event) {
               return $options.openCancelDialog(order);
             }
-          }, _toConsumableArray(_cache[18] || (_cache[18] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+          }, _toConsumableArray(_cache[19] || (_cache[19] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
             "class": "fa-solid fa-ban",
             "aria-hidden": "true"
           }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_40)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), col.id === 'prepared' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
@@ -14365,7 +14443,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
             onClick: function onClick($event) {
               return $options.markDelivered(order);
             }
-          }, [_cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+          }, [_cache[20] || (_cache[20] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
             "class": "fa-solid fa-check",
             "aria-hidden": "true"
           }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.delivered_short')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_41)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_22);
@@ -14375,7 +14453,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, 1024 /* DYNAMIC_SLOTS */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_43, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_44, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(col.emptyIcon), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(col.emptyLabel || _ctx.$t('pos.tracker.empty_column')), 1 /* TEXT */)]))], 2 /* CLASS */);
   }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_15), $data.loading && $options.columns.every(function (c) {
     return c.orders.length === 0;
-  }) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_45, [_cache[20] || (_cache[20] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_45, [_cache[21] || (_cache[21] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "pos-tracker-spinner",
     "aria-hidden": "true"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.loading')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n          [POS-V4-CASHIER-OPS 2026-05-02] Cancel-order dialog.\n          Custom inline dialog (not using bootstrap modal) so we keep full\n          control of the textarea focus/validation lifecycle. Click on\n          backdrop dismisses; Esc dismisses (handled at element level).\n        "), $data.cancelDialog.open ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
@@ -14397,7 +14475,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[2] || (_cache[2] = function () {
       return $options.closeCancelDialog && $options.closeCancelDialog.apply($options, arguments);
     })
-  }, _toConsumableArray(_cache[21] || (_cache[21] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, _toConsumableArray(_cache[22] || (_cache[22] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "fa-solid fa-xmark",
     "aria-hidden": "true"
   }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_49)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_50, [$data.cancelDialog.order ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_51, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.cancelDialog.order.queue_number ? 'N°' + $data.cancelDialog.order.queue_number : '#' + ($data.cancelDialog.order.order_serial_no || $data.cancelDialog.order.id)), 1 /* TEXT */), $options.customerLabel($data.cancelDialog.order) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_52, " — " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerLabel($data.cancelDialog.order)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-001/C-002 2026-05-10] Same field-projection mismatch as the card total. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, " — " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice((_ref3 = (_$data$cancelDialog$o = $data.cancelDialog.order.total) !== null && _$data$cancelDialog$o !== void 0 ? _$data$cancelDialog$o : $data.cancelDialog.order.total_amount_price) !== null && _ref3 !== void 0 ? _ref3 : $data.cancelDialog.order.order_amount)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_53, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.cancel_order_reason_label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("textarea", {
@@ -14411,7 +14489,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     placeholder: _ctx.$t('pos.cancel_order_reason_placeholder'),
     "class": "pos-tracker-cancel-textarea",
     "data-testid": "tracker-cancel-reason"
-  }, null, 8 /* PROPS */, _hoisted_54), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.cancelDialog.reason]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                      [test-e2e/pos-kds-sync round-4 E-001 P0 2026-05-10]\n                      Persistent error banner inside the cancel dialog.\n                      Mirrors KDS C-001 pattern: toast fires for screen-reader\n                      attention, but the banner is the DURABLE visual evidence\n                      that survives adversarial capture timing (no fade).\n                      role=\"alert\" + aria-live=\"assertive\" forces SR announce;\n                      the banner stays visible until user dismisses or closes\n                      the dialog (closeCancelDialog clears `error`).\n                    "), $data.cancelDialog.error ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_55, [_cache[22] || (_cache[22] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, 8 /* PROPS */, _hoisted_54), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.cancelDialog.reason]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                      [test-e2e/pos-kds-sync round-4 E-001 P0 2026-05-10]\n                      Persistent error banner inside the cancel dialog.\n                      Mirrors KDS C-001 pattern: toast fires for screen-reader\n                      attention, but the banner is the DURABLE visual evidence\n                      that survives adversarial capture timing (no fade).\n                      role=\"alert\" + aria-live=\"assertive\" forces SR announce;\n                      the banner stays visible until user dismisses or closes\n                      the dialog (closeCancelDialog clears `error`).\n                    "), $data.cancelDialog.error ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_55, [_cache[23] || (_cache[23] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "fa-solid fa-circle-exclamation pos-tracker-cancel-error-icon",
     "aria-hidden": "true"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_56, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.cancelDialog.error), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("footer", _hoisted_57, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
@@ -14433,7 +14511,13 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   }, [$data.cancelDialog.busy ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("i", _hoisted_60)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.cancel_order_confirm')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_59)])])], 32 /* NEED_HYDRATION */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n          [POS-V4-CASHIER-OPS 2026-05-02] Hidden ReceiptComponent for one-click\n          reprints from the tracker. Uses the same existing #receiptModal so\n          the existing print buttons (kitchen + client) remain authoritative\n          for the actual paper output.\n        "), $data.reprintOrder && $data.reprintOrder.id ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_ReceiptComponent, {
     key: 3,
     order: $data.reprintOrder
-  }, null, 8 /* PROPS */, ["order"])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);
+  }, null, 8 /* PROPS */, ["order"])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [GOAL-2026-05-29 DEAD-BUTTON-FIX] Shared counter-collect modal so the\n             tracker's \"Encaisser\" CTA actually opens the encashment flow\n             (previously a dead button — un-listened CustomEvent only). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosCounterCollectModal, {
+    order: $data.encaisseOrder,
+    onConfirmed: $options.onEncaisseConfirmed,
+    onCancel: _cache[8] || (_cache[8] = function ($event) {
+      return $data.encaisseOrder = null;
+    })
+  }, null, 8 /* PROPS */, ["order", "onConfirmed"])])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);
 }
 
 /***/ },
