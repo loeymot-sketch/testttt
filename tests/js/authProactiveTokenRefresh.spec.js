@@ -52,3 +52,35 @@ describe('[P-AUTH] auth.refreshAuthToken — proactive token refresh', () => {
         expect(ctx.commit).not.toHaveBeenCalled(); // existing token untouched -> reactive net + 401->login handle it
     });
 });
+
+/**
+ * [GOAL-2026-05-29 P-AUTH-SYNC] The Echo auth header must be re-injected with the
+ * token the mutation JUST set — NOT re-read from localStorage, which vuex-persist
+ * writes only AFTER the mutation. A stale token here makes the first private-channel
+ * subscribe after login fail (chef KDS silently degrades to 60s poll). Verified live:
+ * pre-fix `private-branch.1` subscribed:false after a fresh chef login; post-fix it
+ * subscribes on the first try (6ms push latency measured). These tests lock the
+ * contract that the mutations pass the fresh token explicitly.
+ */
+describe('[P-AUTH-SYNC] mutations re-inject Echo auth with the FRESH token (no stale-by-one)', () => {
+    let calls;
+    beforeEach(() => {
+        calls = [];
+        window._refreshEchoAuth = (t) => { calls.push(t); };
+    });
+    afterEach(() => { delete window._refreshEchoAuth; });
+
+    it('authLogin passes the new login token to _refreshEchoAuth (not undefined)', () => {
+        const state = {};
+        auth.mutations.authLogin(state, { token: 'LOGIN-FRESH-123', branch_id: 1, user: {}, menu: [], permission: {}, defaultPermission: {}, defaultMenu: {} });
+        expect(calls).toEqual(['LOGIN-FRESH-123']);
+        expect(state.authToken).toBe('LOGIN-FRESH-123');
+    });
+
+    it('authTokenRefreshed passes the refreshed token to _refreshEchoAuth', () => {
+        const state = { authToken: 'OLD' };
+        auth.mutations.authTokenRefreshed(state, 'REFRESH-FRESH-456');
+        expect(calls).toEqual(['REFRESH-FRESH-456']);
+        expect(state.authToken).toBe('REFRESH-FRESH-456');
+    });
+});

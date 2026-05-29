@@ -180,8 +180,12 @@ export const auth = {
             // [GAP-34-2] Re-inject the new token into Echo auth headers after login.
             // Echo is initialized at page load before the token exists — this ensures
             // private channel auth works immediately after login without page reload.
+            // [GOAL-2026-05-29 P-AUTH-SYNC] Pass the fresh token EXPLICITLY: localStorage
+            // is not yet written at mutation time (vuex-persist runs post-mutation), so a
+            // no-arg call would inject the stale token and the first KDS/POS private
+            // channel subscribe right after login would fail auth (silent degrade to poll).
             if (typeof window !== 'undefined' && typeof window._refreshEchoAuth === 'function') {
-                window._refreshEchoAuth();
+                window._refreshEchoAuth(payload.token);
             }
         },
         // [GOAL-2026-05-29 P-AUTH] Store the proactively-refreshed Bearer + re-inject it
@@ -190,8 +194,11 @@ export const auth = {
         // next request; vuex-persist writes it to localStorage for reloads.
         authTokenRefreshed: function (state, token) {
             state.authToken = token;
+            // [GOAL-2026-05-29 P-AUTH-SYNC] Pass the fresh token explicitly (same stale-
+            // by-one reason as authLogin) so a post-refresh reconnect re-subscribes the
+            // live WS channels with the NEW Bearer, not the just-deleted old one.
             if (typeof window !== 'undefined' && typeof window._refreshEchoAuth === 'function') {
-                window._refreshEchoAuth();
+                window._refreshEchoAuth(token);
             }
         },
         authLogout: function (state) {

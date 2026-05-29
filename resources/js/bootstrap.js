@@ -352,8 +352,23 @@ if (_MIX_PUSHER_APP_KEY) {
     // [GAP-34-2] Re-inject the token after login (token not available at page load).
     // When the user logs in, the store updates authToken — Echo must pick it up.
     // We expose a helper so auth.js can call window._refreshEchoAuth() after login.
-    window._refreshEchoAuth = function () {
-        const token = _getEchoBearerToken();
+    // [GOAL-2026-05-29 P-AUTH-SYNC] `explicitToken` lets the caller pass the token it
+    // JUST set in the Vuex store. vuex-persistedstate writes localStorage in a
+    // post-mutation `store.subscribe`, so `_getEchoBearerToken()` (which reads
+    // localStorage) is STALE-BY-ONE when called synchronously inside the
+    // authLogin/authTokenRefreshed mutations — it injects the PRIOR token, the very
+    // next private-channel subscribe (e.g. KDS `private-branch.N` right after a chef
+    // login) fails auth, and Pusher does NOT auto-retry a terminally-failed
+    // subscription → the kitchen silently degrades to the 60s poll instead of
+    // sub-second push (verified live 2026-05-29: `subscribed:false` after a fresh chef
+    // login; forced re-subscribe with the correct token → `subscribed:true` → broadcast
+    // received). Passing the fresh token makes the FIRST subscribe succeed. Callers that
+    // pass nothing (the reactive subscription_error net L379; kiosk login kioskCart.js,
+    // where localStorage is already written by call time) keep the localStorage path.
+    window._refreshEchoAuth = function (explicitToken) {
+        const token = (typeof explicitToken === 'string' && explicitToken)
+            ? explicitToken
+            : _getEchoBearerToken();
         if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
             window.Echo.connector.options.auth.headers['Authorization'] = `Bearer ${token}`;
         }
