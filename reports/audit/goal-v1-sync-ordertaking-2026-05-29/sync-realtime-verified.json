@@ -1,0 +1,64 @@
+{
+  "system": "Synchronisation cross-surface (Outbox + broadcast + Soketi/Echo + per-surface polling fallback + cascades)",
+  "head": "962d9d15479a4be3642a2355be63807c538ba34b",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "confirmed_count": 3,
+  "dropped_count": 2,
+  "verified_findings": [
+    {
+      "severity": "P2",
+      "file": "app/Console/Commands/OutboxRescueCommand.php",
+      "line": "47 (attempts<5 cap) + tests/Feature/Outbox/OutboxRescueStaleClaimedRowsTest.php:109-127 (false docblock) + app/Models/DomainEvent.php:34-49 (scopeFailed->pending->whereNull)",
+      "title": "Crash-claimed outbox rows (dispatched_at!=NULL, attempts>=5) fall through ALL re-queue/page lanes; OutboxRescueStaleClaimedRowsTest:114 ratifies a FALSE invariant (the documented RetryFailed handoff can never fire). For a KdsOrderRecalled event the lost broadcast is unreconcilable because kdsRecalledMap is broadcast-only (poll never writes it).",
+      "confirmed": true,
+      "is_new": true,
+      "grep_evidence": "OutboxRescueCommand.php:47 `->where('attempts', '<', 5)` applies to BOTH lanes (chained after the pending|crashed where-group at :38-46), so a crash-claimed row attempts>=5 is excluded. OutboxRetryFailedCommand.php:103 `->failed(5)`; DomainEvent.php:45-48 scopeFailed `return $query->pending()->where('attempts','>=',$maxAttempts)` and scopePending:36 `whereNull('dispatched_at')` => a NON-NULL dispatched_at row can NEVER be selected by RetryFailed. MonitorOutboxStaleness.php:46 `->whereNull('dispatched_at')` => never pages. PruneOutboxCommand.php:53 lane A `whereNotNull('dispatched_at')->where('dispatched_at','<',$cutoff)` => only DELETES it ~90d later, no recovery. OutboxRescueStaleClaimedRowsTest.php:110-111 docblock 'they belong to the RetryFailed lane (hourly, scope `failed(5)`)' is FALSE and the test (:114-127 test_rescue_skips_crash_claimed_row_past_attempts_cap) asserts assertNotDispatched i.e. ratifies the gap as 'safe' but never asserts any lane recovers the row. Recall discriminator confirmed: KitchenDisplaySystemComponent.vue:2442 `this.kdsRecalledMap = {...this.kdsRecalledMap,[id]:at}` is the ONLY write, invoked only by onKdsOrderRecalled (local @recalled emit + Echo handler at :1934-1944 broadcastAs 'KdsOrderRecalled'); recallActiveIds:1234-1246 derives solely from kdsRecalledMap; KdsV2Grid.vue:218 `if (s === ORDER_STATUS.PREPARED && recallIds.has(o?.id))` re-injects only on recallActiveIds; fetchOrders/poll never writes kdsRecalledMap. Recall does NOT bump orders.updated_at (comment KitchenDisplaySystemComponent.vue:2448-2449), so a non-originating station cannot reconstruct the RAPPELE badge from a poll.",
+      "recommendation": "Severity P2 (not P1): high VALUE (a passing test that ratifies a false invariant — exactly the test-vs-production gap this gate targets) but bounded impact — narrow trigger (hard-kill in DispatchDomainEventsJob Phase1->3b window at attempts>=5), bounded blast radius (60s ephemeral RAPPELE badge on NON-originating KDS stations; order stays correctly PREPARED, originating station fine via local emit), and LATENT in single-box V1 (needs 2+ active KDS screens) — classify identically to the known V2-latent backlog items. None of the 3 command files are frozen-zone (CLAUDE.md §7), no LOCK needed. Fix: (a) drop the attempts<5 cap on lane B's crash-claimed branch in OutboxRescueCommand.php:38-48 (lane B already releases the stuck claim at :59-61, self-heals regardless of attempts) AND/OR (b) add a crash-claimed OR-branch to MonitorOutboxStaleness so the operator is paged. Then FIX the false docblock + add a test asserting an attempts>=5 crash-claimed row IS re-dispatched or paged (the current OutboxRescueStaleClaimedRowsTest:114 asserts the gap is safe — that assertion is part of the defect).",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Listeners/PersistOrderPaidAtCounterToOutbox.php",
+      "line": "66 (Log::warning, no OutboxBroadcastSwallowedEvent)",
+      "title": "PaidAtCounter is the only order outbox listener missing the swallow alarm (4 of the persist listeners fire OutboxBroadcastSwallowedEvent, PaidAtCounter does not), for a fiscal-adjacent payment-confirmed event; it is also absent from the swallow-alarm sentinel.",
+      "confirmed": true,
+      "is_new": true,
+      "grep_evidence": "grep -rln OutboxBroadcastSwallowedEvent app/Listeners/ => fires from FOUR persist listeners: PersistOrderStatusChangedToOutbox, PersistOrderCreatedToOutbox, PersistKdsOrderRecalledToOutbox (:83 event(new OutboxBroadcastSwallowedEvent(...))), PersistOrderPaymentStatusChangedToOutbox (plus EscalateOutboxBroadcastSwallowed consumer). PersistOrderPaidAtCounterToOutbox.php:65-74 catches Throwable but only `Log::warning('[Outbox] DispatchDomainEventsJob inline dispatch failed (non-blocking)'...)` with NO event() call. Payload at :37-38 carries `payment_status` + `fiscal_sequence_no` (fiscal-adjacent). Dispatched live at PaymentService.php:409 `OrderPaidAtCounter::dispatch($order,$mode)`. Sentinel tests/Feature/Sentinels/OutboxBroadcastSwallowAlarmSentinelTest.php only locks Created/StatusChanged/PaymentStatusChanged (3 structural sentinels :125-213) — PaidAtCounter (EventServiceProvider.php:176-177) and KdsOrderRecalled (:165-166) are NOT in the sentinel.",
+      "recommendation": "Severity P3 (honest): observability-only — the domain_event ROW IS persisted (firstOrCreate at :25), only the inline broadcast dispatch is swallowed, and payment state self-heals via full-state poll (POS fetchOrders / OSS lists). The gap is that during a dual worker+cron-down deploy window the swallow is Log::warning (the fiscal-channel 'critical' pager grep misses it) for the one event carrying fiscal_sequence_no. Fix: mirror PersistOrderStatusChangedToOutbox.php — escalate Log::warning->Log::error + add the nested-try event(new OutboxBroadcastSwallowedEvent(...)). ~8 LOC, not frozen-zone, restores 5/5 order-outbox parity. Extend OutboxBroadcastSwallowAlarmSentinelTest to also lock PaidAtCounter AND KdsOrderRecalled (the latter already HAS the alarm but is unprotected by the sentinel — relevant since the F-1 recall path depends on it).",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P2",
+      "file": "app/Console/Commands/MonitorOutboxStaleness.php",
+      "line": "44-47",
+      "title": "Staleness monitor counts whereNull(dispatched_at) only — crash-claimed rows (dispatched_at!=NULL, never broadcast) are invisible to the 'queue worker down' alarm, so the operator is never paged for the F-1 orphan class.",
+      "confirmed": true,
+      "is_new": true,
+      "grep_evidence": "MonitorOutboxStaleness.php:44-47 `DB::table('domain_events')->where('created_at','<',$cutoff)->whereNull('dispatched_at')->count()`. A crash-claimed row (dispatched_at=now()->subMinutes(30), attempts>=3, never broadcast) is excluded by the whereNull at :46 => staleCount stays 0 => [OK] SUCCESS exit, no page. OutboxRescueCommand.php:24-27 comment explicitly documents this same whereNull blind-spot ('rescue / MonitorOutboxStaleness / RetryFailed all filter on whereNull(dispatched_at) -> silent loss'). No test covers MonitorOutboxStaleness (find tests -iname '*monitor*' returns none for this command).",
+      "recommendation": "Distinct from F-1 (this is the operator-PAGING gap; F-1 is the re-DISPATCH gap) but SHARES the fix family — do not double-count impact. Add an OR-branch: `->orWhere(fn($q)=>$q->whereNotNull('dispatched_at')->where('dispatched_at','<',now()->subMinutes(10)))` so crash-claimed rows past the 10-min rescue threshold page the operator. Pairs with F-1 fix (b). Not frozen-zone (console command). Add a test asserting a crash-claimed row over threshold triggers FAILURE exit.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P1",
+      "file": "app/Console/Commands/OutboxRescueCommand.php",
+      "line": "47 (architect lens duplicate of F-1)",
+      "title": "[DEDUPE] architect-lens copy of the crash-claimed orphan finding (raw severity P1).",
+      "confirmed": false,
+      "is_new": true,
+      "grep_evidence": "Same file:line evidence as the kept finding #1 (OutboxRescueCommand.php:47 attempts<5 cap + DomainEvent.php scopeFailed->pending->whereNull + false test docblock). The architect lens proposed P1 via the KdsOrderRecalled discriminator; per impact x likelihood (narrow trigger, bounded 60s badge blast radius, latent in single-box V1) the merged finding lands P2 — same defect, same code, kept once as finding #1.",
+      "recommendation": "See kept finding #1 (OutboxRescueCommand.php).",
+      "drop_reason": "Dedupe of kept finding #1 (architect + security lenses reported the same crash-claimed orphan defect at OutboxRescueCommand.php:47 / DomainEvent.php scopeFailed / OutboxRescueStaleClaimedRowsTest:114; the better-evidenced security-lens framing is kept and merged with the architect discriminator, settled at P2)."
+    },
+    {
+      "severity": "P2",
+      "file": "app/Listeners/PersistOrderPaidAtCounterToOutbox.php",
+      "line": "66 (architect lens duplicate of the PaidAtCounter swallow finding)",
+      "title": "[DEDUPE] architect-lens copy of the PaidAtCounter swallow-alarm gap (raw severity P2).",
+      "confirmed": false,
+      "is_new": true,
+      "grep_evidence": "Same file:line evidence as kept finding #2 (PersistOrderPaidAtCounterToOutbox.php:66 Log::warning with no OutboxBroadcastSwallowedEvent). Both architect (F-2, P2) and security (F-3, P3) lenses reported it; the actual sibling enumeration is 4 firing listeners, PaidAtCounter is the gap; merged severity P3 (observability-only, row persisted, poll self-heals).",
+      "recommendation": "See kept finding #2 (PersistOrderPaidAtCounterToOutbox.php).",
+      "drop_reason": "Dedupe of kept finding #2 (architect F-2 + security F-3 are the same PaidAtCounter swallow-alarm gap; kept once, severity settled at P3 since the domain_event row is persisted and payment state self-heals via poll)."
+    }
+  ]
+}

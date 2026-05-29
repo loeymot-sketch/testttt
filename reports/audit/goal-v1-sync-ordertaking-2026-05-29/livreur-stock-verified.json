@@ -1,0 +1,44 @@
+{
+  "system": "Livreur (delivery cash sessions) + Stock cascade (livreur-stock)",
+  "head": "962d9d15479a4be3642a2355be63807c538ba34b",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "verified_at": "2026-05-29",
+  "confirmed_count": 3,
+  "dropped_count": 0,
+  "verified_findings": [
+    {
+      "severity": "P1",
+      "file": "app/Services/Fiscal/ZReportCashEnrichmentService.php",
+      "line": "235 (persistForClosedReport), 320 (enrichClose), 427 (getDeliveryMovementsBetween), 482 (verifyConsistencyVsAuditLog)",
+      "title": "Delivery-cash Z-enrichment + audit cross-check are orphaned — the 'drift caught EOD' safety-net the COD-DELIVERED hook relies on never runs in production [NEW]",
+      "confirmed": true,
+      "is_new": true,
+      "grep_evidence": "grep -rn --include='*.php' 'verifyConsistencyVsAuditLog|enrichClose|getDeliveryMovementsBetween|persistForClosedReport' app/ routes/ config/ → ONLY hits are the method DEFINITIONS inside ZReportCashEnrichmentService.php (235/320/427/482) plus a docstring/comment in app/Models/ZReport.php:38 ('Remplis post-close par ZReportCashEnrichmentService::persistForClosedReport.'). ZERO production callers. All actual call-sites are in tests/ (ZReportCashEnrichmentSentinelTest.php:126/180/238/243/291/350, ZReportCashEnrichmentTest.php:186/211, F003CashReconciliationSentinelTest.php:222). Prod Z-close entrypoint #1: app/Http/Controllers/Admin/Fiscal/ZReportController.php:58 calls $this->service->close($branchId, $request->user()). Prod Z-close entrypoint #2: app/Console/Commands/FiscalCloseAllActiveBranchesCommand.php:125 calls $service->close($branchId) — its own docstring line 16 states 'Z-close has NO production trigger today'. ZReportService::close() at line 180: grep for 'enrich|persistForClosed|ZReportClosed|event(|dispatch|Event::|delivery' returns NOTHING in ZReportService.php → close() dispatches no event and never invokes enrichment. OrderService.php:1825-1832 comment verbatim: 'ZReportCashEnrichmentService:489 cross-checks audit_logs action=cash.delivery.movement.recorded ... without this call the count_mismatch / movement_missing_audit_row drift surfaces on every COD DELIVERED' and :1853-1858 'cross-check surfaces it end-of-day'. Net: both prod close paths reach close() which never touches enrichment, so delivery-boy cash is absent from the closed Z report and verifyConsistencyVsAuditLog never runs. (Minor: OrderService comment cites ':489' but verifyConsistencyVsAuditLog is at 482 — stale line ref, substance unaffected.)",
+      "recommendation": "Wire a post-close hook (observer / dedicated ZReportClosed event listener) to call persistForClosedReport() + enrichClose() and persist delivery totals, then run verifyConsistencyVsAuditLog() logging discrepancies to the fiscal channel. ZReportService.php is a FROZEN ZONE (CLAUDE.md §7, NF525 chain integrity) — enrichment must remain strictly post-signature/additive (the service documents this discipline at lines 281-289); prefer an observer/event listener over editing close() internals. If close() itself must be touched it requires an owner LOCK gate. Until wired, surface as a known V1 limitation: delivery COD cash is auditable (delivery.cash_collected_escrow audit row) but NOT folded into Z totals and never cross-checked. NOT in the known backlog.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P2",
+      "file": "app/Services/Delivery/DeliveryBoyCashSessionService.php",
+      "line": "351-359 (recordMovement non-OPEN null-return), 372 (audit write success-only)",
+      "title": "Closed-session race in COD-DELIVERED mirror is invisible to the very cross-check cited to catch it [NEW]",
+      "confirmed": true,
+      "is_new": true,
+      "grep_evidence": "DeliveryBoyCashSessionService.php:351-359 — inside lockForUpdate, if $session->status !== STATUS_OPEN and $strict is false: Log::warning + 'return null;' at 358. The movement row create (361) and writeAuditLog('cash.delivery.movement.recorded',...) (372) are BOTH after this early return → neither row is written. OrderService.php:1833-1851 calls findOpenSessionForDeliveryBoy() then recordMovement(..., false) (non-strict) inside the COD-DELIVERED hook; OrderService.php:1802-region already wrote a delivery.cash_collected_escrow audit row for the doorstep cash. verifyConsistencyVsAuditLog (ZReportCashEnrichmentService.php:482) audit side queries ONLY where('action','cash.delivery.movement.recorded') (line 489) — it never queries delivery.cash_collected_escrow. So an orphaned escrow (cash collected, mirror was a no-op because shift closed between find and lock) leaves audit_count==movements_count==0 → ok=true. Cash remains traceable solely via the delivery.cash_collected_escrow row, hence P2 not P1, and gated behind Finding A (the cross-check doesn't run in prod at all yet).",
+      "recommendation": "When wiring Finding A, make the close-path consistency probe ALSO reconcile delivery.cash_collected_escrow audit rows against mirrored cash.delivery.movement.recorded rows (orphan escrow = collected cash that never landed in a session). Additive read-only logic in ZReportCashEnrichmentService — no frozen-zone touch. Lower priority than the wiring; only matters once Finding A is fixed. NOT in the known backlog.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P2",
+      "file": "app/Providers/EventServiceProvider.php",
+      "line": "185-188 (OrderCanceled cascade: ReleaseStockOnOrderCanceled then ReleaseAvailabilityOnOrderCanceled)",
+      "title": "OrderCanceled stock-release reads released_qty that only availability-release writes — correct today, unpinned latent landmine if listeners are reordered [NEW]",
+      "confirmed": true,
+      "is_new": true,
+      "grep_evidence": "EventServiceProvider.php:185-188 — OrderCanceled::class => [ReleaseStockOnOrderCanceled::class, ReleaseAvailabilityOnOrderCanceled::class] (stock listed FIRST). StockService::releaseForOrderInTransaction app/Services/Stock/StockService.php:381 READS '$remainingQty = max(0, (int) $orderItem->quantity - (int) $orderItem->released_qty)' but never writes released_qty; it self-idempotents via a separate StockMovement idempotency_key ('released:'.released_qty.':delta:'.deltaLineQty) at StockService.php:~407-411. AvailabilityService::releaseForOrderItems app/Services/Menu/AvailabilityService.php:695 READS released_qty and :755 WRITES 'released_qty => released_qty + $delta'. Because stock runs first today it reads released_qty=0 and releases fully; if reordered (availability first), stock-release would read an already-advanced released_qty → deltaLineQty=0 → silent stock under-release. Sentinel tests/Feature/Listeners/OrderCanceledCascadeHardenedSentinelTest.php pins ISOLATION only (Cases 1-3 no-rethrow + structural sentinels 1-4 source-grep for try/catch/Log::error); docstring line 98 says 'Order-independent (advisor pattern)'. grep across all of tests/ for any assertion of the stock-before-availability registration order returns NONE — the only file referencing ReleaseStockOnOrderCanceled is this sentinel, which does not assert sequence. The correctness this depends on is therefore unprotected by any sentinel.",
+      "recommendation": "Either (a) add a sentinel asserting OrderCanceled (and RefundCreated) listener registration order keeps stock-release before availability-release, or (b) decouple StockService release from order_items.released_qty (it already has independent StockMovement-key idempotency at :407-411, so the released_qty read at :381 can likely be dropped). No frozen-zone touch; scope-minimal is the sentinel (option a). NOT in the known backlog.",
+      "drop_reason": ""
+    }
+  ],
+  "disk_path": "reports/audit/goal-v1-sync-ordertaking-2026-05-29/livreur-stock-verified.json"
+}

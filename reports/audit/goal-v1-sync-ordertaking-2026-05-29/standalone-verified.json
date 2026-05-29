@@ -1,0 +1,31 @@
+{
+  "system": "Standalone Mobile (RN) + Web (separated trees, NO API wireup in V1)",
+  "head": "962d9d15479a4be3642a2355be63807c538ba34b",
+  "verified_at": "2026-05-29",
+  "confirmed_count": 2,
+  "dropped_count": 0,
+  "verified_findings": [
+    {
+      "severity": "P3",
+      "file": "tests/js/mobileDataAntiFiction.spec.js",
+      "line": "22-24",
+      "title": "No sentinel guards web/data/menu.js, and no cross-tree mobile<->web parity assertion (test-vs-production gap)",
+      "confirmed": true,
+      "is_new": true,
+      "grep_evidence": "sed -n '22,24p' tests/js/mobileDataAntiFiction.spec.js => line22 MENU_FILE=resolve(REPO_ROOT,'mobile/data/menu.js'); line23 ORDERS_FILE=mobile/data/orders.js; line24 LOYALTY_FILE=mobile/data/loyalty.js -- all under mobile/. grep -rln 'Downloads/web' tests/js/ => EMPTY (no vitest spec references the web tree). ls /Users/1millnonstop/Downloads/web/data/ => only menu.js (36142 bytes), outside REPO_ROOT, no equivalent guard. The 'parity' specs found (posKioskVariationParity.spec.js, labelKeyParityFrontend.spec.js) do NOT touch the web tree (grep 'web/data|Downloads/web' on both => EMPTY). ID-bearing mkItem entries: mobile=41, web=41 (byte-identical set today) but hand-maintained mirroring with zero automated cross-tree drift protection. CI vitest.yml runs 'npx vitest run --reporter=verbose' so the mobile sentinel runs, but can only see the mobile tree.",
+      "drop_reason": "",
+      "recommendation": "Add a small parity sentinel (e.g. tests/js/menuParityMobileWeb.spec.js) that loads both IIFEs and asserts equal item count + per-id (slug,category,name,price) equality + pool counts. The web tree is outside REPO_ROOT (/Users/1millnonstop/Downloads/web) so the spec must resolve an absolute path or the web menu.js must be symlinked/copied into the repo for CI to see it -- this is the real friction, not the assertion. No frozen-zone touch. Defer to V1.0.2 polish backlog; not a ship blocker (trees match today)."
+    },
+    {
+      "severity": "P3",
+      "file": "mobile/data/menu.js",
+      "line": "518",
+      "title": "Stale header comment '37 produits visibles' -- actual count is 41",
+      "confirmed": true,
+      "is_new": true,
+      "grep_evidence": "grep -n 'produits visibles' mobile/data/menu.js => line 518: '// ALL ITEMS (heal-light v2 2026-05-14 — 37 produits visibles)'. Actual count: grep -nE 'mkItem\\(\\s*[0-9]' mobile/data/menu.js | wc -l => 41 (helper def at line 249 'function mkItem(id,slug,...)' excluded). Web counterpart correct: web/data/menu.js:298 '// ITEMS (41 visibles — heal-light V2 2026-05-14)' and web ID-bearing entries also = 41. Pure documentation drift -- the comment is descriptive, not executed; no render or logic impact.",
+      "drop_reason": "",
+      "recommendation": "One-line comment fix: '37 produits visibles' -> '41 produits visibles' to match the web header (line 298) and reality. Trivial, no frozen-zone, no functional change. Bundle into the parity-sentinel PR or any future menu touch."
+    }
+  ]
+}

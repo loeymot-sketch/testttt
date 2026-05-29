@@ -1,0 +1,99 @@
+{
+  "system": "Prise de commande — order lifecycle, state machine, pricing SSOT, composition snapshot, quote integrity",
+  "head": "962d9d15479a4be3642a2355be63807c538ba34b",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "verified_at": "2026-05-29",
+  "lens_count_note": "Gate header said '5 lens(es)' but the raw findings payload actually delivered exactly 2 top-level lens objects: architect (4 findings) and security (4 findings, the 4th truncated mid-stream). Verified against both. No dba/tester/sre/a11y/red-team lens objects were present in the input to verify; not silently dropped — they were never delivered.",
+  "verified_findings": [
+    {
+      "severity": "P2",
+      "file": "app/Jobs/CleanupStalePendingKioskOrders.php",
+      "line": "64-86 (cited 34-69; OrderController guard at 209 / 422 at 238)",
+      "title": "Deferred kiosk-card late-payment vs 15-min auto-reject: no TPE-fund reconciliation (DORMANT under V1 Plan B)",
+      "confirmed": true,
+      "grep_evidence": "CleanupStalePendingKioskOrders.php:64 OrderStateMachine::apply($locked, OrderStatus::REJECTED, ...); line 86 OrderCanceled::dispatch($order) (stock release). OrderController.php:209 'if ((int) $locked->status !== OrderStatus::PENDING)' sets nonConfirmableStatus; line 238 returns response([...],422) 'Payment confirmation is no longer accepted'. Reachability gate confirmed: config/kiosk.php:54 KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER default true (filter_var env(...,true)); KioskPaymentComponent.vue:421 confirmCounterRoute() forces counter route. CleanupVsConfirmRaceTest.php:57 fixture transaction_id 'FK-M06-LATE-TPE', line 63 assertStatus(422), line 68 asserts payment_status stays UNPAID — test asserts the data-integrity outcome but is SILENT on TPE-captured funds / refund / reconciliation.",
+      "is_new": true,
+      "recommendation": "No V1 action while Plan B active (path dormant — all kiosk payments route to counter). When Plan A (kiosk TPE auth+capture) is wired, add a reconciliation guard: paymentConfirm landing on a REJECTED/CANCELED row whose transaction_id indicates a real capture must alert + queue refund/void rather than silent 422. Extend CleanupVsConfirmRaceTest to assert that branch. Touches no frozen zone (controller + job not §7). Track as Plan-A precondition, not a V1 LOCAL blocker.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Jobs/CleanupStalePendingKioskOrders.php",
+      "line": "38 (decrement at FrontendOrderService.php:512; source_surface at 520-523)",
+      "title": "Stale-order stock release scoped to source_surface='kiosk' only; web/mobile abandoned orders leak branch counters (LATENT — no V1 web/mobile API wireup)",
+      "confirmed": true,
+      "grep_evidence": "CleanupStalePendingKioskOrders.php:38 '->where('source_surface', 'kiosk')' + line 39 whereIn order_type [KIOSK,TAKEAWAY]. FrontendOrderService.php:512 decrementForOrder() is unconditional inside the create closure; lines 520-523 set source_surface = $isKiosk ? 'kiosk' : 'web' (so a non-kiosk PENDING/UNPAID order is tagged 'web' and is never picked up by the cleanup filter). routes/api.php my-order group at line 603 exposes only GET show routes — the order-CREATE route is the kiosk-shared /api/frontend/order, so no live V1 client POSTs a non-kiosk order through myOrderStore. Asymmetry is latent.",
+      "is_new": true,
+      "recommendation": "Per CLAUDE.md §3bis mobile/web are STANDALONE with NO API wireup in V1 — latent, not active. When web/mobile wireup lands (V2), broaden the cleanup filter to whereIn(source_surface,['kiosk','web']) with a surface-appropriate TTL, or make the decrement conditional on payment confirmation for non-kiosk surfaces. No frozen zone touched.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/Pricing/DiscountCalculator.php",
+      "line": "28 (paths: PricingService.php:339-355, OrderService.php:956, OrderQuoteService.php:299)",
+      "title": "KNOWN-BACKLOG F1 (unclamped manual discount ~5 LOC) — VERIFIED RESOLVED at HEAD across all three pricing paths (architect + security duplicate, merged)",
+      "confirmed": true,
+      "grep_evidence": "DiscountCalculator.php:28 'return $requested <= $subtotal ? $requested : 0.0;' (manual clamp). SSOT path PricingService.php:339-344 routes manualDiscountRequest through DiscountCalculator::manualDiscount for context in ['pos','table']; PricingService.php:355 '$finalTotal = ... max(0.0, $rawTotal)'. Legacy POS path OrderService.php:956 'if ($manualDiscount <= $realSubtotal) { $calculatedDiscount = $manualDiscount; }' else ignored (comment 'pas de total négatif'). Quote path OrderQuoteService.php:299 'if ($pricing->subtotal <= 0.0 || $discount > $pricing->subtotal)' throws validation 422. F1 closed on all three paths.",
+      "is_new": false,
+      "recommendation": "Verified mitigated at HEAD, no action. PricingService is frozen (§7); do not edit. Report as backlog item #2-F1 RESOLVED.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/Fiscal/ZReportService.php",
+      "line": "651-656, 663 (per-line snapshot frozen at PricingService.php:287)",
+      "title": "KNOWN-BACKLOG F2 (multi-rate tax-breakdown drift) — VERIFIED reconstructed at Z aggregation from frozen per-line snapshot, not at creation (architect + security duplicate, merged)",
+      "confirmed": true,
+      "grep_evidence": "ZReportService.php:651-656 DB::table('order_items')->selectRaw('tax_rate, SUM(tax_amount) AS total_tax_for_rate')->whereIn('order_id',$orderIds)->whereNotNull('tax_rate')->groupBy('tax_rate'). Line 663 normalizes rate via rtrim(rtrim(number_format((float)$r->tax_rate,2,'.',''),'0'),'.') canonicalisation. Per-line tax_amount stamped frozen at creation: PricingService.php:287 'tax_amount => $taxPrice' in the order_items composition write. F2 lives at Z aggregation, no creation-time drift.",
+      "is_new": false,
+      "recommendation": "Verified mitigated at HEAD, no action. ZReportService is frozen (§7); do not edit. Report as backlog item #2-F2 RESOLVED.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "tests/Feature/KioskLoyaltyLedgerAtomicTest.php",
+      "line": "36, 174-182 (companion QuoteBindingTest.php:82,159)",
+      "title": "No integration test exercises kiosk loyalty-redeem + REAL quote-seal together (seal stubbed to no-op)",
+      "confirmed": true,
+      "grep_evidence": "KioskLoyaltyLedgerAtomicTest.php:36 calls bypassKioskQuoteSealForLoyaltySentinel(); lines 174-181 'this->app->instance(\\App\\Services\\Order\\OrderQuoteService::class, new class { public function sealForCommit(): \\App\\Models\\OrderQuote { return new \\App\\Models\\OrderQuote(); } })' — seal disabled for all loyalty atomicity tests. Companion QuoteBindingTest.php exercises real sealForCommit but its fixture has NO loyalty (grep loyalty_code = 0 matches in that file; line 159 tax_rate => 0). The two invariants (loyalty ledger atomicity + quote-seal 409 total-mismatch) are never asserted on the SAME request.",
+      "is_new": true,
+      "recommendation": "Add a kiosk feature test posting a loyalty-redeem order WITHOUT stubbing OrderQuoteService, asserting (a) sealForCommit 409 fires if the sealed total diverges from the loyalty-adjusted total, and (b) ledger rollback on seal failure. Test-only, no frozen-zone touch. Low priority: both production paths independently verified-correct; this is assertion-coverage, not a live defect.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/OrderService.php",
+      "line": "645-647 (recovery) vs 671-677 (ownership check); recovery query at 2850-2861",
+      "title": "POS idempotency-recovery returns existing Order using client-supplied branch_id BEFORE the create-path branch-ownership check — VERIFIED NON-exploitable via BranchScope",
+      "confirmed": true,
+      "grep_evidence": "OrderService.php:629 (in 615-625 region) '$targetBranchId = (int) ($request->branch_id ?: 0)' client-supplied; line 645 '$existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey,$targetBranchId,$recoveryCustomerId)'; line 647 'return $existing' — runs BEFORE the branch-ownership guard at lines 671-677 ('if (! isGlobalAdmin && (authBranchId<=0 || request->branch_id !== authBranchId)) throw 403'), which executes only inside the create closure. findExistingOrderForIdempotencyRecovery (OrderService.php:2850-2861) uses plain Order::query()->where('idempotency_key')->where('branch_id',$branchId) with NO withoutGlobalScope. BranchScope.php:33-36 admin (branch_id=0) returns early; line 39 staff scoped '$builder->where($field,'=',$userBranch)' → branch-A operator passing branch_id=B yields branch_id=B AND branch_id=A = empty. Only global Admin (by design) can pass arbitrary branch_id. NON-exploitable.",
+      "is_new": true,
+      "recommendation": "No production fix for V1 (BranchScope is the enforcing layer; single-branch branch_id=1 has no second branch). Optional V2 hardening: move the branch-ownership assert ABOVE the recovery return, or assert $existing->branch_id === $authBranchId on recovery, so the guarantee does not silently depend on the global scope. Add a regression test pinning cross-branch-recovery=empty before V2. Not a frozen-zone file.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/Pricing/DiscountCalculator.php",
+      "line": "22-29",
+      "title": "DUPLICATE — architect-lens F1 verify (DiscountCalculator.php:28), same item as merged security-lens F1 above",
+      "confirmed": false,
+      "grep_evidence": "Architect lens reported the same F1-RESOLVED verification (DiscountCalculator.php:28) that the security lens reported with a fuller 3-path trace (SSOT + legacy + quote). Both verified true against HEAD; kept the better-evidenced security-lens entry to avoid double-counting.",
+      "is_new": false,
+      "recommendation": "N/A — duplicate, see merged F1 entry above.",
+      "drop_reason": "Duplicate of security-lens F1 verify; kept the better-evidenced 3-path trace. Both confirmed mitigated at HEAD."
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/Fiscal/ZReportService.php",
+      "line": "645-668",
+      "title": "DUPLICATE — architect-lens F2 verify and security-lens F2 verify report the same ZReportService aggregation; merged into single F2 entry above",
+      "confirmed": false,
+      "grep_evidence": "Both architect (ZReportService.php:645-668) and security (summary: 'F2 multi-rate tax ... confirmed RESOLVED at HEAD') reported the same F2-RESOLVED verification. Verified true against HEAD (ZReportService.php:651-656,663). Merged into single F2 entry above to keep counts honest.",
+      "is_new": false,
+      "recommendation": "N/A — duplicate, see merged F2 entry above.",
+      "drop_reason": "Duplicate F2 verify reported across both lenses; merged into one confirmed F2 entry. Both confirmed mitigated at HEAD."
+    }
+  ],
+  "confirmed_count": 6,
+  "dropped_count": 2
+}
