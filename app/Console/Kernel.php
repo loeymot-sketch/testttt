@@ -80,6 +80,28 @@ class Kernel extends ConsoleKernel
             ->name('webhook-retry-failed')
             ->description('Retry failed webhook_events (Stripe/SenangPay) within last 24h');
 
+        // [GOAL-2026-05-29 V3 / NF525 P0 #1 detect-only] Daily Z-membership
+        // reconciliation: the read-only fiscal:verify-z-membership detector flags any
+        // fiscally-numbered order at risk of appearing in NO signed Z (cross-Z-window
+        // settlement orphan — a numbered receipt absent from every Z = NF525 gap-free
+        // risk). The command exits non-zero on candidates; the onFailure hook raises a
+        // pageable Log::error. The full cross-window policy (reject-late vs
+        // counter-entry) remains an owner decision, but the orphan can no longer go
+        // unsurfaced. Read-only — no writes, no fiscal mutation.
+        $schedule->command('fiscal:verify-z-membership')
+            ->dailyAt('06:05')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->name('fiscal-z-membership')
+            ->description('NF525: alarm if any numbered order is absent from every signed Z (cross-Z-window orphan).')
+            ->onFailure(function () {
+                \Illuminate\Support\Facades\Log::error(
+                    '[fiscal:verify-z-membership] cross-Z-window orphan candidate(s) detected — '
+                    . 'a numbered receipt may be absent from every signed Z (NF525 gap-free risk). '
+                    . 'Investigate before close. See reports/audit/massive-validation-2026-05-29/ESCALATION_NO_GO.md (P0 #1).'
+                );
+            });
+
         $schedule->job(new CleanupStalePendingKioskOrders())
             ->everyFiveMinutes()
             ->withoutOverlapping()
