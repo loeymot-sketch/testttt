@@ -24,7 +24,29 @@
                             <option value="reconciled">{{ $t('label.delivery_cash_status_reconciled') }}</option>
                         </select>
                     </div>
+                    <!-- [GOAL-2026-05-29 BTN-P1] Open-session entry: the Form was orphaned
+                         (no UI path to open). Mounts the existing self-contained Form (open mode). -->
+                    <div class="db-card-filter-item flex items-end">
+                        <button
+                            type="button"
+                            class="db-btn bg-primary text-white"
+                            data-testid="delivery-cash-open-session-btn"
+                            @click="showOpenForm = !showOpenForm"
+                        >
+                            <i class="lab lab-plus"></i>
+                            <span>{{ $t('label.cash_session_open') }}</span>
+                        </button>
+                    </div>
                 </div>
+            </div>
+
+            <!-- [GOAL-2026-05-29 BTN-P1] Inline open form (was orphaned component). -->
+            <div v-if="showOpenForm" class="px-4 pb-4" data-testid="delivery-cash-open-form-wrap">
+                <DeliveryBoyCashSessionFormComponent
+                    mode="open"
+                    @submitted="onSessionOpened"
+                    @cancel="showOpenForm = false"
+                />
             </div>
 
             <div class="db-table-responsive">
@@ -76,7 +98,7 @@
                                     type="button"
                                     class="db-btn-outline-sm"
                                     :data-testid="`delivery-cash-session-view-${session.id}`"
-                                    @click="$emit('view', session.id)"
+                                    @click="viewSession(session.id)"
                                 >
                                     <i class="lab lab-eye-line"></i>
                                     <span>{{ $t('button.view') }}</span>
@@ -132,19 +154,22 @@
  * a table with status badges + variance highlight. Filter by status only
  * (delivery_boy_id filter added by Wave 6b-1.7 enrichment).
  *
- * Emits `view` with session ID when a row's view button is clicked — the
- * parent route should swap to the detail component.
+ * [GOAL-2026-05-29 BTN-P1] The View button previously did $emit('view') but this
+ * is a TOP-LEVEL route component — no parent listened, so it was a dead button.
+ * Now it $router.push to the .show route. Also mounts the (previously orphaned)
+ * Form in open mode so a session can actually be opened from this surface.
  */
 import axios from 'axios';
 import LoadingComponent from '../components/LoadingComponent';
+import DeliveryBoyCashSessionFormComponent from './DeliveryBoyCashSessionFormComponent.vue';
 
 export default {
     name: 'DeliveryBoyCashSessionListComponent',
-    components: { LoadingComponent },
-    emits: ['view'],
+    components: { LoadingComponent, DeliveryBoyCashSessionFormComponent },
     data() {
         return {
             loading: { isActive: false },
+            showOpenForm: false,
             sessions: [],
             pagination: {
                 total: 0,
@@ -163,6 +188,19 @@ export default {
         this.list();
     },
     methods: {
+        // [GOAL-2026-05-29 BTN-P1] Was $emit('view') to a non-existent parent (dead button).
+        viewSession(id) {
+            this.$router.push({ name: 'admin.delivery-boy-cash-sessions.show', params: { id } });
+        },
+        // [GOAL-2026-05-29 BTN-P1] Form(open) success → close form + refresh + jump to the new session.
+        onSessionOpened(session) {
+            this.showOpenForm = false;
+            if (session && session.id) {
+                this.viewSession(session.id);
+            } else {
+                this.list(1);
+            }
+        },
         list(page = 1) {
             this.loading.isActive = true;
             const params = {

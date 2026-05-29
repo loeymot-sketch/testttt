@@ -167,6 +167,14 @@ export default {
         return {
             submitting: false,
             errorMessage: '',
+            // [GOAL-2026-05-29 BTN-P1] The open/close/reconcile routes carry the
+            // `idempotency` middleware (routes/api.php) which REQUIRES an
+            // X-Idempotency-Key header — without it the POST 422s
+            // ("Header X-Idempotency-Key requis"). This component was never mounted
+            // (orphaned) so the omission was never caught. Build ONE stable key per
+            // form mount so an accidental double-submit dedupes; a fresh mount (new
+            // operation) gets a fresh key. Mirrors PosRefundModal's pattern.
+            idempotencyKey: `livreur-cash-${this.mode}-${this.sessionId ?? 'new'}-${Date.now()}`,
             form: {
                 delivery_boy_id: this.defaultDeliveryBoyId
                     ? Number(this.defaultDeliveryBoyId)
@@ -202,6 +210,7 @@ export default {
                         delivery_boy_id: Number(this.form.delivery_boy_id),
                         opening_amount: Number(this.form.opening_amount),
                     },
+                    { headers: { 'X-Idempotency-Key': this.idempotencyKey } },
                 );
                 this.$emit('submitted', res.data.data);
             } catch (err) {
@@ -224,6 +233,7 @@ export default {
                     {
                         closing_amount: Number(this.form.closing_amount),
                     },
+                    { headers: { 'X-Idempotency-Key': this.idempotencyKey } },
                 );
                 this.$emit('submitted', res.data.data);
             } catch (err) {
@@ -248,6 +258,7 @@ export default {
                             ? this.form.variance_reason.trim()
                             : null,
                     },
+                    { headers: { 'X-Idempotency-Key': this.idempotencyKey } },
                 );
                 this.$emit('submitted', res.data.data);
             } catch (err) {

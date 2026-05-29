@@ -69,13 +69,13 @@
                     </div>
                 </dl>
 
-                <div class="mt-6 flex gap-3" v-if="canMutate">
+                <div class="mt-6 flex gap-3" v-if="canMutate && !activeFormMode">
                     <button
                         v-if="session.status === 'open'"
                         type="button"
                         class="db-btn bg-warning text-white"
                         data-testid="delivery-cash-action-close"
-                        @click="$emit('close-session', session)"
+                        @click="activeFormMode = 'close'"
                     >
                         {{ $t('label.cash_session_close') }}
                     </button>
@@ -84,10 +84,22 @@
                         type="button"
                         class="db-btn bg-success text-white"
                         data-testid="delivery-cash-action-reconcile"
-                        @click="$emit('reconcile-session', session)"
+                        @click="activeFormMode = 'reconcile'"
                     >
                         {{ $t('label.cash_session_reconcile') }}
                     </button>
+                </div>
+
+                <!-- [GOAL-2026-05-29 BTN-P1] Close/Reconcile buttons previously $emit'd to a
+                     non-existent parent (dead). Now they mount the (self-contained) Form
+                     inline; on success the session is refreshed in place. -->
+                <div v-if="canMutate && activeFormMode" class="mt-6" data-testid="delivery-cash-action-form-wrap">
+                    <DeliveryBoyCashSessionFormComponent
+                        :mode="activeFormMode"
+                        :session-id="session.id"
+                        @submitted="onActionSubmitted"
+                        @cancel="activeFormMode = null"
+                    />
                 </div>
             </div>
         </div>
@@ -139,26 +151,29 @@
  * [V1.0.2 Sub-6.3 BUILD-1 — 2026-05-18] Delivery boy cash session — admin detail view.
  *
  * Loads /api/admin/delivery-boy/cash-sessions/{id} with movements eager-loaded.
- * Emits `close-session` / `reconcile-session` to parent which mounts the form.
  *
- * canMutate prop drives visibility of action buttons — parent passes false
- * if the calling user lacks `delivery-boys` permission (status pinned).
+ * [GOAL-2026-05-29 BTN-P1] This is a TOP-LEVEL route component — the old
+ * $emit('close-session'/'reconcile-session') reached no parent (dead buttons).
+ * It now mounts the self-contained Form inline (close/reconcile modes) and
+ * refreshes the session in place on success. Backend enforces the
+ * `delivery-boys` permission on the mutation regardless of canMutate.
  */
 import axios from 'axios';
 import LoadingComponent from '../components/LoadingComponent';
+import DeliveryBoyCashSessionFormComponent from './DeliveryBoyCashSessionFormComponent.vue';
 
 export default {
     name: 'DeliveryBoyCashSessionShowComponent',
-    components: { LoadingComponent },
+    components: { LoadingComponent, DeliveryBoyCashSessionFormComponent },
     props: {
         sessionId: { type: [Number, String], required: true },
         canMutate: { type: Boolean, default: true },
     },
-    emits: ['close-session', 'reconcile-session'],
     data() {
         return {
             loading: { isActive: false },
             session: null,
+            activeFormMode: null,
         };
     },
     computed: {
@@ -175,6 +190,13 @@ export default {
         },
     },
     methods: {
+        // [GOAL-2026-05-29 BTN-P1] Form(close|reconcile) success → close form + re-fetch
+        // the full session (the show endpoint eager-loads movements, which the
+        // close/reconcile response may not carry) so status + variance refresh in place.
+        onActionSubmitted() {
+            this.activeFormMode = null;
+            this.fetch();
+        },
         fetch() {
             if (!this.sessionId) return;
             this.loading.isActive = true;
