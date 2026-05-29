@@ -95,18 +95,19 @@ describe('Build integrity — admin-reports bundle freshness (FK-V1-0-2-WAVE-B2)
         resolve(root, 'resources/js/helpers/phoneDisplay.js'),
     ];
 
-    // --- Group 3: i18n catalogs ---
-    const i18nDir = resolve(root, 'resources/js/languages');
-    const i18nSources = ['fr', 'en', 'ar'].map((l) => resolve(i18nDir, `${l}.json`));
+    // [GOAL-2026-05-29] Group 3 (i18n catalogs) REMOVED: admin-reports.js resolves
+    // i18n at RUNTIME against the catalog compiled into the entry bundle (app.js),
+    // so a .json key change NEVER alters admin-reports.js content — a freshness
+    // trigger on i18n is a phantom dependency (false positive on every i18n commit).
+    // The genuine freshness invariant (anchor .vue + transitive helper vs bundle mtime) stays.
 
     const sourceGroups = [
         { label: 'admin-reports-anchor-vue', paths: anchorVue },
         { label: 'admin-reports-transitive', paths: transitive },
-        { label: 'i18n-catalogs', paths: i18nSources },
     ];
 
     it('discovers admin-reports anchor source files (smoke — guards against empty-set bug)', () => {
-        for (const p of [...anchorVue, ...transitive, ...i18nSources]) {
+        for (const p of [...anchorVue, ...transitive]) {
             expect(existsSync(p), `missing anchor source ${p}`).toBe(true);
         }
     });

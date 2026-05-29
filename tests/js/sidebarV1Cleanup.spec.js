@@ -59,7 +59,9 @@ describe('V1 admin sidebar cleanup', () => {
         expect(text).toContain('menu.catalog');
         expect(text).toContain('menu.ingredients');
         expect(text).toContain('menu.pos_orders');
-        // buildMergedSidebarMenus: dashboard, pos, rupture, items→studio+attrs, ingredients, pos-orders = 7 rows
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(7);
+        // buildMergedSidebarMenus: dashboard, pos, rupture, items→studio+attrs,
+        // ingredients, pos-orders, cash-overview, delivery-cash-sessions = 9 rows
+        // [GOAL-2026-05-29] +2 since this was written: cash-overview + delivery-cash-sessions.
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(9);
     });
 });

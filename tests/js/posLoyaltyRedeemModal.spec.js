@@ -150,7 +150,10 @@ describe('PosLoyaltyRedeemModal', () => {
 
         expect(axios.post).toHaveBeenCalledTimes(1);
         const [url, payload, options] = axios.post.mock.calls[0];
-        expect(url).toBe('/api/admin/pos-order/42/redeem-loyalty');
+        // [GOAL-2026-05-29] '/api' is supplied by the project axios baseURL
+        // (axios-setup.js), NOT the call site — the component correctly passes the
+        // relative path. Assert the literal call-site arg = the relative path.
+        expect(url).toBe('/admin/pos-order/42/redeem-loyalty');
         expect(payload).toEqual({ points: 100, loyalty_code: 'TESTCUST' });
         expect(options.headers['X-Idempotency-Key']).toMatch(/^pos-redeem-42-TESTCUST-100-/);
 

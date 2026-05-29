@@ -28,12 +28,15 @@ describe('F-004 — Kiosk cancel sends whitelisted reason', () => {
     );
 
     it('KioskPaymentComponent never posts cancel-status without reason key', () => {
-        // Find every change-status POST and assert each one carries a reason: token within
-        // the same payload object (≤ 250 chars window).
-        const matches = paymentSource.match(/change-status\/\$\{[^}]+\}`[\s\S]{0,250}?\{[\s\S]{0,300}?\}/g) || [];
-        expect(matches.length).toBeGreaterThan(0);
-        for (const m of matches) {
-            expect(m).toMatch(/reason\s*:/);
+        // [GOAL-2026-05-29] The cancel payload is now hoisted into a NAMED const so an
+        // X-Idempotency-Key can be propagated alongside it (commit 1eebd208c, NF525 §9).
+        // The invariant (every change-status POST carries a whitelisted reason) is
+        // unchanged — follow each POST's payload VARIABLE to its const declaration and
+        // assert that const has a reason: key.
+        const postVars = [...paymentSource.matchAll(/change-status\/\$\{[^}]+\}`\s*,\s*([A-Za-z_$][\w$]*)/g)].map((m) => m[1]);
+        expect(postVars.length).toBeGreaterThan(0);
+        for (const v of postVars) {
+            expect(paymentSource).toMatch(new RegExp(`const\\s+${v}\\s*=\\s*\\{[\\s\\S]{0,200}?reason\\s*:`));
         }
     });
 
@@ -49,7 +52,11 @@ describe('F-004 — Kiosk cancel sends whitelisted reason', () => {
     });
 
     it('KioskWaitingComponent customer cancel sends customer_request reason', () => {
-        expect(waitingSource).toMatch(/change-status\/\$\{[^}]+\}`[\s\S]{0,250}?reason\s*:\s*'customer_request'/);
+        // [GOAL-2026-05-29] payload hoisted to a named const (idempotency-key propagation);
+        // resolve the POST's payload variable to its declaration and assert the reason.
+        const m = waitingSource.match(/change-status\/\$\{[^}]+\}`\s*,\s*([A-Za-z_$][\w$]*)/);
+        expect(m).not.toBeNull();
+        expect(waitingSource).toMatch(new RegExp(`const\\s+${m[1]}\\s*=\\s*\\{[\\s\\S]{0,200}?reason\\s*:\\s*'customer_request'`));
     });
 
     it('comment trail references AUDIT-F-004 for traceability', () => {

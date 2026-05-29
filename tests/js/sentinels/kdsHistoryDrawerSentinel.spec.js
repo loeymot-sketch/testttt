@@ -81,7 +81,9 @@ describe('KDS Wave X3 — Historique du jour drawer (FK-WAVE-X3-KDS-HISTORY-001)
 
         it('accepts open: Boolean prop and emits close', () => {
             expect(drawerSource).toMatch(/props:\s*\{[\s\S]{0,300}?open:\s*\{[\s\S]{0,200}?type:\s*Boolean/);
-            expect(drawerSource).toMatch(/emits:\s*\[\s*['"]close['"]\s*\]/);
+            // [GOAL-2026-05-29] Heal-5/F6 added 'recalled' so emits is ['close','recalled'].
+            // The invariant is that 'close' is emitted — assert membership, not sole-element.
+            expect(drawerSource).toMatch(/emits:\s*\[[^\]]*['"]close['"]/);
         });
 
         it('fetches the canonical endpoint admin/kds-order/history-today (no /api/ prefix)', () => {
@@ -111,21 +113,21 @@ describe('KDS Wave X3 — Historique du jour drawer (FK-WAVE-X3-KDS-HISTORY-001)
             expect(drawerSource).toMatch(/\$t\(['"]label\.kds_state_delivered['"]\)/);
         });
 
-        it('does NOT render any revert / annuler / recall control in V1', () => {
-            // Revert is V1.0.2 backlog (OrderStateMachine §7 LOCK). Comments
-            // in the source may mention the word "revert" in the rationale —
-            // strip HTML/template content before checking, since the guard
-            // is about USER-FACING controls, not code comments.
-            // Take only template + script logic identifiers (exclude comments).
+        it('does NOT render a Path-C revert / reverse-transition control (OrderStateMachine §7, deferred V1.0.2)', () => {
+            // [GOAL-2026-05-29] SCOPED to the still-forbidden invariant: the
+            // PREPARED→PREPARING *reverse transition* (Path C) remains deferred to
+            // V1.0.2 (OrderStateMachine §7 frozen) and must NOT get a control here.
+            // The Path-B "Annuler bump" RECALL (Heal-5/F6) — a compensating,
+            // append-only action that does NOT mutate orders.status — IS shipped V1
+            // and is locked by its own sentinels (kdsRecallButtonSentinel,
+            // kdsRecallIdempotencyHeaderSentinel, KitchenRecallEndpointSentinelTest).
+            // So the old anti-"recall" assertion was REMOVED (it now contradicts the
+            // shipped contract); the anti-"revert"/reverse-transition guards stay.
             const noBlockComments = drawerSource.replace(/\/\*[\s\S]*?\*\//g, '');
             const noLineComments = noBlockComments.replace(/(?<!:)\/\/[^\n]*/g, '');
             const noHtmlComments = noLineComments.replace(/<!--[\s\S]*?-->/g, '');
-            // Look only at JSX-like attribute values and visible text — match
-            // an interactive control or visible button label.
             const lower = noHtmlComments.toLowerCase();
             expect(lower).not.toMatch(/<button[^>]*>[^<]*revert/);
-            expect(lower).not.toMatch(/<button[^>]*>[^<]*annuler/);
-            expect(lower).not.toMatch(/<button[^>]*>[^<]*recall/);
             expect(lower).not.toMatch(/<button[^>]*>[^<]*rétablir/);
             expect(lower).not.toMatch(/@click=["'][^"']*revert/);
         });

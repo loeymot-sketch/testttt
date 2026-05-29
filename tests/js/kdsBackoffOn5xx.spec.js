@@ -10,11 +10,18 @@ describe('KdsSyncService backoff', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         vi.spyOn(Math, 'random').mockReturnValue(0);
+        // [GOAL-2026-05-29] Seed the Sanctum token so forceSync() passes the
+        // auth-guard added in a46ec7df7 (skip poll tick until Vuex hydrates the
+        // token). Without it forceSync short-circuits before fetch and the
+        // resilience paths never run. The guard is correct production behavior;
+        // this mirrors kdsVersionGate test-1's existing seed.
+        localStorage.setItem('vuex', JSON.stringify({ auth: { authToken: 'staff-token' } }));
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
         vi.useRealTimers();
+        localStorage.clear();
     });
 
     it('doubles interval on 503 and resets after 200', async () => {

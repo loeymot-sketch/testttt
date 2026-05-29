@@ -25,7 +25,10 @@ describe('POS wizard composer profile runtime contract', () => {
         // [POS-V4-UNIFIED-CATEGORY-VIEW-2026-05-02] La vue landing/best-sellers a été supprimée
         // au profit d'un seul rail catégories + grille produits unifié. La grille consomme
         // donc uniquement `items` (catalogue branch_id-scoped via posCategory + item stores).
-        expect(source).toContain(':items="items"');
+        // [GOAL-2026-05-29] F-4 featured-categories first-page filter: the grid now
+        // binds the filtered :items="displayedItems" (still the item payload, no
+        // separate heuristic layer — line 29 still guards against detectTemplateFromName).
+        expect(source).toContain(':items="displayedItems"');
         expect(source).not.toContain('detectTemplateFromName');
     });
 

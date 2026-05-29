@@ -18,10 +18,14 @@ describe('B5b kiosk cash-at-counter flow', () => {
         const source = read('resources/js/components/admin/pos/PosComponent.vue');
 
         expect(source).toContain("axios.get('admin/pos/counter-collect/pending')");
-        expect(source).toMatch(/admin\/pos\/counter-collect\/\$\{order\.id\}\/confirm/);
         expect(source).toMatch(/admin\/pos\/counter-collect\/\$\{order\.id\}\/cancel/);
         expect(source).toContain('posPaymentMethodEnum.CASH');
         expect(source).toContain('OrderPaidAtCounter');
+        // [GOAL-2026-05-29] The confirm-POST moved to the dedicated PosCounterCollectModal
+        // (it owns the confirm step now, with X-Idempotency-Key); PosComponent keeps
+        // pending/cancel. Assert confirm against its real owner (uses ${orderId}).
+        expect(read('resources/js/components/admin/pos/PosCounterCollectModal.vue'))
+            .toMatch(/admin\/pos\/counter-collect\/\$\{orderId\}\/confirm/);
     });
 
     it('marks pending counter payment orders on the KDS card and listens for confirmation', () => {

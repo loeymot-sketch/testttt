@@ -9,6 +9,9 @@ import { KdsSyncService } from '../../resources/js/services/KdsSyncService';
 describe('KdsSyncService version gate', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        // [GOAL-2026-05-29] Seed Sanctum token so forceSync() passes the auth-guard
+        // (a46ec7df7) in the version-gate tests (test-1 also seeds inline; harmless overwrite).
+        localStorage.setItem('vuex', JSON.stringify({ auth: { authToken: 'staff-token' } }));
     });
 
     afterEach(() => {
