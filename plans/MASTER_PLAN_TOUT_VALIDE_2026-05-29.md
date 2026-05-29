@@ -22,3 +22,9 @@ Baseline réelle (post validation-state assessment, honnête) :
 - **V5 — Validation massive.** Full vitest + full PHPUnit verts ; NF525 CHAIN OK ; frozen 0 ; convergence adversariale 2 rounds identiques 0 P0/P1 ; re-confirmer le capstone visuel. → "tout validé".
 
 Statut : V1 lancée.
+
+## V1 COMPLETE 2026-05-29 — CI GENUINELY GREEN
+- vitest 1871 passed / 0 failed (was 24 red); PHP 2712 passed / 0 failed (was 8 red).
+- ALL stale-test/baseline drift behind real security+feature hardening; adversarially verified 0 holes; ZERO source/frozen changes (except owner-LOCKed ZReportService baseline bump).
+- Commits: 262662563 (vitest x14), aefce71d8 (frozen baseline), 57fbf29bb (php x3).
+- → V2 concurrency F2 next.
