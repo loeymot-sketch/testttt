@@ -81666,19 +81666,31 @@ loadCorrelationDedupeFromStorage();
 function correlationDedupeKey(correlationId) {
   var eventType = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
   var branchId = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+  var aggregateId = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
   var branchKey = branchId === null || branchId === undefined || branchId === '' ? null : "branch:".concat(branchId);
-  if (!eventType || typeof eventType !== 'string') {
-    return branchKey ? "".concat(branchKey, ":").concat(correlationId) : correlationId;
-  }
-  return branchKey ? "".concat(eventType, ":").concat(branchKey, ":").concat(correlationId) : "".concat(eventType, ":").concat(correlationId);
+  // [GOAL-2026-05-29 F4] Include the event's aggregate id when present so a SINGLE
+  // request/correlation that legitimately emits one event PER ENTITY — e.g. a
+  // multi-item auto-86 emitting ItemAvailabilityChanged for each item, all sharing
+  // one correlationId+type+branch — is NOT collapsed to the first event (which kept
+  // the 2nd..Nth depleted items sellable). A genuine re-delivery (WS+poll) carries
+  // the SAME aggregate id, so it still dedups. Backward-compatible: when aggregateId
+  // is null the key is byte-identical to the previous format.
+  var aggKey = aggregateId === null || aggregateId === undefined || aggregateId === '' ? null : "agg:".concat(aggregateId);
+  var parts = [];
+  if (eventType && typeof eventType === 'string') parts.push(eventType);
+  if (branchKey) parts.push(branchKey);
+  if (aggKey) parts.push(aggKey);
+  parts.push(correlationId);
+  return parts.join(':');
 }
 function isDuplicateCorrelation(correlationId) {
   var eventType = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
   var branchId = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+  var aggregateId = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
   if (!correlationId || typeof correlationId !== 'string') {
     return false;
   }
-  var dedupeKey = correlationDedupeKey(correlationId, eventType, branchId);
+  var dedupeKey = correlationDedupeKey(correlationId, eventType, branchId, aggregateId);
   var now = Date.now();
   evictExpiredCorrelations(now);
   if (seenCorrelationIds.has(dedupeKey)) {
@@ -81764,7 +81776,11 @@ function onEvents(branchId, bindings) {
             receivedType: parsed.type
           });
         }
-        if (isDuplicateCorrelation(parsed.correlationId, parsed.type || expectedType || broadcastAs, parsed.branchId)) {
+
+        // [GOAL-2026-05-29 F4] Pass the aggregate id so per-entity events of one
+        // request/correlation (multi-item auto-86) aren't collapsed; a true
+        // re-delivery (same aggregate) still dedups.
+        if (isDuplicateCorrelation(parsed.correlationId, parsed.type || expectedType || broadcastAs, parsed.branchId, parsed.aggregateId)) {
           return;
         }
         handler(parsed);
