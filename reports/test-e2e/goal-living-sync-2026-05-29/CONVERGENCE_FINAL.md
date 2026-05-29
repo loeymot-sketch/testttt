@@ -63,8 +63,13 @@ recharge » avec « push live » — la racine de l'overclaim.
 - **Fix** : timer 2h dans `app.js`/`pos-app.js` → action `refreshAuthToken` → POST
   `/api/refresh-token` (endpoint existant `RefreshTokenController`, abilities préservées,
   ancien token supprimé). Mutation `authTokenRefreshed` ré-injecte le token frais dans Echo.
-- **Preuve** : `RefreshTokenAbilityPreserveTest` 4/4 (kiosk garde `kiosk:order` only ;
-  admin garde `*` ; token invalide → 401). Vitest spec dédiée 6/6.
+- **Preuve unit/backend** : `RefreshTokenAbilityPreserveTest` 4/4 (kiosk garde `kiosk:order`
+  only ; admin garde `*` ; token invalide → 401). Vitest spec dédiée 6/6.
+- **Preuve LIVE (chef, canal abonné)** : `dispatch('refreshAuthToken')` → token **rotaté**
+  (`b7881e0c`→`4d54a254`), header Echo mis à jour, **canal `private-branch.1` reste
+  subscribed:true** (Pusher ne ré-auth pas mid-connection ; le nouveau token est posé pour
+  la prochaine reconnexion via le fix §3.1), et un broadcast post-refresh est reçu en **6 ms**.
+  → la rotation 2h ne casse PAS le sync live. C'est la garantie all-day de P-AUTH.
 
 ---
 
@@ -96,6 +101,19 @@ recharge » avec « push live » — la racine de l'overclaim.
 - Le fix dédupe `aggregateId` (`eventContract.js:264`, session précédente) jugé **SOUND**
   par l'agent : byte-identique pour les events order, ne peut ni perdre des events distincts
   ni rater un vrai doublon.
+
+### 3.3 Dégradation WS → poll fallback (LIVE-validé, pas seulement code)
+- WS coupé live (`pusher.disconnect()`) → état `disconnected` → le composant flippe
+  `wsConnected=false` et **le poll 5 s prend le relais** : à **t=5003 ms** le fetch réel
+  `admin/kds-order` (+`kds-order/items`) part. Reconnexion → `connected`.
+- L'endpoint poll renvoie du **VRAI JSON** (`content-type: application/json`, clés
+  `server_now/branch_id/version/orders/deleted_ids`) — pas un masquerade HTML du catch-all
+  SPA (piège vérifié : `window.axios` baseURL=`/api`, donc chemin `/admin/...` PAS `/api/admin/...`).
+  Le SRE-agent confirme que ce poll lit `orders` EN DIRECT (KdsSyncService.php:96), pas l'outbox
+  → **0 perte de donnée** même bus de broadcast mort.
+- ⚠️ Distinction clé : **WS-down** (soketi/réseau) → poll **5 s** (validé ici). **Worker mort**
+  (soketi UP mais `queue:work` mort) → Pusher reste « connected » → poll reste **60 s** + events
+  s'empilent dans l'outbox = c'est l'item ouvert **O-1 (P1)** ci-dessous, distinct, monitored.
 
 ---
 
