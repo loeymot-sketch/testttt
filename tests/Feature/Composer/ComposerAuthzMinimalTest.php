@@ -109,9 +109,15 @@ class ComposerAuthzMinimalTest extends TestCase
             'branch_id_scope' => $this->branchB->id,
         ]);
 
+        // [GOAL-2026-05-29] WizardProfileBranchScope (added eb0f191e2, 2026-05-18)
+        // now HIDES the foreign-branch profile at route-model binding, so the
+        // controller authz (403) is never reached — Laravel returns 404 first.
+        // 404 (hide existence) is strictly MORE secure than 403 (confirm existence);
+        // the forbidden mutation still does not land (adversarially probed: foreign
+        // profile unchanged across all vectors). Assert the secure 404.
         $this->actingAs($user, 'sanctum')
             ->putJson($this->profileUpdateUrl($foreignProfile->id), $this->payload($this->branchA->id))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_show_defaults_to_actor_branch_and_does_not_leak_foreign_latest_profile(): void
@@ -134,9 +140,13 @@ class ComposerAuthzMinimalTest extends TestCase
             ->assertJsonPath('data.id', $ownProfile->id)
             ->assertJsonPath('data.branch_id_scope', $this->branchA->id);
 
+        // [GOAL-2026-05-29] showForItem runs under WizardProfileBranchScope: the
+        // foreign-branch profile is invisible and there is no global fallback in
+        // this test, so the controller aborts 404 (no leak — the foreign profile is
+        // NOT returned). 404 is the correct secure response (was 403 pre-scope).
         $this->actingAs($user, 'sanctum')
             ->getJson($this->profileUrl().'?branch_id_scope='.$this->branchB->id)
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_branch_admin_can_show_global_item_profile_when_no_branch_scoped_profile_exists(): void
@@ -232,10 +242,17 @@ class ComposerAuthzMinimalTest extends TestCase
         $foreignStep = ItemWizardStep::factory()->create(['profile_id' => $foreignProfile->id]);
         $ownStep = ItemWizardStep::factory()->create(['profile_id' => $ownProfile->id]);
 
+        // [GOAL-2026-05-29] POST to a foreign-branch {profile}'s steps: the profile
+        // is hidden by WizardProfileBranchScope at route binding → 404 (secure;
+        // the step is NOT created — adversarially probed: zero injected steps).
         $this->actingAs($user, 'sanctum')
             ->postJson($this->stepsUrlForProfile($foreignProfile->id), $this->stepPayload())
-            ->assertForbidden();
+            ->assertNotFound();
 
+        // PUT/DELETE on a foreign {step}: ItemWizardStep has NO branch scope, so it
+        // binds and reaches the controller's authorizeWritableBranchScope → 403.
+        // These stay assertForbidden — they prove controller-level authz executes
+        // (the stronger guard; the foreign step remains unmutated per the probe).
         $this->actingAs($user, 'sanctum')
             ->putJson($this->stepUrl($foreignStep->id), $this->stepPayload('Crudités modifié', $foreignStep->step_key))
             ->assertForbidden();
