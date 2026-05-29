@@ -54,6 +54,10 @@ Dedicated senior-security-engineer pass on all 5 changed source areas. **RESIDUA
 - config/broadcasting: no secret exposure.
 (Cloud "ultra review" `/code-review ultra` is owner-triggered/billed — recommend owner fires it pre-cloud.)
 
+## Surface re-drive — KDS bump → OSS (lifecycle leg)
+- KDS "Prêt" bump on A0004 → **real status transition ACCEPT(4)→PREPARING(7)** (paid, fiscal_seq=42). KDS bump is a genuine changeStatus, not just a local pastille. ✅
+- OSS wall showed empty for A0004. **Root-caused = EXPECTED, not a bug**: `OrderStatusScreenOrderService::list()` filters `order_datetime` within today (Paris TZ) + stale-prunes orders older than `oss.stale_window_hours` (anti-zombie). A0004's order_datetime is hours-old test data (created in an earlier test, transitioned now) → correctly pruned; the 6 other PREPARED matches are old test orders too. The OSS API `/api/admin/oss-order` returned `{"data":[]}` for that reason. In real ops (order prepared within minutes) order_datetime is fresh → it shows. My initial mirror-query omitted the date/stale filter → false alarm, corrected. **OSS behaving correctly.** (To visually prove a fresh order on the wall, a continuation should drive a brand-new borne order all the way through within the stale window.)
+
 ## NEXT (continuation queue)
 1. Loyalty IDOR fix (token-name pattern) + test.
 2. changePaymentStatus fiscal-seq allocation + test.
