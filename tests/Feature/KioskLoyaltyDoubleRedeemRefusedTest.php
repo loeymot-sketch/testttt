@@ -175,6 +175,35 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
         ], $overrides);
     }
 
+    /**
+     * [GOAL-2026-05-29 SEC-P1 LOYALTY-IDOR] A plain guest token carries the
+     * `kiosk:order` ability (GuestSignupController mints auth_token with it) but
+     * has NO KioskMachine row. It must NOT be treated as a kiosk and MUST be
+     * refused when redeeming a FOREIGN loyalty code — zero points debited.
+     */
+    public function test_guest_with_kiosk_ability_cannot_redeem_foreign_code(): void
+    {
+        $guest = User::factory()->create([
+            'branch_id' => 0,
+            'status' => Status::ACTIVE,
+            // deliberately NO KioskMachine row for this user
+        ]);
+        Sanctum::actingAs($guest, ['kiosk:order']);
+
+        $before = (int) $this->loyaltyCustomer->fresh()->loyalty_points;
+
+        $this->postJson('/api/frontend/loyalty/redeem', [
+            'code' => $this->loyaltyCustomer->loyalty_code, // FOREIGN code
+            'points' => 100,
+        ])->assertStatus(403);
+
+        $this->assertSame(
+            $before,
+            (int) $this->loyaltyCustomer->fresh()->loyalty_points,
+            'A guest (kiosk:order ability, no KioskMachine row) must NOT debit another user\'s loyalty points (IDOR).'
+        );
+    }
+
     private function bypassKioskQuoteSealForLoyaltySentinel(): void
     {
         $this->app->instance(\App\Services\Order\OrderQuoteService::class, new class {

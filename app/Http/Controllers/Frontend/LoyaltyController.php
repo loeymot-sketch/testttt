@@ -258,7 +258,22 @@ class LoyaltyController extends Controller
     public function redeem(Request $request)
     {
         $caller = $request->user();
-        $isKiosk = $caller && $caller->tokenCan('kiosk:order');
+        // [GOAL-2026-05-29 SEC-P1 LOYALTY-IDOR] The kiosk discriminator must NOT
+        // rely on the `kiosk:order` ABILITY alone: GuestSignupController mints
+        // ordinary guest tokens (`auth_token`, branch_id=0) WITH the
+        // `['kiosk:order']` ability, so a plain guest satisfied tokenCan(...) and
+        // — because the owner-check at L283 is skipped when $isKiosk — could
+        // redeem (debit) ANOTHER user's loyalty points by supplying their code
+        // (IDOR / points theft). Same root as the channels.php fix. Require a
+        // REAL KioskMachine row for the caller: a true kiosk machine user has one
+        // (KioskMachineTableSeeder), a guest never does. Preserves legit kiosk
+        // redemption (kiosk machine redeems on behalf of the customer's code)
+        // while a guest falls through to the owner-only check.
+        $isKiosk = $caller
+            && $caller->tokenCan('kiosk:order')
+            && \App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->where('user_id', $caller->id)
+                ->exists();
         $isStaff = $caller && $caller->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff']);
 
         try {
