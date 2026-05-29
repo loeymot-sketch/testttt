@@ -1703,6 +1703,14 @@ class OrderService
                     return;
                 }
 
+                // [GOAL-2026-05-29 F3] Race guard: re-validate the transition against
+                // the FRESH locked status. The pre-lock check (line 1670) used the
+                // possibly-stale $order->status; a concurrent transition could have
+                // moved the row, making the originally-valid edge illegal.
+                if (!(new \App\Rules\ValidStatusTransition((int) $locked->status))->passes('status', $newStatus)) {
+                    throw new Exception(trans('all.message.invalid_status_transition'), 422);
+                }
+
                 $transaction = Transaction::where('order_id', $locked->id)->first();
                 $wasUnpaidCash = (! $transaction)
                     && (int) $locked->payment_status === (int) PaymentStatus::UNPAID;
@@ -1929,6 +1937,14 @@ class OrderService
                             return [$locked, (int) $locked->status, true];
                         }
                         $previousStatus = (int) $locked->status;
+                        // [GOAL-2026-05-29 F3] Race guard: re-validate the transition
+                        // against the FRESH locked status (the pre-lock check at line
+                        // 1909 used the possibly-stale route-bound $order->status; a
+                        // concurrent transition could have moved the row, making the
+                        // originally-valid edge illegal — e.g. DELIVERED->CANCELED).
+                        if (!(new \App\Rules\ValidStatusTransition($previousStatus))->passes('status', $targetStatus)) {
+                            throw new Exception(trans('all.message.invalid_status_transition'), 422);
+                        }
                         if ($request->reason) {
                             $locked->reason = $request->reason;
                         }
@@ -2018,6 +2034,16 @@ class OrderService
                         // circuits via the $oldStatusForBroadcast===null guard.
                         $order->setRawAttributes($locked->getAttributes(), true);
                         return;
+                    }
+
+                    // [GOAL-2026-05-29 F3] Race guard: re-validate the transition
+                    // against the FRESH locked status. The pre-lock check (line 1909)
+                    // used the route-bound $order->status; a concurrent transition may
+                    // have superseded it before we acquired the lock — persisting the
+                    // originally-valid transition could write an illegal state-machine
+                    // edge (e.g. CANCELED->DELIVERED, DELIVERED->OUT_FOR_DELIVERY).
+                    if (!(new \App\Rules\ValidStatusTransition((int) $locked->status))->passes('status', $toStatus)) {
+                        throw new Exception(trans('all.message.invalid_status_transition'), 422);
                     }
 
                     // [P3] RETURNED — même barrière motif / contrepartie que CANCELED & REJECTED.
