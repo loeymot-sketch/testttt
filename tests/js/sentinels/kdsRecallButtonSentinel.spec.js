@@ -81,7 +81,11 @@ describe('Heal-5 — KDS recall compensating action (Path B)', () => {
     // 3. POST URL matches the backend route
     // ============================================================
     it('KdsHistoryDrawer POSTs to admin/kds-order/recall/${order.id}', () => {
-        expect(drawerSource).toMatch(/axios\.post\(`admin\/kds-order\/recall\/\$\{order\.id\}`\)/);
+        // [GOAL-2026-05-29 F6] The POST now carries an X-Idempotency-Key config arg
+        // (the route's idempotency middleware requires it — the recall was a dead
+        // button without it). Assert the recall URL is POST'd; tolerate the added
+        // args. The header itself is locked by kdsRecallIdempotencyHeaderSentinel.
+        expect(drawerSource).toMatch(/axios\.post\(`admin\/kds-order\/recall\/\$\{order\.id\}`/);
     });
 
     // ============================================================
