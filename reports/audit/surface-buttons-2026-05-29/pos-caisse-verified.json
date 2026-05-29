@@ -1,0 +1,24 @@
+{
+  "surface": "POS Caisse (pos-caisse)",
+  "head": "04603fa87adefa6dd605c7ec3c0d0ef20f56661c",
+  "verified_at": "2026-05-29",
+  "elements_checked": 70,
+  "confirmed_count": 1,
+  "dropped_count": 0,
+  "verified_findings": [
+    {
+      "severity": "P3",
+      "type": "ux_gap",
+      "file": "resources/js/components/admin/pos/PosComponent.vue",
+      "line": "4257-4277 (_fetchDeliverySuggestions) + 4280-4308 (selectDeliverySuggestion)",
+      "element": "Adresse de livraison — autocomplete inline (order type Livraison)",
+      "title": "Delivery address autocomplete silently produces zero suggestions when Google Maps JS SDK is not loaded",
+      "confirmed": true,
+      "grep_evidence": "Read PosComponent.vue:4257-4277 at HEAD 04603fa87: _getDeliveryAcService() returns null when window.google.maps.places absent; _fetchDeliverySuggestions then runs `if (!svc) { this.deliveryInline.suggestions = []; return; }` with NO user-visible message. deliveryGeocodeError notice (template 732-736, setter 4221) fires ONLY in the geocode-failure SELECT path, never in the SDK-absent autocomplete path. Confirmed input remains reactive (v-model, debounce setTimeout line 4244) and order completion still works manually. Not an axios endpoint (Google Maps Places JS SDK), so an axios sweep finds nothing. NOT dead/broken — order can be completed via manual entry.",
+      "recommendation": "When _getDeliveryAcService() returns null in _fetchDeliverySuggestions, set a one-line hint (e.g. reuse deliveryGeocodeError or a 'saisie manuelle' notice) instead of a silent empty array, so the cashier knows autocomplete is unavailable rather than waiting for a dropdown that will never appear.",
+      "frozen": false
+    }
+  ],
+  "dropped_findings": [],
+  "verification_notes": "All RAW summary support-claims re-verified at HEAD 04603fa87: (1) Historical dead-event 'foodking:pos:open-encaissement' is HEALED — PosOrdersTrackerComponent.vue:909-928 [GOAL-2026-05-29 DEAD-BUTTON-FIX] openEncaissement now opens PosCounterCollectModal locally (encaisseOrder state, modal mounted lines 401-404 with @confirmed/@cancel wired, onEncaisseConfirmed at 933); dangling window.dispatchEvent intentionally kept as harmless. Correctly NOT flagged. (2) Wizard submit bridge LIVE: ItemComponent.vue:1485 addEventListener('wizard:add-to-cart') matched by pos-wizard.js:4267 dispatchEvent(CustomEvent('wizard:add-to-cart')). (3) PosCounterCollectModal also mounted in PosComponent.vue:1396 (sibling of PaymentComponent). No raw labels, no dead buttons, no missing-route axios calls found. Single P3 is a UX clarity note, not a dead/broken control."
+}

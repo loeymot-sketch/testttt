@@ -58,7 +58,24 @@ Dedicated senior-security-engineer pass on all 5 changed source areas. **RESIDUA
 - KDS "Prêt" bump on A0004 → **real status transition ACCEPT(4)→PREPARING(7)** (paid, fiscal_seq=42). KDS bump is a genuine changeStatus, not just a local pastille. ✅
 - OSS wall showed empty for A0004. **Root-caused = EXPECTED, not a bug**: `OrderStatusScreenOrderService::list()` filters `order_datetime` within today (Paris TZ) + stale-prunes orders older than `oss.stale_window_hours` (anti-zombie). A0004's order_datetime is hours-old test data (created in an earlier test, transitioned now) → correctly pruned; the 6 other PREPARED matches are old test orders too. The OSS API `/api/admin/oss-order` returned `{"data":[]}` for that reason. In real ops (order prepared within minutes) order_datetime is fresh → it shows. My initial mirror-query omitted the date/stale filter → false alarm, corrected. **OSS behaving correctly.** (To visually prove a fresh order on the wall, a continuation should drive a brand-new borne order all the way through within the stale window.)
 
+## 🔘 BUTTON & FUNCTION AUDIT (agent army, 6 surfaces) — 14 confirmed, 4 P1, 6 dead buttons
+Artifacts: `reports/audit/surface-buttons-2026-05-29/*.json`. HEAL PRIORITY:
+| Sev | Surface | Finding | File | Fix |
+|---|---|---|---|---|
+| **P1** | Kiosk | Payment-refused CTAs "Réessayer"/"Payer au comptoir" emit to ZERO listeners + no fallback → DEAD; screen reachable after 2 TPE declines (customer stuck) | `KioskErrorPaymentRefusedComponent.vue:80,85` (non-frozen) | wire CTAs: retry → re-trigger payment flow; counter → route to cash-instruction. Same class as tracker Encaisser. |
+| **P1** | Livreur | List "View"/Voir emits to nobody → can't open session detail | `DeliveryBoyCashSessionListComponent.vue:75-83` | wire @click to open Show (route/modal). |
+| **P1** | Livreur | "Clôturer"+"Rapprocher" emit to nobody → cashier can't close/reconcile | `DeliveryBoyCashSessionShowComponent.vue:72-91` | wire to backend close/reconcile endpoints. |
+| **P1** | Livreur | Open/Close/Reconcile Form orphaned (never mounted) → no UI path to open a session | `DeliveryBoyCashSessionFormComponent.vue` | mount the Form in the list/show flow (was deferred V1.0.X — now fix). |
+| P2 | OSS | Fullscreen toggle throws `ReferenceError: handleMouseMove is not defined` → fullscreen dead | `BackendNavbarComponent.vue:603,614,565` (non-frozen) | define/remove handleMouseMove; fix cursor-reveal. |
+| P2 | Admin | "Vider les échecs" destructive purge, no confirm dialog | `OutboxOverviewComponent.vue:67-76,382-391` | add confirm dialog. |
+| P3 | KDS | network-error screen CTAs dead + screen orphaned | `KioskErrorNetworkComponent.vue` | low (orphaned). |
+| P3 | KDS | legacy mobile tab buttons no listener | `KitchenDisplaySystemComponent.vue:134-139` | bind after SPA mount or remove legacy. |
+| P3 | Livreur | list shows raw numeric IDs not names | `DeliveryBoyCashSessionListComponent.vue:52-54` | resolve names. |
+| P3 | misc | delivery autocomplete needs Google SDK; kiosk menu-unavailable retry dead (orphaned); hardcoded "Voir" label; outbox missing success-state | various | low. |
+**Confirmed: tracker Encaisser fix is sound** (the leftover CustomEvent is harmless dead-code, not a dead button — reclassified P3).
+
 ## NEXT (continuation queue)
+- **FIX the 4 P1 dead buttons** (kiosk payment-refused CTAs, livreur View/Close/Reconcile + Form mount) + OSS fullscreen P2 + outbox-confirm P2 — each: wire handler → test → live-verify → commit, frozen-safe.
 1. Loyalty IDOR fix (token-name pattern) + test.
 2. changePaymentStatus fiscal-seq allocation + test.
 3. z_reports.total_ht accessor (non-frozen) + test.
