@@ -515,7 +515,7 @@
   ];
 
   // -------------------------------------------------------------------------
-  // ALL ITEMS (heal-light v2 2026-05-14 — 37 produits visibles)
+  // ALL ITEMS (heal-light v2 2026-05-14 ; recompté 2026-05-29 — 41 entrées sur 11 catégories)
   // -------------------------------------------------------------------------
   const ITEMS = [
     ...SANDWICH_CAYENNE, ...GALETTE, ...SANDWICH_CLASSIQUE, ...BURGERS, ...TACOS,

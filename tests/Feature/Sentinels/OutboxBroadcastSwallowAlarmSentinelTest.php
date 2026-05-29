@@ -29,9 +29,10 @@ use Tests\TestCase;
  *               worker+cron downtime)
  *
  * Invariant: when `DispatchDomainEventsJob::dispatch(...)` throws from inside
- * the `DB::afterCommit` hook of any of the 3 OUTBOX persist listeners
+ * the `DB::afterCommit` hook of any of the 4 OUTBOX persist listeners
  * (PersistOrderCreatedToOutbox / PersistOrderStatusChangedToOutbox /
- * PersistOrderPaymentStatusChangedToOutbox), the listener MUST:
+ * PersistOrderPaymentStatusChangedToOutbox / PersistOrderPaidAtCounterToOutbox),
+ * the listener MUST:
  *
  *   1. Catch the Throwable (existing behavior — preserve cascade isolation),
  *   2. Escalate the structured log to `Log::error` (was `Log::warning`,
@@ -47,7 +48,7 @@ use Tests\TestCase;
  *     real OrderXxx events, assert `OutboxBroadcastSwallowedEvent` was
  *     dispatched with the expected payload (the cheapest listener to wire
  *     is the OrderCreated path).
- *   - 3 structural sentinels (one per listener file) — file_get_contents
+ *   - 4 structural sentinels (one per listener file) — file_get_contents
  *     + regex / substring asserts that lock the WJ-4 policy unambiguously
  *     against silent regression.
  *
@@ -209,6 +210,41 @@ class OutboxBroadcastSwallowAlarmSentinelTest extends TestCase
             $source,
             'WJ-4 swallow alarm: PersistOrderPaymentStatusChangedToOutbox MUST '
             . 'keep the Throwable catch around DispatchDomainEventsJob::dispatch.'
+        );
+    }
+
+    /**
+     * Structural sentinel — same policy on PersistOrderPaidAtCounterToOutbox.
+     *
+     * [GOAL-sync-ordertaking 2026-05-29 H4] OrderPaidAtCounter is a
+     * fiscal-adjacent (payment-confirmed) event yet was the ONLY order outbox
+     * persist listener missing the swallow alarm — a swallowed broadcast left
+     * the operator un-paged. This locks the parity fix against regression.
+     */
+    public function test_persist_order_paid_at_counter_source_has_swallow_alarm(): void
+    {
+        $source = file_get_contents(base_path('app/Listeners/PersistOrderPaidAtCounterToOutbox.php'));
+
+        $this->assertStringContainsString(
+            'OutboxBroadcastSwallowedEvent',
+            $source,
+            'WJ-4 swallow alarm: PersistOrderPaidAtCounterToOutbox MUST '
+            . 'reference OutboxBroadcastSwallowedEvent (mirror policy across '
+            . 'the 4 outbox persist listeners — fiscal-adjacent payment event).'
+        );
+
+        $this->assertStringContainsString(
+            'Log::error',
+            $source,
+            'WJ-4 swallow alarm: PersistOrderPaidAtCounterToOutbox MUST '
+            . 'escalate the swallow log from warning to error.'
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/catch\s*\(\s*\\\\?Throwable\s+\$broadcastException\s*\)/',
+            $source,
+            'WJ-4 swallow alarm: PersistOrderPaidAtCounterToOutbox MUST keep '
+            . 'the Throwable catch around DispatchDomainEventsJob::dispatch.'
         );
     }
 
