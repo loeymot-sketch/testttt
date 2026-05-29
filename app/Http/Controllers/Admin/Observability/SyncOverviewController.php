@@ -34,6 +34,16 @@ class SyncOverviewController extends AdminController
      */
     private const SELECT_LIMIT = 50000;
 
+    /**
+     * [GOAL-2026-05-29 F5] Manual "Retry failed" caps — prevent infinite
+     * resurrection of chronically-failing outbox rows. Ceiling mirrors the
+     * attempts>=5 threshold the staleness monitor / dead-letter escalation uses:
+     * a row that reached 5 attempts has exhausted its budget and must escalate,
+     * not be reset+retried again. Age cap drops ancient stuck rows to the prune lane.
+     */
+    private const RETRY_FAILED_ATTEMPTS_CEILING = 5;
+    private const RETRY_FAILED_MAX_AGE_DAYS = 7;
+
     public function __construct()
     {
         parent::__construct();
@@ -381,9 +391,19 @@ class SyncOverviewController extends AdminController
             $batch = 50;
         }
 
+        // [GOAL-2026-05-29 F5] Caps so manual "Retry failed" cannot INFINITELY
+        // resurrect a chronically-failing row. Each retry resets attempts->0 +
+        // last_error->NULL; with no cap a row that keeps failing is reset on every
+        // click and NEVER reaches the attempts>=5 threshold the staleness/prune +
+        // dead-letter lane keys on — i.e. orphaned from escalation. Excluding rows
+        // at/above the attempts ceiling OR older than the window leaves them to
+        // escalate/prune instead of looping. Recent, not-yet-exhausted failures
+        // (transient infra) are still retryable, which is the legitimate use case.
         $events = DomainEvent::query()
             ->whereNull('dispatched_at')
             ->whereNotNull('last_error')
+            ->where('attempts', '<', self::RETRY_FAILED_ATTEMPTS_CEILING)
+            ->where('created_at', '>=', now()->subDays(self::RETRY_FAILED_MAX_AGE_DAYS))
             ->orderBy('id')
             ->limit($batch)
             ->get();
