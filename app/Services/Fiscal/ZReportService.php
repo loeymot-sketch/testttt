@@ -368,6 +368,27 @@ class ZReportService
             $orderCount++;
         }
 
+        // [LOCK_ZREPORT_REFUND_NETTING / P0 #2 — 2026-05-29] Counter-entry refund
+        // mirrors (RefundWithCounterEntryService) are created IN the current window
+        // (created_at = now) with a pre-NEGATED total + parent_order_id set, so they
+        // miss BOTH the positive $orders loop above (RETURNED is in $terminalStatuses,
+        // excluded) AND the post-Z adjustment block below (which requires
+        // created_at <= $from). Without this, the refund's negative reached the signed
+        // total NOWHERE → the daily Z overstated revenue by the refunded amount
+        // (campaign repro: total_ttc=0 vs expected -55). Apply each here with its
+        // already-negated total so the refund nets into the signed total_ttc/ht/tva.
+        // No double-count: the post-Z block needs created_at<=$from (mirror is
+        // in-window) and $preZRefundCount is count-only. Status-flip-in-place refunds
+        // (parent_order_id NULL) stay evidence-only per M-08 — untouched here. The
+        // mirror is already in $preZRefundCount, so refund_count is unchanged.
+        $counterEntryRefundMirrors = (clone $windowQuery)
+            ->where('status', OrderStatus::RETURNED)
+            ->whereNotNull('parent_order_id')
+            ->get();
+        foreach ($counterEntryRefundMirrors as $mirror) {
+            $this->applyOrderToTotals($mirror, 1, $totalTtc, $totalHt, $totalTva, $byMethod);
+        }
+
         // M-08 policy:
         // - pre-Z refund/void rows are evidence counters only; they do
         //   not create positive revenue in the closing Z;
