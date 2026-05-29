@@ -562,7 +562,8 @@ export default {
                 headerDiv?.classList.remove('active', 'hidden');
                 document?.exitFullscreen();
             };
-            document.removeEventListener('mousemove', handleMouseMove);
+            // [GOAL-2026-05-29 BTN-P2] removed dangling handleMouseMove ref (never
+            // defined — refactor leftover) that threw ReferenceError on the OSS wall.
         },
 
         fullScreen: function (event) {
@@ -600,7 +601,9 @@ export default {
                 } else if (elem.msRequestFullscreen) {
                     elem.msRequestFullscreen();
                 }
-                document.addEventListener('mousemove', handleMouseMove);
+                // [GOAL-2026-05-29 BTN-P2] removed dangling handleMouseMove addEventListener
+                // (never defined) — it threw ReferenceError right after requestFullscreen(),
+                // breaking the OSS fullscreen cursor-reveal. Fullscreen toggle now works clean.
             } else {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
@@ -611,7 +614,7 @@ export default {
                 } else if (document.msExitFullscreen) {
                     document.msExitFullscreen();
                 }
-                document.removeEventListener('mousemove', handleMouseMove);
+                // [GOAL-2026-05-29 BTN-P2] removed dangling handleMouseMove ref (never defined).
             }
         }
     }
