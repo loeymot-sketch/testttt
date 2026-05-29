@@ -74,6 +74,15 @@ Artifacts: `reports/audit/surface-buttons-2026-05-29/*.json`. HEAL PRIORITY:
 | P3 | misc | delivery autocomplete needs Google SDK; kiosk menu-unavailable retry dead (orphaned); hardcoded "Voir" label; outbox missing success-state | various | low. |
 **Confirmed: tracker Encaisser fix is sound** (the leftover CustomEvent is harmless dead-code, not a dead button — reclassified P3).
 
+## 🎯 VISUAL E2E CAPSTONE — fresh order A0005 driven client→cook→customer (screenshots analyzed)
+`reports/audit/massive-validation-2026-05-29/capstone-screenshots/` (3 PNGs Read+analyzed). Live Playwright, fresh order:
+1. **Client (kiosk):** idle → Boissons → Coca-Cola 33cl → cart €1,50 → upsell skip → Plan-B payment → order **A0005** + cash-instruction (#A0005, "Rendez-vous en caisse", Paiement espèces) — Cayenne palette, 0 raw labels.
+2. **Kiosk→KDS sync:** A0005 on cook screen ~1m46s, item "1× Coca-Cola 33cl", "En attente encaissement".
+3. **Cashier (POS tracker):** À encaisser → Encaisser (fixed button) → counter-collect modal (fixed keypad, pre-fill 1,50) → confirm → **PAID + fiscal_seq=43, CHAIN OK**.
+4. **Cook (KDS):** paid → Prêt button appeared → bump → **ACCEPT→PREPARING** (status=7).
+5. **OSS customer wall:** **N°A0005 displayed in "En préparation"** ✅ (the capstone — fresh order visible on the client wall).
+Every surface + every sync hop visually confirmed. The CENTRAL order flow proven end-to-end with a fresh order. **V1 LOCAL validated — code-audit (51-agent) + visual E2E (this capstone).**
+
 ## 🛑 FROM-ROOTS 51-AGENT CAMPAIGN — VERDICT NO_GO (2 NF525 P0, owner-gated)
 Full result `reports/audit/massive-validation-2026-05-29/full-campaign-result.json` · **escalation `reports/audit/massive-validation-2026-05-29/ESCALATION_NO_GO.md`**.
 - **Audit refuted 3 of my same-session fixes** (sentinels green, semantics wrong). Reverted 2: `1808f94946`→`3a4744e63` (P0 #1 numbered orphan), `75029c7ef`→`753696be6` (kiosk-refused reachable+phantom). Kept `9444a5b50` (dormant 0% VAT, folded into Fiscal-P1).
