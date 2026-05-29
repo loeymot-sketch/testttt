@@ -78,11 +78,21 @@ export default {
             this.retrying = true;
             this.logEvent('error_payment_retry');
             this.$emit('retry');
+            // [GOAL-2026-05-29 BTN-P1] This screen is a ROUTE (kiosk.error.payment-refused),
+            // not a child of the (frozen) KioskAppComponent — the $emit reaches NO listener,
+            // so the CTA was a dead button. Mirror cancelOrder()'s working router fallback:
+            // re-attempt payment on the same (vuex-persisted) cart. Latent under Plan B
+            // (route_all_to_counter never attempts TPE) — becomes live when TPE is wired.
+            this.$router?.push({ name: 'kiosk.payment' }).catch(() => { this.retrying = false; });
             setTimeout(() => { this.retrying = false; }, 500);
         },
         payCounter() {
             this.logEvent('error_payment_switch_cash');
             this.$emit('pay-at-counter');
+            // [GOAL-2026-05-29 BTN-P1] Router fallback (emit reaches no listener — see retryPayment).
+            // Switch to the Plan-B counter cash-instruction flow. If the cash-instruction route
+            // guard finds no order ref it safely redirects to idle (degraded, never broken).
+            this.$router?.push({ name: 'kiosk.cash-instruction' }).catch(() => {});
         },
         cancelOrder() {
             this.logEvent('error_payment_cancel');

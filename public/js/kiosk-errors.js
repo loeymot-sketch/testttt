@@ -294,12 +294,23 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     retryPayment: function retryPayment() {
       var _this = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var _this$$router;
         return _regenerator().w(function (_context) {
           while (1) switch (_context.n) {
             case 0:
               _this.retrying = true;
               _this.logEvent('error_payment_retry');
               _this.$emit('retry');
+              // [GOAL-2026-05-29 BTN-P1] This screen is a ROUTE (kiosk.error.payment-refused),
+              // not a child of the (frozen) KioskAppComponent — the $emit reaches NO listener,
+              // so the CTA was a dead button. Mirror cancelOrder()'s working router fallback:
+              // re-attempt payment on the same (vuex-persisted) cart. Latent under Plan B
+              // (route_all_to_counter never attempts TPE) — becomes live when TPE is wired.
+              (_this$$router = _this.$router) === null || _this$$router === void 0 || _this$$router.push({
+                name: 'kiosk.payment'
+              })["catch"](function () {
+                _this.retrying = false;
+              });
               setTimeout(function () {
                 _this.retrying = false;
               }, 500);
@@ -310,14 +321,21 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       }))();
     },
     payCounter: function payCounter() {
+      var _this$$router2;
       this.logEvent('error_payment_switch_cash');
       this.$emit('pay-at-counter');
+      // [GOAL-2026-05-29 BTN-P1] Router fallback (emit reaches no listener — see retryPayment).
+      // Switch to the Plan-B counter cash-instruction flow. If the cash-instruction route
+      // guard finds no order ref it safely redirects to idle (degraded, never broken).
+      (_this$$router2 = this.$router) === null || _this$$router2 === void 0 || _this$$router2.push({
+        name: 'kiosk.cash-instruction'
+      })["catch"](function () {});
     },
     cancelOrder: function cancelOrder() {
-      var _this$$router;
+      var _this$$router3;
       this.logEvent('error_payment_cancel');
       this.$emit('cancel-order');
-      (_this$$router = this.$router) === null || _this$$router === void 0 || _this$$router.push({
+      (_this$$router3 = this.$router) === null || _this$$router3 === void 0 || _this$$router3.push({
         name: 'kiosk.idle'
       })["catch"](function () {});
     },
