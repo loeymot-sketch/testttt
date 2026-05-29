@@ -14,7 +14,7 @@
   "public/css/pos-wizard.css": "126223abc1b8137be740b6588c85db1634ea81037d4df7c37194a0ca554a9f1e",
   "resources/views/admin-pos-v4.blade.php": "47535c19c7c06ed2a863f03d3bee8335280838740fe30eb51e8044809d48c956",
   "app/Services/Fiscal/FiscalSequenceService.php": "1d8626b81d83d014a9e4562f47357eb0f1e1588f479c4fcd390cba3cdb3302f3",
-  "app/Services/Fiscal/ZReportService.php": "5bd1faca0c4645b2e119a9e3da93c7f2ab36857ce14811ad57ef605a5cb88b76",
+  "app/Services/Fiscal/ZReportService.php": "f06ce8141cd629fd685720399a84496cdd3e3328fd7173001343735fb4e2709c",
   "app/Services/Fiscal/AuditLogService.php": "22180f1e977bd59365847d8a6f3eb8a3c3a1fc085929ca93345e24d75030c9dd",
   "app/Models/Scopes/BranchScope.php": "eff306115030b5d7ef8cd69f6d3da98567839e00ed1b2f086c0be2d6a6cd953c",
   "app/Http/Middleware/IdempotencyKeyMiddleware.php": "0c25898a8150b021f4f787c7eb92d9d0fbbd8503cb863362a120c3c35206673b",
