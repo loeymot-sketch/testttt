@@ -79,7 +79,7 @@ Full result `reports/audit/massive-validation-2026-05-29/full-campaign-result.js
 - **Audit refuted 3 of my same-session fixes** (sentinels green, semantics wrong). Reverted 2: `1808f94946`→`3a4744e63` (P0 #1 numbered orphan), `75029c7ef`→`753696be6` (kiosk-refused reachable+phantom). Kept `9444a5b50` (dormant 0% VAT, folded into Fiscal-P1).
 - **P0 #1** `OrderService.php` changePaymentStatus — cross-Z-window settlement escapes signed Z. Numbering reverted; cross-window policy = OWNER DECISION (reject-late 409 vs current-window counter-entry; also check confirmCounterPayment).
 - **P0 #2** `ZReportService.php:355-402` (FROZEN) — post-Z refund invisible in signed total_ttc; lock-plan + owner gate.
-- 7 P1 (F1 TVA/HT split frozen+dormant; F2/F3 concurrency lockForUpdate non-frozen; F4 multi-item auto-86 dormant; F5 retry-failed anti-pattern; **F6 KDS "Annuler bump" recall = DEAD BUTTON, missing X-Idempotency-Key, catch fakes success — verify before fixing**; F7 cash-overview 500-row truncation). All secondary to the fiscal blockers.
+- 7 P1: **✅ F6 KDS "Annuler bump" recall DEAD BUTTON FIXED + LIVE-PROVEN** (`5ee1df127` — verified route middleware, added X-Idempotency-Key, stopped faking 422 badge; live bump→recall→re-injected RAPPELÉ, 0 /recall 422). Remaining: F1 TVA/HT split (frozen+dormant 0% VAT, owner gate); F2/F3 concurrency lockForUpdate (non-frozen, needs 2-actor test harness); F4 multi-item auto-86 (dormant stock=0); F5 retry-failed anti-pattern; F7 cash-overview 500-row truncation (fix spec'd in escalation, needs >500-row test). All secondary to the 2 fiscal P0 blockers.
 - Every other surface cleared 0 P0. NF525 CHAIN OK · frozen 15/15 · no push.
 
 ## BUTTON-AUDIT HEAL STATUS (post-fix)
