@@ -96,6 +96,27 @@ class Order extends Model implements BroadcastableOrder
         'creator_id' => 'integer',
     ];
 
+    /**
+     * [GOAL-2026-05-29 FISCAL-P1] NF525 HT base for the Z-report.
+     *
+     * There is NO stored `total_ht` column, so
+     * ZReportService::applyOrderToTotals fell back to `subtotal` — which in
+     * tax-inclusive mode is a TTC figure — making the signed + 6-year-archived
+     * Z carry a wrong decomposition (total_ht + total_tva != total_ttc). We
+     * derive HT from the SAME amount the Z uses for TTC (`total`) minus the
+     * TVA, so the legal identity TTC = HT + TVA holds BY CONSTRUCTION in every
+     * pricing mode and naturally accounts for discount/delivery. Read-only
+     * virtual attribute (NOT in $appends) — only ZReportService consumes it;
+     * total_ttc/total_tva were already correct, only the HT label was wrong.
+     */
+    public function getTotalHtAttribute(): float
+    {
+        return round(
+            (float) ($this->attributes['total'] ?? 0) - (float) ($this->attributes['total_tax'] ?? 0),
+            2
+        );
+    }
+
     protected static function boot(): void
     {
         parent::boot();
