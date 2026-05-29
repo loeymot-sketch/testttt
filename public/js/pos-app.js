@@ -76606,6 +76606,24 @@ setInterval(function () {
   } catch (_) {/* never let the refresh timer break the app */}
 }, POS_TOKEN_REFRESH_INTERVAL_MS);
 
+// [REG-2 2026-05-30] Cross-tab token-rotation sync — mirror of app.js. The 2h refresh in
+// one tab revokes the shared Sanctum token; without this a second tab (e.g. POS + KDS open
+// together) keeps the dead token and 401s -> forced logout. Adopt a rotated token from
+// localStorage instead of dying; follow a cross-tab logout. See app.js for rationale.
+window.addEventListener('storage', function (e) {
+  if (e.key !== 'vuex' || !e.newValue) return;
+  try {
+    var persisted = JSON.parse(e.newValue);
+    var freshToken = persisted && persisted.auth ? persisted.auth.authToken : null;
+    var current = _store__WEBPACK_IMPORTED_MODULE_5__["default"].state.auth && _store__WEBPACK_IMPORTED_MODULE_5__["default"].state.auth.authToken;
+    if (freshToken && current && freshToken !== current) {
+      _store__WEBPACK_IMPORTED_MODULE_5__["default"].commit('authTokenRefreshed', freshToken);
+    } else if (!freshToken && current) {
+      _store__WEBPACK_IMPORTED_MODULE_5__["default"].commit('authLogout');
+    }
+  } catch (_) {/* never let a cross-tab sync error break the app */}
+});
+
 /***/ },
 
 /***/ "./resources/js/router/index.js"
@@ -84068,7 +84086,11 @@ var auth = {
         token: current
       }).then(function (res) {
         var fresh = res && res.data && res.data.token ? res.data.token : null;
-        if (fresh) {
+        // [REG-1 2026-05-30] If a logout (or another rotation) happened while
+        // this POST was in flight, state.authToken is no longer `current` — do
+        // NOT resurrect a session the operator deliberately ended (or clobber a
+        // newer token a cross-tab `storage` sync just adopted).
+        if (fresh && context.state.authToken === current) {
           context.commit('authTokenRefreshed', fresh);
           return true;
         }
@@ -84172,6 +84194,13 @@ var auth = {
     // axios interceptor reads state.authToken, so it picks up the fresh token on the
     // next request; vuex-persist writes it to localStorage for reloads.
     authTokenRefreshed: function authTokenRefreshed(state, token) {
+      // [REG-1 2026-05-30] Never resurrect a logged-out session. authLogout nulls
+      // authStatus + authToken; a late-resolving proactive refresh (or a cross-tab
+      // storage event) must not write a fresh Bearer back into a session that was
+      // deliberately ended.
+      if (!state.authStatus) {
+        return;
+      }
       state.authToken = token;
       // [GOAL-2026-05-29 P-AUTH-SYNC] Pass the fresh token explicitly (same stale-
       // by-one reason as authLogin) so a post-refresh reconnect re-subscribes the

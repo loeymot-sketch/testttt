@@ -91,7 +91,11 @@ export const auth = {
             return axios.post('refresh-token', { token: current })
                 .then((res) => {
                     const fresh = res && res.data && res.data.token ? res.data.token : null;
-                    if (fresh) {
+                    // [REG-1 2026-05-30] If a logout (or another rotation) happened while
+                    // this POST was in flight, state.authToken is no longer `current` — do
+                    // NOT resurrect a session the operator deliberately ended (or clobber a
+                    // newer token a cross-tab `storage` sync just adopted).
+                    if (fresh && context.state.authToken === current) {
                         context.commit('authTokenRefreshed', fresh);
                         return true;
                     }
@@ -193,6 +197,13 @@ export const auth = {
         // axios interceptor reads state.authToken, so it picks up the fresh token on the
         // next request; vuex-persist writes it to localStorage for reloads.
         authTokenRefreshed: function (state, token) {
+            // [REG-1 2026-05-30] Never resurrect a logged-out session. authLogout nulls
+            // authStatus + authToken; a late-resolving proactive refresh (or a cross-tab
+            // storage event) must not write a fresh Bearer back into a session that was
+            // deliberately ended.
+            if (!state.authStatus) {
+                return;
+            }
             state.authToken = token;
             // [GOAL-2026-05-29 P-AUTH-SYNC] Pass the fresh token explicitly (same stale-
             // by-one reason as authLogin) so a post-refresh reconnect re-subscribes the

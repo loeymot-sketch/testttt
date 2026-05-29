@@ -223,3 +223,24 @@ setInterval(() => {
         }
     } catch (_) { /* never let the refresh timer break the app */ }
 }, TOKEN_REFRESH_INTERVAL_MS);
+
+// [REG-2 2026-05-30] Cross-tab token-rotation sync. The 2h proactive refresh in ONE tab
+// rotates the Sanctum token (RefreshTokenController deletes the old one server-side).
+// vuex-persistedstate has no `storage`-event listener, so a SECOND tab keeps the now-dead
+// token in memory and 401s on its next request -> the global 401 handler force-logs it out
+// mid-service. Fix: when another tab writes a fresh auth token to localStorage, adopt it
+// (authTokenRefreshed re-injects Echo too) instead of dying; when another tab logs out,
+// follow. Guarded so a logged-out follower is never silently auto-logged-in by another tab.
+window.addEventListener('storage', (e) => {
+    if (e.key !== 'vuex' || !e.newValue) return;
+    try {
+        const persisted = JSON.parse(e.newValue);
+        const freshToken = persisted && persisted.auth ? persisted.auth.authToken : null;
+        const current = store.state.auth && store.state.auth.authToken;
+        if (freshToken && current && freshToken !== current) {
+            store.commit('authTokenRefreshed', freshToken); // adopt the rotated token
+        } else if (!freshToken && current) {
+            store.commit('authLogout'); // another tab logged out -> follow
+        }
+    } catch (_) { /* never let a cross-tab sync error break the app */ }
+});

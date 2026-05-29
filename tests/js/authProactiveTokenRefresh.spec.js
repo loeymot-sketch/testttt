@@ -30,7 +30,7 @@ describe('[P-AUTH] auth.refreshAuthToken — proactive token refresh', () => {
     });
 
     it('authTokenRefreshed mutation replaces state.authToken with the fresh token', () => {
-        const state = { authToken: 'OLD' };
+        const state = { authStatus: true, authToken: 'OLD' };
         auth.mutations.authTokenRefreshed(state, 'FRESH');
         expect(state.authToken).toBe('FRESH');
     });
@@ -78,9 +78,46 @@ describe('[P-AUTH-SYNC] mutations re-inject Echo auth with the FRESH token (no s
     });
 
     it('authTokenRefreshed passes the refreshed token to _refreshEchoAuth', () => {
-        const state = { authToken: 'OLD' };
+        const state = { authStatus: true, authToken: 'OLD' };
         auth.mutations.authTokenRefreshed(state, 'REFRESH-FRESH-456');
         expect(calls).toEqual(['REFRESH-FRESH-456']);
         expect(state.authToken).toBe('REFRESH-FRESH-456');
+    });
+});
+
+/**
+ * [REG-1 2026-05-30] Logout-during-refresh must NOT resurrect the session, and a
+ * cross-tab/late-resolving refresh must not clobber a deliberately-ended session.
+ * Found by the post-fix adversarial audit (regression introduced by the 2h proactive
+ * refresh timer). The action re-checks the token identity at resolve time; the mutation
+ * hard-guards on authStatus.
+ */
+describe('[REG-1] proactive refresh never resurrects a logged-out session', () => {
+    beforeEach(() => { axios.post.mockReset(); });
+
+    it('authTokenRefreshed no-ops when logged out (authStatus false)', () => {
+        const state = { authStatus: false, authToken: null };
+        auth.mutations.authTokenRefreshed(state, 'RESURRECT-ME');
+        expect(state.authToken).toBe(null); // session stays ended
+    });
+
+    it('refreshAuthToken does NOT commit if the token changed mid-flight (logout race)', async () => {
+        const ctx = { state: { authToken: 'OLD' }, commit: vi.fn() };
+        axios.post.mockImplementation(() => {
+            ctx.state.authToken = null; // operator logged out while the POST was in flight
+            return Promise.resolve({ data: { token: 'NEW' } });
+        });
+        const ok = await auth.actions.refreshAuthToken(ctx);
+        expect(ok).toBe(false);
+        expect(ctx.commit).not.toHaveBeenCalled();
+    });
+
+    it('refreshAuthToken still commits normally when the token is unchanged mid-flight', async () => {
+        const committed = [];
+        const ctx = { state: { authToken: 'OLD' }, commit: (m, p) => committed.push([m, p]) };
+        axios.post.mockResolvedValue({ data: { token: 'NEW' } });
+        const ok = await auth.actions.refreshAuthToken(ctx);
+        expect(ok).toBe(true);
+        expect(committed).toContainEqual(['authTokenRefreshed', 'NEW']);
     });
 });

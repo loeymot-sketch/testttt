@@ -203,3 +203,21 @@ setInterval(() => {
         }
     } catch (_) { /* never let the refresh timer break the app */ }
 }, POS_TOKEN_REFRESH_INTERVAL_MS);
+
+// [REG-2 2026-05-30] Cross-tab token-rotation sync — mirror of app.js. The 2h refresh in
+// one tab revokes the shared Sanctum token; without this a second tab (e.g. POS + KDS open
+// together) keeps the dead token and 401s -> forced logout. Adopt a rotated token from
+// localStorage instead of dying; follow a cross-tab logout. See app.js for rationale.
+window.addEventListener('storage', (e) => {
+    if (e.key !== 'vuex' || !e.newValue) return;
+    try {
+        const persisted = JSON.parse(e.newValue);
+        const freshToken = persisted && persisted.auth ? persisted.auth.authToken : null;
+        const current = store.state.auth && store.state.auth.authToken;
+        if (freshToken && current && freshToken !== current) {
+            store.commit('authTokenRefreshed', freshToken);
+        } else if (!freshToken && current) {
+            store.commit('authLogout');
+        }
+    } catch (_) { /* never let a cross-tab sync error break the app */ }
+});
