@@ -11,19 +11,16 @@
 //           OnlineOrderReceipt x22 in public/js/admin-shell.js.)
 //           This is now the ONLY trigger (i18n group removed 2026-05-30 — see below).
 //
-// [GOAL-2026-05-29 P-AUTH] The former "Trigger 2" group (BackendNavbarComponent.vue
-// + store/modules/auth.js + helpers/phoneDisplay.js) was REMOVED. Those modules
-// USED to be duplicated into admin-shell.js (commit 272dfdffa: sanitizePendingPhone
-// x7 in admin-shell.js), but the W1B vendor-chunk extraction (webpack.mix.js:33-40)
-// hoisted the eagerly-imported store + DefaultComponent-static chrome into the entry
-// (app.js/pos-app.js) + vendor.js. They no longer ship inside admin-shell.js —
-// verified by grep on a clean rebuild (auth/phoneDisplay/BackendNavbar all x0 in
-// public/js/admin-shell.js, while authTokenRefreshed/sanitizePendingPhone ARE in
-// app.js + pos-app.js). Keeping them here produced a FALSE staleness whenever auth.js
-// or phoneDisplay was touched (the bundle that needs no rebuild flagged stale). Their
-// freshness is enforced where the code actually lives: appBundleFreshnessSentinel +
-// posAppBundleFreshnessSentinel both list all three (lines 90/97/98). Net coverage
-// is unchanged; the false-positive is gone.
+// [GOAL-2026-05-29/30] The former "Trigger 2" transitive group was CORRECTED, not blanket-
+// removed. store/modules/auth.js + BackendNavbarComponent.vue are entry-resident post the
+// W1B vendor-chunk extraction (webpack.mix.js:33-40) — verified x0 in admin-shell.js
+// (authTokenRefreshed/BackendNavbar absent; they ARE in app.js/pos-app.js, guarded by the
+// app+pos-app sentinels). Those two were correctly removed. BUT helpers/phoneDisplay.js was
+// wrongly dropped in the same pass on a grep for `sanitizePendingPhone` (x0 — that is the
+// auth-module re-export NAME, not the display helper): phoneDisplay's `safePhone` export IS
+// genuinely compiled into admin-shell.js (grep 2026-05-30: safePhone x7; also admin-kds x15,
+// admin-reports x3). So phoneDisplay.js is RESTORED to the transitive group below — editing
+// it MUST be reflected in admin-shell.js or staff phone-display goes stale.
 //
 // Fix: npm run development (dev) or npm run production (prod-style)
 //
@@ -101,22 +98,23 @@ describe('Build integrity — admin-shell bundle freshness (FK-V1-0-2-WAVE-B2)',
         resolve(root, 'resources/js/components/admin/onlineOrders/OnlineOrderReceiptComponent.vue'),
     ];
 
-    // [GOAL-2026-05-30] Both the store/helper/navbar "transitive" group (removed
-    // 2026-05-29) AND the i18n-catalogs group (removed now) are entry-resident, NOT in
-    // this lazy admin-shell.js chunk. The 397de5ff0 dashboard i18n keys appear x3 in
-    // app.js / pos-app.js and x0 in admin-shell.js — an i18n-only edit re-emits the entry,
-    // not this chunk, so listing the catalogs here produced a FALSE staleness. i18n
-    // freshness is guarded by appBundleFreshnessSentinel (Group-4) + posAppBundleFreshnessSentinel
-    // (Group-3), both green. SYSTEMIC: lazy-chunk sentinels must only watch sources that
-    // actually compile into the lazy chunk — Group-1 anchor-vue (MessageList x29 /
-    // ProfileEdit x18 / Receipt x22 in admin-shell.js, verified) is the real teeth.
+    // [GOAL-2026-05-30] i18n-catalogs (entry-resident, x0 here) + auth.js/BackendNavbar
+    // (entry-resident, x0 here) are NOT watched — only sources that actually compile into
+    // admin-shell.js. SYSTEMIC: lazy-chunk sentinels must only watch chunk-resident sources.
+    // Group-1 anchor-vue (MessageList x29 / ProfileEdit x18 / Receipt x22) + Group-2
+    // phoneDisplay (safePhone x7) are the verified-resident teeth.
+    const transitive = [
+        resolve(root, 'resources/js/helpers/phoneDisplay.js'),
+    ];
+
     const sourceGroups = [
         { label: 'admin-shell-anchor-vue', paths: anchorVue },
+        { label: 'admin-shell-transitive', paths: transitive },
     ];
 
     it('discovers admin-shell anchor source files (smoke — guards against empty-set bug)', () => {
         expect(anchorVue.length, 'admin-shell anchor-vue set is empty — refactor drift?').toBeGreaterThan(0);
-        for (const p of anchorVue) {
+        for (const p of [...anchorVue, ...transitive]) {
             expect(existsSync(p), `missing anchor source ${p}`).toBe(true);
         }
     });
