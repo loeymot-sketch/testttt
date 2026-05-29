@@ -2269,25 +2269,6 @@ class OrderService
                 $oldPaymentStatus,
                 $targetPaymentStatus
             ): void {
-                // [GOAL-2026-05-29 FISCAL-P1] Allocate the NF525 fiscal sequence
-                // when THIS transition seals the order as PAID — mirrors
-                // PaymentService::confirmCounterPayment:321-322 exactly (same
-                // FiscalSequenceService::next, same null-guard). Without it, a
-                // PENDING_COUNTER/UNPAID → PAID flip via this admin route left
-                // fiscal_sequence_no NULL, so the sale ESCAPED ZReportService
-                // aggregation (whereNotNull('fiscal_sequence_no')) and never
-                // reached the signed Z-report — an NF525 gap-between-surfaces vs
-                // the counter-collect path which DID seal it. Guarded: PAID-only
-                // (other transitions untouched) + null-only (gap-free, never
-                // re-allocates; if confirmCounterPayment already sealed it this
-                // is a no-op). Inside the txn → a fiscal hiccup rolls back the
-                // whole status change (no PAID-without-seq half-state).
-                if ((int) $targetPaymentStatus === \App\Enums\PaymentStatus::PAID
-                    && $order->fiscal_sequence_no === null) {
-                    $order->fiscal_sequence_no = app(\App\Services\Fiscal\FiscalSequenceService::class)
-                        ->next((int) $order->branch_id);
-                }
-
                 $order->payment_status = $request->payment_status;
                 $order->save();
 
