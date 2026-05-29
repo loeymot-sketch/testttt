@@ -74,6 +74,14 @@ Artifacts: `reports/audit/surface-buttons-2026-05-29/*.json`. HEAL PRIORITY:
 | P3 | misc | delivery autocomplete needs Google SDK; kiosk menu-unavailable retry dead (orphaned); hardcoded "Voir" label; outbox missing success-state | various | low. |
 **Confirmed: tracker Encaisser fix is sound** (the leftover CustomEvent is harmless dead-code, not a dead button — reclassified P3).
 
+## 🛑 FROM-ROOTS 51-AGENT CAMPAIGN — VERDICT NO_GO (2 NF525 P0, owner-gated)
+Full result `reports/audit/massive-validation-2026-05-29/full-campaign-result.json` · **escalation `reports/audit/massive-validation-2026-05-29/ESCALATION_NO_GO.md`**.
+- **Audit refuted 3 of my same-session fixes** (sentinels green, semantics wrong). Reverted 2: `1808f94946`→`3a4744e63` (P0 #1 numbered orphan), `75029c7ef`→`753696be6` (kiosk-refused reachable+phantom). Kept `9444a5b50` (dormant 0% VAT, folded into Fiscal-P1).
+- **P0 #1** `OrderService.php` changePaymentStatus — cross-Z-window settlement escapes signed Z. Numbering reverted; cross-window policy = OWNER DECISION (reject-late 409 vs current-window counter-entry; also check confirmCounterPayment).
+- **P0 #2** `ZReportService.php:355-402` (FROZEN) — post-Z refund invisible in signed total_ttc; lock-plan + owner gate.
+- 7 P1 (F1 TVA/HT split frozen+dormant; F2/F3 concurrency lockForUpdate non-frozen; F4 multi-item auto-86 dormant; F5 retry-failed anti-pattern; **F6 KDS "Annuler bump" recall = DEAD BUTTON, missing X-Idempotency-Key, catch fakes success — verify before fixing**; F7 cash-overview 500-row truncation). All secondary to the fiscal blockers.
+- Every other surface cleared 0 P0. NF525 CHAIN OK · frozen 15/15 · no push.
+
 ## BUTTON-AUDIT HEAL STATUS (post-fix)
 - ✅ **FIXED** Kiosk payment-refused CTAs (P1) → router fallback, sentinel 3/3, build OK — `75029c7ef`. (Latent under Plan B; live when TPE wired.)
 - ✅ **FIXED** OSS fullscreen ReferenceError (P2) → removed 3 dangling handleMouseMove refs, sentinel 2/2, build OK — `a2713f999`.
