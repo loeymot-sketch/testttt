@@ -91,6 +91,35 @@ class OutboxMonitorCrashClaimedSentinelTest extends TestCase
     }
 
     /**
+     * [RED-team A.2 fix 2026-05-29] The exact false-positive repro: a LIVE worker
+     * re-driven by outbox:retry-failed (nulls dispatched_at, re-claims — carrying
+     * the prior attempt's last_error since Phase 1 does NOT clear it) that hangs
+     * on a slow Pusher broadcast for 5 min. This is OLDER than stale-after (30s)
+     * but YOUNGER than the 10-min orphan threshold (which exceeds the worst
+     * backoff curve ~6.4 min), so it MUST NOT be paged — the worker can still
+     * resolve it to Phase 3a/3b. Locks the orphan-cutoff widening against
+     * regressing back to the stale-after window.
+     */
+    public function test_monitor_does_not_false_positive_on_in_flight_retry_within_backoff_window(): void
+    {
+        $this->seedDomainEvent([
+            'dispatched_at' => now()->subMinutes(5),
+            'last_error'    => 'Pusher slow: broadcast in progress (live worker, prior attempt errored)',
+            'attempts'      => 5,
+        ], createdMinutesAgo: 30);
+
+        $exit = Artisan::call('foodking:outbox:monitor', ['--threshold' => 10, '--stale-after' => 30]);
+
+        $this->assertSame(
+            0,
+            $exit,
+            'A row claimed 5 min ago (< 10-min orphan threshold) belongs to a possibly-live '
+            . 'retrying worker and MUST NOT trip the crash-claimed alarm — the heal would be '
+            . 'a false-page generator otherwise (RED-team A.2).'
+        );
+    }
+
+    /**
      * @param  array<string,mixed>  $attrs
      */
     private function seedDomainEvent(array $attrs, int $createdMinutesAgo): DomainEvent

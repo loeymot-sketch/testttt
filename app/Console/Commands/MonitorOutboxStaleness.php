@@ -49,19 +49,31 @@ class MonitorOutboxStaleness extends Command
         // [GOAL-sync-ordertaking 2026-05-29 H3] Crash-claimed orphan class.
         // A worker that died between Phase-1 claim (dispatched_at set) and a
         // successful Phase-2 broadcast leaves dispatched_at != NULL WITH
-        // last_error set. `scopePending` (dispatched_at IS NULL) excludes these,
-        // so the staleness count above is blind to them — AND so is
-        // `outbox:retry-failed` (scopeFailed -> pending -> whereNull), while
-        // `outbox:rescue` lane-B only re-queues attempts<5. A row with
-        // attempts>=5 + last_error set therefore falls through EVERY re-queue
-        // lane and the operator is never paged. Count it as a distinct alarm
-        // dimension. Additive + precise: DispatchDomainEventsJob Phase-3 clears
-        // last_error on success, so a healthy dispatched row never matches.
+        // last_error set (from a prior attempt). `scopePending` (dispatched_at
+        // IS NULL) excludes these, so the staleness count above is blind to
+        // them — AND so is `outbox:retry-failed` (scopeFailed -> pending ->
+        // whereNull), while `outbox:rescue` lane-B only re-queues attempts<5.
+        // A row with attempts>=5 + last_error set therefore falls through EVERY
+        // re-queue lane and the operator is never paged. Count it as a distinct
+        // alarm dimension.
+        //
+        // [RED-team A.2 fix 2026-05-29] The age gate MUST be longer than
+        // stale-after (30s) — otherwise a LIVE worker re-driven by
+        // outbox:retry-failed (which nulls dispatched_at then re-claims,
+        // carrying the prior last_error since Phase 1 does NOT clear it) that
+        // hangs >30s on a slow Pusher broadcast would be falsely paged as an
+        // orphan. Reuse rescue lane-B's 10-min threshold: it exceeds the worst
+        // backoff curve (1+5+15+60+300 ≈ 6.4 min) + a broadcast hang, so a row
+        // still claimed past 10 min cannot belong to a healthy in-flight worker.
+        // Precision: DispatchDomainEventsJob Phase-3a clears last_error on
+        // success, so a healthy dispatched row never matches regardless of age.
+        $orphanCutoff = now()->subSeconds(max($staleAfter, 600));
+
         $crashClaimedCount = (int) DB::table('domain_events')
             ->whereNotNull('dispatched_at')
             ->whereNotNull('last_error')
             ->where('attempts', '>=', 5)
-            ->where('dispatched_at', '<', $cutoff)
+            ->where('dispatched_at', '<', $orphanCutoff)
             ->count();
 
         if ($staleCount <= $threshold && $crashClaimedCount === 0) {
@@ -85,7 +97,7 @@ class MonitorOutboxStaleness extends Command
             ->whereNotNull('dispatched_at')
             ->whereNotNull('last_error')
             ->where('attempts', '>=', 5)
-            ->where('dispatched_at', '<', $cutoff)
+            ->where('dispatched_at', '<', $orphanCutoff)
             ->orderBy('dispatched_at')
             ->first(['id', 'event_type', 'dispatched_at', 'attempts', 'last_error']);
 
@@ -107,10 +119,12 @@ class MonitorOutboxStaleness extends Command
         ];
 
         $message = "[OUTBOX STALE] {$staleCount} undispatched events older than {$staleAfter}s "
-            . "(threshold: {$threshold}) + {$crashClaimedCount} crash-claimed orphans "
-            . '(claimed but never broadcast, unreachable by retry-failed/rescue). '
-            . 'Queue worker may be down. Verify `php artisan queue:work --queue=high` '
-            . 'is running and check docs/REALTIME_SETUP.md.';
+            . "(threshold: {$threshold}) + {$crashClaimedCount} crash-claimed orphans. "
+            . 'If stale_count is high: queue worker may be down — verify '
+            . '`php artisan queue:work --queue=high` is running (docs/REALTIME_SETUP.md). '
+            . 'If crash_claimed_count is high: those rows are claimed-but-never-broadcast '
+            . 'and are UNREACHABLE by retry-failed/rescue — re-drive them MANUALLY '
+            . '(e.g. `DispatchDomainEventsJob::dispatch($id)` after nulling dispatched_at).';
 
         Log::error($message, $context);
         $this->error($message);
