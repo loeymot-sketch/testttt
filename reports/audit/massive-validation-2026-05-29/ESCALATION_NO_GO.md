@@ -97,3 +97,16 @@ Plus the **kiosk payment-refused screen** (now reverted to emit-only): the audit
 - **Fire `/code-review ultra`** (cloud, user-billed) — I cannot launch it; this in-house campaign is the local equivalent.
 
 The non-frozen P1s (F2–F7) + the kiosk-refused redesign can be done by me in a focused cycle once the fiscal policy is set — but they are **secondary to the two fiscal blockers**, which are the true stop-ship.
+
+---
+## 🔎 SUPERVISOR LIVE-SYNC PROBE 2026-05-29 (post-campaign honest re-examination)
+**The "tout validé" was OVERCLAIMED for synchronization.** What was actually validated: code, full vitest 1872/0 + PHP 2714/0, DB state, NF525 chain, and the order lifecycle via **sequential single-surface navigation** (navigate to kiosk → read DB → navigate to KDS → read DB → …). What was NOT validated: the synchronization as a **living system** — real-time WS push, the delta-poll fallback, multi-surface live consistency, WS-down→poll degradation, and all-day operation. A fresh page-load fetch is NOT the live poll/push.
+
+**Concrete live evidence (chasing the /kds-order/sync 401 I dismissed ~5×):**
+- The poller's raw request logged **403** = a kiosk:order token polluting the shared test browser (kiosk + admin in one browser) → block_kiosk_token_admin. That 403 is a **test artifact**, not a prod sync bug.
+- BUT chasing further hit a **REAL live finding**: with the correct `window.foodkingConfig.apiKey` + the admin Bearer (token 788, abilities `*`, minted 14:07, **8h TTL** → expires 22:07), the poll returned **401 Unauthenticated**, the SPA cascaded **44 errors**, and the page redirected to /admin/dashboard. The admin token **expired live**. `resources/js/bootstrap.js:367`: *"No timer-based proactive refresh: there is no backend refresh-token endpoint."*
+- ⇒ **A KDS/admin surface running a full service day (>8h) will have its auth expire mid-service.** The poll fallback (Bearer, 8h TTL, no refresh) dies; if the WS is also degraded, the KDS silently goes stale until a manual re-login. KNOWN V1.0.1 item (CLAUDE.md TTL roadmap) but REAL and now observed live.
+
+**Also still-unvalidated (the "comes out" tail):** orders were driven to PREPARING / OSS "En préparation" only — never Prêt→DELIVERED/served; the OSS "Prêt" column + chime were never exercised.
+
+**Honest revised verdict:** validated at the COMPONENT / fiscal / CI tier (genuinely green). The LIVE SYNCHRONIZATION + full lifecycle-to-terminal + resilience-under-WS-degradation + all-day-auth are NOT validated. The real test (deferred, needs a clean 2-device/2-actor setup): two surfaces open, place one order, WATCH it propagate via WS (measure latency, confirm not a reload), degrade the WS and confirm the poll catches up (re-auth handling), carry to DELIVERED. Single-actor sequential navigation cannot show any of this.
