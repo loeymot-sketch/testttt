@@ -65,6 +65,113 @@ correctness, coherence, reliability, and quality**.
 
 ---
 
+## 3bis. Project Context — SSOT + Design + Codebases (anti-drift 2026-05-29)
+
+> Ajouté post `/insights` 2026-05-29 pour prévenir les dérives récurrentes
+> identifiées dans 51 sessions : produits inventés, mauvaise palette,
+> mauvais codebase wirings, mauvaise version POS restaurée.
+
+### Single Source of Truth (SSOT) — menu data
+- **DB items table** = source officielle des produits (45 items V1 Le Cayenne)
+- **`config/menu.php`** = config menu structure si modifié post-reset
+- **`mobile/data/menu.js`** = mirror canonical mobile standalone
+- **`/Users/1millnonstop/Downloads/web/data/menu.js`** = mirror canonical web standalone
+- ⛔ **JAMAIS** inventer de produits (« Box Familiale », « Nashville », « Solo »...). Si un produit n'apparaît PAS dans la DB items table, il n'existe pas.
+- ⛔ JAMAIS deviner les noms catégorie — toujours `grep "Sandwich\|Tacos\|Bols"` la source
+
+### Codebases (3 séparés, mandats distincts owner)
+- **Backend testttt** (ici) = V1 LOCAL Le Cayenne, single restaurant FR
+- **Mobile RN** (`mobile/`) = STANDALONE separated, NO API wireup V1 (owner mandate)
+- **Web standalone** (`/Users/1millnonstop/Downloads/web/`) = STANDALONE separated, NO API wireup V1
+
+⛔ **JAMAIS wire mobile/web aux APIs du backend testttt** sauf demande explicite owner. Composer_profile hardcoded mirror = pattern accepté pour future wireup mécanique.
+
+### Design palette mandate
+- **Kiosk + POS + Admin (backend testttt)** : palette Cayenne brand
+  - Primary `#F4501E` (orange brand)
+  - Accent `#FFB800` (jaune)
+  - Dark `#1A1A1A`
+  - Light mode 100% on kiosk (owner mandate dark mode désactivé)
+- **Mobile standalone** : palette **NOIR / ORANGE / JAUNE / BLANC** — owner mandate. Differs from Cayenne red. NE PAS appliquer `#F4501E` au mobile.
+
+### V1 LOCAL Le Cayenne envelope (immuable owner mandate)
+- 1 machine seule (single box)
+- FR locale (ADR-007 immutable)
+- `POS_SIMULATION_HARDWARE=true` ACCEPTABLE en dev, INTERDIT en prod (boot guard AppServiceProvider)
+- 1 TPE physique simulation
+- 1 branche `branch_id=1`
+- 0 cloud, 0 SaaS, 0 multi-tenant
+- 0 frozen-zone violations
+- SumUp provider current (terminals pas câblés bank Plan A)
+- Plan B kiosk payment routing → caisse encashment (config `kiosk.payment_route_all_to_counter=true`)
+
+### Restore discipline (anti drift POS version)
+Si owner demande « restore POS » ou « rollback » :
+1. **TOUJOURS vérifier QUELLE version** est la canonical (git tag / backup branch)
+2. Lister les 3 derniers backups `storage/backups/db-daily/` + git tags `pre-*`
+3. Demander confirmation explicite avant restore
+
+---
+
+## 3ter. Audit & Verification Discipline (anti-hallucination)
+
+> Ajouté post `/insights` 2026-05-29 — sub-agents ont halluciné des P0
+> contre fichiers inexistants. Discipline anti-hallucination requise.
+
+### Verify before report (mandatory pour sub-agents)
+Tout sub-agent qui retourne un P0/P1 finding DOIT inclure :
+- `file:line` exact + `grep` ou `Read` confirmant l'existence
+- Reproduction step (curl trace / DB query result / DOM extract)
+- Sinon → finding REJECTED, NE PAS le surfacer au owner
+
+### Modern reference research
+Pour audits de design / UX :
+- Recherche références modernes 2024-2026 (McDonald's Kiosk v2, BK Reclaim, Toast 2.0 line-item, Olo Rails)
+- ⛔ JAMAIS citer Toast/Square/Otter génériquement « il y a 10 ans »
+
+### Post-fix convergence reporting
+Après chaque fix appliqué :
+1. Re-run tests (PHPUnit filter + Vitest filter + Playwright affected)
+2. Frozen-zone diff `git diff --stat -- <13 §7 files>`
+3. NF525 chain `php artisan fiscal:verify-chain --all`
+4. Status report : GREEN | YELLOW | RED + counts exact
+
+### Anti-pattern : composer dump-autoload on live dev
+- ⛔ JAMAIS `composer dump-autoload` sur dev server en cours d'exécution (casse autoload stale state)
+- ✅ Alternative : `php artisan cache:clear` + `php artisan config:clear` + static analysis
+
+---
+
+## 3quater. Security & Git Hygiene (anti-incident)
+
+> Ajouté post `/insights` 2026-05-29 — un incident `.env` avec clés AWS
+> live committed accidentellement. Prevention discipline.
+
+### Pre-commit secret check (mandatory)
+Avant CHAQUE `git add` :
+- ⛔ JAMAIS `git add .` ou `git add -A` (peut accidentellement inclure secrets)
+- ✅ TOUJOURS `git add <specific-files>` listés explicitement
+- ✅ Si commit doit inclure beaucoup de files : `git status` + revue ligne par ligne
+
+### Files to NEVER commit
+- `.env*` (sauf `.env.example` template)
+- `*.key`, `*.pem`, `credentials.json`, `secrets.json`
+- `storage/backups/db-daily/*.sql.gz` (backups locaux)
+- Fichiers contenant patterns regex `AWS_SECRET|aws_secret_access_key|stripe_secret_key|sk_live_|sk_test_`
+
+### Autonomous execution mandate
+Si l'owner dit « continue » / « autonome » / « test-e2e » / « go » :
+- ⛔ NE PAS demander de clarifying questions
+- ✅ EXECUTE immédiatement
+- ✅ Report progress + final summary
+
+### Push discipline (CLAUDE.md §10 reinforced)
+- JAMAIS auto-push to remote sans owner explicit
+- JAMAIS `git push --force` sans owner explicit
+- JAMAIS `--no-verify` sur commit (skip hooks dangereux)
+
+---
+
 ## 4. Architecture d'exécution (Claude Code natif)
 
 ### Single-agent session
