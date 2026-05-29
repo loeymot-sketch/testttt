@@ -4,11 +4,21 @@
 //
 // Trigger 1: any *.vue file under resources/js/components/admin/kitchenDisplaySystem/
 //           with mtime > public/js/admin-kds.js
-// Trigger 2: any of fr.json / en.json / ar.json with mtime > public/js/admin-kds.js
-// Trigger 3: any KDS-specific helper/service/store module under
+// Trigger 2: any KDS-specific helper/service/store module under
 //           resources/js/{helpers,services,store/modules} that is imported
 //           by the kitchenDisplaySystem chunk and whose name is prefixed by
 //           `kds*` / `kitchenDisplaySystem*` / `KdsSyncService*`.
+//
+// [GOAL-2026-05-30] The i18n-catalogs trigger was REMOVED. fr/en/ar.json compile into
+// the ENTRY chunk (app.js), NOT this lazy admin-kds.js chunk — verified by grep: the
+// 397de5ff0 dashboard i18n keys appear x3 in app.js and x0 in admin-kds.js. An i18n-only
+// edit re-emits app.js, not admin-kds.js, so listing the catalogs here produced a FALSE
+// staleness on every label add. i18n freshness IS guarded where the catalog lives:
+// appBundleFreshnessSentinel (Group-4) + posAppBundleFreshnessSentinel (Group-3), both
+// green. SYSTEMIC NOTE: lazy-chunk freshness sentinels must not list entry-resident
+// sources (i18n, store, navbar, shared helpers) — those hoist to the entry and only the
+// entry sentinel can see them. admin-oss/admin-reports sentinels likely carry the same
+// latent false-positive (V1.0.X backlog — not fixed here).
 //
 // Fix: npm run development (dev) or npm run production (prod-style)
 //
@@ -119,11 +129,10 @@ describe('Build integrity — KDS bundle freshness (FK-PHASE-2E-Q12)', () => {
     const kdsDir = resolve(root, 'resources/js/components/admin/kitchenDisplaySystem');
     const vueSources = walkFiles(kdsDir, (name) => name.endsWith('.vue'));
 
-    // --- Group 2: i18n catalogs --------------------------------------
-    const i18nDir = resolve(root, 'resources/js/languages');
-    const i18nSources = ['fr', 'en', 'ar'].map((l) => resolve(i18nDir, `${l}.json`));
-
-    // --- Group 3: KDS-specific cross-dir imports ---------------------
+    // --- Group 2: KDS-specific cross-dir imports ---------------------
+    // (The former i18n-catalogs group was removed — see the [GOAL-2026-05-30] header
+    //  note. The catalogs are entry-resident; their freshness is the app/pos-app
+    //  sentinels' job, not this lazy chunk's.)
     // Discovered via grep of KitchenDisplaySystemComponent.vue + KdsOrderCard.vue
     // + KdsV2Grid.vue + KdsHistoryDrawer.vue imports. Restrict to files
     // whose name matches kds* / KdsSyncService / kitchenDisplaySystem*
@@ -147,7 +156,6 @@ describe('Build integrity — KDS bundle freshness (FK-PHASE-2E-Q12)', () => {
 
     const sourceGroups = [
         { label: 'kitchenDisplaySystem-vue', paths: vueSources },
-        { label: 'i18n-catalogs', paths: i18nSources },
         { label: 'kds-helpers', paths: kdsHelperFiles },
         { label: 'kds-services', paths: kdsServiceFiles },
         { label: 'kds-store', paths: kdsStoreFiles },
@@ -157,10 +165,6 @@ describe('Build integrity — KDS bundle freshness (FK-PHASE-2E-Q12)', () => {
         // If a refactor moved the dir, the sentinel must fail loud rather
         // than silently pass on an empty set. Locked baseline: 1+ vue.
         expect(vueSources.length, 'no .vue files found under kitchenDisplaySystem — did the dir move?').toBeGreaterThan(0);
-        // i18n catalogs are mandatory triplet for the FR/EN/AR contract.
-        for (const p of i18nSources) {
-            expect(existsSync(p), `missing i18n catalog ${p}`).toBe(true);
-        }
         // KDS-specific helpers known baseline (>= 1 from grep audit).
         expect(kdsHelperFiles.length, 'no kds* helpers found — refactor drift?').toBeGreaterThan(0);
         expect(kdsServiceFiles.length, 'no Kds* services found — refactor drift?').toBeGreaterThan(0);
@@ -174,7 +178,7 @@ describe('Build integrity — KDS bundle freshness (FK-PHASE-2E-Q12)', () => {
         ).toBe(true);
     });
 
-    it('admin-kds.js bundle is not stale relative to KDS sources or i18n catalogs', () => {
+    it('admin-kds.js bundle is not stale relative to KDS sources', () => {
         const result = assertBundleFresh(bundlePath, sourceGroups);
         // null message == fresh bundle.
         expect(result.message, result.message ?? 'bundle fresh').toBeNull();
