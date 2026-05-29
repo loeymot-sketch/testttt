@@ -78,7 +78,7 @@ Artifacts: `reports/audit/surface-buttons-2026-05-29/*.json`. HEAL PRIORITY:
 - ✅ **FIXED** Kiosk payment-refused CTAs (P1) → router fallback, sentinel 3/3, build OK — `75029c7ef`. (Latent under Plan B; live when TPE wired.)
 - ✅ **FIXED** OSS fullscreen ReferenceError (P2) → removed 3 dangling handleMouseMove refs, sentinel 2/2, build OK — `a2713f999`.
 - ✅ Tracker Encaisser (P1) already fixed — modal wired (`5a0e6b220`/`d55373a86`); audit confirmed sound.
-- ⏳ **NEEDS A FOCUSED CYCLE** Livreur P1×3 — View/Close/Reconcile emit-to-nobody + Form orphaned. Needs backend close/reconcile endpoint wiring + mounting `DeliveryBoyCashSessionFormComponent` into list/show. KNOWN-deferred partial (livreur cash-session UI deferred V1.0.X). Cycle: 1) confirm `DeliveryBoyCashSessionController` open/close/reconcile endpoints, 2) wire 3 buttons + mount Form, 3) live-drive, 4) sentinel.
+- ✅ **FIXED + LIVE-PROVEN** Livreur P1×3 (`ec0d875e9`) — List Voir→router.push(.show); Show Close/Reconcile→mount Form inline; orphaned Form mounted (List "Ouvrir la caisse" open-entry). **2 real bugs the live drive caught**: (a) open/close/reconcile 422'd — missing `X-Idempotency-Key` (Form never sent it; now stable key per mount, PosRefundModal pattern); (b) 4 i18n keys absent fr/en/ar (raw `label.x` on screen) → added all 3 locales. **Playwright end-to-end, 0 console errors**: open #2 (40€) → view → close #1 (counted 65,50€ → Fermée) → reconcile (expected 65,50€, écart 0,00€ → Réconciliée). Sentinel 6/6, frozen 0, CHAIN OK.
 - ⏳ Outbox "Vider les échecs" no-confirm (P2) — add confirm dialog (1 edit). P3s (KDS legacy tabs, delivery autocomplete, kiosk orphaned error screens, livreur raw IDs) batch later.
 
 ## NEXT (continuation queue)
