@@ -106,9 +106,15 @@ describe('F.4 button matrix — PosCounterCollectModal', () => {
         expect(axios.post).toHaveBeenCalledTimes(1);
     });
 
-    // B-006: numpadInput appends value to cashReceivedRaw
+    // B-006: numpadInput appends value to cashReceivedRaw.
+    // [GOAL-2026-05-29] The keypad fresh-entry fix (cashFieldPristine — owner's
+    // "chiffres bizarres" bug: a pre-filled total + blind append gave 8,50→8,501)
+    // makes the FIRST tap on a pristine field start fresh. So to assert the APPEND
+    // behavior we clear pristine first (simulating the field already being edited);
+    // the fresh-entry behavior itself is locked by counterCollectKeypadFreshEntrySentinel.
     it('[B-006] numpadInput appends digit (button "5" tap)', () => {
         const wrapper = makeWrapper();
+        wrapper.vm.cashFieldPristine = false; // field already edited -> append, not fresh-start
         wrapper.vm.cashReceivedRaw = '12';
         wrapper.vm.numpadInput('5');
         expect(wrapper.vm.cashReceivedRaw).toBe('125');
