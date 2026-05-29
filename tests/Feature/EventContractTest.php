@@ -49,6 +49,12 @@ class EventContractTest extends TestCase
             'settings.updated',
             // [Wave 5G R10 heal 2026-05-17] Branch deactivation token revoke
             'branch.status_changed',
+            // [GOAL-2026-05-29] KDS "Annuler bump" recall compensating action. The
+            // EventType enum has carried kds.order_recalled since the Heal-5 recall
+            // feature, but this canonical contract list was never updated — leaving
+            // the V1 event-contract sentinel RED (surfaced by the validation-state
+            // assessment, NOT by the 51-agent campaign nor the capstone).
+            'kds.order_recalled',
         ];
         $actual = EventType::all();
 
