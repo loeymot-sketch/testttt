@@ -77,8 +77,8 @@ Artifacts: `reports/audit/surface-buttons-2026-05-29/*.json`. HEAL PRIORITY:
 ## 🛑 FROM-ROOTS 51-AGENT CAMPAIGN — VERDICT NO_GO (2 NF525 P0, owner-gated)
 Full result `reports/audit/massive-validation-2026-05-29/full-campaign-result.json` · **escalation `reports/audit/massive-validation-2026-05-29/ESCALATION_NO_GO.md`**.
 - **Audit refuted 3 of my same-session fixes** (sentinels green, semantics wrong). Reverted 2: `1808f94946`→`3a4744e63` (P0 #1 numbered orphan), `75029c7ef`→`753696be6` (kiosk-refused reachable+phantom). Kept `9444a5b50` (dormant 0% VAT, folded into Fiscal-P1).
-- **P0 #1** `OrderService.php` changePaymentStatus — cross-Z-window settlement escapes signed Z. Numbering reverted; cross-window policy = OWNER DECISION (reject-late 409 vs current-window counter-entry; also check confirmCounterPayment).
-- **P0 #2** `ZReportService.php:355-402` (FROZEN) — post-Z refund invisible in signed total_ttc; lock-plan + owner gate.
+- **P0 #1** ✅ RISK-MANAGED (owner "detect-only"): numbering reverted + read-only `fiscal:verify-z-membership` detector (`b6a1cf81a`, clean on live DB). Full policy deferred per owner.
+- **P0 #2** ✅ FIXED + REAL-PATH-PROVEN (owner "aggregate-side netting" under `LOCK_ZREPORT_REFUND_NETTING.md`): in-window counter-entry mirrors net into signed Z; LOCK `830dc9234` + patch `5ff8144c3` + integration test `d9b57d4ed`; Fiscal+Unit 183 passed 0 regression; CHAIN OK; advisor-reviewed. **→ verdict NO_GO → GO_WITH_FIXES.**
 - 7 P1: **✅ F6 KDS "Annuler bump" recall DEAD BUTTON FIXED + LIVE-PROVEN** (`5ee1df127` — verified route middleware, added X-Idempotency-Key, stopped faking 422 badge; live bump→recall→re-injected RAPPELÉ, 0 /recall 422). Remaining: F1 TVA/HT split (frozen+dormant 0% VAT, owner gate); F2/F3 concurrency lockForUpdate (non-frozen, needs 2-actor test harness); F4 multi-item auto-86 (dormant stock=0); F5 retry-failed anti-pattern; F7 cash-overview 500-row truncation (fix spec'd in escalation, needs >500-row test). All secondary to the 2 fiscal P0 blockers.
 - Every other surface cleared 0 P0. NF525 CHAIN OK · frozen 15/15 · no push.
 
