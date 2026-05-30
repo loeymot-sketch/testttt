@@ -25,6 +25,7 @@ module.exports = defineConfig({
     'tests/e2e/test-real-e2e-round2-*.spec.js', // [REAL-E2E R2 2026-05-18] extended coverage + 4 viewports
     'tests/e2e/test-real-e2e-fullpage-*.spec.js', // [REAL-E2E R3 2026-05-30] full-page sweep all pages incl hidden/legal
     'tests/e2e/test-e2e-web-z7-*.spec.js', // [Z-7-WEB COMPLEMENT 2026-05-18] coverage gaps for account/loyalty/orders/funnel/axe
+    'tests/e2e/test-ultraudit-visual-web-*.spec.js', // [ULTRAUDIT VISUAL 2026-05-30] deep visual-quality sweep (framing/crop/alignment)
   ],
   workers: 1,
   timeout: 120_000,

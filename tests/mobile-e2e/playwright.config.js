@@ -25,6 +25,7 @@ module.exports = defineConfig({
     'tests/e2e/test-e2e-mobile-realignment-*.spec.js', // [MOBILE-REALIGNMENT 2026-05-16] cycle realignment Bols composer + data parity
     'tests/e2e/test-real-e2e-pagebypage-*.spec.js', // [REAL-E2E 2026-05-18] page-by-page visual capture
     'tests/e2e/test-real-e2e-round2-*.spec.js', // [REAL-E2E R2 2026-05-18] extended coverage
+    'tests/e2e/test-ultraudit-visual-*.spec.js', // [ULTRAUDIT-VISUAL 2026-05-30] deep visual quality audit (read-only capture)
   ],
   workers: 1,                     // localStorage shared state per worker
   timeout: 90_000,

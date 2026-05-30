@@ -1,0 +1,104 @@
+{
+  "big-cayenne-data": {
+    "found": true,
+    "slug": "big-cayenne",
+    "image": "assets/menu/sandwich-cayenne-maxi.png"
+  },
+  "errors-home: featured poster (WV-02) -desktop": {
+    "errs": [],
+    "http4xx": []
+  },
+  "menu-foot-desktop": [
+    {
+      "cardBottom": 760,
+      "footBottom": 741,
+      "footTop": 691,
+      "descLen": 84,
+      "cardTop": 429
+    },
+    {
+      "cardBottom": 779,
+      "footBottom": 760,
+      "footTop": 710,
+      "descLen": 101,
+      "cardTop": 429
+    },
+    {
+      "cardBottom": 760,
+      "footBottom": 741,
+      "footTop": 691,
+      "descLen": 86,
+      "cardTop": 429
+    },
+    {
+      "cardBottom": 760,
+      "footBottom": 741,
+      "footTop": 691,
+      "descLen": 87,
+      "cardTop": 429
+    },
+    {
+      "cardBottom": 1136,
+      "footBottom": 1117,
+      "footTop": 1067,
+      "descLen": 76,
+      "cardTop": 823
+    },
+    {
+      "cardBottom": 1155,
+      "footBottom": 1136,
+      "footTop": 1086,
+      "descLen": 97,
+      "cardTop": 823
+    }
+  ],
+  "errors-menu: grid footer align (WV-05-desktop": {
+    "errs": [],
+    "http4xx": []
+  },
+  "detail-sandwich-desktop": {
+    "item": "Sandwich Cayenne",
+    "board": {
+      "hasImg": true,
+      "imgSrc": "assets/menu/sandwich-cayenne.png",
+      "imgComplete": true,
+      "imgNatW": 800,
+      "emojiDisplay": "none"
+    }
+  },
+  "detail-coca-desktop": {
+    "item": "Coca-Cola 33cl",
+    "board": {
+      "hasImg": true,
+      "imgSrc": "assets/menu/coca.png",
+      "imgComplete": true,
+      "imgNatW": 800,
+      "emojiDisplay": "none"
+    }
+  },
+  "detail-bol-desktop": "NO_ITEM",
+  "errors-item detail board real photo (-desktop": {
+    "errs": [],
+    "http4xx": []
+  },
+  "cart-seed-desktop": {
+    "ok": false,
+    "name": "Sandwich Cayenne",
+    "image": "assets/menu/sandwich-cayenne.png",
+    "note": "no setCart"
+  },
+  "cart-thumb-desktop": {
+    "hasImg": true,
+    "src": "assets/menu/sandwich-cayenne.png",
+    "natW": 800
+  },
+  "recap-thumb-desktop": {
+    "hasImg": false,
+    "src": null,
+    "natW": null
+  },
+  "errors-cart + checkout recap thumbs r-desktop": {
+    "errs": [],
+    "http4xx": []
+  }
+}
