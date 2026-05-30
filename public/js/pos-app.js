@@ -81098,6 +81098,19 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       cancelButtonColor: "#8592a3"
     });
   },
+  // [GOAL-2026-05-30 ORD-01] Confirm dialog for the online-order "Encaisser & Valider
+  // (Kiosk)" single-click cash-collect-then-accept path. OnlineOrderShowComponent
+  // called appService.confirmCashPayment() but the method did not exist -> the click
+  // threw a synchronous TypeError and the button was silently dead. Mirrors acceptOrder
+  // (returns the VueSimpleAlert.confirm promise; the component proceeds on confirm).
+  confirmCashPayment: function confirmCashPayment() {
+    return new vue3_simple_alert__WEBPACK_IMPORTED_MODULE_0__["default"].confirm("Encaisser cette commande en espèces et la valider ?", "Confirmer l'encaissement", "question", {
+      confirmButtonText: "Oui, encaisser",
+      cancelButtonText: "Annuler",
+      confirmButtonColor: "#696cff",
+      cancelButtonColor: "#8592a3"
+    });
+  },
   cancelOrder: function cancelOrder() {
     return new vue3_simple_alert__WEBPACK_IMPORTED_MODULE_0__["default"].confirm("You will not be able to accept the order!", "Are you sure?", "warning", {
       confirmButtonText: "Yes, Cancel it!",

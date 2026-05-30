@@ -114,6 +114,24 @@ export default {
             }
         );
     },
+    // [GOAL-2026-05-30 ORD-01] Confirm dialog for the online-order "Encaisser & Valider
+    // (Kiosk)" single-click cash-collect-then-accept path. OnlineOrderShowComponent
+    // called appService.confirmCashPayment() but the method did not exist -> the click
+    // threw a synchronous TypeError and the button was silently dead. Mirrors acceptOrder
+    // (returns the VueSimpleAlert.confirm promise; the component proceeds on confirm).
+    confirmCashPayment: function () {
+        return new VueSimpleAlert.confirm(
+            "Encaisser cette commande en espèces et la valider ?",
+            "Confirmer l'encaissement",
+            "question",
+            {
+                confirmButtonText: "Oui, encaisser",
+                cancelButtonText: "Annuler",
+                confirmButtonColor: "#696cff",
+                cancelButtonColor: "#8592a3",
+            }
+        );
+    },
     cancelOrder: function () {
         return new VueSimpleAlert.confirm(
             "You will not be able to accept the order!",
