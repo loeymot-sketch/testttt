@@ -28,6 +28,19 @@ class OfferController extends AdminController
         $this->middleware(['permission:offers_edit'])->only('update');
         $this->middleware(['permission:offers_delete'])->only('destroy');
         $this->middleware(['permission:offers_show'])->only('show');
+        // [GOAL-GOLIVE-VAT10 / S1 2026-05-30] Offers module disabled for V1:
+        // PricingService (frozen SSOT) does NOT apply offer discounts, so a
+        // created/edited offer would be DISPLAYED but never charged ("shows X,
+        // charges Y"). Block the mutation paths until offers are wired into
+        // PricingService. Read paths (index/show/export) stay open.
+        $this->middleware(function ($request, $next) {
+            abort_unless(
+                config('features.offers_enabled') === true,
+                403,
+                "Le module Offres est désactivé en V1 (le prix affiché ne serait pas appliqué à la caisse). Réactivation après câblage PricingService."
+            );
+            return $next($request);
+        })->only('store', 'update', 'changeImage');
     }
 
     public function index(PaginateRequest $request
