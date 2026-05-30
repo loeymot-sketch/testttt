@@ -196,7 +196,7 @@
   // Bases bols (Frites / Riz basmati)
   const BOL_BASES = [
     { id: 'bb-frites', name: 'Frites',       price: 0, image: ASSET_BASE + 'frites.png' },
-    { id: 'bb-riz',    name: 'Riz basmati',  price: 0, image: ASSET_BASE + 'generated_assiette-poulet.png' },
+    { id: 'bb-riz',    name: 'Riz basmati',  price: 0, image: ASSET_BASE + 'bol-riz.png' },
   ];
 
   // Boissons formule menu
