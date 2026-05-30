@@ -115,9 +115,9 @@
   // mismatch (2=Galette ≠ Burger label → 4=Burgers).
   const REWARDS = Object.freeze([
     { id: 1, name: 'Petite Frites offerte',      points_cost: 100,  type: 'free_item',         payload: { item_id: 701 },                       icon: '🍟' },
-    { id: 2, name: '−1 € de réduction',          points_cost: 100,  type: 'discount',          payload: { amount: 1.00 },                       icon: '💶' },
-    { id: 3, name: '−2,50 € sur ta commande',    points_cost: 250,  type: 'discount',          payload: { amount: 2.50 },                       icon: '💶' },
-    { id: 4, name: '−5 € sur ta commande',       points_cost: 500,  type: 'discount',          payload: { amount: 5.00 },                       icon: '💶' },
+    { id: 2, name: '−1 € de réduction',          points_cost: 100,  type: 'discount',          payload: { amount: 1.00 },                       icon: '🎁' },
+    { id: 3, name: '−2,50 € sur ta commande',    points_cost: 250,  type: 'discount',          payload: { amount: 2.50 },                       icon: '🎁' },
+    { id: 4, name: '−5 € sur ta commande',       points_cost: 500,  type: 'discount',          payload: { amount: 5.00 },                       icon: '🎁' },
     { id: 5, name: 'Burger gratuit (au choix)',  points_cost: 1000, type: 'free_item',         payload: { category_id: 4 },                     icon: '🍔' },
     { id: 6, name: 'Tacos M offert',             points_cost: 1500, type: 'free_item',         payload: { item_id: 501 },                       icon: '🌮' },
     { id: 7, name: 'Big Cayenne −50 %',          points_cost: 2000, type: 'percent_discount',  payload: { item_id: 102, percent: 50 },          icon: '🌶️' },

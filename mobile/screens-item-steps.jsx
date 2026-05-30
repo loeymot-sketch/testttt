@@ -837,7 +837,7 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
   ) : null;
 
   return (
-    <div style={{ padding: '20px 20px 130px' }}>
+    <div style={{ padding: '20px 20px 210px' }}>
       <div style={{ background: 'var(--cream)', borderRadius: 16, padding: '14px 0 0', overflow: 'hidden' }}>
         <div style={{ padding: '0 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
           <span aria-hidden="true" style={{ fontSize: 28 }}>{item.kiosk_emoji || '🍽️'}</span>
