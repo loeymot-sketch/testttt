@@ -206,7 +206,7 @@
   transition: transform var(--dur-fast) var(--ease-spring);
 }
 .rdw-cta:active { transform: scale(0.985); }
-.rdw-cta:disabled { cursor: not-allowed; }
+.rdw-cta:disabled { cursor: not-allowed; box-shadow: none; }
 
 .rdw-cta-label {
   font-weight: 700;
