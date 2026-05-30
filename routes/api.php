@@ -826,7 +826,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 $query->where('branch_id', $branchId);
             }
 
-            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(50)->get());
+            // [abuse-e2e P3 heal 2026-05-30] Cap raised 50→200. Oldest-first
+            // (created_at ASC) is the correct FIFO collection order — collect the
+            // longest-waiting customer first. The old 50-cap silently hid orders
+            // beyond 50 (a real V1 single-box gap once a backlog builds: a
+            // waiting-to-pay customer became invisible to the cashier). 200 is far
+            // beyond any realistic single-restaurant uncollected backlog while
+            // staying bounded.
+            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get());
         })->middleware('throttle:pos-order-update')->name('counter-collect.pending');
         Route::post('/counter-collect/{order}/confirm', function (\App\Models\Order $order, \Illuminate\Http\Request $request) {
             abort_unless(auth()->user()?->can('pos'), 403);

@@ -40,9 +40,14 @@ class OrderHistoryController extends AdminController
     public function index(
         PaginateRequest $request
     ): \Illuminate\Http\Response|\Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
+        // [GOAL-CAISSE-UNIFIED 2026-05-30 abuse-e2e P3 heal] Tightened to the
+        // pos-order surface baseline (PosOrderController gates pos-orders|pos).
+        // Dropped 'online-orders' — it would have let a future online-only role
+        // see Borne/Caisse/walk-in orders this unified view aggregates, broader
+        // than the split surface it replaces. No seeded role has online-orders
+        // without pos/pos-orders, so this is defense-in-depth, not a live fix.
         abort_unless(
             auth()->user()?->can('pos-orders')
-                || auth()->user()?->can('online-orders')
                 || auth()->user()?->can('pos'),
             403
         );
@@ -57,9 +62,14 @@ class OrderHistoryController extends AdminController
     public function show(
         int|string $order
     ): \Illuminate\Http\Response|OrderDetailsResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
+        // [GOAL-CAISSE-UNIFIED 2026-05-30 abuse-e2e P3 heal] Tightened to the
+        // pos-order surface baseline (PosOrderController gates pos-orders|pos).
+        // Dropped 'online-orders' — it would have let a future online-only role
+        // see Borne/Caisse/walk-in orders this unified view aggregates, broader
+        // than the split surface it replaces. No seeded role has online-orders
+        // without pos/pos-orders, so this is defense-in-depth, not a live fix.
         abort_unless(
             auth()->user()?->can('pos-orders')
-                || auth()->user()?->can('online-orders')
                 || auth()->user()?->can('pos'),
             403
         );

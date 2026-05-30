@@ -168,6 +168,7 @@ import appService from "../../../services/appService";
 import orderStatusEnum from "../../../enums/modules/orderStatusEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import paymentStatusEnum from "../../../enums/modules/paymentStatusEnum";
+import SourceEnum from "../../../enums/modules/sourceEnum";
 import TableLimitComponent from "../components/TableLimitComponent";
 import SmIconViewComponent from "../components/buttons/SmIconViewComponent";
 import FilterComponent from "../components/buttons/collapse/FilterComponent";
@@ -294,6 +295,17 @@ export default {
                 return { label: this.$t('label.caisse'), cls: 'origin-caisse' };
             }
             if (surface === 'web' || surface === 'app' || surface === 'mobile') {
+                return { label: this.$t('label.online'), cls: 'origin-online' };
+            }
+            // [abuse-e2e P3 heal 2026-05-30] Fallback on the legacy `source` column
+            // when source_surface is empty/NULL (older orders predate the surface
+            // tag) so they are not all blanket-badged "En ligne": Source POS=Caisse,
+            // WEB/APP=En ligne. Unknown/dirty source values keep the En ligne default.
+            const src = parseInt(order.source);
+            if (src === SourceEnum.POS) {
+                return { label: this.$t('label.caisse'), cls: 'origin-caisse' };
+            }
+            if (src === SourceEnum.WEB || src === SourceEnum.APP) {
                 return { label: this.$t('label.online'), cls: 'origin-online' };
             }
             return { label: this.$t('label.online'), cls: 'origin-online' };

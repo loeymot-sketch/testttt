@@ -14636,21 +14636,22 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../enums/modules/orderStatusEnum */ "./resources/js/enums/modules/orderStatusEnum.js");
 /* harmony import */ var _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../enums/modules/orderTypeEnum */ "./resources/js/enums/modules/orderTypeEnum.js");
 /* harmony import */ var _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../../enums/modules/paymentStatusEnum */ "./resources/js/enums/modules/paymentStatusEnum.js");
-/* harmony import */ var _components_TableLimitComponent__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../components/TableLimitComponent */ "./resources/js/components/admin/components/TableLimitComponent.vue");
-/* harmony import */ var _components_buttons_SmIconViewComponent__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../components/buttons/SmIconViewComponent */ "./resources/js/components/admin/components/buttons/SmIconViewComponent.vue");
-/* harmony import */ var _components_buttons_collapse_FilterComponent__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../components/buttons/collapse/FilterComponent */ "./resources/js/components/admin/components/buttons/collapse/FilterComponent.vue");
-/* harmony import */ var _vuepic_vue_datepicker__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @vuepic/vue-datepicker */ "./node_modules/@vuepic/vue-datepicker/dist/vue-datepicker.js");
-/* harmony import */ var _vuepic_vue_datepicker_dist_main_css__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! @vuepic/vue-datepicker/dist/main.css */ "./node_modules/@vuepic/vue-datepicker/dist/main.css");
-/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
-/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/endOfMonth/index.js");
-/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/endOfYear/index.js");
-/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/startOfMonth/index.js");
-/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/startOfYear/index.js");
-/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/subMonths/index.js");
-/* harmony import */ var _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! ../../../enums/modules/statusEnum */ "./resources/js/enums/modules/statusEnum.js");
-/* harmony import */ var _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ../../../enums/modules/displayModeEnum */ "./resources/js/enums/modules/displayModeEnum.js");
-/* harmony import */ var _config_env__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ../../../config/env */ "./resources/js/config/env.js");
-/* harmony import */ var _helpers_formatPrice__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ../../../helpers/formatPrice */ "./resources/js/helpers/formatPrice.js");
+/* harmony import */ var _enums_modules_sourceEnum__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../../../enums/modules/sourceEnum */ "./resources/js/enums/modules/sourceEnum.js");
+/* harmony import */ var _components_TableLimitComponent__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../components/TableLimitComponent */ "./resources/js/components/admin/components/TableLimitComponent.vue");
+/* harmony import */ var _components_buttons_SmIconViewComponent__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../components/buttons/SmIconViewComponent */ "./resources/js/components/admin/components/buttons/SmIconViewComponent.vue");
+/* harmony import */ var _components_buttons_collapse_FilterComponent__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../components/buttons/collapse/FilterComponent */ "./resources/js/components/admin/components/buttons/collapse/FilterComponent.vue");
+/* harmony import */ var _vuepic_vue_datepicker__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! @vuepic/vue-datepicker */ "./node_modules/@vuepic/vue-datepicker/dist/vue-datepicker.js");
+/* harmony import */ var _vuepic_vue_datepicker_dist_main_css__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! @vuepic/vue-datepicker/dist/main.css */ "./node_modules/@vuepic/vue-datepicker/dist/main.css");
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/endOfMonth/index.js");
+/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/endOfYear/index.js");
+/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/startOfMonth/index.js");
+/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/startOfYear/index.js");
+/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/subMonths/index.js");
+/* harmony import */ var _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ../../../enums/modules/statusEnum */ "./resources/js/enums/modules/statusEnum.js");
+/* harmony import */ var _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ../../../enums/modules/displayModeEnum */ "./resources/js/enums/modules/displayModeEnum.js");
+/* harmony import */ var _config_env__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ../../../config/env */ "./resources/js/config/env.js");
+/* harmony import */ var _helpers_formatPrice__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! ../../../helpers/formatPrice */ "./resources/js/helpers/formatPrice.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
@@ -14674,36 +14675,37 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 
 
 
+
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   name: "HistoriqueListComponent",
-  mixins: [_helpers_formatPrice__WEBPACK_IMPORTED_MODULE_22__.adminPriceMixin],
+  mixins: [_helpers_formatPrice__WEBPACK_IMPORTED_MODULE_23__.adminPriceMixin],
   components: {
-    TableLimitComponent: _components_TableLimitComponent__WEBPACK_IMPORTED_MODULE_8__["default"],
+    TableLimitComponent: _components_TableLimitComponent__WEBPACK_IMPORTED_MODULE_9__["default"],
     PaginationSMBox: _components_pagination_PaginationSMBox__WEBPACK_IMPORTED_MODULE_3__["default"],
     PaginationBox: _components_pagination_PaginationBox__WEBPACK_IMPORTED_MODULE_2__["default"],
     PaginationTextComponent: _components_pagination_PaginationTextComponent__WEBPACK_IMPORTED_MODULE_1__["default"],
     LoadingComponent: _components_LoadingComponent__WEBPACK_IMPORTED_MODULE_0__["default"],
-    SmIconViewComponent: _components_buttons_SmIconViewComponent__WEBPACK_IMPORTED_MODULE_9__["default"],
-    FilterComponent: _components_buttons_collapse_FilterComponent__WEBPACK_IMPORTED_MODULE_10__["default"],
-    Datepicker: _vuepic_vue_datepicker__WEBPACK_IMPORTED_MODULE_11__["default"]
+    SmIconViewComponent: _components_buttons_SmIconViewComponent__WEBPACK_IMPORTED_MODULE_10__["default"],
+    FilterComponent: _components_buttons_collapse_FilterComponent__WEBPACK_IMPORTED_MODULE_11__["default"],
+    Datepicker: _vuepic_vue_datepicker__WEBPACK_IMPORTED_MODULE_12__["default"]
   },
   setup: function setup() {
-    var date = (0,vue__WEBPACK_IMPORTED_MODULE_13__.ref)();
-    var presetRanges = (0,vue__WEBPACK_IMPORTED_MODULE_13__.ref)([{
+    var date = (0,vue__WEBPACK_IMPORTED_MODULE_14__.ref)();
+    var presetRanges = (0,vue__WEBPACK_IMPORTED_MODULE_14__.ref)([{
       label: 'Aujourd’hui',
       range: [new Date(), new Date()]
     }, {
       label: 'Ce mois',
-      range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_16__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_14__["default"])(new Date())]
-    }, {
-      label: 'Mois dernier',
-      range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_16__["default"])((0,date_fns__WEBPACK_IMPORTED_MODULE_18__["default"])(new Date(), 1)), (0,date_fns__WEBPACK_IMPORTED_MODULE_14__["default"])((0,date_fns__WEBPACK_IMPORTED_MODULE_18__["default"])(new Date(), 1))]
-    }, {
-      label: 'Cette année',
       range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_17__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_15__["default"])(new Date())]
     }, {
+      label: 'Mois dernier',
+      range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_17__["default"])((0,date_fns__WEBPACK_IMPORTED_MODULE_19__["default"])(new Date(), 1)), (0,date_fns__WEBPACK_IMPORTED_MODULE_15__["default"])((0,date_fns__WEBPACK_IMPORTED_MODULE_19__["default"])(new Date(), 1))]
+    }, {
       label: 'Cette année',
-      range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_17__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_15__["default"])(new Date())],
+      range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_18__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_16__["default"])(new Date())]
+    }, {
+      label: 'Cette année',
+      range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_18__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_16__["default"])(new Date())],
       slot: 'yearly'
     }]);
     return {
@@ -14746,7 +14748,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
           to_date: ""
         }
       },
-      ENV: _config_env__WEBPACK_IMPORTED_MODULE_21__["default"]
+      ENV: _config_env__WEBPACK_IMPORTED_MODULE_22__["default"]
     };
   },
   mounted: function mounted() {
@@ -14763,7 +14765,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return this.$store.getters['orderHistory/page'];
     },
     direction: function direction() {
-      return this.$store.getters['frontendLanguage/show'].display_mode === _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_20__["default"].RTL ? 'rtl' : 'ltr';
+      return this.$store.getters['frontendLanguage/show'].display_mode === _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_21__["default"].RTL ? 'rtl' : 'ltr';
     },
     originOptions: function originOptions() {
       return [{
@@ -14815,6 +14817,23 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         };
       }
       if (surface === 'web' || surface === 'app' || surface === 'mobile') {
+        return {
+          label: this.$t('label.online'),
+          cls: 'origin-online'
+        };
+      }
+      // [abuse-e2e P3 heal 2026-05-30] Fallback on the legacy `source` column
+      // when source_surface is empty/NULL (older orders predate the surface
+      // tag) so they are not all blanket-badged "En ligne": Source POS=Caisse,
+      // WEB/APP=En ligne. Unknown/dirty source values keep the En ligne default.
+      var src = parseInt(order.source);
+      if (src === _enums_modules_sourceEnum__WEBPACK_IMPORTED_MODULE_8__["default"].POS) {
+        return {
+          label: this.$t('label.caisse'),
+          cls: 'origin-caisse'
+        };
+      }
+      if (src === _enums_modules_sourceEnum__WEBPACK_IMPORTED_MODULE_8__["default"].WEB || src === _enums_modules_sourceEnum__WEBPACK_IMPORTED_MODULE_8__["default"].APP) {
         return {
           label: this.$t('label.online'),
           cls: 'origin-online'
