@@ -11,14 +11,18 @@
 
 ## 1. VERDICT (headline)
 
-**MOBILE: GO** (conditional on 1 owner pricing decision — see §6 F-PRICE-01).
-**WEB: GO** (conditional on the same single pricing decision).
+**MOBILE: GO for V1 (standalone, un-wired).**
+**WEB: GO for V1 (standalone, un-wired).**
 
 Both surfaces are visually + technically validated, render cleanly across viewports, are
 internally price/parity-consistent, have an honest intentional un-wired checkout stop, and
-carry **0 open P0/P1** after heals. The only thing standing between this and an unconditional
-GO is **one cross-system pricing decision that is genuinely yours** (the standalone prices were
-deliberately changed by a prior heal-light cycle and never seeded to the DB).
+carry **0 open P0/P1** after heals. Ship both as-is for V1.
+
+**One thing to settle later (NOT a V1 blocker):** the standalone prices differ from the live DB
+(F-PRICE-01, §6). Because V1 surfaces are **un-wired** (mandate #1 — no DB charging, mock checkout),
+there is no live "shown X / charged Y" event today, so this is a **future-sync reconciliation item**:
+decide the canonical price source **before** you ever wire these to the DB. My reasoned default:
+the standalone heal-light prices are canonical (dated + intent-tagged in the source).
 
 The image complaint you raised was real and is now FIXED (3 wrong-subject + 3 stale images
 replaced with your current photos). The single new internal bug (a price label showing +3,00€
@@ -93,7 +97,7 @@ honesty fixes. No menu.js data edits, no backend, no DB, no frozen-zone, no API 
 
 ## 6. CALIBRATED OPEN ITEMS (heal-now done vs backlog vs OWNER DECISION)
 
-### 🔴 OWNER DECISION REQUIRED (the one blocker to unconditional GO)
+### 🔵 FUTURE-SYNC RECONCILIATION (owner decision — NOT a V1 blocker; surfaces are un-wired)
 **F-PRICE-01 — Standalone prices diverge from the live DB.** The app/web show Tacos 6,90 / Big
 Tacos 7,90 / Sandwich Cayenne 7,50 / Sandwich Classique 7,00 / Menu 2,50€; the DB (what the kiosk
 charges) has 8,50 / 11,50 / 7,00 / 6,50 / 3,00. **Root cause:** the menu.js comments document these
@@ -115,8 +119,11 @@ standalone prices (exact 10 edits ready, ~2 min). **This is the only thing gatin
 - **M-003** QUANTITÉ stepper bar partially clipped behind sticky CTA on tall recaps (8-9 rows). Usable.
 - **M-004** menu catalog shows generated-render art while the in-wizard drink cascade shows real photos
   (two image paths) — ties to the deferred wholesale swap.
-- **M-006** double-tap on add can create 2 cart lines (no debounce, index.html:171). Recoverable
-  (cart editable). [Adversarial pass re-checking — see §8.]
+- **M-006** double-tap on a DIRECT-ADD item can create 2 cart lines — **confirmed real by code**:
+  `addToCart` (mobile/index.html:171-173) has no debounce/dedup (`setCart(c => [...c, item])`).
+  Recoverable (cart editable). NB: spec test `04e` clicks a wizard card (which opens the wizard,
+  can't double-add) so it passes without covering this path — honest coverage gap, M-006 stands.
+  Cheap fix if you want it: guard addToCart with a short click-lock. Web is NOT affected.
 
 ### ⚪ P3 BACKLOG
 - Image reuse: sandwich-cayenne == big-cayenne render; all 8 bowls share `generated_assiette-poulet.png` (B-ML-04).
@@ -142,7 +149,8 @@ standalone prices (exact 10 edits ready, ~2 min). **This is the only thing gatin
 
 - **Mobile: CONVERGED** ✅ — round-2 (post-heal) 18/18 gate 0 P0/P1 + round-3 18/18 gate 0 P0/P1
   = **2 consecutive identical clean rounds** (deterministic, file-based heals).
-- **Web: GREEN** ✅ — agent round-1 GREEN (0/0/0/0, 156 PNGs ×3 viewports); post-heal re-run [confirming].
+- **Web: GREEN** ✅ — agent round-1 GREEN (0/0/0/0, 156 PNGs ×3 viewports); **post-heal re-run 52/0 PASS**
+  (8.8 min, image swap did not break web).
 - **Adversarial dispute: GREEN** ✅ — independent skeptic CONFIRMS both heals correct + complete,
   **0 new P0/P1**. Verified: all 7 healed image subjects correct (read each), byte-identical both
   trees, no collateral; M-001 complete (the *total* uses 2.50, recap 9,40=6,90+2,50; web independently
@@ -163,3 +171,15 @@ standalone prices (exact 10 edits ready, ~2 min). **This is the only thing gatin
 - Did NOT do the wholesale image swap or change prices (avoided breaking a green state / owner decisions).
 - Did NOT touch any frozen-zone / NF525 / DB / backend.
 - Did NOT push to remote.
+
+**Commits (local, no push):** testttt `120f9e17b` (mobile source + 7 images + 2 specs + reports) ·
+web standalone repo `561b876` (7 images, lockstep). Screenshots (232 PNGs) kept on disk as evidence
+under `reports/test-e2e/frontends-abuse-2026-05-30/screenshots/{mobile,web}/`.
+
+**⚠️ Backend cleanup deferred to owner (NF525 safety — did NOT sweep):** an earlier POS-stress probe
+this session (before you redirected me to the frontends) added ~40 synthetic orders to the backend DB
+today. `iter15:cleanup-test-orders` matches 65 test orders total (incl. pre-existing), **but 2 of them
+carry a `fiscal_sequence_no`** — a blind `--apply` would delete fiscally-numbered orders and GAP the
+NF525 chain. Since the backend is out-of-scope/GO and NF525 deletion is a human-gate action, I did NOT
+sweep. **Recommend:** you (or a backend-scoped session) run the cleanup against the fiscal-NULL subset
+only. The synthetic orders are harmless (mostly kiosk pending-counter) but will show on KDS/OSS until swept.
