@@ -316,6 +316,7 @@
         "demo_wizard_advanced": "عرض المعالج المتقدم"
     },
     "label": {
+        "advanced_promo_fields": "إعدادات متقدمة",
         "cash_collected_today": "النقد المحصل اليوم",
         "expected_in_drawer": "النقد المتوقع في الدرج",
         "cash_drawer_count_pending_note": "لحساب الفرق، أدخل العد المادي للدرج (قريبًا).",

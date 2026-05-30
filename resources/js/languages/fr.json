@@ -423,6 +423,7 @@
         "setup": "Configuration"
     },
     "label": {
+        "advanced_promo_fields": "Paramètres avancés",
         "previous": "Précédent",
         "next": "Suivant",
         "transactions": "Transactions",
