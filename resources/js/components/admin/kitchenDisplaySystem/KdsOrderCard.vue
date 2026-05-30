@@ -139,19 +139,17 @@
       <div class="kds-card__body-fade"></div>
     </div>
 
-    <!-- FOOTER CTA (paid orders) or CASH-PENDING badge (cash-at-counter waiting collection) -->
-    <!-- [Wave S-2 P-OWNER 2026-05-20] Owner decision: 1 clic CTA = PREPARING→PREPARED
-         direct for paid orders (S-1 auto-promotes ACCEPT→PREPARING on payment).
-         For cash-at-counter orders still awaiting cashier encaissement
-         (payment_pending_counter=true), the chef MUST NOT bump — show a
-         passive badge "EN ATTENTE ENCAISSEMENT" instead. This prevents
-         the kitchen from preparing food before the cashier collects cash
-         (regulatory + revenue-protection requirement).
-         Server-side, OrderStateMachine still blocks if the chef tries
-         anyway via direct axios, but this UI gate is the primary signal. -->
+    <!-- FOOTER — bump CTA + (when awaiting counter encashment) a NON-blocking note -->
+    <!-- [GOAL-2026-05-30 D1 — OWNER REVERSAL of Wave S-2 2026-05-20] Owner now wants the
+         kitchen to PREPARE an order BEFORE encashment. So for a cash-at-counter order still
+         awaiting collection (payment_pending_counter=true) we show a NON-blocking
+         "Non encaissé / paiement en attente" note AND keep the bump CTA enabled — the chef can
+         advance the order; the cashier collects later in /admin/encaissement. (The earlier
+         "MUST NOT bump" gate was UI-only — the server never blocked it; comment was inaccurate.)
+         For paid orders the note is hidden and only the CTA shows (unchanged). -->
     <div
       v-if="isCashPending"
-      class="kds-card__cash-pending"
+      class="kds-card__cash-pending kds-card__cash-pending--note"
       role="status"
       :aria-label="$t('label.kds_card_cash_pending_aria')"
       data-testid="kds-card-cash-pending"
@@ -163,7 +161,6 @@
       <span>{{ $t('label.kds_card_cash_pending') }}</span>
     </div>
     <button
-      v-else
       type="button"
       class="kds-card__cta"
       @click.prevent="onCta"
@@ -381,13 +378,10 @@ export default {
             // SSOT (mirrors App\Support\PhoneDisplay::safe).
             return safePhone(this.order?.customer?.phone);
         },
-        // [Wave S-2 P-OWNER 2026-05-20] Cash-at-counter detection. Wire signal
-        // `payment_pending_counter` comes from KDSOrderDetailsResource:44
-        // (= payment_status === PaymentStatus::PENDING_COUNTER). When true,
-        // the chef MUST wait for the cashier to collect cash (Wave S-5) before
-        // bumping — the CTA is replaced by a passive badge in the template,
-        // keyboard Enter is no-op (see onCardKeydownEnter), and the [A]–[H]
-        // slot shortcut is skipped at the grid level (see KdsV2Grid.onKey).
+        // [GOAL-2026-05-30 D1] `payment_pending_counter` (KDSOrderDetailsResource:44 =
+        // payment_status === PENDING_COUNTER) now drives only a NON-blocking "non encaissé"
+        // NOTE — NOT a bump gate. Owner reversed the Wave S-2 "must wait for cash" rule: the
+        // kitchen prepares before encashment; the cashier collects later in /admin/encaissement.
         isCashPending() {
             return this.order?.payment_pending_counter === true;
         },
@@ -397,19 +391,11 @@ export default {
             return renderItem(item).lines;
         },
         onCta() {
-            if (this.isCashPending) {
-                // Defense-in-depth: even if the CTA somehow renders for a
-                // cash-pending order (e.g. transient state), refuse to emit.
-                return;
-            }
+            // [GOAL-2026-05-30 D1] No payment gate — the chef may bump an unpaid (PENDING_COUNTER)
+            // order; the "non encaissé" note stays visible and the cashier collects it later.
             this.$emit('ready', this.order.id);
         },
-        // [Wave S-2 P-OWNER 2026-05-20] Keyboard Enter on card root must NOT
-        // bump cash-pending orders — same gate as the click handler.
         onCardKeydownEnter() {
-            if (this.isCashPending) {
-                return;
-            }
             this.onCta();
         },
     },

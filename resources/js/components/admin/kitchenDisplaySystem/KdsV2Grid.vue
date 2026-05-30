@@ -296,14 +296,10 @@ export default {
             if (idx >= 0 && idx < this.activeOrders.length) {
                 const o = this.activeOrders[idx];
                 if (o) {
-                    // [Wave S-2 P-OWNER 2026-05-20] Cash-pending orders MUST NOT
-                    // be bumped by keyboard shortcut. Mirror the UI gate that
-                    // replaces the CTA with a passive badge for cash-at-counter
-                    // orders awaiting cashier encaissement (Wave S-5). Without
-                    // this, [A]–[H] would silently contradict the badge.
-                    if (o.payment_pending_counter === true) {
-                        return;
-                    }
+                    // [GOAL-2026-05-30 D1 — OWNER REVERSAL of Wave S-2] Cash-pending orders
+                    // MAY now be bumped (kitchen prepares before encashment); the [A]–[H]
+                    // shortcut no longer skips them — it matches the now-always-present CTA.
+                    // The "non encaissé" note stays visible on the card (KdsOrderCard).
                     e.preventDefault();
                     this.onCtaTap(o.id, o.queue_number);
                 }

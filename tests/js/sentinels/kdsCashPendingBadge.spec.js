@@ -3,51 +3,36 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
- * @FK-ID FK-WAVE-S-2-KDS-CASH-PENDING-001
- * @source P-OWNER Wave S-2 (2026-05-20)
+ * @FK-ID FK-WAVE-S-2-KDS-CASH-PENDING-001 (REVERSED by GOAL-2026-05-30 D1)
+ * @source P-OWNER Wave S-2 (2026-05-20) → REVERSED P-OWNER 2026-05-30
  *
- * Sentinel for the KDS 1-clic CTA + cash-pending exception. Owner decision:
- * - Paid orders → chef sees big "Prêt" CTA → 1 click = PREPARING→PREPARED
- *   (assuming Wave S-1 auto-promotes ACCEPT→PREPARING on payment; if S-1
- *   isn't yet shipped, the Wave Q-2 step ladder in KdsV2Grid.onCtaTap
- *   degrades gracefully to 2 clicks = ACCEPT→PREPARING→PREPARED, still
- *   functional and never broken).
- * - Cash-at-counter orders (payment_pending_counter=true) → CTA replaced
- *   by a passive amber badge "EN ATTENTE ENCAISSEMENT". Chef cannot bump
- *   until Wave S-5 cashier flow flips payment_status to PAID. The keyboard
- *   shortcut [A]–[H] in KdsV2Grid.onKey also skips cash-pending slots.
+ * OWNER REVERSAL (2026-05-30): the earlier Wave S-2 rule "the kitchen MUST NOT bump a
+ * cash-at-counter order until the cashier collects" is REVERSED. The owner now wants the
+ * kitchen to PREPARE an order BEFORE encashment (the cashier collects later in the unified
+ * /admin/encaissement page). So for a `payment_pending_counter` order the card now shows a
+ * NON-blocking "Non encaissé / paiement en attente" NOTE AND keeps the bump CTA enabled.
  *
- * The structural invariants this sentinel locks:
- *   1. KdsOrderCard.vue exposes an `isCashPending` computed bound to
- *      `order.payment_pending_counter === true`.
- *   2. The template renders the cash-pending badge `v-if="isCashPending"`
- *      and the Prêt CTA `v-else` (mutually exclusive, no double-render).
- *   3. The badge uses role="status" (NOT button — chef cannot interact).
- *   4. `onCta` and `onCardKeydownEnter` both guard on isCashPending (no
- *      emit when cash-pending — defense-in-depth in case the badge somehow
- *      doesn't render).
- *   5. KdsV2Grid.onKey [A]–[H] handler skips slots where
- *      `payment_pending_counter === true`.
- *   6. i18n keys `kds_card_cash_pending` and `kds_card_cash_pending_aria`
- *      exist in fr.json / en.json / ar.json (admin surfaces).
+ * Structural invariants this sentinel now locks (NEW behavior):
+ *   1. KdsOrderCard exposes `isCashPending` bound to `payment_pending_counter === true`
+ *      — it now drives only the informational NOTE, not a bump gate.
+ *   2. The cash-pending NOTE renders `v-if="isCashPending"` (role="status", non-interactive).
+ *   3. The bump CTA renders UNCONDITIONALLY (no `v-else` mutually-exclusive gating) — when an
+ *      order is cash-pending, BOTH the note and the CTA show.
+ *   4. `onCta` does NOT gate on isCashPending — it always emits 'ready' (the chef can bump unpaid).
+ *   5. KdsV2Grid.onKey [A]–[H] does NOT skip cash-pending slots.
+ *   6. i18n keys `kds_card_cash_pending` + `_aria` still exist (the note text).
  *
- * Anti-régression : if any of these invariants drift, the kitchen could
- * either prepare food before cash is collected (revenue leak) OR could
- * stall paid orders behind a phantom cash gate (kitchen blocked).
+ * Anti-régression : if a future change re-introduces a payment gate on the bump path, this
+ * sentinel fails — the owner explicitly wants prep-before-cash (revenue risk accepted; cash is
+ * collected at the unified caisse page, fiscal-seq still allocated only at collection).
  */
-describe('KDS cash-pending badge — Wave S-2 (FK-WAVE-S-2-KDS-CASH-PENDING-001)', () => {
+describe('KDS cash-pending NOTE (non-blocking) — owner reversal GOAL-2026-05-30 D1', () => {
     const cardSource = readFileSync(
-        resolve(
-            process.cwd(),
-            'resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue',
-        ),
+        resolve(process.cwd(), 'resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue'),
         'utf8',
     );
     const gridSource = readFileSync(
-        resolve(
-            process.cwd(),
-            'resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue',
-        ),
+        resolve(process.cwd(), 'resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue'),
         'utf8',
     );
 
@@ -55,41 +40,40 @@ describe('KDS cash-pending badge — Wave S-2 (FK-WAVE-S-2-KDS-CASH-PENDING-001)
         expect(cardSource).toMatch(/isCashPending\s*\(\)\s*\{[\s\S]*?payment_pending_counter\s*===\s*true/);
     });
 
-    it('Template renders cash-pending badge with v-if="isCashPending"', () => {
-        expect(cardSource).toMatch(/v-if="isCashPending"[\s\S]{0,200}kds-card__cash-pending/);
+    it('Template renders the cash-pending NOTE with v-if="isCashPending"', () => {
+        expect(cardSource).toMatch(/v-if="isCashPending"[\s\S]{0,260}kds-card__cash-pending/);
     });
 
-    it('Template renders Prêt CTA with v-else (mutually exclusive)', () => {
-        expect(cardSource).toMatch(/v-else[\s\S]{0,200}kds-card__cta/);
+    it('Cash-pending element is a NOTE (role="status", not a button)', () => {
+        expect(cardSource).toMatch(/kds-card__cash-pending[\s\S]{0,260}role="status"/);
     });
 
-    it('Cash-pending badge uses role="status" (not a button)', () => {
-        expect(cardSource).toMatch(/kds-card__cash-pending[\s\S]{0,200}role="status"/);
+    it('Bump CTA renders UNCONDITIONALLY (no v-else mutually-exclusive gate)', () => {
+        // The CTA button must NOT be guarded by v-else (which would hide it for cash-pending).
+        expect(cardSource).not.toMatch(/v-else[\s\S]{0,200}kds-card__cta/);
+        expect(cardSource).toMatch(/class="kds-card__cta"[\s\S]{0,200}data-testid="kds-card-cta-ready"/);
     });
 
-    it('Cash-pending badge has data-testid="kds-card-cash-pending" for E2E hooks', () => {
+    it('data-testids present (kds-card-cash-pending note + kds-card-cta-ready CTA)', () => {
         expect(cardSource).toMatch(/data-testid="kds-card-cash-pending"/);
-    });
-
-    it('CTA button has data-testid="kds-card-cta-ready" for E2E hooks', () => {
         expect(cardSource).toMatch(/data-testid="kds-card-cta-ready"/);
     });
 
-    it('onCta guards on isCashPending (defense-in-depth — never emits when pending)', () => {
-        expect(cardSource).toMatch(/onCta\s*\([^)]*\)\s*\{[\s\S]*?this\.isCashPending[\s\S]*?return/);
+    it('onCta does NOT gate on isCashPending — it always emits ready (bump allowed when unpaid)', () => {
+        const onCta = cardSource.match(/onCta\s*\([^)]*\)\s*\{([\s\S]*?)\},/);
+        expect(onCta, 'onCta method found').toBeTruthy();
+        expect(onCta[1]).toMatch(/\$emit\(\s*['"]ready['"]/);
+        expect(onCta[1]).not.toMatch(/this\.isCashPending[\s\S]*?return/);
     });
 
-    it('onCardKeydownEnter guards on isCashPending', () => {
-        expect(cardSource).toMatch(/onCardKeydownEnter\s*\([^)]*\)\s*\{[\s\S]*?this\.isCashPending[\s\S]*?return/);
-    });
-
-    it('Card root @keydown.enter is wired to onCardKeydownEnter (not onCta directly)', () => {
+    it('Card root @keydown.enter is wired to onCardKeydownEnter', () => {
         expect(cardSource).toMatch(/@keydown\.enter="onCardKeydownEnter"/);
-        expect(cardSource).not.toMatch(/@keydown\.enter="onCta"/);
     });
 
-    it('KdsV2Grid.onKey [A]–[H] skips cash-pending slots', () => {
-        expect(gridSource).toMatch(/onKey\s*\([^)]*\)\s*\{[\s\S]*?payment_pending_counter\s*===\s*true[\s\S]*?return/);
+    it('KdsV2Grid.onKey [A]–[H] does NOT skip cash-pending slots', () => {
+        const onKey = gridSource.match(/onKey\s*\([^)]*\)\s*\{([\s\S]*?)\n        \},/);
+        expect(onKey, 'onKey method found').toBeTruthy();
+        expect(onKey[1]).not.toMatch(/payment_pending_counter\s*===\s*true[\s\S]*?return/);
     });
 
     it('i18n key kds_card_cash_pending exists in fr / en / ar admin languages', () => {
@@ -99,8 +83,5 @@ describe('KDS cash-pending badge — Wave S-2 (FK-WAVE-S-2-KDS-CASH-PENDING-001)
         expect(fr).toMatch(/"kds_card_cash_pending":\s*"[^"]+"/);
         expect(en).toMatch(/"kds_card_cash_pending":\s*"[^"]+"/);
         expect(ar).toMatch(/"kds_card_cash_pending":\s*"[^"]+"/);
-        expect(fr).toMatch(/"kds_card_cash_pending_aria":\s*"[^"]+"/);
-        expect(en).toMatch(/"kds_card_cash_pending_aria":\s*"[^"]+"/);
-        expect(ar).toMatch(/"kds_card_cash_pending_aria":\s*"[^"]+"/);
     });
 });

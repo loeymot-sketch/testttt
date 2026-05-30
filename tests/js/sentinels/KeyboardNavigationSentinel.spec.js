@@ -50,10 +50,13 @@ describe('Keyboard navigation — KDS bump (FK-L5.3-001)', () => {
         expect(kdsOrderCard).toMatch(/@keydown\.enter="onCardKeydownEnter"/);
     });
 
-    it('KdsOrderCard onCardKeydownEnter respects cash-pending gate', () => {
-        // The keyboard path mirrors the click gate so a chef cannot bypass
-        // the cash-at-counter wait with Enter (Wave S-2 P-OWNER 2026-05-20).
-        expect(kdsOrderCard).toMatch(/onCardKeydownEnter\s*\(\)\s*\{[\s\S]*?isCashPending[\s\S]*?return;/);
+    it('KdsOrderCard onCardKeydownEnter bumps via onCta (no cash-pending gate — GOAL-2026-05-30 D1)', () => {
+        // OWNER REVERSAL of Wave S-2: the kitchen may prepare an order before encashment, so
+        // Enter must NOT short-circuit on cash-pending — it calls onCta which emits 'ready'.
+        const m = kdsOrderCard.match(/onCardKeydownEnter\s*\(\)\s*\{([\s\S]*?)\}/);
+        expect(m, 'onCardKeydownEnter found').toBeTruthy();
+        expect(m[1]).toMatch(/this\.onCta\(\)/);
+        expect(m[1]).not.toMatch(/isCashPending[\s\S]*?return/);
     });
 
     it('KdsV2Grid registers a global keydown listener for [A]-[H] shortcuts', () => {
@@ -62,8 +65,12 @@ describe('Keyboard navigation — KDS bump (FK-L5.3-001)', () => {
         expect(kdsV2Grid).toMatch(/const SHORTCUTS\s*=\s*\[\s*'A'\s*,\s*'B'\s*,\s*'C'\s*,\s*'D'\s*,\s*'E'\s*,\s*'F'\s*,\s*'G'\s*,\s*'H'\s*\]/);
     });
 
-    it('KdsV2Grid [A]-[H] shortcut skips cash-pending rows (defense-in-depth)', () => {
-        expect(kdsV2Grid).toMatch(/payment_pending_counter\s*===\s*true/);
+    it('KdsV2Grid [A]-[H] shortcut bumps cash-pending rows too (no skip — GOAL-2026-05-30 D1)', () => {
+        // OWNER REVERSAL: the [A]–[H] shortcut no longer skips cash-pending slots; it bumps them
+        // like any order (the "non encaissé" note stays on the card). No payment gate in onKey.
+        const m = kdsV2Grid.match(/onKey\s*\([^)]*\)\s*\{([\s\S]*?)\n        \},/);
+        expect(m, 'onKey found').toBeTruthy();
+        expect(m[1]).not.toMatch(/payment_pending_counter\s*===\s*true[\s\S]*?return/);
     });
 });
 

@@ -120,8 +120,11 @@ describe('KDS Wave V — Multi-order rapid bump dispatch (FK-WAVE-V-KDS-MULTIBUM
         expect(gridSource).toMatch(/aria-live="polite"/);
     });
 
-    it('preserves the cash-pending guard on keyboard shortcut path', () => {
-        // [A]–[H] keyboard shortcut must still short-circuit on payment_pending_counter.
-        expect(gridSource).toMatch(/payment_pending_counter\s*===\s*true/);
+    it('keyboard shortcut path no longer gates on cash-pending (GOAL-2026-05-30 D1 owner reversal)', () => {
+        // OWNER REVERSAL of Wave S-2: [A]–[H] may now bump a payment_pending_counter order
+        // (kitchen prepares before encashment); onKey must NOT short-circuit on it.
+        const m = gridSource.match(/onKey\s*\([^)]*\)\s*\{([\s\S]*?)\n        \},/);
+        expect(m, 'onKey found').toBeTruthy();
+        expect(m[1]).not.toMatch(/payment_pending_counter\s*===\s*true[\s\S]*?return/);
     });
 });
