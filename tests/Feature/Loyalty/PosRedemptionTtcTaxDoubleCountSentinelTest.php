@@ -72,6 +72,9 @@ class PosRedemptionTtcTaxDoubleCountSentinelTest extends TestCase
         ]);
 
         Config::set('fiscal.audit_secret', 'test-fiscal-secret-' . str_repeat('a', 40));
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Redeem is gated OFF in V1;
+        // this sentinel tests redeem TTC tax math (preserved code) → enable it.
+        Config::set('pos.manual_discount_enabled', true);
 
         $this->branch = Branch::factory()->create();
 

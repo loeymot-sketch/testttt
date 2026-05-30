@@ -104,4 +104,50 @@ class ManualDiscountDisabledV1SentinelTest extends TestCase
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $this->payload(['discount' => 0])))
             ->assertStatus(201);
     }
+
+    public function test_coupon_discount_is_refused_when_disabled(): void
+    {
+        // [abuse-e2e r2 P1] The coupon path skips the manual-discount permission
+        // ladder but must STILL be refused by the discretionary-discount gate
+        // (same frozen F1 split). A percentage coupon that would apply a discount
+        // → order create rejected (422).
+        Config::set('pos.manual_discount_enabled', false);
+        $coupon = \App\Models\Coupon::factory()->create([
+            'status' => Status::ACTIVE,
+            'discount_type' => 1,   // percentage
+            'discount' => 20,
+            'minimum_order' => 0,
+        ]);
+        $this->actingAs($this->operator, 'sanctum');
+
+        $payload = $this->payload(['coupon_id' => $coupon->id]);
+        $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload))
+            ->assertStatus(422);
+    }
+
+    public function test_loyalty_redeem_is_refused_when_disabled(): void
+    {
+        // [abuse-e2e r2 P1] Loyalty redeem applies a discount POST-create without
+        // recomputing tax → F1. The PosRedemptionService gate (top of applyToOrder)
+        // throws DISCOUNTS_DISABLED_V1 before touching any order/customer state.
+        Config::set('pos.manual_discount_enabled', false);
+        $order = \App\Models\Order::factory()->create([
+            'branch_id' => $this->branch->id,
+            'order_type' => OrderType::POS,
+            'payment_status' => \App\Enums\PaymentStatus::UNPAID,
+            'total' => 10.00,
+            'subtotal' => 10.00,
+            'discount' => 0,
+        ]);
+
+        $service = app(\App\Services\Loyalty\PosRedemptionService::class);
+        try {
+            $service->applyToOrder($order, 100, 'LOYAL-CODE', (int) $this->operator->id);
+            $this->fail('Loyalty redeem must be refused when discretionary discounts are disabled.');
+        } catch (\App\Services\Loyalty\PosRedemptionException $e) {
+            $this->assertSame('DISCOUNTS_DISABLED_V1', $e->errorCode);
+            $this->assertSame(422, $e->httpStatus);
+        }
+    }
 }

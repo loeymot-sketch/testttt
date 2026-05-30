@@ -514,6 +514,9 @@ class OrderService
                             (int) Auth::id()
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
+                        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Coupon discount
+                        // hits the same frozen F1 split at 10% VAT → refuse in V1.
+                        $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     }
                 }
 
@@ -802,6 +805,12 @@ class OrderService
                             (string) $request->discount_reason
                         );
                     }
+                    // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Catch the COUPON
+                    // discount path too (it skips assertPosManualDiscountAllowed
+                    // above). ANY non-zero discount at 10% VAT triggers the frozen
+                    // F1 split defect → fiscally-incorrect signed Z. The V1 gate
+                    // refuses every discretionary discount source.
+                    $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     // [POS-9.4.BL.1] Persist immutable allergen snapshot on each
                     // order_item row for NF525 fiscal traceability (must be frozen
                     // at order time, not read through a live FK join later).
@@ -974,6 +983,9 @@ class OrderService
                             (int) ($request->customer_id ?? 0)
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
+                        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Coupon discount
+                        // → same frozen F1 split at 10% VAT → refuse in V1.
+                        $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     } elseif ($request->discount > 0) {
                         // [AUDIT-FIX P1-3] Manual cashier discount — validated server-side, will be logged below
                         $manualDiscount = (float) $request->discount;
@@ -1497,6 +1509,9 @@ class OrderService
                             (int) ($request->customer_id ?? 0)
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
+                        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Coupon discount
+                        // → same frozen F1 split at 10% VAT → refuse in V1.
+                        $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     } elseif ($request->discount > 0) {
                         // [AUDIT-FIX P1-3] Manual cashier discount — validated server-side, will be logged below
                         $manualDiscount = (float) $request->discount;
@@ -2779,6 +2794,25 @@ class OrderService
         $userBranchId = (int) ($user?->branch_id ?? 0);
         if ($userBranchId <= 0 || $userBranchId !== (int) $order->branch_id) {
             abort(403, 'Access denied: order does not belong to your branch.');
+        }
+    }
+
+    /**
+     * [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Single fiscal-correctness gate
+     * for ANY discretionary discount (manual, coupon, loyalty redeem). At a
+     * non-zero VAT rate the frozen PricingService/ZReportService compute per-line
+     * TVA on the PRE-discount base, so a discounted order signs a fiscally-
+     * incorrect NF525 Z (the F1 defect, dormant only at 0% VAT). Until F1 is
+     * fixed under a lock-plan, every discount source is refused in V1
+     * (pos.manual_discount_enabled=false — the master discretionary-discount
+     * flag, covering manual/coupon/loyalty). Non-discounted orders are unaffected.
+     */
+    private function assertDiscretionaryDiscountAllowed(float $discount): void
+    {
+        if ($discount > 0.0 && config('pos.manual_discount_enabled') !== true) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'discount' => "Les remises (manuelle, coupon, fidélité) sont désactivées en V1 (correction fiscale TVA/HT en attente). Contactez le responsable.",
+            ]);
         }
     }
 

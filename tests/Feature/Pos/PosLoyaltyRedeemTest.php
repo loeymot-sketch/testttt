@@ -69,6 +69,11 @@ class PosLoyaltyRedeemTest extends TestCase
         ]);
 
         Config::set('fiscal.audit_secret', 'test-fiscal-secret-' . str_repeat('a', 40));
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Loyalty redeem applies a
+        // discount → gated OFF by default in V1 (F1 dormant). This suite tests
+        // the redeem mechanics (preserved code) → enable the discretionary-
+        // discount flag so the redeem path runs rather than the V1 gate.
+        Config::set('pos.manual_discount_enabled', true);
 
         $this->branch = Branch::factory()->create();
 

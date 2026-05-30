@@ -18,8 +18,16 @@ use Tests\TestCase;
  * = "No-VAT"). MenuSeeder::defaultTaxId() now resolves the VAT 10% row by
  * attributes. This sentinel fails CI if any active item ever drifts back to a
  * 0%-rate or NULL tax — preventing a silent regression to fiscally-wrong
- * receipts. Runs MenuSeeder so it validates the SEED path (what migrate:fresh
- * --seed produces on the production box), not just the live DB.
+ * receipts.
+ *
+ * SCOPE (honest, per abuse-e2e r2 P3): it proves "every active item the
+ * MenuSeeder PRODUCES carries VAT 10% PERCENTAGE". It does NOT prove the
+ * canonical 45-item COUNT — the committed config/menu.php items array is stale
+ * (old/fictional group slugs), so a bare migrate:fresh --seed yields only ~8
+ * items. That gap is covered elsewhere: the canonical menu SSOT is the live DB
+ * (CLAUDE.md §3bis), the production cutover PRESERVES it (PROD_CUTOVER_RUNBOOK
+ * forbids migrate:fresh --seed for the menu), and app:preflight-production WARNS
+ * (MENU_COUNT) if the deployed menu is incomplete (< 40 items).
  */
 class MenuVat10PercentSentinelTest extends TestCase
 {

@@ -63,6 +63,20 @@ final class PosRedemptionService
      */
     public function applyToOrder(Order $order, int $points, string $loyaltyCode, ?int $cashierId = null): array
     {
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Loyalty redeem applies a
+        // discount POST-create and updates order.discount + order.total but NOT
+        // order.total_tax / order_items.tax_amount — so at a non-zero VAT rate it
+        // signs a fiscally-incorrect Z (the frozen F1 split defect). Refuse in V1
+        // until F1 is fixed under a lock-plan. Same master gate as manual/coupon
+        // discounts (pos.manual_discount_enabled = discretionary-discount flag).
+        if (config('pos.manual_discount_enabled') !== true) {
+            throw new PosRedemptionException(
+                'DISCOUNTS_DISABLED_V1',
+                "La fidélité (remise) est désactivée en V1 (correction fiscale TVA/HT en attente).",
+                422
+            );
+        }
+
         // [LOCK §6.7] Pre-payment guard — block redemption on orders that
         // already reached a terminal state or are paid. We do this OUTSIDE
         // the transaction so the customer row lock is not acquired uselessly.

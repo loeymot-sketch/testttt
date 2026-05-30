@@ -74,6 +74,36 @@ class OffersDisabledV1SentinelTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_offer_update_is_forbidden_when_disabled(): void
+    {
+        // [abuse-e2e r2 P3] OfferService::update can flip status→ACTIVE / change
+        // amount — re-arming the display-vs-charge mischarge. Lock the 'update'
+        // verb so a refactor dropping it from ->only() is caught by CI.
+        Config::set('features.offers_enabled', false);
+        $offer = new \App\Models\Offer();
+        $offer->forceFill([
+            'name' => 'Seeded Offer', 'slug' => 'seeded-offer-upd', 'amount' => 20,
+            'status' => 5, 'start_date' => '2026-01-01', 'end_date' => '2026-12-31',
+        ])->save();
+        $this->actingAs($this->adminActor(), 'sanctum')
+            ->postJson("/api/admin/offer/{$offer->id}", ['name' => 'X', 'amount' => 30])
+            ->assertForbidden();
+    }
+
+    public function test_offer_change_image_is_forbidden_when_disabled(): void
+    {
+        // [abuse-e2e r2 P3] changeImage is in the same guard ->only() list.
+        Config::set('features.offers_enabled', false);
+        $offer = new \App\Models\Offer();
+        $offer->forceFill([
+            'name' => 'Seeded Offer', 'slug' => 'seeded-offer-img', 'amount' => 20,
+            'status' => 5, 'start_date' => '2026-01-01', 'end_date' => '2026-12-31',
+        ])->save();
+        $this->actingAs($this->adminActor(), 'sanctum')
+            ->postJson("/api/admin/offer/change-image/{$offer->id}", [])
+            ->assertForbidden();
+    }
+
     public function test_offer_index_read_still_allowed(): void
     {
         Config::set('features.offers_enabled', false);
