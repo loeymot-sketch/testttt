@@ -425,6 +425,10 @@
         "setup": "Configuration"
     },
     "label": {
+        "encaisser": "Encaisser",
+        "encaisser_queue_subtitle": "Commandes en attente d’encaissement",
+        "encaisser_queue_empty": "Aucune commande à encaisser",
+        "guest": "Client passage",
         "origin": "Origine",
         "caisse": "Caisse",
         "fiscal_number": "N° fiscal",
@@ -1272,6 +1276,7 @@
         "downloading": "Téléchargement…"
     },
     "button": {
+        "refresh": "Actualiser",
         "add": "Ajouter",
         "save": "Enregistrer",
         "edit": "Modifier",

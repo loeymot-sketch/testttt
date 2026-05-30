@@ -318,6 +318,10 @@
         "demo_wizard_advanced": "عرض المعالج المتقدم"
     },
     "label": {
+        "encaisser": "تحصيل",
+        "encaisser_queue_subtitle": "طلبات بانتظار التحصيل",
+        "encaisser_queue_empty": "لا توجد طلبات للتحصيل",
+        "guest": "زبون عابر",
         "origin": "المصدر",
         "caisse": "الصندوق",
         "fiscal_number": "الرقم الضريبي",
@@ -1173,6 +1177,7 @@
         "downloading": "جارٍ التنزيل…"
     },
     "button": {
+        "refresh": "تحديث",
         "add": "إضافة",
         "save": "حفظ",
         "edit": "تعديل",

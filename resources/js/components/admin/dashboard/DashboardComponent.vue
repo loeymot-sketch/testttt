@@ -159,6 +159,11 @@ export default {
             // push('/admin/pos-v4', this.$t('label.pos_dedicated_shell'), 'lab lab-pos-bold', 'pos', true);
             push('/admin/pos-orders', this.$t('menu.pos_orders'), 'lab lab-pos-orders', 'pos-orders', false);
             push('/admin/pos-orders-tracker', this.$t('menu.pos_orders_tracker'), 'lab lab-pos-orders', 'pos-orders', false);
+            // [GOAL-CAISSE-UNIFIED 2026-05-30] D3 — actionable links to the unified
+            // collection queue (/admin/encaissement) + unified history
+            // (/admin/historique) so everything is reachable from the dashboard.
+            push('/admin/encaissement', this.$t('menu.encaissement'), 'lab lab-pos-bold', 'pos-orders', false);
+            push('/admin/historique', this.$t('menu.historique'), 'lab lab-pos-orders', 'pos-orders', false);
             push('/admin/kitchen-display-system', this.$t('menu.k_d_s'), 'lab lab-kds', 'kitchen-display-system', false);
             push('/admin/order-status-screen', this.$t('menu.o_s_s'), 'lab lab-cds', 'order-status-screen', false);
             push('/admin/items/studio', this.$t('menu.catalog'), 'lab lab-list', 'items', false);

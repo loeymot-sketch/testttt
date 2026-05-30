@@ -240,6 +240,30 @@ ___CSS_LOADER_EXPORT___.push([module.id, "\n@media print {\n.hidden-print[data-v
 
 /***/ },
 
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=style&index=0&id=22c45b59&scoped=true&lang=css"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=style&index=0&id=22c45b59&scoped=true&lang=css ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.enc-card[data-v-22c45b59] {\n    border-radius: var(--pos-v5-radius-lg);\n    box-shadow: var(--pos-v5-shadow-md);\n    border: 1px solid var(--pos-v5-border);\n    background: var(--pos-v5-bg-panel);\n    overflow: hidden;\n}\n.enc-header[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);\n    border-bottom: 1px solid var(--pos-v5-border);\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5);\n}\n.db-card-title[data-v-22c45b59] {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h5);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n}\n.enc-subtitle[data-v-22c45b59] { color: var(--pos-v5-ink-soft); font-size: 0.85rem; margin-top: 0.15rem;\n}\n.enc-header-actions[data-v-22c45b59] { display: flex; align-items: center; gap: 0.75rem;\n}\n.enc-count-chip[data-v-22c45b59] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    min-width: 2.2rem;\n    height: 2.2rem;\n    border-radius: 9999px;\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    font-weight: 800;\n    font-variant-numeric: tabular-nums;\n}\n.enc-body[data-v-22c45b59] { padding: var(--pos-v5-space-5);\n}\n.enc-empty[data-v-22c45b59] { text-align: center; padding: 3rem 1rem; color: var(--pos-v5-ink-soft);\n}\n.enc-empty-icon[data-v-22c45b59] { font-size: 2.5rem;\n}\n.enc-empty-title[data-v-22c45b59] { margin-top: 0.75rem; font-size: 1.05rem; font-weight: 600;\n}\n.enc-grid[data-v-22c45b59] {\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));\n    gap: 1rem;\n}\n.enc-ticket[data-v-22c45b59] {\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n    background: #fff;\n    padding: 0.9rem 1rem;\n    display: flex;\n    flex-direction: column;\n    gap: 0.5rem;\n    box-shadow: var(--pos-v5-shadow-sm);\n}\n.enc-ticket-top[data-v-22c45b59] { display: flex; align-items: center; justify-content: space-between;\n}\n.enc-origin-badge[data-v-22c45b59] {\n    display: inline-flex;\n    align-items: center;\n    border-radius: 9999px;\n    padding: 0.12rem 0.55rem;\n    font-size: 0.74rem;\n    font-weight: 700;\n    border: 1px solid transparent;\n}\n.origin-borne[data-v-22c45b59] { background: #fff7ed; color: #9a3412; border-color: #fed7aa;\n}\n.origin-caisse[data-v-22c45b59] { background: #eff6ff; color: #1e40af; border-color: #bfdbfe;\n}\n.origin-online[data-v-22c45b59] { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe;\n}\n.enc-queue[data-v-22c45b59] {\n    font-weight: 800;\n    color: #9a3412;\n    font-variant-numeric: tabular-nums;\n}\n.enc-ticket-customer[data-v-22c45b59] { font-weight: 600; color: var(--pos-v5-ink);\n}\n.enc-ticket-items[data-v-22c45b59] { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; color: var(--pos-v5-ink-soft);\n}\n.enc-ticket-items li[data-v-22c45b59] { line-height: 1.4;\n}\n.enc-more[data-v-22c45b59] { font-style: italic;\n}\n.enc-ticket-bottom[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    margin-top: 0.4rem;\n    padding-top: 0.6rem;\n    border-top: 1px dashed var(--pos-v5-border);\n}\n.enc-amount[data-v-22c45b59] { font-weight: 800; font-size: 1.1rem; color: var(--pos-v5-ink); font-variant-numeric: tabular-nums;\n}\n.enc-collect-btn[data-v-22c45b59] {\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    border: none;\n    border-radius: var(--pos-v5-radius-md);\n    padding: 0.5rem 1.1rem;\n    font-weight: 800;\n    cursor: pointer;\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.enc-collect-btn[data-v-22c45b59]:hover { background: var(--pos-v5-brand-red-dark);\n}\n[data-v-22c45b59] .db-btn.bg-primary {\n    background: var(--pos-v5-brand-red) !important;\n    border-radius: var(--pos-v5-radius-md);\n    font-weight: var(--pos-v5-weight-bold);\n}\n[data-v-22c45b59] .db-btn.bg-primary:hover { background: var(--pos-v5-brand-red-dark) !important;\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
 /***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/items/CatalogStudioComponent.vue?vue&type=style&index=0&id=1bd9ad88&scoped=true&lang=css"
 /*!*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/items/CatalogStudioComponent.vue?vue&type=style&index=0&id=1bd9ad88&scoped=true&lang=css ***!
@@ -480,6 +504,30 @@ ___CSS_LOADER_EXPORT___.push([module.id, "\n[data-v-dbcfe378] .db-card {\n    bo
 
 /***/ },
 
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=style&index=0&id=708e0b11&scoped=true&lang=css"
+/*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=style&index=0&id=708e0b11&scoped=true&lang=css ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n/* =============================================================================\n   POS Counter-Collect Modal — visual parity with PaymentComponent V5\n   ----------------------------------------------------------------------------- */\n.cc-modal-overlay[data-v-708e0b11] {\n  position: fixed;\n  inset: 0;\n  background: rgba(0, 0, 0, 0.55);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  z-index: 10001;\n  padding: 16px;\n}\n.cc-modal[data-v-708e0b11] {\n  position: relative;\n  background: var(--pos-v5-surface, #fff);\n  border-radius: 12px;\n  width: 100%;\n  max-width: 520px;\n  max-height: 92vh;\n  overflow-y: auto;\n  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);\n  padding: 20px 24px 24px 24px;\n  font-family: var(--pos-v5-font-family, 'Rubik', system-ui, sans-serif);\n}\n.cc-modal-header[data-v-708e0b11] { margin-bottom: 14px;\n}\n.cc-modal-title-row[data-v-708e0b11] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n}\n.cc-modal-title[data-v-708e0b11] {\n  margin: 0;\n  font-size: 18px;\n  font-weight: 800;\n  color: var(--pos-v5-text, #1a1a1a);\n  text-transform: capitalize;\n}\n.cc-modal-close[data-v-708e0b11] {\n  background: transparent;\n  border: 0;\n  font-size: 18px;\n  width: 32px;\n  height: 32px;\n  border-radius: 8px;\n  cursor: pointer;\n  color: var(--pos-v5-muted, #555);\n}\n.cc-modal-close[data-v-708e0b11]:hover:not(:disabled) {\n  background: var(--pos-v5-surface-2, #f3f3f3);\n  color: var(--pos-v5-text, #1a1a1a);\n}\n.cc-modal-order-meta[data-v-708e0b11] {\n  margin: 6px 0 0 0;\n  display: flex;\n  align-items: baseline;\n  gap: 10px;\n  font-size: 13px;\n}\n.cc-modal-order-no[data-v-708e0b11] {\n  font-weight: 700;\n  color: var(--pos-v5-muted, #555);\n}\n.cc-modal-source[data-v-708e0b11] {\n  font-size: 11px;\n  text-transform: uppercase;\n  letter-spacing: 0.06em;\n  padding: 2px 8px;\n  border-radius: 999px;\n  background: var(--pos-v5-brand-red-soft, #ffeaea);\n  color: var(--pos-v5-brand-red, #cf3a3a);\n  font-weight: 600;\n}\n\n/* Hero total — mirror PaymentComponent V5 \".pos-v5-payment-total-card\" */\n.cc-hero-total[data-v-708e0b11] {\n  text-align: center;\n  padding: 14px 16px;\n  background: var(--pos-v5-surface-2, #faf6f1);\n  border: 1px solid var(--pos-v5-border, #eadfd2);\n  border-radius: 10px;\n  margin-bottom: 16px;\n}\n.cc-hero-label[data-v-708e0b11] {\n  margin: 0 0 4px 0;\n  font-size: 12px;\n  text-transform: uppercase;\n  letter-spacing: 0.08em;\n  color: var(--pos-v5-muted, #777);\n  font-weight: 600;\n}\n.cc-hero-value[data-v-708e0b11] {\n  margin: 0;\n  font-size: 40px;\n  line-height: 1.1;\n  font-weight: 800;\n  font-variant-numeric: tabular-nums;\n  color: var(--pos-v5-brand-red, #cf3a3a);\n  font-family: 'Rubik Mono One', 'JetBrains Mono', ui-monospace, monospace;\n}\n@media (max-width: 480px) {\n.cc-hero-value[data-v-708e0b11] { font-size: 32px;\n}\n}\n\n/* Mode picker — same look as Wave W */\n.cc-mode-section[data-v-708e0b11] { margin-bottom: 16px;\n}\n.cc-section-title[data-v-708e0b11] {\n  margin: 0 0 8px 0;\n  font-size: 13px;\n  font-weight: 700;\n  color: var(--pos-v5-text, #1a1a1a);\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n}\n.cc-mode-grid[data-v-708e0b11] {\n  display: grid;\n  grid-template-columns: repeat(2, 1fr);\n  gap: 10px;\n}\n.cc-mode-btn[data-v-708e0b11] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 4px;\n  padding: 14px 10px;\n  border: 2px solid var(--pos-v5-border, #e0e0e0);\n  border-radius: 10px;\n  background: var(--pos-v5-surface-2, #fafafa);\n  cursor: pointer;\n  font-family: inherit;\n  transition: transform 80ms ease, border-color 120ms ease, background 120ms ease;\n  min-height: 84px;\n}\n/* [test-e2e fix A-002 round-1 2026-05-21] Separate :hover (subtle hint)\n   from .is-active (brand-red filled state) so a cashier never sees TWO\n   buttons highlighted simultaneously (hover residue + selected mode). */\n.cc-mode-btn[data-v-708e0b11]:hover:not(:disabled):not(.is-active) {\n  border-color: var(--pos-v5-border-strong, #d4d4d4);\n  background: var(--pos-v5-surface, #fff);\n}\n.cc-mode-btn.is-active[data-v-708e0b11] {\n  border-color: var(--pos-v5-brand-red, #cf3a3a);\n  background: var(--pos-v5-brand-red-soft, #ffeaea);\n  box-shadow: inset 0 0 0 1px var(--pos-v5-brand-red, #cf3a3a);\n}\n.cc-mode-btn[data-v-708e0b11]:active:not(:disabled) { transform: translateY(0);\n}\n.cc-mode-btn[data-v-708e0b11]:disabled { opacity: 0.55; cursor: not-allowed;\n}\n.cc-mode-icon[data-v-708e0b11] { font-size: 26px; line-height: 1;\n}\n.cc-mode-label[data-v-708e0b11] {\n  font-size: 14px;\n  font-weight: 700;\n  color: var(--pos-v5-text, #1a1a1a);\n}\n.cc-mode-sub[data-v-708e0b11] {\n  font-size: 10.5px;\n  color: var(--pos-v5-muted, #777);\n  text-align: center;\n}\n\n/* Cash sub-section */\n.cc-cash-section[data-v-708e0b11] { margin-bottom: 16px;\n}\n.cc-input-label[data-v-708e0b11] {\n  display: block;\n  font-size: 12px;\n  font-weight: 700;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--pos-v5-muted, #555);\n  margin-bottom: 6px;\n}\n.cc-input[data-v-708e0b11] {\n  width: 100%;\n  padding: 12px 14px;\n  border: 1.5px solid var(--pos-v5-border, #e0e0e0);\n  border-radius: 8px;\n  font-size: 24px;\n  font-weight: 700;\n  text-align: right;\n  background: var(--pos-v5-surface, #fff);\n  margin-bottom: 10px;\n  color: var(--pos-v5-text, #1a1a1a);\n}\n.cc-input[data-v-708e0b11]:focus {\n  outline: none;\n  border-color: var(--pos-v5-brand-red, #cf3a3a);\n  box-shadow: 0 0 0 3px var(--pos-v5-brand-red-soft, #ffeaea);\n}\n.cc-tabular[data-v-708e0b11] { font-variant-numeric: tabular-nums;\n}\n.cc-change-row[data-v-708e0b11] {\n  margin-top: 12px;\n  padding: 10px 14px;\n  background: var(--pos-v5-success-soft, #e8f7ed);\n  border: 1px solid var(--pos-v5-success, #2c8c4a);\n  border-radius: 8px;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  color: var(--pos-v5-success-dark, #1f6437);\n  font-weight: 700;\n}\n.cc-change-label[data-v-708e0b11] { font-size: 13px;\n}\n.cc-change-value[data-v-708e0b11] { font-size: 18px;\n}\n.cc-cash-short[data-v-708e0b11] {\n  margin: 8px 0 0 0;\n  font-size: 12px;\n  color: var(--pos-v5-brand-red, #cf3a3a);\n  font-weight: 600;\n}\n\n/* Non-cash info */\n.cc-mode-info[data-v-708e0b11] {\n  margin-bottom: 16px;\n  padding: 12px 14px;\n  background: var(--pos-v5-surface-2, #faf6f1);\n  border: 1px dashed var(--pos-v5-border, #d9cfc0);\n  border-radius: 8px;\n}\n.cc-mode-info-text[data-v-708e0b11] {\n  margin: 0;\n  font-size: 13px;\n  color: var(--pos-v5-muted, #555);\n  line-height: 1.45;\n}\n\n/* Footer */\n.cc-modal-footer[data-v-708e0b11] {\n  display: flex;\n  justify-content: flex-end;\n  gap: 10px;\n  margin-top: 4px;\n}\n.cc-cancel-btn[data-v-708e0b11],\n.cc-confirm-btn[data-v-708e0b11] {\n  padding: 12px 20px;\n  border-radius: 8px;\n  font-weight: 700;\n  font-family: inherit;\n  cursor: pointer;\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n}\n.cc-cancel-btn[data-v-708e0b11] {\n  background: transparent;\n  border: 1px solid var(--pos-v5-border, #ccc);\n  color: var(--pos-v5-text, #1a1a1a);\n}\n.cc-cancel-btn[data-v-708e0b11]:hover:not(:disabled) { background: var(--pos-v5-surface-2, #f3f3f3);\n}\n.cc-cancel-btn[data-v-708e0b11]:disabled { opacity: 0.5; cursor: not-allowed;\n}\n.cc-confirm-btn[data-v-708e0b11] {\n  background: var(--pos-v5-brand-red, #cf3a3a);\n  border: 2px solid var(--pos-v5-brand-red, #cf3a3a);\n  color: #fff;\n  box-shadow: 0 4px 12px rgba(207, 58, 58, 0.25);\n}\n.cc-confirm-btn[data-v-708e0b11]:hover:not(:disabled) {\n  background: var(--pos-v5-brand-red-dark, #b32f2f);\n  border-color: var(--pos-v5-brand-red-dark, #b32f2f);\n}\n.cc-confirm-btn[data-v-708e0b11]:disabled {\n  opacity: 0.55;\n  cursor: not-allowed;\n  box-shadow: none;\n}\n.cc-spinner[data-v-708e0b11] {\n  width: 14px;\n  height: 14px;\n  border: 2px solid rgba(255, 255, 255, 0.4);\n  border-top-color: #fff;\n  border-radius: 50%;\n  animation: cc-spin-708e0b11 700ms linear infinite;\n  display: inline-block;\n}\n@keyframes cc-spin-708e0b11 {\nto { transform: rotate(360deg);\n}\n}\n.fade-enter-active[data-v-708e0b11],\n.fade-leave-active[data-v-708e0b11] { transition: opacity 160ms ease;\n}\n.fade-enter-from[data-v-708e0b11],\n.fade-leave-to[data-v-708e0b11] { opacity: 0;\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
 /***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=style&index=0&id=2279c7e9&scoped=true&lang=css"
 /*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=style&index=0&id=2279c7e9&scoped=true&lang=css ***!
@@ -546,6 +594,30 @@ __webpack_require__.r(__webpack_exports__);
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
 ___CSS_LOADER_EXPORT___.push([module.id, "\n.receipt-remboursement-marker[data-v-53d0d8bc] {\n    border: 2px dashed #d92626;\n    color: #d92626;\n    padding: 6px 10px;\n    margin: 8px 0;\n    text-align: center;\n    font-weight: 700;\n    text-transform: uppercase;\n    letter-spacing: 0.05em;\n    -webkit-print-color-adjust: exact;\n    print-color-adjust: exact;\n}\n.receipt-remboursement-text[data-v-53d0d8bc] {\n    margin: 0;\n    font-size: 12px;\n    line-height: 1.2;\n}\n.receipt-remboursement-parent[data-v-53d0d8bc] {\n    margin: 2px 0 0;\n    font-size: 10px;\n    font-weight: 600;\n    letter-spacing: 0.04em;\n    text-transform: none;\n}\n@media print {\n.receipt-remboursement-marker[data-v-53d0d8bc] {\n        page-break-inside: avoid;\n}\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ },
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=style&index=0&id=6a59af16&scoped=true&lang=css"
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=style&index=0&id=6a59af16&scoped=true&lang=css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../../../node_modules/css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.pos-v5-numpad[data-v-6a59af16] {\n    display: grid;\n    grid-template-columns: repeat(4, 1fr);\n    gap: var(--pos-v5-space-2);\n    padding: var(--pos-v5-space-2);\n    background: var(--pos-v5-bg-subtle);\n    border-radius: var(--pos-v5-radius-md);\n    border: 1px solid var(--pos-v5-border);\n}\n.pos-v5-numpad__key[data-v-6a59af16] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    min-height: 56px;\n    padding: var(--pos-v5-space-2);\n    background: var(--pos-v5-bg-panel);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h5);\n    font-weight: var(--pos-v5-weight-bold);\n    color: var(--pos-v5-ink);\n    cursor: pointer;\n    -webkit-appearance: none;\n       -moz-appearance: none;\n            appearance: none;\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                border-color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                box-shadow var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                transform var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);\n    box-shadow: var(--pos-v5-shadow-sm);\n    line-height: 1;\n}\n.pos-v5-numpad__key[data-v-6a59af16]:hover {\n    background: var(--pos-v5-brand-red-soft);\n    border-color: var(--pos-v5-brand-red);\n    color: var(--pos-v5-brand-red);\n    box-shadow: var(--pos-v5-shadow-md);\n}\n.pos-v5-numpad__key[data-v-6a59af16]:active {\n    transform: scale(0.96);\n    box-shadow: var(--pos-v5-shadow-inset);\n}\n.pos-v5-numpad__key[data-v-6a59af16]:focus-visible {\n    outline: var(--pos-v5-focus-width) solid var(--pos-v5-focus-color);\n    outline-offset: var(--pos-v5-focus-offset);\n}\n\n/* === KEY VARIANTS === */\n.pos-v5-numpad__key--back[data-v-6a59af16],\n.pos-v5-numpad__key--clear[data-v-6a59af16] {\n    background: var(--pos-v5-bg-panel);\n    color: var(--pos-v5-danger);\n    font-size: var(--pos-v5-text-body-lg);\n}\n.pos-v5-numpad__key--back[data-v-6a59af16]:hover,\n.pos-v5-numpad__key--clear[data-v-6a59af16]:hover {\n    background: var(--pos-v5-danger-soft);\n    border-color: var(--pos-v5-danger);\n    color: var(--pos-v5-danger-dark);\n}\n.pos-v5-numpad__key--span-2[data-v-6a59af16] {\n    grid-row: span 2;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -8206,6 +8278,142 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ },
 
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=script&lang=js"
+/*!***********************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=script&lang=js ***!
+  \***********************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _components_LoadingComponent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../components/LoadingComponent */ "./resources/js/components/admin/components/LoadingComponent.vue");
+/* harmony import */ var _components_BreadcrumbComponent__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../components/BreadcrumbComponent */ "./resources/js/components/admin/components/BreadcrumbComponent.vue");
+/* harmony import */ var _pos_PosCounterCollectModal_vue__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../pos/PosCounterCollectModal.vue */ "./resources/js/components/admin/pos/PosCounterCollectModal.vue");
+/* harmony import */ var _services_appService__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../services/appService */ "./resources/js/services/appService.js");
+/* harmony import */ var _services_alertService__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../services/alertService */ "./resources/js/services/alertService.js");
+/* harmony import */ var _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../enums/modules/orderTypeEnum */ "./resources/js/enums/modules/orderTypeEnum.js");
+/* harmony import */ var _helpers_formatPrice__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../helpers/formatPrice */ "./resources/js/helpers/formatPrice.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
+
+
+
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: "EncaissementComponent",
+  mixins: [_helpers_formatPrice__WEBPACK_IMPORTED_MODULE_6__.adminPriceMixin],
+  components: {
+    LoadingComponent: _components_LoadingComponent__WEBPACK_IMPORTED_MODULE_0__["default"],
+    BreadcrumbComponent: _components_BreadcrumbComponent__WEBPACK_IMPORTED_MODULE_1__["default"],
+    PosCounterCollectModal: _pos_PosCounterCollectModal_vue__WEBPACK_IMPORTED_MODULE_2__["default"]
+  },
+  data: function data() {
+    return {
+      loading: {
+        isActive: false
+      },
+      orders: [],
+      encaisseOrder: null,
+      pollTimer: null,
+      enums: {
+        orderTypeEnum: _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_5__["default"]
+      }
+    };
+  },
+  mounted: function mounted() {
+    var _this = this;
+    this.fetchPending();
+    // Light poll so a cashier on this screen sees newly-arrived Borne
+    // orders without a manual refresh. Cleared on unmount.
+    this.pollTimer = setInterval(function () {
+      return _this.fetchPending(true);
+    }, 20000);
+  },
+  beforeUnmount: function beforeUnmount() {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+  },
+  methods: {
+    fetchPending: function fetchPending() {
+      var _this2 = this;
+      var silent = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+      if (!silent) this.loading.isActive = true;
+      axios.get('admin/pos/counter-collect/pending').then(function (res) {
+        var _res$data;
+        _this2.orders = ((_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || [];
+        _this2.loading.isActive = false;
+      })["catch"](function () {
+        _this2.loading.isActive = false;
+      });
+    },
+    // Origin resolver — source_surface is the reliable signal. Today the
+    // pending endpoint returns Borne (kiosk) orders; once delta-(B) routes
+    // POS walk-in through PENDING_COUNTER, Caisse rows appear here too.
+    originBadge: function originBadge(order) {
+      var surface = String(order.source_surface || '').toLowerCase();
+      if (surface === 'kiosk') return {
+        label: this.$t('label.kiosk'),
+        cls: 'origin-borne'
+      };
+      if (surface === 'pos') return {
+        label: this.$t('label.caisse'),
+        cls: 'origin-caisse'
+      };
+      if (surface === 'web' || surface === 'app' || surface === 'mobile') {
+        return {
+          label: this.$t('label.online'),
+          cls: 'origin-online'
+        };
+      }
+      return {
+        label: this.$t('label.kiosk'),
+        cls: 'origin-borne'
+      };
+    },
+    customerName: function customerName(order) {
+      var _order$user;
+      return ((_order$user = order.user) === null || _order$user === void 0 ? void 0 : _order$user.name) || order.customer_name || this.$t('label.guest');
+    },
+    itemName: function itemName(it) {
+      var _it$orderItem, _it$order_item;
+      return it.item_name || it.name || ((_it$orderItem = it.orderItem) === null || _it$orderItem === void 0 ? void 0 : _it$orderItem.name) || ((_it$order_item = it.order_item) === null || _it$order_item === void 0 ? void 0 : _it$order_item.name) || '';
+    },
+    orderAmount: function orderAmount(order) {
+      var _ref, _ref2, _order$cash_pending_a;
+      return (_ref = (_ref2 = (_order$cash_pending_a = order.cash_pending_amount) !== null && _order$cash_pending_a !== void 0 ? _order$cash_pending_a : order.total) !== null && _ref2 !== void 0 ? _ref2 : order.order_amount) !== null && _ref !== void 0 ? _ref : 0;
+    },
+    openEncaissement: function openEncaissement(order) {
+      if (!order || !order.id) return;
+      var amount = this.orderAmount(order);
+      // PosCounterCollectModal reads order.total — map the amount due onto it.
+      this.encaisseOrder = _objectSpread(_objectSpread({}, order), {}, {
+        total: amount
+      });
+    },
+    onEncaisseConfirmed: function onEncaisseConfirmed() {
+      this.encaisseOrder = null;
+      _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].success(this.$t('label.encaisser_success', {
+        order: ''
+      }));
+      this.fetchPending();
+    }
+  }
+});
+
+/***/ },
+
 /***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/items/CatalogConceptHelpComponent.vue?vue&type=script&lang=js"
 /*!**********************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/items/CatalogConceptHelpComponent.vue?vue&type=script&lang=js ***!
@@ -14707,6 +14915,379 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 
 /***/ },
 
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=script&lang=js"
+/*!***************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=script&lang=js ***!
+  \***************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
+/* harmony import */ var _v5_PosV5Numpad_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./v5/PosV5Numpad.vue */ "./resources/js/components/admin/pos/v5/PosV5Numpad.vue");
+/* harmony import */ var _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../enums/modules/posPaymentMethodEnum */ "./resources/js/enums/modules/posPaymentMethodEnum.js");
+/* harmony import */ var _services_appService__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../services/appService */ "./resources/js/services/appService.js");
+/* harmony import */ var _services_alertService__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../services/alertService */ "./resources/js/services/alertService.js");
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+
+
+
+
+
+
+/**
+ * PosCounterCollectModal — Wave X X1 sibling counter-collect SSOT-flavored modal.
+ *
+ * Props:
+ *   - order: Order object (must contain id + total/order_amount + queue_number)
+ *
+ * Emits:
+ *   - confirmed: payload { orderId, mode, modeInt, received } after 2xx persist
+ *   - cancel:    no payload, parent should clear the trigger ref
+ *
+ * Backend route:
+ *   POST /admin/pos/counter-collect/{order}/confirm
+ *   body: { mode: int, received: number|null, note: string|null }
+ *   headers: X-Idempotency-Key (mandatory per Wave K Z7 IdempotencyKeyMiddleware)
+ *
+ * Visual parity contract with PaymentComponent.vue (V5):
+ *   - Hero total card (mb-4) with 48px monospace tabular value
+ *   - Section-title "Sélectionnez le mode de paiement"
+ *   - 2×2 mode picker (4 modes) — Wave W visual preserved
+ *   - PosV5Numpad shared atom for CASH received input
+ *   - Confirm button — primary brand red, disabled until canConfirm
+ *
+ * Multi-tranche split is NOT supported here — see template header comment
+ * for the V1.0.2 deferral rationale.
+ */
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: 'PosCounterCollectModal',
+  components: {
+    PosV5Numpad: _v5_PosV5Numpad_vue__WEBPACK_IMPORTED_MODULE_1__["default"]
+  },
+  props: {
+    order: {
+      type: Object,
+      "default": null
+    }
+  },
+  emits: ['confirmed', 'cancel'],
+  data: function data() {
+    return {
+      selectedMode: 'CASH',
+      cashReceivedRaw: '',
+      // [GOAL-2026-05-29 BUG-CASH-KEYPAD] true while the received field still
+      // holds the auto-pre-filled order total untouched. The FIRST numpad/key
+      // press then starts a FRESH entry instead of appending onto "8,50"
+      // (owner-reported "chiffres bizarres": pre-filled 8,50 + tap 1 → 8,501).
+      cashFieldPristine: true,
+      submitting: false,
+      // Static mode list — kept inside data to ease i18n key reference;
+      // intentionally NOT a computed because keys never change.
+      modes: [{
+        id: 'CASH',
+        icon: '💶',
+        labelKey: 'label.encaisser_mode_cash',
+        subKey: 'label.encaisser_mode_cash_sub'
+      }, {
+        id: 'CARD',
+        icon: '💳',
+        labelKey: 'label.encaisser_mode_card',
+        subKey: 'label.encaisser_mode_card_sub'
+      }, {
+        id: 'MOBILE',
+        icon: '📱',
+        labelKey: 'label.encaisser_mode_mobile',
+        subKey: null
+      }, {
+        id: 'TICKET',
+        icon: '🎟️',
+        labelKey: 'label.encaisser_mode_ticket',
+        subKey: null
+      }]
+    };
+  },
+  computed: {
+    visible: function visible() {
+      return this.order !== null && this.order !== undefined;
+    },
+    orderTotal: function orderTotal() {
+      var _ref, _this$order$total;
+      if (!this.order) return 0;
+      return Number((_ref = (_this$order$total = this.order.total) !== null && _this$order$total !== void 0 ? _this$order$total : this.order.order_amount) !== null && _ref !== void 0 ? _ref : 0);
+    },
+    cashReceivedNumber: function cashReceivedNumber() {
+      // [GOAL-D2 2026-05-23] Accept BOTH `.` and `,` as decimal separator
+      // so the FR pre-fill ("8,50") parses correctly AND user-typed
+      // values keep working in either locale flavour. Mirrors locale
+      // tolerance pattern used by FR POS Vanilla wizard.
+      var raw = String(this.cashReceivedRaw || '').replace(',', '.');
+      var v = parseFloat(raw);
+      return Number.isFinite(v) ? v : 0;
+    },
+    cashChange: function cashChange() {
+      if (this.selectedMode !== 'CASH') return 0;
+      var diff = this.cashReceivedNumber - this.orderTotal;
+      return diff > 0 ? Math.round(diff * 100) / 100 : 0;
+    },
+    cashShort: function cashShort() {
+      if (this.selectedMode !== 'CASH') return false;
+      if (this.cashReceivedRaw === '' || this.cashReceivedRaw === null) return false;
+      return this.cashReceivedNumber < this.orderTotal && this.cashReceivedNumber > 0;
+    },
+    canConfirm: function canConfirm() {
+      if (!this.order) return false;
+      if (this.selectedMode === 'CASH') {
+        // For CASH: require received >= total. Backend
+        // (PaymentService::confirmCounterPayment L235-238) enforces
+        // this server-side; surface it client-side to avoid the 422
+        // round-trip + confusing toast.
+        return this.cashReceivedNumber >= this.orderTotal && this.orderTotal > 0;
+      }
+      // For CARD / MOBILE / TICKET: backend allows null received (L247-249);
+      // a single tap on the mode confirms the collection.
+      return this.orderTotal > 0;
+    },
+    modeHint: function modeHint() {
+      var map = {
+        CARD: this.$t('label.cc_mode_card_hint'),
+        MOBILE: this.$t('label.cc_mode_mobile_hint'),
+        TICKET: this.$t('label.cc_mode_ticket_hint')
+      };
+      return map[this.selectedMode] || '';
+    }
+  },
+  watch: {
+    // Pre-fill the received input with the order total the moment the
+    // modal mounts on a fresh order so a one-tap "Confirmer" suffices for
+    // the canonical exact-change case (cashier's most common scenario).
+    order: {
+      immediate: true,
+      handler: function handler(newOrder) {
+        var _this = this;
+        if (newOrder && newOrder.id) {
+          // [GOAL-D2 2026-05-23] Pre-fill INPUT with FR decimal separator
+          // so the cashier sees "8,50" instead of "8.50". Parser at
+          // cashReceivedNumber accepts both `,` and `.`.
+          this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
+          this.cashFieldPristine = true;
+          this.selectedMode = 'CASH';
+          this.submitting = false;
+          // [GOAL-M-POS-2 2026-05-24] Auto-focus receivedInput on modal
+          // open so the cashier can type-then-Enter without a mouse hop.
+          // $nextTick defers until the cc-cash-section v-if mounts the
+          // input (receivedInput ref does not exist before selectedMode
+          // is CASH AND the DOM updates). Mirrors L5.3-F-02 recommendation.
+          this.$nextTick(function () {
+            if (_this.$refs.receivedInput) {
+              _this.$refs.receivedInput.focus();
+              _this.$refs.receivedInput.select();
+            }
+          });
+        }
+      }
+    }
+  },
+  // [GOAL-M-POS-2 2026-05-24] Escape-to-close keyboard contract.
+  // Mirrors KdsHistoryDrawer.vue:189-204 pattern: document-level
+  // keydown listener installed in mounted(), removed in beforeUnmount().
+  // The component itself is always in the DOM (parent always renders
+  // <PosCounterCollectModal>); only the inner overlay toggles via
+  // v-if="visible". The visibility + submitting guards inside _onEsc
+  // ensure the handler is a no-op when no order is being collected.
+  mounted: function mounted() {
+    document.addEventListener('keydown', this._onEsc);
+  },
+  beforeUnmount: function beforeUnmount() {
+    document.removeEventListener('keydown', this._onEsc);
+  },
+  methods: {
+    setMode: function setMode(modeId) {
+      if (this.submitting) return;
+      this.selectedMode = modeId;
+      // When switching back to CASH, re-pre-fill the received field if
+      // the cashier had emptied it via the numpad C key.
+      if (modeId === 'CASH' && (this.cashReceivedRaw === '' || Number(String(this.cashReceivedRaw).replace(',', '.')) <= 0)) {
+        // [GOAL-D2 2026-05-23] FR decimal pre-fill (see watcher comment).
+        this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
+        this.cashFieldPristine = true;
+      }
+    },
+    onReceivedInput: function onReceivedInput(e) {
+      // Physical-keyboard edit → the field is now user-owned (not pristine).
+      this.cashFieldPristine = false;
+      this.cashReceivedRaw = e.target.value;
+    },
+    numpadInput: function numpadInput(val) {
+      if (this.submitting) return;
+      // [GOAL-2026-05-29 BUG-CASH-KEYPAD] First tap after the auto-pre-fill
+      // starts a FRESH amount (the pre-fill is a one-tap-confirm convenience).
+      // Appending onto the pre-filled "8,50" produced "8,501" — the
+      // owner-reported "chiffres bizarres". Physical typing already replaces
+      // via the input's auto-select; the custom numpad must mirror that.
+      var base = this.cashFieldPristine ? '' : String(this.cashReceivedRaw || '');
+      this.cashFieldPristine = false;
+
+      // One decimal separator only — ignore a 2nd ','/'.' (was "8,50," → NaN).
+      if (val === ',' || val === '.') {
+        if (base.includes(',') || base.includes('.')) return;
+        if (base === '') base = '0'; // leading separator → "0,"
+      }
+      this.cashReceivedRaw = base + val;
+    },
+    numpadBack: function numpadBack() {
+      if (this.submitting) return;
+      // Backspace on the pristine pre-fill: begin editing the existing value.
+      this.cashFieldPristine = false;
+      this.cashReceivedRaw = String(this.cashReceivedRaw || '').slice(0, -1);
+    },
+    numpadClear: function numpadClear() {
+      if (this.submitting) return;
+      this.cashFieldPristine = false;
+      this.cashReceivedRaw = '';
+    },
+    onlyFloat: function onlyFloat(e) {
+      return _services_appService__WEBPACK_IMPORTED_MODULE_3__["default"].floatNumber(e);
+    },
+    formatPrice: function formatPrice(amount) {
+      try {
+        return new Intl.NumberFormat('fr-FR', {
+          style: 'currency',
+          currency: 'EUR'
+        }).format(amount || 0);
+      } catch (_) {
+        return "".concat((amount || 0).toFixed(2), " \u20AC");
+      }
+    },
+    // Idempotency key formula — mirrors Wave W
+    // (PosComponent.buildKioskCashIdempotencyKey commit ab0caa985).
+    // Minute-bucket so a double-tap within the same minute replays the
+    // cached 2xx response from IdempotencyKeyMiddleware (Wave K Z7),
+    // avoiding two distinct POSTs racing into PaymentService::
+    // confirmCounterPayment's DB::transaction + lockForUpdate.
+    // Different orders and different modes produce distinct keys.
+    buildIdempotencyKey: function buildIdempotencyKey(orderId, modeInt) {
+      var minuteBucket = Math.floor(Date.now() / 60000);
+      return "pos-counter-collect-".concat(orderId, "-").concat(modeInt, "-").concat(minuteBucket);
+    },
+    onCancel: function onCancel() {
+      if (this.submitting) return;
+      this.$emit('cancel');
+    },
+    // [GOAL-M-POS-2 2026-05-24] Document-level Escape handler. Guarded by
+    // visibility (modal is permanently mounted by parent) + submitting
+    // flag (don't fire mid-POST or while a 200/409 is in flight).
+    // Stored as an arrow-function-style property so the listener
+    // reference matches across add/remove (avoids the lost-reference
+    // bug with method-bound handlers).
+    _onEsc: function _onEsc(e) {
+      if (!this.visible || this.submitting) return;
+      if (e.key === 'Escape') {
+        this.onCancel();
+      }
+    },
+    onConfirm: function onConfirm() {
+      var _this2 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
+        var modeMap, modeInt, orderId, total, received, idempotencyKey, orderLabel, _err$response, _err$response2, _err$response4, _err$response3, fallbackMsg, msg, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              if (!(!_this2.order || _this2.submitting || !_this2.canConfirm)) {
+                _context.n = 1;
+                break;
+              }
+              return _context.a(2);
+            case 1:
+              modeMap = {
+                CASH: _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_2__["default"].CASH,
+                CARD: _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_2__["default"].CARD,
+                MOBILE: _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_2__["default"].MOBILE_BANKING,
+                TICKET: _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_2__["default"].TICKET_RESTAURANT
+              };
+              modeInt = modeMap[_this2.selectedMode];
+              if (modeInt) {
+                _context.n = 2;
+                break;
+              }
+              return _context.a(2);
+            case 2:
+              orderId = _this2.order.id;
+              total = _this2.orderTotal; // CASH path sends explicit received (backend enforces >= total).
+              // Non-CASH path sends null (backend allows null for non-cash modes).
+              received = _this2.selectedMode === 'CASH' ? _this2.cashReceivedNumber : null;
+              _this2.submitting = true;
+              _context.p = 3;
+              idempotencyKey = _this2.buildIdempotencyKey(orderId, modeInt);
+              _context.n = 4;
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/pos/counter-collect/".concat(orderId, "/confirm"), {
+                mode: modeInt,
+                received: received,
+                note: _this2.selectedMode === 'CASH' ? 'Encaissement borne au comptoir (SSOT modal)' : "Encaissement borne ".concat(_this2.selectedMode, " (SSOT modal)")
+              }, {
+                headers: {
+                  'X-Idempotency-Key': idempotencyKey
+                }
+              });
+            case 4:
+              // Toast feedback per mode — mirror Wave W simulation copy so the
+              // cashier perceives parity with the old picker.
+              orderLabel = _this2.order.queue_number || _this2.order.order_serial_no || orderId;
+              if (_this2.selectedMode === 'CASH') {
+                _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].success(_this2.$t('label.cash_drawer_opened_simulation', {
+                  order: orderLabel
+                }));
+              } else if (_this2.selectedMode === 'CARD') {
+                _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].success(_this2.$t('label.tpe_validated_simulation', {
+                  order: orderLabel
+                }));
+              } else {
+                _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].success(_this2.$t('label.encaisser_success', {
+                  order: orderLabel
+                }));
+              }
+              _this2.$emit('confirmed', {
+                orderId: orderId,
+                mode: _this2.selectedMode,
+                modeInt: modeInt,
+                received: received,
+                total: total
+              });
+              _context.n = 7;
+              break;
+            case 5:
+              _context.p = 5;
+              _t = _context.v;
+              if (!((_t === null || _t === void 0 || (_err$response = _t.response) === null || _err$response === void 0 ? void 0 : _err$response.status) === 409 && (_t === null || _t === void 0 || (_err$response2 = _t.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.error_code) === 'payment_already_collected')) {
+                _context.n = 6;
+                break;
+              }
+              fallbackMsg = 'Cette commande a déjà été encaissée par un autre caissier.';
+              _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error((_t === null || _t === void 0 || (_err$response3 = _t.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || fallbackMsg);
+              _this2.submitting = false;
+              _this2.$emit('cancel');
+              return _context.a(2);
+            case 6:
+              msg = (_t === null || _t === void 0 || (_err$response4 = _t.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || _this2.$t('label.encaisser_failed');
+              _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(msg);
+              _this2.submitting = false;
+            case 7:
+              return _context.a(2);
+          }
+        }, _callee, null, [[3, 5]]);
+      }))();
+    }
+  }
+});
+
+/***/ },
+
 /***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=script&lang=js"
 /*!**************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=script&lang=js ***!
@@ -15234,6 +15815,152 @@ __webpack_require__.r(__webpack_exports__);
       }
       var translated = this.$t('label.remboursement');
       return translated === 'label.remboursement' ? fallback : translated;
+    }
+  }
+});
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=script&lang=js"
+/*!*******************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=script&lang=js ***!
+  \*******************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/**
+ * PosV5Numpad — pavé numérique unifié POS V5.
+ *
+ * Mission : CV1-POS-DESIGN-CONVERGENCE-001
+ * Doc plan : §4.5
+ *
+ * Réutilisé en : paiement (PaymentComponent), futurs override prix admin.
+ *
+ * Layout 4×4 :
+ *   [1] [2] [3] [⌫]   ← backspace span 1
+ *   [4] [5] [6] [⌫]
+ *   [7] [8] [9] [C]   ← clear span 1
+ *   [00][0] [.] [C]
+ *
+ * Émissions :
+ *   - @input(value) — touche numérique pressée (1, 2, ..., '00', '.')
+ *   - @back        — backspace
+ *   - @clear       — clear total
+ *
+ * L'API est intentionnellement event-only (pas de v-model) pour permettre
+ * au parent de cibler un input spécifique (cash vs card).
+ */
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  name: "PosV5Numpad",
+  props: {
+    ariaLabel: {
+      type: String,
+      "default": "Pavé numérique"
+    },
+    decimalSeparator: {
+      type: String,
+      "default": "."
+    }
+  },
+  emits: ["input", "back", "clear"],
+  computed: {
+    keys: function keys() {
+      return [{
+        id: "1",
+        label: "1",
+        kind: "num",
+        value: "1"
+      }, {
+        id: "2",
+        label: "2",
+        kind: "num",
+        value: "2"
+      }, {
+        id: "3",
+        label: "3",
+        kind: "num",
+        value: "3"
+      }, {
+        id: "back",
+        label: "⌫",
+        kind: "back",
+        aria: "Effacer le dernier chiffre"
+      }, {
+        id: "4",
+        label: "4",
+        kind: "num",
+        value: "4"
+      }, {
+        id: "5",
+        label: "5",
+        kind: "num",
+        value: "5"
+      }, {
+        id: "6",
+        label: "6",
+        kind: "num",
+        value: "6"
+      }, {
+        id: "back2",
+        label: "⌫",
+        kind: "back",
+        aria: "Effacer le dernier chiffre"
+      }, {
+        id: "7",
+        label: "7",
+        kind: "num",
+        value: "7"
+      }, {
+        id: "8",
+        label: "8",
+        kind: "num",
+        value: "8"
+      }, {
+        id: "9",
+        label: "9",
+        kind: "num",
+        value: "9"
+      }, {
+        id: "clear",
+        label: "C",
+        kind: "clear",
+        aria: "Effacer tout"
+      }, {
+        id: "00",
+        label: "00",
+        kind: "num",
+        value: "00"
+      }, {
+        id: "0",
+        label: "0",
+        kind: "num",
+        value: "0"
+      }, {
+        id: ".",
+        label: this.decimalSeparator,
+        kind: "num",
+        value: this.decimalSeparator
+      }, {
+        id: "clear2",
+        label: "C",
+        kind: "clear",
+        aria: "Effacer tout"
+      }];
+    }
+  },
+  methods: {
+    onKey: function onKey(key) {
+      if (key.kind === "num") {
+        this.$emit("input", key.value);
+      } else if (key.kind === "back") {
+        this.$emit("back");
+      } else if (key.kind === "clear") {
+        this.$emit("clear");
+      }
     }
   }
 });
@@ -37726,6 +38453,127 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
 
 /***/ },
 
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=template&id=22c45b59&scoped=true"
+/*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=template&id=22c45b59&scoped=true ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = {
+  "class": "row"
+};
+var _hoisted_2 = {
+  "class": "col-12"
+};
+var _hoisted_3 = {
+  "class": "col-12"
+};
+var _hoisted_4 = {
+  "class": "db-card enc-card"
+};
+var _hoisted_5 = {
+  "class": "db-card-header border-none enc-header"
+};
+var _hoisted_6 = {
+  "class": "db-card-title"
+};
+var _hoisted_7 = {
+  "class": "enc-subtitle"
+};
+var _hoisted_8 = {
+  "class": "enc-header-actions"
+};
+var _hoisted_9 = {
+  "class": "enc-count-chip"
+};
+var _hoisted_10 = {
+  "class": "enc-body"
+};
+var _hoisted_11 = {
+  key: 0,
+  "class": "enc-empty"
+};
+var _hoisted_12 = {
+  "class": "enc-empty-title"
+};
+var _hoisted_13 = {
+  key: 1,
+  "class": "enc-grid"
+};
+var _hoisted_14 = {
+  "class": "enc-ticket-top"
+};
+var _hoisted_15 = {
+  key: 0,
+  "class": "enc-queue"
+};
+var _hoisted_16 = {
+  "class": "enc-ticket-customer"
+};
+var _hoisted_17 = {
+  key: 0,
+  "class": "enc-ticket-items"
+};
+var _hoisted_18 = {
+  key: 0,
+  "class": "enc-more"
+};
+var _hoisted_19 = {
+  "class": "enc-ticket-bottom"
+};
+var _hoisted_20 = {
+  "class": "enc-amount"
+};
+var _hoisted_21 = ["onClick"];
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
+  var _component_BreadcrumbComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("BreadcrumbComponent");
+  var _component_PosCounterCollectModal = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PosCounterCollectModal");
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingComponent, {
+    props: $data.loading
+  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_BreadcrumbComponent)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('menu.encaissement')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_queue_subtitle')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.orders.length), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    "class": "db-btn py-2 text-white bg-primary",
+    onClick: _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.fetchPending && $options.fetchPending.apply($options, arguments);
+    }, ["prevent"]))
+  }, [_cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-refresh-line lab-font-size-16"
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.refresh')), 1 /* TEXT */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [$data.orders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_11, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "enc-empty-icon"
+  }, "✅", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_queue_empty')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_13, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.orders, function (order) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      key: order.id,
+      "class": "enc-ticket"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["enc-origin-badge", $options.originBadge(order).cls])
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.originBadge(order).label), 3 /* TEXT, CLASS */), order.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_15, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerName(order)), 1 /* TEXT */), order.order_items && order.order_items.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_17, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(order.order_items.slice(0, 4), function (it, idx) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
+        key: idx
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(it.quantity) + "× " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.itemName(it)), 1 /* TEXT */);
+    }), 128 /* KEYED_FRAGMENT */)), order.order_items.length > 4 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_18, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_items.length - 4) + "… ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.orderAmount(order))), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      "class": "enc-collect-btn",
+      onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        return $options.openEncaissement(order);
+      }, ["prevent"])
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser')), 9 /* TEXT, PROPS */, _hoisted_21)])]);
+  }), 128 /* KEYED_FRAGMENT */))]))])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Shared counter-collect modal (cash / card / mobile / ticket).\n             It POSTs admin/pos/counter-collect/{id}/confirm itself; on @confirmed\n             we refresh the queue so the now-paid order leaves the list. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosCounterCollectModal, {
+    order: $data.encaisseOrder,
+    onConfirmed: $options.onEncaisseConfirmed,
+    onCancel: _cache[1] || (_cache[1] = function ($event) {
+      return $data.encaisseOrder = null;
+    })
+  }, null, 8 /* PROPS */, ["order", "onConfirmed"])])], 64 /* STABLE_FRAGMENT */);
+}
+
+/***/ },
+
 /***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/items/CatalogConceptHelpComponent.vue?vue&type=template&id=e6b1a67a"
 /*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/items/CatalogConceptHelpComponent.vue?vue&type=template&id=e6b1a67a ***!
@@ -45728,6 +46576,218 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
 
 /***/ },
 
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=template&id=708e0b11&scoped=true"
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=template&id=708e0b11&scoped=true ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = ["aria-label"];
+var _hoisted_2 = {
+  "class": "cc-modal-header"
+};
+var _hoisted_3 = {
+  "class": "cc-modal-title-row"
+};
+var _hoisted_4 = {
+  "class": "cc-modal-title"
+};
+var _hoisted_5 = ["aria-label", "disabled"];
+var _hoisted_6 = {
+  "class": "cc-modal-order-meta"
+};
+var _hoisted_7 = {
+  "class": "cc-modal-order-no"
+};
+var _hoisted_8 = {
+  "class": "cc-modal-source"
+};
+var _hoisted_9 = {
+  "class": "cc-hero-total"
+};
+var _hoisted_10 = {
+  "class": "cc-hero-label"
+};
+var _hoisted_11 = {
+  "class": "cc-hero-value",
+  "data-testid": "pos-counter-collect-total"
+};
+var _hoisted_12 = {
+  "class": "cc-mode-section"
+};
+var _hoisted_13 = {
+  "class": "cc-section-title"
+};
+var _hoisted_14 = ["aria-label"];
+var _hoisted_15 = ["aria-selected", "disabled", "data-testid", "onClick"];
+var _hoisted_16 = {
+  "class": "cc-mode-icon",
+  "aria-hidden": "true"
+};
+var _hoisted_17 = {
+  "class": "cc-mode-label"
+};
+var _hoisted_18 = {
+  key: 0,
+  "class": "cc-mode-sub"
+};
+var _hoisted_19 = {
+  key: 0,
+  "class": "cc-cash-section",
+  "data-testid": "pos-counter-collect-cash-block"
+};
+var _hoisted_20 = {
+  "for": "ccReceivedInput",
+  "class": "cc-input-label"
+};
+var _hoisted_21 = ["value", "disabled"];
+var _hoisted_22 = {
+  key: 0,
+  "class": "cc-change-row",
+  role: "status",
+  "aria-live": "polite",
+  "data-testid": "pos-counter-collect-change"
+};
+var _hoisted_23 = {
+  "class": "cc-change-label"
+};
+var _hoisted_24 = {
+  "class": "cc-change-value cc-tabular"
+};
+var _hoisted_25 = {
+  key: 1,
+  "class": "cc-cash-short",
+  role: "alert"
+};
+var _hoisted_26 = {
+  "class": "cc-mode-info",
+  "data-testid": "pos-counter-collect-noncash-block"
+};
+var _hoisted_27 = {
+  "class": "cc-mode-info-text"
+};
+var _hoisted_28 = {
+  "class": "cc-modal-footer"
+};
+var _hoisted_29 = ["disabled"];
+var _hoisted_30 = ["disabled", "aria-disabled", "aria-busy"];
+var _hoisted_31 = {
+  key: 0,
+  "class": "cc-spinner",
+  "aria-hidden": "true"
+};
+var _hoisted_32 = {
+  key: 1,
+  "aria-hidden": "true"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_PosV5Numpad = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PosV5Numpad");
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    PosCounterCollectModal — sibling SSOT-flavored counter-collect modal\n    [Wave X X1 P-OWNER 2026-05-21] Owner mandate verbatim:\n    \"Quand je clique 'Encaisser' sur commande borne cash-pending, je veux\n    que ça ouvre la même popup que pour le POS normal payment. Comme ça\n    toutes les ventes (POS direct, borne, livreur) passent par UN SEUL\n    portail = SSOT pour comptabilité claire.\"\n\n    Architectural decision: Option C (sibling). PaymentComponent.vue is\n    CLAUDE.md §7 FROZEN (paymentComponentEmitsJsdocList.spec.js sentinel\n    locks emits) — we cannot mount it with a `mode=counter_collect` prop.\n    Instead, we mirror its V5 visual atoms (hero total card, mode picker\n    segmented control, PosV5Numpad, rendu calc) inside this sibling so\n    the cashier sees a near-identical surface — same look + same behavior\n    minus the multi-tranche split.\n\n    SCOPE CHANGE vs orchestrator brief — multi-tranche split deferred to\n    V1.0.2 (see commit body). Backend `PaymentService::confirmCounterPayment`\n    accepts a SINGLE mode + single received only, AND short-circuits\n    (no-op) the moment `payment_status === PAID`. A naive loop over\n    tranches would silently lose tranches 2..N. Adding multi-tranche\n    requires a NEW `PaymentService::confirmCounterPaymentSplit(Order,\n    array $tranches)` route + extending `SplitPaymentService` to accept\n    counter-collect entry (currently OrderService::posOrderStore only).\n    That is NF525-adjacent surgery + new LOCK — V1.0.2 backlog. V1 ships\n    single-tender at counter with full 4-mode parity + numpad for CASH.\n\n    Idempotency contract:\n      X-Idempotency-Key = pos-counter-collect-{orderId}-{modeInt}-{minuteBucket}\n    Mirrors Wave W formula (ab0caa985) so double-tap within the same\n    minute replays the cached 2xx response from IdempotencyKeyMiddleware\n    (Wave K Z7), not a duplicate POST.\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+    name: "fade"
+  }, {
+    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      var _$props$order, _$props$order2, _$props$order3;
+      return [$options.visible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        key: 0,
+        "class": "cc-modal-overlay",
+        "data-testid": "pos-counter-collect-modal",
+        onClick: _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+          return $options.onCancel && $options.onCancel.apply($options, arguments);
+        }, ["self"]))
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+        "class": "cc-modal",
+        role: "dialog",
+        "aria-label": _ctx.$t('label.encaisser_mode_title')
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Header: hero total + queue number (mirror PaymentComponent design language) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, [_cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+        "aria-hidden": "true"
+      }, "💳", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_mode_title')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "cc-modal-close",
+        "aria-label": _ctx.$t('button.close'),
+        disabled: $data.submitting,
+        "data-testid": "pos-counter-collect-close",
+        onClick: _cache[0] || (_cache[0] = function () {
+          return $options.onCancel && $options.onCancel.apply($options, arguments);
+        })
+      }, "✕", 8 /* PROPS */, _hoisted_5)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_7, " N° " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(((_$props$order = $props.order) === null || _$props$order === void 0 ? void 0 : _$props$order.queue_number) || ((_$props$order2 = $props.order) === null || _$props$order2 === void 0 ? void 0 : _$props$order2.order_serial_no) || ((_$props$order3 = $props.order) === null || _$props$order3 === void 0 ? void 0 : _$props$order3.id)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cc_source_kiosk')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Hero \"À encaisser\" — mirror PaymentComponent V5 design (48px monospace tabular) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_9, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatPrice($options.orderTotal)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Mode picker — 4-mode parity with Wave W (cash | card | mobile | ticket) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.select_payment_method')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", {
+        "class": "cc-mode-grid",
+        role: "tablist",
+        "aria-label": _ctx.$t('label.select_payment_method')
+      }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.modes, function (m) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+          key: m.id,
+          type: "button",
+          role: "tab",
+          "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['cc-mode-btn', "cc-mode-btn--".concat(m.id), {
+            'is-active': $data.selectedMode === m.id
+          }]),
+          "aria-selected": $data.selectedMode === m.id ? 'true' : 'false',
+          disabled: $data.submitting,
+          "data-testid": "pos-counter-collect-mode-".concat(m.id),
+          onClick: function onClick($event) {
+            return $options.setMode(m.id);
+          }
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(m.icon), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t(m.labelKey)), 1 /* TEXT */), m.subKey ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t(m.subKey)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 10 /* CLASS, PROPS */, _hoisted_15);
+      }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_14)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Cash sub-section: received amount input + numpad + rendu calc "), $data.selectedMode === 'CASH' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.received_amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+        id: "ccReceivedInput",
+        ref: "receivedInput",
+        type: "text",
+        "class": "cc-input cc-tabular",
+        onKeypress: _cache[1] || (_cache[1] = function () {
+          return $options.onlyFloat && $options.onlyFloat.apply($options, arguments);
+        }),
+        onInput: _cache[2] || (_cache[2] = function () {
+          return $options.onReceivedInput && $options.onReceivedInput.apply($options, arguments);
+        }),
+        onKeyup: _cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)(function () {
+          return $options.onConfirm && $options.onConfirm.apply($options, arguments);
+        }, ["enter"])),
+        value: $data.cashReceivedRaw,
+        disabled: $data.submitting,
+        "data-testid": "pos-counter-collect-received-input"
+      }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_21), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Numpad, {
+        "aria-label": _ctx.$t('label.received_amount'),
+        "decimal-separator": ',',
+        onInput: $options.numpadInput,
+        onBack: $options.numpadBack,
+        onClear: $options.numpadClear
+      }, null, 8 /* PROPS */, ["aria-label", "onInput", "onBack", "onClear"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Rendu calc "), $options.cashChange > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+        "aria-hidden": "true"
+      }, "✨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.change_due')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatPrice($options.cashChange)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.cashShort ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cc_cash_short')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+        key: 1
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Card / Mobile / Ticket — single-tap confirm (no extra input) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.modeHint), 1 /* TEXT */)])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Footer: confirm + cancel "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "cc-cancel-btn",
+        disabled: $data.submitting,
+        "data-testid": "pos-counter-collect-cancel",
+        onClick: _cache[4] || (_cache[4] = function () {
+          return $options.onCancel && $options.onCancel.apply($options, arguments);
+        })
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cancel')), 9 /* TEXT, PROPS */, _hoisted_29), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        type: "button",
+        "class": "cc-confirm-btn",
+        disabled: !$options.canConfirm || $data.submitting,
+        "aria-disabled": !$options.canConfirm || $data.submitting,
+        "aria-busy": $data.submitting,
+        "data-testid": "pos-counter-collect-confirm",
+        onClick: _cache[5] || (_cache[5] = function () {
+          return $options.onConfirm && $options.onConfirm.apply($options, arguments);
+        })
+      }, [$data.submitting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_31)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_32, "✓")), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.submitting ? _ctx.$t('label.processing') : _ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_30)])], 8 /* PROPS */, _hoisted_1)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
+    }),
+    _: 1 /* STABLE */
+  })], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);
+}
+
+/***/ },
+
 /***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=template&id=2279c7e9&scoped=true"
 /*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=template&id=2279c7e9&scoped=true ***!
@@ -46105,6 +47165,50 @@ var _hoisted_3 = {
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   return $options.isRefund ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_2, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.remboursementLabel), 1 /* TEXT */), $options.parentSerial ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_3, " #" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.parentSerial), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
+}
+
+/***/ },
+
+/***/ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=template&id=6a59af16&scoped=true"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=template&id=6a59af16&scoped=true ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* binding */ render)
+/* harmony export */ });
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+
+var _hoisted_1 = ["aria-label"];
+var _hoisted_2 = ["aria-label", "onClick"];
+var _hoisted_3 = {
+  key: 1,
+  "aria-hidden": "true"
+};
+function render(_ctx, _cache, $props, $setup, $data, $options) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    "class": "pos-v5-numpad",
+    role: "group",
+    "aria-label": $props.ariaLabel
+  }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.keys, function (key) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      key: key.id,
+      type: "button",
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['pos-v5-numpad__key', "pos-v5-numpad__key--".concat(key.kind), key.span ? "pos-v5-numpad__key--span-".concat(key.span) : '']),
+      "aria-label": key.aria || key.label,
+      onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
+        return $options.onKey(key);
+      }, ["prevent"])
+    }, [key.slot ? (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderSlot)(_ctx.$slots, key.slot, {
+      key: 0,
+      keyData: key
+    }, function () {
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(key.label), 1 /* TEXT */)];
+    }, true) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(key.label), 1 /* TEXT */))], 10 /* CLASS, PROPS */, _hoisted_2);
+  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_1);
 }
 
 /***/ },
@@ -75264,6 +76368,36 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 
 /***/ },
 
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=style&index=0&id=22c45b59&scoped=true&lang=css"
+/*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=style&index=0&id=22c45b59&scoped=true&lang=css ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_EncaissementComponent_vue_vue_type_style_index_0_id_22c45b59_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./EncaissementComponent.vue?vue&type=style&index=0&id=22c45b59&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=style&index=0&id=22c45b59&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_EncaissementComponent_vue_vue_type_style_index_0_id_22c45b59_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_EncaissementComponent_vue_vue_type_style_index_0_id_22c45b59_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
 /***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/items/CatalogStudioComponent.vue?vue&type=style&index=0&id=1bd9ad88&scoped=true&lang=css"
 /*!*********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/items/CatalogStudioComponent.vue?vue&type=style&index=0&id=1bd9ad88&scoped=true&lang=css ***!
@@ -75564,6 +76698,36 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 
 /***/ },
 
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=style&index=0&id=708e0b11&scoped=true&lang=css"
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=style&index=0&id=708e0b11&scoped=true&lang=css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCounterCollectModal_vue_vue_type_style_index_0_id_708e0b11_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosCounterCollectModal.vue?vue&type=style&index=0&id=708e0b11&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=style&index=0&id=708e0b11&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCounterCollectModal_vue_vue_type_style_index_0_id_708e0b11_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCounterCollectModal_vue_vue_type_style_index_0_id_708e0b11_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
 /***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=style&index=0&id=2279c7e9&scoped=true&lang=css"
 /*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
   !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=style&index=0&id=2279c7e9&scoped=true&lang=css ***!
@@ -75651,6 +76815,36 @@ var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ReceiptRemboursementMarker_vue_vue_type_style_index_0_id_53d0d8bc_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
+
+/***/ },
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=style&index=0&id=6a59af16&scoped=true&lang=css"
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=style&index=0&id=6a59af16&scoped=true&lang=css ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../../../../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5Numpad_vue_vue_type_style_index_0_id_6a59af16_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosV5Numpad.vue?vue&type=style&index=0&id=6a59af16&scoped=true&lang=css */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=style&index=0&id=6a59af16&scoped=true&lang=css");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _node_modules_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5Numpad_vue_vue_type_style_index_0_id_6a59af16_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"], options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5Numpad_vue_vue_type_style_index_0_id_6a59af16_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_1__["default"].locals || {});
 
 /***/ },
 
@@ -81909,6 +83103,38 @@ if (false) // removed by dead control flow
 
 /***/ },
 
+/***/ "./resources/js/components/admin/encaissement/EncaissementComponent.vue"
+/*!******************************************************************************!*\
+  !*** ./resources/js/components/admin/encaissement/EncaissementComponent.vue ***!
+  \******************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _EncaissementComponent_vue_vue_type_template_id_22c45b59_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./EncaissementComponent.vue?vue&type=template&id=22c45b59&scoped=true */ "./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=template&id=22c45b59&scoped=true");
+/* harmony import */ var _EncaissementComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./EncaissementComponent.vue?vue&type=script&lang=js */ "./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=script&lang=js");
+/* harmony import */ var _EncaissementComponent_vue_vue_type_style_index_0_id_22c45b59_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./EncaissementComponent.vue?vue&type=style&index=0&id=22c45b59&scoped=true&lang=css */ "./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=style&index=0&id=22c45b59&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_EncaissementComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_EncaissementComponent_vue_vue_type_template_id_22c45b59_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-22c45b59"],['__file',"resources/js/components/admin/encaissement/EncaissementComponent.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
 /***/ "./resources/js/components/admin/items/CatalogConceptHelpComponent.vue"
 /*!*****************************************************************************!*\
   !*** ./resources/js/components/admin/items/CatalogConceptHelpComponent.vue ***!
@@ -83070,6 +84296,38 @@ if (false) // removed by dead control flow
 
 /***/ },
 
+/***/ "./resources/js/components/admin/pos/PosCounterCollectModal.vue"
+/*!**********************************************************************!*\
+  !*** ./resources/js/components/admin/pos/PosCounterCollectModal.vue ***!
+  \**********************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _PosCounterCollectModal_vue_vue_type_template_id_708e0b11_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./PosCounterCollectModal.vue?vue&type=template&id=708e0b11&scoped=true */ "./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=template&id=708e0b11&scoped=true");
+/* harmony import */ var _PosCounterCollectModal_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./PosCounterCollectModal.vue?vue&type=script&lang=js */ "./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=script&lang=js");
+/* harmony import */ var _PosCounterCollectModal_vue_vue_type_style_index_0_id_708e0b11_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./PosCounterCollectModal.vue?vue&type=style&index=0&id=708e0b11&scoped=true&lang=css */ "./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=style&index=0&id=708e0b11&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_PosCounterCollectModal_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_PosCounterCollectModal_vue_vue_type_template_id_708e0b11_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-708e0b11"],['__file',"resources/js/components/admin/pos/PosCounterCollectModal.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
 /***/ "./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue"
 /*!*********************************************************************!*\
   !*** ./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue ***!
@@ -83157,6 +84415,38 @@ __webpack_require__.r(__webpack_exports__);
 
 
 const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_ReceiptRemboursementMarker_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_ReceiptRemboursementMarker_vue_vue_type_template_id_53d0d8bc_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-53d0d8bc"],['__file',"resources/js/components/admin/pos/ReceiptRemboursementMarker.vue"]])
+/* hot reload */
+if (false) // removed by dead control flow
+{}
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (__exports__);
+
+/***/ },
+
+/***/ "./resources/js/components/admin/pos/v5/PosV5Numpad.vue"
+/*!**************************************************************!*\
+  !*** ./resources/js/components/admin/pos/v5/PosV5Numpad.vue ***!
+  \**************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _PosV5Numpad_vue_vue_type_template_id_6a59af16_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./PosV5Numpad.vue?vue&type=template&id=6a59af16&scoped=true */ "./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=template&id=6a59af16&scoped=true");
+/* harmony import */ var _PosV5Numpad_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./PosV5Numpad.vue?vue&type=script&lang=js */ "./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=script&lang=js");
+/* harmony import */ var _PosV5Numpad_vue_vue_type_style_index_0_id_6a59af16_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./PosV5Numpad.vue?vue&type=style&index=0&id=6a59af16&scoped=true&lang=css */ "./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=style&index=0&id=6a59af16&scoped=true&lang=css");
+/* harmony import */ var _node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../../../../node_modules/vue-loader/dist/exportHelper.js */ "./node_modules/vue-loader/dist/exportHelper.js");
+
+
+
+
+;
+
+
+const __exports__ = /*#__PURE__*/(0,_node_modules_vue_loader_dist_exportHelper_js__WEBPACK_IMPORTED_MODULE_3__["default"])(_PosV5Numpad_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_1__["default"], [['render',_PosV5Numpad_vue_vue_type_template_id_6a59af16_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render],['__scopeId',"data-v-6a59af16"],['__file',"resources/js/components/admin/pos/v5/PosV5Numpad.vue"]])
 /* hot reload */
 if (false) // removed by dead control flow
 {}
@@ -87328,6 +88618,22 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ },
 
+/***/ "./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=script&lang=js"
+/*!******************************************************************************************************!*\
+  !*** ./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=script&lang=js ***!
+  \******************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_EncaissementComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_EncaissementComponent_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./EncaissementComponent.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
 /***/ "./resources/js/components/admin/items/CatalogConceptHelpComponent.vue?vue&type=script&lang=js"
 /*!*****************************************************************************************************!*\
   !*** ./resources/js/components/admin/items/CatalogConceptHelpComponent.vue?vue&type=script&lang=js ***!
@@ -87952,6 +89258,22 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ },
 
+/***/ "./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=script&lang=js"
+/*!**********************************************************************************************!*\
+  !*** ./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=script&lang=js ***!
+  \**********************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCounterCollectModal_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCounterCollectModal_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosCounterCollectModal.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
 /***/ "./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=script&lang=js"
 /*!*********************************************************************************************!*\
   !*** ./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=script&lang=js ***!
@@ -87996,6 +89318,22 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ReceiptRemboursementMarker_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
 /* harmony export */ });
 /* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ReceiptRemboursementMarker_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./ReceiptRemboursementMarker.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/ReceiptRemboursementMarker.vue?vue&type=script&lang=js");
+ 
+
+/***/ },
+
+/***/ "./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=script&lang=js"
+/*!**************************************************************************************!*\
+  !*** ./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=script&lang=js ***!
+  \**************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5Numpad_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__["default"])
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5Numpad_vue_vue_type_script_lang_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosV5Numpad.vue?vue&type=script&lang=js */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=script&lang=js");
  
 
 /***/ },
@@ -90816,6 +92154,22 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ },
 
+/***/ "./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=template&id=22c45b59&scoped=true"
+/*!************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=template&id=22c45b59&scoped=true ***!
+  \************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_EncaissementComponent_vue_vue_type_template_id_22c45b59_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_EncaissementComponent_vue_vue_type_template_id_22c45b59_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./EncaissementComponent.vue?vue&type=template&id=22c45b59&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=template&id=22c45b59&scoped=true");
+
+
+/***/ },
+
 /***/ "./resources/js/components/admin/items/CatalogConceptHelpComponent.vue?vue&type=template&id=e6b1a67a"
 /*!***********************************************************************************************************!*\
   !*** ./resources/js/components/admin/items/CatalogConceptHelpComponent.vue?vue&type=template&id=e6b1a67a ***!
@@ -91440,6 +92794,22 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ },
 
+/***/ "./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=template&id=708e0b11&scoped=true"
+/*!****************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=template&id=708e0b11&scoped=true ***!
+  \****************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCounterCollectModal_vue_vue_type_template_id_708e0b11_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCounterCollectModal_vue_vue_type_template_id_708e0b11_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosCounterCollectModal.vue?vue&type=template&id=708e0b11&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=template&id=708e0b11&scoped=true");
+
+
+/***/ },
+
 /***/ "./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=template&id=2279c7e9&scoped=true"
 /*!***************************************************************************************************************!*\
   !*** ./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=template&id=2279c7e9&scoped=true ***!
@@ -91484,6 +92854,22 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ReceiptRemboursementMarker_vue_vue_type_template_id_53d0d8bc_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
 /* harmony export */ });
 /* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ReceiptRemboursementMarker_vue_vue_type_template_id_53d0d8bc_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./ReceiptRemboursementMarker.vue?vue&type=template&id=53d0d8bc&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/ReceiptRemboursementMarker.vue?vue&type=template&id=53d0d8bc&scoped=true");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=template&id=6a59af16&scoped=true"
+/*!********************************************************************************************************!*\
+  !*** ./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=template&id=6a59af16&scoped=true ***!
+  \********************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   render: () => (/* reexport safe */ _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5Numpad_vue_vue_type_template_id_6a59af16_scoped_true__WEBPACK_IMPORTED_MODULE_0__.render)
+/* harmony export */ });
+/* harmony import */ var _node_modules_laravel_mix_node_modules_babel_loader_lib_index_js_clonedRuleSet_5_use_0_node_modules_vue_loader_dist_templateLoader_js_ruleSet_1_rules_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5Numpad_vue_vue_type_template_id_6a59af16_scoped_true__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!../../../../../../node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosV5Numpad.vue?vue&type=template&id=6a59af16&scoped=true */ "./node_modules/laravel-mix/node_modules/babel-loader/lib/index.js??clonedRuleSet-5.use[0]!./node_modules/vue-loader/dist/templateLoader.js??ruleSet[1].rules[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=template&id=6a59af16&scoped=true");
 
 
 /***/ },
@@ -93195,6 +94581,19 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ },
 
+/***/ "./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=style&index=0&id=22c45b59&scoped=true&lang=css"
+/*!**************************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=style&index=0&id=22c45b59&scoped=true&lang=css ***!
+  \**************************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_EncaissementComponent_vue_vue_type_style_index_0_id_22c45b59_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./EncaissementComponent.vue?vue&type=style&index=0&id=22c45b59&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/encaissement/EncaissementComponent.vue?vue&type=style&index=0&id=22c45b59&scoped=true&lang=css");
+
+
+/***/ },
+
 /***/ "./resources/js/components/admin/items/CatalogStudioComponent.vue?vue&type=style&index=0&id=1bd9ad88&scoped=true&lang=css"
 /*!********************************************************************************************************************************!*\
   !*** ./resources/js/components/admin/items/CatalogStudioComponent.vue?vue&type=style&index=0&id=1bd9ad88&scoped=true&lang=css ***!
@@ -93325,6 +94724,19 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ },
 
+/***/ "./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=style&index=0&id=708e0b11&scoped=true&lang=css"
+/*!******************************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=style&index=0&id=708e0b11&scoped=true&lang=css ***!
+  \******************************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosCounterCollectModal_vue_vue_type_style_index_0_id_708e0b11_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosCounterCollectModal.vue?vue&type=style&index=0&id=708e0b11&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/PosCounterCollectModal.vue?vue&type=style&index=0&id=708e0b11&scoped=true&lang=css");
+
+
+/***/ },
+
 /***/ "./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=style&index=0&id=2279c7e9&scoped=true&lang=css"
 /*!*****************************************************************************************************************************!*\
   !*** ./resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue?vue&type=style&index=0&id=2279c7e9&scoped=true&lang=css ***!
@@ -93360,6 +94772,19 @@ __webpack_require__.r(__webpack_exports__);
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_ReceiptRemboursementMarker_vue_vue_type_style_index_0_id_53d0d8bc_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../node_modules/style-loader/dist/cjs.js!../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./ReceiptRemboursementMarker.vue?vue&type=style&index=0&id=53d0d8bc&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/ReceiptRemboursementMarker.vue?vue&type=style&index=0&id=53d0d8bc&scoped=true&lang=css");
+
+
+/***/ },
+
+/***/ "./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=style&index=0&id=6a59af16&scoped=true&lang=css"
+/*!**********************************************************************************************************************!*\
+  !*** ./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=style&index=0&id=6a59af16&scoped=true&lang=css ***!
+  \**********************************************************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_modules_style_loader_dist_cjs_js_node_modules_css_loader_dist_cjs_js_clonedRuleSet_9_use_1_node_modules_vue_loader_dist_stylePostLoader_js_node_modules_postcss_loader_dist_cjs_js_clonedRuleSet_9_use_2_node_modules_vue_loader_dist_index_js_ruleSet_0_use_0_PosV5Numpad_vue_vue_type_style_index_0_id_6a59af16_scoped_true_lang_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../../../../../node_modules/style-loader/dist/cjs.js!../../../../../../node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!../../../../../../node_modules/vue-loader/dist/stylePostLoader.js!../../../../../../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!../../../../../../node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./PosV5Numpad.vue?vue&type=style&index=0&id=6a59af16&scoped=true&lang=css */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9.use[1]!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9.use[2]!./node_modules/vue-loader/dist/index.js??ruleSet[0].use[0]!./resources/js/components/admin/pos/v5/PosV5Numpad.vue?vue&type=style&index=0&id=6a59af16&scoped=true&lang=css");
 
 
 /***/ },

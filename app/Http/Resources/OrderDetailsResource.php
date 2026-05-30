@@ -84,6 +84,10 @@ class OrderDetailsResource extends JsonResource
             'pos_payment_method' => $this->pos_payment_method,
             'pos_payment_note' => $this->pos_payment_note,
             'source' => $this->source,
+            // [GOAL-CAISSE-UNIFIED W-ENC 2026-05-30] Origin signal for the
+            // unified /admin/encaissement queue badge (Borne='kiosk',
+            // Caisse='pos'). Pure projection of an existing nullable column.
+            'source_surface' => $this->source_surface,
             'pos_received_amount' => $this->pos_received_amount,
             'pos_received_currency_amount' => AppLibrary::currencyAmountFormat($this->pos_received_amount),
             'cash_back_amount' => $this->pos_received_amount - $this->total,

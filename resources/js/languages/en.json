@@ -431,6 +431,10 @@
         "demo_wizard_advanced": "Advanced Wizard Demo"
     },
     "label": {
+        "encaisser": "Collect",
+        "encaisser_queue_subtitle": "Orders awaiting collection",
+        "encaisser_queue_empty": "No orders to collect",
+        "guest": "Walk-in",
         "origin": "Origin",
         "caisse": "Counter",
         "fiscal_number": "Fiscal no.",
@@ -1345,6 +1349,7 @@
         "downloading": "Downloading…"
     },
     "button": {
+        "refresh": "Refresh",
         "add": "Add",
         "save": "Save",
         "edit": "Edit",
