@@ -522,7 +522,7 @@ function ScreenStepMenu({ item, selections, setSelections, headingRef }) {
     });
   };
   const options = [
-    { id: 'full',    name: 'Menu complet',  desc: 'Frites + Boisson', price: 3.00, emoji: '🍟🥤' },
+    { id: 'full',    name: 'Menu complet',  desc: 'Frites + Boisson', price: 2.50, emoji: '🍟🥤' },
     { id: 'frites',  name: 'Ajouter Frites', desc: 'Frites uniquement', price: 2.00, emoji: '🍟' },
     { id: 'boisson', name: 'Ajouter Boisson', desc: 'Boisson uniquement', price: 2.00, emoji: '🥤' },
     { id: 'none',    name: 'Sans formule',   desc: 'Plat seul',         price: 0,    emoji: '🚫' },
@@ -776,7 +776,7 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
        item.slug && item.slug.indexOf('bowl-riz-') === 0 ? 'Riz basmati' : null)
     : null;
   const menuLabel = (() => {
-    if (selections.menuChoice === 'full') return 'Menu (Frites + Boisson) +3€';
+    if (selections.menuChoice === 'full') return 'Menu (Frites + Boisson) +2,50€';
     if (selections.menuChoice === 'frites') return 'Ajouter Frites +2€';
     if (selections.menuChoice === 'boisson') return 'Ajouter Boisson +2€';
     // [test-e2e fix B-002/B-003 round-2 2026-05-11] surface "Sans formule" explicitly so
