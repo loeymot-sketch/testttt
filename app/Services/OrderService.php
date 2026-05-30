@@ -2677,10 +2677,16 @@ class OrderService
             })->orderBy($orderColumn, $orderType)->get();
             $salesReportArray = [];
 
+            // [GOAL-2026-05-30 H-03] Revenue figures must be PAID-only so the sales report
+            // agrees with cash-overview (paid-only) and the signed Z. Previously total_earnings
+            // summed `total` over ALL orders incl. UNPAID/PENDING_COUNTER (now common since the
+            // kitchen prepares before encashment) → over-reported revenue. total_orders stays the
+            // placed-volume count (a separate metric); only the MONEY figures filter to PAID.
+            $paidOrders = $orders->where('payment_status', PaymentStatus::PAID);
             $salesReportArray['total_orders'] = $orders->count();
-            $salesReportArray['total_earnings'] = AppLibrary::currencyAmountFormat($orders->sum('total'));
-            $salesReportArray['total_discounts'] = AppLibrary::currencyAmountFormat($orders->sum('discount'));
-            $salesReportArray['total_delivery_charges'] = AppLibrary::currencyAmountFormat($orders->sum('delivery_charge'));
+            $salesReportArray['total_earnings'] = AppLibrary::currencyAmountFormat($paidOrders->sum('total'));
+            $salesReportArray['total_discounts'] = AppLibrary::currencyAmountFormat($paidOrders->sum('discount'));
+            $salesReportArray['total_delivery_charges'] = AppLibrary::currencyAmountFormat($paidOrders->sum('delivery_charge'));
 
             return $salesReportArray;
         } catch (Exception $exception) {
