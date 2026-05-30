@@ -587,7 +587,10 @@ test.describe('Wave T Round 1 — Wave B — KDS chef bump (orders #1 + #2)', ()
     }
     obs(`state02 allergen_pill_count=${allergenCount}`);
 
-    // Wave S-2 verdict (CTA count per card) — pick the CTA + cash-pending count.
+    // [GOAL-2026-05-30 W-D1 — OWNER REVERSAL of Wave S-2] Bump-CTA contract: the kitchen now
+    // prepares BEFORE encashment, so every active KDS card ALWAYS carries the bump CTA; a
+    // cash-pending card ALSO carries the non-blocking "non encaissé" note. Per card: cta===1
+    // always; cash is 0 (paid) or 1 (the note). The old "exactly one of CTA|badge" mutex is gone.
     async function countCtaForCard(cardSel) {
       const cta = await page.locator(`${cardSel} [data-testid="kds-card-cta-ready"]`).count();
       const cash = await page.locator(`${cardSel} [data-testid="kds-card-cash-pending"]`).count();
@@ -596,15 +599,15 @@ test.describe('Wave T Round 1 — Wave B — KDS chef bump (orders #1 + #2)', ()
     const cta1 = await countCtaForCard(card1Sel);
     const cta2 = order2Missing ? { cta: 0, cash: 0 } : await countCtaForCard(card2Sel);
     obs(`state02 cta order1: cta=${cta1.cta} cash=${cta1.cash} | order2: cta=${cta2.cta} cash=${cta2.cash}${order2Missing ? ' (skipped — fixture missing)' : ''}`);
-    const singleCtaOk = order2Missing
-      ? (cta1.cta + cta1.cash) === 1
-      : ((cta1.cta + cta1.cash) === 1 && (cta2.cta + cta2.cash) === 1);
-    report.validations['S-2_single_cta'] = order2Missing
-      ? (singleCtaOk ? 'PASS_ORDER1_ONLY' : 'FAIL')
-      : (singleCtaOk ? 'PASS' : 'FAIL');
-    if (!singleCtaOk) {
-      finding('P1', 'B-S2-CTA',
-        `Single-CTA contract broken: order1 cta=${cta1.cta} cash=${cta1.cash} ; order2 cta=${cta2.cta} cash=${cta2.cash}${order2Missing ? ' (order_2 missing from fixture)' : ''}`);
+    const ctaContractOk = order2Missing
+      ? (cta1.cta === 1)
+      : (cta1.cta === 1 && cta2.cta === 1);
+    report.validations['W-D1_bump_cta_present'] = order2Missing
+      ? (ctaContractOk ? 'PASS_ORDER1_ONLY' : 'FAIL')
+      : (ctaContractOk ? 'PASS' : 'FAIL');
+    if (!ctaContractOk) {
+      finding('P1', 'B-WD1-CTA',
+        `Bump-CTA contract broken (every active card must carry the CTA post-W-D1): order1 cta=${cta1.cta} cash=${cta1.cash} ; order2 cta=${cta2.cta} cash=${cta2.cash}${order2Missing ? ' (order_2 missing from fixture)' : ''}`);
     }
 
     // ──── State 03 — Order #1 card detail (items visible) ──────────────────

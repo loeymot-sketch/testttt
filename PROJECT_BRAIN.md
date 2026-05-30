@@ -1579,6 +1579,12 @@ P0-11 (SenangPay), P0-15 (frozen-zone breach).
 Cette section est **append-only**. Toute décision validée par l'owner
 y est enregistrée pour éviter la dérive et le re-questioning.
 
+### caisse-unifiée 2026-05-30 — Owner decisions (GOAL_CAISSE_UNIFIED_HISTORY)
+- **D1 = REVERSE Wave S-2** (commit `ef94b29a9`). L'ancienne règle Wave S-2 (2026-05-20) « la cuisine NE DOIT PAS bump une commande cash-comptoir avant encaissement » est **RENVERSÉE par l'owner**. Désormais : **la cuisine PRÉPARE avant l'encaissement** ; le KDS montre une note non-bloquante « non encaissé / paiement en attente » + garde le bouton bump actif ; le caissier encaisse plus tard dans la page unifiée `/admin/encaissement`. ⛔ **NE PAS ré-introduire de gate paiement sur le chemin de bump** (KdsOrderCard/KdsV2Grid/KitchenDisplaySystemOrderService) — c'est voulu (owner accepte le risque food-waste). Le serveur n'a jamais bloqué (changeStatus ne gate que sur le statut). 3 sentinelles + 3 e2e specs réalignées au nouveau contrat.
+- **D2 = encaissement UNIFIÉ option (B)** : tout le monde (borne + comptoir) passe par **create-then-collect** dans UNE seule file/page `/admin/encaissement` (cash + carte via `PosCounterCollectModal` non-frozen + `confirmCounterPayment`) ; le paiement inline du wizard frozen est **déprécié** (owner-acté, même si le wizard reste figé/intact). fiscal-seq alloué à l'encaissement (NF525-safe). Badge origine Borne/Caisse. [À CONSTRUIRE — waves W-ENC + delta-B.]
+- **H-03** (commit `4b4bd2591`) : sales-report `total_earnings`/discounts/delivery = **payés-seulement** (cohérent cash-overview + Z) ; `total_orders` reste le volume placé.
+- **OWNER-CONFIRM en attente** : (WD1-02) l'OSS affiche un order PREPARED-non-payé en « Prêt » — probablement voulu (signal au client de venir payer) ; (CFR-1, frozen) refund post-Z non-netté dans `total_by_tax_rate`.
+
 ### iter6 — Owner replies
 - **Q1=A** FR-lock V1 conservé (multi-locale UI désactivé v-if=false)
 - **Q2=B** Migration archive-then-delete recoverable (au lieu de DELETE direct)

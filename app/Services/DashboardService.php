@@ -384,14 +384,24 @@ class DashboardService
                 ->where('payment_status', PaymentStatus::PAID)
                 ->sum('total');
 
-            // Nombre de commandes
+            // Nombre de commandes (volume placé — toutes, payées ou non)
             $daily_orders = $this->orderQuery()
                 ->where('order_datetime', '>=', $startParis)
                 ->where('order_datetime', '<', $endParisExclusive)
                 ->count();
 
+            // [GOAL-2026-05-30 H03-6] Ticket moyen = CA payé / commandes PAYÉES (même base que
+            // daily_sales). Avant : daily_sales/daily_orders mélangeait argent-payé / commandes-toutes
+            // → faussé, surtout depuis W-D1 (beaucoup d'orders restent PENDING_COUNTER au moment du
+            // rapport car la cuisine prépare avant l'encaissement). daily_orders reste le volume placé.
+            $daily_paid_orders = $this->orderQuery()
+                ->where('order_datetime', '>=', $startParis)
+                ->where('order_datetime', '<', $endParisExclusive)
+                ->where('payment_status', PaymentStatus::PAID)
+                ->count();
+
             // Ticket Moyen
-            $average_ticket = $daily_orders > 0 ? ($daily_sales / $daily_orders) : 0;
+            $average_ticket = $daily_paid_orders > 0 ? ($daily_sales / $daily_paid_orders) : 0;
 
             return [
                 'daily_sales' => AppLibrary::currencyAmountFormat($daily_sales),

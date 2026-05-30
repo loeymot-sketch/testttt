@@ -61,14 +61,16 @@ test.describe('Wave S-2 — KDS 1-clic CTA + cash-pending exception', () => {
     });
   });
 
-  test('mutual exclusion: cash-pending card never carries the Prêt CTA', async ({ page }) => {
+  test('cash-pending card carries BOTH the non-blocking note AND the bump CTA (W-D1 prepare-before-pay)', async ({ page }) => {
     await loginAsChefOperator(page, CHEF_EMAIL, CHEF_PASSWORD);
     await expect(page).toHaveURL(KDS_SURFACE_RE, { timeout: 20_000 });
     await page.waitForTimeout(3_500);
 
-    // For every card that has a cash-pending badge, verify the same card
-    // does NOT have a CTA button — this proves the v-if/v-else mutex
-    // (template invariant: only one of the two ever renders per card).
+    // [GOAL-2026-05-30 W-D1 — OWNER REVERSAL of the Wave S-2 mutex] The kitchen now PREPARES an
+    // order BEFORE encashment, so a cash-pending card shows the "non encaissé / paiement en attente"
+    // NOTE *and* keeps the bump CTA enabled (the cashier collects later in /admin/encaissement).
+    // The note and the CTA are NO LONGER mutually exclusive — both must be present on a cash-pending
+    // card. (Was: cash-pending replaced the CTA with a passive badge.)
     const cashPendingCards = page.locator(
       '.kds-card:has([data-testid="kds-card-cash-pending"])'
     );
@@ -76,19 +78,8 @@ test.describe('Wave S-2 — KDS 1-clic CTA + cash-pending exception', () => {
 
     for (let i = 0; i < count; i++) {
       const card = cashPendingCards.nth(i);
-      const cta = card.locator('[data-testid="kds-card-cta-ready"]');
-      await expect(cta).toHaveCount(0);
-    }
-
-    // Symmetric assertion: CTA-bearing cards never carry the badge.
-    const ctaCards = page.locator(
-      '.kds-card:has([data-testid="kds-card-cta-ready"])'
-    );
-    const ctaCount = await ctaCards.count();
-    for (let i = 0; i < ctaCount; i++) {
-      const card = ctaCards.nth(i);
-      const badge = card.locator('[data-testid="kds-card-cash-pending"]');
-      await expect(badge).toHaveCount(0);
+      await expect(card.locator('[data-testid="kds-card-cash-pending"]')).toHaveCount(1);
+      await expect(card.locator('[data-testid="kds-card-cta-ready"]')).toHaveCount(1);
     }
 
     await page.screenshot({

@@ -608,6 +608,15 @@ class PaymentService
             $this->assertCounterDeferredOrder($locked);
             PaymentStateMachine::assertCanTransition((int) $locked->payment_status, PaymentStatus::REFUNDED);
 
+            // [GOAL-2026-05-30 WD1-03] COMPENSATING ACTION (intentional, like recall/refund):
+            // the cashier cancels an abandoned counter-deferred order. Since W-D1 the chef may have
+            // already bumped it to PREPARING/PREPARED before the cashier cancels, so $oldStatus can
+            // be PREPARED — a transition OrderStateMachine::allows() would reject for the NORMAL path.
+            // We deliberately bypass allows() (recordTransition just appends the business-events
+            // journal row, NOT the HMAC fiscal chain) because an out-of-band cancel is a legitimate
+            // compensating action regardless of kitchen progress (owner accepts the food-waste risk
+            // of prep-before-pay). NF525: no fiscal-seq was allocated (never collected), so nothing
+            // enters the signed Z.
             $oldStatus = (int) $locked->status;
             $locked->payment_status = PaymentStatus::REFUNDED;
             $locked->status = OrderStatus::CANCELED;

@@ -40,8 +40,9 @@
 //     to PREPARING, NOT directly to PREPARED. Two taps required to reach PRÊT
 //     when chef sees a CONFIRMÉE ticket. (Most paid orders arrive in
 //     PREPARING from Wave S-1 server-side auto-transition.)
-//   - Wave S-2 cash-pending mutex stays: cards with the
-//     `[data-testid="kds-card-cash-pending"]` badge never expose the CTA.
+//   - [GOAL-2026-05-30 W-D1 — REVERSED Wave S-2] cash-pending cards now expose the CTA too:
+//     the kitchen prepares BEFORE encashment, so a card with the
+//     `[data-testid="kds-card-cash-pending"]` note ALSO carries the bump CTA (no longer a mutex).
 
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
