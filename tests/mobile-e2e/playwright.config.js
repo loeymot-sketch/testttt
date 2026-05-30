@@ -34,7 +34,10 @@ module.exports = defineConfig({
     ['json', { outputFile: '../../reports/antigravity/mobile-loyalty-latest.json' }],
   ],
   use: {
-    baseURL: 'http://127.0.0.1:8081',
+    // [2026-05-30] moved 8081 -> 8087: port 8081 was hijacked by another project's
+    // `serve dist -l 8081` (pregnancy-app "Mama & Bébé"), and reuseExistingServer:true
+    // would silently reuse the WRONG app. 8087 is Cayenne-mobile-dedicated.
+    baseURL: 'http://127.0.0.1:8087',
     viewport: { width: 390, height: 844 },   // iPhone 13
     deviceScaleFactor: 2,
     isMobile: true,
@@ -44,8 +47,8 @@ module.exports = defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'php -S 127.0.0.1:8081 -t mobile/',
-    url: 'http://127.0.0.1:8081/index.html',
+    command: 'php -S 127.0.0.1:8087 -t mobile/',
+    url: 'http://127.0.0.1:8087/index.html',
     reuseExistingServer: true,
     timeout: 30_000,
     cwd: require('path').resolve(__dirname, '../..'),

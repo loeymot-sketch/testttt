@@ -28,7 +28,7 @@ const fs = require('fs');
 const path = require('path');
 
 const SCREEN_DIR = path.join(__dirname, '__screenshots__/test-e2e-mobile-realignment-2026-05-16');
-const MOBILE_URL = 'http://127.0.0.1:8081/index.html';
+const MOBILE_URL = process.env.MOBILE_URL || 'http://127.0.0.1:8087/index.html';
 
 if (!fs.existsSync(SCREEN_DIR)) fs.mkdirSync(SCREEN_DIR, { recursive: true });
 

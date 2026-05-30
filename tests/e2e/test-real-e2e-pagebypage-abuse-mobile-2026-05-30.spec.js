@@ -23,7 +23,9 @@ const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 
-const MOBILE_URL = 'http://127.0.0.1:8081/index.html';
+// [2026-05-30] 8081 was hijacked by another project (pregnancy-app serve dist -l 8081);
+// use 8087 (Cayenne-mobile-dedicated) — override via MOBILE_URL env if needed.
+const MOBILE_URL = process.env.MOBILE_URL || 'http://127.0.0.1:8087/index.html';
 const ROOT = path.resolve(__dirname, '../..');
 const SHOT_DIR = path.join(ROOT, 'reports/test-e2e/frontends-abuse-2026-05-30/screenshots/mobile');
 const FINDINGS_DIR = path.join(ROOT, 'reports/test-e2e/frontends-abuse-2026-05-30/round-1');
