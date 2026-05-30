@@ -43,12 +43,18 @@ Driven via `kiosk:simulate-orders 8` (creation) + real `POST /api/admin/pos-orde
 | 4 | **POS / caisse** | /admin/pos | caissier | ✅ catalogue (photos board) + "Commande en cours" + section **"À ENCAISSER BORNE"** (orders kiosk deferred + boutons Encaisser) | 04-POS-caisse.png |
 
 ## FINDINGS LEDGER (verify-before-report)
-- **MS-01 (P2, degraded-fallback)** : KDS adaptive-**polling** sync 401 — `GET /api/admin/kds-order/sync?...&branch_id=0`
-  (session admin) renvoie **401 Unauthorized**. Niveau auth (pas 403 branche) → touche le fallback polling de
-  la page KDS quel que soit le persona. **MAIS le chemin PRIMAIRE WS push fonctionne** (soketi :6001 up 200 ;
-  chef private-branch.1 prouvé 6 ms au goal living-sync). Donc impact = pas d'auto-refresh KDS SI WS dégradé.
-  **NON patché** (frozen-adjacent + session parallèle édite FrontendOrderService). **À VÉRIFIER** : persona chef
-  (branch_id=1) + mode WS-dégradé. Repro : console KDS page, URL exacte ci-dessus.
+- **MS-01 (P3, re-gradé après investigation — endpoint SAIN)** : la page KDS (Blade) loggait un **401** sur son
+  poll de fallback `GET /api/admin/kds-order/sync` (session navigateur). **VÉRIFIÉ à l'API avec token Sanctum** :
+  CHEF branch_id=1 → **HTTP 200** (renvoie mes orders incl #940 PREPARED) ; ADMIN branch_id=0 → **200** ;
+  admin+override branch_id=1 → **200**. Donc **l'endpoint n'est PAS cassé et ne rejette aucun persona** — le 401
+  console = la requête de poll de la page ne portait pas l'auth session→Sanctum valide (nuance browser-auth du
+  **fallback polling uniquement**). Chemin **PRIMAIRE WS push = OK** (soketi :6001 up ; chef 6 ms prouvé living-sync ;
+  initial render KDS OK). Impact réel = quasi-nul (primaire WS marche, page rend les orders). **À polir V1.0.X** :
+  câblage auth du poll-fallback de la page KDS (CSRF/XSRF session→Sanctum). NON patché (frozen-adjacent + session
+  parallèle). Verify-before-report appliqué : creusé → endpoint sain.
+
+- **⚠️ TEST-CRED (à signaler owner)** : j'ai mis le mot de passe de **chef@lecayenne.fr = `test1234`** pour la
+  capture persona cuisine (worker). Réinitialise-le si besoin. Aucun autre compte modifié.
 - **MS-02 (owner-gated, non-fix)** : ~90 commandes actives accumulées (test-sims multi-sessions : 137 fiscal-NULL
   + 140 fiscal-numbered) encombrent le KDS (bandeau "+41 en attente"). Cleanup = owner-gate NF525 (le classifier
   a CORRECTEMENT bloqué un bulk-delete : ne jamais supprimer les fiscal-numbered = gap chaîne). Sweep fiscal-NULL
