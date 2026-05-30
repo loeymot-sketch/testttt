@@ -679,9 +679,11 @@ function ScreenStepBolSupplements({ item, selections, setSelections, headingRef 
               data-testid={`bol-supp-${s.id}`}
               style={{ outline: 'none' }}
             >
-              <span aria-hidden="true" style={{ fontSize: 24, marginRight: 10 }}>
-                {isGratine ? '🧀' : s.id === 'sb-oignon-frais' ? '🧅' : s.id === 'sb-jambon' ? '🥓' : '🍄'}
-              </span>
+              {s.image
+                ? <img src={s.image} alt="" aria-hidden="true" style={{ width: 36, height: 36, marginRight: 10, borderRadius: 8, objectFit: 'cover', background: 'var(--cream, #f5f0e8)' }} onError={(e) => { e.target.style.display = 'none'; }}/>
+                : <span aria-hidden="true" style={{ fontSize: 24, marginRight: 10 }}>
+                    {isGratine ? '🧀' : s.id === 'sb-oignon-frais' ? '🧅' : s.id === 'sb-jambon' ? '🥓' : '🍄'}
+                  </span>}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
                   {s.name}{isGratine && <span style={{ marginLeft: 6, fontSize: 10, padding: '2px 6px', background: 'var(--orange)', color: '#fff', borderRadius: 4, fontWeight: 700, letterSpacing: '0.05em' }}>POPULAIRE</span>}

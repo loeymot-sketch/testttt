@@ -173,10 +173,10 @@
 
   // Suppléments spécifiques aux bols (heal-light v2 2026-05-14 — gratiné +2€ bol-specific)
   const SUPPLEMENTS_BOLS = [
-    { id: 'sb-oignon-frais',   name: 'Oignon frais',    price: 0.90 },
-    { id: 'sb-jambon',         name: 'Jambon',          price: 0.90 },
-    { id: 'sb-champignons',    name: 'Champignons',     price: 0.90 },
-    { id: 'sb-boule-gratinee', name: 'Boule gratinée',  price: 2.00 },
+    { id: 'sb-oignon-frais',   name: 'Oignon frais',    price: 0.90, image: ASSET_BASE + 'oignons-frits.png' },
+    { id: 'sb-jambon',         name: 'Jambon',          price: 0.90, image: ASSET_BASE + 'jambon-dinde.png' },
+    { id: 'sb-champignons',    name: 'Champignons',     price: 0.90, image: ASSET_BASE + 'champignons.png' },
+    { id: 'sb-boule-gratinee', name: 'Boule gratinée',  price: 2.00, image: ASSET_BASE + 'bol-frites-gratine.png' },
   ];
 
   // Formules menu (heal-light v2 2026-05-14 — menu addon 3.00 → 2.50€)
@@ -341,7 +341,7 @@
           addon_role: null,
           default_choice_id: null,
           choices: SUPPLEMENTS_BOLS.map(s => ({
-            id: s.id, name: s.name, price: s.price, image: null, is_default: false,
+            id: s.id, name: s.name, price: s.price, image: s.image || null, is_default: false,
           })),
         },
         {

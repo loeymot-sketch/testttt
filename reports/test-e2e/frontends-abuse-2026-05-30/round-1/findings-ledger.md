@@ -52,3 +52,19 @@ Default lean: (A), because the standalone changes are documented + dated + inten
 - **galette**: kiosk galette.png is a CHICKEN-WRAP bound to potato-galette Item — subjects disagree in kiosk itself → owner decision.
 - **Wholesale 41-item generated_* render → real-photo swap**: owner aesthetic/asset decision (most products have no real photo in-repo). NOT bundled.
 - **Image-reuse P3** (cayenne==big-cayenne, 8 bowls share 1 render): known backlog B-ML-04.
+
+## ROUND 3 — Board-photo alignment + full web sweep (2026-05-30 owner /goal continuation)
+### Applied (board = base of truth, owner decisions)
+- BOARD PHOTOS mirrored onto mobile+web (ITEM_IMG/categories/sauces/meats/crudités/supplements/drinks/frites-styles → public/images/menu board photos). Verified: real tacos/nuggets/cheddar render; 0 generated_* placeholders on live items.
+- TACOS: M 6,90 · L 8,90 (owner 2026-05-30). Both surfaces.
+- fs-cheddar cheesecake → frites-cheddar.png; fs-cheddar-oignon → frites-cheddar-oignons.png.
+- Commits: testttt 56c1cf991, web 4588dab.
+
+### Web full-page sweep (78 tests pass, P0=0, all pages incl hidden/direct → payment, ×3 viewports)
+- All pages render, 0 crash/blank/overflow/raw-label/console/404. Board photos GREEN (14 subjects vision-verified).
+
+### F-ORANGINA (board data-gap, NOT a standalone defect) — deferred owner
+Orangina renders tropico.png — but config/menu_images.php:145 maps `orangina→tropico.png` (the BOARD itself shows Tropico for Orangina; no faithful Orangina asset exists in-repo). Standalone correctly MIRRORS the board per mandate. Owner: add a real orangina.png to public/images/menu/ → propagates to board + both frontends. No standalone heal (would diverge from board + no correct asset).
+
+### F-HERO-PROMO (P2 disclosed) — web only
+screens.jsx:173-176 hero special "Sandwich Cayenne + Menu à 9,00€" (lc-special-price) vs un-wired wizard 10,00€ (7,50+2,50). Intentional counter-promo (About page prices at :737 correctly match menu). Verify the 9,00 deal is current; un-wired V1 doesn't apply promos in-app. Not healed (marketing copy, owner intent).
