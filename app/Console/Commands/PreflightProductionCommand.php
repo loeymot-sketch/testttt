@@ -56,10 +56,92 @@ class PreflightProductionCommand extends Command
         $this->checkOpsCommandAvailability();
         $this->checkFiscalSecrets();
         $this->checkFiscalVerifyChain();
+        $this->checkMenuVat();
+        $this->checkPosSimulationHardware();
+        $this->checkManualDiscountGate();
         $this->checkDatabaseReachable();
         $this->checkCacheReachable();
 
         return $this->report();
+    }
+
+    /**
+     * [GOAL-GOLIVE-VAT10 2026-05-30] CRITICAL: every active menu item must carry
+     * a non-zero VAT (10% TTC). A 0%/NULL-tax item boots fine (no boot guard
+     * covers it) but every receipt + signed Z would be fiscally wrong. This also
+     * catches a stale/partial menu seed (too few items) before deploy — the
+     * single check that makes "the receipt is legally correct" verifiable.
+     */
+    private function checkMenuVat(): void
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('items')) {
+            $this->addFinding('WARNING', 'MENU_VAT', 'items table missing — cannot verify VAT.');
+            return;
+        }
+
+        $activeItems = \App\Models\Item::query()->where('status', \App\Enums\Status::ACTIVE)->count();
+        if ($activeItems === 0) {
+            $this->addFinding('CRITICAL', 'MENU_VAT', 'No active menu items — the box would open with an empty/unseeded catalogue.');
+            return;
+        }
+
+        // An item is fiscally wrong if its tax is NULL or resolves to a 0% rate.
+        $zeroRateTaxIds = \App\Models\Tax::query()->where('tax_rate', 0)->pluck('id')->all();
+        $wrong = \App\Models\Item::query()
+            ->where('status', \App\Enums\Status::ACTIVE)
+            ->where(function ($q) use ($zeroRateTaxIds) {
+                $q->whereNull('tax_id');
+                if (! empty($zeroRateTaxIds)) {
+                    $q->orWhereIn('tax_id', $zeroRateTaxIds);
+                }
+            })
+            ->count();
+
+        if ($wrong > 0) {
+            $this->addFinding('CRITICAL', 'MENU_VAT', "{$wrong}/{$activeItems} active items carry NULL/0% VAT — receipts + Z would be fiscally wrong. Run `php artisan fiscal:assign-menu-vat`.");
+        } else {
+            $this->ok('MENU_VAT', "{$activeItems} active items, all on a non-zero VAT rate");
+        }
+
+        // Completeness sanity: the canonical Le Cayenne menu is 45 items. A much
+        // smaller count means the menu did not seed completely (e.g. a stale
+        // `migrate:fresh --seed` that produced only the handful of matching
+        // config groups). WARNING (not CRITICAL — the owner may trim the menu),
+        // but it surfaces the seed-parity gap before opening.
+        $canonicalFloor = 40;
+        if ($activeItems < $canonicalFloor) {
+            $this->addFinding('WARNING', 'MENU_COUNT', "Only {$activeItems} active items — the canonical Le Cayenne menu is 45. Verify the menu seeded completely (the committed config/menu.php seed does NOT reproduce the canonical catalogue; preserve the validated DB menu).");
+        } else {
+            $this->ok('MENU_COUNT', "{$activeItems} active items (canonical ~45)");
+        }
+    }
+
+    /**
+     * [GOAL-GOLIVE-VAT10 / B3] CRITICAL in production: POS_SIMULATION_HARDWARE
+     * must be false — true bypasses the cash-drawer-open requirement (NF525 cash
+     * trail). Mirrors the AppServiceProvider boot guard.
+     */
+    private function checkPosSimulationHardware(): void
+    {
+        if (config('pos.simulation_hardware') === true) {
+            $this->addFinding('CRITICAL', 'POS_SIMULATION_HARDWARE', 'POS_SIMULATION_HARDWARE=true bypasses the cash-drawer cash trail (NF525). Set false for production.');
+        } else {
+            $this->ok('POS_SIMULATION_HARDWARE', 'false (cash-drawer discipline enforced)');
+        }
+    }
+
+    /**
+     * [GOAL-GOLIVE-VAT10 / F1-dormancy] WARNING: manual POS discounts enabled
+     * while the F1 discount→HT/TVA split (frozen) is unfixed → a discounted
+     * order signs a fiscally-incorrect Z. V1 default is OFF.
+     */
+    private function checkManualDiscountGate(): void
+    {
+        if (config('pos.manual_discount_enabled') === true) {
+            $this->addFinding('WARNING', 'POS_MANUAL_DISCOUNT', 'Manual POS discounts ENABLED while F1 (discounted-order TVA split) is unfixed — discounted orders would sign a fiscally-wrong Z. Keep OFF until F1 is fixed under a lock-plan.');
+        } else {
+            $this->ok('POS_MANUAL_DISCOUNT', 'disabled (F1 dormant)');
+        }
     }
 
     private function checkAppEnv(): void

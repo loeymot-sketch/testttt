@@ -4,17 +4,39 @@
 
 > Order matters. Do these on the production box, in sequence, BEFORE the first real customer.
 
-## 1. Clean fiscal start (blocker B2)
-The dev DB carries 168 issued fiscal numbers + ~29 test/soak orders. The production NF525 chain must start clean.
+## 1. Clean fiscal start (blocker B2) — PRESERVE the canonical menu
+
+The dev DB carries issued fiscal numbers + test/soak orders. The production NF525
+chain must start clean. **⚠️ DO NOT `migrate:fresh --seed` to get the menu** — the
+committed `config/menu.php` items array is STALE (old/fictional groups: nos-tacos,
+ojja, omelettes, salades…) and does NOT match the current category slugs, so a
+fresh seed produces only ~8 non-canonical items. The **DB items table is the SSOT**
+(45 validated Le Cayenne items) — preserve it.
+
+**Correct procedure — choose ONE:**
+
+**(A) Same box, clear only test fiscal/order data (recommended — keeps the validated menu):**
+Run BEFORE the `.env`→production flip and BEFORE the Ansible CVP0-1 GRANT-REVOKE
+(so the order/fiscal test rows can be cleared; the NF525 DELETE triggers are
+MySQL-prod-only). Clear: orders, order_items, order_payments, transactions,
+order_quotes, pos_parked_orders, cash_drawer_sessions, cash_movements,
+domain_events, order_status_transitions, z_reports, audit_logs, and reset the
+fiscal sequence. Keep: items, categories, menu, wizard profiles, users, settings.
+
+**(B) Fresh box: restore the validated DB backup** (`storage/backups/db-daily/` —
+the daily backup contains the canonical menu), then apply (A) to clear any test
+orders in it.
+
+Then, regardless of path:
 ```bash
-php artisan migrate:fresh --seed       # destroys test data, rebuilds schema + canonical menu
-php artisan fiscal:verify-chain --all  # expect: empty/fresh chain, CHAIN OK
-php artisan fiscal:assign-menu-vat     # belt-and-suspenders: confirm 45/45 items on VAT 10% (seed already does it)
+php artisan fiscal:assign-menu-vat     # idempotent: confirm/repair 45/45 items on VAT 10% TTC
+php artisan fiscal:verify-chain --all  # expect: fresh chain, CHAIN OK
+php artisan app:preflight-production    # GO/NO-GO GATE — see step 7
 ```
-After this the menu is the canonical 45 items, **all carrying VAT 10% TTC** (the seeder now resolves the VAT 10% row — fixed in this cycle). Verify:
+Verify the menu:
 ```bash
-php artisan tinker --execute="echo \App\Models\Item::where('status',5)->where('tax_id', \App\Models\Tax::where('tax_rate',10)->where('name','VAT')->value('id'))->count().' / '.\App\Models\Item::where('status',5)->count();"
-# expect: 45 / 45
+php artisan tinker --execute="echo \App\Models\Item::where('status',5)->whereHas('tax', fn(\$q)=>\$q->where('tax_rate',10))->count().' / '.\App\Models\Item::where('status',5)->count();"
+# expect: 45 / 45  (anything < 40 means the menu did not preserve/seed completely — app:preflight-production WARNS on this)
 ```
 
 ## 2. The three .env flips (blocker B3 — boot guard enforces)
@@ -62,12 +84,25 @@ A cash sale with no open session is blocked at the controller (NF525 cash trail)
 ## 6. Receipt printer (strong-recommend S2 — not a hard blocker)
 `Printer::count()=0`. French law (2023 anti-gaspillage): ticket **on request**, not systematic — so you can open without one. To hand paper tickets, configure one ESC/POS thermal printer in admin (`EscPosPrinterService` is wired). The fiscal ticket DATA + EOD PDF already generate.
 
-## 7. Pre-open smoke (5 min, on the box)
+## 7. GO/NO-GO GATE — `app:preflight-production`
+The single command that decides safe-to-open. Run it AFTER steps 1–4:
+```bash
+php artisan app:preflight-production
+# Exit 0 = safe. Exit 1 = at least one CRITICAL — DO NOT open.
+```
+It hard-checks (CRITICAL): APP_ENV=production, APP_DEBUG=false, app key, cache/queue
+drivers, fiscal secrets, fiscal verify-chain, **MENU_VAT** (every active item on a
+non-zero VAT — catches a 0%/stale menu), **POS_SIMULATION_HARDWARE=false** (cash
+trail). WARNINGs: **MENU_COUNT** (< 40 active items → menu incomplete vs canonical
+45), **POS_MANUAL_DISCOUNT** enabled while F1 unfixed, log channel. On dev today it
+correctly FAILS on POS_SIMULATION_HARDWARE=true — that is the flip you make in step 2.
+
+## 8. Pre-open smoke (5 min, on the box)
 - Place ONE real test order on the kiosk → it appears on KDS → collect at the caisse → **receipt shows 10% TVA, total unchanged** → it lands in `/admin/historique` with a fiscal number.
 - `php artisan fiscal:verify-chain --all` → CHAIN OK.
-- Then `migrate:fresh --seed` ONE more time if that smoke order should not be the first real fiscal record (or keep it — your call; it is a real, correct order).
+- If that smoke order should not be the first real fiscal record, re-run the step-1 (A) order/fiscal clear (NOT `migrate:fresh --seed`, which would wipe the canonical menu). Or keep it — it is a real, correct order.
 
 ## Deferred / owner decisions (not go-live blockers if handled)
-- **F1** (TVA/HT split on DISCOUNTED orders, frozen) — dormant because offers are disabled (S1). **Do not enable manual POS discounts until F1 is fixed under a lock-plan.** If you never discount, it never triggers.
+- **F1** (TVA/HT split on DISCOUNTED orders, frozen) — now ENFORCED dormant: offers disabled (S1) AND manual POS discounts disabled (`pos.manual_discount_enabled=false`, this cycle). A discount cannot be applied → F1 cannot fire. **Do not set `POS_MANUAL_DISCOUNT_ENABLED=true` until F1 is fixed under a lock-plan** (preflight WARNS if you do).
 - **delta-B** (walk-in unified collection) — built, default OFF; activate only after the cross-Z-window settlement decision.
 - **changePaymentStatus escape-Z** — pre-existing, detect-only via the `fiscal:verify-z-membership` cron (now firing 06:05).
