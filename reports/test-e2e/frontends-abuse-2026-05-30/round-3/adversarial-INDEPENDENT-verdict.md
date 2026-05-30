@@ -109,3 +109,15 @@ HERO_IMG signature art — all confirmed still as-classified; none surfaced as n
 - Driving spec: `tests/e2e/test-real-e2e-fullpage-web-indep-drive-2026-05-30.spec.js` (1 of 2 tests "fails" only on the 🚫 sentinel over-assertion; sandwich test PASSED clean).
 - Independent PNGs: `round-3/independent-drive/{bowl-step-0-sauce,bowl-step-1-supplmentsdubo,bowl-step-2-ajouterunebois,sandwich-step-0-choisisviande,sandwich-step-1-crudits,sandwich-step-2-supplmentsgour,sandwich-step-6-saucepourlesfr}.png`
 - Mobile abuse: 18/18 (8087). Provided web captures: web-fullpage/web-wizard-{viande,supp}-step.png. Mobile: 08-wiz-bol-step1/2.png.
+
+---
+## MAIN-BRAIN FINAL VISUAL CONFIRMATION (2026-05-30, by the orchestrator, not delegated)
+Read post-board-repoint mobile captures with my own eyes (owner: "the brain analyzes screenshots"):
+- `06-wiz-sandwich-step0.png` (Viandes): Poulet mariné/curry/tandoori/crispy = 4 distinct REAL chicken photos; required-1 enforced (0/1, Next disabled). ✓
+- `06-wiz-sandwich-step1.png` (Crudités): Salade=real lettuce, Tomate=real tomato, Oignon=real red onion, Cornichon=real pickles. ✓
+- `06-wiz-sandwich-step2.png` (Suppléments): Cheddar/Raclette/Emmental/Œuf/Boursin/Légumes/Jambon/Oignon frais/Champignons = ALL correct real subjects (the exact wrong-subject images — burger-cheddar/cheesecake/mayo-boursin — that started this cycle are now ALL correct). ✓
+- `08-wiz-bol-step1.png` (Suppléments du bol): real onions/ham/mushrooms/gratinated-bowl. ✓
+- `21-cart-recap` + `22-modal-pay-choice`: numeric integrity (12,40 = 8,90+2,00+1,50), clean un-wired stop. ✓
+Palette black/orange/yellow/white throughout. No emoji on any food option. CONFIRMED done.
+
+## FINAL RE-TEST (fresh, post-all-heals): mobile 35/35 + web 52/52, 0 P0/P1. Working tree clean. GOAL DONE.
