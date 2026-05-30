@@ -671,6 +671,22 @@ class OrderService
                     $validated['idempotency_key'] = substr($idempotencyKey, 0, 64);
                 }
 
+                // [GOAL-CAISSE-UNIFIED delta-(B) 2026-05-30] Walk-in → counter
+                // collection routing. When pos.walkin_route_to_counter is ON (or
+                // the request opts in per-order), the POS walk-in order is created
+                // DEFERRED — identical markers to the kiosk Plan B cash-at-counter
+                // path (FrontendOrderService:266-267): PENDING_COUNTER +
+                // COUNTER_DEFERRED + CASH_ON_DELIVERY. It then joins the unified
+                // /admin/encaissement queue and is sealed (PAID + fiscal_sequence_no
+                // allocated, gap-free) ONLY via PaymentService::confirmCounterPayment
+                // at collection — NEVER here. Default OFF preserves inline-paid POS.
+                $deferToCounter = config('pos.walkin_route_to_counter') === true
+                    || $request->boolean('defer_to_counter');
+                if ($deferToCounter) {
+                    $validated['payment_method'] = \App\Enums\PaymentGateway::CASH_ON_DELIVERY;
+                    $validated['pos_payment_method'] = \App\Enums\PosPaymentMethod::COUNTER_DEFERRED;
+                }
+
                 // [AUDIT-P1-A] Validate branch_id ownership: cashier can only create orders for their own branch.
                 // Only a real global Admin (Admin role + branch_id=0) can create orders for any branch.
                 $authUser = \Illuminate\Support\Facades\Auth::user();
@@ -697,10 +713,14 @@ class OrderService
                 // save() + UPDATE round-trip and ensures OrderCreated
                 // (dispatched at line 1088 inside the same tx) encodes
                 // the correct status payload for KDS.
+                // [GOAL-CAISSE-UNIFIED delta-(B) 2026-05-30] When deferring to the
+                // counter, this is a counter-collect order (kitchen prepares before
+                // pay, per W-D1) — same policy input the kiosk cash-at-counter path
+                // uses, so the order still auto-promotes to PREPARING.
                 $posInitialStatus = AutoPrepareOnPaidPolicy::shouldPromote(
                     surface: 'pos',
                     posPaymentMethod: null,
-                    isCounterCollect: false,
+                    isCounterCollect: $deferToCounter,
                 )
                     ? AutoPrepareOnPaidPolicy::nextStatus()
                     : OrderStatus::ACCEPT;
@@ -719,7 +739,10 @@ class OrderService
                         'creator_id' => Auth::check() ? (int) Auth::id() : null,
                         'status' => $posInitialStatus,
                         'token' => $request->token,
-                        'payment_status' => PaymentStatus::PAID,
+                        // [GOAL-CAISSE-UNIFIED delta-(B)] PENDING_COUNTER when the
+                        // walk-in is routed to the unified collection queue; PAID
+                        // for the legacy inline-paid-at-creation flow (default).
+                        'payment_status' => $deferToCounter ? PaymentStatus::PENDING_COUNTER : PaymentStatus::PAID,
                         'order_datetime' => date('Y-m-d H:i:s'),
                         'preparation_time' => (int) (Settings::group('order_setup')->get('order_setup_food_preparation_time') ?? 15),
                         'total'    => 0,
@@ -1032,8 +1055,21 @@ class OrderService
                     // transaction rolls back, no sequence number is effectively
                     // "consumed" (next call sees the same MAX again). NF525 requires
                     // strictly monotonic gap-free numbering per branch.
-                    $this->order->fiscal_sequence_no = app(FiscalSequenceService::class)
-                        ->next((int) $this->order->branch_id);
+                    //
+                    // [GOAL-CAISSE-UNIFIED delta-(B) 2026-05-30] DEFER the allocation
+                    // for the counter-collect path: a deferred walk-in (PENDING_COUNTER
+                    // + COUNTER_DEFERRED) is NOT a sale yet, so it must NOT consume a
+                    // fiscal number here — the seq is allocated once, at collection,
+                    // by PaymentService::confirmCounterPayment (mirrors kiosk Plan B).
+                    // Allocating here would burn a number for a sale that may be
+                    // cancelled before payment → NF525 gap. Recomputed locally from
+                    // the same config/request signal used above (inner closure).
+                    $deferToCounterFiscal = config('pos.walkin_route_to_counter') === true
+                        || $request->boolean('defer_to_counter');
+                    if (! $deferToCounterFiscal) {
+                        $this->order->fiscal_sequence_no = app(FiscalSequenceService::class)
+                            ->next((int) $this->order->branch_id);
+                    }
                 }, 'pos');
 
                 // [BUG-C3 FIX] Create OrderCoupon record for POS orders — tracks coupon usage per order

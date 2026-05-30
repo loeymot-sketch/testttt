@@ -800,10 +800,25 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/counter-collect/pending', function () {
             abort_unless(auth()->user()?->can('pos'), 403);
 
+            // [GOAL-CAISSE-UNIFIED W-ENC + delta-(B) 2026-05-30] Unified collection
+            // queue: Borne (kiosk Plan B) AND Caisse walk-in routed through
+            // pos.walkin_route_to_counter. Both are PENDING_COUNTER; the Borne
+            // clause is byte-identical to the original (kiosk + KIOSK/TAKEAWAY type)
+            // so existing behavior is preserved, and the added clause surfaces
+            // pos-origin counter-deferred orders (source_surface='pos' +
+            // COUNTER_DEFERRED). With the flag OFF, no pos order is deferred so the
+            // result set is unchanged.
             $query = \App\Models\Order::with(['orderItems.orderItem'])
-                ->where('source_surface', 'kiosk')
-                ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY])
                 ->where('payment_status', \App\Enums\PaymentStatus::PENDING_COUNTER)
+                ->where(function ($q) {
+                    $q->where(function ($k) {
+                        $k->where('source_surface', 'kiosk')
+                          ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
+                    })->orWhere(function ($p) {
+                        $p->where('source_surface', 'pos')
+                          ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
+                    });
+                })
                 ->orderBy('created_at');
 
             $branchId = (int) (auth()->user()?->branch_id ?? 0);

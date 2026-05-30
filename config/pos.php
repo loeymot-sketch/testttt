@@ -150,4 +150,34 @@ return [
         FILTER_VALIDATE_BOOLEAN,
         FILTER_NULL_ON_FAILURE,
     ) ?? true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Walk-in route to counter (GOAL-CAISSE-UNIFIED delta-(B) 2026-05-30)
+    |--------------------------------------------------------------------------
+    |
+    | Owner model (B): route POS walk-in orders through the SAME deferred
+    | counter-collection queue as the Borne (kiosk Plan B), so EVERY payment —
+    | Borne + Caisse, espèces + carte — is collected from the unified
+    | /admin/encaissement page. Symmetric to kiosk.payment_route_all_to_counter.
+    |
+    | When TRUE, OrderService::posOrderStore creates the walk-in order as
+    | PENDING_COUNTER + COUNTER_DEFERRED (payment_method=CASH_ON_DELIVERY marker,
+    | kitchen prepares before pay per W-D1) and DEFERS the fiscal_sequence_no
+    | allocation to collection time (PaymentService::confirmCounterPayment),
+    | exactly like the kiosk cash-at-counter path. NF525 stays gap-free: the
+    | seq is allocated once, at collection, never at this deferred creation.
+    |
+    | DEFAULT = false — preserves the current inline-paid-at-creation POS flow.
+    | Activation is an OWNER GATE (it changes the protected POS checkout UX:
+    | the cashier collects later instead of inline). A per-request
+    | `defer_to_counter=true` flag also triggers the deferred path so a
+    | future non-frozen PosComponent control can opt in per order without a
+    | global flip.
+    */
+    'walkin_route_to_counter' => filter_var(
+        env('POS_WALKIN_ROUTE_TO_COUNTER', false),
+        FILTER_VALIDATE_BOOLEAN,
+        FILTER_NULL_ON_FAILURE,
+    ) ?? false,
 ];

@@ -668,12 +668,22 @@ class PaymentService
 
     private function assertCounterDeferredOrder(Order $order): void
     {
-        $isKioskCash = (string) ($order->source_surface ?? '') === 'kiosk'
+        // [GOAL-CAISSE-UNIFIED delta-(B) 2026-05-30] Accept BOTH origins of a
+        // counter-deferred order: Borne (kiosk Plan B) AND Caisse walk-in routed
+        // through pos.walkin_route_to_counter. The canonical deferred signal is
+        // the marker TRIPLE (CASH_ON_DELIVERY + COUNTER_DEFERRED + PENDING_COUNTER,
+        // the latter checked by the caller's PaymentStateMachine guard), set
+        // identically at creation by FrontendOrderService (kiosk) and
+        // OrderService::posOrderStore (pos). source_surface is restricted to the
+        // two collection origins so a regular paid POS/online order can never be
+        // routed through the counter-collect seal.
+        $surface = (string) ($order->source_surface ?? '');
+        $isCounterDeferred = in_array($surface, ['kiosk', 'pos'], true)
             && (int) $order->payment_method === \App\Enums\PaymentGateway::CASH_ON_DELIVERY
             && (int) $order->pos_payment_method === PosPaymentMethod::COUNTER_DEFERRED;
 
-        if (! $isKioskCash) {
-            throw new \InvalidArgumentException('This order is not a pending kiosk counter payment.', 422);
+        if (! $isCounterDeferred) {
+            throw new \InvalidArgumentException('This order is not a pending counter payment.', 422);
         }
     }
 
