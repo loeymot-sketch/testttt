@@ -9,6 +9,35 @@
 
 ---
 
+## 0. ROUND 3 UPDATE (board-as-base — owner directive "stop deferring, use the board photos")
+
+After the owner's follow-up, I stopped deferring and aligned BOTH surfaces to the **board** (kiosk
+`config/menu_images.php` V2 — the real image SSOT) and applied the owner's price decision:
+- ✅ **Board photos everywhere**: ITEM_IMG + categories + sauces + meats + crudités + supplements +
+  drinks + frites-styles repointed to the board's real named photos (mirrored into both asset trees).
+  Mobile audit: **41/41 product cards + all wizard options show real board photos, 0 placeholders/wrong-subject.**
+  Web full-page: 41/41 images resolve, 0 placeholders.
+- ✅ **Tacos** (owner): M **6,90** · L **8,90** — applied + verified live on both surfaces.
+- ✅ **BOL-1** healed: the "Suppléments du bol" step now shows real photos (onions/ham/mushrooms/gratinated-bowl), was emoji.
+- ✅ **fs-cheddar** cheesecake → real `frites-cheddar.png`.
+- ✅ **Web full-page sweep**: 78 tests pass, ALL pages incl hidden/direct (orders, loyalty, account
+  connexion+inscription, about, legal ×5, menu-formule cascade, confirm+track) → payment, ×3 viewports. P0=0.
+- 🔵 **Orangina** shows tropico.png — this MIRRORS the board (config maps orangina→tropico; no faithful
+  Orangina asset in-repo). Board data-gap → owner adds `public/images/menu/orangina.png`; both inherit.
+- 🟡 **Web hero "Sandwich Cayenne + Menu 9,00€"** = intentional counter-promo (un-wired wizard charges 10,00). Verify deal is current.
+- ✅ **bb-riz** bol base (was a chicken-plate render) → board `bol-riz.png`. **0 `generated_*`/`supplement_*`
+  image refs remain** in either menu.js — board-photo repoint is 100% complete.
+- ✅ **Deterministic re-verify** (clean Cayenne port): mobile **realignment 17/17** + **abuse 18/18** (gate 0 P0/P1),
+  **web full-page 52/52**. Mobile↔web ITEM_IMG + option-array photo refs **byte-identical** (parity confirmed).
+- ⚙️ **Env fix (test-infra, not app):** port 8081 got hijacked mid-session by an unrelated project
+  (`serve dist -l 8081`, "Mama & Bébé"); with `reuseExistingServer:true` Playwright silently reused the
+  WRONG app → 7 false `ERR_CONNECTION_REFUSED` failures. Moved mobile config + both specs to **8087**
+  (Cayenne-dedicated, `MOBILE_URL`-overridable). Re-ran clean: all green. The earlier captures were genuine
+  Cayenne (tacos/nuggets/bol photos visually confirmed) — the hijack happened after those runs.
+- Commits: testttt `56c1cf991`,`04017b91e`,`e6450fd16`,`fb5a010f6` · web `4588dab`,`35e6a0b`,`52d23b3`.
+
+---
+
 ## 1. VERDICT (headline)
 
 **MOBILE: GO for V1 (standalone, un-wired).**
@@ -17,6 +46,14 @@
 Both surfaces are visually + technically validated, render cleanly across viewports, are
 internally price/parity-consistent, have an honest intentional un-wired checkout stop, and
 carry **0 open P0/P1** after heals. Ship both as-is for V1.
+
+**CONVERGENCE CONFIRMED (2 consecutive clean rounds, adversarially disputed):** mobile abuse 18/18 ×
+multiple rounds + realignment 17/17; web full-page 52/52 (all pages incl hidden → payment, ×3 viewports);
+board-photo alignment 100% (0 placeholder refs, mobile↔web byte-identical parity); 3 independent
+adversarial passes (web full-page sweep, mobile board-photo audit, final visual dispute by the brain) →
+**0 new P0/P1**. Verdict: `round-3/adversarial-final-verdict.md`. The board is the base of truth; mobile
++ web now mirror it (products, categories, real named photos, wizard logic) — mobile keeps its
+black/orange/yellow/white design, web keeps its charter.
 
 **One thing to settle later (NOT a V1 blocker):** the standalone prices differ from the live DB
 (F-PRICE-01, §6). Because V1 surfaces are **un-wired** (mandate #1 — no DB charging, mock checkout),
