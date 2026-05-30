@@ -198,6 +198,14 @@ standalone prices (exact 10 edits ready, ~2 min). **This is the only thing gatin
 
 ---
 
+## 7bis. FINAL RE-TEST SEAL (owner: "tested AND re-tested")
+Fresh full re-run after all heals, on the deterministic Cayenne ports:
+- **Mobile 35/35** (abuse 18/18 gate 0 P0/P1 + realignment 17/17), port 8087.
+- **Web full-page 52/52** (all pages incl hidden/direct → payment, ×3 viewports), port 8095.
+- Source integrity: 0 placeholder image refs both menu.js · web wizard renders `opt.image` (photos verified
+  live) · Tacos M 6,90 / L 8,90 identical both surfaces · all frozen zones clean · working tree clean.
+- Independent adversary (separate mind) confirmed 0 new P0/P1 driving the LIVE web wizard on Bowl + Sandwich.
+
 ## 8. CONVERGENCE PROOF
 
 - **Mobile: CONVERGED** ✅ — round-2 (post-heal) 18/18 gate 0 P0/P1 + round-3 18/18 gate 0 P0/P1
