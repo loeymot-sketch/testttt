@@ -71,7 +71,13 @@ return [
     */
     'settings' => [
         'tax_rate'              => 10.00,
-        'default_tax_id'        => 1,
+        // [GOAL-GOLIVE-VAT10 2026-05-30] Was 1 (= "No-VAT 0%") → the root cause of
+        // the 0%-VAT menu. Le Cayenne charges 10% VAT included in the price.
+        // NOTE: MenuSeeder::defaultTaxId() resolves the VAT 10% row BY ATTRIBUTES
+        // (rate=10 + PERCENTAGE + name='VAT'), so this int is now a documented
+        // fallback only — the resolver is authoritative and id-agnostic. Set to 3
+        // (the seeded VAT 10% row) for consumers that read this value directly.
+        'default_tax_id'        => 3,
         'status_active'         => \App\Enums\Status::ACTIVE,
         'featured_default'      => true,
         'currency_decimals'     => 2,

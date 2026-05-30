@@ -361,6 +361,19 @@ class MenuSeeder extends Seeder
     /**
      * Items reference taxes.id; config default_tax_id is often 1 but tests/CI
      * may have no row at 1 (e.g. InnoDB rollback leaves AUTO_INCREMENT > 1).
+     *
+     * [GOAL-GOLIVE-VAT10 2026-05-30] Owner mandate: Le Cayenne is a French
+     * fast-food charging 10% VAT INCLUDED in the price (TTC). The menu must
+     * therefore seed with the canonical VAT 10% row, NOT the 0% "No-VAT" row
+     * that config default_tax_id=1 historically pointed at. We resolve the VAT
+     * row BY ATTRIBUTES (rate=10 + PERCENTAGE type), not by a hardcoded id —
+     * there are two 10% rows (VAT id=3 and GST id=5) and AUTO_INCREMENT is not
+     * deterministic after rollbacks, so an id literal would silently bind the
+     * wrong tax. Prefer name='VAT' to disambiguate from GST. Falls back to the
+     * configured id only if it is itself a non-zero-rate tax, then creates the
+     * canonical VAT 10% row as a last resort. PricingService runs in
+     * tax-inclusive mode (config pricing.tax_inclusive_prices=true) so this
+     * EXTRACTS 0,45 € from a 5,00 € line — it does NOT add 10% on top.
      */
     protected function defaultTaxId(): int
     {
@@ -368,16 +381,37 @@ class MenuSeeder extends Seeder
             return $this->defaultTaxId;
         }
 
+        // 1. Canonical resolve: VAT 10% PERCENTAGE by attributes (deterministic).
+        $vat10 = Tax::query()
+            ->where('tax_rate', 10)
+            ->where('type', TaxType::PERCENTAGE)
+            ->where('name', 'VAT')
+            ->orderBy('id')
+            ->value('id');
+        if ($vat10) {
+            return $this->defaultTaxId = (int) $vat10;
+        }
+
+        // 2. Any 10% PERCENTAGE row (covers a non-'VAT'-named 10% row).
+        $anyTen = Tax::query()
+            ->where('tax_rate', 10)
+            ->where('type', TaxType::PERCENTAGE)
+            ->orderBy('id')
+            ->value('id');
+        if ($anyTen) {
+            return $this->defaultTaxId = (int) $anyTen;
+        }
+
+        // 3. Configured id — ONLY if it is a non-zero-rate tax (never bind 0%).
         $configured = (int) ($this->config['settings']['default_tax_id'] ?? 0);
-        if ($configured > 0 && Tax::query()->whereKey($configured)->exists()) {
-            return $this->defaultTaxId = $configured;
+        if ($configured > 0) {
+            $configuredRate = (float) (Tax::query()->whereKey($configured)->value('tax_rate') ?? 0);
+            if ($configuredRate > 0) {
+                return $this->defaultTaxId = $configured;
+            }
         }
 
-        $existing = Tax::query()->orderBy('id')->value('id');
-        if ($existing) {
-            return $this->defaultTaxId = (int) $existing;
-        }
-
+        // 4. Last resort: create the canonical VAT 10% row.
         $tax = Tax::create([
             'name' => 'VAT',
             'code' => 'VAT-MENUSEEDER-DEFAULT',
