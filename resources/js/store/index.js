@@ -88,6 +88,7 @@ import { posFloorplan } from './modules/posFloorplan';
 import { posParked } from './modules/posParked';
 import { posCustomer } from './modules/posCustomer';
 import { posOrder } from './modules/posOrder';
+import { orderHistory } from './modules/orderHistory';
 import { cashDrawer } from './modules/cashDrawer';
 import { transaction } from './modules/transaction';
 import { notificationAlert } from './modules/notificationAlert';
@@ -215,6 +216,7 @@ export default new createStore({
         posParked,
         posCustomer,
         posOrder,
+        orderHistory,
         cashDrawer,
         transaction,
         notificationAlert,

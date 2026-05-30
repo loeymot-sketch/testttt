@@ -62,6 +62,10 @@ describe('V1 admin sidebar cleanup', () => {
         // buildMergedSidebarMenus: dashboard, pos, rupture, items→studio+attrs,
         // ingredients, pos-orders, cash-overview, delivery-cash-sessions = 9 rows
         // [GOAL-2026-05-29] +2 since this was written: cash-overview + delivery-cash-sessions.
-        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(9);
+        // [GOAL-CAISSE-UNIFIED 2026-05-30] +2: historique + encaissement (unified
+        // history + collection surfaces) → 11 rows. Both gated on pos-orders perm.
+        expect(text).toContain('menu.historique');
+        expect(text).toContain('menu.encaissement');
+        expect(wrapper.findAll('.db-sidebar-nav-menu')).toHaveLength(11);
     });
 });

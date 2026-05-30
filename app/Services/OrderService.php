@@ -78,7 +78,14 @@ class OrderService
         'payment_status',
         'status',
         'delivery_boy_id',
-        'source'
+        'source',
+        // [GOAL-CAISSE-UNIFIED W-HIST 2026-05-30] Origin filter for the unified
+        // /admin/historique page. source_surface ('kiosk'|'pos'|'web'|'app') is
+        // the RELIABLE origin signal (order_type carries legacy/dirty values on
+        // this deployment, e.g. 30/4, and kiosk orders are TAKEAWAY-typed). Read
+        // path only; applied via applyOrderFilter (LIKE) — surfaces are distinct
+        // substrings so no cross-match. No write/business-rule change.
+        'source_surface'
     ];
 
     protected array $exceptFilter = [

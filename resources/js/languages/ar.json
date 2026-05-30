@@ -222,6 +222,8 @@
         }
     },
     "menu": {
+        "historique": "السجل",
+        "encaissement": "التحصيل",
         "dashboard": "لوحة القيادة",
         "settings": "الإعدادات",
         "company": "الشركة",
@@ -316,6 +318,11 @@
         "demo_wizard_advanced": "عرض المعالج المتقدم"
     },
     "label": {
+        "origin": "المصدر",
+        "caisse": "الصندوق",
+        "fiscal_number": "الرقم الضريبي",
+        "pending_counter": "بانتظار التحصيل",
+        "refunded": "مسترد",
         "advanced_promo_fields": "إعدادات متقدمة",
         "cash_collected_today": "النقد المحصل اليوم",
         "expected_in_drawer": "النقد المتوقع في الدرج",

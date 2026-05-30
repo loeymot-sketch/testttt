@@ -57,6 +57,14 @@ class SimpleOrderResource extends JsonResource
             'source'                       => $this->source,
             'source_surface'               => $this->source_surface,
             'pos_payment_method'           => $this->pos_payment_method,
+            // [GOAL-CAISSE-UNIFIED W-HIST 2026-05-30] NF525 traceability columns
+            // for the unified /admin/historique page. Pure projection — both are
+            // existing nullable `orders` columns (fiscal_sequence_no allocated at
+            // collection per Plan B; parent_order_id links a refund/counter-entry
+            // to its origin sale). Exposed so the history table can show the
+            // gap-free fiscal number + flag refunds without a second round-trip.
+            'fiscal_sequence_no'           => $this->fiscal_sequence_no,
+            'parent_order_id'              => $this->parent_order_id,
             'status'                       => $this->status,
             'status_name'                  => trans('orderStatus.' . $this->status),
             'customer_name'                => $this->user?->name,

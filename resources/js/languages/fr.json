@@ -333,6 +333,8 @@
         }
     },
     "menu": {
+        "historique": "Historique",
+        "encaissement": "Encaissement",
         "dashboard": "Tableau de bord",
         "settings": "Paramètres",
         "company": "Entreprise",
@@ -423,6 +425,11 @@
         "setup": "Configuration"
     },
     "label": {
+        "origin": "Origine",
+        "caisse": "Caisse",
+        "fiscal_number": "N° fiscal",
+        "pending_counter": "À encaisser",
+        "refunded": "Remboursé",
         "advanced_promo_fields": "Paramètres avancés",
         "previous": "Précédent",
         "next": "Suivant",

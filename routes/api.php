@@ -41,6 +41,7 @@ use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\LanguageController;
 use App\Http\Controllers\Admin\PosOrderController;
+use App\Http\Controllers\Admin\OrderHistoryController;
 use App\Http\Controllers\Admin\TimeSlotController;
 use App\Http\Controllers\Admin\TimezoneController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -934,6 +935,15 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/{payment_terminal}', [App\Http\Controllers\Admin\PaymentTerminalController::class, 'show'])->name('show');
         Route::match(['put', 'patch'], '/{payment_terminal}', [App\Http\Controllers\Admin\PaymentTerminalController::class, 'update'])->name('update');
         Route::delete('/{payment_terminal}', [App\Http\Controllers\Admin\PaymentTerminalController::class, 'destroy'])->name('destroy');
+    });
+
+    // [GOAL-CAISSE-UNIFIED W-HIST 2026-05-30] Unified read-only order history
+    // (/admin/historique) — Borne + Caisse + walk-in + delivery + online in ONE
+    // view. Thin read layer over OrderService::list; no source filter forced
+    // server-side. Distinct from pos-order (POS-source) and online-order (web).
+    Route::prefix('order-history')->name('orderHistory.')->group(function () {
+        Route::get('/', [OrderHistoryController::class, 'index'])->name('index');
+        Route::get('show/{order}', [OrderHistoryController::class, 'show'])->name('show');
     });
 
     Route::prefix('pos-order')->name('posOrder.')->group(function () {
