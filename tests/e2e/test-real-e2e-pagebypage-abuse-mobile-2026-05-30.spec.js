@@ -273,22 +273,24 @@ test('00b — Menu complet displayed +price vs charged delta', async () => {
 test('00c — register vision-pass findings (from PNG Read)', async () => {
   // P2 — wrong product image: ASSET-LEVEL verified. supplement_cheddar.png IS a cheesecake;
   // supplement_raclette.png IS a triple cheeseburger. Used by frites-styles + supplement catalog.
-  // [HEAL M-002 2026-05-30] The wrong-subject supplement images (raclette/fromage=cheeseburger,
-  // boursin=mayo bowl, cheddar=cheesecake) were replaced with the correct le-cayenne-v2 real photos.
-  // Dynamic regression guard: flag P1 if any healed file still carries the old wrong-subject bytes.
+  // [BOARD-PHOTO ALIGN 2026-05-30] The app now references the BOARD photos directly
+  // (raclette/cheddar/boursin/fromage.png = le-cayenne-v2 real). Guard: flag P1 if any board file
+  // the app references carries non-real bytes (clobbered with an old placeholder) or is missing.
   {
     const crypto = require('crypto'); const fs = require('fs'); const path = require('path');
-    const BAD = {
-      'supplement_raclette.png': 'd962373ac807679f2be80351f9dacb87',
-      'supplement_fromage.png':  'd962373ac807679f2be80351f9dacb87',
-      'supplement_boursin.png':  '99a42b198d450d8652d22da64be0456f',
+    const REAL = {
+      'raclette.png':       '0f99df01fecc71d9b90a245fe5384e13',
+      'cheddar.png':        'a42639fd175583160b37d147896493b0',
+      'boursin.png':        'a2e0412d9911dbe2ee9a9ef357015003',
+      'fromage.png':        '6a6bab43901a03de51d63c6888169078',
+      'frites-cheddar.png': null, // existence-only (used by fs-cheddar)
     };
     const dir = path.resolve(__dirname, '../../mobile/assets/menu');
-    for (const [f, badmd5] of Object.entries(BAD)) {
+    for (const [f, realmd5] of Object.entries(REAL)) {
       try {
         const h = crypto.createHash('md5').update(fs.readFileSync(path.join(dir, f))).digest('hex');
-        if (h === badmd5) add('P1', `asset ${f}`, `wrong-subject placeholder reintroduced (md5 ${h})`, `mobile/assets/menu/${f}`);
-      } catch (e) { /* missing file — separate concern */ }
+        if (realmd5 && h !== realmd5) add('P1', `asset ${f}`, `board photo not real-subject bytes (md5 ${h} != ${realmd5})`, `mobile/assets/menu/${f}`);
+      } catch (e) { add('P1', `asset ${f}`, `referenced board photo missing`, `mobile/assets/menu/${f}`); }
     }
   }
   // P2 — qty stepper bar clipped behind sticky CTA on tall recaps (8-9 rows @ 390x844).
