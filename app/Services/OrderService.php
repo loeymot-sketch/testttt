@@ -2788,6 +2788,22 @@ class OrderService
             return;
         }
 
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] V1 manual-discount gate.
+        // At 10% VAT the discount→HT/TVA split in the FROZEN ZReportService/
+        // PricingService is wrong (TVA computed on the PRE-discount base → the
+        // signed Z is fiscally incorrect — the F1 defect, dormant only at 0%
+        // VAT). Until F1 is fixed under a lock-plan, ANY non-zero manual POS
+        // discount is refused so no discounted order can sign a wrong Z. The
+        // customer's paid TOTAL on a non-discounted order is already correct.
+        // Default OFF for V1 (config/pos.php manual_discount_enabled=false).
+        // Re-enable only after F1 is fixed + a behavioral Z test proves the
+        // discounted-order TVA is computed on the NET base.
+        if (config('pos.manual_discount_enabled') !== true) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'discount' => "Les remises manuelles sont désactivées en V1 (correction fiscale TVA/HT en attente). Contactez le responsable.",
+            ]);
+        }
+
         if (strlen(trim((string) $reason)) < 3) {
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'discount_reason' => 'A reason is required for any POS discount (min 3 characters).',

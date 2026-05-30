@@ -153,6 +153,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Manual POS discount (GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30)
+    |--------------------------------------------------------------------------
+    |
+    | DEFAULT FALSE for V1. At a non-zero VAT rate (10% TTC) the discount→HT/TVA
+    | split in the FROZEN ZReportService/PricingService is wrong (TVA on the
+    | PRE-discount base) — the dormant-at-0%-VAT "F1" defect. A discounted order
+    | would sign a fiscally-incorrect NF525 Z. Until F1 is fixed under a
+    | lock-plan, OrderService::assertPosManualDiscountAllowed refuses any
+    | non-zero manual discount. Non-discounted orders decompose correctly.
+    | Re-enable (POS_MANUAL_DISCOUNT_ENABLED=true) ONLY after F1 is fixed + a
+    | behavioral Z test proves discounted TVA is computed on the NET base.
+    */
+    'manual_discount_enabled' => filter_var(
+        env('POS_MANUAL_DISCOUNT_ENABLED', false),
+        FILTER_VALIDATE_BOOLEAN,
+        FILTER_NULL_ON_FAILURE,
+    ) ?? false,
+
+    /*
+    |--------------------------------------------------------------------------
     | Walk-in route to counter (GOAL-CAISSE-UNIFIED delta-(B) 2026-05-30)
     |--------------------------------------------------------------------------
     |

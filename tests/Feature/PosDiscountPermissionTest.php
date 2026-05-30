@@ -42,6 +42,10 @@ class PosDiscountPermissionTest extends TestCase
             'app.api_key' => 'test-api-key',
             'broadcasting.default' => 'log',
             'fiscal.audit_secret' => str_repeat('a', 48),
+            // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] This suite tests the
+            // discount permission ladder (preserved code); enable the flag so
+            // the ladder runs rather than the V1 manual-discount-off gate.
+            'pos.manual_discount_enabled' => true,
         ]);
 
         $this->branch = Branch::factory()->create();
