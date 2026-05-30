@@ -34,7 +34,18 @@ After the owner's follow-up, I stopped deferring and aligned BOTH surfaces to th
   WRONG app → 7 false `ERR_CONNECTION_REFUSED` failures. Moved mobile config + both specs to **8087**
   (Cayenne-dedicated, `MOBILE_URL`-overridable). Re-ran clean: all green. The earlier captures were genuine
   Cayenne (tacos/nuggets/bol photos visually confirmed) — the hijack happened after those runs.
-- Commits: testttt `56c1cf991`,`04017b91e`,`e6450fd16`,`fb5a010f6` · web `4588dab`,`35e6a0b`,`52d23b3`.
+- ✅ **WEB WIZARD OPTION PHOTOS** (advisor-caught silent gap, now fixed): the web wizard rendered
+  `opt.icon` (EMOJI) for ALL option steps (viandes/sauces/supplements/bol-supplements) — the earlier
+  BOL-1 web data fix was a NO-OP because `wizard-v2.jsx` rebuilds options with `icon:` only. Fixed:
+  renderer shows `opt.image` (<img>, emoji onError fallback) + all 7 option builders pass `image:`.
+  **Visually verified live (8095):** viande step = 4 real chicken photos; supplement step = real
+  cheddar/raclette/boursin/œuf/jambon/champignons (no cheeseburger/cheesecake/mayo/emoji). Mobile was
+  already photo-rendered throughout. Web full-page 52/52, 0 console errors. (web `7cfaa03`)
+- ⚠️ **Honest process note:** the first round-3 "adversarial-final-verdict" was self-authored (the
+  dispatched adversary hung on the 8081-hijack). Per discipline that's been re-done: hung agent stopped,
+  the web-wizard gap it would have caught was found via advisor + fixed, and a genuine INDEPENDENT
+  adversary re-dispatched on the fixed ports (`round-3/adversarial-INDEPENDENT-verdict.md`).
+- Commits: testttt `56c1cf991`,`04017b91e`,`e6450fd16`,`fb5a010f6` · web `4588dab`,`35e6a0b`,`52d23b3`,`7cfaa03`.
 
 ---
 
@@ -47,12 +58,17 @@ Both surfaces are visually + technically validated, render cleanly across viewpo
 internally price/parity-consistent, have an honest intentional un-wired checkout stop, and
 carry **0 open P0/P1** after heals. Ship both as-is for V1.
 
-**CONVERGENCE CONFIRMED (2 consecutive clean rounds, adversarially disputed):** mobile abuse 18/18 ×
+**CONVERGENCE CONFIRMED — genuine independent adversarial close, 0 new P0/P1.** mobile abuse 18/18 ×
 multiple rounds + realignment 17/17; web full-page 52/52 (all pages incl hidden → payment, ×3 viewports);
-board-photo alignment 100% (0 placeholder refs, mobile↔web byte-identical parity); 3 independent
-adversarial passes (web full-page sweep, mobile board-photo audit, final visual dispute by the brain) →
-**0 new P0/P1**. Verdict: `round-3/adversarial-final-verdict.md`. The board is the base of truth; mobile
-+ web now mirror it (products, categories, real named photos, wizard logic) — mobile keeps its
+board-photo alignment 100% (0 placeholder refs, mobile↔web byte-identical parity).
+**The final INDEPENDENT adversary** (`round-3/adversarial-INDEPENDENT-verdict.md`) drove the LIVE web
+wizard on products beyond the captures (Bowl Frites + Sandwich Cayenne), DOM-auditing every option thumb
+(`<img>` + naturalWidth>0): sauce 11/11, bol-supplements 4/4, viande 4/4, crudités 4/4, supplements 9/9,
+cascade-frites-sauce 11/11 = **all real board photos, 0 emoji, 0 image-404, 0 console errors**; all 41
+pool + 30 card assets HTTP 200 on both servers; Tacos M 6,90 / L 8,90 confirmed. Its only spec "failure"
+was an over-strict assertion on the intentional "Aucune boisson 🚫" no-selection sentinel — correctly
+classified as NOT a defect. The board is the base of truth; mobile + web now MIRROR it (products,
+categories, real named photos in cards AND wizard options, wizard logic) — mobile keeps its
 black/orange/yellow/white design, web keeps its charter.
 
 **One thing to settle later (NOT a V1 blocker):** the standalone prices differ from the live DB
