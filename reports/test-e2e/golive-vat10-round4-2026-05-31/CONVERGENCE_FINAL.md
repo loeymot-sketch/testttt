@@ -188,14 +188,42 @@ Owner answers (AskUserQuestion): **Q1 = Fix F1 now under lock-plan + re-enable**
 
 **Gates across this batch:** full PHP suite **2753/0**, vitest **1879/0**, NF525 **CHAIN OK**, frozen diff = only `ZReportService` (LOCK-authorized + baseline updated). No push.
 
-### 10.1 Reactivation — the single owner go-live action
+### 10.1 Round 2 — advisor refactor (EXACT identity + E2E close+sign proof)
 
-The **F1 blocker is fixed and proven** — a discounted order now signs a fiscally-correct Z (TVA on the post-discount base). All three layers are flag-conditional: the order gates, the UI entries (Q2), and the pre-redeem (Q3) all turn back **on** together when the flag flips on.
+Post-commit `1ff06f171`, the advisor caught a real defect: I rounded TVA at **two levels** (per-order in `applyOrderToTotals` + per-rate in `taxBreakdownForOrders`). With round-half-up they CAN diverge by a cent on a multi-rate discounted Z → a signed payload whose `total_tva ≠ Σ total_by_tax_rate` is internally inconsistent. Counter-example: `total_tax=0,04` split `0,03 (10%) + 0,01 (5,5%)`, ratio 0,5 → naïve `total_tva=0,02` vs `Σ buckets = round(0,015)+round(0,005) = 0,02+0,01 = 0,03`. My `assertEqualsWithDelta(0,02)` would HIDE it.
 
-Discounts remain **OFF by default** (`config/pos.php` `pos.manual_discount_enabled` / `POS_MANUAL_DISCOUNT_ENABLED`). To **reactivate** coupons + loyalty in production, the owner sets:
+**Refactor (same LOCK §6bis, `edf48b8c7` + `747204e9c`):**
+- `total_by_tax_rate` is the SINGLE SOURCE OF TRUTH; `total_tva = array_sum(byTaxRate)` and `total_ht = total_ttc − total_tva` → NF525 identity holds **EXACT** by construction.
+- `applyOrderToTotals` simplified to only `&$totalTtc, &$byMethod`.
+- Counter-entry refund mirrors NOW included in the breakdown call too (bonus: closes a pre-existing asymmetry).
 
-```
-POS_MANUAL_DISCOUNT_ENABLED=true
-```
+**E2E proof the advisor demanded** — `ZReportDiscountNettingTest::test_discounted_z_close_signs_and_chain_verifies`: flag ON → discounted order → REAL `close()` pipeline → `verifySignature` ✓ + `verifyChain.valid=true` ✓ + persisted identities **EXACT** + F1 values correct (TTC 8,00 / TVA 0,73 / HT 7,27). PHP **2755/0**, fiscal cluster **55/55**, NF525 CHAIN OK.
 
-This is left as the owner's deliberate go-live activation (per the delta-B precedent: build + test + reversible + owner sign-off — appropriate for a fiscal feature). After the flip, the discretionary-discount gates become a **config-controlled kill-switch** (`=false` re-disables everything instantly); the dormancy sentinels verify that kill-switch still works. _If the owner prefers, I can flip the default + convert the dormancy sentinels to explicit kill-switch tests as a follow-up._
+### 10.2 Reactivation EXECUTED — discounts now LIVE in V1 (default ON)
+
+Owner chose to flip the default + convert sentinels (AskUserQuestion 2026-05-31): **discounts (coupons + loyalty) are now ENABLED by default in V1**.
+
+| Change | File | Detail |
+|---|---|---|
+| Default flag | `config/pos.php` | `env('POS_MANUAL_DISCOUNT_ENABLED', false)` → `true` |
+| Kill-switch sentinel (fiscal) | `ManualDiscountDisabledV1SentinelTest::test_manual_discount_killswitch_engages_when_explicitly_disabled` | `Config::set` false → asserts flag flips false |
+| Kill-switch sentinel (frontend) | `FrontendDiscountIntegrityTest::test_discretionary_discount_killswitch_engages_on_frontend_v1` | `config[…] = false` → coupon + loyalty sub-paths refused (422) + full transaction rollback |
+| Kill-switch sentinel (table) | `TableOrderNegativeTotalTest::test_table_dining_order_refuses_server_validated_coupon_under_killswitch` | `config[…] = false` → table SSOT coupon (round-4 P0 surface) refused |
+
+The flag remains a **production kill-switch**: setting `POS_MANUAL_DISCOUNT_ENABLED=false` in `.env` re-engages every dormancy gate (order-creation refusals, UI entries hide via `window.foodkingConfig.discountsEnabled`, pre-redeem refuses at source) — the rollback channel if F1 ever needs to be re-disabled. The kill-switch path is locked by the `*_killswitch_*` sentinels.
+
+**Gates (activation):** full PHP suite **2755 passed / 0 failed** with the new default ON (proves zero regressions across the whole suite under the live discount paths) · NF525 **CHAIN OK** · vitest **1879/0** · frozen-zone diff = 0 in this commit (only `config/pos.php` + sentinel test bodies, all non-§7).
+
+### 10.3 Verdict — goal converged
+
+🟢 **GO** — Le Cayenne is production-ready on the 10% VAT-TTC + discount axis:
+
+- B1 10% VAT TTC ✓ · S1 offers disabled ✓ · P0 seed-parity ✓
+- F1-dormancy P1 (FrontendOrderService customer path) ✓ — `784c84d17`
+- Round-4 P0 (ungated SSOT coupon on OrderService web+table) ✓ — `59b13bdec`
+- F1 fix (frozen ZReportService discount-netting under LOCK) ✓ — `1ff06f171` + round-2 advisor refactor with EXACT identity + E2E close+sign proof ✓ — `747204e9c`
+- Q2 UI dead-end closed ✓ — `6f519ea9b`
+- Q3 pre-redeem gate ✓ — included in `1ff06f171`
+- **Reactivation EXECUTED** — discounts now LIVE in V1 (kill-switch preserved via `POS_MANUAL_DISCOUNT_ENABLED=false`).
+
+The customer can now use coupons + loyalty, a discounted order signs a fiscally-correct NF525 Z (TVA on the post-discount base, identity total_tva == Σ buckets EXACT), and the kill-switch flips everything back off if F1 ever needs to be re-disabled.

@@ -293,10 +293,13 @@ class FrontendDiscountIntegrityTest extends TestCase
      * sub-paths, and the whole order transaction rolls back (no order, no coupon
      * link, no loyalty deduction/ledger — so a refused redeem never burns points).
      */
-    public function test_discretionary_discount_disabled_by_default_on_frontend_v1(): void
+    public function test_discretionary_discount_killswitch_engages_on_frontend_v1(): void
     {
-        // Production V1 default — the flag is OFF unless a test/lock-plan enables it.
-        $this->assertNotSame(true, config('pos.manual_discount_enabled'));
+        // [GOAL-GOLIVE-VAT10 2026-05-31] Post-F1-fix reactivation: default ENABLED.
+        // Flip the flag explicitly to assert the KILL-SWITCH path still refuses both
+        // sub-paths (coupon + loyalty) with a full transaction rollback. This is the
+        // safety-rollback channel if F1 ever needs to be re-disabled in prod.
+        config(['pos.manual_discount_enabled' => false]);
 
         // --- Sub-path A: coupon ---
         $coupon = Coupon::forceCreate([

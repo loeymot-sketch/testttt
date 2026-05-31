@@ -212,10 +212,12 @@ class TableOrderNegativeTotalTest extends TestCase
      * sentinel locks the in-SSOT gate: with the flag OFF (V1 default), a valid
      * coupon on a QR table order is refused (422) and nothing is persisted.
      */
-    public function test_table_dining_order_refuses_server_validated_coupon_in_v1(): void
+    public function test_table_dining_order_refuses_server_validated_coupon_under_killswitch(): void
     {
-        // Production V1 default — discretionary discounts OFF.
-        $this->assertNotSame(true, config('pos.manual_discount_enabled'));
+        // [GOAL-GOLIVE-VAT10 2026-05-31] Post-F1-fix reactivation: default ENABLED.
+        // Flip the kill-switch explicitly to verify the table-SSOT coupon gate still
+        // refuses (round-4 P0 protection — that path was the live fiscal hole).
+        config(['pos.manual_discount_enabled' => false]);
 
         $branch = \Database\Factories\BranchFactory::new()->create();
         $customer = UserFactory::new()->create(['branch_id' => $branch->id]);

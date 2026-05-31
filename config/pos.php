@@ -165,11 +165,22 @@ return [
     | Re-enable (POS_MANUAL_DISCOUNT_ENABLED=true) ONLY after F1 is fixed + a
     | behavioral Z test proves discounted TVA is computed on the NET base.
     */
+    // [GOAL-GOLIVE-VAT10 / F1-fix-r2 2026-05-31] Default flipped false → true.
+    // F1 (fiscal-incorrect Z on a discounted order at non-zero VAT) is FIXED in
+    // ZReportService under LOCK_ZREPORT_F1_DISCOUNT_NETTING_2026_05_31.md and
+    // proven E2E by ZReportDiscountNettingTest::test_discounted_z_close_signs_and_chain_verifies
+    // (signed Z verifySignature ✓ + verifyChain.valid ✓ + EXACT identity
+    // total_tva == Σ total_by_tax_rate on a real discounted Z). Reactivation per
+    // owner AskUserQuestion. The flag remains a runtime KILL-SWITCH: setting
+    // POS_MANUAL_DISCOUNT_ENABLED=false in .env re-engages every dormancy gate
+    // (refusing non-zero discounts at every order-creation chokepoint, hiding the
+    // kiosk loyalty button + web coupon entry, refusing the pre-redeem at source).
+    // The kill-switch path is locked by the *_killswitch_* sentinels.
     'manual_discount_enabled' => filter_var(
-        env('POS_MANUAL_DISCOUNT_ENABLED', false),
+        env('POS_MANUAL_DISCOUNT_ENABLED', true),
         FILTER_VALIDATE_BOOLEAN,
         FILTER_NULL_ON_FAILURE,
-    ) ?? false,
+    ) ?? true,
 
     /*
     |--------------------------------------------------------------------------

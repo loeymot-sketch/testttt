@@ -76,9 +76,16 @@ class ManualDiscountDisabledV1SentinelTest extends TestCase
         ], $overrides);
     }
 
-    public function test_manual_discount_disabled_by_default_in_v1(): void
+    /**
+     * [GOAL-GOLIVE-VAT10 2026-05-31] Post-F1-fix reactivation: the default is now
+     * ENABLED. The flag remains a runtime KILL-SWITCH: setting it explicitly false
+     * (env or runtime) re-engages the protection. This sentinel verifies that path
+     * is functionally intact (the kill-switch flips back to a hard refusal).
+     */
+    public function test_manual_discount_killswitch_engages_when_explicitly_disabled(): void
     {
-        $this->assertFalse((bool) config('pos.manual_discount_enabled'), 'Manual discounts must be OFF by default in V1');
+        Config::set('pos.manual_discount_enabled', false);
+        $this->assertFalse((bool) config('pos.manual_discount_enabled'), 'Kill-switch must flip the flag to false.');
     }
 
     public function test_pos_operator_discount_is_refused_when_disabled(): void
