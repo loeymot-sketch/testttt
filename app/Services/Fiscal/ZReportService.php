@@ -433,9 +433,9 @@ class ZReportService
         // PricingService and guarantees consistency with the individual
         // receipts that are referenced by fiscal_sequence_no.
         $byTaxRate = [];
-        $byTaxRate = $this->taxBreakdownForOrders($orders->pluck('id')->all(), 1, $byTaxRate);
-        $adjustmentOrderIds = $postZCanceled->concat($postZReturned)->pluck('id')->all();
-        $byTaxRate = $this->taxBreakdownForOrders($adjustmentOrderIds, -1, $byTaxRate);
+        $byTaxRate = $this->taxBreakdownForOrders($orders, 1, $byTaxRate);
+        $adjustmentOrders = $postZCanceled->concat($postZReturned);
+        $byTaxRate = $this->taxBreakdownForOrders($adjustmentOrders, -1, $byTaxRate);
         $byTaxRate = array_map(fn ($v) => round((float) $v, 2), $byTaxRate);
         ksort($byTaxRate);
 
@@ -650,30 +650,75 @@ class ZReportService
 
     private function applyOrderToTotals(Order $order, int $sign, float &$totalTtc, float &$totalHt, float &$totalTva, array &$byMethod): void
     {
-        $totalTtc += $sign * (float) ($order->total ?? 0);
-        $totalHt  += $sign * (float) ($order->total_ht ?? ($order->subtotal ?? 0));
-        $totalTva += $sign * (float) ($order->total_tax ?? 0);
+        // [LOCK_ZREPORT_F1_DISCOUNT_NETTING / GOAL-GOLIVE-VAT10 2026-05-31] F1 fix.
+        // The per-line tax_amount (and order->total_tax) is computed on the
+        // PRE-discount base and is an immutable NF525 snapshot. A discretionary
+        // discount reduces order->total (TTC) but NOT total_tax, so a discounted
+        // order's signed TVA used to sit on the pre-discount base at a non-zero VAT
+        // rate (the F1 defect). Net it to the post-discount base by scaling with
+        // ratio = (subtotal - discount)/subtotal — mathematically identical to
+        // allocating the discount proportionally across rate buckets and recomputing
+        // TVA on the discounted base. ratio = 1 when discount = 0, so a non-discount
+        // order is byte-identical to the prior behaviour (total_ht accessor = total -
+        // total_tax). HT is then total - net TVA so the legal identity TTC = HT + TVA
+        // holds on the netted figures.
+        $ttc      = (float) ($order->total ?? 0);
+        $grossTva = (float) ($order->total_tax ?? 0);
+        $netTva   = round($grossTva * $this->orderDiscountRatio($order), 2);
+
+        $totalTtc += $sign * $ttc;
+        $totalTva += $sign * $netTva;
+        $totalHt  += $sign * ($ttc - $netTva);
 
         $method = (string) ($order->pos_payment_method ?: ($order->payment_method ?: 'unknown'));
-        $byMethod[$method] = ($byMethod[$method] ?? 0.0) + ($sign * (float) ($order->total ?? 0));
+        $byMethod[$method] = ($byMethod[$method] ?? 0.0) + ($sign * $ttc);
     }
 
     /**
-     * @param array<int, int> $orderIds
+     * [LOCK_ZREPORT_F1_DISCOUNT_NETTING] Discount-netting ratio for an order:
+     * (subtotal - discount) / subtotal, clamped to [0,1]. Returns 1.0 when there is
+     * no discount (or no positive subtotal) so non-discount aggregation is unchanged.
+     * Scaling the immutable pre-discount per-line TVA by this ratio yields the
+     * fiscally-correct post-discount TVA (proportional allocation across rate buckets).
+     */
+    private function orderDiscountRatio(Order $order): float
+    {
+        $subtotal = (float) ($order->subtotal ?? 0);
+        $discount = (float) ($order->discount ?? 0);
+        if ($discount <= 0.0 || $subtotal <= 0.0) {
+            return 1.0;
+        }
+
+        return max(0.0, min(1.0, ($subtotal - $discount) / $subtotal));
+    }
+
+    /**
+     * @param iterable<\App\Models\Order> $orders
      * @param array<string, float> $byTaxRate
      * @return array<string, float>
+     *
+     * [LOCK_ZREPORT_F1_DISCOUNT_NETTING] Sums per-rate TVA across the given orders,
+     * scaling each order's per-rate tax_amount by its discount-netting ratio so a
+     * discounted order contributes its POST-discount TVA per bucket (F1 fix). The
+     * GROUP BY is now per (order_id, tax_rate) so the per-order ratio can be applied
+     * before summation. For non-discount orders the ratio is 1.0 → identical to the
+     * prior straight SUM, so existing breakdowns are byte-identical.
      */
-    private function taxBreakdownForOrders(array $orderIds, int $sign, array $byTaxRate): array
+    private function taxBreakdownForOrders(iterable $orders, int $sign, array $byTaxRate): array
     {
-        if ($orderIds === []) {
+        $ratios = [];
+        foreach ($orders as $o) {
+            $ratios[(int) $o->id] = $this->orderDiscountRatio($o);
+        }
+        if ($ratios === []) {
             return $byTaxRate;
         }
 
         $rows = DB::table('order_items')
-            ->selectRaw('tax_rate, SUM(tax_amount) AS total_tax_for_rate')
-            ->whereIn('order_id', $orderIds)
+            ->selectRaw('order_id, tax_rate, SUM(tax_amount) AS total_tax_for_rate')
+            ->whereIn('order_id', array_keys($ratios))
             ->whereNotNull('tax_rate')
-            ->groupBy('tax_rate')
+            ->groupBy('order_id', 'tax_rate')
             ->get();
 
         foreach ($rows as $r) {
@@ -681,8 +726,9 @@ class ZReportService
             // inconsistent precision ("10", "10.00", "5.5"), so we
             // cast through float to canonicalise and then back to
             // string for a stable JSON-encoded signed payload.
-            $key = rtrim(rtrim(number_format((float) $r->tax_rate, 2, '.', ''), '0'), '.');
-            $byTaxRate[$key] = ($byTaxRate[$key] ?? 0.0) + ($sign * (float) $r->total_tax_for_rate);
+            $key   = rtrim(rtrim(number_format((float) $r->tax_rate, 2, '.', ''), '0'), '.');
+            $ratio = $ratios[(int) $r->order_id] ?? 1.0;
+            $byTaxRate[$key] = ($byTaxRate[$key] ?? 0.0) + ($sign * (float) $r->total_tax_for_rate * $ratio);
         }
 
         return $byTaxRate;

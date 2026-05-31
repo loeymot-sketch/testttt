@@ -211,6 +211,32 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
         );
     }
 
+    /**
+     * [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q3] The pre-redeem endpoint
+     * (POST /api/frontend/loyalty/redeem) debits points in its own committed
+     * transaction. With discretionary discounts OFF (V1 default) the downstream
+     * discounted order is refused, so the debit would strand the customer's points.
+     * The endpoint is gated at the source: flag OFF → 422 BEFORE any debit/ledger.
+     * (Re-enabled automatically when the flag flips on post-F1-fix.)
+     */
+    public function test_pre_redeem_is_refused_when_discounts_disabled_v1(): void
+    {
+        // Override the setUp flag-ON to assert the PRODUCTION V1 default (OFF).
+        config(['pos.manual_discount_enabled' => false]);
+        Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
+
+        $before = (int) $this->loyaltyCustomer->fresh()->loyalty_points;
+
+        $this->postJson('/api/frontend/loyalty/redeem', [
+            'code' => $this->loyaltyCustomer->loyalty_code,
+            'points' => 100,
+        ])->assertStatus(422);
+
+        // No points debited, no pending ledger written — refused at the source.
+        $this->assertSame($before, (int) $this->loyaltyCustomer->fresh()->loyalty_points, 'Refused pre-redeem must not debit points.');
+        $this->assertSame(0, LoyaltyTransaction::where('type', 'redeem')->count(), 'Refused pre-redeem must not write a ledger entry.');
+    }
+
     private function bypassKioskQuoteSealForLoyaltySentinel(): void
     {
         $this->app->instance(\App\Services\Order\OrderQuoteService::class, new class {

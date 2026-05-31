@@ -257,6 +257,20 @@ class LoyaltyController extends Controller
      */
     public function redeem(Request $request)
     {
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q3] Pre-redeem debits loyalty
+        // points immediately in its own transaction. While discretionary discounts
+        // are disabled in V1 (pos.manual_discount_enabled !== true) the downstream
+        // discounted order is refused by the order-creation gate, which would strand
+        // the already-debited points (separate committed txn, not rolled back).
+        // Refuse the redeem at the source so points are NEVER debited while discounts
+        // are off. Re-enabled automatically when the flag flips on (post F1-fix).
+        if (config('pos.manual_discount_enabled') !== true) {
+            return response()->json([
+                'status' => false,
+                'message' => "La fidélité (remise) est désactivée en V1 (correction fiscale TVA/HT en attente).",
+            ], 422);
+        }
+
         $caller = $request->user();
         // [GOAL-2026-05-29 SEC-P1 LOYALTY-IDOR] The kiosk discriminator must NOT
         // rely on the `kiosk:order` ABILITY alone: GuestSignupController mints
