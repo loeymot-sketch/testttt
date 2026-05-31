@@ -5,7 +5,7 @@
 **Heal HEAD (round-3 P1):** `784c84d17`
 **Date:** 2026-05-31
 **Heal HEAD (round-4 P0):** `59b13bdec`
-**Verdict (fiscal convergence):** 🟢 **GO** — round-4 found a real P0 (ungated SSOT coupon on web+table `OrderService`); it was healed and **round-5 (3 independent adversarial angles) confirms 0 ungated discount-persisting order paths remain.** Full suite 2749/0, frozen-zone 0, NF525 CHAIN OK. _Non-fiscal go-live items remain as owner decisions (§9)._
+**Verdict (fiscal convergence):** 🟢 **GO** — round-4 found a real P0 (ungated SSOT coupon on web+table `OrderService`); it was healed and **round-5 (3 independent adversarial angles) confirms 0 ungated discount-persisting order paths remain.** Full suite 2749/0, frozen-zone 0, NF525 CHAIN OK. _Owner decisions (§9) RESOLVED + implemented — see §10._
 
 ---
 
@@ -173,3 +173,29 @@ Workflow `wf_99b7c4db-0cf` — 3 diverse adversarial bypass-hunters (control-flo
 1. **Discount-dormancy scope (§5):** keep discretionary discounts (coupon + loyalty) disabled for V1, OR fix F1 properly now under a lock-plan and keep them live?
 2. **UI dead-end (§6.1):** hide the kiosk-loyalty + web-checkout-coupon entry points now (UI work + visual test), OR is the web frontend not a V1-live surface (document + proceed)?
 3. **Pre-redeem (§6.2):** gate `/api/frontend/loyalty/redeem` too (refuse pre-redeem when discounts off), OR accept the bounded ≤10-min stranding?
+
+---
+
+## 10. Owner decisions — RESOLVED + implemented (2026-05-31)
+
+Owner answers (AskUserQuestion): **Q1 = Fix F1 now under lock-plan + re-enable** · **Q2 = Hide UI entries when flag off** · **Q3 = Gate the pre-redeem too.**
+
+| # | Decision | Implementation | Commit |
+|---|----------|----------------|--------|
+| **Q1** | Fix F1 (re-split TVA on the post-discount base) | Frozen `ZReportService` discount-netting (ratio = (subtotal−discount)/subtotal across rate buckets; HT = total − netTVA). TDD: `ZReportDiscountNettingTest` (RED→GREEN); 38-test fiscal cluster green; inert until re-enabled. **Under `LOCK_ZREPORT_F1_DISCOUNT_NETTING_2026_05_31.md` + frozen SHA-256 baseline updated.** | `8d8125c7f` (LOCK) + `1ff06f171` (fix) |
+| **Q2** | Hide discount UI when flag off | `window.foodkingConfig.discountsEnabled` exposed (`master.blade.php`); `v-if` on kiosk coupon/promo + loyalty button (`KioskCartComponent`) and web `<CouponComponent>` (`CheckoutComponent`). vitest proves both states; `kiosk-shell.js` rebuilt. | `6f519ea9b` |
+| **Q3** | Gate the pre-redeem endpoint | `Frontend/LoyaltyController::redeem` refuses (422) before any debit when flag off; sentinel proves no points burned. | `1ff06f171` |
+
+**Gates across this batch:** full PHP suite **2753/0**, vitest **1879/0**, NF525 **CHAIN OK**, frozen diff = only `ZReportService` (LOCK-authorized + baseline updated). No push.
+
+### 10.1 Reactivation — the single owner go-live action
+
+The **F1 blocker is fixed and proven** — a discounted order now signs a fiscally-correct Z (TVA on the post-discount base). All three layers are flag-conditional: the order gates, the UI entries (Q2), and the pre-redeem (Q3) all turn back **on** together when the flag flips on.
+
+Discounts remain **OFF by default** (`config/pos.php` `pos.manual_discount_enabled` / `POS_MANUAL_DISCOUNT_ENABLED`). To **reactivate** coupons + loyalty in production, the owner sets:
+
+```
+POS_MANUAL_DISCOUNT_ENABLED=true
+```
+
+This is left as the owner's deliberate go-live activation (per the delta-B precedent: build + test + reversible + owner sign-off — appropriate for a fiscal feature). After the flip, the discretionary-discount gates become a **config-controlled kill-switch** (`=false` re-disables everything instantly); the dormancy sentinels verify that kill-switch still works. _If the owner prefers, I can flip the default + convert the dormancy sentinels to explicit kill-switch tests as a follow-up._
