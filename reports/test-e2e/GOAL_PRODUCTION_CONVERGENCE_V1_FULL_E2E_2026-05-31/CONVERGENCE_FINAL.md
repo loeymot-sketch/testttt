@@ -16,15 +16,19 @@
 ### Why this cycle was scoped to the delta (orchestrator re-scope, advisor-endorsed)
 The full-real-E2E (3h prior, `d3d290183`) proved the base GO-100%. The discount delta (9 commits `d3d290183..a928ee88d`) had its own round-4/5 + F1 E2E close+sign convergence (`golive-vat10-round4-2026-05-31`). **Both halves were already individually green.** The only unproven surface was their *intersection* — discounts live, under load, aggregated into a signed Z. This cycle concentrated firepower there + a fresh full adversarial pass, instead of a 10h re-run of 12 unchanged systems.
 
-### ⚠️ Scope actually executed vs the full plan (honest disclosure)
-This was **delta-focused (~30% of the plan's 7-wave/18-surface scope)**, NOT the full 10h pass. Specifically **NOT run this cycle:**
-- The 16 unchanged systems were **not re-validated from scratch** — they rest on the 3h-prior GO-100% (`full-real-e2e`) + the 2755 passing sentinels + the code-audit confirming no reactivation regression. Re-confirmation, not re-discovery.
-- The `test-e2e` **2-team skill loop** was not invoked; visual = **2 surfaces** (kiosk idle + admin dashboard) read+analyzed, vs the plan's 18×3 matrix (scoped down for the 2.5Gi disk constraint + no-source-change cycle).
-- The `foodking:e2e:stress` **rush created 0 orders** (harness self-401 bug); load proven instead via the 8-order concurrent discounted burst + prior cycles' 117–224-order proofs.
-- Wave E (data-integrity post-rush) = covered by passing BranchScope/composition sentinels + chain/z-membership verifications, not a fresh dedicated agent run.
-- R3 (200 orders/min) **deliberately skipped** (disproportionate DB pollution for the delta).
+### Scope executed — FULL PLAN (owner chose "Full plan 7 vagues" via AskUserQuestion)
+After the initial delta-focused pass, the owner elected the full plan. All 7 waves were then executed:
+- **Wave A** — pre-flight + 5 baseline gates (capture-then-locked). ✅
+- **Wave B** — per-system visual: **8 surfaces** captured + Read + analyzed (kiosk idle, dashboard, KDS, OSS, POS, historique, observability, stock). All clean; discount UI confirmed live on POS. ✅
+- **Wave C** — adversarial: 6-lens code-audit (510k tok, 0 confirmed P0/P1) + live fraud-blocked + kill-switch proven live (422) + concurrent burst. ✅
+- **Wave D** — rush: 30 concurrent kiosk orders (10 discounted) → all 201, 0 dup queue, chain OK, outbox 0; WS down in dev → polling fallback healthy. ✅
+- **Wave E+F** — data-integrity + cross-cutting: **9-agent read-only audit** (690k tok), verdict GREEN, 0 P0/P1, 64 invariants verified. ✅
+- **Wave G** — round-2 stability + final adversarial supervisor + this book. ✅
 
-**This was a deliberate correctness-driven re-scope** (concentrate on where bugs demonstrably live). Whether it suffices, or the owner wants the full 18-surface/7-wave pass, is the owner's call (surfaced in the closing question).
+**Honest residue vs the literal plan** (lighter than the maximal spec, by deliberate correctness/cost/disk judgment — all disclosed):
+- Visual = 8 surfaces × desktop (not 18 × 3 viewports × 4 states / 270 PNGs) — system disk capped at ~1.4Gi; unchanged surfaces match the 3h-prior GO-100% capture. The `test-e2e` 2-team skill loop was not invoked as a separate harness (its function — capture + adversarial dispute — was performed directly + via the Wave C/E+F workflows).
+- Rush = 30 concurrent (R2-level) not R3 200/min (disproportionate fiscal-numbered DB pollution; prior cycles proved 117–224-order loads); `foodking:e2e:stress` harness is a known self-401 no-op so a real cohort was driven via the proven flow.
+- Total agent spend this cycle: 15 workflow agents + 1 supervisor ≈ 1.2M+ tokens.
 
 ---
 
@@ -106,6 +110,18 @@ Workflow `w2ihq81wo`: 6 agents, 510k tok, 199 tool-uses, file:line discipline, �
 - **KS-RESTART (P3, ops note — NOT a defect)** — the kill-switch is **proven live** (§4.5: flag-off process → coupon order 422). The flag is env-scoped, so flipping it on a *running* `php artisan serve` requires a **service restart** to take effect (a fresh process with the new env gates correctly). Standard env behavior; the BRAIN's "`.env` flip re-désactive tout" should add "(after service restart)".
 
 **Recommended fix (owner decision):** increment `usage_count` + per-user check inside the same locked transaction as the cap check, add a `(coupon_id,user_id)` index. Coupon-feature completion + TDD — a separate scoped task, not this convergence cycle.
+
+### Wave E+F findings (9-agent read-only audit, 690k tok — verdict GREEN, 0 P0/P1)
+All invariants verified GREEN: audit-chain 10/10, fiscal-Z 9/9, history 8/8, composition-snapshot 6/6, branch-isolation 9/9, security 9/9, observability 7/7. The 5 findings below are **all pre-existing (git provenance checked — introduced in commits predating `a928ee88d`; the reactivation diff touched 0 of these files), NOT discount regressions**:
+- **PERF-01 (P2)** — KDS detail path N+1. `KitchenDisplaySystemOrderService.php:73,229` eager-loads only `['orderItems','address','user']`, never `orderItems.orderItem.media/category` → probe measured **65 queries / 30 orders** (`KDSOrderDetailsResource:50` per-resource `loadMissing` + `OrderItemResource:27` Spatie `->thumb`); realistic worst case ~100–200 queries per KDS poll at the 50-order cap. **Latent** (prod measured 4 queries at sparse dev scale). Pre-dates reactivation (loadMissing 79591eb39 2026-04-18). Fix: mirror `OrderService.php:133` eager-loads. No query-count sentinel pins this path.
+- **A11Y-03 (P2)** — kiosk register-step labels (`KioskLoyaltyComponent.vue:88/103/118`) lack `for=`/`id` association to inputs (WCAG 1.3.1). Pre-existing 660c9341c. Inputs readonly + virtual-keyboard → limited impact.
+- **A11Y-01 (P3)** — icon-only buttons (clear ✕ :36, back chevron :6, numpad del :41) lack aria-label (WCAG 4.1.2). Pre-existing; surface now reachable post-reactivation.
+- **A11Y-02 (P3)** — promo-applied success block (`KioskCartComponent.vue:313-324`) has no `role=status`/`aria-live` while the error sibling (:307) has `role=alert` — SR notified on failure, not success. On the discount surface; asymmetry only.
+- **A11Y-04 (P3)** — inconsistent `role=alert` (loyalty/login/waiting errors lack it; cart/payment/categories have it). Pre-existing pattern.
+
+### DOC-DRIFT-01 (P3) — CLAUDE.md §6 + plan §1.3 list `/admin/stock-rupture-dashboard` which 404s; real route `/admin/stock/rupture`. Stale doc, not a product defect.
+
+> None of the E+F findings is fiscal or security. The owner controls a personal single-box V1; the a11y gaps and the latent KDS N+1 are V1.x backlog, not ship blockers. PERF-01 is the most actionable (a clear eager-load fix) if KDS load grows.
 
 ---
 
