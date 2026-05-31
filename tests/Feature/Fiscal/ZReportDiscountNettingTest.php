@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Fiscal;
 
+use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Branch;
 use App\Models\Item;
@@ -153,5 +154,128 @@ class ZReportDiscountNettingTest extends TestCase
 
         $this->assertEqualsWithDelta(1.00, (float) $totals['total_tva'], 0.001, 'No discount → TVA unchanged (gross == net)');
         $this->assertEqualsWithDelta(1.00, (float) $totals['total_by_tax_rate']['10'], 0.001);
+    }
+
+    /**
+     * [advisor 2026-05-31] EXACT identity total_tva == Σ total_by_tax_rate must hold
+     * on the signed Z payload — a signed fiscal document whose TVA total ≠ sum of
+     * its rate buckets is internally inconsistent. Pre-refactor my fix rounded at
+     * two levels (per-order in applyOrderToTotals + per-rate in taxBreakdownForOrders);
+     * with round-half-up they could diverge by a cent on a multi-rate discounted Z.
+     * Worked counter-example: order total_tax=0,04 split 0,03 (10%) + 0,01 (5,5%),
+     * ratio 0,5 → naïve total_tva=round(0,02,2)=0,02; per-bucket round(0,015)=0,02 +
+     * round(0,005)=0,01 → Σ buckets = 0,03 ≠ 0,02. The refactor derives total_tva
+     * FROM the rounded buckets (array_sum) → identity holds by construction. This
+     * test EXACTS that and uses a worked multi-rate ratio that would diverge with
+     * the naïve approach.
+     */
+    public function test_total_tva_exactly_equals_sum_of_total_by_tax_rate(): void
+    {
+        $branch = Branch::factory()->create();
+
+        // Construct the divergence case explicitly: an order whose pre-discount
+        // per-rate tax_amount values would round differently from the order-level
+        // pre-rounded netTVA under the naïve approach.
+        $order = Order::factory()->create([
+            'branch_id'          => $branch->id,
+            'payment_status'     => PaymentStatus::PAID,
+            'subtotal'           => 1.00,
+            'discount'           => 0.50,    // ratio 0.5
+            'total'              => 0.50,
+            'total_tax'          => 0.04,    // 0.03 + 0.01
+            'fiscal_sequence_no' => 1,
+        ]);
+        $this->insertOrderItem($order->id, $branch->id, '10',  0.03, 0.50);
+        $this->insertOrderItem($order->id, $branch->id, '5.5', 0.01, 0.50);
+
+        $totals = app(ZReportService::class)->aggregate($branch->id, null, now()->addMinute());
+
+        // EXACT identity (no delta) — the signed payload must be internally consistent.
+        $this->assertSame(
+            round((float) array_sum($totals['total_by_tax_rate']), 2),
+            (float) $totals['total_tva'],
+            'EXACT: total_tva must equal sum(total_by_tax_rate) — both come from the same SSOT (the per-rate buckets)'
+        );
+        // And total_ttc == total_ht + total_tva.
+        $this->assertSame(
+            round((float) $totals['total_ht'] + (float) $totals['total_tva'], 2),
+            (float) $totals['total_ttc'],
+            'EXACT NF525 identity: TTC == HT + TVA on the signed payload'
+        );
+    }
+
+    /**
+     * [advisor 2026-05-31] The fiscal end-to-end the prior tests lacked: with
+     * pos.manual_discount_enabled=true (post-F1 reactivation), simulate a discounted
+     * PAID order, run the REAL aggregate() + close() + sign() pipeline, and prove
+     * (a) verifySignature is green, (b) verifyChain is green, and (c) the persisted
+     * Z row's identities hold (TVA=Σbuckets and TTC=HT+TVA). This exercises the
+     * exact code-path that the owner's reactivation will hit on day 1 — without
+     * touching the production default flag.
+     */
+    public function test_discounted_z_close_signs_and_chain_verifies(): void
+    {
+        Config::set('pos.manual_discount_enabled', true); // reactivation scenario
+        Config::set('pricing.tax_inclusive_prices', true);
+
+        $branch = Branch::factory()->create();
+        $svc = app(ZReportService::class);
+
+        // Open FIRST: the close window is (opened_at, closedAt] (strict lower bound),
+        // so the discounted order must be created strictly AFTER open() — Carbon::now()
+        // here can resolve to the same second as open(), so explicitly travel forward.
+        $svc->open($branch->id);
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::now()->addSeconds(2));
+
+        // 10,00 TTC gross at 10% (line tax 0,91), 2,00 discount → 8,00 net.
+        // Expected post-fix signed Z: total_tva = 0,73 ; total_by_tax_rate['10'] = 0,73 ;
+        // total_ttc = 8,00 ; total_ht = 7,27.
+        $order = Order::factory()->create([
+            'branch_id'          => $branch->id,
+            'payment_status'     => PaymentStatus::PAID,
+            'subtotal'           => 10.00,
+            'discount'           => 2.00,
+            'total'              => 8.00,
+            'total_tax'          => 0.91,
+            'fiscal_sequence_no' => 1,
+            'status'             => OrderStatus::DELIVERED,
+        ]);
+        $this->insertOrderItem($order->id, $branch->id, '10.00', 0.91, 10.00);
+
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::now()->addSeconds(2));
+        $report = $svc->close($branch->id);
+        \Illuminate\Support\Carbon::setTestNow();
+
+        // (a) signature verifies on the just-signed report
+        $this->assertTrue($svc->verifySignature($report), 'Just-signed Z must verifySignature green.');
+
+        // (b) chain verifies for the branch (the production NF525 health gate).
+        // verifyChain re-derives each Z's signature from its persisted totals; if my
+        // refactor produced totals inconsistent with computeSignature's payload, the
+        // chain would break here even though verifySignature on a fresh row passes.
+        $chain = $svc->verifyChain($branch->id);
+        $this->assertTrue((bool) $chain['valid'], 'verifyChain must be valid on a chain that contains a discounted Z.');
+        $this->assertSame([], $chain['errors'], 'verifyChain errors must be empty.');
+
+        // (c) persisted identities on the signed row
+        $fresh = $report->fresh();
+        $byRate = (array) ($fresh->total_by_tax_rate ?? []);
+
+        $this->assertSame(
+            round((float) array_sum($byRate), 2),
+            (float) $fresh->total_tva,
+            'Persisted signed Z: total_tva == Σ total_by_tax_rate (EXACT).'
+        );
+        $this->assertSame(
+            round((float) $fresh->total_ht + (float) $fresh->total_tva, 2),
+            (float) $fresh->total_ttc,
+            'Persisted signed Z: total_ttc == total_ht + total_tva (EXACT).'
+        );
+
+        // F1 fix values (the proof reactivation produces fiscally-correct figures)
+        $this->assertEqualsWithDelta(8.00, (float) $fresh->total_ttc, 0.01);
+        $this->assertEqualsWithDelta(0.73, (float) $fresh->total_tva, 0.01, 'TVA on the post-discount base (F1 fix).');
+        $this->assertEqualsWithDelta(7.27, (float) $fresh->total_ht,  0.01);
+        $this->assertEqualsWithDelta(0.73, (float) ($byRate['10'] ?? 0), 0.01);
     }
 }

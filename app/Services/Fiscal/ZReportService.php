@@ -357,14 +357,11 @@ class ZReportService
             ->get();
 
         $totalTtc = 0.0;
-        $totalHt  = 0.0;
-        $totalTva = 0.0;
         $byMethod = [];
-        $byTaxRate = [];
         $orderCount = 0;
 
         foreach ($orders as $o) {
-            $this->applyOrderToTotals($o, 1, $totalTtc, $totalHt, $totalTva, $byMethod);
+            $this->applyOrderToTotals($o, 1, $totalTtc, $byMethod);
             $orderCount++;
         }
 
@@ -386,7 +383,7 @@ class ZReportService
             ->whereNotNull('parent_order_id')
             ->get();
         foreach ($counterEntryRefundMirrors as $mirror) {
-            $this->applyOrderToTotals($mirror, 1, $totalTtc, $totalHt, $totalTva, $byMethod);
+            $this->applyOrderToTotals($mirror, 1, $totalTtc, $byMethod);
         }
 
         // M-08 policy:
@@ -418,34 +415,41 @@ class ZReportService
                 ->get();
 
             foreach ($postZCanceled->concat($postZReturned) as $o) {
-                $this->applyOrderToTotals($o, -1, $totalTtc, $totalHt, $totalTva, $byMethod);
+                $this->applyOrderToTotals($o, -1, $totalTtc, $byMethod);
             }
         }
 
         $cancelCount = $preZCancelCount + $postZCanceled->count();
         $refundCount = $preZRefundCount + $postZReturned->count();
 
-        // [POS-9-H.2.8 / F-B6]
-        // Populate total_by_tax_rate by summing order_items.tax_amount
-        // grouped by tax_rate, scoped to the exact same order set we
-        // just aggregated. Using order_items (the already-persisted,
-        // server-recomputed pricing from POS-9.1.8) avoids re-running
-        // PricingService and guarantees consistency with the individual
-        // receipts that are referenced by fiscal_sequence_no.
-        $byTaxRate = [];
-        $byTaxRate = $this->taxBreakdownForOrders($orders, 1, $byTaxRate);
+        // [LOCK_ZREPORT_F1_DISCOUNT_NETTING — 2026-05-31] total_by_tax_rate is the
+        // SINGLE SOURCE OF TRUTH for the tax decomposition: total_tva is derived from
+        // it (array_sum) and total_ht from total_ttc - total_tva, so the NF525 identity
+        // total_tva == Σ total_by_tax_rate holds EXACTLY in the signed payload (and
+        // total_ttc == total_ht + total_tva by construction). Refund mirrors are
+        // included in the breakdown call too, so they contribute symmetrically to both
+        // total_tva and per-rate buckets (closes a pre-existing asymmetry where mirrors
+        // hit total_tva via applyOrderToTotals but never reached byTaxRate). Each order
+        // is scaled by its own discount-netting ratio inside taxBreakdownForOrders, so
+        // F1 (TVA on the post-discount base) is applied uniformly here.
+        $byTaxRate = $this->taxBreakdownForOrders($orders, 1, []);
+        $byTaxRate = $this->taxBreakdownForOrders($counterEntryRefundMirrors, 1, $byTaxRate);
         $adjustmentOrders = $postZCanceled->concat($postZReturned);
         $byTaxRate = $this->taxBreakdownForOrders($adjustmentOrders, -1, $byTaxRate);
         $byTaxRate = array_map(fn ($v) => round((float) $v, 2), $byTaxRate);
         ksort($byTaxRate);
+
+        $totalTva = (float) array_sum($byTaxRate);
+        $totalTtcRounded = round($totalTtc, 2);
+        $totalHt = round($totalTtcRounded - $totalTva, 2);
 
         // Normalise rounding to 2 decimals so the signed aggregates are stable.
         $byMethod = array_map(fn ($v) => round((float) $v, 2), $byMethod);
         ksort($byMethod);
 
         return [
-            'total_ttc'         => round($totalTtc, 2),
-            'total_ht'          => round($totalHt,  2),
+            'total_ttc'         => $totalTtcRounded,
+            'total_ht'          => $totalHt,
             'total_tva'         => round($totalTva, 2),
             'total_by_method'   => $byMethod,
             'total_by_tax_rate' => $byTaxRate,
@@ -648,27 +652,16 @@ class ZReportService
         return $this->sealing->signZReport($branchId, $prevHash, $sequenceNo, $aggregates, $closedAt);
     }
 
-    private function applyOrderToTotals(Order $order, int $sign, float &$totalTtc, float &$totalHt, float &$totalTva, array &$byMethod): void
+    /**
+     * [LOCK_ZREPORT_F1_DISCOUNT_NETTING 2026-05-31] Per-order TTC + byMethod only.
+     * TVA / HT are no longer computed here — they are derived from total_by_tax_rate
+     * (the SSOT for the tax decomposition) in aggregate(), so the NF525 identity
+     * total_tva == Σ total_by_tax_rate holds exactly in the signed payload.
+     */
+    private function applyOrderToTotals(Order $order, int $sign, float &$totalTtc, array &$byMethod): void
     {
-        // [LOCK_ZREPORT_F1_DISCOUNT_NETTING / GOAL-GOLIVE-VAT10 2026-05-31] F1 fix.
-        // The per-line tax_amount (and order->total_tax) is computed on the
-        // PRE-discount base and is an immutable NF525 snapshot. A discretionary
-        // discount reduces order->total (TTC) but NOT total_tax, so a discounted
-        // order's signed TVA used to sit on the pre-discount base at a non-zero VAT
-        // rate (the F1 defect). Net it to the post-discount base by scaling with
-        // ratio = (subtotal - discount)/subtotal — mathematically identical to
-        // allocating the discount proportionally across rate buckets and recomputing
-        // TVA on the discounted base. ratio = 1 when discount = 0, so a non-discount
-        // order is byte-identical to the prior behaviour (total_ht accessor = total -
-        // total_tax). HT is then total - net TVA so the legal identity TTC = HT + TVA
-        // holds on the netted figures.
-        $ttc      = (float) ($order->total ?? 0);
-        $grossTva = (float) ($order->total_tax ?? 0);
-        $netTva   = round($grossTva * $this->orderDiscountRatio($order), 2);
-
+        $ttc = (float) ($order->total ?? 0);
         $totalTtc += $sign * $ttc;
-        $totalTva += $sign * $netTva;
-        $totalHt  += $sign * ($ttc - $netTva);
 
         $method = (string) ($order->pos_payment_method ?: ($order->payment_method ?: 'unknown'));
         $byMethod[$method] = ($byMethod[$method] ?? 0.0) + ($sign * $ttc);
