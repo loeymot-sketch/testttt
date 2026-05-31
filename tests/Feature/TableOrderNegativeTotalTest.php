@@ -201,4 +201,75 @@ class TableOrderNegativeTotalTest extends TestCase
             'Total must remain the full backend-computed price (~12), not the fraudulently discounted ~0.'
         );
     }
+
+    /**
+     * [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 r4] Round-4 bypass-hunt P0:
+     * the SSOT branch (V1 default, pricing.use_ssot_service=true) of
+     * OrderService::tableOrderStore computed a non-zero server-validated COUPON
+     * discount and persisted it with NO gate — the assertDiscretionaryDiscountAllowed
+     * call lived only in the dead non-SSOT `else`. At 10% VAT a coupon-discounted
+     * table order signs a fiscally-incorrect NF525 Z (frozen F1 split). This
+     * sentinel locks the in-SSOT gate: with the flag OFF (V1 default), a valid
+     * coupon on a QR table order is refused (422) and nothing is persisted.
+     */
+    public function test_table_dining_order_refuses_server_validated_coupon_in_v1(): void
+    {
+        // Production V1 default — discretionary discounts OFF.
+        $this->assertNotSame(true, config('pos.manual_discount_enabled'));
+
+        $branch = \Database\Factories\BranchFactory::new()->create();
+        $customer = UserFactory::new()->create(['branch_id' => $branch->id]);
+        $table = DiningTable::factory()->create([
+            'branch_id' => $branch->id,
+            'status' => Status::ACTIVE,
+        ]);
+        $category = ItemCategoryFactory::new()->create();
+        $item = ItemFactory::new()->create([
+            'item_category_id' => $category->id,
+            'price' => 20.00,
+        ]);
+        $coupon = \App\Models\Coupon::forceCreate([
+            'name' => 'TABLE10',
+            'description' => '10 percent',
+            'code' => 'TABLE10',
+            'discount' => 10,
+            'discount_type' => \App\Enums\DiscountType::PERCENTAGE,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addDay(),
+            'minimum_order' => 10,
+            'maximum_discount' => 5,
+            'limit_per_user' => 2,
+        ]);
+
+        $payload = [
+            'order_type' => OrderType::DINING_TABLE,
+            'dining_table_id' => $table->id,
+            'subtotal' => 20.00,
+            'discount' => 0,
+            'total' => 20.00,
+            'source' => Source::POS,
+            'customer_id' => $customer->id,
+            'branch_id' => $branch->id,
+            'coupon_id' => $coupon->id,
+            'is_advance_order' => Ask::NO,
+            'items' => json_encode([[
+                'item_id' => $item->id,
+                'price' => 20.00,
+                'quantity' => 1,
+            ]]),
+        ];
+
+        $response = $this->withHeader('x-api-key', config('app.api_key', env('MIX_API_KEY', 'test-api-key')))
+            ->postJson('/api/table/dining-order', $payload);
+
+        // The in-SSOT discretionary-discount gate must refuse the coupon discount.
+        $response->assertStatus(422);
+
+        // Transaction rolled back — no discounted table order persisted.
+        $this->assertSame(
+            0,
+            \App\Models\FrontendOrder::where('dining_table_id', $table->id)->count(),
+            'A coupon-discounted table order must be refused entirely in V1 (no persisted order).'
+        );
+    }
 }

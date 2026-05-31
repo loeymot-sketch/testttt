@@ -377,6 +377,14 @@ class OrderService
                     $realSubtotal = $res->accumulatedSubtotal;
                     $totalTax = $res->totalTax;
                     $calculatedDiscount = $res->discount;
+                    // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 r4] The SSOT branch is
+                    // the V1 DEFAULT (pricing.use_ssot_service=true). PricingService
+                    // computes a non-zero COUPON discount here from coupon_id; the gate
+                    // in the non-SSOT else (line ~519) does NOT cover this path. Without
+                    // this call a coupon-discounted web order persists + signs a
+                    // fiscally-incorrect NF525 Z at 10% VAT (frozen F1 split). Mirrors
+                    // posOrderStore's in-SSOT gate (~813). [round-4 bypass-hunt P0]
+                    $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     if (!blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
@@ -1351,6 +1359,13 @@ class OrderService
                     $realSubtotal = $tableSsotPricingResult->accumulatedSubtotal;
                     $totalTax = $tableSsotPricingResult->totalTax;
                     $calculatedDiscount = $tableSsotPricingResult->discount;
+                    // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 r4] SSOT branch = V1
+                    // DEFAULT. The manual discount is zeroed at method entry, but a
+                    // COUPON discount (coupon_id) is still computed here and was NOT
+                    // gated — the gate at line ~1514 lives in the non-SSOT else. Refuse
+                    // it so a coupon-discounted table order cannot sign a fiscally-
+                    // incorrect Z. Mirrors posOrderStore's in-SSOT gate (~813). [round-4 P0]
+                    $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     if (!blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
