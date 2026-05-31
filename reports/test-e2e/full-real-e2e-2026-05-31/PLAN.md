@@ -124,3 +124,12 @@ backend frozen-adjacent + session parallèle). Surface owner : défaut d'afficha
   payments AUDIT-F-003 design, orders-history P2/P3 mineurs). **AUCUN P0/P1.**
 - **MS-02 owner-gate** : pile ~90 commandes test accumulées (SLA alertes, KDS overflow) — cleanup owner.
 - **0 backend source touché** (drive+verify+capture). Discipline frozen/NF525 respectée.
+
+## CORROBORATION WORKFLOW (détail complet, 6 agents, 500k tokens)
+- **Réconciliation paiements 3 stores** (order_payments/transactions/cash_movements) : **ZÉRO mismatch montant** ; tout paiement enregistré = order.total exact ; 0 orphelin ; refund 226/227 nets à 0 textbook.
+- **Fiscal** : chaîne 1..169 gap-free monotonic, 0 dup ; audit_logs 437 append-only 0 break ; z_reports 5 contigus closed ; 0 alloc-error.
+- **Stock** : décrément opt-in by-design (tracking inutilisé V1) + wiring synchrone correct + oversell→rollback prouvé ; 86 gate OK ; rupture=0.
+- **Orders/history** : 0 transition illégale/backward sur 312 rows ; 148 PENDING→PREPARING = collapse POS direct-sale documenté (state machine jamais bypassé) ; paths live re-valident sur fresh lockForUpdate.
+- **payments P1→P3** (cash_movement gaté session, seed 28/05 18:01-18:03) + **P2 seed-data** : 57 PAID sans payment-record (36 fixtures factory + 21 POS-cash early, **AUCUN dans une fenêtre Z fermée → 0 Z signé corrompu**). = artefacts seed/test-pile (thème MS-02), PAS bug code production.
+
+### CONCLUSION : 0 P0/P1 production confirmé. Tous les findings = P3 design/monitoring/dev OU artefacts seed-data (MS-02 cleanup owner-gate). Intégrité argent + NF525 + transitions + stock = PROUVÉE par 6 agents read-only + mes 13 captures + abuse. Fiscal bracket 6× CHAIN OK.
