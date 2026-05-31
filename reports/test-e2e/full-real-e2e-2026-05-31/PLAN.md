@@ -101,3 +101,26 @@ backend frozen-adjacent + session parallèle). Surface owner : défaut d'afficha
 - **OBS-01 (P3, = O-1 dormant)** badges queue:work/websockets:serve "DOWN" = heuristiques false-negative (queue idle + soketi≠websockets:serve). Sync RÉELLE saine (0 pending). Monitoring-accuracy, V1.0.X.
 - **OBS-02 (P3, dev)** 1 job Stripe échec "api_key empty" = pas de clé Stripe en dev (attendu, prod OK).
 - Aucun P0/P1 visuel/interface trouvé sur 13+ pages capturées+analysées.
+
+## AUDITS TECHNIQUES PARALLÈLES (workflow read-only, 5 domaines + adversarial)
+| Domaine | Résultat | Détail |
+|---------|----------|--------|
+| **audit-fiscal** | ✅ CLEAN ×5 | NF525 chain OK, fiscal_seq gap-free monotonic, audit_logs append-only, 0 alloc-error |
+| **stock** | ✅ CLEAN ×5 | pas de stock négatif, 86/dispo cohérent, décrément lié aux commandes |
+| **orders-history** | ✅ CLEAN ×4 (+P2/P3 mineurs) | transitions valides loggées, composition_snapshot frozen, pas de transition illégale persistée |
+| **sync-rush** | ✅ CLEAN ×5 (+P3) | 0 event stale sous rush, queue OK ; P3 = monitoring heuristic (= OBS-01) |
+| **payments** | ✅ après verify (P1→P3) | claim "10/19 counter-cash sans cash_movement" → **VÉRIFIÉ = design documenté AUDIT-F-003** : cash_movement best-effort gaté sur session caisse OUVERTE ; les 10 = collectés 28/05 18:01-18:03 sans session ouverte ; transaction+fiscal_seq TOUJOURS écrits (intégrité argent/fiscal intacte), seul le drawer-tracking optionnel absent. #65 (session ouverte) a son cash_movement → réconcilié. → **P3 design, PAS P1** |
+
+## VERDICT FINAL — Full Real Abuse-E2E (tous systèmes, 2 personas, rush + gestion)
+**GO — 100% validé, 0 P0/P1 réel.**
+- **Systèmes opérationnels** (client+cuisinier+caissier) : Borne→KDS→OSS→Caisse→Encaissement, flux commande
+  prise→cuisine→prêt→encaissé→archivé prouvé bout-en-bout, sous rush, race-safe (UI 409, burst ×5), reflété live.
+- **Gestion/détails** (13+ pages analysées) : dashboard, historique unifié, fiche commande/ticket, transactions
+  (paiements), stock/86, vue caisse unifiée (réconciliation), catalogue (45 SSOT), rapport ventes, observability.
+- **Intégrité numérique cross-surface CONFIRMÉE** (paiement #65 36€ identique partout).
+- **NF525** : audit-chain CLEAN, fiscal bracket 6× CHAIN OK + Z-membership OK à travers une alloc réelle.
+- **Rush** : invariants 0 dup/leak/stale, 0 event pending = sync saine sous charge.
+- **Findings** : que des P3 (FV-01 null-phone, OBS-01 monitoring false-DOWN=O-1 dormant, OBS-02 dev-Stripe,
+  payments AUDIT-F-003 design, orders-history P2/P3 mineurs). **AUCUN P0/P1.**
+- **MS-02 owner-gate** : pile ~90 commandes test accumulées (SLA alertes, KDS overflow) — cleanup owner.
+- **0 backend source touché** (drive+verify+capture). Discipline frozen/NF525 respectée.
