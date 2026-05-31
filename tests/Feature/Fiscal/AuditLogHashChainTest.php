@@ -52,6 +52,26 @@ class AuditLogHashChainTest extends TestCase
         $this->assertNull($this->service->verifyChain(1), 'Pristine chain must verify.');
     }
 
+    public function test_high_volume_chain_remains_intact(): void
+    {
+        // Append-only volume proof: a long chain must verify end-to-end,
+        // each row's prev_hash matching its predecessor's current_hash.
+        $n = 250;
+        for ($i = 1; $i <= $n; $i++) {
+            $this->service->write([
+                'branch_id' => 1,
+                'action'    => 'order.event',
+                'payload'   => ['seq' => $i, 'total' => $i * 1.5],
+            ]);
+        }
+
+        $this->assertSame($n, AuditLog::where('branch_id', 1)->count());
+        $this->assertNull(
+            $this->service->verifyChain(1),
+            "A {$n}-entry append-only chain must verify intact end-to-end."
+        );
+    }
+
     public function test_tampering_detected_on_payload(): void
     {
         $this->service->write(['branch_id' => 1, 'action' => 'order.create', 'payload' => ['id' => 1, 'total' => 100]]);

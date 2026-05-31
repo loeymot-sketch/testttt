@@ -68,6 +68,46 @@ class FiscalSequenceTest extends TestCase
         $this->assertSame(2, $service->next($b->id));
     }
 
+    public function test_high_volume_gap_free_and_branch_isolated(): void
+    {
+        $a = Branch::factory()->create();
+        $b = Branch::factory()->create();
+        $service = app(FiscalSequenceService::class);
+
+        // 500 total allocations, two branches interleaved so any
+        // cross-branch leak would surface as a gap or a collision.
+        $perBranch = 250;
+        for ($i = 0; $i < $perBranch; $i++) {
+            $na = $service->next($a->id);
+            Order::factory()->create(['branch_id' => $a->id, 'fiscal_sequence_no' => $na]);
+
+            $nb = $service->next($b->id);
+            Order::factory()->create(['branch_id' => $b->id, 'fiscal_sequence_no' => $nb]);
+        }
+
+        foreach ([$a, $b] as $branch) {
+            $seq = Order::query()
+                ->where('branch_id', $branch->id)
+                ->orderBy('fiscal_sequence_no')
+                ->pluck('fiscal_sequence_no')
+                ->map(fn ($v) => (int) $v)
+                ->all();
+
+            $this->assertSame(range(1, $perBranch), $seq,
+                "Branch {$branch->id} must hold a strictly monotonic, gap-free 1..{$perBranch} chain.");
+            $this->assertCount($perBranch, array_unique($seq),
+                "Branch {$branch->id} must contain zero duplicate fiscal numbers.");
+        }
+
+        // Branch isolation (CLAUDE.md §3.8): identical number space,
+        // independent chains — neither branch consumed the other's range.
+        $this->assertSame(
+            (int) Order::where('branch_id', $a->id)->max('fiscal_sequence_no'),
+            (int) Order::where('branch_id', $b->id)->max('fiscal_sequence_no'),
+            'Both branches independently reach the same max — proving isolated number spaces.'
+        );
+    }
+
     public function test_non_positive_branch_id_is_rejected(): void
     {
         $service = app(FiscalSequenceService::class);
