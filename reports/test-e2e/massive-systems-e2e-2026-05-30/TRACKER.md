@@ -109,3 +109,10 @@ baseline CHAIN OK → lifecycle CHAIN OK → state-machine-abuse CHAIN OK → **
 sync : chaque attaque (transition invalide, backward, garbage, double-bump, burst concurrent, replay, zombie,
 reason free-text) est correctement défendue. Chaîne fiscale intacte à travers une allocation réelle. Findings
 honnêtes : MS-01 (P3, poll-fallback auth, endpoint sain) + MS-02 (owner-gate cleanup pile). 0 backend touché.
+
+## LOOP CLOSED (visual end-to-end) — oss-after-abuse.png
+Après le double-bump KDS d'A0171 : **A0171 a migré "En préparation" → "Prêt"** sur le mur client OSS
+(glow d'arrivée), preuve que l'abus a produit UNE seule transition propre (2e clic 409-rejeté) ET qu'elle
+s'est propagée au système client-facing. A0172 reste "En préparation" (non bumpé). CANCELED #946 / REJECTED
+#947 correctement ABSENTS du mur client (terminaux non affichés). Chaîne complète : abus cuisine → 1 transition
+propre → file d'attente client à jour. Fiscal CHAIN OK + Z-membership OK en fin d'abus.
