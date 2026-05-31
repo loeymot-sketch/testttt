@@ -69,3 +69,43 @@ Driven via `kiosk:simulate-orders 8` (creation) + real `POST /api/admin/pos-orde
 réelles (création + change-status, 100% HTTP 200), reflété correctement par statut sur chaque page (KDS/OSS/
 historique/caisse), sync émise (13 events) + WS primaire up, **NF525 chaîne intacte** (bracket 3×). 1 finding P2
 (polling-fallback 401, primaire OK) surfacé honnêtement + 1 item owner-gate (cleanup pile). 0 backend touché.
+
+## ABUSE ROUND 1 — State machine (command-driven, real change-status endpoint)
+Cohort #942-947. Every attack defended correctly :
+| Attack | Result | Verdict |
+|--------|--------|---------|
+| Invalid FORWARD skip PENDING→PREPARED | HTTP 422 "Transition invalide", st unchanged | ✅ blocked |
+| Invalid BACKWARD ACCEPT→PENDING | HTTP 422, st stays ACCEPT | ✅ blocked |
+| Idempotency replay (same key A→B ×2) | both 200, single apply | ✅ no double |
+| A→A double-bump (ACCEPT→ACCEPT) | 200 idempotent | ✅ |
+| Garbage status=999 | HTTP 422 invalid transition | ✅ blocked |
+| Terminal w/ FREE-TEXT reason (kiosk-origin) | HTTP 422 "Reason code not whitelisted" | ✅ NF525 audit guard (not a bug) |
+| Terminal w/ VALID code (customer_request/kitchen_reject) | 200 → CANCELED/REJECTED | ✅ works |
+| Revive a CANCELED order →PREPARING | HTTP 422 blocked, stays terminal | ✅ no zombie |
+| Concurrency BURST ×5 PENDING→ACCEPT | [200,200,200,200,200] final ACCEPT, no dup/crash | ✅ race-safe |
+**Fiscal after abuse: CHAIN OK.** State machine + idempotency + NF525 reason-whitelist = robust.
+
+## ABUSE ROUND 1b — UI (Playwright MCP) + encaissement NF525
+| System | Abuse | Result | Commentaire |
+|--------|-------|--------|-------------|
+| **KDS / cuisine** | double-clic "Prêt" (bump) sur A0171 | 1er→200, 2e→**409 Conflict** (idempotency) ; order PREPARED **1 seule** transition (DB confirmé) ; fiscal OK | ✅ **Bump race-safe au niveau UI** : le double-clic ne double-bump pas. Cartes reflètent le bon statut (NOUVELLE/EN COURS) en live. Note honnête : bandeau "pastilles Prêt mémorisées localement, pas sync multi-écrans" (by-design V1 mono-poste). |
+| **POS / caisse** | encaissement borne CASH d'une commande PENDING_COUNTER (#65) via endpoint réel + **replay même clé** | confirm→200 PAID **fiscal_seq=169** (alloc gap-free 168→169) ; replay→200 **sans 2e alloc** (delta=+1) ; CHAIN OK + Z-membership OK | ✅✅ **Chemin NF525 critique blindé** : l'encaissement alloue un n° fiscal monotone gap-free, et un POST dupliqué NE brûle PAS un n° fiscal ni ne double-encaisse. C'est le cœur fiscal — il tient sous abus. |
+| **OSS / file** | (r1) PREPARING→"En préparation", PREPARED→"Prêt" | filtré par statut correct | ✅ validé live |
+| **Historique** | (r1) table NF525 + #fiscal + filtres | rend | ✅ validé |
+
+### Commentaire global par système
+- **Borne/Kiosk** : création OK, paiement→PAID ou deferred→PENDING_COUNTER, émet les domain_events de sync.
+- **KDS/Cuisine** : reçoit, bump PENDING→ACCEPT→PREPARING→PREPARED race-safe (UI+API), overflow honnête, WS primaire OK.
+- **OSS/File client** : miroir temps-réel cuisine (préparation→prêt), filtre propre.
+- **POS/Caisse** : encaissement borne, alloc fiscale NF525 gap-free + idempotente, liste "À ENCAISSER BORNE".
+- **Historique/Archive** : table unifiée toutes origines + n° fiscal + statut + filtres ; terminaux archivables.
+- **State machine** : rejette transition invalide/backward/garbage/zombie ; reason-whitelist NF525 sur terminaux.
+
+## FISCAL BRACKET (final)
+baseline CHAIN OK → lifecycle CHAIN OK → state-machine-abuse CHAIN OK → **encaissement (alloc réelle fiscal_seq 169) CHAIN OK + Z-membership OK**. La chaîne grandit proprement sous abus.
+
+## VERDICT FINAL (abuse-e2e)
+**GO — tous les systèmes valident sous abus.** Lifecycle + state machine + idempotency + encaissement NF525 +
+sync : chaque attaque (transition invalide, backward, garbage, double-bump, burst concurrent, replay, zombie,
+reason free-text) est correctement défendue. Chaîne fiscale intacte à travers une allocation réelle. Findings
+honnêtes : MS-01 (P3, poll-fallback auth, endpoint sain) + MS-02 (owner-gate cleanup pile). 0 backend touché.
