@@ -216,7 +216,7 @@
                             </div>
                         </div>
                         <div class="p-4">
-                            <CouponComponent :props="{ total: parseFloat(subtotal) }" :coupon="coupon" />
+                            <CouponComponent v-if="discountsEnabled" :props="{ total: parseFloat(subtotal) }" :coupon="coupon" />
 
                             <div class="rounded-xl mb-6 border border-[#EFF0F6]">
                                 <ul class="flex flex-col gap-2 p-3 border-b border-dashed border-[#EFF0F6]">
@@ -552,6 +552,15 @@ export default {
         }
     },
     computed: {
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] Hide the coupon entry while
+        // discretionary discounts are disabled in V1 so a customer can't apply a coupon
+        // and hit the backend 422 dead-end. Exposed via window.foodkingConfig
+        // .discountsEnabled (master.blade.php). Defaults to FALSE (hidden) when missing.
+        discountsEnabled: function () {
+            return (typeof window !== 'undefined' && window.foodkingConfig)
+                ? window.foodkingConfig.discountsEnabled === true
+                : false;
+        },
         globalState: function () {
             return this.$store.getters['globalState/lists'];
         },

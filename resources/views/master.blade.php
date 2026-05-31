@@ -153,6 +153,12 @@
             kiosk: {
                 paymentRouteAllToCounter: @json((bool) config('kiosk.payment_route_all_to_counter', true)),
             },
+            // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] Discretionary-discount
+            // master flag, exposed so the customer UI hides coupon + loyalty-redeem
+            // entries while discounts are disabled — otherwise a customer who uses them
+            // hits a raw 422 dead-end (the backend gates the order). When F1 is fixed
+            // and the flag flipped on, the entries reappear automatically.
+            discountsEnabled: @json((bool) config('pos.manual_discount_enabled', false)),
             // Borne : une catégorie « Nos Sandwichs » en base, deux lignes sidebar (signatures / froid)
             kioskSandwichSplit: @json(config('kiosk.sandwich_split')),
             maxItemQty: @json((int) config('kiosk.max_item_qty', 20)),

@@ -272,7 +272,7 @@
 
       <!-- Kiosk Phase 9.1.6 — Champ code promo (SSOT lecture-seule, revalidé
            serveur à /order). Affiche success / error inline. -->
-      <div class="kiosk-cart-promo" data-testid="kiosk-cart-promo">
+      <div v-if="discountsEnabled" class="kiosk-cart-promo" data-testid="kiosk-cart-promo">
         <div v-if="!promoCode" class="kiosk-cart-promo-form">
           <label for="kiosk-cart-promo-input" class="kiosk-cart-promo-label">
             {{ $t('kiosk.promo.label') }}
@@ -324,8 +324,8 @@
         </div>
       </div>
 
-      <!-- Bouton fidélité -->
-      <button type="button"
+      <!-- Bouton fidélité — masqué quand les remises sont désactivées (V1 F1-dormancy) -->
+      <button v-if="discountsEnabled" type="button"
         class="kiosk-btn-loyalty"
         @click="$router.push({ name: 'kiosk.loyalty' })"
         data-testid="kiosk-cart-loyalty-btn"
@@ -433,6 +433,18 @@ export default {
       const t = typeof raw;
       if (t !== 'boolean' && t !== 'number' && t !== 'string') return false;
       return String(raw) === '1' || raw === true;
+    },
+    /**
+     * [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] Hide the coupon/promo form and
+     * the loyalty-redeem entry while discretionary discounts are disabled in V1, so a
+     * customer can't trigger the backend 422 dead-end. Exposed via
+     * window.foodkingConfig.discountsEnabled (master.blade.php). Defaults to FALSE so
+     * a missing/empty config stays safe (entries hidden = no dead-end).
+     */
+    discountsEnabled() {
+      return (typeof window !== 'undefined' && window.foodkingConfig)
+        ? window.foodkingConfig.discountsEnabled === true
+        : false;
     },
     customerAllergenCodes() {
       const profile = this.$store?.getters?.['kioskSettings/customerProfile'];

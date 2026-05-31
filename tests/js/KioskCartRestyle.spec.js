@@ -75,6 +75,15 @@ function mountOpts(store) {
 }
 
 describe('KioskCartComponent restyle', () => {
+    beforeEach(() => {
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] These specs assert the cart UI
+        // STRUCTURE (loyalty button + promo form testids), which now render only when
+        // discretionary discounts are enabled (window.foodkingConfig.discountsEnabled).
+        // Set the flag so the structural assertions hold; the OFF (hidden) behaviour is
+        // the V1 dormancy default verified at the backend gate level.
+        global.window.foodkingConfig = { discountsEnabled: true };
+    });
+
     it('empty state : testid + role=status + CTA present', () => {
         const store = makeStore({ items: [] });
         const wrapper = mount(KioskCartComponent, mountOpts(store));
