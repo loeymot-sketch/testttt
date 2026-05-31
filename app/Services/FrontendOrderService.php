@@ -489,6 +489,18 @@ class FrontendOrderService
                     $calculatedDiscount
                 );
 
+                // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Single fiscal gate
+                // for the customer-facing kiosk/web path. After coupon (SSOT or
+                // legacy) + kiosk loyalty redeem, $calculatedDiscount holds the
+                // total discretionary discount. At a non-zero VAT rate the frozen
+                // PricingService/ZReportService compute per-line TVA on the
+                // PRE-discount base → a discounted order signs a fiscally-incorrect
+                // NF525 Z (the F1 defect). Loyalty AUTO-accrues, so this path is
+                // reachable with zero admin action — it MUST be gated by code, not
+                // data. Refuse any non-zero discount until F1 is fixed under a
+                // lock-plan (same master flag as POS/admin: pos.manual_discount_enabled).
+                $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
+
                 $this->saveFrontendOrderWithQueueNumber(function () use ($request, $totalTax, $realSubtotal, $calculatedDiscount, $isKioskMachineOrder, $idempotencyKey): void {
                     $this->frontendOrder->order_serial_no = date('dmy') . $this->frontendOrder->id;
                     $this->frontendOrder->total_tax = round($totalTax, 2);
@@ -775,6 +787,25 @@ class FrontendOrderService
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Customer-facing (kiosk/web)
+     * fiscal-correctness gate for ANY discretionary discount (coupon + kiosk
+     * loyalty redeem). Mirrors OrderService::assertDiscretionaryDiscountAllowed.
+     * At a non-zero VAT rate the frozen PricingService/ZReportService compute
+     * per-line TVA on the PRE-discount base → a discounted order signs a
+     * fiscally-incorrect NF525 Z (F1, dormant only at 0% VAT). Refused in V1
+     * until F1 is fixed under a lock-plan (pos.manual_discount_enabled = the
+     * discretionary-discount master flag).
+     */
+    private function assertDiscretionaryDiscountAllowed(float $discount): void
+    {
+        if ($discount > 0.0 && config('pos.manual_discount_enabled') !== true) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'discount' => "Les remises (coupon, fidélité) sont désactivées en V1 (correction fiscale TVA/HT en attente).",
+            ]);
         }
     }
 

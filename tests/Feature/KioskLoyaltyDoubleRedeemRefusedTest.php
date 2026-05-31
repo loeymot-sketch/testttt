@@ -44,6 +44,13 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
             'loyalty_min_redeem_points' => 50,
         ]);
 
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] These tests exercise the kiosk
+        // loyalty-redeem MECHANICS (single decrement, pending-join, idempotent ledger) —
+        // not the V1 on/off policy. Enable the discretionary-discount master flag so the
+        // redeem path runs; the OFF default is locked by FrontendDiscountIntegrityTest
+        // ::test_discretionary_discount_disabled_by_default_on_frontend_v1().
+        config(['pos.manual_discount_enabled' => true]);
+
         $this->branch = Branch::factory()->create(['status' => Status::ACTIVE]);
         $this->kioskUser = User::factory()->create([
             'branch_id' => $this->branch->id,

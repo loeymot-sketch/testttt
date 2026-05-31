@@ -132,6 +132,12 @@ class FrontendDiscountIntegrityTest extends TestCase
 
     public function test_valid_coupon_is_applied_through_centralized_validation(): void
     {
+        // [GOAL-GOLIVE-VAT10] Subject = discount CALC/anti-forgery correctness, not
+        // the V1 on/off policy → enable the discretionary-discount master flag so the
+        // gated path runs (mirrors PosDiscountTest:46). Production default stays OFF;
+        // the OFF behaviour is locked by test_discretionary_discount_disabled_..._v1().
+        config(['pos.manual_discount_enabled' => true]);
+
         $coupon = Coupon::forceCreate([
             'name' => 'FRONT10',
             'description' => '10 percent',
@@ -169,6 +175,10 @@ class FrontendDiscountIntegrityTest extends TestCase
 
     public function test_forged_frontend_totals_do_not_change_server_coupon_discount(): void
     {
+        // [GOAL-GOLIVE-VAT10] Subject = anti-forgery (server ignores client totals),
+        // not the V1 on/off policy → enable the master flag so the discount path runs.
+        config(['pos.manual_discount_enabled' => true]);
+
         $coupon = Coupon::forceCreate([
             'name' => 'FRONT10_FORGED',
             'description' => '10 percent',
@@ -211,6 +221,10 @@ class FrontendDiscountIntegrityTest extends TestCase
 
     public function test_coupon_takes_priority_over_loyalty_discount_on_frontend_order(): void
     {
+        // [GOAL-GOLIVE-VAT10] Subject = coupon-over-loyalty priority, not the V1
+        // on/off policy → enable the master flag so both discount paths are live.
+        config(['pos.manual_discount_enabled' => true]);
+
         $coupon = Coupon::forceCreate([
             'name' => 'FIXED5',
             'description' => '5 euros',
@@ -264,5 +278,84 @@ class FrontendDiscountIntegrityTest extends TestCase
         ]);
         $this->assertSame(500, (int) $this->loyaltyCustomer->fresh()->loyalty_points);
         $this->assertFalse((bool) $response->json('loyalty_applied'));
+    }
+
+    /**
+     * [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Sentinel — discretionary
+     * discounts (coupon + kiosk/web loyalty redeem) are OFF by default in V1 on
+     * the customer-facing FrontendOrderService path. At a non-zero VAT rate the
+     * discount→HT/TVA split in the frozen PricingService/ZReportService is wrong
+     * (TVA computed on the PRE-discount base) → a discounted order would sign a
+     * fiscally-incorrect NF525 Z (the F1 defect). Loyalty AUTO-accrues, so the
+     * loyalty sub-path is reachable with zero admin action. This locks the gate
+     * (FrontendOrderService::assertDiscretionaryDiscountAllowed): flag OFF → any
+     * non-zero discount is refused (422) for BOTH the coupon and loyalty
+     * sub-paths, and the whole order transaction rolls back (no order, no coupon
+     * link, no loyalty deduction/ledger — so a refused redeem never burns points).
+     */
+    public function test_discretionary_discount_disabled_by_default_on_frontend_v1(): void
+    {
+        // Production V1 default — the flag is OFF unless a test/lock-plan enables it.
+        $this->assertNotSame(true, config('pos.manual_discount_enabled'));
+
+        // --- Sub-path A: coupon ---
+        $coupon = Coupon::forceCreate([
+            'name' => 'GATE10',
+            'description' => '10 percent',
+            'code' => 'GATE10',
+            'discount' => 10,
+            'discount_type' => DiscountType::PERCENTAGE,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addDay(),
+            'minimum_order' => 10,
+            'maximum_discount' => 5,
+            'limit_per_user' => 2,
+        ]);
+
+        $couponResponse = $this
+            ->actingAs($this->orderUser, 'sanctum')
+            ->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload([
+                'coupon_id' => $coupon->id,
+            ]));
+
+        // The gate throws a ValidationException, but myOrderStore's catch(Exception)
+        // re-wraps it as a generic 422 (the field-error structure is flattened) — so
+        // we assert the status + the transaction-rollback effects, matching the
+        // canonical ManualDiscountDisabledV1SentinelTest convention (status-only).
+        $couponResponse->assertStatus(422);
+        $this->assertSame(0, OrderCoupon::count(), 'Refused coupon order must not persist a coupon link.');
+        $this->assertSame(0, \App\Models\FrontendOrder::count(), 'Refused coupon order must roll back entirely.');
+
+        // --- Sub-path B: kiosk/web loyalty redeem (auto-accrues → reachable with zero admin action) ---
+        // The FrontendOrderService kiosk-loyalty lookup matches status=1 (legacy
+        // active), so use a status=1 redeemer holding enough points. 5.00 EUR ==
+        // 500 pts (rate 100) >= min 100, balance 500 → the redeem WOULD apply a
+        // 5.00 € discount, which the gate must refuse (422) + roll the whole tx back.
+        $redeemer = User::forceCreate([
+            'name' => 'Loyalty Redeemer',
+            'email' => 'loyalty-redeemer@test.local',
+            'username' => 'loyalty_redeemer',
+            'phone' => '0600000012',
+            'password' => bcrypt('password123'),
+            'branch_id' => $this->branch->id,
+            'status' => 1,
+            'loyalty_code' => 'LEGACY500',
+            'loyalty_points' => 500,
+        ]);
+
+        $loyaltyResponse = $this
+            ->actingAs($this->orderUser, 'sanctum')
+            ->withHeader('x-api-key', '123456')
+            ->postJson('/api/frontend/order', $this->basePayload([
+                'loyalty_code' => $redeemer->loyalty_code,
+                'discount' => 5.00,
+            ]));
+
+        $loyaltyResponse->assertStatus(422);
+        // Transaction rollback proof: no points burned, no ledger, no order.
+        $this->assertSame(500, (int) $redeemer->fresh()->loyalty_points, 'Refused loyalty redeem must not burn points.');
+        $this->assertSame(0, \App\Models\LoyaltyTransaction::where('type', 'redeem')->count(), 'Refused loyalty redeem must not write a ledger entry.');
+        $this->assertSame(0, \App\Models\FrontendOrder::count(), 'Refused loyalty order must roll back entirely.');
     }
 }
