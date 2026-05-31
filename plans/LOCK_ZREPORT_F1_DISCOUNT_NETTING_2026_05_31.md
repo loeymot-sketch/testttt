@@ -67,6 +67,39 @@ TVA by `(S - D)/S`. Worked example (the documented F1 case): 2,00 discount on 10
 test file; reverting restores the prior (pre-discount-base) aggregation. Because the fix is
 inert while discounts are disabled, rollback has no effect on any signed production Z.
 
+## 6bis. Round 2 — advisor-driven refactor (same LOCK scope, 2026-05-31)
+
+Post-review the advisor flagged a real defect in the round-1 fix: TVA was rounded at
+**two levels** (per-order in `applyOrderToTotals` + per-rate in `taxBreakdownForOrders`).
+With round-half-up these can diverge by a cent on a multi-rate discounted Z, producing
+a signed payload whose `total_tva ≠ Σ total_by_tax_rate` — a fiscally inconsistent
+document. Counter-example: order `total_tax=0,04` split `0,03 (10%) + 0,01 (5,5%)`,
+ratio 0,5 → naïve `total_tva=0,02` vs `Σ buckets = round(0,015) + round(0,005) =
+0,02 + 0,01 = 0,03`.
+
+**Refactor (same LOCK scope, still inside ZReportService):**
+- `total_by_tax_rate` becomes the SINGLE SOURCE OF TRUTH for the tax decomposition.
+- `total_tva = array_sum(byTaxRate)` and `total_ht = round(total_ttc − total_tva, 2)` —
+  the NF525 identity holds **EXACT** by construction.
+- `applyOrderToTotals` simplified to only `&$totalTtc, &$byMethod` (no TVA/HT).
+- Counter-entry refund mirrors are now included in `taxBreakdownForOrders` too
+  (bonus correctness: pre-fix they hit `total_tva` via `applyOrderToTotals` but never
+  reached `byTaxRate` — a pre-existing asymmetry).
+
+**Net −7 LOC.** `ratio=1` when `discount=0` → every non-discount Z is still
+byte-identical to the prior (pre-LOCK) behaviour. Frozen SHA-256 baseline updated
+(new hash `675796bbea478e12e1628794c52e9958991c812a32cf8a0d9749a6f07d52b207`).
+
+**Empirical proof (the advisor's E2E demand):**
+- `test_total_tva_exactly_equals_sum_of_total_by_tax_rate` — **EXACT** equality
+  (no delta) on the divergence-prone construction.
+- `test_discounted_z_close_signs_and_chain_verifies` — flag ON → discounted order →
+  REAL `close()` pipeline → `verifySignature` ✓ + `verifyChain.valid=true` ✓ +
+  persisted identities EXACT + F1 values correct (TTC 8,00 / TVA 0,73 / HT 7,27).
+
+Gates: PHP **2755/0**, fiscal cluster **55/55**, NF525 **CHAIN OK**, frozen diff =
+only `ZReportService` (this LOCK).
+
 ## 7. Activation (separate, owner-controlled)
 
 Re-enabling discounts (`pos.manual_discount_enabled=true`) is the activation step that makes
