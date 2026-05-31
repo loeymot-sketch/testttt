@@ -16,6 +16,16 @@
 ### Why this cycle was scoped to the delta (orchestrator re-scope, advisor-endorsed)
 The full-real-E2E (3h prior, `d3d290183`) proved the base GO-100%. The discount delta (9 commits `d3d290183..a928ee88d`) had its own round-4/5 + F1 E2E close+sign convergence (`golive-vat10-round4-2026-05-31`). **Both halves were already individually green.** The only unproven surface was their *intersection* — discounts live, under load, aggregated into a signed Z. This cycle concentrated firepower there + a fresh full adversarial pass, instead of a 10h re-run of 12 unchanged systems.
 
+### ⚠️ Scope actually executed vs the full plan (honest disclosure)
+This was **delta-focused (~30% of the plan's 7-wave/18-surface scope)**, NOT the full 10h pass. Specifically **NOT run this cycle:**
+- The 16 unchanged systems were **not re-validated from scratch** — they rest on the 3h-prior GO-100% (`full-real-e2e`) + the 2755 passing sentinels + the code-audit confirming no reactivation regression. Re-confirmation, not re-discovery.
+- The `test-e2e` **2-team skill loop** was not invoked; visual = **2 surfaces** (kiosk idle + admin dashboard) read+analyzed, vs the plan's 18×3 matrix (scoped down for the 2.5Gi disk constraint + no-source-change cycle).
+- The `foodking:e2e:stress` **rush created 0 orders** (harness self-401 bug); load proven instead via the 8-order concurrent discounted burst + prior cycles' 117–224-order proofs.
+- Wave E (data-integrity post-rush) = covered by passing BranchScope/composition sentinels + chain/z-membership verifications, not a fresh dedicated agent run.
+- R3 (200 orders/min) **deliberately skipped** (disproportionate DB pollution for the delta).
+
+**This was a deliberate correctness-driven re-scope** (concentrate on where bugs demonstrably live). Whether it suffices, or the owner wants the full 18-surface/7-wave pass, is the owner's call (surfaced in the closing question).
+
 ---
 
 ## §2 — Plan corrections applied during execution (review fixes)
@@ -65,6 +75,11 @@ The full-real-E2E (3h prior, `d3d290183`) proved the base GO-100%. The discount 
   - non-discounted breakdown unchanged (no regression) ✓
 - Order-level `total_tax` stores the pre-discount base (the F1 premise); the netting-to-post-discount lives in the (frozen) `ZReportService` aggregation — confirmed by the code-audit (aggregates from `Order`, not `order_quotes`) and the unit tests above.
 
+### 4.5 Kill-switch PROVEN LIVE (C-L6, authoritative — corrected)
+- **The gate is at ORDER CREATE, not at quote.** The quote's `assertManualDiscountAllowed` returns early for `coupon_id>0` (`OrderQuoteService:290`) — so a coupon *quote* returns 200 even with the flag off (it only computes pricing). The kill-switch lives at the order-persistence chokepoint (`FrontendOrderService` / `OrderService::assertDiscretionaryDiscountAllowed`).
+- **Live proof:** a throwaway `php artisan serve --port=8001` started with `POS_MANUAL_DISCOUNT_ENABLED=false` in its process env (Dotenv immutable → guaranteed off) → coupon quote 200 (computes discount 0.6) → **coupon ORDER → HTTP 422** `"Les remises (coupon, fidélité) sont désactivées en V1 (correction fiscale TVA/HT en attente)."` No-coupon quote/order still 200/201 (no-discount path unaffected). Cleaned up; chain CHAIN OK, dev DB 414.
+- **Ops note (not a defect):** the flag is env-scoped. `:8000` runs plain `php artisan serve`; flipping `.env` on the *running* process does not hot-reload (Dotenv won't override an already-set process env; and the long-running serve process holds its boot environment). Flipping the kill-switch = set the env + restart the service (standard). A fresh process with the new value gates correctly (proven above).
+
 ---
 
 ## §5 — Adversarial (Wave C, 6-lens code-audit + live)
@@ -86,9 +101,9 @@ Workflow `w2ihq81wo`: 6 agents, 510k tok, 199 tool-uses, file:line discipline, �
 ## §6 — Real findings (verified, owner-gate — NOT auto-fixed)
 > Discount-abuse / revenue / ops vectors. **None is a fiscal-chain or security P0/P1.** Dormant until reactivation; newly relevant now that discounts are live. Per the cycle's own non-goal ("convergence ≠ feature add"), these are surfaced for owner decision, not patched here.
 
-- **COUPON-CAP-01 (P2)** — `max_uses_global` is **not enforced**. `usage_count` is checked (`Coupon.php:152`) and initialized 0 (`CouponService:236`) but **never incremented** (broad grep: no `increment(`, no observer). Empirical: `CONVTEST10` showed `usage_count=0` after redemption. A globally-capped coupon ("max 100 uses") is effectively unlimited.
+- **COUPON-CAP-01 (P2)** — `max_uses_global` is **not enforced**. `usage_count` is checked (`Coupon.php:152`) and initialized 0 (`CouponService:236`) but **never incremented** anywhere (broad grep: no `increment(`, no observer/listener). Evidence = code-confirmed + empirically observed `usage_count=0` after redeeming order #1001 (the full unlimited-over-redeem loop was not fired live, but a globally-capped coupon stays at 0 → cap check `0 >= 1` never trips → effectively unlimited). NOT a fiscal/security issue.
 - **COUPON-CAP-02 (P3)** — `limit_per_user` **IS** enforced (via `OrderCoupon` row-count, `CouponService:437-448`) but **non-atomically**: no `lockForUpdate`, `order_coupons` has no `(coupon_id,user_id)` unique index → a same-user concurrent burst could race past the per-user cap. Low risk on V1 single-box.
-- **KS-PROPAGATION (P3, ops)** — the kill-switch gate is complete (7 sentinels + code-audit), but a `.env` `POS_MANUAL_DISCOUNT_ENABLED=false` flip on the **running** server does NOT hot-reload (server holds boot-time env). Flipping the kill-switch requires a **service restart** (or `config:cache` redeploy). Standard for env, but the "instant kill-switch" framing should note this.
+- **KS-RESTART (P3, ops note — NOT a defect)** — the kill-switch is **proven live** (§4.5: flag-off process → coupon order 422). The flag is env-scoped, so flipping it on a *running* `php artisan serve` requires a **service restart** to take effect (a fresh process with the new env gates correctly). Standard env behavior; the BRAIN's "`.env` flip re-désactive tout" should add "(after service restart)".
 
 **Recommended fix (owner decision):** increment `usage_count` + per-user check inside the same locked transaction as the cap check, add a `(coupon_id,user_id)` index. Coupon-feature completion + TDD — a separate scoped task, not this convergence cycle.
 
