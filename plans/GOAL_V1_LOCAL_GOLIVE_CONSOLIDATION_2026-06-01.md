@@ -137,6 +137,8 @@ remainder is irreducibly owner/physical (cannot be self-performed).
 
 **Why I stopped at the gates:** I cannot self-countersign a fiscal LOCK (§10), run a 10-hour soak, write production `.env`, execute the Ansible playbook, migrate the prod DB, or physically operate the TPE/drawer/printer. Those 8 gates are the irreducible owner remainder. Everything a Claude session can do is done + tested + committed (no push).
 
+**Convergence gate (post-execution):** full PHP suite **2792 passed / 0 failed** (1 risky / 2 incomplete / 29 skipped — pre-existing non-failure states; the prior POSComprehensive transient did NOT recur) · **NF525 CHAIN OK** (branch 1) · frozen-zone diff **0** · 6 new sentinels · HEAD post-execution. no push.
+
 ---
 
 ## §F — DONE criteria
