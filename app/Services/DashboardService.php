@@ -358,7 +358,12 @@ class DashboardService
     public function totalOrders()
     {
         try {
-            return $this->orderQuery()->where('status', OrderStatus::DELIVERED)->count();
+            // [DASH-01 heal 2026-06-01, owner "do the goal"] The "Total commandes" KPI must
+            // reflect REAL order volume — it previously counted status=DELIVERED only (e.g. 3
+            // vs 1755 placed/day), misleading under that label. Count all PLACED orders,
+            // excluding refund counter-entry mirrors (parent_order_id). The per-status
+            // breakdown stays in orderStatistics; this headline is total volume.
+            return $this->orderQuery()->whereNull('parent_order_id')->count();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
