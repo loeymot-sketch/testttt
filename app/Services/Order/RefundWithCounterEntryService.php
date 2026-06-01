@@ -129,7 +129,21 @@ class RefundWithCounterEntryService
             $mirror->reason = $reason;
             $mirror->save();
 
-            // 4) Duplicate order_items with negated qty + tax.
+            // [LOCK_ZREPORT_REFUND_DISCOUNT_TVA_NETTING 2026-06-01 — ZRPT-SEM-01]
+            // Replicate ZReportService::orderDiscountRatio for the PARENT so the mirror
+            // reverses the parent's POST-discount (net) per-rate TVA, not the full
+            // pre-discount TVA. The Z scales the parent's per-line tax by parentRatio,
+            // but the mirror's negative subtotal makes orderDiscountRatio(mirror)=1.0,
+            // so without pre-scaling the mirror would over-reverse TVA by tax×(1−ratio),
+            // making the signed Z understate per-rate TVA across the close/refund windows.
+            // Non-discounted orders → parentRatio = 1.0 → byte-identical to prior behavior.
+            $parentSubtotal = (float) ($parent->subtotal ?? 0);
+            $parentDiscount = (float) ($parent->discount ?? 0);
+            $parentRatio = ($parentDiscount > 0.0 && $parentSubtotal > 0.0)
+                ? max(0.0, min(1.0, ($parentSubtotal - $parentDiscount) / $parentSubtotal))
+                : 1.0;
+
+            // 4) Duplicate order_items with negated qty + (discount-netted) tax.
             $parent->loadMissing('orderItems');
             foreach ($parent->orderItems as $item) {
                 /** @var OrderItem $item */
@@ -142,7 +156,7 @@ class RefundWithCounterEntryService
                     'tax_name'             => $item->tax_name,
                     'tax_rate'             => $item->tax_rate,
                     'tax_type'             => $item->tax_type,
-                    'tax_amount'           => -1 * (float) ($item->tax_amount ?? 0),
+                    'tax_amount'           => -1 * (float) ($item->tax_amount ?? 0) * $parentRatio,
                     'price'                => $item->price,
                     'item_variations'      => $item->item_variations,
                     'item_extras'          => $item->item_extras,
