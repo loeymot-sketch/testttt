@@ -87,5 +87,13 @@ class ItemsReportUnitsSoldSentinelTest extends TestCase
         $this->assertSame(1, (int) ($byId[$itemB->id]->units_sold ?? 0), 'B must be 1 (out-of-range Feb sale excluded).');
         // C never sold → 0/null.
         $this->assertSame(0, (int) ($byId[$itemC->id]->units_sold ?? 0));
+
+        // [advisor 2026-06-01] Guard the admin DataTable path (paginate=1): the
+        // withSum-alias + orderByRaw must not break the paginate() count wrapper.
+        $paged = app(ItemService::class)->itemReport(
+            PaginateRequest::create('/', 'GET', ['paginate' => 1, 'per_page' => 10, 'from_date' => '2026-03-01', 'to_date' => '2026-03-31'])
+        );
+        $this->assertSame(3, $paged->total(), 'paginate=1 path must return a working paginator (count over all items).');
+        $this->assertSame(5, (int) ($paged->getCollection()->firstWhere('id', $itemA->id)->units_sold ?? 0));
     }
 }
