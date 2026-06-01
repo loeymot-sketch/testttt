@@ -446,6 +446,18 @@ class CouponService
             }
         }
 
+        // [COUPON-CAP-01 heal 2026-06-01] Enforce max_uses_global. The model's isUsableNow()
+        // checked it against `usage_count`, but usage_count is never incremented (dead column),
+        // so the global cap never tripped. Count actual redemptions from order_coupons — same
+        // source-of-truth as limit_per_user above (single-box V1: same non-atomic semantics).
+        $maxUsesGlobal = (int) ($coupon->max_uses_global ?? 0);
+        if ($maxUsesGlobal > 0) {
+            $globalUsed = OrderCoupon::where('coupon_id', $coupon->id)->count();
+            if ($globalUsed >= $maxUsesGlobal) {
+                throw new Exception(trans('all.message.coupon_limit_exceeded'), 422);
+            }
+        }
+
         // [CV6 P0 fix — wire isUsableNow]
         // The model exposes a richer scoping check (status, day-of-week, hour-of-day,
         // branch_scope, surfaces, max_uses_global) — this private path-validator
