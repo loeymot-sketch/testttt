@@ -1129,7 +1129,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/', [MessageController::class, 'index']);
         Route::get('/show/{message}', [MessageController::class, 'show']);
         Route::post('/', [MessageController::class, 'store']);
-        Route::match(['put', 'patch'], '/{message}', [MessageController::class, 'update']);
+        // [NC-MSG-UPDATE-DEAD heal 2026-06-01] Removed dead route — MessageController has no
+        // update() method (index/show/store/destroy/changeStatus only); PUT/PATCH 500'd.
         Route::delete('/{message}', [MessageController::class, 'destroy']);
         Route::get('/change-status/{message}/{customer}', [MessageController::class, 'changeStatus']);
     });

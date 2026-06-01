@@ -157,8 +157,10 @@ class EmployeeService
                         $this->user->password = Hash::make($request->password);
                     }
                     $this->user->save();
+                    // [USR-RBAC-03 heal 2026-06-01] syncRoles inside the transaction — atomic with
+                    // the user update (was outside: a failed sync left the user mutated but role stale).
+                    $this->user->syncRoles($request->role_id);
                 });
-                $this->user->syncRoles($request->role_id);
                 return $this->user;
             } else {
                 throw new Exception(trans('all.message.permission_denied'), 422);
