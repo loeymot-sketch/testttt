@@ -2,7 +2,17 @@
 
 Executed 2026-06-01 (owner: "do the remaining of goal, max reasoning"). Read/capture + deep adversarial code-audit; **2 P1 security holes healed with TDD**. 0 frozen-zone touch.
 
-## Verdict: management surface FUNCTIONAL + reachable; data well-recorded; **2 P1 secret-leaks HEALED**, 1 P1 privilege-escalation ESCALATED (policy), 11 P2/P3 documented.
+## Verdict: management surface FUNCTIONAL + reachable; data well-recorded; **5 findings HEALED with TDD** (2 P1 + 1 P2 + 2 P3), 1 P1 privilege-escalation ESCALATED (policy), 8 P2/P3 documented/escalated.
+
+### Heals applied this cycle (all TDD RED→GREEN, non-frozen, frozen-diff 0)
+| Finding | Sev | Fix | Commit |
+|---|---|---|---|
+| SET-01-PG | P1 | PaymentGatewayController `->only('index','update')` (secret leak) | 24325ac6b |
+| SET-01-SMS | P1 | SmsGatewayController `->only('index','update')` (secret leak) | 24325ac6b |
+| REP-AUTHZ-01 | P2 | SalesReportController add `'overview'` to gate (revenue leak) | b180f14b7 |
+| NC-MSG-CHANGESTATUS-GATE | P3 | MessageController add `'changeStatus'` to gate | b180f14b7 |
+| CAT-DATA-02 | P3 | ItemCategoryRequest `->whereNull('deleted_at')` (reusable name) | (this commit) |
+Sentinels added: `GatewaySecretIndexAuthzSentinelTest`, `MgmtReadAuthzGateSentinelTest`. Regression: FormRequestAuthzDrift + PermissionIndexAuthz + catalog (116) all green. Round-2 full suite in progress.
 
 ## A. Page/nav reachability — ✅ whole surface works, 0 dead pages
 - **27/27 sidebar buttons** → real named routes (0 orphan/404) → working pages (live-rendered).
