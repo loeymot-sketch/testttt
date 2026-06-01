@@ -395,7 +395,7 @@ class CashOverviewControllerTest extends TestCase
         $today = Carbon::now('Europe/Paris')->startOfDay()->addHours(9);
 
         // Open drawer in branch A with 100€ opening.
-        CashDrawerSession::create([
+        $session = CashDrawerSession::create([
             'branch_id'         => $this->branchA->id,
             'opened_by_user_id' => $this->cashierA->id,
             'opened_at'         => $today,
@@ -403,10 +403,22 @@ class CashOverviewControllerTest extends TestCase
             'status'            => CashDrawerSession::STATUS_OPEN,
         ]);
 
-        // Cash collected: 30 + 20 = 50 in branch A today.
+        // [CASH-JOIN-01/SEM-02] expected_cash is now derived from the SESSION's
+        // signed CashMovements (the authoritative reconcileSession source), not a
+        // per-branch+day Transaction sum. Cash IN movements: 30 + 20 = 50.
+        \App\Models\CashMovement::create([
+            'cash_drawer_session_id' => $session->id, 'branch_id' => $this->branchA->id,
+            'type' => \App\Models\CashMovement::TYPE_ORDER_PAYMENT,
+            'direction' => \App\Models\CashMovement::DIRECTION_IN, 'amount' => 30.00,
+        ]);
+        \App\Models\CashMovement::create([
+            'cash_drawer_session_id' => $session->id, 'branch_id' => $this->branchA->id,
+            'type' => \App\Models\CashMovement::TYPE_ORDER_PAYMENT,
+            'direction' => \App\Models\CashMovement::DIRECTION_IN, 'amount' => 20.00,
+        ]);
+        // Transactions populate the list; a card txn must NOT inflate expected_cash
+        // (it creates no cash CashMovement).
         $this->makeOrderTransaction($this->branchA, 'caisse', 'cash',         30.00, (clone $today)->addHours(2));
-        $this->makeOrderTransaction($this->branchA, 'borne',  'counter_cash', 20.00, (clone $today)->addHours(3));
-        // Card txn must NOT inflate expected_cash.
         $this->makeOrderTransaction($this->branchA, 'caisse', 'credit',       80.00, (clone $today)->addHours(4));
 
         $response = $this->actingAs($this->managerA, 'sanctum')
@@ -416,6 +428,53 @@ class CashOverviewControllerTest extends TestCase
         $this->assertEquals(100.00, $response->json('cash_session.opening_amount'));
         $this->assertEquals(50.00,  $response->json('cash_session.cash_collected'));
         $this->assertEquals(150.00, $response->json('cash_session.expected_cash'));
+    }
+
+    /**
+     * [CASH-JOIN-01 + CASH-SEM-02] expected_cash must (a) net cash-OUT/cashback
+     * movements and (b) NOT include cash from another session of the same day.
+     */
+    public function test_expected_cash_nets_cashout_and_isolates_session(): void
+    {
+        $today = Carbon::now('Europe/Paris')->startOfDay()->addHours(9);
+
+        // A PREVIOUS closed session of the same day with its own cash — must NOT leak.
+        $closed = CashDrawerSession::create([
+            'branch_id' => $this->branchA->id, 'opened_by_user_id' => $this->cashierA->id,
+            'opened_at' => (clone $today)->subHours(1), 'opening_amount' => 500.00,
+            'status' => CashDrawerSession::STATUS_CLOSED,
+        ]);
+        \App\Models\CashMovement::create([
+            'cash_drawer_session_id' => $closed->id, 'branch_id' => $this->branchA->id,
+            'type' => \App\Models\CashMovement::TYPE_ORDER_PAYMENT,
+            'direction' => \App\Models\CashMovement::DIRECTION_IN, 'amount' => 999.00,
+        ]);
+
+        // The CURRENT open session: opening 100, +60 cash in, -25 cashback out.
+        $session = CashDrawerSession::create([
+            'branch_id' => $this->branchA->id, 'opened_by_user_id' => $this->cashierA->id,
+            'opened_at' => $today, 'opening_amount' => 100.00,
+            'status' => CashDrawerSession::STATUS_OPEN,
+        ]);
+        \App\Models\CashMovement::create([
+            'cash_drawer_session_id' => $session->id, 'branch_id' => $this->branchA->id,
+            'type' => \App\Models\CashMovement::TYPE_ORDER_PAYMENT,
+            'direction' => \App\Models\CashMovement::DIRECTION_IN, 'amount' => 60.00,
+        ]);
+        \App\Models\CashMovement::create([
+            'cash_drawer_session_id' => $session->id, 'branch_id' => $this->branchA->id,
+            'type' => \App\Models\CashMovement::TYPE_CASHBACK,
+            'direction' => \App\Models\CashMovement::DIRECTION_OUT, 'amount' => 25.00,
+        ]);
+
+        $response = $this->actingAs($this->managerA, 'sanctum')->getJson('/api/admin/cash-overview');
+
+        $response->assertOk();
+        // Net = 60 - 25 = 35 (the closed session's 999 must NOT leak).
+        $this->assertEquals(35.00, $response->json('cash_session.cash_collected'),
+            'cash_collected must net cash-OUT and be scoped to the open session only.');
+        $this->assertEquals(135.00, $response->json('cash_session.expected_cash'),
+            'expected_cash = opening 100 + (60 - 25) = 135; the prior session 999 must not leak.');
     }
 
     public function test_cash_session_null_for_admin_without_branch_filter(): void

@@ -225,23 +225,26 @@ class CashOverviewController extends AdminController
             // bounded query restricted to drawer.branch_id + the current
             // day window, IGNORING all UI filters.
             $sessionBranchId = (int) $cashSession->branch_id;
-            $cashCollectedToday = (float) $this->drawerCashCollectedUnfiltered(
-                $sessionBranchId,
-                $startBound,
-                $endBound,
-                $isGlobalAdmin
-            );
-            $expectedCash = round(
-                (float) $cashSession->opening_amount + $cashCollectedToday,
-                2
-            );
+            // [CASH-JOIN-01 + CASH-SEM-02 heal 2026-06-01] Expected cash = opening_amount
+            // + Σ signed CashMovements SCOPED TO THIS SESSION — the SAME authoritative
+            // source as CashDrawerService::reconcileSession. The previous per-branch+day
+            // positive Transaction sum (a) leaked cash from OTHER sessions of the same day
+            // into this drawer's expected (CASH-JOIN-01) and (b) summed only positive
+            // order-payments, ignoring cashback/cash-OUT movements (CASH-SEM-02) → it
+            // overstated the physical drawer the cashier reconciles against.
+            $movementsSum = (float) \App\Models\CashMovement::query()
+                ->where('cash_drawer_session_id', $cashSession->id)
+                ->get()
+                ->sum(fn (\App\Models\CashMovement $m) => $m->signedAmount());
+            $expectedCash = round((float) $cashSession->opening_amount + $movementsSum, 2);
             $cashSessionPayload = [
                 'id'               => (int) $cashSession->id,
                 'branch_id'        => $sessionBranchId,
                 'opened_at'        => optional($cashSession->opened_at)->toIso8601String(),
                 'opening_amount'   => round((float) $cashSession->opening_amount, 2),
                 'expected_cash'    => $expectedCash,
-                'cash_collected'   => round($cashCollectedToday, 2),
+                // Net cash movement since opening (IN minus OUT), the reconciliation delta.
+                'cash_collected'   => round($movementsSum, 2),
             ];
         }
 
@@ -320,47 +323,6 @@ class CashOverviewController extends AdminController
         // mounts by default for the admin's daily écart view.
 
         return $query->orderByDesc('opened_at')->first();
-    }
-
-    /**
-     * [Wave X-C round-2 2026-05-21] Fix C-014 — compute the drawer's
-     * `cash_collected` from a SEPARATE bounded query restricted to the
-     * drawer's branch + the current day window, IGNORING the UI
-     * source/mode/branch filters used to build `$transactions`.
-     *
-     * Reconciliation cash IN is a physical-drawer invariant: it does NOT
-     * change because the admin filtered the transactions list to
-     * source=borne or mode=card. Returns the rounded total in EUR.
-     *
-     * Cost: one extra SELECT bounded by (branch_id + day + type=payment +
-     * cash LIKE patterns), well below 100 rows in realistic operation —
-     * negligible vs the main list query already capped at 500.
-     */
-    private function drawerCashCollectedUnfiltered(
-        int $branchId,
-        Carbon $startBound,
-        Carbon $endBound,
-        bool $isGlobalAdmin
-    ): float {
-        $cashPatterns = $this->paymentMethodPatternsForBucket('cash');
-
-        $q = Transaction::query()
-            ->whereBetween('created_at', [$startBound, $endBound])
-            ->where('type', 'payment')
-            ->whereHas('order', function ($oq) use ($branchId, $isGlobalAdmin) {
-                if ($isGlobalAdmin) {
-                    $oq->withoutGlobalScope(BranchScope::class);
-                }
-                $oq->where('branch_id', $branchId);
-            })
-            ->where(function ($pq) use ($cashPatterns) {
-                foreach ($cashPatterns as $pattern) {
-                    $pq->orWhere('payment_method', 'like', $pattern);
-                }
-            });
-
-        $sum = (float) $q->sum('amount');
-        return round($sum, 2);
     }
 
     /**
