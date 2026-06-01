@@ -6,6 +6,7 @@ use Exception;
 use App\Enums\Ask;
 use App\Models\User;
 use App\Enums\Role as EnumRole;
+use App\Services\Concerns\EnforcesOwnBranchScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\WaiterRequest;
@@ -19,6 +20,8 @@ use App\Http\Requests\UserChangePasswordRequest;
 
 class WaiterService
 {
+    use EnforcesOwnBranchScope;
+
     public object $waiter;
     public array $phoneFilter = ['phone'];
     public array $roleFilter = ['role_id'];
@@ -69,7 +72,7 @@ class WaiterService
                     'phone'             => $request->phone,
                     'username'          => $this->username($request->email),
                     'password'          => bcrypt($request->password),
-                    'branch_id'         => $request->branch_id,
+                    'branch_id'         => $this->effectiveBranchId(auth()->user(), $request->branch_id),
                     'email_verified_at' => now(),
                     'status'            => $request->status,
                     'country_code'      => $request->country_code,
@@ -107,7 +110,7 @@ class WaiterService
                     if ($request->password) {
                         $this->waiter->password = Hash::make($request->password);
                     }
-                    $this->waiter->branch_id     = $request->branch_id;
+                    $this->waiter->branch_id     = $this->effectiveBranchId(auth()->user(), $request->branch_id);
                     $this->waiter->save();
                 });
                 return $this->waiter;

@@ -7,6 +7,7 @@ use App\Enums\Ask;
 use App\Models\User;
 use App\Enums\Role as EnumRole;
 use Spatie\Permission\Models\Role;
+use App\Services\Concerns\EnforcesOwnBranchScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
@@ -19,6 +20,8 @@ use App\Http\Requests\UserChangePasswordRequest;
 
 class EmployeeService
 {
+    use EnforcesOwnBranchScope;
+
     public $user;
     public $phoneFilter = ['phone'];
     public $roleFilter = ['role_id'];
@@ -93,19 +96,6 @@ class EmployeeService
 
         return $targetPerms->diff($callerPerms)->isEmpty()
             && $targetPerms->count() < $callerPerms->count();
-    }
-
-    /**
-     * [USR-RBAC-02 heal 2026-06-01] A non-`settings` caller (e.g. Branch Manager) may only
-     * create/assign users in their OWN branch — ignore a request-supplied branch_id to prevent
-     * cross-branch assignment. A `settings` holder (admin) keeps cross-branch discretion.
-     */
-    public function effectiveBranchId(?User $caller, $requestedBranchId): int
-    {
-        if ($caller && !$caller->can('settings')) {
-            return (int) $caller->branch_id;
-        }
-        return (int) $requestedBranchId;
     }
 
     public function store(EmployeeRequest $request)

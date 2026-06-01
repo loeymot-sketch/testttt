@@ -6,6 +6,7 @@ use Exception;
 use App\Enums\Ask;
 use App\Models\User;
 use App\Enums\Role as EnumRole;
+use App\Services\Concerns\EnforcesOwnBranchScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +19,8 @@ use App\Http\Requests\UserChangePasswordRequest;
 
 class DeliveryBoyService
 {
+    use EnforcesOwnBranchScope;
+
     public $user;
     public $phoneFilter = ['phone'];
     public $roleFilter = ['role_id'];
@@ -69,7 +72,7 @@ class DeliveryBoyService
                     'phone'             => $request->phone,
                     'username'          => $this->username($request->email),
                     'password'          => bcrypt($request->password),
-                    'branch_id'         => $request->branch_id,
+                    'branch_id'         => $this->effectiveBranchId(auth()->user(), $request->branch_id),
                     'status'            => $request->status,
                     'email_verified_at' => now(),
                     'country_code'      => $request->country_code,
@@ -103,7 +106,7 @@ class DeliveryBoyService
                     $this->user->name         = $request->name;
                     $this->user->email        = $request->email;
                     $this->user->phone        = $request->phone;
-                    $this->user->branch_id    = $request->branch_id;
+                    $this->user->branch_id    = $this->effectiveBranchId(auth()->user(), $request->branch_id);
                     $this->user->status       = $request->status;
                     $this->user->country_code = $request->country_code;
                     if ($request->password) {

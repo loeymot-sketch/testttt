@@ -7,6 +7,7 @@ use App\Enums\Ask;
 use App\Models\User;
 use App\Enums\Role as EnumRole;
 use App\Http\Requests\ChefRequest;
+use App\Services\Concerns\EnforcesOwnBranchScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +19,8 @@ use App\Http\Requests\UserChangePasswordRequest;
 
 class ChefService
 {
+    use EnforcesOwnBranchScope;
+
     public object $chef;
     public array $phoneFilter = ['phone'];
     public array $roleFilter = ['role_id'];
@@ -68,7 +71,7 @@ class ChefService
                     'phone'             => $request->phone,
                     'username'          => $this->username($request->email),
                     'password'          => bcrypt($request->password),
-                    'branch_id'         => $request->branch_id,
+                    'branch_id'         => $this->effectiveBranchId(auth()->user(), $request->branch_id),
                     'email_verified_at' => now(),
                     'status'            => $request->status,
                     'country_code'      => $request->country_code,
@@ -106,7 +109,7 @@ class ChefService
                     if ($request->password) {
                         $this->chef->password = Hash::make($request->password);
                     }
-                    $this->chef->branch_id     = $request->branch_id;
+                    $this->chef->branch_id     = $this->effectiveBranchId(auth()->user(), $request->branch_id);
                     $this->chef->save();
                 });
                 return $this->chef;
