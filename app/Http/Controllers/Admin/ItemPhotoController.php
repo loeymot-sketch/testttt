@@ -20,6 +20,13 @@ class ItemPhotoController extends AdminController
 
     public function store(ItemPhotoUploadRequest $request, Item $item): JsonResponse
     {
+        // [CAT-AUTHZ-01 heal 2026-06-01] This destructive media-replace must carry the same
+        // Admin/Tenant-Admin reservation as ItemController::changeImage (locked by
+        // ProductPhotoAuthzTest). Without it, a branch user granted items_edit could replace
+        // catalog photos via this route while being 403'd on change-image (authz drift).
+        $user = auth()->user();
+        abort_if(! $user || (! $user->hasRole('Admin') && ! $user->hasRole('Tenant Admin')), 403);
+
         $originalMediaIds = $item->getMedia('item')->pluck('id')->all();
 
         try {
