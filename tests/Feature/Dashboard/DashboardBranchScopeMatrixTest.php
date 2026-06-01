@@ -68,7 +68,10 @@ class DashboardBranchScopeMatrixTest extends TestCase
         $this->actingAs($manager, 'sanctum')
             ->getJson('/api/admin/dashboard/total-orders')
             ->assertOk()
-            ->assertJsonPath('data.total_orders', 2);
+            // [DASH-01 2026-06-01] total_orders now = all PLACED branchA orders (DELIVERED
+            // A0001 + PREPARING A0002 + customer order), not DELIVERED-only. Branch scope
+            // intact: branchA = 3, NOT branchA+branchB = 6.
+            ->assertJsonPath('data.total_orders', 3);
 
         $this->actingAs($manager, 'sanctum')
             ->getJson('/api/admin/dashboard/realtime-report')
