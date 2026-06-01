@@ -183,6 +183,11 @@ class OrderService
                             } else {
                                 $query->where('pos_payment_method', abs((int) $request));
                             }
+                        } else if ($key === 'source') {
+                            // [SALES-PAR-03 heal 2026-06-01] `source` is an int enum — EXACT match
+                            // (parity with salesReportOverview), NOT the generic LIKE which would
+                            // over-match (e.g. '%5%' matching 5 and 15/50). source_surface stays LIKE.
+                            $query->where('source', (int) $request);
                         } else {
                             $this->applyOrderFilter($query, $key, $request);
                         }
@@ -2746,6 +2751,12 @@ class OrderService
                             }
                         }
                     }
+                }
+
+                // [SALES-PAR-05 heal 2026-06-01] Honour exceptSource for parity with list() —
+                // the overview cards previously ignored it, diverging from the table/PDF/Excel.
+                if (isset($requests['exceptSource'])) {
+                    $query->where('source', '!=', $requests['exceptSource']);
                 }
             })->orderBy($orderColumn, $orderType)->get();
             $salesReportArray = [];
