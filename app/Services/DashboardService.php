@@ -328,6 +328,9 @@ class DashboardService
 
             return $this->customerQuery()
                 ->withCount(['orders' => function ($query) use ($branchId): void {
+                    // [topCustomers heal 2026-06-01] Exclude refund counter-entry mirrors
+                    // so a refunded customer is not credited an extra "order".
+                    $query->whereNull('parent_order_id');
                     if ($branchId !== null) {
                         $query->where('branch_id', $branchId);
                     }
@@ -464,7 +467,11 @@ class DashboardService
             $appTz = config('app.timezone');
             $startParis = Carbon::today($appTz);
             $endParisExclusive = Carbon::tomorrow($appTz);
+            // [DASH-SEM-04 heal 2026-06-01] Exclude refund counter-entry mirrors
+            // (parent_order_id set, source NULL) — they are not placed orders and
+            // were mis-bucketed into 'Web', skewing the channel percentages.
             $orders = $this->orderQuery()
+                ->whereNull('parent_order_id')
                 ->where('order_datetime', '>=', $startParis)
                 ->where('order_datetime', '<', $endParisExclusive)
                 ->get();
