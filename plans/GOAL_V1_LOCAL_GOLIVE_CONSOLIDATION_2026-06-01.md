@@ -114,5 +114,30 @@ Hors-scope V1 LOCAL, listés pour traçabilité, **jamais surfacés comme blocke
 
 ---
 
+## §E — EXECUTION LOG (2026-06-01 — owner « do the goal till finish »)
+
+All **code-able** scope EXECUTED autonomously (TDD, frozen 0, NF525 CHAIN OK). The
+remainder is irreducibly owner/physical (cannot be self-performed).
+
+| Wave | Item | Status | Commit / evidence |
+|------|------|--------|-------------------|
+| W1.1 | CREDBAL-SEM-02 customers-only | ✅ DONE | `2dc65189c` + CreditBalanceCustomersOnly sentinel |
+| W1.2/1.3 | CREDBAL soft-deleted / ledger-recon | 📄 DOC-DEFER | V1-LOCAL negligible → V1.0.2 (documented) |
+| W1.4 | DASH-SEM-04 channel mirror | ✅ DONE | `2dc65189c` + ChannelStatisticsMirrorExcluded sentinel |
+| W1.6 | topCustomers all-time-unfiltered | ✅ DONE | `2dc65189c` (mirror-excluded) |
+| W1.5 | SALES-PAR-03/05 source-exact + exceptSource parity | ✅ DONE | `b5e4f1e01` + SalesReportFilterParity sentinel |
+| W2.2 | REP-ANALYTIC-01 gate index/show | ✅ DONE | `b9bd199fa`-range + AnalyticReadAuthz sentinel (consumer-check refuted the risk) |
+| W2.1 | DASH-01 « Total commandes » real volume | ✅ DONE | `b046b1c3b`+`b9bd199fa` (3→3388 live MySQL); backend-only, NO bundle rebuild needed; branch-scope test realigned |
+| W3 | Dormants (LOY-SEM-03, ZRPT-SEM-03, DEL-FEE-LEGACY, DEL-GEOCODE) | 📄 DOC | confirmed inert + documented (FINDINGS / CONVERGENCE) — no blind code |
+| W6 | V1.0.1 hardening (password policy / Sanctum TTL / API-key / FormRequest ratchet / advisories) | ⏸ POST-GO-LIVE | non-blocking, deliberate track — NOT rushed at session-tail |
+| **G1** | ZRPT-SEM-01 countersign | 🔒 OWNER | code+test done; fiscal countersign is owner-only (§10 human gate) |
+| **G2** | LOCK housekeeping ×5 | 🔒 OWNER | code shipped prior cycles; owner marks ACCEPTED |
+| **G4** | clean 10h soak server-alone | 🔒 OWNER-PHYSICAL | owner runs (can't self-run 10h + concurrency rule) |
+| **G5-G8** | `.env` prod flip / Ansible REVOKE / migrate-fresh-seed / on-site walk | 🔒 OWNER-PHYSICAL | requires owner at the machine |
+
+**Why I stopped at the gates:** I cannot self-countersign a fiscal LOCK (§10), run a 10-hour soak, write production `.env`, execute the Ansible playbook, migrate the prod DB, or physically operate the TPE/drawer/printer. Those 8 gates are the irreducible owner remainder. Everything a Claude session can do is done + tested + committed (no push).
+
+---
+
 ## §F — DONE criteria
 Go-live LOCAL = **G1-G8 résolus** + Waves 1-2 convergées (P0+P1=0, frozen 0, CHAIN OK, full-suite vert, visual gate) + clean 10h soak vert (G4) + 1 vraie commande→paiement→Z signé sur la machine prod (G8). V1.0.1 (Wave 6) = post-go-live, non-bloquant. **Production-perfect, pas « presque ».**
