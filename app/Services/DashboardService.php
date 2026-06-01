@@ -251,8 +251,13 @@ class DashboardService
 
         $salesSummaryArray = [];
         if ($date_diff > 0) {
+            // [DASH-SEM-02 heal 2026-06-01] Divide by the INCLUSIVE day count
+            // (count($dateRangeArray) == date_diff + 1), not date_diff. A 7-day
+            // range has date_diff=6 but spans 7 days; dividing by 6 overstated
+            // the daily average by ~16%. count($dateRangeArray) is the same set
+            // the per-day chart iterates, so the average matches the chart.
             $salesSummaryArray['total_sales'] = AppLibrary::currencyAmountFormat($total_sales);
-            $salesSummaryArray['avg_per_day'] = AppLibrary::currencyAmountFormat($total_sales / $date_diff);
+            $salesSummaryArray['avg_per_day'] = AppLibrary::currencyAmountFormat($total_sales / count($dateRangeArray));
             $salesSummaryArray['per_day_sales'] = $dateRangeValueArray;
         } else {
             $salesSummaryArray['total_sales'] = AppLibrary::currencyAmountFormat($total_sales);
