@@ -108,13 +108,16 @@
                 <tbody>
                     @foreach ($items as $item)
                         @php
-                            $total_quantity+= $item->orders->count();
+                            // [ITEMS-SEM-02 heal] units sold (SUM quantity, realized, date-scoped),
+                            // not COUNT of order lines.
+                            $units = (int) ($item->units_sold ?? 0);
+                            $total_quantity += $units;
                          @endphp
                         <tr>
                             <td>{{$item->name}}</td>
                             <td>{{  optional($item->category)->name }}</td>
                             <td>{{ trans( 'itemType.' . $item->item_type) }}</td>
-                            <td>{{    $item->orders->count() }}</td>
+                            <td>{{ $units }}</td>
 
                         </tr>
                     @endforeach

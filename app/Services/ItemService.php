@@ -604,16 +604,29 @@ class ItemService
             $requests = $request->all();
             $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
-            return Item::with('category')->withCount('orders')->where(function ($query) use ($requests) {
-                if (isset($requests['from_date']) && isset($requests['to_date'])) {
-                    $first_date = date('Y-m-d', strtotime($requests['from_date']));
-                    $last_date = date('Y-m-d', strtotime($requests['to_date']));
-                    $query->whereDate('created_at', '>=', $first_date)->whereDate(
-                        'created_at',
-                        '<=',
-                        $last_date
-                    );
-                }
+            // [ITEMS-SEM-01/02/NET-03 heal 2026-06-01, owner "agree with the Z"]
+            // "Units sold" = SUM(order_items.quantity) — NOT COUNT of order lines —
+            // scoped to the SALE date (the parent order's order_datetime, NOT
+            // Item.created_at which is catalog-creation), and restricted to NET
+            // realized orders (Order::scopeRealizedRevenue) so cancelled / refunded /
+            // unpaid lines are not counted as sold.
+            $appTz = config('app.timezone');
+            $from = isset($requests['from_date'])
+                ? \Carbon\Carbon::parse($requests['from_date'], $appTz)->startOfDay() : null;
+            $toExclusive = isset($requests['to_date'])
+                ? \Carbon\Carbon::parse($requests['to_date'], $appTz)->addDay()->startOfDay() : null;
+
+            return Item::with('category')
+                ->withSum(['orders as units_sold' => function ($q) use ($from, $toExclusive) {
+                    $q->whereHas('order', function ($o) use ($from, $toExclusive) {
+                        $o->realizedRevenue();
+                        if ($from && $toExclusive) {
+                            $o->where('order_datetime', '>=', $from)
+                              ->where('order_datetime', '<', $toExclusive);
+                        }
+                    });
+                }], 'quantity')
+                ->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->itemFilter)) {
                         if ($key == "except") {
@@ -628,7 +641,7 @@ class ItemService
                         }
                     }
                 }
-            })->orderBy('orders_count', 'desc')->$method(
+            })->orderByRaw('units_sold IS NULL, units_sold DESC')->$method(
                     $methodValue
                 );
         } catch (Exception $exception) {
