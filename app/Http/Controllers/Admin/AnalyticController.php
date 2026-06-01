@@ -18,7 +18,12 @@ class AnalyticController extends AdminController
     {
         parent::__construct();
         $this->analyticService = $analyticService;
-        $this->middleware(['permission:settings'])->only('store', 'update', 'destroy');
+        // [REP-ANALYTIC-01 heal 2026-06-01] index/show read the third-party tracking
+        // scripts (analytic tags). Consumer-check confirmed the only caller is the
+        // Settings>Analytics admin page (admin/setting/analytic*, a settings-perm area);
+        // the dashboard analytics widget uses DashboardService, NOT this controller — so
+        // gating reads on permission:settings is safe (no widget breakage). Mirrors SET-01.
+        $this->middleware(['permission:settings'])->only('index', 'show', 'store', 'update', 'destroy');
     }
 
     public function index(PaginateRequest $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
