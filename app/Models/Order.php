@@ -277,6 +277,23 @@ class Order extends Model implements BroadcastableOrder
         });
     }
 
+    /**
+     * [SALES-NET-01 / DASH-NET-01 heal 2026-06-01] Collection-side mirror of
+     * scopeRealizedRevenue, for surfaces that operate on already-fetched models
+     * (PDF blade, Excel export, salesReportOverview collection). MUST stay in
+     * lock-step with scopeRealizedRevenue's SQL predicate.
+     */
+    public static function isRealizedRevenueRow($o): bool
+    {
+        $terminal = [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED];
+        $isLivePaidSale = (int) $o->payment_status === \App\Enums\PaymentStatus::PAID
+            && ! in_array((int) $o->status, $terminal, true);
+        $isRefundMirror = (int) $o->status === OrderStatus::RETURNED
+            && $o->parent_order_id !== null;
+
+        return $isLivePaidSale || $isRefundMirror;
+    }
+
     public function transaction(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(Transaction::class);

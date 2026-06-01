@@ -2755,7 +2755,12 @@ class OrderService
             // summed `total` over ALL orders incl. UNPAID/PENDING_COUNTER (now common since the
             // kitchen prepares before encashment) → over-reported revenue. total_orders stays the
             // placed-volume count (a separate metric); only the MONEY figures filter to PAID.
-            $paidOrders = $orders->where('payment_status', PaymentStatus::PAID);
+            // [SALES-NET-01 heal 2026-06-01, owner "net, agree with the Z"] Money figures use the
+            // net realized set (Order::isRealizedRevenueRow): drop cancelled-but-paid orders and
+            // include the negative refund counter-entry mirrors so a refunded sale nets to ~0 —
+            // agrees with the dashboard (scopeRealizedRevenue) and the signed Z. total_orders stays
+            // the placed-volume count.
+            $paidOrders = $orders->filter(fn ($o) => \App\Models\Order::isRealizedRevenueRow($o));
             $salesReportArray['total_orders'] = $orders->count();
             $salesReportArray['total_earnings'] = AppLibrary::currencyAmountFormat($paidOrders->sum('total'));
             $salesReportArray['total_discounts'] = AppLibrary::currencyAmountFormat($paidOrders->sum('discount'));

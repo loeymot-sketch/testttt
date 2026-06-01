@@ -123,9 +123,15 @@
                 <tbody>
                     @foreach ($orders as $order)
                         @php
-                            $total+= $order->total;
-                            $total_discount += $order->discount;
-                            $total_delivery_charge += $order->delivery_charge;
+                            // [SALES-NET-01 heal 2026-06-01] The Total row sums only NET realized
+                            // revenue (drop cancelled-but-paid, include negative refund mirrors) so
+                            // it agrees with the on-screen card and the signed Z. Rows are still
+                            // listed for every order; only the aggregate is netted.
+                            if (\App\Models\Order::isRealizedRevenueRow($order)) {
+                                $total += $order->total;
+                                $total_discount += $order->discount;
+                                $total_delivery_charge += $order->delivery_charge;
+                            }
                          @endphp
                         <tr>
                             <td>{{$order->order_serial_no}}</td>
