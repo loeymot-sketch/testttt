@@ -43,9 +43,12 @@ cancelled-but-paid order drops out and a refund nets to ~0, consistently and in 
 the signed Z. Counts exclude refund counter-entry mirrors (no longer "placed orders").
 
 ## Gate evidence
-- Frozen-zone diff (13 §7 files) `47970b4b7..6875a0d4b` = **0 lines**. `ZReportService` (frozen) untouched; the ZRPT fix is in non-frozen `RefundWithCounterEntryService` under LOCK.
+- Frozen-zone diff (13 §7 files) `47970b4b7..HEAD` = **0 lines**. `ZReportService` (frozen) untouched; the ZRPT fix is in non-frozen `RefundWithCounterEntryService` under LOCK.
 - `php artisan fiscal:verify-chain --all` → **CHAIN OK** (1 branch).
-- Targeted-broad PHPUnit GREEN per wave; final full-suite gate: see `regression-full.txt` / commit-time runs (Fiscal 204/0, Dashboard+Reports+Pos+Order+Unit 202/0, Delivery 42/0, Cash 17/0, Loyalty+Pricing green).
+- **Full PHP suite: 2787 passed, 0 failed** (1 risky / 2 incomplete / 29 skipped — pre-existing non-failure states). HONEST NOTE: one earlier full run showed **2786/1** — a transient failure in `POSComprehensiveTest` (a lenient `in_array(status, [200,400,403,422])` assertion hit a 500-class transient). It **did NOT reproduce** on a clean re-run (2787/0); `POSComprehensiveTest` passes 8/8 in isolation AND after all new test files; none of the changed source files are on its order-create/export path → confirmed a non-deterministic flake, NOT a regression of this cycle.
+- Per-wave PHPUnit GREEN (Fiscal 204/0, Dashboard+Reports+Pos+Order+Unit 202/0, Delivery 42/0, Cash 17/0, Loyalty+Pricing green).
+- **Render + paginate layers live-verified on MySQL** (advisor catch — sqlite tests don't exercise MySQL alias-in-ORDER-BY): items-report `paginate=1` (count=10/total=45), items PDF (16KB), sales PDF (1.46MB / 3388 rows, per-row `isRealizedRevenueRow`), items Excel (46 rows) — all clean. `paginate=1` durable test guard added.
+- Cash: `openSession` creates NO DRAWER_OPEN movement (opening lives only on the session row) → `opening + Σ signed movements` cannot double-count.
 - Delivery branch live-DB verified: `branches.id=1` = 50.4215667/2.9549060, base=5/per_km=1/min=5/free_km=5.
 
 ## Remaining / owner-gated (not blindly healed)
