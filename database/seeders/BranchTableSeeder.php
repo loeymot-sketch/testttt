@@ -33,9 +33,12 @@ class BranchTableSeeder extends Seeder
             'state'     => 'Hauts-de-France',
             'zip_code'  => '62110',
             'address'   => '437 Rue Élie Gruyelle, 62110 Hénin-Beaumont',
-            'delivery_fee_base'    => 0,
+            // Owner rule (whole-km): 5€ covers the first 5km, +1€ per started km beyond.
+            // max(minimum, base + per_km * ceil(max(0, d - free_km))).
+            'delivery_fee_base'    => 5,
             'delivery_fee_per_km'  => 1,
             'delivery_fee_minimum' => 5,
+            'delivery_fee_free_km' => 5,
             'status'    => Status::ACTIVE,
         ]);
 
@@ -52,9 +55,10 @@ class BranchTableSeeder extends Seeder
                 'state'     => 'Hauts-de-France',
                 'zip_code'  => '62110',
                 'address'   => 'Hénin-Beaumont (démo)',
-                'delivery_fee_base'    => 0,
+                'delivery_fee_base'    => 5,
                 'delivery_fee_per_km'  => 1,
                 'delivery_fee_minimum' => 5,
+                'delivery_fee_free_km' => 5,
                 'status'    => Status::ACTIVE,
             ]);
         }

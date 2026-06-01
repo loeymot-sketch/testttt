@@ -8,7 +8,9 @@ export function calculateDeliveryChargeFromDistance(distanceKm) {
         return 0;
     }
 
-    // FoodKing V1 rule: 5 EUR per started 5 km tranche.
-    // Preview UI only; backend DeliveryFeeService::fromDistanceKm remains authoritative.
-    return Math.max(5, Math.ceil(distance / 5) * 5);
+    // [DEL-FEE whole-km 2026-06-01, owner decision] Le Cayenne rule: 5 EUR covers
+    // the first 5 km, then +1 EUR per STARTED km beyond (rounded up). Mirrors the
+    // authoritative backend DeliveryFeeService (base=5/per_km=1/min=5/free_km=5).
+    // Preview UI only; the backend recompute on the order remains authoritative.
+    return Math.max(5, 5 + Math.ceil(Math.max(0, distance - 5)));
 }

@@ -15,18 +15,18 @@ use Tests\TestCase;
  *   - Restaurant is at 437 Rue Élie Gruyelle, 62110 Hénin-Beaumont
  *     (geocoded rooftop: lat 50.4215667, lng 2.9549060) — NOT Paris.
  *   - Delivery fee: 5 € for distance ≤ 5 km (straight-line / à vol d'oiseau),
- *     +1 € per additional km. Continuous reading ≡ max(5, distance_km).
+ *     +1 € per additional km, ROUNDED UP per started km (owner decision 2026-06-01).
  *
- * The existing DeliveryFeeService formula `max(minimum, base + per_km * distance)`
- * reproduces the owner rule EXACTLY with base=0 / per_km=1 / minimum=5 — no code
- * or migration change. This sentinel locks (a) the formula↔rule mapping and
- * (b) the seeded branch origin + fee config so a future migrate:fresh keeps it.
+ * DeliveryFeeService computes this with the whole-km path:
+ *     max(minimum, base + per_km * ceil(max(0, distance - free_km)))
+ * configured base=5 / per_km=1 / minimum=5 / free_km=5. So 5km→5€, 6km→6€,
+ * 8km→8€, 8.3km→9€ (started km rounds up).
  *
  * Pre-heal defects this guards against:
  *   - DEL-ORIGIN-01: seeded branch was Paris (48.8566/2.3522) → every delivery
  *     distance/fee computed from the wrong city.
- *   - DEL-FEE-01: seeded branch fee config was NULL (legacy ceil(d/5)*5 fallback,
- *     giving fee(8km)=10 €) — not the owner's +1€/km (fee(8km)=8 €).
+ *   - DEL-FEE-01: seeded branch fee config gave the wrong schedule (NULL → legacy
+ *     ceil(d/5)*5 → fee(8km)=10 €) — not the owner's +1€/km (fee(8km)=8 €).
  *
  * @group sentinel
  * @group delivery
@@ -39,12 +39,13 @@ class DeliveryOwnerRuleHeninBeaumontSentinelTest extends TestCase
      * The owner's fee schedule, computed through the REAL service with the
      * owner-rule config. distance => expected euros.
      */
-    public function test_owner_delivery_rule_is_5eur_base_plus_1eur_per_km(): void
+    public function test_owner_delivery_rule_is_5eur_base_plus_1eur_per_started_km(): void
     {
         $branch = Branch::factory()->create([
-            'delivery_fee_base'    => 0.00,
+            'delivery_fee_base'    => 5.00,
             'delivery_fee_per_km'  => 1.00,
             'delivery_fee_minimum' => 5.00,
+            'delivery_fee_free_km' => 5.00,
         ]);
         $service = new DeliveryFeeService();
 
@@ -52,12 +53,14 @@ class DeliveryOwnerRuleHeninBeaumontSentinelTest extends TestCase
         $this->assertSame(5.0, $service->fromDistanceKm(0, $branch));
         $this->assertSame(5.0, $service->fromDistanceKm(3, $branch));
         $this->assertSame(5.0, $service->fromDistanceKm(5, $branch));
-        // > 5 km → +1 €/km (continuous): fee = distance
-        $this->assertSame(8.0, $service->fromDistanceKm(8, $branch));
-        $this->assertSame(10.0, $service->fromDistanceKm(10, $branch));
-        $this->assertSame(12.5, $service->fromDistanceKm(12.5, $branch));
-        // just over the free radius
-        $this->assertSame(6.0, $service->fromDistanceKm(6, $branch));
+        // > 5 km → +1 € per STARTED km (rounded up)
+        $this->assertSame(6.0, $service->fromDistanceKm(6, $branch));   // 5 + ceil(1)
+        $this->assertSame(8.0, $service->fromDistanceKm(8, $branch));   // 5 + ceil(3)
+        $this->assertSame(10.0, $service->fromDistanceKm(10, $branch)); // 5 + ceil(5)
+        // partial km rounds UP
+        $this->assertSame(6.0, $service->fromDistanceKm(5.01, $branch)); // 5 + ceil(0.01)=1
+        $this->assertSame(9.0, $service->fromDistanceKm(8.3, $branch));  // 5 + ceil(3.3)=4
+        $this->assertSame(13.0, $service->fromDistanceKm(12.5, $branch)); // 5 + ceil(7.5)=8
     }
 
     /**
@@ -77,14 +80,16 @@ class DeliveryOwnerRuleHeninBeaumontSentinelTest extends TestCase
             'Seeded branch longitude must be Hénin-Beaumont, not Paris.');
         $this->assertSame('62110', (string) $branch->zip_code);
 
-        // Fee config encodes the owner rule: base=0, per_km=1, minimum=5.
-        $this->assertSame(0.0, (float) $branch->delivery_fee_base);
+        // Fee config encodes the owner whole-km rule: base=5, per_km=1, min=5, free_km=5.
+        $this->assertSame(5.0, (float) $branch->delivery_fee_base);
         $this->assertSame(1.0, (float) $branch->delivery_fee_per_km);
         $this->assertSame(5.0, (float) $branch->delivery_fee_minimum);
+        $this->assertSame(5.0, (float) $branch->delivery_fee_free_km);
 
         // End-to-end: the seeded branch yields the owner schedule.
         $service = new DeliveryFeeService();
         $this->assertSame(5.0, $service->fromDistanceKm(4, $branch));
         $this->assertSame(8.0, $service->fromDistanceKm(8, $branch));
+        $this->assertSame(8.0, $service->fromDistanceKm(7.2, $branch)); // 5 + ceil(2.2)=3 → 8
     }
 }
