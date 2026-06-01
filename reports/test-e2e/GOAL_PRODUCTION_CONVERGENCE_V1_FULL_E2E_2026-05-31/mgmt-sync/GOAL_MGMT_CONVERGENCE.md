@@ -2,7 +2,7 @@
 
 Executed 2026-06-01 (owner: "do the remaining of goal, max reasoning"). Read/capture + deep adversarial code-audit; **2 P1 security holes healed with TDD**. 0 frozen-zone touch.
 
-## Verdict: management surface FUNCTIONAL + reachable; data well-recorded; **8 findings HEALED with TDD** (2 P1 + 6 P2/P3), owner secure-default policy applied. 2 small items remain (1 cosmetic frontend, 1 cross-service extension).
+## Verdict: management surface FUNCTIONAL + reachable; data well-recorded; **11 findings HEALED with TDD** (3 P1 + 4 P2 + 4 P3) + USR-RBAC-02 extended across all 4 staff services, owner secure-default policy applied. 3 items remain (1 cosmetic frontend, 1 risk-assessment, 1 owner-intent) + soak redo.
 
 ### Heals applied this cycle (all TDD RED→GREEN, non-frozen, frozen-diff 0)
 | Finding | Sev | Fix | Commit |
@@ -15,12 +15,17 @@ Executed 2026-06-01 (owner: "do the remaining of goal, max reasoning"). Read/cap
 | USR-RBAC-02 | P2 | EmployeeService `effectiveBranchId()` force own-branch for non-settings (EmployeeService) | (this cycle) |
 | NC-MSG-CHANGESTATUS-GATE | P3 | MessageController add `'changeStatus'` to gate | b180f14b7 |
 | CAT-DATA-02 | P3 | ItemCategoryRequest `->whereNull('deleted_at')` (reusable name) | (this cycle) |
+| USR-RBAC-02 (×3) | P2 | Own-branch guard extended to Chef/Waiter/DeliveryBoy via shared `EnforcesOwnBranchScope` trait | 29a1c…/cross |
+| USR-RBAC-03 | P3 | EmployeeService syncRoles moved inside the DB transaction (atomic) | 29a1c3431 |
+| NC-MSG-UPDATE-DEAD | P3 | Removed dead `PUT /admin/message/{message}` route (no update method) | 29a1c3431 |
+| CAT-AUTHZ-01 | P2 | ItemPhotoController Admin/Tenant-Admin gate (parity with change-image) | (this cycle) |
 Owner policy (2026-06-01 "défauts sûrs"): settings-holder grants any non-core role / any branch; non-settings staff grants only strict-subordinate roles + own branch only. 5 new sentinel tests. Regression green throughout.
 
-### Remaining (small)
-- **DASH-01 (P2, cosmetic):** relabel "Total commandes" KPI → "Commandes livrées" — frontend (OverviewComponent.vue + i18n) change requiring an admin bundle rebuild + visual recapture; deferred to a frontend pass (not security/data).
-- **USR-RBAC-02 cross-service:** same own-branch + role-grant guard should extend to Chef/Waiter/DeliveryBoy services (EmployeeService healed; others follow the identical pattern).
-- (Lower P3s: REP-ANALYTIC-01 ungated analytics reads [risk of breaking dashboard widget — needs consumer check], REP-ITEMS-01 report date-semantics, NC-MSG-UPDATE-DEAD dead route, USR-RBAC-03 syncRoles-outside-txn, CAT-AUTHZ-01 latent.)
+### Remaining (3 items — each needs build / risk-assessment / owner-intent, not a safe blind heal) + soak
+- **DASH-01 (P2, cosmetic):** relabel "Total commandes" KPI → "Commandes livrées" — frontend (OverviewComponent.vue + i18n) change requiring an **admin bundle rebuild** + visual recapture. Deferred to a frontend pass.
+- **REP-ANALYTIC-01 (P3):** AnalyticController index/show ungated — gating on `permission:settings` **risks breaking the dashboard analytics widget for non-settings admins**; needs a consumer check before gating (not a blind heal).
+- **REP-ITEMS-01 (P2):** items-report date filter applies to `Item.created_at` (catalog creation) not order date — **owner-intent decision** (is the filter meant to be "items created in range" or "items sold in range"?) before changing semantics.
+- **Soak redo (owner-sequenced):** clean 10h `e2e:soak` run with the server alone.
 
 ## A. Page/nav reachability — ✅ whole surface works, 0 dead pages
 - **27/27 sidebar buttons** → real named routes (0 orphan/404) → working pages (live-rendered).
