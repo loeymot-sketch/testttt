@@ -18,7 +18,12 @@ class PaymentGatewayController extends AdminController
     {
         parent::__construct();
         $this->paymentGatewayService = $paymentGatewayService;
-        $this->middleware(['permission:settings'])->only('update');
+        // [SET-01 heal 2026-06-01] Gate index too: GET /admin/setting/payment-gateway
+        // returns gateway_options 'value' incl. secrets (stripe_secret, paypal_client_secret…)
+        // via GatewayOptionsResource. Only the settings component consumes this read, so
+        // gating index does not break any non-settings surface. Mirrors Mail (SET-02) /
+        // KioskSetup / LoyaltySetup ->only('index','update').
+        $this->middleware(['permission:settings'])->only('index', 'update');
     }
 
     public function index(
