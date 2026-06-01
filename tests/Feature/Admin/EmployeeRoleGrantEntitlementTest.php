@@ -106,4 +106,33 @@ class EmployeeRoleGrantEntitlementTest extends TestCase
             'No caller resolved → no grant (fail-closed).'
         );
     }
+
+    // ── USR-RBAC-02: non-settings caller forced to own branch ──
+
+    public function test_non_settings_caller_is_forced_to_own_branch(): void
+    {
+        $mgr = $this->role('mgr-br', ['perm.a']); // no `settings`
+        $caller = User::factory()->create(['branch_id' => 1]);
+        $caller->assignRole($mgr);
+
+        $this->assertSame(
+            1,
+            $this->service()->effectiveBranchId($caller, 2),
+            'A non-settings caller must be forced to its own branch (cannot assign cross-branch).'
+        );
+    }
+
+    public function test_settings_holder_keeps_requested_branch(): void
+    {
+        $this->perm('settings');
+        $admin = $this->role('admin-br', ['settings']);
+        $caller = User::factory()->create(['branch_id' => 0]);
+        $caller->assignRole($admin);
+
+        $this->assertSame(
+            2,
+            $this->service()->effectiveBranchId($caller, 2),
+            'A settings holder (admin) keeps cross-branch discretion via the requested branch_id.'
+        );
+    }
 }

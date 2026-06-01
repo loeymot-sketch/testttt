@@ -95,6 +95,19 @@ class EmployeeService
             && $targetPerms->count() < $callerPerms->count();
     }
 
+    /**
+     * [USR-RBAC-02 heal 2026-06-01] A non-`settings` caller (e.g. Branch Manager) may only
+     * create/assign users in their OWN branch — ignore a request-supplied branch_id to prevent
+     * cross-branch assignment. A `settings` holder (admin) keeps cross-branch discretion.
+     */
+    public function effectiveBranchId(?User $caller, $requestedBranchId): int
+    {
+        if ($caller && !$caller->can('settings')) {
+            return (int) $caller->branch_id;
+        }
+        return (int) $requestedBranchId;
+    }
+
     public function store(EmployeeRequest $request)
     {
         try {
@@ -109,7 +122,7 @@ class EmployeeService
                         'phone'             => $request->phone,
                         'username'          => $this->username($request->email),
                         'password'          => bcrypt($request->password),
-                        'branch_id'         => $request->branch_id,
+                        'branch_id'         => $this->effectiveBranchId(auth()->user(), $request->branch_id),
                         'status'            => $request->status,
                         'email_verified_at' => now(),
                         'country_code'      => $request->country_code,
@@ -147,7 +160,7 @@ class EmployeeService
                     $this->user->name         = $request->name;
                     $this->user->email        = $request->email;
                     $this->user->phone        = $request->phone;
-                    $this->user->branch_id    = $request->branch_id;
+                    $this->user->branch_id    = $this->effectiveBranchId(auth()->user(), $request->branch_id);
                     $this->user->status       = $request->status;
                     $this->user->country_code = $request->country_code;
                     if ($request->password) {
