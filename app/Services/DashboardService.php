@@ -59,7 +59,11 @@ class DashboardService
     public function orderStatistics(Request $request)
     {
         try {
-            $order = $this->orderQuery();
+            // [DASH-SEM-03 heal 2026-06-01] Exclude refund counter-entry mirrors
+            // (parent_order_id set) from PLACED-order counts — a mirror is a fiscal
+            // counter-entry, not a customer order; counting it inflated total_order
+            // and returned_order.
+            $order = $this->orderQuery()->whereNull('parent_order_id');
 
             // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
             // Wave T R5 Paris bounds (commit 27d95e066). The Wave 3c
@@ -143,7 +147,8 @@ class DashboardService
     public function orderSummary(Request $request)
     {
         try {
-            $order = $this->orderQuery();
+            // [DASH-SEM-03 heal 2026-06-01] Exclude refund counter-entry mirrors from counts.
+            $order = $this->orderQuery()->whereNull('parent_order_id');
             // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to Wave T R5
             // Paris bounds — see orderStatistics() comment for full rationale.
             // The user-supplied path uses raw Y-m-d strings; the default-month
@@ -217,11 +222,14 @@ class DashboardService
         $date = date_diff(date_create($first_date), date_create($last_date), false);
         $date_diff = (int) $date->format("%a");
 
+        // [DASH-NET-01 heal 2026-06-01] Net realized revenue (owner: "agree with the Z").
+        // realizedRevenue() drops cancelled-but-paid orders and includes the negative
+        // refund counter-entry mirrors so a refunded sale nets to ~0.
         $total_sales = AppLibrary::flatAmountFormat(
             (clone $order)
                 ->where('order_datetime', '>=', $startParis)
                 ->where('order_datetime', '<', $endParisExclusive)
-                ->where('payment_status', PaymentStatus::PAID)
+                ->realizedRevenue()
                 ->sum('total')
         );
 
@@ -242,7 +250,7 @@ class DashboardService
                 (clone $order)
                     ->where('order_datetime', '>=', $dayStartParis)
                     ->where('order_datetime', '<', $nextDayStartParis)
-                    ->where('payment_status', PaymentStatus::PAID)
+                    ->realizedRevenue()
                     ->sum('total')
             );
             $dateRangeValueArray[] = floatval($per_day);
@@ -336,7 +344,8 @@ class DashboardService
     public function totalSales()
     {
         try {
-            return $this->orderQuery()->where('payment_status', PaymentStatus::PAID)->sum('total');
+            // [DASH-NET-01 heal 2026-06-01] Net realized revenue (excl cancelled-paid, net refunds).
+            return $this->orderQuery()->realizedRevenue()->sum('total');
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -382,15 +391,16 @@ class DashboardService
             $startParis = Carbon::today($appTz);
             $endParisExclusive = Carbon::tomorrow($appTz);
 
-            // Total CA du jour (Commandes payées)
+            // Total CA du jour — net réalisé (DASH-NET-01: excl annulées-payées, remboursements nettés)
             $daily_sales = $this->orderQuery()
                 ->where('order_datetime', '>=', $startParis)
                 ->where('order_datetime', '<', $endParisExclusive)
-                ->where('payment_status', PaymentStatus::PAID)
+                ->realizedRevenue()
                 ->sum('total');
 
-            // Nombre de commandes (volume placé — toutes, payées ou non)
+            // Nombre de commandes (volume placé — toutes, payées ou non ; hors contre-écritures de remboursement)
             $daily_orders = $this->orderQuery()
+                ->whereNull('parent_order_id')
                 ->where('order_datetime', '>=', $startParis)
                 ->where('order_datetime', '<', $endParisExclusive)
                 ->count();
@@ -580,19 +590,33 @@ class DashboardService
                 ->where('order_datetime', '<', $nextDayParis)
                 ->get();
 
-            // Paid subset (CA + TVA + avg-ticket basis — refunds excluded).
-            $paid = $orders->filter(fn ($o) => (int) $o->payment_status === PaymentStatus::PAID);
+            // [DASH-NET-01 heal 2026-06-01] Net realized set (owner: "agree with the Z").
+            // Live paid sales (PAID, non-terminal) PLUS counter-entry refund mirrors
+            // (RETURNED + parent_order_id, already-negated total/total_tax) → a refunded
+            // order nets to ~0 and a cancelled-but-paid order drops out. Mirrors the
+            // Order::scopeRealizedRevenue scope used by the live dashboard queries.
+            $terminal = [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED];
+            $realized = $orders->filter(function ($o) use ($terminal) {
+                $isLivePaidSale = (int) $o->payment_status === PaymentStatus::PAID
+                    && ! in_array((int) $o->status, $terminal, true);
+                $isRefundMirror = (int) $o->status === OrderStatus::RETURNED
+                    && $o->parent_order_id !== null;
+                return $isLivePaidSale || $isRefundMirror;
+            });
             $refunded = $orders->filter(fn ($o) => (int) $o->payment_status === PaymentStatus::REFUNDED);
 
-            $totalCa = (float) $paid->sum('total');
-            $totalTva = (float) $paid->sum('total_tax');
-            $paidCount = $paid->count();
-            $totalOrders = $orders->count();
+            $totalCa = (float) $realized->sum('total');
+            $totalTva = (float) $realized->sum('total_tax');
+            // avg-ticket basis = count of live paid sales only (exclude the negative mirrors).
+            $paidCount = $realized->filter(fn ($o) => $o->parent_order_id === null)->count();
+            // Placed-order volume excludes refund counter-entry mirrors.
+            $totalOrders = $orders->filter(fn ($o) => $o->parent_order_id === null)->count();
             $refundedCount = $refunded->count();
             $avgTicket = $paidCount > 0 ? $totalCa / $paidCount : 0.0;
 
-            $byPayment = $this->bucketPaymentMethods($paid);
-            $byChannel = $this->bucketChannels($paid);
+            // Buckets use the net realized set so by-payment / by-channel CA sums to total_ca.
+            $byPayment = $this->bucketPaymentMethods($realized);
+            $byChannel = $this->bucketChannels($realized);
             $topItems = $this->topItemsOfDay($dayParis, $nextDayParis, $branchId);
 
             return [

@@ -253,6 +253,30 @@ class Order extends Model implements BroadcastableOrder
         return $query->where('status', OrderStatus::REJECTED);
     }
 
+    /**
+     * [DASH-NET-01 heal 2026-06-01, owner decision "net, agree with the Z"]
+     * Net realized-revenue rows for management reporting. Mirrors the signed
+     * ZReportService netting (LOCK_ZREPORT_REFUND_NETTING): include PAID orders
+     * NOT in a terminal status (CANCELED/REJECTED/RETURNED) — which drops a
+     * cancelled-but-paid order — PLUS the counter-entry refund mirrors
+     * (status=RETURNED + parent_order_id) whose `total` is already negated, so
+     * summing `total` over this scope nets a refunded order back to ~0.
+     * Intended use: ->realizedRevenue()->sum('total'). Counts that want
+     * "placed orders" should instead exclude mirrors via whereNull('parent_order_id').
+     */
+    public function scopeRealizedRevenue($query)
+    {
+        return $query->where(function ($q) {
+            $q->where(function ($paid) {
+                $paid->where('payment_status', \App\Enums\PaymentStatus::PAID)
+                    ->whereNotIn('status', [OrderStatus::CANCELED, OrderStatus::REJECTED, OrderStatus::RETURNED]);
+            })->orWhere(function ($mirror) {
+                $mirror->where('status', OrderStatus::RETURNED)
+                    ->whereNotNull('parent_order_id');
+            });
+        });
+    }
+
     public function transaction(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(Transaction::class);
