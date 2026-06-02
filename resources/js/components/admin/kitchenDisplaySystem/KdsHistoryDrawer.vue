@@ -675,7 +675,7 @@ export default {
 
 .kds-history-drawer__recall-btn {
   background: #F4501E;
-  color: #ffffff;
+  color: #1A1A1A;
   border: none;
   padding: 8px 14px;
   border-radius: 6px;

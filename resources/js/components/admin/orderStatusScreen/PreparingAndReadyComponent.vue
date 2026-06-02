@@ -51,6 +51,9 @@
     </h3>
     <div class="content-wrapper p-3 overflow-hidden thin-scrolling h-full">
       <transition-group name="oss-pop" tag="ul"
+        role="status"
+        aria-live="polite"
+        :aria-label="$t('label.ready')"
         :class="['oss-order-list', preparedItems.length > 8 ? 'oss-autoscroll' : '',
                  '[&_li]:mb-8 [&_li]:text-[56px] [&_li]:font-extrabold [&_li]:leading-[1.1] w-full text-center text-[#1F1F39] mb-20']">
         <li v-for="item in preparedItems" :key="item.id"

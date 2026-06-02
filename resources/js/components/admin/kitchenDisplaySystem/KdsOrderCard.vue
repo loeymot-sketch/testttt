@@ -539,13 +539,13 @@ export default {
     padding: 0 8px;
     height: 20px;
     border-radius: 4px;
-    background: #EA580C;
+    background: #C2410C;
     color: #FFFFFF;
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.30);
+    box-shadow: 0 0 0 2px rgba(194, 65, 12, 0.30);
 }
 
 /* [Wave T R1 F3 WT-B-R1-002 2026-05-20] Responsive type scale with clamp().

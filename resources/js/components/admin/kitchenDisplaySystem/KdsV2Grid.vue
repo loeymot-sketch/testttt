@@ -26,6 +26,7 @@
       :fallback-mode="fallbackMode"
       :admin-polling-hint="adminPollingHint"
       :bump-local-only-notice="bumpLocalOnlyNotice"
+      :reserve-right-gutter="overflowActiveCount > 0"
     />
 
     <!-- Empty state (only when NO active orders — served strip below renders independently) -->
@@ -440,7 +441,7 @@ export default {
     right: 16px;
     padding: 8px 16px;
     background: #F4501E;
-    color: white;
+    color: #1A1A1A;
     border-radius: 8px;
     font-weight: 700;
     font-size: 16px;
