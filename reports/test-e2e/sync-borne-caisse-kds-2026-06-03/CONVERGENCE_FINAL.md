@@ -124,3 +124,22 @@ worker restarted live to apply.
   frozen-zone diff = 0 · `git diff --stat` = 2 files (config/queue.php + EncaissementComponent.vue).
 
 _Converged 2026-06-03 ~06:00. No push. Owner gates: §4 out-of-scope items + §5 observations._
+
+---
+
+## Addendum — 2026-06-03 14:03 (gap-closing re-attempt under `/goal`)
+
+Re-attempted to upgrade the 3 *inferred/trigger-level* claims (§1/§2 callouts) to
+*directly-observed*: F-W5-01 order **render**, OSS + POS-tracker **live** propagation,
+and a **fresh caisse** order. **All deferred — environment hostile:**
+- The **abuse-e2e batch is active again** (capturing Wave I / refund at 14:03) → live
+  injection would collide on the shared single-thread server/DB. Held read-only (Step 0).
+- **DB pollution = 1251 `PENDING_COUNTER` kiosk orders** (max id 4128). The
+  `counter-collect/pending` endpoint is **oldest-first FIFO `limit(200)`**
+  (`routes/api.php:822,836`), so a fresh order sits at ~#1252 — **F-W5-01 render is
+  structurally unobservable until the pollution clears** (the soak's own cleanup, or owner).
+  The heal (Echo sub + fast refetch) remains proven; only the end *render* is cap-gated.
+
+Drain watcher re-armed (monitor `b51u33r85`, ≥25-min quiescence). On drain I will close
+OSS/tracker-live + caisse (those don't need a clean DB); F-W5-01 render needs the queue
+below 200 first. **Verdict unchanged: GREEN — these are evidence-strengthening, not verdict-changing.**
