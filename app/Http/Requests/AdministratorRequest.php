@@ -68,7 +68,7 @@ class AdministratorRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             if ($this->password !== $this->password_confirmation) {
-                $validator->errors()->add('password_confirmation', 'The password confirmation does not match.');
+                $validator->errors()->add('password_confirmation', __('auth.password_confirmation_mismatch'));
             }
 
             // [bug_011 / R3 T-2.2.1 Sec S-3 / WH-5 2026-05-19] Close the

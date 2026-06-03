@@ -55,7 +55,8 @@
                     </ul>
                 </div>
                 <button v-if="!staffOnlyMode" @click.prevent="openCanvas('cart')" type="button"
-                    class="webcart hidden lg:flex items-center justify-center gap-1.5 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-heading bg-heading">
+                    :aria-label="$t('label.my_cart')"
+                    class="webcart hidden lg:flex items-center justify-center gap-1.5 w-fit rounded-3xl capitalize text-sm font-medium h-8 px-3 transition text-white bg-heading">
                     <i class="lab lab-bag-2 lab-font-size-17"></i>
                     <span class="whitespace-nowrap">{{
                         currencyFormat(subtotal, setting.site_digit_after_decimal_point,

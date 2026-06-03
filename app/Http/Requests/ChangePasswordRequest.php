@@ -43,10 +43,10 @@ class ChangePasswordRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             if (!$this->checkOldPassword()) {
-                $validator->errors()->add('old_password', 'The old password does not match.');
+                $validator->errors()->add('old_password', __('auth.old_password_mismatch'));
             }
             if ($this->password !== $this->password_confirmation) {
-                $validator->errors()->add('password_confirmation', 'The password confirmation does not match.');
+                $validator->errors()->add('password_confirmation', __('auth.password_confirmation_mismatch'));
             }
         });
     }
