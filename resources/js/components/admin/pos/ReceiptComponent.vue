@@ -537,8 +537,18 @@ export default {
             try {
                 if (this.order?.id) {
                     try {
+                        // [K-001 abuse-e2e] print-receipt is in idempotency.required_routes
+                        // (config/idempotency.php); the middleware (enabled in prod per the §8
+                        // AppServiceProvider boot guard) returns 422 MISSING_IDEMPOTENCY_KEY
+                        // without this header → reprint/print was BROKEN in production (the UI
+                        // route predated the 2026-05-18 required_routes addition). Fresh key per
+                        // click so each intentional (re)print increments the counter; a same-click
+                        // network-retry dedupes on the identical key.
+                        const idempotencyKey = `pos-print-receipt-${this.order.id}-${Date.now()}`;
                         const { data } = await axios.post(
-                            `admin/pos/orders/${this.order.id}/print-receipt`
+                            `admin/pos/orders/${this.order.id}/print-receipt`,
+                            {},
+                            { headers: { 'X-Idempotency-Key': idempotencyKey } }
                         );
                         this.localPrintCount = Number(
                             data?.receipt_print_count

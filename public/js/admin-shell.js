@@ -8296,12 +8296,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _services_alertService__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../services/alertService */ "./resources/js/services/alertService.js");
 /* harmony import */ var _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../enums/modules/orderTypeEnum */ "./resources/js/enums/modules/orderTypeEnum.js");
 /* harmony import */ var _helpers_formatPrice__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../helpers/formatPrice */ "./resources/js/helpers/formatPrice.js");
+/* harmony import */ var _services_eventContract__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../../services/eventContract */ "./resources/js/services/eventContract.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
 
 
 
@@ -8338,12 +8340,17 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     this.pollTimer = setInterval(function () {
       return _this.fetchPending(true);
     }, 20000);
+    // [F-W5-01 sync heal 2026-06-03] Real-time push so newly-arrived Borne
+    // orders + counter-collected ones reflect sub-second; the 20s poll above
+    // stays as the WS-down fallback (mirrors KDS/OSS/tracker pattern).
+    this.subscribeEcho();
   },
   beforeUnmount: function beforeUnmount() {
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
       this.pollTimer = null;
     }
+    this.unsubscribeEcho();
   },
   methods: {
     fetchPending: function fetchPending() {
@@ -8357,6 +8364,58 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       })["catch"](function () {
         _this2.loading.isActive = false;
       });
+    },
+    // [F-W5-01 sync heal 2026-06-03] Echo subscription mirrors KDS/OSS/tracker:
+    // branch staff (branch_id>0) get sub-second updates; admin (branch 0) keeps
+    // the 20s poll fallback. Re-fetch on OrderCreated (new Borne arrival),
+    // OrderPaidAtCounter (collected → drops off), OrderStatusChanged (cancel/refund).
+    // [F-W5-01] Robust branch-id resolution mirrors PreparingAndReadyComponent:
+    // the auth store module is NOT namespaced, so the bare `authBranchId` getter is
+    // the canonical path; the namespaced + state paths are belt-and-suspenders.
+    authBranchId: function authBranchId() {
+      var _this$$store$state;
+      var candidates = [this.$store.getters['auth/authBranchId'], this.$store.getters.authBranchId, (_this$$store$state = this.$store.state) === null || _this$$store$state === void 0 || (_this$$store$state = _this$$store$state.auth) === null || _this$$store$state === void 0 ? void 0 : _this$$store$state.authBranchId];
+      for (var _i = 0, _candidates = candidates; _i < _candidates.length; _i++) {
+        var c = _candidates[_i];
+        if (c === '' || c === null || typeof c === 'undefined') continue;
+        var v = parseInt(c, 10);
+        if (Number.isFinite(v)) return v;
+      }
+      return 0;
+    },
+    subscribeEcho: function subscribeEcho() {
+      var _this3 = this;
+      if (!window.Echo) return;
+      var branchId = this.authBranchId();
+      if (branchId <= 0) return;
+      this.unsubscribeEcho();
+      try {
+        this._eventSub = (0,_services_eventContract__WEBPACK_IMPORTED_MODULE_7__.onEvents)(branchId, [{
+          broadcastAs: 'OrderCreated',
+          handler: function handler() {
+            return _this3.fetchPending(true);
+          }
+        }, {
+          broadcastAs: 'OrderPaidAtCounter',
+          handler: function handler() {
+            return _this3.fetchPending(true);
+          }
+        }, {
+          broadcastAs: 'OrderStatusChanged',
+          handler: function handler() {
+            return _this3.fetchPending(true);
+          }
+        }]);
+      } catch (e) {
+        console.warn('[Encaissement] Echo subscription failed:', e.message);
+      }
+    },
+    unsubscribeEcho: function unsubscribeEcho() {
+      try {
+        var _this$_eventSub;
+        (_this$_eventSub = this._eventSub) === null || _this$_eventSub === void 0 || _this$_eventSub.unsubscribe();
+      } catch (_) {/* noop */}
+      this._eventSub = null;
     },
     // Origin resolver — source_surface is the reliable signal. Today the
     // pending endpoint returns Borne (kiosk) orders; once delta-(B) routes

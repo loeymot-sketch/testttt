@@ -8864,7 +8864,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     handlePrintClientClick: function handlePrintClientClick() {
       var _this = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
-        var _this$order6, _data$receipt_print_c, _this$localPrintCount, _yield$axios$post, data, _apiError$response, _this$localPrintCount2, status, trigger, _t;
+        var _this$order6, _data$receipt_print_c, _this$localPrintCount, idempotencyKey, _yield$axios$post, data, _apiError$response, _this$localPrintCount2, status, trigger, _t;
         return _regenerator().w(function (_context) {
           while (1) switch (_context.p = _context.n) {
             case 0:
@@ -8881,8 +8881,20 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                 break;
               }
               _context.p = 3;
+              // [K-001 abuse-e2e] print-receipt is in idempotency.required_routes
+              // (config/idempotency.php); the middleware (enabled in prod per the §8
+              // AppServiceProvider boot guard) returns 422 MISSING_IDEMPOTENCY_KEY
+              // without this header → reprint/print was BROKEN in production (the UI
+              // route predated the 2026-05-18 required_routes addition). Fresh key per
+              // click so each intentional (re)print increments the counter; a same-click
+              // network-retry dedupes on the identical key.
+              idempotencyKey = "pos-print-receipt-".concat(_this.order.id, "-").concat(Date.now());
               _context.n = 4;
-              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/pos/orders/".concat(_this.order.id, "/print-receipt"));
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/pos/orders/".concat(_this.order.id, "/print-receipt"), {}, {
+                headers: {
+                  'X-Idempotency-Key': idempotencyKey
+                }
+              });
             case 4:
               _yield$axios$post = _context.v;
               data = _yield$axios$post.data;
