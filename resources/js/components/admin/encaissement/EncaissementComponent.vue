@@ -73,6 +73,7 @@ import appService from "../../../services/appService";
 import alertService from "../../../services/alertService";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import { adminPriceMixin } from "../../../helpers/formatPrice";
+import { onEvents } from "../../../services/eventContract";
 
 export default {
     name: "EncaissementComponent",
@@ -96,12 +97,17 @@ export default {
         // Light poll so a cashier on this screen sees newly-arrived Borne
         // orders without a manual refresh. Cleared on unmount.
         this.pollTimer = setInterval(() => this.fetchPending(true), 20000);
+        // [F-W5-01 sync heal 2026-06-03] Real-time push so newly-arrived Borne
+        // orders + counter-collected ones reflect sub-second; the 20s poll above
+        // stays as the WS-down fallback (mirrors KDS/OSS/tracker pattern).
+        this.subscribeEcho();
     },
     beforeUnmount() {
         if (this.pollTimer) {
             clearInterval(this.pollTimer);
             this.pollTimer = null;
         }
+        this.unsubscribeEcho();
     },
     methods: {
         fetchPending(silent = false) {
@@ -112,6 +118,45 @@ export default {
             }).catch(() => {
                 this.loading.isActive = false;
             });
+        },
+        // [F-W5-01 sync heal 2026-06-03] Echo subscription mirrors KDS/OSS/tracker:
+        // branch staff (branch_id>0) get sub-second updates; admin (branch 0) keeps
+        // the 20s poll fallback. Re-fetch on OrderCreated (new Borne arrival),
+        // OrderPaidAtCounter (collected → drops off), OrderStatusChanged (cancel/refund).
+        // [F-W5-01] Robust branch-id resolution mirrors PreparingAndReadyComponent:
+        // the auth store module is NOT namespaced, so the bare `authBranchId` getter is
+        // the canonical path; the namespaced + state paths are belt-and-suspenders.
+        authBranchId() {
+            const candidates = [
+                this.$store.getters['auth/authBranchId'],
+                this.$store.getters.authBranchId,
+                this.$store.state?.auth?.authBranchId,
+            ];
+            for (const c of candidates) {
+                if (c === '' || c === null || typeof c === 'undefined') continue;
+                const v = parseInt(c, 10);
+                if (Number.isFinite(v)) return v;
+            }
+            return 0;
+        },
+        subscribeEcho() {
+            if (!window.Echo) return;
+            const branchId = this.authBranchId();
+            if (branchId <= 0) return;
+            this.unsubscribeEcho();
+            try {
+                this._eventSub = onEvents(branchId, [
+                    { broadcastAs: 'OrderCreated', handler: () => this.fetchPending(true) },
+                    { broadcastAs: 'OrderPaidAtCounter', handler: () => this.fetchPending(true) },
+                    { broadcastAs: 'OrderStatusChanged', handler: () => this.fetchPending(true) },
+                ]);
+            } catch (e) {
+                console.warn('[Encaissement] Echo subscription failed:', e.message);
+            }
+        },
+        unsubscribeEcho() {
+            try { this._eventSub?.unsubscribe(); } catch (_) { /* noop */ }
+            this._eventSub = null;
         },
         // Origin resolver — source_surface is the reliable signal. Today the
         // pending endpoint returns Borne (kiosk) orders; once delta-(B) routes
