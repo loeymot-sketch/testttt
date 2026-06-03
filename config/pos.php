@@ -67,40 +67,33 @@ return [
     | Featured category allowlist — POS first-page filter
     |--------------------------------------------------------------------------
     |
-    | Owner spec 2026-05-18: the cashier's landing screen on `/admin/pos`
-    | shows ONLY this curated set of categories on the strip + their items
-    | in the grid. All other categories remain accessible by:
-    |   (a) typing into the search input (full menu, unfiltered), or
-    |   (b) clicking the "Toutes les catégories" pill (escape hatch).
+    | [2026-06-04 P-OWNER ALL-CATEGORIES] Owner decision: the POS strip on
+    | `/admin/pos` shows ALL categories directly — a single horizontal
+    | scrollable row, each with its photo — NOT a curated featured subset.
+    | More categories are coming, so no per-slug allowlist to maintain.
     |
-    | [2026-05-20 P-OWNER-3 root-cause heal] The original implementation
-    | shipped raw integer IDs `[344,345,346,306,348,347]` taken from an
-    | older menu snapshot. After the menu reset 2026-05-13, real category
-    | IDs in the Le Cayenne DB are `[1..11]` and the env-default list
-    | matches NOTHING — every category collapses to `featured=false`,
-    | the cashier lands on supplements/menu-builder items, and the
-    | "Sandwiches/Tacos/Burgers/Bowls" strip never renders properly.
+    | Mechanism: an EMPTY allowlist = "no filter". The controller
+    | (PosCategoryController.php:204-206) marks every category
+    | `featured=true` when `$featuredSet === null` (empty resolved IDs),
+    | so `displayedCategories` (PosComponent.vue:1940) renders all 11
+    | categories and `hasNonFeaturedCategories` becomes false → the
+    | "Toutes les catégories" escape-hatch pill auto-hides (no longer
+    | needed since nothing is hidden). The CSS strip is already
+    | `flex-wrap:nowrap; overflow-x:auto` (single horizontal scrollable
+    | row) and each category resolves a `thumb` photo via the
+    | `cat-<slug>.png` fallback in config/menu_images.php.
     |
-    | Fix: switch the source of truth from raw IDs (env-dependent) to
-    | **slugs** (stable across envs/reseeds). The controller now resolves
-    | slugs → IDs via the `item_categories` table at request time.
+    | --- HISTORY (superseded) ------------------------------------------
+    | 2026-05-18 → 2026-05-20: a curated best-seller subset (8 slugs) was
+    | the landing default; categories outside it were reachable via search
+    | or the "Toutes" pill. The slug-based source of truth (stable across
+    | reseeds, vs the original env-dependent raw integer IDs) is retained:
+    | the controller resolves slugs → IDs via the `item_categories` table
+    | at request time. To re-enable a curated subset, set a non-empty
+    | env CSV:  POS_FEATURED_CATEGORY_SLUGS=sandwich-cayenne,burgers,tacos
+    | -------------------------------------------------------------------
     |
-    | Default = Le Cayenne best-sellers per menu reset 2026-05-13:
-    |   sandwich-cayenne, galette, sandwich-classique, tacos,
-    |   bols-gourmands, frites, burgers, boissons.
-    |
-    | [2026-05-20 Wave O O10] Owner adds `boissons` to the featured strip —
-    | drinks are a high-velocity attach for cashier upsell on the POS landing
-    | screen. The 8 boisson items (coca, coca-zero, fanta, sprite, oasis,
-    | orangina, eau-plate, capri-sun) all have media attached via O8
-    | RestoreLeCayenneItemImagesSeeder (byte-identical owner uploads in
-    | `storage/app/public/51-58/`), so the strip will surface the photos.
-    |
-    | Override via env CSV (slugs):
-    |   POS_FEATURED_CATEGORY_SLUGS=sandwich-cayenne,burgers,tacos,...
-    |
-    | Empty list → "no filter" (all categories shown — safe default when
-    | config not yet provisioned).
+    | Default = EMPTY → all categories shown (single row, all photos).
     |
     | Backward compatibility — `featured_category_ids` is preserved as a
     | secondary knob for ops that still ship integer-IDs via env
@@ -112,7 +105,7 @@ return [
         static fn (string $s): string => trim($s),
         explode(',', (string) env(
             'POS_FEATURED_CATEGORY_SLUGS',
-            'sandwich-cayenne,burgers,tacos,bols-gourmands,sandwich-classique,frites,galette,boissons',
+            '',
         )),
     ))),
 
