@@ -317,16 +317,16 @@
                         <div class="flex items-center gap-3 mb-4">
                             <img class="w-8 rounded-full" :src="orderUser.image" alt="avatar">
                             <h4 class="font-semibold text-sm capitalize text-[#374151]">
-                                {{ textShortener(orderUser.name, 20) }}
+                                {{ isWalkIn ? 'Passager' : textShortener(orderUser.name, 20) }}
                             </h4>
                         </div>
                         <ul class="flex flex-col gap-3 py-4 border-[#EFF0F6]"
                             :class="order.order_type === enums.orderTypeEnum.DELIVERY ? 'mb-4 border-y' : 'border-t'">
-                            <li class="flex items-center gap-2.5">
+                            <li class="flex items-center gap-2.5" v-if="!isWalkIn">
                                 <i class="lab lab-mail lab-font-size-14"></i>
                                 <span class="text-xs">{{ orderUser.email }}</span>
                             </li>
-                            <li class="flex items-center gap-2.5" v-if="orderUser.phone">
+                            <li class="flex items-center gap-2.5" v-if="!isWalkIn && orderUser.phone">
                                 <i class="lab lab-call-calling-linear lab-font-size-14"></i>
                                 <span dir="ltr" class="text-xs">{{ orderUser.country_code + '' + orderUser.phone
                                     }}</span>
@@ -476,6 +476,12 @@ export default {
         },
         orderUser: function () {
             return this.$store.getters['posOrder/orderUser'];
+        },
+        // Walk-in client (no real profile) is the DB-seeded placeholder user
+        // keyed on this email. Detect it to display "Passager" without the
+        // fake seeded contact (email/phone). Precedent: PosComponent.vue:2588.
+        isWalkIn: function () {
+            return String(this.orderUser && this.orderUser.email || '').toLowerCase() === 'walkingcustomer@example.com';
         },
         orderAddress: function () {
             return this.$store.getters['posOrder/orderAddress'];
@@ -641,12 +647,20 @@ export default {
             this.refundTarget = null;
         },
         onRefundCompleted: function (_payload) {
-            // Refresh the order so the new payment_status / REMBOURSEMENT
-            // marker / mirror reference materialize without page reload.
-            // `_payload` carries { mirrorOrder, parentOrderId,
-            // mirrorFiscalSequenceNo, alreadyRefunded? } — we just trigger
-            // a fresh fetch of the parent ; the mirror appears in the
-            // history list via its own routes.
+            // Refresh the order so the new status (RETURNED) / payment / mirror
+            // reference materialize without page reload.
+            //
+            // [WI-REFUND-PREZ 2026-06-04] The backend routes by Z-status behind
+            // ONE endpoint, so `_payload` may describe EITHER mode:
+            //   - mode='counter_entry' (post-Z) → mirrorOrder + mirrorFiscalSequenceNo
+            //     populated, REMBOURSEMENT mirror appears in the history list.
+            //   - mode='pre_z' (same-day, not-yet-Z-closed) → mirrorOrder=null,
+            //     mirrorFiscalSequenceNo=null. The parent itself flips to
+            //     RETURNED (Retourné) with cashBack + audit — NO mirror exists.
+            // This handler is tolerant of BOTH: we just re-fetch the parent and
+            // read its fresh status/payment_status; a null mirror is expected and
+            // never crashes. The success toast ("Commande remboursée") is raised
+            // by PosRefundModal before it emits.
             this.refundTarget = null;
             this.loading.isActive = true;
             this.$store

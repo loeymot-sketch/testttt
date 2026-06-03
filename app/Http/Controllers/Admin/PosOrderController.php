@@ -72,11 +72,79 @@ class PosOrderController extends AdminController
             abort(403, 'Cross-branch refund denied.');
         }
 
+        // ─────────────────────────────────────────────────────────────────────
+        // [WI-REFUND-PREZ 2026-06-04] Single endpoint, server-side path-selection.
+        //
+        // The "sealed?" predicate is the SSOT — it lives server-side in
+        // SealedOrderGuard, never duplicated on the client. We branch here so the
+        // owner's "Rembourser" CTA works for BOTH cases through ONE route:
+        //
+        //   • Sealed (post-Z, parent inside a CLOSED Z window) → NF525 counter-
+        //     entry mirror via RefundWithCounterEntryService (parent immutable).
+        //     Response carries the mirror (mode='counter_entry').
+        //
+        //   • NOT sealed (pre-Z, parent still in the open Z) → the EXISTING,
+        //     already-working pre-Z refund: OrderService::changeStatus(RETURNED)
+        //     with the reason. This sets status=RETURNED, fires cashBack() (money
+        //     returned to the drawer/customer via the order's `transaction`),
+        //     refunds loyalty points, and appends an `order.returned` audit row.
+        //     The parent is captured in the still-open Z (no fiscal gap, no
+        //     mirror). Response carries mode='pre_z' + mirror=null.
+        //
+        // NOTE on payment_status: we deliberately do NOT flip the parent's
+        // payment_status to REFUNDED. PaymentStateMachine defines
+        // `PAID => []` (app/Domain/Order/PaymentStateMachine.php:17) — a PAID
+        // order CANNOT transition to REFUNDED; changePaymentStatus() would throw
+        // InvalidArgumentException(422). This matches the post-Z path, where the
+        // parent also stays PAID and only the MIRROR carries REFUNDED. The
+        // canonical "refunded" representation of a parent in this codebase is
+        // status=RETURNED + cashBack + audit — which is exactly what the pre-Z
+        // path produces. Widening the PaymentStateMachine is a fiscal-adjacent
+        // owner-gated change, intentionally out of scope here.
+        // ─────────────────────────────────────────────────────────────────────
+        $isSealed = app(\App\Services\Order\SealedOrderGuard::class)->isSealed($order);
+
+        if (!$isSealed) {
+            try {
+                return $this->refundPreZ($order, (string) $validated['reason']);
+            } catch (HttpException $http) {
+                // 403 cross-branch / role guards from OrderService::changeStatus
+                // must reach the client intact (multi-tenant security signal).
+                throw $http;
+            } catch (\Illuminate\Validation\ValidationException $ve) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $ve->getMessage(),
+                ], 422);
+            } catch (\Throwable $t) {
+                // OrderService::changeStatus throws Exception(.., 422) for an
+                // invalid status transition; InvalidArgumentException(422) is
+                // possible from downstream guards. Surface a clean 422 for those,
+                // 500 for anything genuinely unexpected.
+                $code = (int) $t->getCode();
+                if ($code === 422) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $t->getMessage(),
+                    ], 422);
+                }
+                \Illuminate\Support\Facades\Log::error('refund-pre-z failed', [
+                    'order_id' => $order->id,
+                    'error'    => $t->getMessage(),
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to process pre-Z refund: ' . $t->getMessage(),
+                ], 500);
+            }
+        }
+
         try {
             $mirror = $service->execute($order, (string) $validated['reason']);
 
             return response()->json([
                 'success' => true,
+                'mode'    => 'counter_entry',
                 'data'    => new OrderDetailsResource($mirror->load('orderItems')),
                 'meta'    => [
                     'parent_order_id'           => (int) $order->id,
@@ -125,6 +193,58 @@ class PosOrderController extends AdminController
                 'message' => 'Failed to create counter-entry refund: ' . $t->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * [WI-REFUND-PREZ 2026-06-04] Pre-Z refund branch of refundWithCounterEntry.
+     *
+     * Reuses the EXISTING, already-working pre-Z refund path
+     * (OrderService::changeStatus → OrderStatus::RETURNED) verbatim — we do NOT
+     * reinvent or modify OrderService. The transition DELIVERED→RETURNED (and
+     * other terminal→RETURNED edges) is legal in OrderStateMachine; changeStatus
+     * validates the reason (required ≤700), runs cashBack() when the order has a
+     * `transaction`, refunds loyalty points, and writes the `order.returned`
+     * audit row — all guarded by SealedOrderGuard::assertMutable() which permits
+     * pre-Z mutation (the inverse of assertSealed). No mirror is produced; the
+     * negative is captured in the still-open Z (no fiscal gap).
+     *
+     * Returns the same envelope shape as the post-Z path so the single frontend
+     * handler (PosRefundModal + onRefundCompleted) is tolerant of both modes:
+     * `data` = refreshed parent, `meta.mirror_fiscal_sequence_no` = null.
+     */
+    private function refundPreZ(Order $order, string $reason): \Illuminate\Http\JsonResponse
+    {
+        // Build a synthetic OrderStatusRequest so OrderService::changeStatus
+        // (type-hinted to OrderStatusRequest) resolves $request->status,
+        // $request->reason and its inner $request->validate(). authorize() does
+        // not run on a manually-created FormRequest — already gated above by
+        // abort_unless(can('pos-refund')) + the cross-branch check.
+        $statusRequest = OrderStatusRequest::create('/', 'POST', [
+            'status' => \App\Enums\OrderStatus::RETURNED,
+            'reason' => $reason,
+        ]);
+        $statusRequest->setContainer(app())->setRedirector(app('redirect'));
+        $statusRequest->setUserResolver(fn () => \Illuminate\Support\Facades\Auth::user());
+
+        $refunded = $this->orderService->changeStatus($order, $statusRequest);
+
+        // changeStatus returns Order on success, or array on caught failure.
+        if (is_array($refunded)) {
+            return response()->json([
+                'success' => false,
+                'message' => $refunded['message'] ?? 'Pre-Z refund failed.',
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'mode'    => 'pre_z',
+            'data'    => new OrderDetailsResource($refunded->fresh()?->load('orderItems') ?? $refunded),
+            'meta'    => [
+                'parent_order_id'           => (int) $order->id,
+                'mirror_fiscal_sequence_no' => null,
+            ],
+        ], 200);
     }
 
     public function index(
