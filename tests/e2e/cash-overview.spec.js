@@ -89,10 +89,13 @@ test.describe('ENC-13 — Cash Overview visual integrity (money screen)', () => 
     await expect(loading).toHaveCount(0); // never stuck loading
 
     const hasSummary = await summary.isVisible().catch(() => false);
-    const hasEmpty = await empty.isVisible().catch(() => false);
-    expect(hasSummary || hasEmpty, 'neither summary nor empty-state rendered').toBeTruthy();
+    // [RED-tighten 2026-06-03, adversarial gate of 59c95085a] The cash-overview ALWAYS
+    // renders its summary section: the 3 fixed source cards (caisse/borne/livreur) are
+    // populated even at 0€ (displayedSources). Assert it IS present so the per-card
+    // currency validation below ALWAYS runs — closes the vacuous empty-day pass.
+    expect(hasSummary, 'cash-overview summary section (fixed source cards) must render').toBeTruthy();
 
-    if (hasSummary) {
+    {
       // Grand total card + the 3 fixed source cards (caisse/borne/livreur) are
       // always rendered (zero-count buckets are populated by displayedSources).
       const grandTotalCard = summary.locator('> div').first();
