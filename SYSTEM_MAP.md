@@ -4,6 +4,8 @@
 
 Bundle ownership (from `webpack.mix.js` + `webpackChunkName` counts): `kiosk-shell/kiosk-wizard/kiosk-wizard-step/kiosk-errors`→BORNE · `pos-shell`→CAISSE · `admin-kds`/`admin-oss`→KDS+OSS · `admin-shell`(117 chunks)/`admin-reports`→CENTRAL · `app.js`=shared admin/customer SPA entry · `pos-app.js`=POS SPA entry · `vendor.js`=shared.
 
+> ⚠️ **2 OWNER-CONFIRM judgment calls (Claude's decomposition, NOT owner-verbatim — flag for sign-off):** (1) **OSS** folded into the **KDS** lane — owner's 5 systems named «ÉCRAN CUISINE (KDS)» without listing OSS separately; bundled here as the paired display surface fed by the same sync contract. (2) **Backend customer storefront** (`components/frontend/{home,menu,account,...}`) placed under **WEB+APP** — owner said «site web + app, standalone»; this also assigns the backend-served storefront to that lane. Both defensible; confirm before relying on them for parallel routing.
+
 ---
 
 ## 1. BORNE (kiosk) — self-service customer ordering
@@ -32,7 +34,8 @@ Bundle ownership (from `webpack.mix.js` + `webpackChunkName` counts): `kiosk-she
 
 **Backend (OWNED):**
 - `app/Http/Controllers/Admin/Pos/**` (PosReceiptPrintController) + `PosController`, `PosOrderController`
-- `app/Services/PaymentService.php`, `SplitPaymentService`, `CashDrawerService` (+ `app/Services/Pos/**` `(à vérifier)`)
+- ⚠️ **POS controllers sitting DIRECTLY in `Admin/` (no `Pos/` subdir) — CAISSE, NOT CENTRAL:** `AdminPosV4Controller.php`, `PosCategoryController.php`, `PosLoyaltyController.php`, `CashOverviewController.php`, `CashSessionReportController.php` (verified `ls Admin/*.php`).
+- `app/Services/PaymentService.php`, `SplitPaymentService`, `CashDrawerService`, `app/Services/Pos/**`
 - Routes: `routes/api.php:792` `pos.`, `:971` `pos-order.`, `:1156` `pos-category.`
 - Config: `config/pos.php` (`simulation_hardware:37`)
 
@@ -51,6 +54,7 @@ Bundle ownership (from `webpack.mix.js` + `webpackChunkName` counts): `kiosk-she
 
 **Backend (OWNED):**
 - `app/Services/KitchenDisplaySystemOrderService.php`, `app/Http/Controllers/Admin/OrderStatusScreenController.php`
+- ⚠️ **KDS controllers DIRECTLY in `Admin/` (no `Kds/` subdir) — KDS, NOT CENTRAL:** `KitchenDisplaySystemController.php` (changeStatus/recall), `KdsSyncController.php` (verified `ls Admin/*.php`).
 - `app/Http/Resources/{KDSOrderItemsResource,KDSOrderDetailsResource,CDSOrderDetailsResource}.php`
 - `app/Events/KdsOrderRecalled.php` + `app/Listeners/PersistKdsOrderRecalledToOutbox.php`
 - `app/Http/Requests/Kds/**`
@@ -78,11 +82,11 @@ Bundle ownership (from `webpack.mix.js` + `webpackChunkName` counts): `kiosk-she
 ---
 
 ## 5. CENTRAL — management (catalogue, dashboard, history, settings, users, reports)
-**Frontend (OWNED):** `resources/js/components/admin/**` **EXCEPT** the POS-lane dirs (`pos`,`posOrders`,`cash`,`cashOverview`,`cashSessionReport`,`encaissement`) and the KDS-lane dirs (`kitchenDisplaySystem`,`orderStatusScreen`). I.e. OWNED: `dashboard, items, settings, administrators, employees, chefs, waiters, customers, coupons, offers, ingredients, stock, salesReport, itemsReport, transactions, messages, pushNotification, subscribers, orderHistory, onlineOrders, tableOrders, deliveryBoys, deliveryBoyCashSession, creditBalanceReport, diningTable, observability, profile, admin/components` (note: `admin/components` — distinct from `frontend/components` which is WEB+APP). Any new `admin/<dir>` ≠ POS/KDS-lane defaults here.
+**Frontend (OWNED):** `resources/js/components/admin/**` **EXCEPT** the POS-lane dirs (`pos`,`posOrders`,`cash`,`cashOverview`,`cashSessionReport`,`encaissement`) and the KDS-lane dirs (`kitchenDisplaySystem`,`orderStatusScreen`). I.e. OWNED: `dashboard, items, settings, administrators, employees, chefs, waiters, customers, coupons, offers, ingredients, stock, salesReport, itemsReport, transactions, messages, pushNotification, subscribers, orderHistory, onlineOrders, tableOrders, deliveryBoys, deliveryBoyCashSession, creditBalanceReport, diningTable, observability, profile`. ⚠️ **`admin/components/**` is NOT CENTRAL-owned → §6 SHARED** (its widgets LoadingComponent/BreadcrumbComponent/MapComponent are imported across CAISSE+KDS, incl. the FROZEN `PaymentComponent.vue:334`). Any new `admin/<dir>` ≠ POS/KDS-lane and ≠ `components` defaults here.
 - `resources/js/components/layouts/backend/BackendMenuComponent.vue` (sidebar/RBAC). ⚠️ `resources/js/app.js` (shared admin SPA entry) is **NOT a CENTRAL-owned file → §6 SHARED (coordinate-only, never parallel)**.
 - Bundles: `public/js/admin-shell.js` (117 lazy chunks), `public/js/admin-reports.js`
 
-**Backend (OWNED):** `app/Http/Controllers/Admin/**` (91 controllers) EXCEPT the POS + KDS/OSS controllers listed above. Includes `DashboardController`/`DashboardService`, `OrderHistoryController`, Settings cluster (~26 controllers), catalogue (`ItemController`, CatalogStudio), `SalesReport`/`ItemsReport`/`AnalyticController`, users (Administrator/Employee/Chef/Waiter/Customer/DeliveryBoy), Coupon/Offer.
+**Backend (OWNED):** `app/Http/Controllers/Admin/**` (**100 controllers**, incl. subdirs `Fiscal/`,`Observability/`,`Pos/`) EXCEPT the POS + KDS/OSS controllers **explicitly named in §2/§3** — including the 7 that sit DIRECTLY in `Admin/` (AdminPosV4/PosCategory/PosLoyalty/CashOverview/CashSessionReport → CAISSE ; KitchenDisplaySystemController/KdsSync → KDS). ⚠️ **The exclusion is by the EXPLICIT named list, NOT by subdir** — a POS/KDS controller sitting in bare `Admin/` belongs to its functional lane, never CENTRAL. Includes `DashboardController`/`DashboardService`, `OrderHistoryController`, Settings cluster (~26 controllers), catalogue (`ItemController`, CatalogStudio), `SalesReport`/`ItemsReport`/`AnalyticController`, users (Administrator/Employee/Chef/Waiter/Customer/DeliveryBoy), Coupon/Offer.
 
 **FROZEN inside:** none specific.
 **SHARED it touches:** PricingService (reads), Fiscal (reads Z, `LastZReportWidget`), BranchScope/auth, sync (dashboard polls) — §6.
@@ -100,6 +104,7 @@ Bundle ownership (from `webpack.mix.js` + `webpackChunkName` counts): `kiosk-she
 | i18n | `resources/js/languages/{fr,en,ar}.json` · `lang/fr/**` | — (FR canonical) |
 | Build/bundles | `webpack.mix.js` · `public/mix-manifest.json` · **`resources/js/app.js`** (shared admin/customer SPA entry — coordinate, never parallel) · `public/js/app.js`(gitignored)/`vendor.js`. NB: `resources/js/pos-app.js` is CAISSE-owned (§2). | — |
 | **Registry / aggregators (append-coordination)** | `routes/api.php` (toutes les voies y ajoutent leurs routes) · `resources/js/router/index.js` (import manuel des modules) · `resources/js/store/index.js` (import manuel des modules vuex) | — |
+| **Shared UI widgets** | `resources/js/components/admin/components/**` (LoadingComponent/BreadcrumbComponent/MapComponent/buttons — importés par CAISSE+KDS+CENTRAL, incl. le FROZEN `PaymentComponent.vue:334`) · `resources/js/components/common/**` (ConnectionStatusBanner — 4 voies) · `resources/js/components/DefaultComponent.vue` (enregistré dans app.js + pos-app.js) | — (éditer un widget partagé = coordination, jamais en parallèle) |
 
 **Disjointness check (acceptance):** the OWNED sets of systems 1–5 share no file. All cross-system files are in §6. Two agents on different lanes cannot collide unless one writes §6 (which requires a LOCK doc + gate per PARALLEL_PROTOCOL.md). Touching `OrderService.php`/`FrontendOrderService.php`/`resources/js/app.js` (multi-lane) = coordination required even though not all are frozen.
 

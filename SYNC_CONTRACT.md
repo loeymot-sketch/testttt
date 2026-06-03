@@ -15,10 +15,12 @@ The bus is a **SHARED ZONE** (SYSTEM_MAP §6): no single system lane edits it al
 ## 3. Events (broadcast)
 | Event | File | Broadcast | Meaning |
 |---|---|---|---|
-| `OrderCreated` | `app/Events/OrderCreated.php` (implements ShouldBroadcast) | on `branch.{branchId}` | new order placed (borne/caisse/web) → appears on KDS |
-| `OrderStatusChanged` | `app/Events/OrderStatusChanged.php:15` (broadcast wired via `app/Services/OrderService.php` — ShouldBroadcast usage grep-confirmed there; exact dispatch line `(à vérifier)`) | on `branch.{branchId}` | status transition (ACCEPT→PREPARING→PREPARED→…) → KDS/OSS/customer tracker update |
-| `KdsOrderRecalled` | `app/Events/KdsOrderRecalled.php` (+ `app/Listeners/PersistKdsOrderRecalledToOutbox.php`) | on `branch.{branchId}` `(à vérifier)` | chef recalls a bumped order |
+| `OrderCreated` | `app/Events/OrderCreated.php` (**plain `DispatchableAfterCommit` — NOT ShouldBroadcast**) | outbox → `private-branch.{id}` | new order placed (borne/caisse/web) → appears on KDS |
+| `OrderStatusChanged` | `app/Events/OrderStatusChanged.php:15` (**plain event**, dispatched from OrderService/PaymentService/FrontendOrderService/KDS) | outbox → `private-branch.{id}` | status transition (ACCEPT→PREPARING→PREPARED→…) → KDS/OSS/customer tracker update |
+| `KdsOrderRecalled` | `app/Events/KdsOrderRecalled.php` | outbox → `private-branch.{id}` (`PersistKdsOrderRecalledToOutbox.php:58`) | chef recalls a bumped order |
 | `OutboxBroadcastSwallowedEvent` | `app/Events/OutboxBroadcastSwallowedEvent.php` | internal (not client) | broadcast-failure alarm (outbox monitor) |
+
+**⚠️ Broadcast mechanism (corrected, verified code-side 2026-06-03):** the 3 order events do **NOT** use Laravel `ShouldBroadcast`. They are **plain events** → a `Persist{Event}ToOutbox` listener writes a `domain_events` row (`channel=['private-branch.'.$branch_id]`, `broadcast_as='<Event>'`) → `DispatchDomainEventsJob->broadcast()` pushes to soketi. **Outbox pattern** (gate C9/KI-001 — `OrderCreated.php:12` comment: "replacing direct ShouldBroadcastNow"). Listeners: `app/Listeners/Persist{OrderCreated,OrderStatusChanged,KdsOrderRecalled}ToOutbox.php`. This is WHY worker-death degrades gracefully (rows persist, replay on recovery). **Channel naming:** `branch.{branchId}` (auth name, `channels.php:41`) == `private-branch.{branchId}` (wire name, Pusher `private-` convention) — same channel.
 
 ## 4. Payload contract — canonical KdsOrder (consume-side SSOT)
 From `app/Http/Resources/KDSOrderDetailsResource.php:21+` (header fields) + `KDSOrderItemsResource.php` (line items):
