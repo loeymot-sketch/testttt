@@ -1,0 +1,74 @@
+{
+  "wave": "H",
+  "round": 2,
+  "title": "Fiscal Z-Report + X-Report (NF525) — adversarial review",
+  "states_reviewed": 8,
+  "states": [
+    "01-dashboard-last-z-widget",
+    "02-z-report-list-gapfree-monotonic",
+    "03-x-report-intraday",
+    "04-historique-fiscal-chips",
+    "05-order-detail",
+    "06-refund-modal-open",
+    "06b-refund-modal-cancelled",
+    "07-admin-xreport-422-by-design"
+  ],
+  "review_method": "Read all 4 artifacts per state (png with vision + dom.html + console.json + network.json). Read spec tests/e2e/test-e2e-abuse-H-fiscal-z.spec.js end-to-end for audit integrity. Read XReportService.php + recorder mega-audit-snap.js. Extracted embedded payloads __h_z_list__ / __h_x_report__ from DOM. Ran read-only DB verification of the named NF525 key assertion (Order.fiscal_sequence_no gap-free) via php artisan tinker.",
+  "findings": [
+    {
+      "id": "H-001",
+      "state_artifact": "tests/e2e/test-e2e-abuse-H-fiscal-z.spec.js (whole spec) + 02-z-report-list-gapfree-monotonic + 04-historique-fiscal-chips",
+      "category": "audit_integrity",
+      "severity": "P2",
+      "title": "Named NF525 key assertion (Order.fiscal_sequence_no gap-free) is NEVER asserted; gap-free runs only on the 5-row Z-report numbering, not on the canonical per-order fiscal counter.",
+      "evidence": "Two distinct sequences exist. (1) ZReport.sequence_no = [1,2,3,4,5] (embedded payload __h_z_list__ in 02-z-report-list-gapfree-monotonic.dom.html: {\"sequences\":[5,4,3,2,1],\"count\":5}). The spec's assertGapFreeMonotonic (spec lines 168-185, assertions B/C lines 222-225) runs the gap-free test on THIS 5-element list only. (2) Order.fiscal_sequence_no = the canonical per-order fiscal counter (1990..1994 visible in 04-historique-fiscal-chips.png; DB max=1994). The Wave-H KEY ASSERTION (AUDIT_PLAN.md:131) names THIS field 'fiscal_sequence_no gap-free + monotonic'. On it the spec asserts ONLY distinct + strictly-increasing (lines 285-292, assertion F) — explicitly NOT gap-free (header note lines 280-284) — and only conditionally when >=2 fiscal rows surface, else a non-failing console.warn (lines 293-304). Net: a real NF525 violation such as 1,2,3,7,8 (a deleted/skipped permanent fiscal record — the classic NF525 defect) would PASS the spec 4/4 because gap-free is only proven on the unrelated 5-row Z numbering.",
+      "vacuity_risk": "Assertion F can also run vacuously without failing: the cross-order read (spec lines 263-266) requests order_column=fiscal_sequence_no&order_by=asc; MySQL sorts NULLs first, so if unpaid '—' rows (no fiscal number) lead the 50-row page the filtered fiscal count can be <2, F is skipped, and the console.warn (line 299) lands AFTER the last snap('03-...') of test 1 with dispose() in finally — so it is written to NO .console.json. 03-x-report-intraday.console.json is [] and therefore proves nothing about whether F ran.",
+      "db_resolution": "Read-only DB check (php artisan tinker): SELECT MIN,MAX,COUNT(DISTINCT),COUNT(*) of orders.fiscal_sequence_no WHERE branch_id=1 AND fiscal_sequence_no IS NOT NULL => {mn:1, mx:1994, c:1994, n:1994}; ordered scan: dups=0, gap_ranges=[], total_gap_groups=0. The real chain IS gap-free + monotonic + duplicate-free. THEREFORE this is a P2 audit-integrity / under-assertion finding (spec is structurally blind to the named invariant) and NOT a P0 product defect — the data is correct today, but the test would not catch it going wrong.",
+      "fix_hint": "Add a hard gap-free assertion on the canonical per-order chain. Either (a) read a fiscal-only, fiscal-asc slice with a guaranteed-contiguous floor (e.g. fetch all rows where fiscal_sequence_no BETWEEN 1 AND N for a small N and assert max-min+1===count), or (b) assert the aggregate invariant the DB query above proves: COUNT(DISTINCT fiscal_sequence_no)===COUNT(*)===(MAX-MIN+1) over the branch via a dedicated read endpoint. Also: make the <2-rows path a HARD test.fail (not console.warn after the final snap) since the comment itself notes ~1994 fiscal orders exist, so <2 rows means the param contract drifted — a real test failure, not a benign skip."
+    },
+    {
+      "id": "H-002",
+      "state_artifact": "01-dashboard-last-z-widget.png / 02-z-report-list-gapfree-monotonic.png / 03-x-report-intraday.png",
+      "category": "capture_coverage",
+      "severity": "P3",
+      "title": "States 01/02/03 screenshots are byte-identical and show only the dashboard above-the-fold KPIs — neither the LastZReportWidget body nor any Z-list/X-report UI is visible in any captured pixel.",
+      "evidence": "01/02/03 .png are identical (187333 bytes each; same image). The Z widget DID render (01-dashboard-last-z-widget.dom.html contains 'Dernier rapport Z #5' + last-z-report-link) but it sits below the fold and is not in the screenshot viewport; the visible region shows only KPI cards + 'Suivi en direct'. The 'Z-report LIST' (02) and 'X-report intraday' (03) have NO SPA UI (by design — API-only routes); their fiscal payloads live only in hidden <pre> nodes (__h_z_list__, __h_x_report__) and the screenshot for all three states is just the dashboard. Acceptable given the documented surface reality, but the visual evidence for 02/03 is non-representative (a reviewer relying on vision alone sees no fiscal content).",
+      "fix_hint": "Either scroll the LastZReportWidget into view before snap('01-...') so the Z #5/status/closed_at body is actually photographed, or render the read payloads into a visible diagnostic panel for 02/03 so the screenshot carries the asserted numbers. Non-blocking."
+    },
+    {
+      "id": "H-003",
+      "state_artifact": "03-x-report-intraday (embedded __h_x_report__) + dashboard KPIs in 01/02/03/07",
+      "category": "numeric_integrity",
+      "severity": "INFO",
+      "title": "X-report internal math is consistent; dashboard 'Total ventes' vs X-report total_ttc differ by SCOPE (assumption, not a verified contradiction).",
+      "evidence": "X-report payload (__h_x_report__): total_ttc=30220.40, total_ht=27587.17, total_tva=2633.23. Checks PASS: HT+TVA = 27587.17+2633.23 = 30220.40 = TTC; total_by_method {1:30151.40, 4:69} sums to 30220.40 = TTC; total_by_tax_rate {0:0, 10:2633.23} consistent (10%% bucket TVA 2633.23 ⇒ HT_10=26332.30; remaining HT 1254.87 sits at 0%% VAT ⇒ 0 TVA; 26332.30+1254.87=27587.17=total_ht). The 0%%-VAT bucket (1254.87€ HT, 0 TVA) is the previously-documented DORMANT P3 'total_by_tax_rate 0%% VAT', not a new defect. Dashboard 'Total ventes' = 31691,40€ / 'Total commandes' = 3420 vs X-report total_ttc 30220.40 / order_count 1952: ASSUMED to differ because the dashboard is all-time/cumulative while the X-report window is since the last closed Z (period from 2026-05-29). This scope difference is plausible but was NOT independently verified; stated as an assumption, not a confirmed equality. No cross-surface contradiction is asserted as a defect.",
+      "fix_hint": "No action required. If desired, confirm the dashboard 'Total ventes' definition vs X-report window to fully close the scope assumption."
+    },
+    {
+      "id": "H-004",
+      "state_artifact": "07-admin-xreport-422-by-design (.network.json + .console.json + .png)",
+      "category": "by_design_not_a_defect",
+      "severity": "INFO",
+      "title": "Admin (branch_id=0) X-report → 422 and its console resource-error are BY DESIGN (NF525 unpinned-fiscal-op guard) — explicitly NOT flagged.",
+      "evidence": "07.network.json records GET /api/admin/fiscal/x-report => 422; 07.console.json records the browser's automatic 'Failed to load resource ... 422' log for the SAME request. Both are allowlisted: AUDIT_PLAN.md header + REVIEWER_PROTOCOL category 10 allowlist + the task brief ('the X-report 422-for-unpinned-admin is BY DESIGN, not a defect'). The spec hard-expects status===422 (line 481, assertion E) so the guard regressing to 200 WOULD fail the test. Not a silent_error (cat 6) and not an unexpected 4xx (cat 10).",
+      "fix_hint": "None. Correctly classified as by-design."
+    },
+    {
+      "id": "H-005",
+      "state_artifact": "05-order-detail.png / 06-refund-modal-open.png / 06b-refund-modal-cancelled.png + DOMs",
+      "category": "verified_clean",
+      "severity": "INFO",
+      "title": "Refund counter-entry flow numerically + structurally clean and genuinely non-destructive (no confirm fired).",
+      "evidence": "Order #0306264118 (PAID, Espèces, fiscal #1994), order Total = 3,00€ (05). Refund modal (06) carries all required testids (pos-refund-modal-overlay/title/total/warning/reason/confirm/cancel/close) and total = '3,00 €' = the order total (numeric integrity holds). 06b is byte-identical to 05 (131407 bytes) ⇒ modal closed via cancel, back to clean detail; no POST to refund-with-counter-entry recorded (06/06b network.json are []). Confirms the spec's non-destructive promise (header lines 440-446): no permanent mirror minted, no fiscal sequence burned. apiRead pattern is sound — returns {status} and callers hard-expect 200, so non-fiscal reads are not silently swallowed (the only vacuity risk is the F fallback in H-001, not a swallowed catch).",
+      "fix_hint": "None."
+    }
+  ],
+  "i18n_scan": "No raw i18n key leaks (label.* / kiosk.* / pos.*) found in any of the 8 state DOMs (regex scan for visible text nodes matching ^[a-z]+(\\.[a-z_]+){1,4}$).",
+  "console_scan": "All 8 console.json clean except 07 (single 422 resource-load error = by-design admin guard, allowlisted, see H-004). No non-vendor application console errors.",
+  "network_scan": "Only 07 carries a >=400 status (422 by-design). 200 GET fiscal reads are intentionally not recorded (recorder keeps only status>=400 || >2000ms || non-GET — mega-audit-snap.js). No unexpected 4xx/5xx.",
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 1, "P3": 1,
+    "open_P0": 0, "open_P1": 0, "open_P2": 1, "open_P3": 1
+  },
+  "verdict": "GREEN (no open P0/P1). One P2 audit-integrity under-assertion (H-001) + one P3 capture-coverage (H-002) disclosed. The product data is correct (NF525 order chain DB-verified gap-free/monotonic/dup-free, min=1 max=1994 distinct=1994 count=1994), but the spec does NOT prove the named per-order gap-free key assertion — it only proves it on the 5-row Z numbering. Recommend tightening H-001 so the suite would actually catch a future deleted/skipped fiscal record."
+}
