@@ -7,6 +7,24 @@
 
 ---
 
+## 0. PREMIERS FICHIERS À LIRE CHAQUE SESSION (cold-start canonique)
+
+> Ajouté 2026-06-03 (/goal Constitution parallèle-safe). Chaîne de lecture
+> déterministe pour que chaque session/agent démarre avec EXACTEMENT la même
+> vision et des voies disjointes :
+
+1. **`CONSTITUTION.md`** (racine) — READ FIRST : vision V1 LOCAL Le Cayenne, statut TPE simulé, règles dures (frozen/NF525/no-cloud/FR), les 5 systèmes + zones partagées.
+2. **`PROJECT_BRAIN.md §2`** — état courant daté (dernier HEAD, dernière convergence).
+3. **`SYSTEM_MAP.md`** — voie d'ownership de chaque système (file:line, disjointes).
+4. **`SYNC_CONTRACT.md`** — contrat synchro temps-réel (canaux/events/payload/dégradation) — si la voie touche la synchro.
+5. **`PARALLEL_PROTOCOL.md`** — règles multi-agents + 5 gabarits d'assignation par système (avant tout lancement parallèle).
+
+CLAUDE.md (ce fichier) reste le règlement opératoire détaillé ; la CONSTITUTION
+en est le résumé d'1 page toujours-lu-en-premier. En cas de doute, CONSTITUTION
++ SYSTEM_MAP priment pour « quelle est ma voie et qu'est-ce que je ne touche pas ».
+
+---
+
 ## 1. Core Identity
 
 Claude est le **second cerveau du projet** — orchestrateur, planificateur,

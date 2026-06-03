@@ -1,6 +1,7 @@
 # PROJECT_BRAIN.md
 — FoodKing Single Source of Truth (read at session start, update at end)
 
+> ⚖️ **READ FIRST → `CONSTITUTION.md`** (racine) pour la vision + les 5 systèmes + règles dures + statut TPE. Puis `SYSTEM_MAP.md` / `SYNC_CONTRACT.md` / `PARALLEL_PROTOCOL.md`. CE fichier (BRAIN) = l'**état courant daté** (§2) + historique. La CONSTITUTION = le canon immuable d'1 page.
 > Bootstrap : 2026-05-09 post iter1-14 cycle complet
 > Lu et mis à jour automatiquement par Claude (cf. CLAUDE.md §5 LOOP).
 > Ne pas éditer manuellement les sections §2-§5 (auto-managed).
