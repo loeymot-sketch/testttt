@@ -70,12 +70,19 @@ fix independently re-proven; frozen zones + NF525 untouchable; **no push**.
 - Wave K spec green (12.6s), Wave P spec green (2/2, 8.2s), Wave G change-password + logout pass standalone.
 - IdempotencyKeyMiddleware observed-only (frozen); idempotency.enabled=true on this box.
 
-## P2/P3 BACKLOG (non-blocking, recorded)
-- **Go-live config:** G-001 (LOGIN_LOCKOUT_MAX_ATTEMPTS=10 in prod + boot-guard ceiling).
-- **i18n sweep:** G-003 hardcoded English validation messages in FR product (`*Request.php`, `lang/fr/validation.php`); L-002 "Useful Liens".
-- **Customer-web a11y (LIVE surface — `STAFF_ONLY_MODE=false` in .env AND .env.example):** L-001 header cart button dark-on-dark (invisible on every customer page) + missing aria-label. Most actionable live-surface P2; not a money/data/security defect so non-blocking, but it IS customer-facing — owner may want a quick a11y pass.
-- **Test-strength tightening:** H-001 per-order gap-free assertion; K-002/K-003 same-seq-no + audit_emitted hard-assert; P-001 persist decisive evidence to artifacts; P-003 exercise concurrent TOCTOU; I-002 sealed-parent refund-success leg.
-- **Capture-settle:** G-006/O-002/O-001 add wait-for-animation/networkidle before snap (mid-fade frames); this is also the cause of the forget-password 20s-timeout step (form renders, input type=email confirmed — not a product defect).
+## P2/P3 BACKLOG
+
+### ✅ RESOLVED in the 2026-06-03 P2 cleanup pass (commit `b9c63a21d` + spec hardening on disk)
+- **L-001 (P2, live customer-web a11y) — FIXED + visually verified.** Header cart button text-heading→text-white (1.00:1 → 15.99:1 AA) + aria-label. `FrontendNavBarComponent.vue`.
+- **L-002 (P2, mixed-locale footer) — FIXED + visually verified** ("Liens Utiles"). + bonus username "Utilisateurname"→"Nom d'utilisateur". `fr.json`.
+- **G-003 (P2, FR-locale validation msgs) — FIXED + verified** ("L'ancien mot de passe est incorrect."). 7 FormRequests + lang/fr/{auth,validation}.php → `__()`. PHPUnit 87 incl. i18n-integrity green; authz/return-true unchanged.
+- **K-002/K-003/P-001/H-001 (test-strength) — HARDENED** (on-disk specs): K-002 reshow now window.axios→200 (same-seq 1999==1999, tautology killed), K-003 hard audit_emitted, P-001 evidence JSON persisted, H-001 documented (fiscal_sequence_no order-col allowlist-dropped; distinct+monotonic retained). All 3 specs green ×3.
+
+### Still open (non-blocking)
+- **Go-live config:** G-001 (LOGIN_LOCKOUT_MAX_ATTEMPTS=10 in prod + boot-guard ceiling) — **owner-gate** (touches AppServiceProvider production boot logic).
+- **Capture-settle (P3):** G-006/O-002/O-001 add wait-for-animation/networkidle before snap (mid-fade frames); also the cause of the forget-password 20s-timeout step (form renders, input type=email confirmed — not a product defect).
+- **Lower-value product P2/P3:** I-001 empty payment-type label on refund; KDS C-001 timer truncation (stale 4-digit-min seeds only); C-002 overflow-chip overlaps LOCAL tag (coupled to the chip sentinel); P-003 concurrent-TOCTOU not exercised; I-002 sealed-parent refund-success leg.
+- **Hygiene (advisor-flagged):** committed `app.js` carries strings its committed `fr.json`/component source didn't (pre-existing bundle↔source drift, same family as the K-001 dead-fix). One-line backlog: rebuild+recommit bundles from a clean source tree, or add a CI "bundles match source" check.
 
 ## What was NOT done (scope honesty)
 - No push (owner gate). No prod `.env` change. No frozen-zone code change.
