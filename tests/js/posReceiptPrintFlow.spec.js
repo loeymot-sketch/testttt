@@ -81,7 +81,18 @@ describe('ReceiptComponent print policy (W9.D)', () => {
         await flushPromises();
 
         expect(axios.post).toHaveBeenCalledTimes(1);
-        expect(axios.post).toHaveBeenCalledWith('admin/pos/orders/42/print-receipt');
+        // [K-001 abuse-e2e 2026-06-03] print-receipt is in idempotency.required_routes,
+        // so the call MUST carry a fresh-per-click X-Idempotency-Key (else 422 in prod).
+        // Assert the full 3-arg signature so a future regression dropping the header fails.
+        expect(axios.post).toHaveBeenCalledWith(
+            'admin/pos/orders/42/print-receipt',
+            {},
+            expect.objectContaining({
+                headers: expect.objectContaining({
+                    'X-Idempotency-Key': expect.stringMatching(/^pos-print-receipt-42-\d+$/),
+                }),
+            }),
+        );
     });
 
     it('does not call the fiscal increment endpoint for kitchen print', async () => {

@@ -100,13 +100,16 @@ describe('KDS Wave N — Overflow chip safety net (FK-WAVE-N-KDS-OVERFLOW-001)',
         expect(chipBlock[0]).toMatch(/aria-live="polite"/);
     });
 
-    it('chip uses the Cayenne red brand color (#F4501E) high-contrast on white', () => {
+    it('chip uses the Cayenne red brand color (#F4501E) with WCAG-AA dark text (#1A1A1A)', () => {
         const styleBlock = gridSource.match(/<style\s+scoped>[\s\S]*?<\/style>/);
         expect(styleBlock, 'expected <style scoped> block').not.toBeNull();
         const css = styleBlock[0];
         // Chip selector and brand color present together.
         expect(css).toMatch(/\.kds-overflow-chip\s*\{[^}]*background:\s*#F4501E/);
-        expect(css).toMatch(/\.kds-overflow-chip\s*\{[^}]*color:\s*white/);
+        // [stale-sentinel realign 2026-06-03] Text MUST be dark #1A1A1A, not white:
+        // white on #F4501E = 3.46:1 (FAILS WCAG AA); #1A1A1A on #F4501E = 4.87:1 (PASSES).
+        // The C-004 a11y fix corrected the source to dark text; this assertion lagged behind it.
+        expect(css).toMatch(/\.kds-overflow-chip\s*\{[^}]*color:\s*#1A1A1A/);
         // z-index keeps the chip above grid cards.
         expect(css).toMatch(/\.kds-overflow-chip\s*\{[^}]*z-index:\s*100/);
         // Position absolute anchored top-right of the .kds-v2 (which is relative).
