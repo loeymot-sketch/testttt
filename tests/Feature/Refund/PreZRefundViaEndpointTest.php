@@ -34,15 +34,18 @@ use Tests\TestCase;
  *   - NOT sealed (pre-Z) → reuse the EXISTING OrderService::changeStatus(RETURNED)
  *     pre-Z refund (mode='pre_z', no mirror, captured in the still-open Z).
  *
- * KNOWN LIMITATION captured as an executable sentinel (case c): the pre-Z
- * RETURNED transition is only LEGAL from the DELIVERED status in the frozen
- * OrderStateMachine (line 60-61). ACCEPT/PREPARING/PREPARED → RETURNED is
- * illegal for EVERYONE (no Admin override on those source statuses). A live
- * DB query (2026-06-04) showed 1997/1999 paid+fiscalized pre-Z orders sit in
- * ACCEPT/PREPARING/PREPARED — so making the owner's DOMINANT case work
- * requires widening OrderStateMachine (FROZEN — needs LOCK). This test pins
- * the current behavior: DELIVERED works (case a), ACCEPT is rejected 422
- * (case c). When the LOCK lands, case c flips to GREEN/200.
+ * [LOCK-OSM-PREZ-REFUND 2026-06-04, owner-gated] The frozen OrderStateMachine
+ * was widened (3 additive, permission-gated guards) so a refund-capable user
+ * (`pos-refund` = Admin / Branch Manager) may RETURN a not-yet-delivered pre-Z
+ * order from ACCEPT / PREPARING / PREPARED. A live DB query (2026-06-04) showed
+ * 1994/1999 paid+fiscalized pre-Z orders sit in those three statuses, so this
+ * unblocks the owner's DOMINANT case. The cases below pin the new contract:
+ *   (a) pre-Z DELIVERED  → 200 (unchanged: DELIVERED→RETURNED was always legal)
+ *   (b) post-Z sealed    → 201 mirror (counter-entry path UNCHANGED)
+ *   (c) pre-Z ACCEPT with `pos-refund` → 200 RETURNED (FLIPPED by the LOCK)
+ *   (d) pre-Z PREPARING with `pos-refund` → 200 RETURNED (owner dominant case)
+ *   (e) pre-Z ACCEPT WITHOUT `pos-refund` (plain POS Operator) → 403 (the
+ *       permission gate closes for regular operators; no refund applies)
  */
 class PreZRefundViaEndpointTest extends TestCase
 {
@@ -130,6 +133,25 @@ class PreZRefundViaEndpointTest extends TestCase
         $user->assignRole('Admin');
         $user->givePermissionTo('pos-orders');
         $user->givePermissionTo('pos-refund');
+        $user->givePermissionTo('pos');
+        return $user;
+    }
+
+    /**
+     * A regular POS Operator: holds `pos`/`pos-orders` but NOT `pos-refund`
+     * (mass-refund vector mitigation — see RolePermissionTableSeeder, the
+     * permission is granted only to Admin + Branch Manager). Used for the
+     * negative case (e): the controller `pos-refund` gate must 403 BEFORE the
+     * state machine is reached, so a non-DELIVERED order is never refunded.
+     */
+    private function newPosOperator(Branch $branch): User
+    {
+        $user = User::factory()->create([
+            'branch_id' => $branch->id,
+            'password'  => Hash::make('password'),
+        ]);
+        $user->assignRole('POS Operator');
+        $user->givePermissionTo('pos-orders');
         $user->givePermissionTo('pos');
         return $user;
     }
@@ -248,17 +270,16 @@ class PreZRefundViaEndpointTest extends TestCase
     }
 
     /**
-     * (c) LIMITATION SENTINEL — PRE-Z order in a NON-DELIVERED status
-     * (ACCEPT, the dominant real-world case) → endpoint → 422 invalid
-     * transition, NO status change, NO mirror.
+     * (c) FLIPPED BY [LOCK-OSM-PREZ-REFUND 2026-06-04] — PRE-Z order in a
+     * NON-DELIVERED status (ACCEPT), acted by a user holding `pos-refund`,
+     * now REFUNDS successfully: → 200, mode='pre_z', status RETURNED, cashback
+     * Transaction row, `order.returned` audit row, NO mirror, NO fiscal gap.
      *
-     * This documents the frozen OrderStateMachine restriction (RETURNED only
-     * reachable from DELIVERED). When the owner gates a LOCK to widen the
-     * state machine (ACCEPT/PREPARING/PREPARED → RETURNED), THIS test must be
-     * updated to expect 200 + RETURNED. Until then it locks the current
-     * working-tree behavior so a silent regression is impossible.
+     * This is the FIRST case that exercises the new permission-gated guard
+     * inside OrderStateMachine::allows (DELIVERED→RETURNED at line 77 is
+     * unconditional, so case (a) never reaches the `pos-refund` check).
      */
-    public function test_pre_z_accept_order_is_rejected_422_until_state_machine_widened(): void
+    public function test_pre_z_accept_order_with_pos_refund_now_refunds_200(): void
     {
         $branch = Branch::factory()->create();
         $customer = User::factory()->create(['branch_id' => $branch->id, 'balance' => 0]);
@@ -267,20 +288,151 @@ class PreZRefundViaEndpointTest extends TestCase
 
         $admin = $this->newAdmin($branch);
 
+        $orderCountBefore = Order::withoutGlobalScopes()->count();
+        $auditCountBefore = \App\Models\AuditLog::withoutGlobalScopes()->count();
+
         $resp = $this->actingAs($admin, 'sanctum')
-            ->withHeaders(['X-Idempotency-Key' => 'prez-422-' . bin2hex(random_bytes(8))])
+            ->withHeaders(['X-Idempotency-Key' => 'prez-accept-200-' . bin2hex(random_bytes(8))])
             ->postJson("/api/admin/pos-order/{$order->id}/refund-with-counter-entry", [
-                'reason' => 'Pre-Z ACCEPT order — RETURNED illegal until LOCK.',
+                'reason' => 'Pre-Z ACCEPT order — remboursement même jour (LOCK).',
             ]);
 
-        $resp->assertStatus(422);
+        $resp->assertStatus(200);
+        $resp->assertJsonPath('success', true);
+        $resp->assertJsonPath('mode', 'pre_z');
+        $resp->assertJsonPath('meta.mirror_fiscal_sequence_no', null);
 
-        // No state change, no mirror — refund did not partially apply.
+        $this->assertSame(
+            OrderStatus::RETURNED,
+            (int) $order->fresh()->status,
+            'Pre-Z ACCEPT refund must set the parent order status to RETURNED.'
+        );
+
+        // cashBack recorded — money returned (a cash_back Transaction row).
+        $this->assertDatabaseHas('transactions', [
+            'order_id' => $order->id,
+            'type'     => 'cash_back',
+            'sign'     => '-',
+        ]);
+
+        // NO mirror order created (no fiscal gap; this is NOT the counter-entry path).
+        $this->assertSame(
+            $orderCountBefore,
+            Order::withoutGlobalScopes()->count(),
+            'Pre-Z refund must NOT create a mirror order.'
+        );
+        $this->assertSame(
+            0,
+            Order::withoutGlobalScopes()->where('parent_order_id', $order->id)->count(),
+            'Pre-Z refund must NOT create any child mirror.'
+        );
+
+        // order.returned audit row appended to the NF525 chain.
+        $this->assertGreaterThan(
+            $auditCountBefore,
+            \App\Models\AuditLog::withoutGlobalScopes()->count(),
+            'Pre-Z refund must append an audit row (order.returned).'
+        );
+        $this->assertDatabaseHas('audit_logs', [
+            'action'      => 'order.returned',
+            'resource_id' => $order->id,
+        ]);
+    }
+
+    /**
+     * (d) OWNER DOMINANT CASE — PRE-Z order in PREPARING status (1994/1999 live
+     * pre-Z orders sit in ACCEPT/PREPARING/PREPARED), acted by an Admin holding
+     * `pos-refund`, hits the single refund endpoint with a reason and is
+     * refunded: → 200, status RETURNED, cashback + `order.returned` audit, NO
+     * mirror. This is the exact bug the owner reported as un-refundable.
+     */
+    public function test_pre_z_preparing_order_refunds_via_endpoint_owner_dominant_case(): void
+    {
+        $branch = Branch::factory()->create();
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'balance' => 0]);
+
+        $order = $this->makeOrder($branch, $customer, OrderStatus::PREPARING, Carbon::now()->subMinutes(5));
+
+        $admin = $this->newAdmin($branch);
+
+        $orderCountBefore = Order::withoutGlobalScopes()->count();
+        $auditCountBefore = \App\Models\AuditLog::withoutGlobalScopes()->count();
+
+        $resp = $this->actingAs($admin, 'sanctum')
+            ->withHeaders(['X-Idempotency-Key' => 'prez-preparing-200-' . bin2hex(random_bytes(8))])
+            ->postJson("/api/admin/pos-order/{$order->id}/refund-with-counter-entry", [
+                'reason' => 'Commande en préparation annulée — remboursement même jour.',
+            ]);
+
+        $resp->assertStatus(200);
+        $resp->assertJsonPath('success', true);
+        $resp->assertJsonPath('mode', 'pre_z');
+        $resp->assertJsonPath('meta.mirror_fiscal_sequence_no', null);
+
+        $this->assertSame(
+            OrderStatus::RETURNED,
+            (int) $order->fresh()->status,
+            'Pre-Z PREPARING refund must set the parent order status to RETURNED.'
+        );
+
+        $this->assertDatabaseHas('transactions', [
+            'order_id' => $order->id,
+            'type'     => 'cash_back',
+            'sign'     => '-',
+        ]);
+
+        $this->assertSame(
+            $orderCountBefore,
+            Order::withoutGlobalScopes()->count(),
+            'Pre-Z PREPARING refund must NOT create a mirror order.'
+        );
+        $this->assertSame(
+            0,
+            Order::withoutGlobalScopes()->where('parent_order_id', $order->id)->count(),
+            'Pre-Z PREPARING refund must NOT create any child mirror.'
+        );
+
+        $this->assertGreaterThan(
+            $auditCountBefore,
+            \App\Models\AuditLog::withoutGlobalScopes()->count(),
+            'Pre-Z PREPARING refund must append an audit row (order.returned).'
+        );
+        $this->assertDatabaseHas('audit_logs', [
+            'action'      => 'order.returned',
+            'resource_id' => $order->id,
+        ]);
+    }
+
+    /**
+     * (e) NEGATIVE — PRE-Z ACCEPT order acted by a plain POS Operator WITHOUT
+     * `pos-refund` → the controller permission gate (PosOrderController:58-62)
+     * 403s BEFORE the state machine is reached. The order is NOT refunded: no
+     * status change, no cashback, no mirror. This pins the blast-radius control
+     * from the LOCK doc — the new edge is closed for regular operators.
+     */
+    public function test_pre_z_accept_order_without_pos_refund_is_forbidden_403(): void
+    {
+        $branch = Branch::factory()->create();
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'balance' => 0]);
+
+        $order = $this->makeOrder($branch, $customer, OrderStatus::ACCEPT, Carbon::now()->subMinutes(5));
+
+        $operator = $this->newPosOperator($branch);
+
+        $resp = $this->actingAs($operator, 'sanctum')
+            ->withHeaders(['X-Idempotency-Key' => 'prez-403-' . bin2hex(random_bytes(8))])
+            ->postJson("/api/admin/pos-order/{$order->id}/refund-with-counter-entry", [
+                'reason' => 'POS Operator sans pos-refund — doit être refusé.',
+            ]);
+
+        $resp->assertStatus(403);
+
+        // No state change, no mirror, no cashback — refund did not apply.
         $this->assertSame(OrderStatus::ACCEPT, (int) $order->fresh()->status);
         $this->assertSame(
             0,
             Order::withoutGlobalScopes()->where('parent_order_id', $order->id)->count(),
-            'Rejected pre-Z refund must NOT create a mirror.'
+            'Forbidden refund must NOT create a mirror.'
         );
         $this->assertDatabaseMissing('transactions', [
             'order_id' => $order->id,

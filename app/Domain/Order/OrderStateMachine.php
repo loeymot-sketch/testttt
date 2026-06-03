@@ -41,6 +41,13 @@ final class OrderStateMachine
                 if ($to === OrderStatus::DELIVERED && $user && method_exists($user, 'hasPermissionTo') && $user->hasPermissionTo('pos')) {
                     return true;
                 }
+                // [LOCK-OSM-PREZ-REFUND 2026-06-04, owner-gated] Pre-Z refund of a
+                // not-yet-delivered order: a refund-capable user (pos-refund =
+                // Admin/Branch Manager) may RETURN it. Captured in the open Z (no gap);
+                // cashback + audit are wired in the changeStatus→RETURNED path.
+                if ($to === OrderStatus::RETURNED && $user && method_exists($user, 'hasPermissionTo') && $user->hasPermissionTo('pos-refund')) {
+                    return true;
+                }
 
                 return in_array($to, [OrderStatus::PREPARING, OrderStatus::CANCELED], true);
 
@@ -48,10 +55,19 @@ final class OrderStateMachine
                 if ($to === OrderStatus::DELIVERED && $user && method_exists($user, 'hasPermissionTo') && $user->hasPermissionTo('pos')) {
                     return true;
                 }
+                // [LOCK-OSM-PREZ-REFUND 2026-06-04, owner-gated] see ACCEPT case.
+                if ($to === OrderStatus::RETURNED && $user && method_exists($user, 'hasPermissionTo') && $user->hasPermissionTo('pos-refund')) {
+                    return true;
+                }
 
                 return in_array($to, [OrderStatus::PREPARED, OrderStatus::CANCELED], true);
 
             case OrderStatus::PREPARED:
+                // [LOCK-OSM-PREZ-REFUND 2026-06-04, owner-gated] see ACCEPT case.
+                if ($to === OrderStatus::RETURNED && $user && method_exists($user, 'hasPermissionTo') && $user->hasPermissionTo('pos-refund')) {
+                    return true;
+                }
+
                 return in_array($to, [OrderStatus::OUT_FOR_DELIVERY, OrderStatus::DELIVERED], true);
 
             case OrderStatus::OUT_FOR_DELIVERY:
