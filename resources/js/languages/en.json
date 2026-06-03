@@ -1307,6 +1307,8 @@
         "kds_history_loading": "Loading…",
         "kds_history_error": "Failed to load",
         "kds_history_retry": "Retry",
+        "kds_history_placed_at": "Placed at",
+        "kds_history_completed_at": "Completed at",
         "kds_state_prepared": "Ready",
         "kds_state_out": "Out for delivery",
         "kds_state_delivered": "Delivered",

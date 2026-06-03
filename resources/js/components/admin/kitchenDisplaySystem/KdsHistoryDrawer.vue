@@ -120,33 +120,53 @@
             >
               {{ statusLabel(order.status) }}
             </span>
-            <time
-              class="kds-history-drawer__time"
-              :datetime="order.updated_at"
-            >
-              {{ formatTime(order.updated_at) }}
-            </time>
           </div>
 
-          <ul class="kds-history-drawer__items">
-            <li
+          <!--
+            [KDS history full-detail 2026-06-04] Owner ask: each history order
+            must show heure PASSÉE (commande prise) + heure TERMINÉE (bump/livré)
+            so a customer remark can be looked up. `order_time` is already a
+            formatted HH:MM string (AppLibrary::time) — bind it RAW (NOT through
+            formatTime, which expects an ISO8601 date). `updated_at` is ISO8601
+            → formatTime(). -->
+          <div class="kds-history-drawer__times">
+            <span
+              v-if="placedTime(order)"
+              class="kds-history-drawer__time-cell"
+            >
+              <span class="kds-history-drawer__time-label">{{ $t('label.kds_history_placed_at') }}</span>
+              <time class="kds-history-drawer__time">{{ placedTime(order) }}</time>
+            </span>
+            <span
+              v-if="formatTime(order.updated_at)"
+              class="kds-history-drawer__time-cell"
+            >
+              <span class="kds-history-drawer__time-label">{{ $t('label.kds_history_completed_at') }}</span>
+              <time class="kds-history-drawer__time" :datetime="order.updated_at">{{ formatTime(order.updated_at) }}</time>
+            </span>
+          </div>
+
+          <!--
+            [KDS history full-detail 2026-06-04] Reuse the canonical live-board
+            renderer (DRY): renderItem(item).lines + <KdsOrderLine> — identical
+            output to KdsOrderCard.vue (full composition / variations / extras /
+            menu children / instruction / allergens). Replaces the former bare
+            qty+name+variation loop. Data was already complete (history endpoint
+            returns the SAME KDSOrderDetailsResource as the live board). -->
+          <div class="kds-history-drawer__items">
+            <template
               v-for="(item, idx) in (order.order_items || [])"
               :key="(item.id || idx) + '-' + idx"
-              class="kds-history-drawer__line"
             >
-              <span class="kds-history-drawer__qty">{{ item.quantity }}×</span>
-              <span class="kds-history-drawer__name">{{ itemName(item) }}</span>
-              <span
-                v-if="Array.isArray(item.item_variations) && item.item_variations.length"
-                class="kds-history-drawer__variations"
-              >
-                <em
-                  v-for="(variation, vIdx) in item.item_variations"
-                  :key="vIdx"
-                >— {{ variation.name }}<span v-if="vIdx + 1 < item.item_variations.length">, </span></em>
-              </span>
-            </li>
-          </ul>
+              <div class="kds-history-drawer__item-block">
+                <KdsOrderLine
+                  v-for="(line, li) in renderItemLines(item)"
+                  :key="li"
+                  :line="line"
+                />
+              </div>
+            </template>
+          </div>
           <!--
             [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
             Chef "Annuler bump" surfaced ONLY when:
@@ -195,6 +215,10 @@
 
 <script>
 import axios from 'axios';
+// [KDS history full-detail 2026-06-04] Canonical live-board renderer + line
+// component (same as KdsOrderCard.vue) so history shows the FULL composition.
+import KdsOrderLine from './KdsOrderLine.vue';
+import { renderItem } from '../../../helpers/kdsCustomization.js';
 
 const STATUS_PREPARED          = 8;
 const STATUS_OUT_FOR_DELIVERY  = 10;
@@ -202,6 +226,8 @@ const STATUS_DELIVERED         = 13;
 
 export default {
   name: 'KdsHistoryDrawer',
+
+  components: { KdsOrderLine },
 
   props: {
     open: {
@@ -313,12 +339,29 @@ export default {
       }
     },
 
-    itemName(item) {
-      // KDSOrderDetailsResource exposes `item_name` directly; defensive fall-backs.
-      return item.item_name
-        || (item.item && item.item.name)
-        || item.name
-        || '';
+    // [KDS history full-detail 2026-06-04] Delegate to the canonical renderer
+    // (single source of truth shared with the live KdsOrderCard) — yields the
+    // full typed line list: header, grouped variations, supplements, menu
+    // children, free-text instruction, allergens. No per-category branching here.
+    renderItemLines(item) {
+      return renderItem(item).lines;
+    },
+
+    // [KDS history full-detail 2026-06-04] Heure de prise de commande. The
+    // resource already exposes a pre-formatted HH:MM string via
+    // AppLibrary::time(order_datetime) — it is NOT an ISO date, so it must be
+    // bound raw (NOT passed through formatTime, which would yield Invalid Date
+    // and render blank). `order_datetime` is the fuller formatted fallback.
+    placedTime(order) {
+      const raw = order?.order_time;
+      if (typeof raw === 'string' && raw.trim().length > 0) {
+        return raw.trim();
+      }
+      // Defensive fallback: derive HH:MM from order_datetime if order_time is
+      // absent. order_datetime is also pre-formatted, so we only reuse it as a
+      // last-resort display string.
+      const dt = order?.order_datetime;
+      return typeof dt === 'string' && dt.trim().length > 0 ? dt.trim() : '';
     },
 
     statusClass(status) {
@@ -616,42 +659,50 @@ export default {
   letter-spacing: 0.04em;
 }
 
-.kds-history-drawer__time {
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
-  font-size: 0.85rem;
-  color: #444;
+/* [KDS history full-detail 2026-06-04] Heure passée / terminée — two labeled
+   cells under the head row so the chef can read both times at a glance. */
+.kds-history-drawer__times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 6px;
 }
 
+.kds-history-drawer__time-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.kds-history-drawer__time-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6B7280;
+  font-weight: 600;
+}
+
+.kds-history-drawer__time {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+/* [KDS history full-detail 2026-06-04] Full-composition lines rendered by the
+   canonical <KdsOrderLine> (shared with the live board). The wrapper just adds
+   a thin top separator so the composition reads as a block under the header. */
 .kds-history-drawer__items {
   list-style: none;
   margin: 8px 0 0;
-  padding: 0;
+  padding: 8px 0 0;
+  border-top: 1px solid #ececec;
 }
 
-.kds-history-drawer__line {
-  font-size: 0.9rem;
-  padding: 2px 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.kds-history-drawer__qty {
-  font-weight: 700;
-  min-width: 28px;
-}
-
-.kds-history-drawer__name {
-  flex: 1;
-}
-
-.kds-history-drawer__variations {
-  color: #555;
-  font-style: italic;
-  font-size: 0.85rem;
-  width: 100%;
-  margin-left: 32px;
+.kds-history-drawer__item-block + .kds-history-drawer__item-block {
+  border-top: 1px dashed #ececec;
+  margin-top: 6px;
+  padding-top: 4px;
 }
 
 /* [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] recall row.

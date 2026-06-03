@@ -1113,6 +1113,8 @@
         "kds_history_loading": "جارٍ التحميل…",
         "kds_history_error": "فشل التحميل",
         "kds_history_retry": "إعادة المحاولة",
+        "kds_history_placed_at": "طُلبت في",
+        "kds_history_completed_at": "اكتملت في",
         "kds_state_prepared": "جاهز",
         "kds_state_out": "قيد التوصيل",
         "kds_state_delivered": "تم التسليم",

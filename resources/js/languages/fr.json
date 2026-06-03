@@ -781,6 +781,8 @@
         "kds_history_loading": "Chargement…",
         "kds_history_error": "Erreur de chargement",
         "kds_history_retry": "Réessayer",
+        "kds_history_placed_at": "Passée à",
+        "kds_history_completed_at": "Terminée à",
         "kds_state_prepared": "Prêt",
         "kds_state_out": "En livraison",
         "kds_state_delivered": "Livré",
