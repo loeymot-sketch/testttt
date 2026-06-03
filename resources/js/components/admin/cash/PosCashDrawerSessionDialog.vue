@@ -367,6 +367,9 @@ export default {
             varianceReasonTouched: false,
             increments: [5, 10, 20, 50],
             errorMessage: '',
+            // [B-001 abuse-e2e] guards the one-shot movement hydration in resolveMode()
+            // against the mounted + 3-watcher storm (load at most once per session id).
+            movementsLoadedForSession: null,
         };
     },
     computed: {
@@ -456,9 +459,21 @@ export default {
         resolveMode() {
             if (this.initialMode && this.initialMode !== 'auto') {
                 this.mode = this.initialMode;
-                return;
+            } else {
+                this.mode = this.session && this.session.status === 'open' ? 'active' : 'open';
             }
-            this.mode = this.session && this.session.status === 'open' ? 'active' : 'open';
+            // [B-001 abuse-e2e] Hydrate movements for any OPEN session so expectedTotal
+            // (shown in BOTH the active summary and the close/reconcile views) reflects
+            // real cash IN, not just the opening float. loadCurrentSession does NOT fetch
+            // movements — without this the cashier reconciles the drawer against
+            // opening-only (e.g. 50,00 € instead of 402,00 €). Backend reconcileSession
+            // stays authoritative; this only corrects the operator-facing number.
+            // Guarded to load at most once per session id (resolveMode fires in mounted
+            // + open/session/initialMode watchers).
+            if (this.session && this.session.status === 'open' && this.session.id !== this.movementsLoadedForSession) {
+                this.movementsLoadedForSession = this.session.id;
+                this.$store.dispatch('cashDrawer/loadMovements');
+            }
         },
         emitClose() {
             this.errorMessage = '';
