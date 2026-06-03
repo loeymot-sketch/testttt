@@ -140,6 +140,27 @@ and a **fresh caisse** order. **All deferred — environment hostile:**
   structurally unobservable until the pollution clears** (the soak's own cleanup, or owner).
   The heal (Echo sub + fast refetch) remains proven; only the end *render* is cap-gated.
 
-Drain watcher re-armed (monitor `b51u33r85`, ≥25-min quiescence). On drain I will close
-OSS/tracker-live + caisse (those don't need a clean DB); F-W5-01 render needs the queue
-below 200 first. **Verdict unchanged: GREEN — these are evidence-strengthening, not verdict-changing.**
+### Gap-closing EXECUTED — 14:13–14:22 (owner said "execute plan", batch went quiet)
+
+In a quiet window I upgraded the inferred claims to **directly observed** (fresh borne orders,
+`SYNC-E2E-` prefix; my test orders were again auto-removed by the env's cleanup — no residue):
+
+| Surface | Result | Latency | Evidence |
+|---|---|---|---|
+| **OSS** (`/admin/order-status-screen`) | ✅ **A0014 rendered** in "En préparation" after transition to PREPARING | status-change **469 ms** | `captures/sync-gap-03-oss-live-A0014-rendered.png` (subscribed:true, OC+OSC×2 received) |
+| **POS tracker** (`/admin/pos-orders-tracker`) | ✅ **A0015 rendered** in "À encaisser" — "Borne — paiement comptoir", 1× Coca-Cola, **1,50 €** (integrity) | WS **66 ms** | `captures/sync-gap-04-tracker-live-A0015-rendered.png` |
+
+So **borne→KDS + borne→OSS + borne→tracker + borne→encaissement are all now directly observed**
+(latencies 66–469 ms — `block_for=5` holding, no cold penalty). Two items remain qualified for
+honest, legitimate reasons:
+- **Caisse fresh order:** still pipeline-confirmed (real source=15 orders broadcast to branch.1 +
+  the tracker's Caisse filter shows them) — a fresh **POS-UI** order was not driven (POS wizard is
+  frozen Vanilla JS; out of cheap reach without risking it).
+- **F-W5-01 order *render* in the encaissement list:** still cap-gated — the queue holds **1251**
+  stale soak `PENDING_COUNTER` orders and the endpoint is oldest-first FIFO `limit(200)`, so a
+  fresh order sits at ~#1252. The heal (Echo sub + ~1.2 s refetch) is proven; in a normal restaurant
+  (<200 pending) the refetch renders the order immediately. Render is unobservable only under the
+  abnormal soak pollution — which is itself the separately-flagged 200-cap finding.
+
+**Verdict: GREEN.** 4 of 5 surface observations are now first-hand; the 2 qualified items are
+environment/frozen-zone limited, not heal defects.
