@@ -522,7 +522,7 @@ function ScreenStepMenu({ item, selections, setSelections, headingRef }) {
     });
   };
   const options = [
-    { id: 'full',    name: 'Menu complet',  desc: 'Frites + Boisson', price: 2.50, emoji: '🍟🥤' },
+    { id: 'full',    name: 'Menu complet',  desc: 'Frites + Boisson', price: 3.00, emoji: '🍟🥤' },
     { id: 'frites',  name: 'Ajouter Frites', desc: 'Frites uniquement', price: 2.00, emoji: '🍟' },
     { id: 'boisson', name: 'Ajouter Boisson', desc: 'Boisson uniquement', price: 2.00, emoji: '🥤' },
     { id: 'none',    name: 'Sans formule',   desc: 'Plat seul',         price: 0,    emoji: '🚫' },
