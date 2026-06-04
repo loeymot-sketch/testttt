@@ -118,30 +118,60 @@ class HealthzController extends Controller
     }
 
     /**
-     * WebSocket probe — V1 LOCAL has no cheap synchronous probe against
-     * Soketi. We attest "ok" when PUSHER_HOST is configured (i.e. the
-     * realtime pipeline has at least been wired up) and broadcasting is
-     * not set to the null driver. A future V1.0.X enhancement can
-     * actually open a TCP socket to PUSHER_HOST:PUSHER_PORT.
+     * WebSocket probe.
+     *
+     * [OPS-2 2026-06-04] Made HONEST. The previous implementation returned
+     * 'ok' for ANY broadcast driver that was not `null` — it NEVER opened a
+     * socket to Soketi, so a crashed websocket server reported healthy and
+     * the pager stayed silent. Now:
+     *   - null driver               → 'fail' (realtime explicitly disabled).
+     *   - pusher driver             → real TCP connect to the configured
+     *                                 host:port (short timeout). Connection
+     *                                 refused / timeout → 'fail'.
+     *   - other drivers (log etc.)  → INFORMATIONAL 'ok' — there is no socket
+     *                                 to probe and V1 LOCAL tolerates the 30s
+     *                                 polling fallback. /api/health/ready is
+     *                                 the strict gate; /healthz stays lenient.
      */
     private function checkWebsocket(): string
     {
-        try {
-            $broadcast  = config('broadcasting.default');
-            $pusherHost = env('PUSHER_HOST', '');
+        return self::probeWebsocket();
+    }
 
-            // If broadcasting is explicitly disabled (null driver), report fail.
+    /**
+     * Shared honest websocket probe (used by HealthzController and the
+     * `healthz:check` CLI mirror) so the two surfaces never drift.
+     */
+    public static function probeWebsocket(): string
+    {
+        try {
+            $broadcast = config('broadcasting.default');
+
             if (in_array($broadcast, [null, 'null'], true)) {
                 return 'fail';
             }
 
-            // If PUSHER_HOST not set in non-pusher drivers (log etc.) we still
-            // attest ok — V1 LOCAL kiosks tolerate broadcast misroute via the
-            // 30s polling fallback. The /api/health/ready probe is the strict
-            // gate; /healthz is the public uptime probe.
-            if ($pusherHost === '' && $broadcast !== 'pusher') {
+            if ($broadcast !== 'pusher') {
+                // No socket to probe (log/redis/ably handled elsewhere) —
+                // informational ok, polling fallback covers realtime.
                 return 'ok';
             }
+
+            $host = (string) config('broadcasting.connections.pusher.options.host', '');
+            $port = (int) config('broadcasting.connections.pusher.options.port', 0);
+
+            if ($host === '' || $port <= 0) {
+                // Pusher selected but unconfigured = a real misconfiguration.
+                return 'fail';
+            }
+
+            $errno = 0;
+            $errstr = '';
+            $sock = @fsockopen($host, $port, $errno, $errstr, 1.0);
+            if ($sock === false) {
+                return 'fail';
+            }
+            fclose($sock);
 
             return 'ok';
         } catch (\Throwable $e) {
@@ -173,13 +203,29 @@ class HealthzController extends Controller
     /**
      * Pending queue size. Returns an int per the OPS-GATE-1 contract
      * (NOT a string ok|fail) so the monitor can graph the value.
-     * If the `jobs` table is missing (rare — migration not run),
-     * return 0 so the JSON shape never breaks the monitor's parser.
+     *
+     * [OPS-2 2026-06-04] Made HONEST. The previous implementation counted
+     * the `jobs` DB table — but this box runs QUEUE_CONNECTION=redis, so
+     * that table is always empty and the metric was a constant 0 (it could
+     * never surface a backed-up queue). Now uses the driver-agnostic
+     * Queue::size() against the same queues HealthController::checkQueue
+     * graphs (default + high). Returns 0 on any driver error so the JSON
+     * shape never breaks the monitor's parser.
      */
     private function checkQueuePending(): int
     {
+        return self::probeQueuePending();
+    }
+
+    /**
+     * Shared honest queue-depth probe (used by HealthzController and the
+     * `healthz:check` CLI mirror).
+     */
+    public static function probeQueuePending(): int
+    {
         try {
-            return (int) DB::table('jobs')->count();
+            return (int) \Illuminate\Support\Facades\Queue::size('default')
+                + (int) \Illuminate\Support\Facades\Queue::size('high');
         } catch (\Throwable $e) {
             return 0;
         }

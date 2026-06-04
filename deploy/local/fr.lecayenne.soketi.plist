@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  fr.lecayenne.soketi — FoodKing V1 LOCAL · Soketi WebSocket server (Pusher protocol, :6001).
+  Drives realtime Borne<->Caisse<->KDS<->OSS sync (BROADCAST_DRIVER=pusher in .env).
+
+  STATE @ 2026-06-04: soketi was NOT running (ps showed serve + 2 queue workers + redis
+  only). The brief lists it as one of the 3 daemons; this plist (re)introduces it so the
+  realtime layer auto-starts + auto-restarts like the rest.
+
+  ===== launchd PATH TRAP (read before editing) =====
+  The `soketi` CLI is a symlink to a .js file with an `#!/usr/bin/env node` shebang.
+  launchd does NOT inherit your shell PATH, so `env node` would FAIL to find nvm's node
+  and soketi would never boot. We sidestep this by invoking the absolute nvm node binary
+  directly against soketi's server.js entrypoint. Verified paths (2026-06-04):
+    node        = /Users/1millnonstop/.nvm/versions/node/v18.20.7/bin/node
+    server.js   = /Users/1millnonstop/.nvm/versions/node/v18.20.7/lib/node_modules/@soketi/soketi/bin/server.js
+  We ALSO set EnvironmentVariables.PATH to the nvm bin dir as belt-and-suspenders for any
+  child process soketi spawns.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>fr.lecayenne.soketi</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/1millnonstop/.nvm/versions/node/v18.20.7/bin/node</string>
+        <string>/Users/1millnonstop/.nvm/versions/node/v18.20.7/lib/node_modules/@soketi/soketi/bin/server.js</string>
+        <string>start</string>
+        <string>--config=/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/soketi.json</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/1millnonstop/.nvm/versions/node/v18.20.7/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/storage/logs/launchd-soketi.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/storage/logs/launchd-soketi.log</string>
+</dict>
+</plist>

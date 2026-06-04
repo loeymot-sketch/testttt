@@ -123,24 +123,14 @@ class HealthzCheckCommand extends Command
         }
     }
 
+    /**
+     * [OPS-2 2026-06-04] Delegate to the shared honest probe so the CLI
+     * heartbeat lane and the HTTP /healthz surface never report different
+     * websocket health. Real TCP connect to the pusher host:port.
+     */
     private function checkWebsocket(): string
     {
-        try {
-            $broadcast  = config('broadcasting.default');
-            $pusherHost = env('PUSHER_HOST', '');
-
-            if (in_array($broadcast, [null, 'null'], true)) {
-                return 'fail';
-            }
-
-            if ($pusherHost === '' && $broadcast !== 'pusher') {
-                return 'ok';
-            }
-
-            return 'ok';
-        } catch (\Throwable $e) {
-            return 'fail';
-        }
+        return \App\Http\Controllers\HealthzController::probeWebsocket();
     }
 
     private function checkFiscalChain(): string
@@ -156,12 +146,12 @@ class HealthzCheckCommand extends Command
         }
     }
 
+    /**
+     * [OPS-2 2026-06-04] Driver-agnostic queue depth (default+high) via the
+     * shared probe — the old `jobs` table count was always 0 under redis.
+     */
     private function checkQueuePending(): int
     {
-        try {
-            return (int) DB::table('jobs')->count();
-        } catch (\Throwable $e) {
-            return 0;
-        }
+        return \App\Http\Controllers\HealthzController::probeQueuePending();
     }
 }

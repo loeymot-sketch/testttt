@@ -23,12 +23,18 @@ class HealthController extends Controller
 
         $allOk = collect($checks)->every(fn ($c) => $c['status'] === 'ok');
 
+        // [OPS-2 2026-06-04] Return 503 when degraded so a pager `curl -f`
+        // actually fires. Previously this endpoint ALWAYS returned 200 with
+        // `status:degraded` in the body — a monitor doing an HTTP-code probe
+        // (the common case) never saw the outage. `broadcast: warning`
+        // (null driver) is NOT ok, so it correctly degrades to 503 too.
+        // Mirrors the /health/ready 503 policy.
         return response()->json([
             'status' => $allOk ? 'ok' : 'degraded',
             'version' => config('app.version', 'dev'),
             'timestamp' => now()->toIso8601String(),
             'subsystems' => $checks,
-        ]);
+        ], $allOk ? 200 : 503);
     }
 
     public function live(): Response

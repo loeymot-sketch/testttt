@@ -44,6 +44,8 @@ class PreflightProductionCommand extends Command
         $this->line('');
 
         $this->checkAppEnv();
+        $this->checkDiskSpace();
+        $this->checkSchedulerInstalled();
         $this->checkAppDebug();
         $this->checkAppKey();
         $this->checkTimezone();
@@ -152,6 +154,62 @@ class PreflightProductionCommand extends Command
         } else {
             $this->ok('APP_ENV', 'production');
         }
+    }
+
+    /**
+     * [OPS-2 2026-06-04] CRITICAL: the box hit 100% disk twice, taking the
+     * app offline (failed writes to laravel.log / sessions / fiscal archive).
+     * Refuse to flip the symlink onto a node that is already near-full. 2 GB
+     * is the operational floor that leaves room for a day of logs + a Z
+     * close + the J-1 fiscal archive write before `storage:cleanup` runs.
+     */
+    private function checkDiskSpace(): void
+    {
+        $free = @disk_free_space(base_path());
+        if ($free === false) {
+            $this->addFinding('WARNING', 'DISK_SPACE', 'Could not determine free disk space on the deploy volume.');
+            return;
+        }
+
+        $freeGb = $free / (1024 ** 3);
+        $minGb = 2.0;
+        if ($free < $minGb * (1024 ** 3)) {
+            $this->addFinding('CRITICAL', 'DISK_SPACE', sprintf(
+                'Only %.2f GB free on the deploy volume (floor %.0f GB). The box hit 100%% disk twice — free space before deploying. Run `php artisan storage:cleanup`.',
+                $freeGb,
+                $minGb
+            ));
+        } else {
+            $this->ok('DISK_SPACE', sprintf('%.2f GB free (floor %.0f GB)', $freeGb, $minGb));
+        }
+    }
+
+    /**
+     * [OPS-2 2026-06-04] WARNING: nothing in the boot guards verifies that
+     * `schedule:run` is actually installed in cron/launchd. If it is not,
+     * every scheduled lane silently stops — including `storage:cleanup`
+     * (disk fills), the heartbeat, the outbox monitor, and the J-1 fiscal
+     * archive. Detection is platform-fragile (containers run the scheduler
+     * differently), so this is a WARNING — but `--strict` still blocks, and
+     * an operator deploying to a classic VM/box gets the catch they need.
+     */
+    private function checkSchedulerInstalled(): void
+    {
+        $crontab = @shell_exec('crontab -l 2>/dev/null') ?: '';
+        $launchd = @shell_exec('launchctl list 2>/dev/null') ?: '';
+        $haystack = $crontab . "\n" . $launchd;
+
+        if (stripos($haystack, 'schedule:run') !== false) {
+            $this->ok('SCHEDULER_CRON', 'schedule:run found in crontab/launchd');
+            return;
+        }
+
+        if (trim($crontab) === '' && trim($launchd) === '') {
+            $this->addFinding('WARNING', 'SCHEDULER_CRON', 'Could not read crontab/launchd to verify `schedule:run` is installed. Confirm the scheduler runs every minute (otherwise storage:cleanup, heartbeat, outbox monitor and the J-1 fiscal archive never fire).');
+            return;
+        }
+
+        $this->addFinding('WARNING', 'SCHEDULER_CRON', '`schedule:run` was NOT found in crontab/launchd. Install `* * * * * php artisan schedule:run` — without it storage:cleanup never runs (disk fills) and the J-1 fiscal archive never writes.');
     }
 
     private function checkAppDebug(): void

@@ -148,6 +148,24 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping(60)
             ->onOneServer();
 
+        // [GO-LIVE FLOOR 2026-06-04] Backups are worthless unless restorable.
+        // Restore the latest backup into a scratch DB + assert parity + fiscal chain.
+        $schedule->command('backup:verify-restore')
+            ->dailyAt('05:00')
+            ->name('foodking-backup-verify-restore')
+            ->description('Restore latest backup to scratch DB + verify counts + NF525 chain')
+            ->withoutOverlapping(30)
+            ->onOneServer();
+
+        // [GO-LIVE FLOOR 2026-06-04] Single-box disk hygiene — the box hit 100% twice.
+        // Purge debugbar + rotated logs (NF525 fiscal-*.log are kept) + stale caches.
+        $schedule->command('storage:cleanup')
+            ->dailyAt('04:10')
+            ->name('foodking-storage-cleanup')
+            ->description('Purge debugbar + old laravel logs + framework caches (NF525-safe)')
+            ->withoutOverlapping()
+            ->onOneServer();
+
         // [RED-team P0 / Outbox unbounded growth — 2026-05-17]
         // domain_events grows unbounded without this prune. NF525 6y retention
         // applies to audit_logs + z_reports ONLY (CLAUDE.md §8), NOT to this
