@@ -1,9 +1,0 @@
-[
-  {
-    "url": "http://localhost:8000/api/frontend/order/quote",
-    "method": "POST",
-    "status": 200,
-    "duration_ms": null,
-    "ts": 1779704644520
-  }
-]

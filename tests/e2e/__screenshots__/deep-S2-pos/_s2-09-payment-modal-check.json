@@ -1,9 +1,0 @@
-{
-  "payment_component_present": false,
-  "counter_collect_modal_present": false,
-  "any_dialog": 2,
-  "modal_texts": [
-    "",
-    "CAISSE\n\nSession active\n✕\nFOND DE CAISSE INITIAL\n50,00 €\nOUVERTE LE\n25/05 12:32\nMOUVEMENTS\n0\nMONTANT ATTENDU\n50,00 €\nVoir les mouvements\nClôturer la caisse"
-  ]
-}

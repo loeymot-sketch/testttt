@@ -1,0 +1,2215 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=e12] [cursor=pointer]:
+            - generic [ref=e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=e14]:
+              - generic [ref=e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=e18]:
+          - button "flag" [ref=e20] [cursor=pointer]:
+            - img "flag" [ref=e21]
+          - link "POS" [ref=e22] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e23]: 
+      - button "Fermer" [ref=e24] [cursor=pointer]: 
+      - generic [ref=e25]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=e26] [cursor=pointer]:
+          - img "avatar" [ref=e27]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=e28]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=e29]
+          - generic [ref=e30]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=e31]:
+    - text: 
+    - navigation [ref=e32]:
+      - list [ref=e33]:
+        - listitem [ref=e34]:
+          - link " Tableau de bord" [ref=e35] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e36]: 
+            - generic [ref=e37]: Tableau de bord
+      - list [ref=e38]:
+        - listitem [ref=e39]:
+          - link " POS" [ref=e40] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e41]: 
+            - generic [ref=e42]: POS
+      - list [ref=e43]:
+        - listitem [ref=e44]:
+          - link "Produits & Stock" [ref=e45] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=e46]: Produits & Stock
+      - list [ref=e47]:
+        - listitem [ref=e48]:
+          - link " Catalogue" [ref=e49] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=e50]: 
+            - generic [ref=e51]: Catalogue
+        - listitem [ref=e52]:
+          - link " Attribut d’articles" [ref=e53] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=e54]: 
+            - generic [ref=e55]: Attribut d’articles
+      - list [ref=e56]:
+        - listitem [ref=e57]:
+          - link " Ingrédients" [ref=e58] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=e59]: 
+            - generic [ref=e60]: Ingrédients
+      - list [ref=e61]:
+        - listitem [ref=e62]:
+          - link " Commandes caisse" [ref=e63] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=e64]: 
+            - generic [ref=e65]: Commandes caisse
+      - list [ref=e66]:
+        - listitem [ref=e67]:
+          - link " Historique" [ref=e68] [cursor=pointer]:
+            - /url: /admin/historique
+            - generic [ref=e69]: 
+            - generic [ref=e70]: Historique
+      - list [ref=e71]:
+        - listitem [ref=e72]:
+          - link " Encaissement" [ref=e73] [cursor=pointer]:
+            - /url: /admin/encaissement
+            - generic [ref=e74]: 
+            - generic [ref=e75]: Encaissement
+      - list [ref=e76]:
+        - listitem [ref=e77]:
+          - link " Vue caisse unifiée" [ref=e78] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=e79]: 
+            - generic [ref=e80]: Vue caisse unifiée
+      - list [ref=e81]:
+        - listitem [ref=e82]:
+          - link " Caisse livreur" [ref=e83] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=e84]: 
+            - generic [ref=e85]: Caisse livreur
+      - list [ref=e86]:
+        - listitem [ref=e87]:
+          - button "Caisse et commandes" [ref=e88] [cursor=pointer]
+        - listitem [ref=e89]:
+          - link " Écran cuisine" [ref=e90] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=e91]: 
+            - generic [ref=e92]: Écran cuisine
+        - listitem [ref=e93]:
+          - link " Suivi client" [ref=e94] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=e95]: 
+            - generic [ref=e96]: Suivi client
+      - list [ref=e97]:
+        - listitem [ref=e98]:
+          - button "Communications" [ref=e99] [cursor=pointer]
+        - listitem [ref=e100]:
+          - link " Notification pushs" [ref=e101] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=e102]: 
+            - generic [ref=e103]: Notification pushs
+        - listitem [ref=e104]:
+          - link " Messages" [ref=e105] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=e106]: 
+            - generic [ref=e107]: Messages
+        - listitem [ref=e108]:
+          - link " Abonnés" [ref=e109] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=e110]: 
+            - generic [ref=e111]: Abonnés
+      - list [ref=e112]:
+        - listitem [ref=e113]:
+          - button "Utilisateurs" [ref=e114] [cursor=pointer]
+        - listitem [ref=e115]:
+          - link " Administrateurs" [ref=e116] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=e117]: 
+            - generic [ref=e118]: Administrateurs
+        - listitem [ref=e119]:
+          - link " Employés" [ref=e120] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=e121]: 
+            - generic [ref=e122]: Employés
+        - listitem [ref=e123]:
+          - link " Chefs" [ref=e124] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=e125]: 
+            - generic [ref=e126]: Chefs
+      - list [ref=e127]:
+        - listitem [ref=e128]:
+          - button "Comptes" [ref=e129] [cursor=pointer]
+        - listitem [ref=e130]:
+          - link " Transactions" [ref=e131] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=e132]: 
+            - generic [ref=e133]: Transactions
+      - list [ref=e134]:
+        - listitem [ref=e135]:
+          - button "Rapports" [ref=e136] [cursor=pointer]
+        - listitem [ref=e137]:
+          - link " Rapport des ventes" [ref=e138] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=e139]: 
+            - generic [ref=e140]: Rapport des ventes
+        - listitem [ref=e141]:
+          - link " Rapport articles" [ref=e142] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=e143]: 
+            - generic [ref=e144]: Rapport articles
+      - list [ref=e145]:
+        - listitem [ref=e146]:
+          - button "Configuration" [ref=e147] [cursor=pointer]
+        - listitem [ref=e148]:
+          - link " Paramètres" [ref=e149] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=e150]: 
+            - generic [ref=e151]: Paramètres
+  - img [ref=e154]
+  - generic [ref=e158]:
+    - list [ref=e161]:
+      - listitem [ref=e162]:
+        - link "Tableau de bord/" [ref=e163] [cursor=pointer]:
+          - /url: /admin/dashboard
+      - listitem [ref=e164]:
+        - generic [ref=e165]: Encaissement
+    - generic [ref=e167]:
+      - generic [ref=e168]:
+        - generic [ref=e169]:
+          - heading "Encaissement" [level=3] [ref=e170]
+          - paragraph [ref=e171]: Commandes en attente d’encaissement
+        - generic [ref=e172]:
+          - generic [ref=e173]: "200"
+          - button "Actualiser" [ref=e174] [cursor=pointer]:
+            - generic [ref=e175]: Actualiser
+      - generic [ref=e177]:
+        - generic [ref=e178]:
+          - generic [ref=e179]:
+            - generic [ref=e180]: Borne
+            - generic [ref=e181]: N°A0043
+          - generic [ref=e182]: soak-kiosk-6a1866ebc6835
+          - list [ref=e183]:
+            - listitem [ref=e184]: 14× Menu (Frites + Boisson)
+          - generic [ref=e185]:
+            - generic [ref=e186]: 42,00 €
+            - button "Encaisser" [ref=e187] [cursor=pointer]
+        - generic [ref=e188]:
+          - generic [ref=e189]:
+            - generic [ref=e190]: Borne
+            - generic [ref=e191]: N°A0046
+          - generic [ref=e192]: soak-kiosk-6a1866ebc6835
+          - list [ref=e193]:
+            - listitem [ref=e194]: 10× Menu (Frites + Boisson)
+          - generic [ref=e195]:
+            - generic [ref=e196]: 30,00 €
+            - button "Encaisser" [ref=e197] [cursor=pointer]
+        - generic [ref=e198]:
+          - generic [ref=e199]:
+            - generic [ref=e200]: Borne
+            - generic [ref=e201]: N°A0048
+          - generic [ref=e202]: soak-kiosk-6a1866ebc6835
+          - list [ref=e203]:
+            - listitem [ref=e204]: 12× Menu (Frites + Boisson)
+          - generic [ref=e205]:
+            - generic [ref=e206]: 36,00 €
+            - button "Encaisser" [ref=e207] [cursor=pointer]
+        - generic [ref=e208]:
+          - generic [ref=e209]:
+            - generic [ref=e210]: Borne
+            - generic [ref=e211]: N°A0051
+          - generic [ref=e212]: soak-kiosk-6a1866ebc6835
+          - list [ref=e213]:
+            - listitem [ref=e214]: 14× Menu (Frites + Boisson)
+          - generic [ref=e215]:
+            - generic [ref=e216]: 42,00 €
+            - button "Encaisser" [ref=e217] [cursor=pointer]
+        - generic [ref=e218]:
+          - generic [ref=e219]:
+            - generic [ref=e220]: Borne
+            - generic [ref=e221]: N°A0053
+          - generic [ref=e222]: soak-kiosk-6a1866ebc6835
+          - list [ref=e223]:
+            - listitem [ref=e224]: 11× Menu (Frites + Boisson)
+          - generic [ref=e225]:
+            - generic [ref=e226]: 33,00 €
+            - button "Encaisser" [ref=e227] [cursor=pointer]
+        - generic [ref=e228]:
+          - generic [ref=e229]:
+            - generic [ref=e230]: Borne
+            - generic [ref=e231]: N°A0056
+          - generic [ref=e232]: soak-kiosk-6a1866ebc6835
+          - list [ref=e233]:
+            - listitem [ref=e234]: 12× Menu (Frites + Boisson)
+          - generic [ref=e235]:
+            - generic [ref=e236]: 36,00 €
+            - button "Encaisser" [ref=e237] [cursor=pointer]
+        - generic [ref=e238]:
+          - generic [ref=e239]:
+            - generic [ref=e240]: Borne
+            - generic [ref=e241]: N°A0058
+          - generic [ref=e242]: soak-kiosk-6a1866ebc6835
+          - list [ref=e243]:
+            - listitem [ref=e244]: 14× Menu (Frites + Boisson)
+          - generic [ref=e245]:
+            - generic [ref=e246]: 42,00 €
+            - button "Encaisser" [ref=e247] [cursor=pointer]
+        - generic [ref=e248]:
+          - generic [ref=e249]:
+            - generic [ref=e250]: Borne
+            - generic [ref=e251]: N°A0061
+          - generic [ref=e252]: soak-kiosk-6a1866ebc6835
+          - list [ref=e253]:
+            - listitem [ref=e254]: 11× Menu (Frites + Boisson)
+          - generic [ref=e255]:
+            - generic [ref=e256]: 33,00 €
+            - button "Encaisser" [ref=e257] [cursor=pointer]
+        - generic [ref=e258]:
+          - generic [ref=e259]:
+            - generic [ref=e260]: Borne
+            - generic [ref=e261]: N°A0063
+          - generic [ref=e262]: soak-kiosk-6a1866ebc6835
+          - list [ref=e263]:
+            - listitem [ref=e264]: 13× Menu (Frites + Boisson)
+          - generic [ref=e265]:
+            - generic [ref=e266]: 39,00 €
+            - button "Encaisser" [ref=e267] [cursor=pointer]
+        - generic [ref=e268]:
+          - generic [ref=e269]:
+            - generic [ref=e270]: Borne
+            - generic [ref=e271]: N°A0066
+          - generic [ref=e272]: soak-kiosk-6a1866ebc6835
+          - list [ref=e273]:
+            - listitem [ref=e274]: 14× Menu (Frites + Boisson)
+          - generic [ref=e275]:
+            - generic [ref=e276]: 42,00 €
+            - button "Encaisser" [ref=e277] [cursor=pointer]
+        - generic [ref=e278]:
+          - generic [ref=e279]:
+            - generic [ref=e280]: Borne
+            - generic [ref=e281]: N°A0068
+          - generic [ref=e282]: soak-kiosk-6a1866ebc6835
+          - list [ref=e283]:
+            - listitem [ref=e284]: 12× Menu (Frites + Boisson)
+          - generic [ref=e285]:
+            - generic [ref=e286]: 36,00 €
+            - button "Encaisser" [ref=e287] [cursor=pointer]
+        - generic [ref=e288]:
+          - generic [ref=e289]:
+            - generic [ref=e290]: Borne
+            - generic [ref=e291]: N°A0073
+          - generic [ref=e292]: soak-kiosk-6a1866ebc6835
+          - list [ref=e293]:
+            - listitem [ref=e294]: 11× Menu (Frites + Boisson)
+          - generic [ref=e295]:
+            - generic [ref=e296]: 33,00 €
+            - button "Encaisser" [ref=e297] [cursor=pointer]
+        - generic [ref=e298]:
+          - generic [ref=e299]:
+            - generic [ref=e300]: Borne
+            - generic [ref=e301]: N°A0077
+          - generic [ref=e302]: soak-kiosk-6a1866ebc6835
+          - list [ref=e303]:
+            - listitem [ref=e304]: 12× Menu (Frites + Boisson)
+          - generic [ref=e305]:
+            - generic [ref=e306]: 36,00 €
+            - button "Encaisser" [ref=e307] [cursor=pointer]
+        - generic [ref=e308]:
+          - generic [ref=e309]:
+            - generic [ref=e310]: Borne
+            - generic [ref=e311]: N°A0079
+          - generic [ref=e312]: Admin Le Cayenne
+          - list [ref=e313]:
+            - listitem [ref=e314]: 1× Boisson Seule
+          - generic [ref=e315]:
+            - generic [ref=e316]: 2,00 €
+            - button "Encaisser" [ref=e317] [cursor=pointer]
+        - generic [ref=e318]:
+          - generic [ref=e319]:
+            - generic [ref=e320]: Borne
+            - generic [ref=e321]: N°A0080
+          - generic [ref=e322]: Admin Le Cayenne
+          - list [ref=e323]:
+            - listitem [ref=e324]: 1× Frites Seules
+          - generic [ref=e325]:
+            - generic [ref=e326]: 2,00 €
+            - button "Encaisser" [ref=e327] [cursor=pointer]
+        - generic [ref=e328]:
+          - generic [ref=e329]:
+            - generic [ref=e330]: Borne
+            - generic [ref=e331]: N°A0081
+          - generic [ref=e332]: Admin Le Cayenne
+          - list [ref=e333]:
+            - listitem [ref=e334]: 1× Frites Seules
+          - generic [ref=e335]:
+            - generic [ref=e336]: 2,00 €
+            - button "Encaisser" [ref=e337] [cursor=pointer]
+        - generic [ref=e338]:
+          - generic [ref=e339]:
+            - generic [ref=e340]: Borne
+            - generic [ref=e341]: N°A0082
+          - generic [ref=e342]: Admin Le Cayenne
+          - list [ref=e343]:
+            - listitem [ref=e344]: 1× Frites Seules
+          - generic [ref=e345]:
+            - generic [ref=e346]: 2,00 €
+            - button "Encaisser" [ref=e347] [cursor=pointer]
+        - generic [ref=e348]:
+          - generic [ref=e349]:
+            - generic [ref=e350]: Borne
+            - generic [ref=e351]: N°A0084
+          - generic [ref=e352]: Admin Le Cayenne
+          - list [ref=e353]:
+            - listitem [ref=e354]: 1× Frites Seules
+          - generic [ref=e355]:
+            - generic [ref=e356]: 2,00 €
+            - button "Encaisser" [ref=e357] [cursor=pointer]
+        - generic [ref=e358]:
+          - generic [ref=e359]:
+            - generic [ref=e360]: Borne
+            - generic [ref=e361]: N°A0083
+          - generic [ref=e362]: Admin Le Cayenne
+          - list [ref=e363]:
+            - listitem [ref=e364]: 1× Frites Seules
+          - generic [ref=e365]:
+            - generic [ref=e366]: 2,00 €
+            - button "Encaisser" [ref=e367] [cursor=pointer]
+        - generic [ref=e368]:
+          - generic [ref=e369]:
+            - generic [ref=e370]: Borne
+            - generic [ref=e371]: N°A0087
+          - generic [ref=e372]: Admin Le Cayenne
+          - list [ref=e373]:
+            - listitem [ref=e374]: 1× Frites Seules
+          - generic [ref=e375]:
+            - generic [ref=e376]: 2,00 €
+            - button "Encaisser" [ref=e377] [cursor=pointer]
+        - generic [ref=e378]:
+          - generic [ref=e379]:
+            - generic [ref=e380]: Borne
+            - generic [ref=e381]: N°A0086
+          - generic [ref=e382]: Admin Le Cayenne
+          - list [ref=e383]:
+            - listitem [ref=e384]: 1× Frites Seules
+          - generic [ref=e385]:
+            - generic [ref=e386]: 2,00 €
+            - button "Encaisser" [ref=e387] [cursor=pointer]
+        - generic [ref=e388]:
+          - generic [ref=e389]:
+            - generic [ref=e390]: Borne
+            - generic [ref=e391]: N°A0085
+          - generic [ref=e392]: Admin Le Cayenne
+          - list [ref=e393]:
+            - listitem [ref=e394]: 1× Frites Seules
+          - generic [ref=e395]:
+            - generic [ref=e396]: 2,00 €
+            - button "Encaisser" [ref=e397] [cursor=pointer]
+        - generic [ref=e398]:
+          - generic [ref=e399]:
+            - generic [ref=e400]: Borne
+            - generic [ref=e401]: N°A0088
+          - generic [ref=e402]: Admin Le Cayenne
+          - list [ref=e403]:
+            - listitem [ref=e404]: 1× Frites Seules
+          - generic [ref=e405]:
+            - generic [ref=e406]: 2,00 €
+            - button "Encaisser" [ref=e407] [cursor=pointer]
+        - generic [ref=e408]:
+          - generic [ref=e409]:
+            - generic [ref=e410]: Borne
+            - generic [ref=e411]: N°A0089
+          - generic [ref=e412]: Admin Le Cayenne
+          - list [ref=e413]:
+            - listitem [ref=e414]: 1× Frites Seules
+          - generic [ref=e415]:
+            - generic [ref=e416]: 2,00 €
+            - button "Encaisser" [ref=e417] [cursor=pointer]
+        - generic [ref=e418]:
+          - generic [ref=e419]:
+            - generic [ref=e420]: Borne
+            - generic [ref=e421]: N°A0091
+          - generic [ref=e422]: Admin Le Cayenne
+          - list [ref=e423]:
+            - listitem [ref=e424]: 1× Frites Seules
+          - generic [ref=e425]:
+            - generic [ref=e426]: 2,00 €
+            - button "Encaisser" [ref=e427] [cursor=pointer]
+        - generic [ref=e428]:
+          - generic [ref=e429]:
+            - generic [ref=e430]: Borne
+            - generic [ref=e431]: N°A0092
+          - generic [ref=e432]: Admin Le Cayenne
+          - list [ref=e433]:
+            - listitem [ref=e434]: 1× Frites Seules
+          - generic [ref=e435]:
+            - generic [ref=e436]: 2,00 €
+            - button "Encaisser" [ref=e437] [cursor=pointer]
+        - generic [ref=e438]:
+          - generic [ref=e439]:
+            - generic [ref=e440]: Borne
+            - generic [ref=e441]: N°A0093
+          - generic [ref=e442]: Admin Le Cayenne
+          - list [ref=e443]:
+            - listitem [ref=e444]: 1× Frites Seules
+          - generic [ref=e445]:
+            - generic [ref=e446]: 2,00 €
+            - button "Encaisser" [ref=e447] [cursor=pointer]
+        - generic [ref=e448]:
+          - generic [ref=e449]:
+            - generic [ref=e450]: Borne
+            - generic [ref=e451]: N°A0094
+          - generic [ref=e452]: Admin Le Cayenne
+          - list [ref=e453]:
+            - listitem [ref=e454]: 1× Frites Seules
+          - generic [ref=e455]:
+            - generic [ref=e456]: 2,00 €
+            - button "Encaisser" [ref=e457] [cursor=pointer]
+        - generic [ref=e458]:
+          - generic [ref=e459]:
+            - generic [ref=e460]: Borne
+            - generic [ref=e461]: N°A0095
+          - generic [ref=e462]: Admin Le Cayenne
+          - list [ref=e463]:
+            - listitem [ref=e464]: 1× Frites Seules
+          - generic [ref=e465]:
+            - generic [ref=e466]: 2,00 €
+            - button "Encaisser" [ref=e467] [cursor=pointer]
+        - generic [ref=e468]:
+          - generic [ref=e469]:
+            - generic [ref=e470]: Borne
+            - generic [ref=e471]: N°A0096
+          - generic [ref=e472]: Admin Le Cayenne
+          - list [ref=e473]:
+            - listitem [ref=e474]: 1× Frites Seules
+          - generic [ref=e475]:
+            - generic [ref=e476]: 2,00 €
+            - button "Encaisser" [ref=e477] [cursor=pointer]
+        - generic [ref=e478]:
+          - generic [ref=e479]:
+            - generic [ref=e480]: Borne
+            - generic [ref=e481]: N°A0097
+          - generic [ref=e482]: Admin Le Cayenne
+          - list [ref=e483]:
+            - listitem [ref=e484]: 1× Frites Seules
+          - generic [ref=e485]:
+            - generic [ref=e486]: 2,00 €
+            - button "Encaisser" [ref=e487] [cursor=pointer]
+        - generic [ref=e488]:
+          - generic [ref=e489]:
+            - generic [ref=e490]: Borne
+            - generic [ref=e491]: N°A0098
+          - generic [ref=e492]: Admin Le Cayenne
+          - list [ref=e493]:
+            - listitem [ref=e494]: 1× Frites Seules
+          - generic [ref=e495]:
+            - generic [ref=e496]: 2,00 €
+            - button "Encaisser" [ref=e497] [cursor=pointer]
+        - generic [ref=e498]:
+          - generic [ref=e499]:
+            - generic [ref=e500]: Borne
+            - generic [ref=e501]: N°A0099
+          - generic [ref=e502]: Admin Le Cayenne
+          - list [ref=e503]:
+            - listitem [ref=e504]: 1× Frites Seules
+          - generic [ref=e505]:
+            - generic [ref=e506]: 2,00 €
+            - button "Encaisser" [ref=e507] [cursor=pointer]
+        - generic [ref=e508]:
+          - generic [ref=e509]:
+            - generic [ref=e510]: Borne
+            - generic [ref=e511]: N°A0100
+          - generic [ref=e512]: Admin Le Cayenne
+          - list [ref=e513]:
+            - listitem [ref=e514]: 1× Frites Seules
+          - generic [ref=e515]:
+            - generic [ref=e516]: 2,00 €
+            - button "Encaisser" [ref=e517] [cursor=pointer]
+        - generic [ref=e518]:
+          - generic [ref=e519]:
+            - generic [ref=e520]: Borne
+            - generic [ref=e521]: N°A0101
+          - generic [ref=e522]: Admin Le Cayenne
+          - list [ref=e523]:
+            - listitem [ref=e524]: 1× Frites Seules
+          - generic [ref=e525]:
+            - generic [ref=e526]: 2,00 €
+            - button "Encaisser" [ref=e527] [cursor=pointer]
+        - generic [ref=e528]:
+          - generic [ref=e529]:
+            - generic [ref=e530]: Borne
+            - generic [ref=e531]: N°A0102
+          - generic [ref=e532]: Admin Le Cayenne
+          - list [ref=e533]:
+            - listitem [ref=e534]: 1× Frites Seules
+          - generic [ref=e535]:
+            - generic [ref=e536]: 2,00 €
+            - button "Encaisser" [ref=e537] [cursor=pointer]
+        - generic [ref=e538]:
+          - generic [ref=e539]:
+            - generic [ref=e540]: Borne
+            - generic [ref=e541]: N°A0103
+          - generic [ref=e542]: Admin Le Cayenne
+          - list [ref=e543]:
+            - listitem [ref=e544]: 1× Frites Seules
+          - generic [ref=e545]:
+            - generic [ref=e546]: 2,00 €
+            - button "Encaisser" [ref=e547] [cursor=pointer]
+        - generic [ref=e548]:
+          - generic [ref=e549]:
+            - generic [ref=e550]: Borne
+            - generic [ref=e551]: N°A0104
+          - generic [ref=e552]: Admin Le Cayenne
+          - list [ref=e553]:
+            - listitem [ref=e554]: 1× Frites Seules
+          - generic [ref=e555]:
+            - generic [ref=e556]: 2,00 €
+            - button "Encaisser" [ref=e557] [cursor=pointer]
+        - generic [ref=e558]:
+          - generic [ref=e559]:
+            - generic [ref=e560]: Borne
+            - generic [ref=e561]: N°A0105
+          - generic [ref=e562]: Admin Le Cayenne
+          - list [ref=e563]:
+            - listitem [ref=e564]: 1× Frites Seules
+          - generic [ref=e565]:
+            - generic [ref=e566]: 2,00 €
+            - button "Encaisser" [ref=e567] [cursor=pointer]
+        - generic [ref=e568]:
+          - generic [ref=e569]:
+            - generic [ref=e570]: Borne
+            - generic [ref=e571]: N°A0106
+          - generic [ref=e572]: Admin Le Cayenne
+          - list [ref=e573]:
+            - listitem [ref=e574]: 1× Frites Seules
+          - generic [ref=e575]:
+            - generic [ref=e576]: 2,00 €
+            - button "Encaisser" [ref=e577] [cursor=pointer]
+        - generic [ref=e578]:
+          - generic [ref=e579]:
+            - generic [ref=e580]: Borne
+            - generic [ref=e581]: N°A0107
+          - generic [ref=e582]: Admin Le Cayenne
+          - list [ref=e583]:
+            - listitem [ref=e584]: 1× Frites Seules
+          - generic [ref=e585]:
+            - generic [ref=e586]: 2,00 €
+            - button "Encaisser" [ref=e587] [cursor=pointer]
+        - generic [ref=e588]:
+          - generic [ref=e589]:
+            - generic [ref=e590]: Borne
+            - generic [ref=e591]: N°A0108
+          - generic [ref=e592]: Admin Le Cayenne
+          - list [ref=e593]:
+            - listitem [ref=e594]: 1× Frites Seules
+          - generic [ref=e595]:
+            - generic [ref=e596]: 2,00 €
+            - button "Encaisser" [ref=e597] [cursor=pointer]
+        - generic [ref=e598]:
+          - generic [ref=e599]:
+            - generic [ref=e600]: Borne
+            - generic [ref=e601]: N°A0109
+          - generic [ref=e602]: Admin Le Cayenne
+          - list [ref=e603]:
+            - listitem [ref=e604]: 1× Frites Seules
+          - generic [ref=e605]:
+            - generic [ref=e606]: 2,00 €
+            - button "Encaisser" [ref=e607] [cursor=pointer]
+        - generic [ref=e608]:
+          - generic [ref=e609]:
+            - generic [ref=e610]: Borne
+            - generic [ref=e611]: N°A0110
+          - generic [ref=e612]: Admin Le Cayenne
+          - list [ref=e613]:
+            - listitem [ref=e614]: 1× Frites Seules
+          - generic [ref=e615]:
+            - generic [ref=e616]: 2,00 €
+            - button "Encaisser" [ref=e617] [cursor=pointer]
+        - generic [ref=e618]:
+          - generic [ref=e619]:
+            - generic [ref=e620]: Borne
+            - generic [ref=e621]: N°A0111
+          - generic [ref=e622]: Admin Le Cayenne
+          - list [ref=e623]:
+            - listitem [ref=e624]: 1× Frites Seules
+          - generic [ref=e625]:
+            - generic [ref=e626]: 2,00 €
+            - button "Encaisser" [ref=e627] [cursor=pointer]
+        - generic [ref=e628]:
+          - generic [ref=e629]:
+            - generic [ref=e630]: Borne
+            - generic [ref=e631]: N°A0112
+          - generic [ref=e632]: Admin Le Cayenne
+          - list [ref=e633]:
+            - listitem [ref=e634]: 1× Frites Seules
+          - generic [ref=e635]:
+            - generic [ref=e636]: 2,00 €
+            - button "Encaisser" [ref=e637] [cursor=pointer]
+        - generic [ref=e638]:
+          - generic [ref=e639]:
+            - generic [ref=e640]: Borne
+            - generic [ref=e641]: N°A0114
+          - generic [ref=e642]: Admin Le Cayenne
+          - list [ref=e643]:
+            - listitem [ref=e644]: 1× Frites Seules
+          - generic [ref=e645]:
+            - generic [ref=e646]: 2,00 €
+            - button "Encaisser" [ref=e647] [cursor=pointer]
+        - generic [ref=e648]:
+          - generic [ref=e649]:
+            - generic [ref=e650]: Borne
+            - generic [ref=e651]: N°A0113
+          - generic [ref=e652]: Admin Le Cayenne
+          - list [ref=e653]:
+            - listitem [ref=e654]: 1× Frites Seules
+          - generic [ref=e655]:
+            - generic [ref=e656]: 2,00 €
+            - button "Encaisser" [ref=e657] [cursor=pointer]
+        - generic [ref=e658]:
+          - generic [ref=e659]:
+            - generic [ref=e660]: Borne
+            - generic [ref=e661]: N°A0115
+          - generic [ref=e662]: Admin Le Cayenne
+          - list [ref=e663]:
+            - listitem [ref=e664]: 1× Frites Seules
+          - generic [ref=e665]:
+            - generic [ref=e666]: 2,00 €
+            - button "Encaisser" [ref=e667] [cursor=pointer]
+        - generic [ref=e668]:
+          - generic [ref=e669]:
+            - generic [ref=e670]: Borne
+            - generic [ref=e671]: N°A0117
+          - generic [ref=e672]: Admin Le Cayenne
+          - list [ref=e673]:
+            - listitem [ref=e674]: 1× Frites Seules
+          - generic [ref=e675]:
+            - generic [ref=e676]: 2,00 €
+            - button "Encaisser" [ref=e677] [cursor=pointer]
+        - generic [ref=e678]:
+          - generic [ref=e679]:
+            - generic [ref=e680]: Borne
+            - generic [ref=e681]: N°A0116
+          - generic [ref=e682]: Admin Le Cayenne
+          - list [ref=e683]:
+            - listitem [ref=e684]: 1× Frites Seules
+          - generic [ref=e685]:
+            - generic [ref=e686]: 2,00 €
+            - button "Encaisser" [ref=e687] [cursor=pointer]
+        - generic [ref=e688]:
+          - generic [ref=e689]:
+            - generic [ref=e690]: Borne
+            - generic [ref=e691]: N°A0118
+          - generic [ref=e692]: Admin Le Cayenne
+          - list [ref=e693]:
+            - listitem [ref=e694]: 1× Frites Seules
+          - generic [ref=e695]:
+            - generic [ref=e696]: 2,00 €
+            - button "Encaisser" [ref=e697] [cursor=pointer]
+        - generic [ref=e698]:
+          - generic [ref=e699]:
+            - generic [ref=e700]: Borne
+            - generic [ref=e701]: N°A0002
+          - generic [ref=e702]: Admin Le Cayenne
+          - list [ref=e703]:
+            - listitem [ref=e704]: 1× Galette Normale
+          - generic [ref=e705]:
+            - generic [ref=e706]: 6,50 €
+            - button "Encaisser" [ref=e707] [cursor=pointer]
+        - generic [ref=e708]:
+          - generic [ref=e709]:
+            - generic [ref=e710]: Borne
+            - generic [ref=e711]: N°A0003
+          - generic [ref=e712]: Admin Le Cayenne
+          - list [ref=e713]:
+            - listitem [ref=e714]: 1× Galette Normale
+          - generic [ref=e715]:
+            - generic [ref=e716]: 6,50 €
+            - button "Encaisser" [ref=e717] [cursor=pointer]
+        - generic [ref=e718]:
+          - generic [ref=e719]:
+            - generic [ref=e720]: Borne
+            - generic [ref=e721]: N°A0006
+          - generic [ref=e722]: Admin Le Cayenne
+          - list [ref=e723]:
+            - listitem [ref=e724]: 1× Coca-Cola 33cl
+          - generic [ref=e725]:
+            - generic [ref=e726]: 1,50 €
+            - button "Encaisser" [ref=e727] [cursor=pointer]
+        - generic [ref=e728]:
+          - generic [ref=e729]:
+            - generic [ref=e730]: Borne
+            - generic [ref=e731]: N°A0165
+          - generic [ref=e732]: Admin Le Cayenne
+          - list [ref=e733]:
+            - listitem [ref=e734]: 1× Coca-Cola 33cl
+          - generic [ref=e735]:
+            - generic [ref=e736]: 1,50 €
+            - button "Encaisser" [ref=e737] [cursor=pointer]
+        - generic [ref=e738]:
+          - generic [ref=e739]:
+            - generic [ref=e740]: Borne
+            - generic [ref=e741]: N°A0019
+          - generic [ref=e742]: soak-kiosk-6a1c9de370822
+          - list [ref=e743]:
+            - listitem [ref=e744]: 11× Menu (Frites + Boisson)
+          - generic [ref=e745]:
+            - generic [ref=e746]: 33,00 €
+            - button "Encaisser" [ref=e747] [cursor=pointer]
+        - generic [ref=e748]:
+          - generic [ref=e749]:
+            - generic [ref=e750]: Borne
+            - generic [ref=e751]: N°A0020
+          - generic [ref=e752]: soak-kiosk-6a1c9de370822
+          - list [ref=e753]:
+            - listitem [ref=e754]: 12× Menu (Frites + Boisson)
+          - generic [ref=e755]:
+            - generic [ref=e756]: 36,00 €
+            - button "Encaisser" [ref=e757] [cursor=pointer]
+        - generic [ref=e758]:
+          - generic [ref=e759]:
+            - generic [ref=e760]: Borne
+            - generic [ref=e761]: N°A0024
+          - generic [ref=e762]: soak-kiosk-6a1c9de370822
+          - list [ref=e763]:
+            - listitem [ref=e764]: 14× Menu (Frites + Boisson)
+          - generic [ref=e765]:
+            - generic [ref=e766]: 42,00 €
+            - button "Encaisser" [ref=e767] [cursor=pointer]
+        - generic [ref=e768]:
+          - generic [ref=e769]:
+            - generic [ref=e770]: Borne
+            - generic [ref=e771]: N°A0026
+          - generic [ref=e772]: soak-kiosk-6a1c9de370822
+          - list [ref=e773]:
+            - listitem [ref=e774]: 12× Menu (Frites + Boisson)
+          - generic [ref=e775]:
+            - generic [ref=e776]: 36,00 €
+            - button "Encaisser" [ref=e777] [cursor=pointer]
+        - generic [ref=e778]:
+          - generic [ref=e779]:
+            - generic [ref=e780]: Borne
+            - generic [ref=e781]: N°A0029
+          - generic [ref=e782]: soak-kiosk-6a1c9de370822
+          - list [ref=e783]:
+            - listitem [ref=e784]: 12× Menu (Frites + Boisson)
+          - generic [ref=e785]:
+            - generic [ref=e786]: 36,00 €
+            - button "Encaisser" [ref=e787] [cursor=pointer]
+        - generic [ref=e788]:
+          - generic [ref=e789]:
+            - generic [ref=e790]: Borne
+            - generic [ref=e791]: N°A0031
+          - generic [ref=e792]: soak-kiosk-6a1c9de370822
+          - list [ref=e793]:
+            - listitem [ref=e794]: 10× Menu (Frites + Boisson)
+          - generic [ref=e795]:
+            - generic [ref=e796]: 30,00 €
+            - button "Encaisser" [ref=e797] [cursor=pointer]
+        - generic [ref=e798]:
+          - generic [ref=e799]:
+            - generic [ref=e800]: Borne
+            - generic [ref=e801]: N°A0034
+          - generic [ref=e802]: soak-kiosk-6a1c9de370822
+          - list [ref=e803]:
+            - listitem [ref=e804]: 11× Menu (Frites + Boisson)
+          - generic [ref=e805]:
+            - generic [ref=e806]: 33,00 €
+            - button "Encaisser" [ref=e807] [cursor=pointer]
+        - generic [ref=e808]:
+          - generic [ref=e809]:
+            - generic [ref=e810]: Borne
+            - generic [ref=e811]: N°A0036
+          - generic [ref=e812]: soak-kiosk-6a1c9de370822
+          - list [ref=e813]:
+            - listitem [ref=e814]: 14× Menu (Frites + Boisson)
+          - generic [ref=e815]:
+            - generic [ref=e816]: 42,00 €
+            - button "Encaisser" [ref=e817] [cursor=pointer]
+        - generic [ref=e818]:
+          - generic [ref=e819]:
+            - generic [ref=e820]: Borne
+            - generic [ref=e821]: N°A0039
+          - generic [ref=e822]: soak-kiosk-6a1c9de370822
+          - list [ref=e823]:
+            - listitem [ref=e824]: 14× Menu (Frites + Boisson)
+          - generic [ref=e825]:
+            - generic [ref=e826]: 42,00 €
+            - button "Encaisser" [ref=e827] [cursor=pointer]
+        - generic [ref=e828]:
+          - generic [ref=e829]:
+            - generic [ref=e830]: Borne
+            - generic [ref=e831]: N°A0041
+          - generic [ref=e832]: soak-kiosk-6a1c9de370822
+          - list [ref=e833]:
+            - listitem [ref=e834]: 12× Menu (Frites + Boisson)
+          - generic [ref=e835]:
+            - generic [ref=e836]: 36,00 €
+            - button "Encaisser" [ref=e837] [cursor=pointer]
+        - generic [ref=e838]:
+          - generic [ref=e839]:
+            - generic [ref=e840]: Borne
+            - generic [ref=e841]: N°A0044
+          - generic [ref=e842]: soak-kiosk-6a1c9de370822
+          - list [ref=e843]:
+            - listitem [ref=e844]: 13× Menu (Frites + Boisson)
+          - generic [ref=e845]:
+            - generic [ref=e846]: 39,00 €
+            - button "Encaisser" [ref=e847] [cursor=pointer]
+        - generic [ref=e848]:
+          - generic [ref=e849]:
+            - generic [ref=e850]: Borne
+            - generic [ref=e851]: N°A0046
+          - generic [ref=e852]: soak-kiosk-6a1c9de370822
+          - list [ref=e853]:
+            - listitem [ref=e854]: 11× Menu (Frites + Boisson)
+          - generic [ref=e855]:
+            - generic [ref=e856]: 33,00 €
+            - button "Encaisser" [ref=e857] [cursor=pointer]
+        - generic [ref=e858]:
+          - generic [ref=e859]:
+            - generic [ref=e860]: Borne
+            - generic [ref=e861]: N°A0049
+          - generic [ref=e862]: soak-kiosk-6a1c9de370822
+          - list [ref=e863]:
+            - listitem [ref=e864]: 11× Menu (Frites + Boisson)
+          - generic [ref=e865]:
+            - generic [ref=e866]: 33,00 €
+            - button "Encaisser" [ref=e867] [cursor=pointer]
+        - generic [ref=e868]:
+          - generic [ref=e869]:
+            - generic [ref=e870]: Borne
+            - generic [ref=e871]: N°A0051
+          - generic [ref=e872]: soak-kiosk-6a1c9de370822
+          - list [ref=e873]:
+            - listitem [ref=e874]: 14× Menu (Frites + Boisson)
+          - generic [ref=e875]:
+            - generic [ref=e876]: 42,00 €
+            - button "Encaisser" [ref=e877] [cursor=pointer]
+        - generic [ref=e878]:
+          - generic [ref=e879]:
+            - generic [ref=e880]: Borne
+            - generic [ref=e881]: N°A0054
+          - generic [ref=e882]: soak-kiosk-6a1c9de370822
+          - list [ref=e883]:
+            - listitem [ref=e884]: 10× Menu (Frites + Boisson)
+          - generic [ref=e885]:
+            - generic [ref=e886]: 30,00 €
+            - button "Encaisser" [ref=e887] [cursor=pointer]
+        - generic [ref=e888]:
+          - generic [ref=e889]:
+            - generic [ref=e890]: Borne
+            - generic [ref=e891]: N°A0056
+          - generic [ref=e892]: soak-kiosk-6a1c9de370822
+          - list [ref=e893]:
+            - listitem [ref=e894]: 13× Menu (Frites + Boisson)
+          - generic [ref=e895]:
+            - generic [ref=e896]: 39,00 €
+            - button "Encaisser" [ref=e897] [cursor=pointer]
+        - generic [ref=e898]:
+          - generic [ref=e899]:
+            - generic [ref=e900]: Borne
+            - generic [ref=e901]: N°A0059
+          - generic [ref=e902]: soak-kiosk-6a1c9de370822
+          - list [ref=e903]:
+            - listitem [ref=e904]: 13× Menu (Frites + Boisson)
+          - generic [ref=e905]:
+            - generic [ref=e906]: 39,00 €
+            - button "Encaisser" [ref=e907] [cursor=pointer]
+        - generic [ref=e908]:
+          - generic [ref=e909]:
+            - generic [ref=e910]: Borne
+            - generic [ref=e911]: N°A0062
+          - generic [ref=e912]: soak-kiosk-6a1c9de370822
+          - list [ref=e913]:
+            - listitem [ref=e914]: 13× Menu (Frites + Boisson)
+          - generic [ref=e915]:
+            - generic [ref=e916]: 39,00 €
+            - button "Encaisser" [ref=e917] [cursor=pointer]
+        - generic [ref=e918]:
+          - generic [ref=e919]:
+            - generic [ref=e920]: Borne
+            - generic [ref=e921]: N°A0064
+          - generic [ref=e922]: soak-kiosk-6a1c9de370822
+          - list [ref=e923]:
+            - listitem [ref=e924]: 12× Menu (Frites + Boisson)
+          - generic [ref=e925]:
+            - generic [ref=e926]: 36,00 €
+            - button "Encaisser" [ref=e927] [cursor=pointer]
+        - generic [ref=e928]:
+          - generic [ref=e929]:
+            - generic [ref=e930]: Borne
+            - generic [ref=e931]: N°A0067
+          - generic [ref=e932]: soak-kiosk-6a1c9de370822
+          - list [ref=e933]:
+            - listitem [ref=e934]: 11× Menu (Frites + Boisson)
+          - generic [ref=e935]:
+            - generic [ref=e936]: 33,00 €
+            - button "Encaisser" [ref=e937] [cursor=pointer]
+        - generic [ref=e938]:
+          - generic [ref=e939]:
+            - generic [ref=e940]: Borne
+            - generic [ref=e941]: N°A0069
+          - generic [ref=e942]: soak-kiosk-6a1c9de370822
+          - list [ref=e943]:
+            - listitem [ref=e944]: 10× Menu (Frites + Boisson)
+          - generic [ref=e945]:
+            - generic [ref=e946]: 30,00 €
+            - button "Encaisser" [ref=e947] [cursor=pointer]
+        - generic [ref=e948]:
+          - generic [ref=e949]:
+            - generic [ref=e950]: Borne
+            - generic [ref=e951]: N°A0072
+          - generic [ref=e952]: soak-kiosk-6a1c9de370822
+          - list [ref=e953]:
+            - listitem [ref=e954]: 11× Menu (Frites + Boisson)
+          - generic [ref=e955]:
+            - generic [ref=e956]: 33,00 €
+            - button "Encaisser" [ref=e957] [cursor=pointer]
+        - generic [ref=e958]:
+          - generic [ref=e959]:
+            - generic [ref=e960]: Borne
+            - generic [ref=e961]: N°A0074
+          - generic [ref=e962]: soak-kiosk-6a1c9de370822
+          - list [ref=e963]:
+            - listitem [ref=e964]: 14× Menu (Frites + Boisson)
+          - generic [ref=e965]:
+            - generic [ref=e966]: 42,00 €
+            - button "Encaisser" [ref=e967] [cursor=pointer]
+        - generic [ref=e968]:
+          - generic [ref=e969]:
+            - generic [ref=e970]: Borne
+            - generic [ref=e971]: N°A0077
+          - generic [ref=e972]: soak-kiosk-6a1c9de370822
+          - list [ref=e973]:
+            - listitem [ref=e974]: 14× Menu (Frites + Boisson)
+          - generic [ref=e975]:
+            - generic [ref=e976]: 42,00 €
+            - button "Encaisser" [ref=e977] [cursor=pointer]
+        - generic [ref=e978]:
+          - generic [ref=e979]:
+            - generic [ref=e980]: Borne
+            - generic [ref=e981]: N°A0079
+          - generic [ref=e982]: soak-kiosk-6a1c9de370822
+          - list [ref=e983]:
+            - listitem [ref=e984]: 12× Menu (Frites + Boisson)
+          - generic [ref=e985]:
+            - generic [ref=e986]: 36,00 €
+            - button "Encaisser" [ref=e987] [cursor=pointer]
+        - generic [ref=e988]:
+          - generic [ref=e989]:
+            - generic [ref=e990]: Borne
+            - generic [ref=e991]: N°A0082
+          - generic [ref=e992]: soak-kiosk-6a1c9de370822
+          - list [ref=e993]:
+            - listitem [ref=e994]: 13× Menu (Frites + Boisson)
+          - generic [ref=e995]:
+            - generic [ref=e996]: 39,00 €
+            - button "Encaisser" [ref=e997] [cursor=pointer]
+        - generic [ref=e998]:
+          - generic [ref=e999]:
+            - generic [ref=e1000]: Borne
+            - generic [ref=e1001]: N°A0084
+          - generic [ref=e1002]: soak-kiosk-6a1c9de370822
+          - list [ref=e1003]:
+            - listitem [ref=e1004]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1005]:
+            - generic [ref=e1006]: 33,00 €
+            - button "Encaisser" [ref=e1007] [cursor=pointer]
+        - generic [ref=e1008]:
+          - generic [ref=e1009]:
+            - generic [ref=e1010]: Borne
+            - generic [ref=e1011]: N°A0088
+          - generic [ref=e1012]: soak-kiosk-6a1c9de370822
+          - list [ref=e1013]:
+            - listitem [ref=e1014]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1015]:
+            - generic [ref=e1016]: 36,00 €
+            - button "Encaisser" [ref=e1017] [cursor=pointer]
+        - generic [ref=e1018]:
+          - generic [ref=e1019]:
+            - generic [ref=e1020]: Borne
+            - generic [ref=e1021]: N°A0090
+          - generic [ref=e1022]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1023]:
+            - listitem [ref=e1024]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1025]:
+            - generic [ref=e1026]: 33,00 €
+            - button "Encaisser" [ref=e1027] [cursor=pointer]
+        - generic [ref=e1028]:
+          - generic [ref=e1029]:
+            - generic [ref=e1030]: Borne
+            - generic [ref=e1031]: N°A0091
+          - generic [ref=e1032]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1033]:
+            - listitem [ref=e1034]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1035]:
+            - generic [ref=e1036]: 36,00 €
+            - button "Encaisser" [ref=e1037] [cursor=pointer]
+        - generic [ref=e1038]:
+          - generic [ref=e1039]:
+            - generic [ref=e1040]: Borne
+            - generic [ref=e1041]: N°A0093
+          - generic [ref=e1042]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1043]:
+            - listitem [ref=e1044]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1045]:
+            - generic [ref=e1046]: 42,00 €
+            - button "Encaisser" [ref=e1047] [cursor=pointer]
+        - generic [ref=e1048]:
+          - generic [ref=e1049]:
+            - generic [ref=e1050]: Borne
+            - generic [ref=e1051]: N°A0095
+          - generic [ref=e1052]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1053]:
+            - listitem [ref=e1054]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1055]:
+            - generic [ref=e1056]: 33,00 €
+            - button "Encaisser" [ref=e1057] [cursor=pointer]
+        - generic [ref=e1058]:
+          - generic [ref=e1059]:
+            - generic [ref=e1060]: Borne
+            - generic [ref=e1061]: N°A0096
+          - generic [ref=e1062]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1063]:
+            - listitem [ref=e1064]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1065]:
+            - generic [ref=e1066]: 36,00 €
+            - button "Encaisser" [ref=e1067] [cursor=pointer]
+        - generic [ref=e1068]:
+          - generic [ref=e1069]:
+            - generic [ref=e1070]: Borne
+            - generic [ref=e1071]: N°A0100
+          - generic [ref=e1072]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1073]:
+            - listitem [ref=e1074]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1075]:
+            - generic [ref=e1076]: 42,00 €
+            - button "Encaisser" [ref=e1077] [cursor=pointer]
+        - generic [ref=e1078]:
+          - generic [ref=e1079]:
+            - generic [ref=e1080]: Borne
+            - generic [ref=e1081]: N°A0101
+          - generic [ref=e1082]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1083]:
+            - listitem [ref=e1084]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1085]:
+            - generic [ref=e1086]: 30,00 €
+            - button "Encaisser" [ref=e1087] [cursor=pointer]
+        - generic [ref=e1088]:
+          - generic [ref=e1089]:
+            - generic [ref=e1090]: Borne
+            - generic [ref=e1091]: N°A0105
+          - generic [ref=e1092]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1093]:
+            - listitem [ref=e1094]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1095]:
+            - generic [ref=e1096]: 36,00 €
+            - button "Encaisser" [ref=e1097] [cursor=pointer]
+        - generic [ref=e1098]:
+          - generic [ref=e1099]:
+            - generic [ref=e1100]: Borne
+            - generic [ref=e1101]: N°A0106
+          - generic [ref=e1102]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1103]:
+            - listitem [ref=e1104]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1105]:
+            - generic [ref=e1106]: 39,00 €
+            - button "Encaisser" [ref=e1107] [cursor=pointer]
+        - generic [ref=e1108]:
+          - generic [ref=e1109]:
+            - generic [ref=e1110]: Borne
+            - generic [ref=e1111]: N°A0110
+          - generic [ref=e1112]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1113]:
+            - listitem [ref=e1114]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1115]:
+            - generic [ref=e1116]: 33,00 €
+            - button "Encaisser" [ref=e1117] [cursor=pointer]
+        - generic [ref=e1118]:
+          - generic [ref=e1119]:
+            - generic [ref=e1120]: Borne
+            - generic [ref=e1121]: N°A0111
+          - generic [ref=e1122]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1123]:
+            - listitem [ref=e1124]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1125]:
+            - generic [ref=e1126]: 36,00 €
+            - button "Encaisser" [ref=e1127] [cursor=pointer]
+        - generic [ref=e1128]:
+          - generic [ref=e1129]:
+            - generic [ref=e1130]: Borne
+            - generic [ref=e1131]: N°A0115
+          - generic [ref=e1132]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1133]:
+            - listitem [ref=e1134]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1135]:
+            - generic [ref=e1136]: 42,00 €
+            - button "Encaisser" [ref=e1137] [cursor=pointer]
+        - generic [ref=e1138]:
+          - generic [ref=e1139]:
+            - generic [ref=e1140]: Borne
+            - generic [ref=e1141]: N°A0116
+          - generic [ref=e1142]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1143]:
+            - listitem [ref=e1144]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1145]:
+            - generic [ref=e1146]: 30,00 €
+            - button "Encaisser" [ref=e1147] [cursor=pointer]
+        - generic [ref=e1148]:
+          - generic [ref=e1149]:
+            - generic [ref=e1150]: Borne
+            - generic [ref=e1151]: N°A0120
+          - generic [ref=e1152]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1153]:
+            - listitem [ref=e1154]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1155]:
+            - generic [ref=e1156]: 39,00 €
+            - button "Encaisser" [ref=e1157] [cursor=pointer]
+        - generic [ref=e1158]:
+          - generic [ref=e1159]:
+            - generic [ref=e1160]: Borne
+            - generic [ref=e1161]: N°A0121
+          - generic [ref=e1162]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1163]:
+            - listitem [ref=e1164]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1165]:
+            - generic [ref=e1166]: 42,00 €
+            - button "Encaisser" [ref=e1167] [cursor=pointer]
+        - generic [ref=e1168]:
+          - generic [ref=e1169]:
+            - generic [ref=e1170]: Borne
+            - generic [ref=e1171]: N°A0125
+          - generic [ref=e1172]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1173]:
+            - listitem [ref=e1174]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1175]:
+            - generic [ref=e1176]: 33,00 €
+            - button "Encaisser" [ref=e1177] [cursor=pointer]
+        - generic [ref=e1178]:
+          - generic [ref=e1179]:
+            - generic [ref=e1180]: Borne
+            - generic [ref=e1181]: N°A0126
+          - generic [ref=e1182]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1183]:
+            - listitem [ref=e1184]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1185]:
+            - generic [ref=e1186]: 36,00 €
+            - button "Encaisser" [ref=e1187] [cursor=pointer]
+        - generic [ref=e1188]:
+          - generic [ref=e1189]:
+            - generic [ref=e1190]: Borne
+            - generic [ref=e1191]: N°A0130
+          - generic [ref=e1192]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1193]:
+            - listitem [ref=e1194]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1195]:
+            - generic [ref=e1196]: 30,00 €
+            - button "Encaisser" [ref=e1197] [cursor=pointer]
+        - generic [ref=e1198]:
+          - generic [ref=e1199]:
+            - generic [ref=e1200]: Borne
+            - generic [ref=e1201]: N°A0131
+          - generic [ref=e1202]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1203]:
+            - listitem [ref=e1204]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1205]:
+            - generic [ref=e1206]: 33,00 €
+            - button "Encaisser" [ref=e1207] [cursor=pointer]
+        - generic [ref=e1208]:
+          - generic [ref=e1209]:
+            - generic [ref=e1210]: Borne
+            - generic [ref=e1211]: N°A0135
+          - generic [ref=e1212]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1213]:
+            - listitem [ref=e1214]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1215]:
+            - generic [ref=e1216]: 39,00 €
+            - button "Encaisser" [ref=e1217] [cursor=pointer]
+        - generic [ref=e1218]:
+          - generic [ref=e1219]:
+            - generic [ref=e1220]: Borne
+            - generic [ref=e1221]: N°A0136
+          - generic [ref=e1222]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1223]:
+            - listitem [ref=e1224]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1225]:
+            - generic [ref=e1226]: 42,00 €
+            - button "Encaisser" [ref=e1227] [cursor=pointer]
+        - generic [ref=e1228]:
+          - generic [ref=e1229]:
+            - generic [ref=e1230]: Borne
+            - generic [ref=e1231]: N°A0140
+          - generic [ref=e1232]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1233]:
+            - listitem [ref=e1234]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1235]:
+            - generic [ref=e1236]: 36,00 €
+            - button "Encaisser" [ref=e1237] [cursor=pointer]
+        - generic [ref=e1238]:
+          - generic [ref=e1239]:
+            - generic [ref=e1240]: Borne
+            - generic [ref=e1241]: N°A0141
+          - generic [ref=e1242]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1243]:
+            - listitem [ref=e1244]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1245]:
+            - generic [ref=e1246]: 39,00 €
+            - button "Encaisser" [ref=e1247] [cursor=pointer]
+        - generic [ref=e1248]:
+          - generic [ref=e1249]:
+            - generic [ref=e1250]: Borne
+            - generic [ref=e1251]: N°A0145
+          - generic [ref=e1252]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1253]:
+            - listitem [ref=e1254]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1255]:
+            - generic [ref=e1256]: 30,00 €
+            - button "Encaisser" [ref=e1257] [cursor=pointer]
+        - generic [ref=e1258]:
+          - generic [ref=e1259]:
+            - generic [ref=e1260]: Borne
+            - generic [ref=e1261]: N°A0146
+          - generic [ref=e1262]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1263]:
+            - listitem [ref=e1264]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1265]:
+            - generic [ref=e1266]: 33,00 €
+            - button "Encaisser" [ref=e1267] [cursor=pointer]
+        - generic [ref=e1268]:
+          - generic [ref=e1269]:
+            - generic [ref=e1270]: Borne
+            - generic [ref=e1271]: N°A0150
+          - generic [ref=e1272]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1273]:
+            - listitem [ref=e1274]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1275]:
+            - generic [ref=e1276]: 42,00 €
+            - button "Encaisser" [ref=e1277] [cursor=pointer]
+        - generic [ref=e1278]:
+          - generic [ref=e1279]:
+            - generic [ref=e1280]: Borne
+            - generic [ref=e1281]: N°A0151
+          - generic [ref=e1282]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1283]:
+            - listitem [ref=e1284]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1285]:
+            - generic [ref=e1286]: 30,00 €
+            - button "Encaisser" [ref=e1287] [cursor=pointer]
+        - generic [ref=e1288]:
+          - generic [ref=e1289]:
+            - generic [ref=e1290]: Borne
+            - generic [ref=e1291]: N°A0155
+          - generic [ref=e1292]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1293]:
+            - listitem [ref=e1294]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1295]:
+            - generic [ref=e1296]: 36,00 €
+            - button "Encaisser" [ref=e1297] [cursor=pointer]
+        - generic [ref=e1298]:
+          - generic [ref=e1299]:
+            - generic [ref=e1300]: Borne
+            - generic [ref=e1301]: N°A0156
+          - generic [ref=e1302]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1303]:
+            - listitem [ref=e1304]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1305]:
+            - generic [ref=e1306]: 39,00 €
+            - button "Encaisser" [ref=e1307] [cursor=pointer]
+        - generic [ref=e1308]:
+          - generic [ref=e1309]:
+            - generic [ref=e1310]: Borne
+            - generic [ref=e1311]: N°A0160
+          - generic [ref=e1312]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1313]:
+            - listitem [ref=e1314]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1315]:
+            - generic [ref=e1316]: 33,00 €
+            - button "Encaisser" [ref=e1317] [cursor=pointer]
+        - generic [ref=e1318]:
+          - generic [ref=e1319]:
+            - generic [ref=e1320]: Borne
+            - generic [ref=e1321]: N°A0161
+          - generic [ref=e1322]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1323]:
+            - listitem [ref=e1324]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1325]:
+            - generic [ref=e1326]: 36,00 €
+            - button "Encaisser" [ref=e1327] [cursor=pointer]
+        - generic [ref=e1328]:
+          - generic [ref=e1329]:
+            - generic [ref=e1330]: Borne
+            - generic [ref=e1331]: N°A0165
+          - generic [ref=e1332]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1333]:
+            - listitem [ref=e1334]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1335]:
+            - generic [ref=e1336]: 42,00 €
+            - button "Encaisser" [ref=e1337] [cursor=pointer]
+        - generic [ref=e1338]:
+          - generic [ref=e1339]:
+            - generic [ref=e1340]: Borne
+            - generic [ref=e1341]: N°A0166
+          - generic [ref=e1342]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1343]:
+            - listitem [ref=e1344]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1345]:
+            - generic [ref=e1346]: 33,00 €
+            - button "Encaisser" [ref=e1347] [cursor=pointer]
+        - generic [ref=e1348]:
+          - generic [ref=e1349]:
+            - generic [ref=e1350]: Borne
+            - generic [ref=e1351]: N°A0170
+          - generic [ref=e1352]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1353]:
+            - listitem [ref=e1354]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1355]:
+            - generic [ref=e1356]: 39,00 €
+            - button "Encaisser" [ref=e1357] [cursor=pointer]
+        - generic [ref=e1358]:
+          - generic [ref=e1359]:
+            - generic [ref=e1360]: Borne
+            - generic [ref=e1361]: N°A0171
+          - generic [ref=e1362]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1363]:
+            - listitem [ref=e1364]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1365]:
+            - generic [ref=e1366]: 30,00 €
+            - button "Encaisser" [ref=e1367] [cursor=pointer]
+        - generic [ref=e1368]:
+          - generic [ref=e1369]:
+            - generic [ref=e1370]: Borne
+            - generic [ref=e1371]: N°A0175
+          - generic [ref=e1372]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1373]:
+            - listitem [ref=e1374]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1375]:
+            - generic [ref=e1376]: 33,00 €
+            - button "Encaisser" [ref=e1377] [cursor=pointer]
+        - generic [ref=e1378]:
+          - generic [ref=e1379]:
+            - generic [ref=e1380]: Borne
+            - generic [ref=e1381]: N°A0176
+          - generic [ref=e1382]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1383]:
+            - listitem [ref=e1384]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1385]:
+            - generic [ref=e1386]: 39,00 €
+            - button "Encaisser" [ref=e1387] [cursor=pointer]
+        - generic [ref=e1388]:
+          - generic [ref=e1389]:
+            - generic [ref=e1390]: Borne
+            - generic [ref=e1391]: N°A0180
+          - generic [ref=e1392]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1393]:
+            - listitem [ref=e1394]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1395]:
+            - generic [ref=e1396]: 30,00 €
+            - button "Encaisser" [ref=e1397] [cursor=pointer]
+        - generic [ref=e1398]:
+          - generic [ref=e1399]:
+            - generic [ref=e1400]: Borne
+            - generic [ref=e1401]: N°A0183
+          - generic [ref=e1402]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1403]:
+            - listitem [ref=e1404]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1405]:
+            - generic [ref=e1406]: 42,00 €
+            - button "Encaisser" [ref=e1407] [cursor=pointer]
+        - generic [ref=e1408]:
+          - generic [ref=e1409]:
+            - generic [ref=e1410]: Borne
+            - generic [ref=e1411]: N°A0185
+          - generic [ref=e1412]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1413]:
+            - listitem [ref=e1414]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1415]:
+            - generic [ref=e1416]: 39,00 €
+            - button "Encaisser" [ref=e1417] [cursor=pointer]
+        - generic [ref=e1418]:
+          - generic [ref=e1419]:
+            - generic [ref=e1420]: Borne
+            - generic [ref=e1421]: N°A0188
+          - generic [ref=e1422]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1423]:
+            - listitem [ref=e1424]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1425]:
+            - generic [ref=e1426]: 42,00 €
+            - button "Encaisser" [ref=e1427] [cursor=pointer]
+        - generic [ref=e1428]:
+          - generic [ref=e1429]:
+            - generic [ref=e1430]: Borne
+            - generic [ref=e1431]: N°A0190
+          - generic [ref=e1432]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1433]:
+            - listitem [ref=e1434]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1435]:
+            - generic [ref=e1436]: 36,00 €
+            - button "Encaisser" [ref=e1437] [cursor=pointer]
+        - generic [ref=e1438]:
+          - generic [ref=e1439]:
+            - generic [ref=e1440]: Borne
+            - generic [ref=e1441]: N°A0193
+          - generic [ref=e1442]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1443]:
+            - listitem [ref=e1444]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1445]:
+            - generic [ref=e1446]: 36,00 €
+            - button "Encaisser" [ref=e1447] [cursor=pointer]
+        - generic [ref=e1448]:
+          - generic [ref=e1449]:
+            - generic [ref=e1450]: Borne
+            - generic [ref=e1451]: N°A0195
+          - generic [ref=e1452]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1453]:
+            - listitem [ref=e1454]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1455]:
+            - generic [ref=e1456]: 30,00 €
+            - button "Encaisser" [ref=e1457] [cursor=pointer]
+        - generic [ref=e1458]:
+          - generic [ref=e1459]:
+            - generic [ref=e1460]: Borne
+            - generic [ref=e1461]: N°A0198
+          - generic [ref=e1462]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1463]:
+            - listitem [ref=e1464]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1465]:
+            - generic [ref=e1466]: 33,00 €
+            - button "Encaisser" [ref=e1467] [cursor=pointer]
+        - generic [ref=e1468]:
+          - generic [ref=e1469]:
+            - generic [ref=e1470]: Borne
+            - generic [ref=e1471]: N°A0200
+          - generic [ref=e1472]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1473]:
+            - listitem [ref=e1474]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1475]:
+            - generic [ref=e1476]: 42,00 €
+            - button "Encaisser" [ref=e1477] [cursor=pointer]
+        - generic [ref=e1478]:
+          - generic [ref=e1479]:
+            - generic [ref=e1480]: Borne
+            - generic [ref=e1481]: N°A0203
+          - generic [ref=e1482]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1483]:
+            - listitem [ref=e1484]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1485]:
+            - generic [ref=e1486]: 42,00 €
+            - button "Encaisser" [ref=e1487] [cursor=pointer]
+        - generic [ref=e1488]:
+          - generic [ref=e1489]:
+            - generic [ref=e1490]: Borne
+            - generic [ref=e1491]: N°A0205
+          - generic [ref=e1492]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1493]:
+            - listitem [ref=e1494]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1495]:
+            - generic [ref=e1496]: 36,00 €
+            - button "Encaisser" [ref=e1497] [cursor=pointer]
+        - generic [ref=e1498]:
+          - generic [ref=e1499]:
+            - generic [ref=e1500]: Borne
+            - generic [ref=e1501]: N°A0208
+          - generic [ref=e1502]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1503]:
+            - listitem [ref=e1504]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1505]:
+            - generic [ref=e1506]: 39,00 €
+            - button "Encaisser" [ref=e1507] [cursor=pointer]
+        - generic [ref=e1508]:
+          - generic [ref=e1509]:
+            - generic [ref=e1510]: Borne
+            - generic [ref=e1511]: N°A0210
+          - generic [ref=e1512]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1513]:
+            - listitem [ref=e1514]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1515]:
+            - generic [ref=e1516]: 33,00 €
+            - button "Encaisser" [ref=e1517] [cursor=pointer]
+        - generic [ref=e1518]:
+          - generic [ref=e1519]:
+            - generic [ref=e1520]: Borne
+            - generic [ref=e1521]: N°A0213
+          - generic [ref=e1522]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1523]:
+            - listitem [ref=e1524]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1525]:
+            - generic [ref=e1526]: 33,00 €
+            - button "Encaisser" [ref=e1527] [cursor=pointer]
+        - generic [ref=e1528]:
+          - generic [ref=e1529]:
+            - generic [ref=e1530]: Borne
+            - generic [ref=e1531]: N°A0215
+          - generic [ref=e1532]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1533]:
+            - listitem [ref=e1534]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1535]:
+            - generic [ref=e1536]: 42,00 €
+            - button "Encaisser" [ref=e1537] [cursor=pointer]
+        - generic [ref=e1538]:
+          - generic [ref=e1539]:
+            - generic [ref=e1540]: Borne
+            - generic [ref=e1541]: N°A0219
+          - generic [ref=e1542]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1543]:
+            - listitem [ref=e1544]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1545]:
+            - generic [ref=e1546]: 36,00 €
+            - button "Encaisser" [ref=e1547] [cursor=pointer]
+        - generic [ref=e1548]:
+          - generic [ref=e1549]:
+            - generic [ref=e1550]: Borne
+            - generic [ref=e1551]: N°A0220
+          - generic [ref=e1552]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1553]:
+            - listitem [ref=e1554]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1555]:
+            - generic [ref=e1556]: 39,00 €
+            - button "Encaisser" [ref=e1557] [cursor=pointer]
+        - generic [ref=e1558]:
+          - generic [ref=e1559]:
+            - generic [ref=e1560]: Borne
+            - generic [ref=e1561]: N°A0224
+          - generic [ref=e1562]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1563]:
+            - listitem [ref=e1564]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1565]:
+            - generic [ref=e1566]: 30,00 €
+            - button "Encaisser" [ref=e1567] [cursor=pointer]
+        - generic [ref=e1568]:
+          - generic [ref=e1569]:
+            - generic [ref=e1570]: Borne
+            - generic [ref=e1571]: N°A0225
+          - generic [ref=e1572]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1573]:
+            - listitem [ref=e1574]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1575]:
+            - generic [ref=e1576]: 33,00 €
+            - button "Encaisser" [ref=e1577] [cursor=pointer]
+        - generic [ref=e1578]:
+          - generic [ref=e1579]:
+            - generic [ref=e1580]: Borne
+            - generic [ref=e1581]: N°A0229
+          - generic [ref=e1582]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1583]:
+            - listitem [ref=e1584]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1585]:
+            - generic [ref=e1586]: 42,00 €
+            - button "Encaisser" [ref=e1587] [cursor=pointer]
+        - generic [ref=e1588]:
+          - generic [ref=e1589]:
+            - generic [ref=e1590]: Borne
+            - generic [ref=e1591]: N°A0230
+          - generic [ref=e1592]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1593]:
+            - listitem [ref=e1594]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1595]:
+            - generic [ref=e1596]: 30,00 €
+            - button "Encaisser" [ref=e1597] [cursor=pointer]
+        - generic [ref=e1598]:
+          - generic [ref=e1599]:
+            - generic [ref=e1600]: Borne
+            - generic [ref=e1601]: N°A0234
+          - generic [ref=e1602]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1603]:
+            - listitem [ref=e1604]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1605]:
+            - generic [ref=e1606]: 36,00 €
+            - button "Encaisser" [ref=e1607] [cursor=pointer]
+        - generic [ref=e1608]:
+          - generic [ref=e1609]:
+            - generic [ref=e1610]: Borne
+            - generic [ref=e1611]: N°A0235
+          - generic [ref=e1612]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1613]:
+            - listitem [ref=e1614]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1615]:
+            - generic [ref=e1616]: 39,00 €
+            - button "Encaisser" [ref=e1617] [cursor=pointer]
+        - generic [ref=e1618]:
+          - generic [ref=e1619]:
+            - generic [ref=e1620]: Borne
+            - generic [ref=e1621]: N°A0239
+          - generic [ref=e1622]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1623]:
+            - listitem [ref=e1624]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1625]:
+            - generic [ref=e1626]: 33,00 €
+            - button "Encaisser" [ref=e1627] [cursor=pointer]
+        - generic [ref=e1628]:
+          - generic [ref=e1629]:
+            - generic [ref=e1630]: Borne
+            - generic [ref=e1631]: N°A0240
+          - generic [ref=e1632]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1633]:
+            - listitem [ref=e1634]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1635]:
+            - generic [ref=e1636]: 36,00 €
+            - button "Encaisser" [ref=e1637] [cursor=pointer]
+        - generic [ref=e1638]:
+          - generic [ref=e1639]:
+            - generic [ref=e1640]: Borne
+            - generic [ref=e1641]: N°A0244
+          - generic [ref=e1642]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1643]:
+            - listitem [ref=e1644]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1645]:
+            - generic [ref=e1646]: 42,00 €
+            - button "Encaisser" [ref=e1647] [cursor=pointer]
+        - generic [ref=e1648]:
+          - generic [ref=e1649]:
+            - generic [ref=e1650]: Borne
+            - generic [ref=e1651]: N°A0245
+          - generic [ref=e1652]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1653]:
+            - listitem [ref=e1654]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1655]:
+            - generic [ref=e1656]: 30,00 €
+            - button "Encaisser" [ref=e1657] [cursor=pointer]
+        - generic [ref=e1658]:
+          - generic [ref=e1659]:
+            - generic [ref=e1660]: Borne
+            - generic [ref=e1661]: N°A0249
+          - generic [ref=e1662]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1663]:
+            - listitem [ref=e1664]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1665]:
+            - generic [ref=e1666]: 39,00 €
+            - button "Encaisser" [ref=e1667] [cursor=pointer]
+        - generic [ref=e1668]:
+          - generic [ref=e1669]:
+            - generic [ref=e1670]: Borne
+            - generic [ref=e1671]: N°A0250
+          - generic [ref=e1672]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1673]:
+            - listitem [ref=e1674]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1675]:
+            - generic [ref=e1676]: 42,00 €
+            - button "Encaisser" [ref=e1677] [cursor=pointer]
+        - generic [ref=e1678]:
+          - generic [ref=e1679]:
+            - generic [ref=e1680]: Borne
+            - generic [ref=e1681]: N°A0254
+          - generic [ref=e1682]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1683]:
+            - listitem [ref=e1684]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1685]:
+            - generic [ref=e1686]: 33,00 €
+            - button "Encaisser" [ref=e1687] [cursor=pointer]
+        - generic [ref=e1688]:
+          - generic [ref=e1689]:
+            - generic [ref=e1690]: Borne
+            - generic [ref=e1691]: N°A0255
+          - generic [ref=e1692]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1693]:
+            - listitem [ref=e1694]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1695]:
+            - generic [ref=e1696]: 36,00 €
+            - button "Encaisser" [ref=e1697] [cursor=pointer]
+        - generic [ref=e1698]:
+          - generic [ref=e1699]:
+            - generic [ref=e1700]: Borne
+            - generic [ref=e1701]: N°A0259
+          - generic [ref=e1702]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1703]:
+            - listitem [ref=e1704]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1705]:
+            - generic [ref=e1706]: 30,00 €
+            - button "Encaisser" [ref=e1707] [cursor=pointer]
+        - generic [ref=e1708]:
+          - generic [ref=e1709]:
+            - generic [ref=e1710]: Borne
+            - generic [ref=e1711]: N°A0260
+          - generic [ref=e1712]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1713]:
+            - listitem [ref=e1714]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1715]:
+            - generic [ref=e1716]: 33,00 €
+            - button "Encaisser" [ref=e1717] [cursor=pointer]
+        - generic [ref=e1718]:
+          - generic [ref=e1719]:
+            - generic [ref=e1720]: Borne
+            - generic [ref=e1721]: N°A0264
+          - generic [ref=e1722]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1723]:
+            - listitem [ref=e1724]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1725]:
+            - generic [ref=e1726]: 39,00 €
+            - button "Encaisser" [ref=e1727] [cursor=pointer]
+        - generic [ref=e1728]:
+          - generic [ref=e1729]:
+            - generic [ref=e1730]: Borne
+            - generic [ref=e1731]: N°A0265
+          - generic [ref=e1732]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1733]:
+            - listitem [ref=e1734]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1735]:
+            - generic [ref=e1736]: 42,00 €
+            - button "Encaisser" [ref=e1737] [cursor=pointer]
+        - generic [ref=e1738]:
+          - generic [ref=e1739]:
+            - generic [ref=e1740]: Borne
+            - generic [ref=e1741]: N°A0269
+          - generic [ref=e1742]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1743]:
+            - listitem [ref=e1744]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1745]:
+            - generic [ref=e1746]: 36,00 €
+            - button "Encaisser" [ref=e1747] [cursor=pointer]
+        - generic [ref=e1748]:
+          - generic [ref=e1749]:
+            - generic [ref=e1750]: Borne
+            - generic [ref=e1751]: N°A0272
+          - generic [ref=e1752]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1753]:
+            - listitem [ref=e1754]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1755]:
+            - generic [ref=e1756]: 33,00 €
+            - button "Encaisser" [ref=e1757] [cursor=pointer]
+        - generic [ref=e1758]:
+          - generic [ref=e1759]:
+            - generic [ref=e1760]: Borne
+            - generic [ref=e1761]: N°A0274
+          - generic [ref=e1762]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1763]:
+            - listitem [ref=e1764]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1765]:
+            - generic [ref=e1766]: 30,00 €
+            - button "Encaisser" [ref=e1767] [cursor=pointer]
+        - generic [ref=e1768]:
+          - generic [ref=e1769]:
+            - generic [ref=e1770]: Borne
+            - generic [ref=e1771]: N°A0277
+          - generic [ref=e1772]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1773]:
+            - listitem [ref=e1774]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1775]:
+            - generic [ref=e1776]: 30,00 €
+            - button "Encaisser" [ref=e1777] [cursor=pointer]
+        - generic [ref=e1778]:
+          - generic [ref=e1779]:
+            - generic [ref=e1780]: Borne
+            - generic [ref=e1781]: N°A0279
+          - generic [ref=e1782]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1783]:
+            - listitem [ref=e1784]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1785]:
+            - generic [ref=e1786]: 42,00 €
+            - button "Encaisser" [ref=e1787] [cursor=pointer]
+        - generic [ref=e1788]:
+          - generic [ref=e1789]:
+            - generic [ref=e1790]: Borne
+            - generic [ref=e1791]: N°A0282
+          - generic [ref=e1792]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1793]:
+            - listitem [ref=e1794]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1795]:
+            - generic [ref=e1796]: 42,00 €
+            - button "Encaisser" [ref=e1797] [cursor=pointer]
+        - generic [ref=e1798]:
+          - generic [ref=e1799]:
+            - generic [ref=e1800]: Borne
+            - generic [ref=e1801]: N°A0284
+          - generic [ref=e1802]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1803]:
+            - listitem [ref=e1804]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1805]:
+            - generic [ref=e1806]: 36,00 €
+            - button "Encaisser" [ref=e1807] [cursor=pointer]
+        - generic [ref=e1808]:
+          - generic [ref=e1809]:
+            - generic [ref=e1810]: Borne
+            - generic [ref=e1811]: N°A0287
+          - generic [ref=e1812]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1813]:
+            - listitem [ref=e1814]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1815]:
+            - generic [ref=e1816]: 39,00 €
+            - button "Encaisser" [ref=e1817] [cursor=pointer]
+        - generic [ref=e1818]:
+          - generic [ref=e1819]:
+            - generic [ref=e1820]: Borne
+            - generic [ref=e1821]: N°A0289
+          - generic [ref=e1822]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1823]:
+            - listitem [ref=e1824]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1825]:
+            - generic [ref=e1826]: 33,00 €
+            - button "Encaisser" [ref=e1827] [cursor=pointer]
+        - generic [ref=e1828]:
+          - generic [ref=e1829]:
+            - generic [ref=e1830]: Borne
+            - generic [ref=e1831]: N°A0292
+          - generic [ref=e1832]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1833]:
+            - listitem [ref=e1834]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1835]:
+            - generic [ref=e1836]: 33,00 €
+            - button "Encaisser" [ref=e1837] [cursor=pointer]
+        - generic [ref=e1838]:
+          - generic [ref=e1839]:
+            - generic [ref=e1840]: Borne
+            - generic [ref=e1841]: N°A0294
+          - generic [ref=e1842]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1843]:
+            - listitem [ref=e1844]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1845]:
+            - generic [ref=e1846]: 42,00 €
+            - button "Encaisser" [ref=e1847] [cursor=pointer]
+        - generic [ref=e1848]:
+          - generic [ref=e1849]:
+            - generic [ref=e1850]: Borne
+            - generic [ref=e1851]: N°A0297
+          - generic [ref=e1852]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1853]:
+            - listitem [ref=e1854]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1855]:
+            - generic [ref=e1856]: 30,00 €
+            - button "Encaisser" [ref=e1857] [cursor=pointer]
+        - generic [ref=e1858]:
+          - generic [ref=e1859]:
+            - generic [ref=e1860]: Borne
+            - generic [ref=e1861]: N°A0299
+          - generic [ref=e1862]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1863]:
+            - listitem [ref=e1864]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1865]:
+            - generic [ref=e1866]: 39,00 €
+            - button "Encaisser" [ref=e1867] [cursor=pointer]
+        - generic [ref=e1868]:
+          - generic [ref=e1869]:
+            - generic [ref=e1870]: Borne
+            - generic [ref=e1871]: N°A0302
+          - generic [ref=e1872]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1873]:
+            - listitem [ref=e1874]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1875]:
+            - generic [ref=e1876]: 39,00 €
+            - button "Encaisser" [ref=e1877] [cursor=pointer]
+        - generic [ref=e1878]:
+          - generic [ref=e1879]:
+            - generic [ref=e1880]: Borne
+            - generic [ref=e1881]: N°A0304
+          - generic [ref=e1882]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1883]:
+            - listitem [ref=e1884]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1885]:
+            - generic [ref=e1886]: 33,00 €
+            - button "Encaisser" [ref=e1887] [cursor=pointer]
+        - generic [ref=e1888]:
+          - generic [ref=e1889]:
+            - generic [ref=e1890]: Borne
+            - generic [ref=e1891]: N°A0307
+          - generic [ref=e1892]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1893]:
+            - listitem [ref=e1894]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1895]:
+            - generic [ref=e1896]: 36,00 €
+            - button "Encaisser" [ref=e1897] [cursor=pointer]
+        - generic [ref=e1898]:
+          - generic [ref=e1899]:
+            - generic [ref=e1900]: Borne
+            - generic [ref=e1901]: N°A0309
+          - generic [ref=e1902]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1903]:
+            - listitem [ref=e1904]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1905]:
+            - generic [ref=e1906]: 30,00 €
+            - button "Encaisser" [ref=e1907] [cursor=pointer]
+        - generic [ref=e1908]:
+          - generic [ref=e1909]:
+            - generic [ref=e1910]: Borne
+            - generic [ref=e1911]: N°A0312
+          - generic [ref=e1912]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1913]:
+            - listitem [ref=e1914]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1915]:
+            - generic [ref=e1916]: 30,00 €
+            - button "Encaisser" [ref=e1917] [cursor=pointer]
+        - generic [ref=e1918]:
+          - generic [ref=e1919]:
+            - generic [ref=e1920]: Borne
+            - generic [ref=e1921]: N°A0314
+          - generic [ref=e1922]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1923]:
+            - listitem [ref=e1924]: 13× Menu (Frites + Boisson)
+          - generic [ref=e1925]:
+            - generic [ref=e1926]: 39,00 €
+            - button "Encaisser" [ref=e1927] [cursor=pointer]
+        - generic [ref=e1928]:
+          - generic [ref=e1929]:
+            - generic [ref=e1930]: Borne
+            - generic [ref=e1931]: N°A0317
+          - generic [ref=e1932]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1933]:
+            - listitem [ref=e1934]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1935]:
+            - generic [ref=e1936]: 42,00 €
+            - button "Encaisser" [ref=e1937] [cursor=pointer]
+        - generic [ref=e1938]:
+          - generic [ref=e1939]:
+            - generic [ref=e1940]: Borne
+            - generic [ref=e1941]: N°A0319
+          - generic [ref=e1942]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1943]:
+            - listitem [ref=e1944]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1945]:
+            - generic [ref=e1946]: 36,00 €
+            - button "Encaisser" [ref=e1947] [cursor=pointer]
+        - generic [ref=e1948]:
+          - generic [ref=e1949]:
+            - generic [ref=e1950]: Borne
+            - generic [ref=e1951]: N°A0322
+          - generic [ref=e1952]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1953]:
+            - listitem [ref=e1954]: 12× Menu (Frites + Boisson)
+          - generic [ref=e1955]:
+            - generic [ref=e1956]: 36,00 €
+            - button "Encaisser" [ref=e1957] [cursor=pointer]
+        - generic [ref=e1958]:
+          - generic [ref=e1959]:
+            - generic [ref=e1960]: Borne
+            - generic [ref=e1961]: N°A0324
+          - generic [ref=e1962]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1963]:
+            - listitem [ref=e1964]: 10× Menu (Frites + Boisson)
+          - generic [ref=e1965]:
+            - generic [ref=e1966]: 30,00 €
+            - button "Encaisser" [ref=e1967] [cursor=pointer]
+        - generic [ref=e1968]:
+          - generic [ref=e1969]:
+            - generic [ref=e1970]: Borne
+            - generic [ref=e1971]: N°A0327
+          - generic [ref=e1972]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1973]:
+            - listitem [ref=e1974]: 11× Menu (Frites + Boisson)
+          - generic [ref=e1975]:
+            - generic [ref=e1976]: 33,00 €
+            - button "Encaisser" [ref=e1977] [cursor=pointer]
+        - generic [ref=e1978]:
+          - generic [ref=e1979]:
+            - generic [ref=e1980]: Borne
+            - generic [ref=e1981]: N°A0329
+          - generic [ref=e1982]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1983]:
+            - listitem [ref=e1984]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1985]:
+            - generic [ref=e1986]: 42,00 €
+            - button "Encaisser" [ref=e1987] [cursor=pointer]
+        - generic [ref=e1988]:
+          - generic [ref=e1989]:
+            - generic [ref=e1990]: Borne
+            - generic [ref=e1991]: N°A0332
+          - generic [ref=e1992]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e1993]:
+            - listitem [ref=e1994]: 14× Menu (Frites + Boisson)
+          - generic [ref=e1995]:
+            - generic [ref=e1996]: 42,00 €
+            - button "Encaisser" [ref=e1997] [cursor=pointer]
+        - generic [ref=e1998]:
+          - generic [ref=e1999]:
+            - generic [ref=e2000]: Borne
+            - generic [ref=e2001]: N°A0334
+          - generic [ref=e2002]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2003]:
+            - listitem [ref=e2004]: 12× Menu (Frites + Boisson)
+          - generic [ref=e2005]:
+            - generic [ref=e2006]: 36,00 €
+            - button "Encaisser" [ref=e2007] [cursor=pointer]
+        - generic [ref=e2008]:
+          - generic [ref=e2009]:
+            - generic [ref=e2010]: Borne
+            - generic [ref=e2011]: N°A0337
+          - generic [ref=e2012]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2013]:
+            - listitem [ref=e2014]: 13× Menu (Frites + Boisson)
+          - generic [ref=e2015]:
+            - generic [ref=e2016]: 39,00 €
+            - button "Encaisser" [ref=e2017] [cursor=pointer]
+        - generic [ref=e2018]:
+          - generic [ref=e2019]:
+            - generic [ref=e2020]: Borne
+            - generic [ref=e2021]: N°A0339
+          - generic [ref=e2022]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2023]:
+            - listitem [ref=e2024]: 11× Menu (Frites + Boisson)
+          - generic [ref=e2025]:
+            - generic [ref=e2026]: 33,00 €
+            - button "Encaisser" [ref=e2027] [cursor=pointer]
+        - generic [ref=e2028]:
+          - generic [ref=e2029]:
+            - generic [ref=e2030]: Borne
+            - generic [ref=e2031]: N°A0342
+          - generic [ref=e2032]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2033]:
+            - listitem [ref=e2034]: 11× Menu (Frites + Boisson)
+          - generic [ref=e2035]:
+            - generic [ref=e2036]: 33,00 €
+            - button "Encaisser" [ref=e2037] [cursor=pointer]
+        - generic [ref=e2038]:
+          - generic [ref=e2039]:
+            - generic [ref=e2040]: Borne
+            - generic [ref=e2041]: N°A0344
+          - generic [ref=e2042]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2043]:
+            - listitem [ref=e2044]: 14× Menu (Frites + Boisson)
+          - generic [ref=e2045]:
+            - generic [ref=e2046]: 42,00 €
+            - button "Encaisser" [ref=e2047] [cursor=pointer]
+        - generic [ref=e2048]:
+          - generic [ref=e2049]:
+            - generic [ref=e2050]: Borne
+            - generic [ref=e2051]: N°A0347
+          - generic [ref=e2052]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2053]:
+            - listitem [ref=e2054]: 10× Menu (Frites + Boisson)
+          - generic [ref=e2055]:
+            - generic [ref=e2056]: 30,00 €
+            - button "Encaisser" [ref=e2057] [cursor=pointer]
+        - generic [ref=e2058]:
+          - generic [ref=e2059]:
+            - generic [ref=e2060]: Borne
+            - generic [ref=e2061]: N°A0349
+          - generic [ref=e2062]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2063]:
+            - listitem [ref=e2064]: 13× Menu (Frites + Boisson)
+          - generic [ref=e2065]:
+            - generic [ref=e2066]: 39,00 €
+            - button "Encaisser" [ref=e2067] [cursor=pointer]
+        - generic [ref=e2068]:
+          - generic [ref=e2069]:
+            - generic [ref=e2070]: Borne
+            - generic [ref=e2071]: N°A0352
+          - generic [ref=e2072]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2073]:
+            - listitem [ref=e2074]: 13× Menu (Frites + Boisson)
+          - generic [ref=e2075]:
+            - generic [ref=e2076]: 39,00 €
+            - button "Encaisser" [ref=e2077] [cursor=pointer]
+        - generic [ref=e2078]:
+          - generic [ref=e2079]:
+            - generic [ref=e2080]: Borne
+            - generic [ref=e2081]: N°A0354
+          - generic [ref=e2082]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2083]:
+            - listitem [ref=e2084]: 11× Menu (Frites + Boisson)
+          - generic [ref=e2085]:
+            - generic [ref=e2086]: 33,00 €
+            - button "Encaisser" [ref=e2087] [cursor=pointer]
+        - generic [ref=e2088]:
+          - generic [ref=e2089]:
+            - generic [ref=e2090]: Borne
+            - generic [ref=e2091]: N°A0357
+          - generic [ref=e2092]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2093]:
+            - listitem [ref=e2094]: 12× Menu (Frites + Boisson)
+          - generic [ref=e2095]:
+            - generic [ref=e2096]: 36,00 €
+            - button "Encaisser" [ref=e2097] [cursor=pointer]
+        - generic [ref=e2098]:
+          - generic [ref=e2099]:
+            - generic [ref=e2100]: Borne
+            - generic [ref=e2101]: N°A0359
+          - generic [ref=e2102]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2103]:
+            - listitem [ref=e2104]: 10× Menu (Frites + Boisson)
+          - generic [ref=e2105]:
+            - generic [ref=e2106]: 30,00 €
+            - button "Encaisser" [ref=e2107] [cursor=pointer]
+        - generic [ref=e2108]:
+          - generic [ref=e2109]:
+            - generic [ref=e2110]: Borne
+            - generic [ref=e2111]: N°A0362
+          - generic [ref=e2112]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2113]:
+            - listitem [ref=e2114]: 10× Menu (Frites + Boisson)
+          - generic [ref=e2115]:
+            - generic [ref=e2116]: 30,00 €
+            - button "Encaisser" [ref=e2117] [cursor=pointer]
+        - generic [ref=e2118]:
+          - generic [ref=e2119]:
+            - generic [ref=e2120]: Borne
+            - generic [ref=e2121]: N°A0364
+          - generic [ref=e2122]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2123]:
+            - listitem [ref=e2124]: 13× Menu (Frites + Boisson)
+          - generic [ref=e2125]:
+            - generic [ref=e2126]: 39,00 €
+            - button "Encaisser" [ref=e2127] [cursor=pointer]
+        - generic [ref=e2128]:
+          - generic [ref=e2129]:
+            - generic [ref=e2130]: Borne
+            - generic [ref=e2131]: N°A0367
+          - generic [ref=e2132]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2133]:
+            - listitem [ref=e2134]: 14× Menu (Frites + Boisson)
+          - generic [ref=e2135]:
+            - generic [ref=e2136]: 42,00 €
+            - button "Encaisser" [ref=e2137] [cursor=pointer]
+        - generic [ref=e2138]:
+          - generic [ref=e2139]:
+            - generic [ref=e2140]: Borne
+            - generic [ref=e2141]: N°A0369
+          - generic [ref=e2142]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2143]:
+            - listitem [ref=e2144]: 12× Menu (Frites + Boisson)
+          - generic [ref=e2145]:
+            - generic [ref=e2146]: 36,00 €
+            - button "Encaisser" [ref=e2147] [cursor=pointer]
+        - generic [ref=e2148]:
+          - generic [ref=e2149]:
+            - generic [ref=e2150]: Borne
+            - generic [ref=e2151]: N°A0372
+          - generic [ref=e2152]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2153]:
+            - listitem [ref=e2154]: 12× Menu (Frites + Boisson)
+          - generic [ref=e2155]:
+            - generic [ref=e2156]: 36,00 €
+            - button "Encaisser" [ref=e2157] [cursor=pointer]
+        - generic [ref=e2158]:
+          - generic [ref=e2159]:
+            - generic [ref=e2160]: Borne
+            - generic [ref=e2161]: N°A0374
+          - generic [ref=e2162]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2163]:
+            - listitem [ref=e2164]: 10× Menu (Frites + Boisson)
+          - generic [ref=e2165]:
+            - generic [ref=e2166]: 30,00 €
+            - button "Encaisser" [ref=e2167] [cursor=pointer]
+        - generic [ref=e2168]:
+          - generic [ref=e2169]:
+            - generic [ref=e2170]: Borne
+            - generic [ref=e2171]: N°A0377
+          - generic [ref=e2172]: soak-kiosk-6a1c9ffc94459
+          - list [ref=e2173]:
+            - listitem [ref=e2174]: 11× Menu (Frites + Boisson)
+          - generic [ref=e2175]:
+            - generic [ref=e2176]: 33,00 €
+            - button "Encaisser" [ref=e2177] [cursor=pointer]

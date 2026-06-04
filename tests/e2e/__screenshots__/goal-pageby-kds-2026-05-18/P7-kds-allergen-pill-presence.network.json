@@ -1,9 +1,0 @@
-[
-  {
-    "url": "http://localhost:8000/api/admin/fiscal/z-report",
-    "method": "GET",
-    "status": 422,
-    "duration_ms": null,
-    "ts": 1779236092289
-  }
-]

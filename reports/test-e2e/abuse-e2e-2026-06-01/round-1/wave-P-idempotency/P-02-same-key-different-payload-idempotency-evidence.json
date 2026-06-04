@@ -1,0 +1,28 @@
+{
+  "scenario": "P-02-same-key-different-payload",
+  "capturedAt": "2026-06-03T17:15:24.176Z",
+  "invariant": "same key + different payload ⇒ 409 conflict, no second order",
+  "idemKey": "51cecddd-4464-4312-a976-d481bc3b6fe1",
+  "first": {
+    "status": 201,
+    "orderId": 4159,
+    "replayed": false,
+    "conflict": false
+  },
+  "second": {
+    "status": 409,
+    "orderId": 0,
+    "replayed": false,
+    "conflict": true,
+    "body": {
+      "success": false,
+      "message": "Idempotency key reused with different payload.",
+      "code": "IDEMPOTENCY_KEY_CONFLICT"
+    }
+  },
+  "dbCount": {
+    "before": 1,
+    "after": 2,
+    "delta": 1
+  }
+}

@@ -180,7 +180,7 @@
                 disconnectedJitterMs: @json((int) config('catalog_v15.kds_fallback_polling.disconnected_jitter_ms', 3000)),
             },
             // [STAFF-ONLY-V1] Feature flags for surface restructuring
-            staffOnlyMode: @json((bool) env('STAFF_ONLY_MODE', false)),
+            staffOnlyMode: @json((bool) config('features.staff_only_mode')),
             kioskUsePosWizard: @json((bool) env('KIOSK_USE_POS_WIZARD', false)),
             // [iter15-mega-fix C-003/A-003 2026-05-10] Expose APP_ENV so the SPA
             // can suppress the "Connexion temps réel perdue" banner in dev/local

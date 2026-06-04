@@ -1,4 +1,0 @@
-23. [GET] http://127.0.0.1:8000/api/frontend/oss-order => [200] OK
-26. [GET] http://127.0.0.1:8000/api/frontend/oss-order => [200] OK
-
-Note: 23 static requests not shown, run with "static" option to see them.

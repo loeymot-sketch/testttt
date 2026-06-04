@@ -1,0 +1,472 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - button " Filiale Le Cayenne (principal) " [ref=e149] [cursor=pointer]:
+            - generic [ref=e13]: 
+            - heading "Filiale Le Cayenne (principal)" [level=3] [ref=e150]:
+              - generic [ref=e15]: Filiale
+              - text: Le Cayenne (principal)
+            - generic [ref=e16]: 
+          - list:
+            - listitem:
+              - radio "Le Cayenne (principal)" [checked]
+              - generic: Le Cayenne (principal)
+        - generic [ref=e18]:
+          - button "flag" [ref=e152] [cursor=pointer]:
+            - img "flag" [ref=e153]
+          - link "POS" [ref=e19] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e20]: 
+      - button "Fermer" [ref=e21] [cursor=pointer]: 
+      - generic [ref=e22]:
+        - button "avatar Bonjour Admin Le Cayenne" [ref=e23] [cursor=pointer]:
+          - img "avatar" [ref=e24]
+          - heading "Bonjour Admin Le Cayenne" [level=3] [ref=e25]:
+            - text: Bonjour
+            - generic "Admin Le Cayenne" [ref=e26]
+          - generic [ref=e27]: 
+        - menu "avatar Bonjour Admin Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Admin Le Cayenne" [level=3]
+            - paragraph: admin@lecayenne.fr
+            - paragraph: "+330600000000"
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - complementary [ref=e28]:
+    - text: 
+    - navigation [ref=e29]:
+      - list [ref=e30]:
+        - listitem [ref=e31]:
+          - link " Tableau de bord" [ref=e32] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e33]: 
+            - generic [ref=e34]: Tableau de bord
+      - list [ref=e35]:
+        - listitem [ref=e36]:
+          - link " POS" [ref=e37] [cursor=pointer]:
+            - /url: /admin/pos
+            - generic [ref=e38]: 
+            - generic [ref=e39]: POS
+      - list [ref=e40]:
+        - listitem [ref=e41]:
+          - link "Produits & Stock" [ref=e42] [cursor=pointer]:
+            - /url: /admin/stock/rupture
+            - generic [ref=e43]: Produits & Stock
+      - list [ref=e44]:
+        - listitem [ref=e45]:
+          - link " Catalogue" [ref=e46] [cursor=pointer]:
+            - /url: /admin/items/studio
+            - generic [ref=e47]: 
+            - generic [ref=e48]: Catalogue
+        - listitem [ref=e49]:
+          - link " Attribut d’articles" [ref=e50] [cursor=pointer]:
+            - /url: /admin/settings/item-attributes/list
+            - generic [ref=e51]: 
+            - generic [ref=e52]: Attribut d’articles
+      - list [ref=e53]:
+        - listitem [ref=e54]:
+          - link " Ingrédients" [ref=e55] [cursor=pointer]:
+            - /url: /admin/ingredients
+            - generic [ref=e56]: 
+            - generic [ref=e57]: Ingrédients
+      - list [ref=e58]:
+        - listitem [ref=e59]:
+          - link " Commandes caisse" [ref=e60] [cursor=pointer]:
+            - /url: /admin/pos-orders
+            - generic [ref=e61]: 
+            - generic [ref=e62]: Commandes caisse
+      - list [ref=e63]:
+        - listitem [ref=e64]:
+          - link " Historique" [ref=e65] [cursor=pointer]:
+            - /url: /admin/historique
+            - generic [ref=e66]: 
+            - generic [ref=e67]: Historique
+      - list [ref=e68]:
+        - listitem [ref=e69]:
+          - link " Encaissement" [ref=e70] [cursor=pointer]:
+            - /url: /admin/encaissement
+            - generic [ref=e71]: 
+            - generic [ref=e72]: Encaissement
+      - list [ref=e73]:
+        - listitem [ref=e74]:
+          - link " Vue caisse unifiée" [ref=e75] [cursor=pointer]:
+            - /url: /admin/cash-overview
+            - generic [ref=e76]: 
+            - generic [ref=e77]: Vue caisse unifiée
+      - list [ref=e78]:
+        - listitem [ref=e79]:
+          - link " Caisse livreur" [ref=e80] [cursor=pointer]:
+            - /url: /admin/delivery-boy-cash-sessions
+            - generic [ref=e81]: 
+            - generic [ref=e82]: Caisse livreur
+      - list [ref=e83]:
+        - listitem [ref=e84]:
+          - button "Caisse et commandes" [ref=e85] [cursor=pointer]
+        - listitem [ref=e86]:
+          - link " Écran cuisine" [ref=e87] [cursor=pointer]:
+            - /url: /admin/kitchen-display-system
+            - generic [ref=e88]: 
+            - generic [ref=e89]: Écran cuisine
+        - listitem [ref=e90]:
+          - link " Suivi client" [ref=e91] [cursor=pointer]:
+            - /url: /admin/order-status-screen
+            - generic [ref=e92]: 
+            - generic [ref=e93]: Suivi client
+      - list [ref=e94]:
+        - listitem [ref=e95]:
+          - button "Communications" [ref=e96] [cursor=pointer]
+        - listitem [ref=e97]:
+          - link " Notification pushs" [ref=e98] [cursor=pointer]:
+            - /url: /admin/push-notifications
+            - generic [ref=e99]: 
+            - generic [ref=e100]: Notification pushs
+        - listitem [ref=e101]:
+          - link " Messages" [ref=e102] [cursor=pointer]:
+            - /url: /admin/messages
+            - generic [ref=e103]: 
+            - generic [ref=e104]: Messages
+        - listitem [ref=e105]:
+          - link " Abonnés" [ref=e106] [cursor=pointer]:
+            - /url: /admin/subscribers
+            - generic [ref=e107]: 
+            - generic [ref=e108]: Abonnés
+      - list [ref=e109]:
+        - listitem [ref=e110]:
+          - button "Utilisateurs" [ref=e111] [cursor=pointer]
+        - listitem [ref=e112]:
+          - link " Administrateurs" [ref=e113] [cursor=pointer]:
+            - /url: /admin/administrators
+            - generic [ref=e114]: 
+            - generic [ref=e115]: Administrateurs
+        - listitem [ref=e116]:
+          - link " Employés" [ref=e117] [cursor=pointer]:
+            - /url: /admin/employees
+            - generic [ref=e118]: 
+            - generic [ref=e119]: Employés
+        - listitem [ref=e120]:
+          - link " Chefs" [ref=e121] [cursor=pointer]:
+            - /url: /admin/chefs
+            - generic [ref=e122]: 
+            - generic [ref=e123]: Chefs
+      - list [ref=e124]:
+        - listitem [ref=e125]:
+          - button "Comptes" [ref=e126] [cursor=pointer]
+        - listitem [ref=e127]:
+          - link " Transactions" [ref=e128] [cursor=pointer]:
+            - /url: /admin/transactions
+            - generic [ref=e129]: 
+            - generic [ref=e130]: Transactions
+      - list [ref=e131]:
+        - listitem [ref=e132]:
+          - button "Rapports" [ref=e133] [cursor=pointer]
+        - listitem [ref=e134]:
+          - link " Rapport des ventes" [ref=e135] [cursor=pointer]:
+            - /url: /admin/sales-report
+            - generic [ref=e136]: 
+            - generic [ref=e137]: Rapport des ventes
+        - listitem [ref=e138]:
+          - link " Rapport articles" [ref=e139] [cursor=pointer]:
+            - /url: /admin/items-report
+            - generic [ref=e140]: 
+            - generic [ref=e141]: Rapport articles
+      - list [ref=e142]:
+        - listitem [ref=e143]:
+          - button "Configuration" [ref=e144] [cursor=pointer]
+        - listitem [ref=e145]:
+          - link " Paramètres" [ref=e146] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=e147]: 
+            - generic [ref=e148]: Paramètres
+  - generic [ref=e154]:
+    - list [ref=e157]:
+      - listitem [ref=e158]:
+        - link "Tableau de bord/" [ref=e159] [cursor=pointer]:
+          - /url: /admin/dashboard
+      - listitem [ref=e160]:
+        - generic [ref=e161]: Commandes caisse
+    - img [ref=e164]
+    - generic [ref=e169]:
+      - generic [ref=e170]:
+        - heading "Commandes caisse" [level=3] [ref=e171]
+        - generic [ref=e172]:
+          - generic [ref=e173]:
+            - button "10 " [ref=e174] [cursor=pointer]:
+              - generic [ref=e175]: "10"
+              - generic [ref=e176]: 
+            - list:
+              - listitem:
+                - generic: "10"
+              - listitem:
+                - generic: "25"
+              - listitem:
+                - generic: "50"
+              - listitem:
+                - generic: "100"
+              - listitem:
+                - generic: "500"
+              - listitem:
+                - generic: "1000"
+          - button " Filtrer " [ref=e177] [cursor=pointer]:
+            - generic [ref=e178]: 
+            - generic [ref=e179]: Filtrer
+            - generic [ref=e180]: 
+          - generic [ref=e181]:
+            - button " Exporter " [ref=e182] [cursor=pointer]:
+              - generic [ref=e183]: 
+              - generic [ref=e184]: Exporter
+              - generic [ref=e185]: 
+            - generic:
+              - button " Imprimer":
+                - generic: 
+                - text: Imprimer
+              - link " XLS":
+                - /url: "#"
+                - generic: 
+                - text: XLS
+      - generic [ref=e187]:
+        - generic [ref=e188]:
+          - generic [ref=e189]: N° Commande
+          - textbox "N° Commande" [ref=e190]
+        - generic [ref=e191]:
+          - generic [ref=e192]: Statut
+          - combobox [ref=e193]:
+            - textbox [ref=e196]:
+              - /placeholder: "--"
+        - generic [ref=e198]:
+          - generic [ref=e199]: Client
+          - combobox [ref=e200]:
+            - textbox [ref=e203]:
+              - /placeholder: "--"
+        - generic [ref=e205]:
+          - generic [ref=e206]: Date
+          - textbox "Date" [ref=e208]:
+            - textbox "Date" [ref=e210] [cursor=pointer]:
+              - /placeholder: ""
+        - generic [ref=e212]:
+          - button " Rechercher" [ref=e213] [cursor=pointer]:
+            - generic [ref=e214]: 
+            - generic [ref=e215]: Rechercher
+          - button " Effacer" [ref=e216] [cursor=pointer]:
+            - generic [ref=e217]: 
+            - generic [ref=e218]: Effacer
+      - table [ref=e220]:
+        - rowgroup [ref=e221]:
+          - row "N° Commande N° file Type de commande Client Montant Date Statut Action" [ref=e222]:
+            - columnheader "N° Commande" [ref=e223]
+            - columnheader "N° file" [ref=e224]
+            - columnheader "Type de commande" [ref=e225]
+            - columnheader "Client" [ref=e226]
+            - columnheader "Montant" [ref=e227]
+            - columnheader "Date" [ref=e228]
+            - columnheader "Statut" [ref=e229]
+            - columnheader "Action" [ref=e230]
+        - rowgroup [ref=e231]:
+          - row "0406264160 N°A0001 À emporter Client passage 1,50 € 03:37 AM, 04-06-2026 Retournée Voir Supprimer" [ref=e232]:
+            - cell "0406264160" [ref=e233]
+            - cell "N°A0001" [ref=e234]:
+              - generic [ref=e235]: N°A0001
+            - cell "À emporter" [ref=e236]:
+              - generic [ref=e237]: À emporter
+            - cell "Client passage" [ref=e238]
+            - cell "1,50 €" [ref=e239]
+            - cell "03:37 AM, 04-06-2026" [ref=e240]
+            - cell "Retournée" [ref=e241]:
+              - generic [ref=e242]: Retournée
+            - cell "Voir Supprimer" [ref=e243]:
+              - generic [ref=e244]:
+                - link "Voir" [ref=e245] [cursor=pointer]:
+                  - /url: /admin/pos-orders/show/4160
+                  - generic [ref=e246]: 
+                - button "Supprimer" [ref=e247] [cursor=pointer]:
+                  - generic [ref=e248]: 
+          - row "0306264118 N°A0008 À emporter Client passage 3,00 € 04:49 AM, 03-06-2026 Préparée Voir Supprimer" [ref=e249]:
+            - cell "0306264118" [ref=e250]
+            - cell "N°A0008" [ref=e251]:
+              - generic [ref=e252]: N°A0008
+            - cell "À emporter" [ref=e253]:
+              - generic [ref=e254]: À emporter
+            - cell "Client passage" [ref=e255]
+            - cell "3,00 €" [ref=e256]
+            - cell "04:49 AM, 03-06-2026" [ref=e257]
+            - cell "Préparée" [ref=e258]:
+              - generic [ref=e259]: Préparée
+            - cell "Voir Supprimer" [ref=e260]:
+              - generic [ref=e261]:
+                - link "Voir" [ref=e262] [cursor=pointer]:
+                  - /url: /admin/pos-orders/show/4118
+                  - generic [ref=e263]: 
+                - button "Supprimer" [ref=e264] [cursor=pointer]:
+                  - generic [ref=e265]: 
+          - row "0306264113 N°A0006 À emporter Client passage 3,00 € 03:38 AM, 03-06-2026 Retournée Voir Supprimer" [ref=e266]:
+            - cell "0306264113" [ref=e267]
+            - cell "N°A0006" [ref=e268]:
+              - generic [ref=e269]: N°A0006
+            - cell "À emporter" [ref=e270]:
+              - generic [ref=e271]: À emporter
+            - cell "Client passage" [ref=e272]
+            - cell "3,00 €" [ref=e273]
+            - cell "03:38 AM, 03-06-2026" [ref=e274]
+            - cell "Retournée" [ref=e275]:
+              - generic [ref=e276]: Retournée
+            - cell "Voir Supprimer" [ref=e277]:
+              - generic [ref=e278]:
+                - link "Voir" [ref=e279] [cursor=pointer]:
+                  - /url: /admin/pos-orders/show/4113
+                  - generic [ref=e280]: 
+                - button "Supprimer" [ref=e281] [cursor=pointer]:
+                  - generic [ref=e282]: 
+          - row "0306264107 N°A0003 À emporter Client passage 3,00 € 01:14 AM, 03-06-2026 Livré Voir Supprimer" [ref=e283]:
+            - cell "0306264107" [ref=e284]
+            - cell "N°A0003" [ref=e285]:
+              - generic [ref=e286]: N°A0003
+            - cell "À emporter" [ref=e287]:
+              - generic [ref=e288]: À emporter
+            - cell "Client passage" [ref=e289]
+            - cell "3,00 €" [ref=e290]
+            - cell "01:14 AM, 03-06-2026" [ref=e291]
+            - cell "Livré" [ref=e292]:
+              - generic [ref=e293]: Livré
+            - cell "Voir Supprimer" [ref=e294]:
+              - generic [ref=e295]:
+                - link "Voir" [ref=e296] [cursor=pointer]:
+                  - /url: /admin/pos-orders/show/4107
+                  - generic [ref=e297]: 
+                - button "Supprimer" [ref=e298] [cursor=pointer]:
+                  - generic [ref=e299]: 
+          - row "0206264059 N°A0013 À emporter Client passage 3,00 € 03:53 PM, 02-06-2026 En préparation Voir Supprimer" [ref=e300]:
+            - cell "0206264059" [ref=e301]
+            - cell "N°A0013" [ref=e302]:
+              - generic [ref=e303]: N°A0013
+            - cell "À emporter" [ref=e304]:
+              - generic [ref=e305]: À emporter
+            - cell "Client passage" [ref=e306]
+            - cell "3,00 €" [ref=e307]
+            - cell "03:53 PM, 02-06-2026" [ref=e308]
+            - cell "En préparation" [ref=e309]:
+              - generic [ref=e310]: En préparation
+            - cell "Voir Supprimer" [ref=e311]:
+              - generic [ref=e312]:
+                - link "Voir" [ref=e313] [cursor=pointer]:
+                  - /url: /admin/pos-orders/show/4059
+                  - generic [ref=e314]: 
+                - button "Supprimer" [ref=e315] [cursor=pointer]:
+                  - generic [ref=e316]: 
+          - row "0206264057 N°A0011 À emporter Client passage 3,00 € 04:42 AM, 02-06-2026 Préparée Voir Supprimer" [ref=e317]:
+            - cell "0206264057" [ref=e318]
+            - cell "N°A0011" [ref=e319]:
+              - generic [ref=e320]: N°A0011
+            - cell "À emporter" [ref=e321]:
+              - generic [ref=e322]: À emporter
+            - cell "Client passage" [ref=e323]
+            - cell "3,00 €" [ref=e324]
+            - cell "04:42 AM, 02-06-2026" [ref=e325]
+            - cell "Préparée" [ref=e326]:
+              - generic [ref=e327]: Préparée
+            - cell "Voir Supprimer" [ref=e328]:
+              - generic [ref=e329]:
+                - link "Voir" [ref=e330] [cursor=pointer]:
+                  - /url: /admin/pos-orders/show/4057
+                  - generic [ref=e331]: 
+                - button "Supprimer" [ref=e332] [cursor=pointer]:
+                  - generic [ref=e333]: 
+          - row "0206264056 N°A0010 À emporter Client passage 3,00 € 04:41 AM, 02-06-2026 Préparée Voir Supprimer" [ref=e334]:
+            - cell "0206264056" [ref=e335]
+            - cell "N°A0010" [ref=e336]:
+              - generic [ref=e337]: N°A0010
+            - cell "À emporter" [ref=e338]:
+              - generic [ref=e339]: À emporter
+            - cell "Client passage" [ref=e340]
+            - cell "3,00 €" [ref=e341]
+            - cell "04:41 AM, 02-06-2026" [ref=e342]
+            - cell "Préparée" [ref=e343]:
+              - generic [ref=e344]: Préparée
+            - cell "Voir Supprimer" [ref=e345]:
+              - generic [ref=e346]:
+                - link "Voir" [ref=e347] [cursor=pointer]:
+                  - /url: /admin/pos-orders/show/4056
+                  - generic [ref=e348]: 
+                - button "Supprimer" [ref=e349] [cursor=pointer]:
+                  - generic [ref=e350]: 
+          - row "0206264055 N°A0009 À emporter Client passage 3,00 € 04:34 AM, 02-06-2026 Préparée Voir Supprimer" [ref=e351]:
+            - cell "0206264055" [ref=e352]
+            - cell "N°A0009" [ref=e353]:
+              - generic [ref=e354]: N°A0009
+            - cell "À emporter" [ref=e355]:
+              - generic [ref=e356]: À emporter
+            - cell "Client passage" [ref=e357]
+            - cell "3,00 €" [ref=e358]
+            - cell "04:34 AM, 02-06-2026" [ref=e359]
+            - cell "Préparée" [ref=e360]:
+              - generic [ref=e361]: Préparée
+            - cell "Voir Supprimer" [ref=e362]:
+              - generic [ref=e363]:
+                - link "Voir" [ref=e364] [cursor=pointer]:
+                  - /url: /admin/pos-orders/show/4055
+                  - generic [ref=e365]: 
+                - button "Supprimer" [ref=e366] [cursor=pointer]:
+                  - generic [ref=e367]: 
+          - row "0206264054 N°A0008 À emporter Client passage 3,00 € 04:32 AM, 02-06-2026 Préparée Voir Supprimer" [ref=e368]:
+            - cell "0206264054" [ref=e369]
+            - cell "N°A0008" [ref=e370]:
+              - generic [ref=e371]: N°A0008
+            - cell "À emporter" [ref=e372]:
+              - generic [ref=e373]: À emporter
+            - cell "Client passage" [ref=e374]
+            - cell "3,00 €" [ref=e375]
+            - cell "04:32 AM, 02-06-2026" [ref=e376]
+            - cell "Préparée" [ref=e377]:
+              - generic [ref=e378]: Préparée
+            - cell "Voir Supprimer" [ref=e379]:
+              - generic [ref=e380]:
+                - link "Voir" [ref=e381] [cursor=pointer]:
+                  - /url: /admin/pos-orders/show/4054
+                  - generic [ref=e382]: 
+                - button "Supprimer" [ref=e383] [cursor=pointer]:
+                  - generic [ref=e384]: 
+          - row "0206264053 N°A0007 À emporter Client passage 3,00 € 04:30 AM, 02-06-2026 Préparée Voir Supprimer" [ref=e385]:
+            - cell "0206264053" [ref=e386]
+            - cell "N°A0007" [ref=e387]:
+              - generic [ref=e388]: N°A0007
+            - cell "À emporter" [ref=e389]:
+              - generic [ref=e390]: À emporter
+            - cell "Client passage" [ref=e391]
+            - cell "3,00 €" [ref=e392]
+            - cell "04:30 AM, 02-06-2026" [ref=e393]
+            - cell "Préparée" [ref=e394]:
+              - generic [ref=e395]: Préparée
+            - cell "Voir Supprimer" [ref=e396]:
+              - generic [ref=e397]:
+                - link "Voir" [ref=e398] [cursor=pointer]:
+                  - /url: /admin/pos-orders/show/4053
+                  - generic [ref=e399]: 
+                - button "Supprimer" [ref=e400] [cursor=pointer]:
+                  - generic [ref=e401]: 
+      - generic [ref=e403]:
+        - paragraph [ref=e405]: Affichage de 1 à 10 sur 15 entrées
+        - navigation "Pagination" [ref=e407]:
+          - button "Previous" [disabled] [ref=e408]:
+            - generic [ref=e409]: Previous
+            - img [ref=e410]
+          - button "1" [disabled] [ref=e412]
+          - button "2" [ref=e413] [cursor=pointer]
+          - button "Next" [ref=e414] [cursor=pointer]:
+            - generic [ref=e415]: Next
+            - img [ref=e416]

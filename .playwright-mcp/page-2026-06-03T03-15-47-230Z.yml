@@ -1,0 +1,301 @@
+- generic [active] [ref=e1]:
+  - main [ref=e43]:
+    - generic [ref=e44]:
+      - link "logo" [ref=e45] [cursor=pointer]:
+        - /url: /home
+        - img "logo" [ref=e46]
+      - generic [ref=e47]:
+        - generic [ref=e49]:
+          - link " Tableau de bord" [ref=e51] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e52]: 
+            - generic [ref=e53]: Tableau de bord
+          - generic [ref=e55]:
+            - button "flag Français" [ref=e56] [cursor=pointer]:
+              - img "flag" [ref=e57]
+              - generic [ref=e58]: Français
+            - list:
+              - listitem:
+                - img "flag"
+                - generic: Anglais
+              - listitem:
+                - img "flag"
+                - generic: Français
+        - generic [ref=e59]:
+          - button "avatar Bonjour Chef Le Cayenne" [ref=e60] [cursor=pointer]:
+            - img "avatar" [ref=e61]
+            - heading "Bonjour Chef Le Cayenne" [level=3] [ref=e62]:
+              - text: Bonjour
+              - generic "Chef Le Cayenne" [ref=e63]
+            - generic [ref=e64]: 
+          - menu "avatar Bonjour Chef Le Cayenne":
+            - generic:
+              - figure:
+                - img "avatar"
+              - generic:
+                - button "Modifier le profil"
+                - generic: 
+              - heading "Chef Le Cayenne" [level=3]
+              - paragraph: chef@lecayenne.fr
+              - paragraph: "+330600000003"
+              - heading "0,00 €" [level=3]
+            - menuitem "Modifier le profil":
+              - text: 
+              - generic: Modifier le profil
+            - menuitem "Changer le mot de passe":
+              - text: 
+              - generic: Changer le mot de passe
+            - menuitem "Déconnexion":
+              - text: 
+              - generic: Déconnexion
+    - text:       
+    - button "Ouvrir l'historique des commandes du jour" [ref=e66] [cursor=pointer]:
+      - generic [ref=e67]: 📚
+      - generic [ref=e68]: Historique
+    - generic [ref=e69]:
+      - status [ref=e70]:
+        - generic [ref=e71]:
+          - img [ref=e73]
+          - generic [ref=e75]: Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS.
+        - generic [ref=e76]: LOCAL
+      - generic [ref=e77]:
+        - region "Commande A0001, source Borne, Nouvelle, attente 268 minutes 2 secondes" [ref=e78]:
+          - generic [ref=e80]:
+            - generic [ref=e81]:
+              - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e82]: "[A]"
+              - generic [ref=e83]:
+                - generic [ref=e84]: Nouvelle
+                - generic [ref=e87]: Borne
+            - generic [ref=e88]:
+              - generic [ref=e89]:
+                - generic [ref=e90]: N°
+                - text: A0001
+              - generic [ref=e91]:
+                - generic [ref=e92]: Attente
+                - generic [ref=e93]: 268:02
+          - region "Détails de la commande A0001, défilable au clavier" [ref=e94]:
+            - generic [ref=e95]:
+              - generic [ref=e97]:
+                - generic [ref=e98]:
+                  - text: "1"
+                  - generic [ref=e99]: ×
+                - generic [ref=e100]: Tacos
+              - generic [ref=e102]:
+                - generic [ref=e103]: Choix
+                - generic [ref=e104]: ":"
+                - generic [ref=e105]: Poulet mariné
+              - generic [ref=e107]:
+                - generic [ref=e108]: Sauce
+                - generic [ref=e109]: ":"
+                - generic [ref=e110]: Algérienne
+              - generic [ref=e112]:
+                - generic [ref=e113]: ·
+                - generic [ref=e114]: "Viandes : Poulet mariné ×1"
+          - status "Commande en attente d'encaissement par le caissier — préparation en attente" [ref=e115]:
+            - img [ref=e116]
+            - generic [ref=e119]: En attente encaissement
+          - button "Prêt" [ref=e120] [cursor=pointer]:
+            - img [ref=e121]
+            - generic [ref=e123]: Prêt
+        - region "Commande A0002, source Borne, Nouvelle, attente 252 minutes 37 secondes" [ref=e124]:
+          - generic [ref=e126]:
+            - generic [ref=e127]:
+              - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e128]: "[B]"
+              - generic [ref=e129]:
+                - generic [ref=e130]: Nouvelle
+                - generic [ref=e133]: Borne
+            - generic [ref=e134]:
+              - generic [ref=e135]:
+                - generic [ref=e136]: N°
+                - text: A0002
+              - generic [ref=e137]:
+                - generic [ref=e138]: Attente
+                - generic [ref=e139]: 252:37
+          - region "Détails de la commande A0002, défilable au clavier" [ref=e140]:
+            - generic [ref=e141]:
+              - generic [ref=e143]:
+                - generic [ref=e144]:
+                  - text: "1"
+                  - generic [ref=e145]: ×
+                - generic [ref=e146]: Tacos
+              - generic [ref=e148]:
+                - generic [ref=e149]: Choix
+                - generic [ref=e150]: ":"
+                - generic [ref=e151]: Poulet mariné
+              - generic [ref=e153]:
+                - generic [ref=e154]: Sauce
+                - generic [ref=e155]: ":"
+                - generic [ref=e156]: Algérienne
+              - generic [ref=e158]:
+                - generic [ref=e159]: ·
+                - generic [ref=e160]: "Viandes : Poulet mariné ×1"
+          - status "Commande en attente d'encaissement par le caissier — préparation en attente" [ref=e161]:
+            - img [ref=e162]
+            - generic [ref=e165]: En attente encaissement
+          - button "Prêt" [ref=e166] [cursor=pointer]:
+            - img [ref=e167]
+            - generic [ref=e169]: Prêt
+        - region "Commande A0003, source Caisse, En cours, attente 241 minutes 44 secondes" [ref=e170]:
+          - generic [ref=e172]:
+            - generic [ref=e173]:
+              - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e174]: "[C]"
+              - generic [ref=e175]:
+                - generic [ref=e176]: En cours
+                - generic [ref=e179]: Caisse
+            - generic [ref=e180]:
+              - generic [ref=e181]:
+                - generic [ref=e182]: N°
+                - text: A0003
+              - generic [ref=e183]:
+                - generic [ref=e184]: Attente
+                - generic [ref=e185]: 241:44
+          - region "Détails de la commande A0003, défilable au clavier" [ref=e186]:
+            - generic [ref=e187]:
+              - generic [ref=e189]:
+                - generic [ref=e190]:
+                  - text: "1"
+                  - generic [ref=e191]: ×
+                - generic [ref=e192]: Menu (Frites + Boisson)
+              - generic [ref=e194]:
+                - generic [ref=e195]: ·
+                - generic [ref=e196]: MENU (FRITES + BOISSON)
+          - button "Prêt" [ref=e197] [cursor=pointer]:
+            - img [ref=e198]
+            - generic [ref=e200]: Prêt
+        - region "Commande A0005, source Borne, Nouvelle, attente 112 minutes 38 secondes" [ref=e201]:
+          - generic [ref=e203]:
+            - generic [ref=e204]:
+              - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e205]: "[D]"
+              - generic [ref=e206]:
+                - generic [ref=e207]: Nouvelle
+                - generic [ref=e210]: Borne
+            - generic [ref=e211]:
+              - generic [ref=e212]:
+                - generic [ref=e213]: N°
+                - text: A0005
+              - generic [ref=e214]:
+                - generic [ref=e215]: Attente
+                - generic [ref=e216]: 112:38
+          - region "Détails de la commande A0005, défilable au clavier" [ref=e217]:
+            - generic [ref=e218]:
+              - generic [ref=e220]:
+                - generic [ref=e221]:
+                  - text: "1"
+                  - generic [ref=e222]: ×
+                - generic [ref=e223]: Tacos
+              - generic [ref=e225]:
+                - generic [ref=e226]: Choix
+                - generic [ref=e227]: ":"
+                - generic [ref=e228]: Poulet mariné
+              - generic [ref=e230]:
+                - generic [ref=e231]: Sauce
+                - generic [ref=e232]: ":"
+                - generic [ref=e233]: Algérienne
+              - generic [ref=e235]:
+                - generic [ref=e236]: ·
+                - generic [ref=e237]: "Viandes : Poulet mariné ×1"
+          - status "Commande en attente d'encaissement par le caissier — préparation en attente" [ref=e238]:
+            - img [ref=e239]
+            - generic [ref=e242]: En attente encaissement
+          - button "Prêt" [ref=e243] [cursor=pointer]:
+            - img [ref=e244]
+            - generic [ref=e246]: Prêt
+        - region "Commande A0006, source Caisse, En cours, attente 97 minutes 15 secondes" [ref=e247]:
+          - generic [ref=e249]:
+            - generic [ref=e250]:
+              - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e251]: "[E]"
+              - generic [ref=e252]:
+                - generic [ref=e253]: En cours
+                - generic [ref=e256]: Caisse
+            - generic [ref=e257]:
+              - generic [ref=e258]:
+                - generic [ref=e259]: N°
+                - text: A0006
+              - generic [ref=e260]:
+                - generic [ref=e261]: Attente
+                - generic [ref=e262]: 97:15
+          - region "Détails de la commande A0006, défilable au clavier" [ref=e263]:
+            - generic [ref=e264]:
+              - generic [ref=e266]:
+                - generic [ref=e267]:
+                  - text: "1"
+                  - generic [ref=e268]: ×
+                - generic [ref=e269]: Menu (Frites + Boisson)
+              - generic [ref=e271]:
+                - generic [ref=e272]: ·
+                - generic [ref=e273]: MENU (FRITES + BOISSON)
+          - button "Prêt" [ref=e274] [cursor=pointer]:
+            - img [ref=e275]
+            - generic [ref=e277]: Prêt
+        - region "Commande A0008, source Caisse, En cours, attente 25 minutes 57 secondes" [ref=e278]:
+          - generic [ref=e280]:
+            - generic [ref=e281]:
+              - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e282]: "[F]"
+              - generic [ref=e283]:
+                - generic [ref=e284]: En cours
+                - generic [ref=e287]: Caisse
+            - generic [ref=e288]:
+              - generic [ref=e289]:
+                - generic [ref=e290]: N°
+                - text: A0008
+              - generic [ref=e291]:
+                - generic [ref=e292]: Attente
+                - generic [ref=e293]: 25:57
+          - region "Détails de la commande A0008, défilable au clavier" [ref=e294]:
+            - generic [ref=e295]:
+              - generic [ref=e297]:
+                - generic [ref=e298]:
+                  - text: "1"
+                  - generic [ref=e299]: ×
+                - generic [ref=e300]: Menu (Frites + Boisson)
+              - generic [ref=e302]:
+                - generic [ref=e303]: ·
+                - generic [ref=e304]: MENU (FRITES + BOISSON)
+          - button "Prêt" [ref=e305] [cursor=pointer]:
+            - img [ref=e306]
+            - generic [ref=e308]: Prêt
+        - region "Commande A0009, source Borne, Nouvelle, attente 4 minutes 3 secondes" [ref=e309]:
+          - generic [ref=e311]:
+            - generic [ref=e312]:
+              - generic "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ne se synchronisent pas entre plusieurs écrans KDS." [ref=e313]: "[G]"
+              - generic [ref=e314]:
+                - generic [ref=e315]: Nouvelle
+                - generic [ref=e318]: Borne
+            - generic [ref=e319]:
+              - generic [ref=e320]:
+                - generic [ref=e321]: N°
+                - text: A0009
+              - generic [ref=e322]:
+                - generic [ref=e323]: Attente
+                - generic [ref=e324]: 04:03
+          - region "Détails de la commande A0009, défilable au clavier" [ref=e325]:
+            - generic [ref=e328]:
+              - generic [ref=e329]:
+                - text: "1"
+                - generic [ref=e330]: ×
+              - generic [ref=e331]: Coca-Cola 33cl
+          - status "Commande en attente d'encaissement par le caissier — préparation en attente" [ref=e332]:
+            - img [ref=e333]
+            - generic [ref=e336]: En attente encaissement
+          - button "Prêt" [ref=e337] [cursor=pointer]:
+            - img [ref=e338]
+            - generic [ref=e340]: Prêt
+      - region "Récemment servies" [ref=e342]:
+        - generic [ref=e343]: Récemment servies
+        - generic [ref=e344]:
+          - generic "Commande N°A0007 servie" [ref=e345]:
+            - generic [ref=e346]: N°A0007
+            - generic [ref=e347]: il y a 58 min
+          - generic "Commande N°A0004 servie" [ref=e348]:
+            - generic [ref=e349]: N°A0004
+            - generic [ref=e350]: il y a 155 min
+          - generic "Commande N°A0177 servie" [ref=e351]:
+            - generic [ref=e352]: N°A0177
+            - generic [ref=e353]: il y a 404 min
+          - generic "Commande N°A0176 servie" [ref=e354]:
+            - generic [ref=e355]: N°A0176
+            - generic [ref=e356]: il y a 404 min
+  - generic [ref=e358]:
+    - img [ref=e359]: 
+    - alert [ref=e361]: Connexion réussie.
+    - button "close" [ref=e362] [cursor=pointer]: ×

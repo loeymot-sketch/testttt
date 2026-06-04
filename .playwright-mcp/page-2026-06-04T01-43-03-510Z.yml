@@ -1,0 +1,34 @@
+- generic [ref=e1]:
+  - generic [ref=e293]:
+    - generic [ref=e294]:
+      - heading "Et pour terminer ?" [level=1] [ref=e295]
+      - paragraph [ref=e296]: Ajoutez quelque chose à votre commande
+    - list "Et pour terminer ?" [ref=e297]:
+      - listitem "Boisson Seule — €2,00" [ref=e298] [cursor=pointer]:
+        - img [ref=e300]
+        - generic [ref=e301]:
+          - heading "Boisson Seule" [level=3] [ref=e302]
+          - generic [ref=e303]: €2,00
+        - generic [ref=e305]: +
+      - listitem "Menu (Frites + Boisson) — €3,00" [ref=e306] [cursor=pointer]:
+        - img [ref=e308]
+        - generic [ref=e309]:
+          - heading "Menu (Frites + Boisson)" [level=3] [ref=e310]
+          - generic [ref=e311]: €3,00
+        - generic [ref=e313]: +
+      - listitem "Frites Seules — €2,00" [ref=e314] [cursor=pointer]:
+        - img [ref=e316]
+        - generic [ref=e317]:
+          - heading "Frites Seules" [level=3] [ref=e318]
+          - generic [ref=e319]: €2,00
+        - generic [ref=e321]: +
+    - generic [ref=e322]:
+      - button "Non merci, continuer sans" [ref=e323] [cursor=pointer]:
+        - text: Non merci, continuer sans
+        - generic [ref=e324]: (29s)
+      - progressbar "(29s)" [ref=e325]
+  - status:
+    - alert [ref=e327] [cursor=pointer]:
+      - generic [ref=e328]: ⚠
+      - generic [ref=e329]: Session rafraîchie automatiquement
+      - button "Fermer la notification" [ref=e330]: ×

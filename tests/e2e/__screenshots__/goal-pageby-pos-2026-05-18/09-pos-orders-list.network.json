@@ -1,9 +1,0 @@
-[
-  {
-    "url": "http://localhost:8000/api/broadcasting/auth",
-    "method": "POST",
-    "status": 403,
-    "duration_ms": null,
-    "ts": 1779070281009
-  }
-]

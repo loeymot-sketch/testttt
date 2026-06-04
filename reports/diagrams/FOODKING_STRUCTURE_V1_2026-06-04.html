@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FoodKing — Structure V1 LOCAL « Le Cayenne » (dessin de bout en bout)</title>
+<style>
+  :root{
+    --brand:#F4501E; --jaune:#FFB800; --dark:#1A1A1A; --bg:#0f1115; --card:#1b1f27;
+    --line:#2c3240; --ok:#1faa59; --warn:#e6a700; --bad:#e0483d; --muted:#8a93a5; --txt:#e8edf5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:28px}
+  h1{font-size:22px;margin:0 0 4px} h2{font-size:16px;margin:30px 0 10px;color:var(--jaune);border-bottom:1px solid var(--line);padding-bottom:6px}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0 4px;font-size:12.5px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .d-ok{background:var(--ok)}.d-warn{background:var(--warn)}.d-bad{background:var(--bad)}.d-prior{background:#5b8def}
+  .flow{display:flex;flex-direction:column;gap:0}
+  .row{display:flex;align-items:stretch;gap:14px;flex-wrap:wrap;margin:0 0 6px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 13px;min-width:150px;flex:1}
+  .box.brand{border-color:var(--brand)} .box.acc{border-color:var(--jaune)}
+  .box b{display:block;font-size:13.5px;margin-bottom:3px}
+  .box small{color:var(--muted);font-size:11.5px;display:block}
+  .tag{display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:20px;margin-top:6px;border:1px solid}
+  .t-ok{color:var(--ok);border-color:var(--ok)} .t-warn{color:var(--warn);border-color:var(--warn)}
+  .t-bad{color:var(--bad);border-color:var(--bad)} .t-prior{color:#5b8def;border-color:#5b8def} .t-frozen{color:#c98bff;border-color:#c98bff}
+  .arrow{text-align:center;color:var(--muted);font-size:18px;margin:2px 0}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+  .sys{border-top:3px solid var(--brand)}
+  ul.tree{list-style:none;margin:6px 0 0;padding-left:14px;font-size:12.5px}
+  ul.tree li{position:relative;padding:2px 0 2px 14px}
+  ul.tree li:before{content:"├─";position:absolute;left:-2px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12.5px}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:#222834;color:var(--jaune)}
+  .pill{font-size:11px;padding:1px 8px;border-radius:20px;white-space:nowrap}
+  .p-ok{background:rgba(31,170,89,.15);color:#5fe39b}.p-warn{background:rgba(230,167,0,.15);color:#ffce5a}.p-bad{background:rgba(224,72,61,.15);color:#ff8a80}
+  .btns{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+  .btn{background:#222834;border:1px solid var(--line);border-radius:7px;padding:5px 9px;font-size:12px;display:flex;align-items:center;gap:6px}
+  .foot{color:var(--muted);font-size:11.5px;margin-top:24px;border-top:1px solid var(--line);padding-top:10px}
+  code{background:#222834;padding:1px 5px;border-radius:4px;font-size:11.5px;color:#ffce5a}
+</style>
+</head>
+<body>
+<h1>FoodKing — Structure V1 LOCAL « Le Cayenne »</h1>
+<p class="sub">Dessin de bout en bout : <b>de la prise de courant → à la sortie de la commande → à la clôture Z</b>. Système de caisse mono-poste, 1 branche (branch_id=1), FR. Établi 2026-06-04, ancré sur le code réel (CONSTITUTION/SYSTEM_MAP/SYNC_CONTRACT + vérif code + smoke live).</p>
+<div class="legend">
+  <span><i class="dot d-ok"></i> Vérifié LIVE cette session</span>
+  <span><i class="dot d-prior"></i> Convergé session antérieure (HEAD courant)</span>
+  <span><i class="dot d-warn"></i> Point faible / dégradé maintenant</span>
+  <span><i class="dot d-bad"></i> Défaut à connaître</span>
+  <span><i class="dot" style="background:#c98bff"></i> FROZEN (NF525/protégé)</span>
+</div>
+
+<h2>1 · Prise de courant — les 4 daemons (la boîte unique)</h2>
+<div class="row">
+  <div class="box"><b>php artisan serve :8000</b><small>SPA + API Laravel</small><span class="tag t-ok">UP (live) — ⚠ mono-process, a re-crashé puis redémarré sous charge</span></div>
+  <div class="box"><b>queue:work redis</b><small>dispatcher outbox → broadcast</small><span class="tag t-ok">UP (live)</span></div>
+  <div class="box"><b>redis :6379</b><small>cache + queue + locks NF525</small><span class="tag t-ok">UP (live · PONG)</span></div>
+  <div class="box"><b>soketi :6001 (WebSocket push)</b><small>temps-réel Echo</small><span class="tag t-bad">ÉTEINT (live) → sync en repli POLLING</span></div>
+</div>
+
+<h2>2 · Flux principal — de l'entrée commande à la sortie</h2>
+<div class="flow">
+  <div class="row">
+    <div class="box brand"><b>① Ouverture caisse</b><small>POS → ouvre <code>CashDrawerSession</code> (fond de caisse)</small><span class="tag t-prior">flux validé</span></div>
+  </div>
+  <div class="arrow">▼</div>
+  <div class="row">
+    <div class="box brand"><b>② BORNE (kiosk)</b><small>client libre-service · wizard Vue</small><span class="tag t-frozen">wizard frozen</span><span class="tag t-prior">live antérieur OK</span></div>
+    <div class="box brand"><b>② CAISSE (POS)</b><small>caissier · wizard Vanilla JS</small><span class="tag t-frozen">wizard strict no-touch</span><span class="tag t-ok">charge (live)</span></div>
+    <div class="box"><b>② WEB + APP</b><small>standalone · <b>PAS branché API en V1</b></small><span class="tag t-prior">standalone</span></div>
+    <div class="box" style="opacity:.55"><b>② En-ligne / Table</b><small>dine-in <code>dine_in_enabled=false</code></small><span class="tag t-warn">DORMANT V1</span></div>
+  </div>
+  <div class="arrow">▼ envoie SEULEMENT item_id + qty + options</div>
+  <div class="row">
+    <div class="box acc"><b>③ PRIX — PricingService (SSOT)</b><small>100% calculé backend · le front n'impose JAMAIS un prix · <code>composition_snapshot</code> figé à la création (jamais réécrit)</small><span class="tag t-frozen">FROZEN</span></div>
+    <div class="box acc"><b>③ STOCK</b><small><code>ItemBranchAvailability</code> (dispo on/off + plafond/jour) + <code>StockLevel</code> (on_hand/reserved/seuil bas). Décrément par commande (<code>StockService::decrementForOrder</code>), release auto si annulation. Plan-B non-payé ne consomme pas le plafond.</small><span class="tag t-prior">code vérifié</span></div>
+  </div>
+  <div class="arrow">▼ création commande (OrderService / FrontendOrderService)</div>
+  <div class="row">
+    <div class="box acc"><b>④ FISCAL — FiscalSequenceService</b><small>N° séquentiel monotone, sans trou, par branche. Alloc : <b>kiosk payé = à la création</b> · <b>espèces/Plan-B = au PAID au comptoir</b>. Chaîne HMAC <code>audit_logs</code> append-only.</small><span class="tag t-frozen">FROZEN NF525</span></div>
+  </div>
+  <div class="arrow">▼ événements : OrderCreated / OrderStatusChanged</div>
+  <div class="row">
+    <div class="box"><b>⑤ BUS SYNCHRO (outbox)</b><small>event → <code>domain_events</code> → queue:work → DispatchDomainEventsJob → soketi → canal privé <code>branch.1</code></small><span class="tag t-warn">soketi éteint → repli polling (KDS ~30s, OSS ~60s) · données NON perdues</span></div>
+  </div>
+  <div class="arrow">▼</div>
+  <div class="row">
+    <div class="box brand"><b>⑥ KDS — Écran cuisine</b><small>cartes commandes · bump/recall · cycle ACCEPT→PREPARING→PREPARED</small><span class="tag t-ok">charge (live)</span><span class="tag t-warn">bandeau "polling" masqué en local</span></div>
+    <div class="box brand"><b>⑥ OSS — Suivi client</b><small>mur "En préparation / Prêt" · POLLE (pas de push)</small><span class="tag t-ok">charge (live)</span></div>
+  </div>
+  <div class="arrow">▼ cycle statut (OrderStateMachine)</div>
+  <div class="row">
+    <div class="box"><b>⑦ Statuts</b><small>PENDING → ACCEPT → PREPARING → PREPARED → (OUT_FOR_DELIVERY) → DELIVERED → RETURNED · CANCELED/REJECTED · POS peut servir direct</small><span class="tag t-frozen">OrderStateMachine FROZEN</span></div>
+  </div>
+  <div class="arrow">▼</div>
+  <div class="row">
+    <div class="box brand"><b>⑧ PAIEMENT / ENCAISSEMENT</b><small>POS : espèces + carte + ticket-resto · TPE en <b>mode simulé</b> (matériel seulement, jamais le prix/fiscal) · Kiosk = <b>Plan B</b> → routé encaissement comptoir → PAID + N° fiscal à la collecte</small><span class="tag t-prior">cycle bouclé validé</span><span class="tag t-warn">TPE simulé = choix assumé</span></div>
+  </div>
+  <div class="arrow">▼</div>
+  <div class="row">
+    <div class="box acc"><b>⑨ HISTORIQUE & CHIFFRES</b><small>Historique commandes · Transactions · Vue caisse unifiée (réconciliation) · Rapport ventes / articles</small><span class="tag t-prior">audité (mgmt)</span></div>
+    <div class="box acc"><b>⑩ CLÔTURE Z (fin de journée)</b><small>ZReportService · chaîne HMAC quotidienne · rétention 6 ans</small><span class="tag t-frozen">FROZEN NF525</span></div>
+  </div>
+</div>
+
+<h2>3 · Les 5 systèmes (modules autonomes)</h2>
+<div class="grid">
+  <div class="box sys"><b>① BORNE (kiosk)</b><ul class="tree"><li>wizard client Vue (frozen)</li><li>bundles kiosk-*</li><li>/kiosk public autonome</li></ul></div>
+  <div class="box sys"><b>② CAISSE (POS)</b><ul class="tree"><li>wizard Vanilla JS (frozen)</li><li>paiement · tiroir · fiscal</li><li>encaissement Plan-B</li></ul></div>
+  <div class="box sys"><b>③ KDS + OSS</b><ul class="tree"><li>écran cuisine (bump/recall)</li><li>mur statut client (polling)</li></ul></div>
+  <div class="box sys"><b>④ WEB + APP</b><ul class="tree"><li>site + mobile standalone</li><li>NON branché API en V1</li><li>storefront /home /offers = ÉTEINT (staff-only)</li></ul></div>
+  <div class="box sys"><b>⑤ CENTRAL (gérance)</b><ul class="tree"><li>catalogue · stock · ingrédients</li><li>dashboard · historique · rapports</li><li>réglages · utilisateurs</li></ul></div>
+</div>
+
+<h2>4 · Dashboard — 23 boutons réels (rendus FR, post-RBAC, filtrés V1) — vérifié live</h2>
+<div class="btns">
+  <span class="btn"><i class="dot d-ok"></i> Tableau de bord</span>
+  <span class="btn"><i class="dot d-ok"></i> POS</span>
+  <span class="btn"><i class="dot d-prior"></i> Produits &amp; Stock</span>
+  <span class="btn"><i class="dot d-prior"></i> Catalogue</span>
+  <span class="btn"><i class="dot d-prior"></i> Attribut d'articles</span>
+  <span class="btn"><i class="dot d-prior"></i> Ingrédients</span>
+  <span class="btn"><i class="dot d-prior"></i> Commandes caisse</span>
+  <span class="btn"><i class="dot d-prior"></i> Historique</span>
+  <span class="btn"><i class="dot d-prior"></i> Encaissement</span>
+  <span class="btn"><i class="dot d-prior"></i> Vue caisse unifiée</span>
+  <span class="btn"><i class="dot d-prior"></i> Caisse livreur</span>
+  <span class="btn"><i class="dot d-ok"></i> Écran cuisine</span>
+  <span class="btn"><i class="dot d-ok"></i> Suivi client</span>
+  <span class="btn"><i class="dot d-prior"></i> Notification pushs</span>
+  <span class="btn"><i class="dot d-prior"></i> Messages</span>
+  <span class="btn"><i class="dot d-prior"></i> Abonnés</span>
+  <span class="btn"><i class="dot d-prior"></i> Administrateurs</span>
+  <span class="btn"><i class="dot d-prior"></i> Employés</span>
+  <span class="btn"><i class="dot d-prior"></i> Chefs</span>
+  <span class="btn"><i class="dot d-prior"></i> Transactions</span>
+  <span class="btn"><i class="dot d-prior"></i> Rapport des ventes</span>
+  <span class="btn"><i class="dot d-prior"></i> Rapport articles</span>
+  <span class="btn"><i class="dot d-prior"></i> Paramètres</span>
+</div>
+<p class="sub" style="margin-top:8px">Masqués/dormants V1 by-design (non affichés) : Tables/dine-in, Commandes en-ligne, Commandes table, Coupons, Offres (désactivées), Clients, Livreurs, Waiters, Rapport solde crédit. Nav validée 25/25 sans orphelin lors de l'audit mgmt (HEAD courant) ; les 4 cœurs re-vérifiés live aujourd'hui.</p>
+
+<h2>5 · Verdict — parfait ou il manque des choses ? (V1 LOCAL minimum viable)</h2>
+<table>
+  <tr><th>Domaine</th><th>État</th><th>Détail honnête</th></tr>
+  <tr><td>Saisie commande borne + comptoir</td><td><span class="pill p-ok">SOLIDE</span></td><td>Cycle complet borne→KDS et POS→paiement→KDS bouclé (live antérieur récent) ; POS + KDS + OSS chargent live aujourd'hui.</td></tr>
+  <tr><td>Prix (SSOT) · composition figée</td><td><span class="pill p-ok">SOLIDE</span></td><td>PricingService backend autoritaire, frozen ; snapshot non réécrit (prouvé : prix live→999 ignoré en lecture).</td></tr>
+  <tr><td>Stock</td><td><span class="pill p-ok">SOLIDE</span></td><td>Dispo + plafond/jour + on_hand/reserved, décrément/commande + release annulation.</td></tr>
+  <tr><td>Fiscal / NF525 / Z</td><td><span class="pill p-ok">SOLIDE</span></td><td>Séquence gap-free, chaîne HMAC OK, alloc kiosk-création / espèces-comptoir correcte.</td></tr>
+  <tr><td><b>Synchro temps-réel</b></td><td><span class="pill p-warn">DÉGRADÉ MAINTENANT</span></td><td><b>soketi (push) éteint</b> → cuisine/écrans rafraîchis toutes les ~30–60 s au lieu d'instantané, ET aucun bandeau d'alerte en mode local. <b>Données non perdues</b> (outbox+queue OK). <b>Correctif = lancer le daemon soketi</b> (opérationnel, pas un bug code).</td></tr>
+  <tr><td>Serveur dev mono-process</td><td><span class="pill p-warn">FRAGILE</span></td><td><code>artisan serve</code> sert 1 requête à la fois ; a re-crashé sous charge concurrente cette session (redémarré). OK pour 1 caissier ; éviter de lancer des tâches lourdes en parallèle.</td></tr>
+  <tr><td>/menu (vitrine)</td><td><span class="pill p-warn">404 pré-existant</span></td><td>Le dossier d'assets <code>public/menu/</code> (86 images catalogue) masque la route → 404. Vitrine inaccessible de toute façon (voulu). NE PAS supprimer public/menu.</td></tr>
+  <tr><td>OSS mur public</td><td><span class="pill p-warn">≤60 s décalage</span></td><td>Polle au lieu de push (par design). Acceptable pour un écran de statut.</td></tr>
+  <tr><td>TPE / paiement matériel</td><td><span class="pill p-ok">PAR DESIGN</span></td><td>Mode simulé jusqu'au vrai terminal ; Kiosk Plan-B → encaissement comptoir. Choix assumé, pas un défaut.</td></tr>
+  <tr><td>Alerting outbox / hardening</td><td><span class="pill p-warn">DIFFÉRÉ</span></td><td>Staleness outbox = Log seulement ; backlog owner-gate (ZRPT refund countersign, coupon cap, lockout boot-guard…) = durcissement, PAS blockers V1.</td></tr>
+  <tr><td>Cloud / SaaS / multi-tenant</td><td><span class="pill p-ok">HORS V1</span></td><td>Explicitement futur (CONSTITUTION). Jamais un blocker V1.</td></tr>
+</table>
+
+<p class="foot">Conclusion : <b>le cœur métier (commande → prix → stock → fiscal → cuisine → paiement → historique → Z) est en place et vérifié pour ta V1 LOCAL minimale.</b> Le seul point qui peut gêner l'usage quotidien <i>maintenant</i> est <b>opérationnel et réversible en une commande</b> : démarrer <code>soketi</code> pour retrouver le temps-réel instantané (sinon repli polling 30–60 s sans alerte). Le reste = par-design (TPE simulé, vitrine éteinte) ou différé/cosmétique (hors blockers V1). — FoodKing · Le Cayenne</p>
+</body>
+</html>

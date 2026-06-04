@@ -1,4 +1,0 @@
-35. [GET] http://127.0.0.1:8000/api/admin/oss-order => [200] OK
-38. [GET] http://127.0.0.1:8000/api/admin/oss-order => [200] OK
-
-Note: 30 static requests not shown, run with "static" option to see them.

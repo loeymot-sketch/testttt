@@ -1,0 +1,55 @@
+- generic [ref=e1]:
+  - generic [ref=e237]:
+    - generic [ref=e238]:
+      - button "Retour" [ref=e239] [cursor=pointer]:
+        - img [ref=e240]
+      - generic [ref=e242]:
+        - heading "Votre panier" [level=1] [ref=e243]
+        - paragraph [ref=e244]: 1 article
+      - button "Vider le panier" [ref=e245] [cursor=pointer]
+    - radiogroup "Type de commande" [ref=e246]:
+      - radio "À emporter" [checked] [ref=e247] [cursor=pointer]:
+        - generic [ref=e248]: 🥡
+        - generic [ref=e249]: À emporter
+    - generic [ref=e250]:
+      - list [ref=e251]:
+        - listitem [ref=e252]:
+          - generic [ref=e254]:
+            - generic [ref=e255]:
+              - heading "Coca-Cola 33cl" [level=3] [ref=e256]
+              - button "Modifier cet article" [ref=e257] [cursor=pointer]:
+                - img [ref=e258]
+            - generic [ref=e260]: €1,50 par unité
+          - generic [ref=e261]:
+            - group "Quantité de Coca-Cola 33cl" [ref=e262]:
+              - button "Diminuer la quantité" [ref=e263] [cursor=pointer]:
+                - img [ref=e264]
+              - generic [ref=e265]: "1"
+              - button "Augmenter la quantité" [ref=e266] [cursor=pointer]:
+                - img [ref=e267]
+            - button "Retirer" [ref=e269] [cursor=pointer]:
+              - img [ref=e270]
+            - generic [ref=e273]: €1,50
+      - region "Sous-total" [ref=e274]:
+        - generic [ref=e275]:
+          - generic [ref=e276]: Sous-total
+          - generic [ref=e277]: €1,50
+        - generic [ref=e278]:
+          - generic [ref=e279]: Total
+          - generic [ref=e280]: €1,50
+      - generic [ref=e282]:
+        - generic [ref=e283]: Code promo
+        - generic [ref=e284]:
+          - textbox "Code promo" [ref=e285]:
+            - /placeholder: Saisir un code promo…
+          - button "Appliquer" [disabled] [ref=e286]
+      - button "Avez-vous une carte fidélité ?" [ref=e287] [cursor=pointer]:
+        - generic [ref=e288]: ★
+        - generic [ref=e289]: Avez-vous une carte fidélité ?
+        - generic [ref=e290]: ›
+      - generic [ref=e291]:
+        - button "Valider ma commande €1,50" [ref=e292] [cursor=pointer]:
+          - generic [ref=e293]: Valider ma commande
+          - generic [ref=e294]: €1,50
+        - button "+ Ajouter des articles" [ref=e295] [cursor=pointer]
+  - status
