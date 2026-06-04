@@ -89,7 +89,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n/* =============================================================================\n   ItemComponent — POS V5 Design Convergence (refonte 2026-05-02)\n   -----------------------------------------------------------------------------\n   Mission : CV1-POS-DESIGN-CONVERGENCE-001\n   Doc plan : §3.2\n   - Tiles produits stylisées via :deep() override dans PosComponent.vue\n     (tokens V5 unifiés). On ne redéfinit pas ici pour ne pas fragmenter.\n   - Modal item variation : chrome refondu en warm V5 (cf. .pos-v5-item-modal*).\n   ============================================================================= */\n\n/* =============================================================================\n   POS V5 R2 — Tiles produits avec photo hero (layout vertical : visual + body)\n   ============================================================================= */\n.pos-v5-tile.pos-item-tile[data-v-ea217858] {\n    /* Reset de l'ancien flex-col items-center forcé */\n    display: flex;\n    flex-direction: column;\n    background: var(--pos-v5-bg-panel);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-lg);\n    overflow: hidden;\n    cursor: pointer;\n    -webkit-appearance: none;\n       -moz-appearance: none;\n            appearance: none;\n    text-align: left;\n    font-family: var(--pos-v5-font-sans);\n    color: inherit;\n    padding: 0 !important;\n    box-shadow: var(--pos-v5-shadow-sm);\n    transition:\n        transform var(--pos-v5-duration-base) var(--pos-v5-ease-bounce),\n        border-color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n        box-shadow var(--pos-v5-duration-base) var(--pos-v5-ease-standard);\n    min-height: 0;\n}\n.pos-v5-tile.pos-item-tile[data-v-ea217858]:hover:not(.is-unavailable):not(:disabled) {\n    transform: translateY(-2px);\n    border-color: var(--pos-v5-brand-red);\n    box-shadow: var(--pos-v5-shadow-lift);\n}\n.pos-v5-tile.pos-item-tile[data-v-ea217858]:active:not(.is-unavailable):not(:disabled) {\n    transform: translateY(0);\n}\n.pos-v5-tile.pos-item-tile[data-v-ea217858]:focus-visible {\n    outline: var(--pos-v5-focus-width) solid var(--pos-v5-focus-color);\n    outline-offset: var(--pos-v5-focus-offset);\n}\n\n/* Photo visual (hero 4/3) */\n.pos-v5-tile__visual[data-v-ea217858] {\n    position: relative;\n    aspect-ratio: 4 / 3;\n    background: var(--pos-v5-bg-subtle);\n    overflow: hidden;\n    flex-shrink: 0;\n}\n.pos-v5-tile__image[data-v-ea217858] {\n    width: 100%;\n    height: 100%;\n    -o-object-fit: cover;\n       object-fit: cover;\n    display: block;\n    transition: transform var(--pos-v5-duration-slow) var(--pos-v5-ease-standard);\n}\n.pos-v5-tile.pos-item-tile:hover:not(.is-unavailable) .pos-v5-tile__image[data-v-ea217858] {\n    transform: scale(1.06);\n}\n.pos-v5-tile__visual-fallback[data-v-ea217858] {\n    width: 100%;\n    height: 100%;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    font-size: 36px;\n    color: var(--pos-v5-ink-muted);\n}\n\n/* Body (name + price + add) */\n.pos-v5-tile__body[data-v-ea217858] {\n    padding: var(--pos-v5-space-3);\n    display: flex;\n    flex-direction: column;\n    gap: var(--pos-v5-space-2);\n    flex: 1;\n    min-height: 84px;\n}\n.pos-v5-tile__name[data-v-ea217858] {\n    margin: 0;\n    color: var(--pos-v5-ink);\n    font-size: var(--pos-v5-text-body) !important;\n    font-weight: var(--pos-v5-weight-bold) !important;\n    line-height: var(--pos-v5-leading-snug) !important;\n    flex: 1;\n    text-transform: capitalize;\n    display: -webkit-box;\n    -webkit-line-clamp: 2;\n    -webkit-box-orient: vertical;\n    overflow: hidden;\n    text-align: left;\n}\n.pos-v5-tile__foot[data-v-ea217858] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: var(--pos-v5-space-2);\n    margin-top: auto;\n}\n.pos-v5-tile__price[data-v-ea217858] {\n    margin: 0;\n    font-family: var(--pos-v5-font-sans);\n    font-feature-settings: \"tnum\";\n    font-variant-numeric: tabular-nums;\n    font-size: var(--pos-v5-text-body-lg) !important;\n    font-weight: var(--pos-v5-weight-extrabold) !important;\n    color: var(--pos-v5-brand-red) !important;\n    line-height: 1;\n}\n.pos-v5-tile__add[data-v-ea217858] {\n    width: 32px;\n    height: 32px;\n    border-radius: 50%;\n    background: var(--pos-v5-bg-subtle);\n    color: var(--pos-v5-ink);\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    flex-shrink: 0;\n    transition:\n        background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n        color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n        transform var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);\n}\n.pos-v5-tile__add i[data-v-ea217858] {\n    line-height: 1;\n}\n.pos-v5-tile.pos-item-tile:hover:not(.is-unavailable) .pos-v5-tile__add[data-v-ea217858] {\n    background: var(--pos-v5-brand-red);\n    color: var(--pos-v5-ink-on-red);\n    transform: scale(1.08);\n}\n\n/* Unavailable overlay (pos-item-86-badge devient un overlay full surface) */\n.pos-v5-tile__overlay[data-v-ea217858],\n.pos-item-86-badge[data-v-ea217858] {\n    position: absolute;\n    inset: 0;\n    z-index: 2;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    background: rgba(194, 30, 47, 0.86);\n    color: var(--pos-v5-ink-on-red);\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h6);\n    font-weight: var(--pos-v5-weight-extrabold);\n    letter-spacing: var(--pos-v5-tracking-caps);\n    text-transform: uppercase;\n    text-align: center;\n    padding: var(--pos-v5-space-2);\n    backdrop-filter: blur(2px);\n    /* Reset des anciens placement / radius */\n    top: auto;\n    right: auto;\n    border-radius: 0;\n    box-shadow: none;\n    line-height: 1.1;\n}\n/* When pos-item-86-badge is OUTSIDE the tile__visual (legacy compat — no longer used) */\n.pos-item-tile > .pos-item-86-badge[data-v-ea217858]:not(.pos-v5-tile__overlay) {\n    inset: auto;\n    top: 8px;\n    right: 8px;\n    padding: 4px 8px;\n    border-radius: 999px;\n    font-size: 10px;\n    background: rgba(194, 30, 47, 0.92);\n    backdrop-filter: none;\n    box-shadow: 0 2px 6px rgba(26, 26, 26, 0.18);\n}\n.pos-item-tile.is-unavailable[data-v-ea217858] {\n    opacity: 0.55;\n    pointer-events: none;\n    filter: grayscale(0.4);\n}\n.pos-add-to-cart-sticky[data-v-ea217858] {\n    position: sticky;\n    bottom: 0;\n    z-index: 5;\n    background: #fff;\n    padding-top: 8px;\n    padding-bottom: 2px;\n}\n/* Wizard shell: footer is a flex column — not sticky inside scroll */\n.pos-v4-item-wizard-footer.pos-add-to-cart-sticky[data-v-ea217858] {\n    position: relative;\n    padding-top: 0;\n    padding-bottom: 0;\n}\n\n/* =============================================================================\n   POS V5 Item Modal (variation modal léger — produits sans wizard kiosk)\n   -----------------------------------------------------------------------------\n   Le wizard kiosk reste FROZEN. Ce modal sert pour les produits simples\n   (boisson avec taille, dessert avec variantes, etc.) — refonte chrome warm V5.\n   ============================================================================= */\n.pos-v5-item-modal[data-v-ea217858] .modal-dialog {\n    border-radius: var(--pos-v5-radius-xl) !important;\n    box-shadow: var(--pos-v5-shadow-modal) !important;\n    background: var(--pos-v5-bg-panel) !important;\n    border: 1px solid var(--pos-v5-border) !important;\n    font-family: var(--pos-v5-font-sans);\n}\n.pos-v5-item-modal__head[data-v-ea217858] {\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);\n    border-bottom: 1px solid var(--pos-v5-border) !important;\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5) var(--pos-v5-space-3) !important;\n}\n.pos-v5-item-modal__foot[data-v-ea217858] {\n    background: var(--pos-v5-bg-panel) !important;\n    box-shadow: var(--pos-v5-shadow-sticky-top);\n}\n\n/* CTA \"Ajouter au panier — X €\" : pleine largeur, brand gradient, ombre soft */\n.pos-v5-item-add-cta[data-v-ea217858] {\n    background: linear-gradient(135deg, var(--pos-v5-brand-red), var(--pos-v5-brand-red-dark)) !important;\n    border: 0;\n    box-shadow: var(--pos-v5-shadow-cta);\n    min-height: var(--pos-v5-tap-large);\n    letter-spacing: var(--pos-v5-tracking-tight);\n    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);\n}\n.pos-v5-item-add-cta[data-v-ea217858]:hover:not(:disabled) {\n    transform: translateY(-1px);\n    box-shadow: 0 12px 28px rgba(244, 80, 30, 0.32);\n}\n\n/* Attribute / variation cards within the modal body */\n.pos-v5-item-modal[data-v-ea217858] .modal-body > * {\n    font-family: var(--pos-v5-font-sans);\n}\n\n/* Respecte reduced-motion */\n@media (prefers-reduced-motion: reduce) {\n.pos-v5-item-add-cta[data-v-ea217858] { transition: none !important;\n}\n.pos-v5-item-add-cta[data-v-ea217858]:hover:not(:disabled) { transform: none;\n}\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n/* =============================================================================\n   ItemComponent — POS V5 Design Convergence (refonte 2026-05-02)\n   -----------------------------------------------------------------------------\n   Mission : CV1-POS-DESIGN-CONVERGENCE-001\n   Doc plan : §3.2\n   - Tiles produits stylisées via :deep() override dans PosComponent.vue\n     (tokens V5 unifiés). On ne redéfinit pas ici pour ne pas fragmenter.\n   - Modal item variation : chrome refondu en warm V5 (cf. .pos-v5-item-modal*).\n   ============================================================================= */\n\n/* =============================================================================\n   POS V5 R2 — Tiles produits avec photo hero (layout vertical : visual + body)\n   ============================================================================= */\n.pos-v5-tile.pos-item-tile[data-v-ea217858] {\n    /* Reset de l'ancien flex-col items-center forcé */\n    display: flex;\n    flex-direction: column;\n    background: var(--pos-v5-bg-panel);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-lg);\n    overflow: hidden;\n    cursor: pointer;\n    -webkit-appearance: none;\n       -moz-appearance: none;\n            appearance: none;\n    text-align: left;\n    font-family: var(--pos-v5-font-sans);\n    color: inherit;\n    padding: 0 !important;\n    box-shadow: var(--pos-v5-shadow-sm);\n    transition:\n        transform var(--pos-v5-duration-base) var(--pos-v5-ease-bounce),\n        border-color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n        box-shadow var(--pos-v5-duration-base) var(--pos-v5-ease-standard);\n    min-height: 0;\n}\n.pos-v5-tile.pos-item-tile[data-v-ea217858]:hover:not(.is-unavailable):not(:disabled) {\n    transform: translateY(-2px);\n    border-color: var(--pos-v5-brand-red);\n    box-shadow: var(--pos-v5-shadow-lift);\n}\n.pos-v5-tile.pos-item-tile[data-v-ea217858]:active:not(.is-unavailable):not(:disabled) {\n    transform: translateY(0);\n}\n.pos-v5-tile.pos-item-tile[data-v-ea217858]:focus-visible {\n    outline: var(--pos-v5-focus-width) solid var(--pos-v5-focus-color);\n    outline-offset: var(--pos-v5-focus-offset);\n}\n\n/* Photo visual (hero 4/3) */\n.pos-v5-tile__visual[data-v-ea217858] {\n    position: relative;\n    aspect-ratio: 4 / 3;\n    background: var(--pos-v5-bg-subtle);\n    overflow: hidden;\n    flex-shrink: 0;\n}\n.pos-v5-tile__image[data-v-ea217858] {\n    width: 100%;\n    height: 100%;\n    -o-object-fit: cover;\n       object-fit: cover;\n    display: block;\n    transition: transform var(--pos-v5-duration-slow) var(--pos-v5-ease-standard);\n}\n.pos-v5-tile.pos-item-tile:hover:not(.is-unavailable) .pos-v5-tile__image[data-v-ea217858] {\n    transform: scale(1.06);\n}\n.pos-v5-tile__visual-fallback[data-v-ea217858] {\n    width: 100%;\n    height: 100%;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    font-size: 36px;\n    color: var(--pos-v5-ink-muted);\n}\n\n/* Body (name + price + add) */\n.pos-v5-tile__body[data-v-ea217858] {\n    padding: var(--pos-v5-space-3);\n    display: flex;\n    flex-direction: column;\n    gap: var(--pos-v5-space-2);\n    flex: 1;\n    min-height: 84px;\n}\n.pos-v5-tile__name[data-v-ea217858] {\n    margin: 0;\n    color: var(--pos-v5-ink);\n    font-size: var(--pos-v5-text-body) !important;\n    font-weight: var(--pos-v5-weight-bold) !important;\n    line-height: var(--pos-v5-leading-snug) !important;\n    /* [CAISSE-INGREDIENTS 2026-06-04] flex:1 retiré : le nom + la description\n       s'empilent en haut, le pied (prix) reste collé en bas via margin-top:auto. */\n    text-transform: capitalize;\n    display: -webkit-box;\n    -webkit-line-clamp: 2;\n    -webkit-box-orient: vertical;\n    overflow: hidden;\n    text-align: left;\n}\n/* [CAISSE-INGREDIENTS 2026-06-04] Ingrédients sous le nom, muté, 2 lignes max. */\n.pos-v5-tile__desc[data-v-ea217858] {\n    margin: calc(-1 * var(--pos-v5-space-1)) 0 0 0;\n    color: var(--pos-v5-ink-soft);\n    font-size: var(--pos-v5-text-caption);\n    line-height: var(--pos-v5-leading-snug);\n    text-align: left;\n    display: -webkit-box;\n    -webkit-line-clamp: 2;\n    -webkit-box-orient: vertical;\n    overflow: hidden;\n}\n.pos-v5-tile__foot[data-v-ea217858] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: var(--pos-v5-space-2);\n    margin-top: auto;\n}\n.pos-v5-tile__price[data-v-ea217858] {\n    margin: 0;\n    font-family: var(--pos-v5-font-sans);\n    font-feature-settings: \"tnum\";\n    font-variant-numeric: tabular-nums;\n    font-size: var(--pos-v5-text-body-lg) !important;\n    font-weight: var(--pos-v5-weight-extrabold) !important;\n    color: var(--pos-v5-brand-red) !important;\n    line-height: 1;\n}\n.pos-v5-tile__add[data-v-ea217858] {\n    width: 32px;\n    height: 32px;\n    border-radius: 50%;\n    background: var(--pos-v5-bg-subtle);\n    color: var(--pos-v5-ink);\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    flex-shrink: 0;\n    transition:\n        background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n        color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n        transform var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);\n}\n.pos-v5-tile__add i[data-v-ea217858] {\n    line-height: 1;\n}\n.pos-v5-tile.pos-item-tile:hover:not(.is-unavailable) .pos-v5-tile__add[data-v-ea217858] {\n    background: var(--pos-v5-brand-red);\n    color: var(--pos-v5-ink-on-red);\n    transform: scale(1.08);\n}\n\n/* Unavailable overlay (pos-item-86-badge devient un overlay full surface) */\n.pos-v5-tile__overlay[data-v-ea217858],\n.pos-item-86-badge[data-v-ea217858] {\n    position: absolute;\n    inset: 0;\n    z-index: 2;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    background: rgba(194, 30, 47, 0.86);\n    color: var(--pos-v5-ink-on-red);\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h6);\n    font-weight: var(--pos-v5-weight-extrabold);\n    letter-spacing: var(--pos-v5-tracking-caps);\n    text-transform: uppercase;\n    text-align: center;\n    padding: var(--pos-v5-space-2);\n    backdrop-filter: blur(2px);\n    /* Reset des anciens placement / radius */\n    top: auto;\n    right: auto;\n    border-radius: 0;\n    box-shadow: none;\n    line-height: 1.1;\n}\n/* When pos-item-86-badge is OUTSIDE the tile__visual (legacy compat — no longer used) */\n.pos-item-tile > .pos-item-86-badge[data-v-ea217858]:not(.pos-v5-tile__overlay) {\n    inset: auto;\n    top: 8px;\n    right: 8px;\n    padding: 4px 8px;\n    border-radius: 999px;\n    font-size: 10px;\n    background: rgba(194, 30, 47, 0.92);\n    backdrop-filter: none;\n    box-shadow: 0 2px 6px rgba(26, 26, 26, 0.18);\n}\n.pos-item-tile.is-unavailable[data-v-ea217858] {\n    opacity: 0.55;\n    pointer-events: none;\n    filter: grayscale(0.4);\n}\n.pos-add-to-cart-sticky[data-v-ea217858] {\n    position: sticky;\n    bottom: 0;\n    z-index: 5;\n    background: #fff;\n    padding-top: 8px;\n    padding-bottom: 2px;\n}\n/* Wizard shell: footer is a flex column — not sticky inside scroll */\n.pos-v4-item-wizard-footer.pos-add-to-cart-sticky[data-v-ea217858] {\n    position: relative;\n    padding-top: 0;\n    padding-bottom: 0;\n}\n\n/* =============================================================================\n   POS V5 Item Modal (variation modal léger — produits sans wizard kiosk)\n   -----------------------------------------------------------------------------\n   Le wizard kiosk reste FROZEN. Ce modal sert pour les produits simples\n   (boisson avec taille, dessert avec variantes, etc.) — refonte chrome warm V5.\n   ============================================================================= */\n.pos-v5-item-modal[data-v-ea217858] .modal-dialog {\n    border-radius: var(--pos-v5-radius-xl) !important;\n    box-shadow: var(--pos-v5-shadow-modal) !important;\n    background: var(--pos-v5-bg-panel) !important;\n    border: 1px solid var(--pos-v5-border) !important;\n    font-family: var(--pos-v5-font-sans);\n}\n.pos-v5-item-modal__head[data-v-ea217858] {\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);\n    border-bottom: 1px solid var(--pos-v5-border) !important;\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5) var(--pos-v5-space-3) !important;\n}\n.pos-v5-item-modal__foot[data-v-ea217858] {\n    background: var(--pos-v5-bg-panel) !important;\n    box-shadow: var(--pos-v5-shadow-sticky-top);\n}\n\n/* CTA \"Ajouter au panier — X €\" : pleine largeur, brand gradient, ombre soft */\n.pos-v5-item-add-cta[data-v-ea217858] {\n    background: linear-gradient(135deg, var(--pos-v5-brand-red), var(--pos-v5-brand-red-dark)) !important;\n    border: 0;\n    box-shadow: var(--pos-v5-shadow-cta);\n    min-height: var(--pos-v5-tap-large);\n    letter-spacing: var(--pos-v5-tracking-tight);\n    transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);\n}\n.pos-v5-item-add-cta[data-v-ea217858]:hover:not(:disabled) {\n    transform: translateY(-1px);\n    box-shadow: 0 12px 28px rgba(244, 80, 30, 0.32);\n}\n\n/* Attribute / variation cards within the modal body */\n.pos-v5-item-modal[data-v-ea217858] .modal-body > * {\n    font-family: var(--pos-v5-font-sans);\n}\n\n/* Respecte reduced-motion */\n@media (prefers-reduced-motion: reduce) {\n.pos-v5-item-add-cta[data-v-ea217858] { transition: none !important;\n}\n.pos-v5-item-add-cta[data-v-ea217858]:hover:not(:disabled) { transform: none;\n}\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -7530,7 +7530,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     onConfirm: function onConfirm() {
       var _this2 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
-        var modeMap, modeInt, orderId, total, received, idempotencyKey, orderLabel, _err$response, _err$response2, _err$response4, _err$response3, fallbackMsg, msg, _t;
+        var modeMap, modeInt, orderId, total, received, _resp$data, _resp$data2, idempotencyKey, resp, orderLabel, cashMovementSkipped, _resp$data3, _resp$data4, skipMsg, _err$response, _err$response2, _err$response4, _err$response3, fallbackMsg, msg, _t;
         return _regenerator().w(function (_context) {
           while (1) switch (_context.p = _context.n) {
             case 0:
@@ -7571,9 +7571,33 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
                 }
               });
             case 4:
+              resp = _context.v;
               // Toast feedback per mode — mirror Wave W simulation copy so the
               // cashier perceives parity with the old picker.
-              orderLabel = _this2.order.queue_number || _this2.order.order_serial_no || orderId;
+              orderLabel = _this2.order.queue_number || _this2.order.order_serial_no || orderId; // [TRAP-3 2026-06-04] Cash-trail gap surfacing. When a CASH collection
+              // succeeds with NO open drawer session, the backend flags
+              // `cash_movement_skipped` on the response: the order is PAID but NO
+              // cash_movement row was recorded, so end-of-day reconciliation will
+              // under-count. The sale is NEVER blocked — we replace the plain success
+              // toast with an explicit WARNING so the cashier knows to open a session
+              // / reconcile manually, instead of the gap silently reaching the Z-close.
+              cashMovementSkipped = (resp === null || resp === void 0 || (_resp$data = resp.data) === null || _resp$data === void 0 || (_resp$data = _resp$data.data) === null || _resp$data === void 0 ? void 0 : _resp$data.cash_movement_skipped) === true || (resp === null || resp === void 0 || (_resp$data2 = resp.data) === null || _resp$data2 === void 0 ? void 0 : _resp$data2.cash_movement_skipped) === true;
+              if (!cashMovementSkipped) {
+                _context.n = 5;
+                break;
+              }
+              skipMsg = (resp === null || resp === void 0 || (_resp$data3 = resp.data) === null || _resp$data3 === void 0 || (_resp$data3 = _resp$data3.data) === null || _resp$data3 === void 0 ? void 0 : _resp$data3.cash_movement_skipped_message) || (resp === null || resp === void 0 || (_resp$data4 = resp.data) === null || _resp$data4 === void 0 ? void 0 : _resp$data4.cash_movement_skipped_message) || 'Aucune session caisse ouverte — mouvement non enregistré';
+              _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].warning("Commande ".concat(orderLabel, " encaiss\xE9e. ").concat(skipMsg, " (\xE0 r\xE9gulariser au fond de caisse)."));
+              _this2.$emit('confirmed', {
+                orderId: orderId,
+                mode: _this2.selectedMode,
+                modeInt: modeInt,
+                received: received,
+                total: total,
+                cashMovementSkipped: true
+              });
+              return _context.a(2);
+            case 5:
               if (_this2.selectedMode === 'CASH') {
                 _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].success(_this2.$t('label.cash_drawer_opened_simulation', {
                   order: orderLabel
@@ -7594,13 +7618,13 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
                 received: received,
                 total: total
               });
-              _context.n = 7;
+              _context.n = 8;
               break;
-            case 5:
-              _context.p = 5;
+            case 6:
+              _context.p = 6;
               _t = _context.v;
               if (!((_t === null || _t === void 0 || (_err$response = _t.response) === null || _err$response === void 0 ? void 0 : _err$response.status) === 409 && (_t === null || _t === void 0 || (_err$response2 = _t.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.error_code) === 'payment_already_collected')) {
-                _context.n = 6;
+                _context.n = 7;
                 break;
               }
               fallbackMsg = 'Cette commande a déjà été encaissée par un autre caissier.';
@@ -7608,14 +7632,14 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _this2.submitting = false;
               _this2.$emit('cancel');
               return _context.a(2);
-            case 6:
+            case 7:
               msg = (_t === null || _t === void 0 || (_err$response4 = _t.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || _this2.$t('label.encaisser_failed');
               _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(msg);
               _this2.submitting = false;
-            case 7:
+            case 8:
               return _context.a(2);
           }
-        }, _callee, null, [[3, 5]]);
+        }, _callee, null, [[3, 6]]);
       }))();
     }
   }
@@ -11021,235 +11045,236 @@ var _hoisted_7 = {
 var _hoisted_8 = {
   "class": "pos-v5-tile__name text-sm font-bold capitalize leading-snug line-clamp-2"
 };
-var _hoisted_9 = {
+var _hoisted_9 = ["title"];
+var _hoisted_10 = {
   "class": "pos-v5-tile__foot"
 };
-var _hoisted_10 = {
+var _hoisted_11 = {
   "class": "pos-v5-tile__price"
 };
-var _hoisted_11 = {
+var _hoisted_12 = {
   id: "item-info-modal",
   ref: "itemInfoModal",
   "class": "modal ff-modal info-modal"
 };
-var _hoisted_12 = {
+var _hoisted_13 = {
   key: 0,
   "class": "modal-dialog"
 };
-var _hoisted_13 = {
+var _hoisted_14 = {
   "class": "modal-header flex items-start gap-3"
 };
-var _hoisted_14 = {
+var _hoisted_15 = {
   "class": "modal-title text-base font-medium"
 };
-var _hoisted_15 = {
+var _hoisted_16 = {
   "class": "modal-body"
 };
-var _hoisted_16 = ["data-pos-drinks-catalog"];
-var _hoisted_17 = {
+var _hoisted_17 = ["data-pos-drinks-catalog"];
+var _hoisted_18 = {
   key: 0,
   "class": "modal-dialog pos-v4-item-wizard-dialog max-w-[820px] w-full flex flex-col max-h-[min(100dvh,100vh)] overflow-hidden rounded-xl bg-white shadow-xl"
 };
-var _hoisted_18 = {
+var _hoisted_19 = {
   "class": "modal-header items-start border-none pb-0 flex-shrink-0 pos-v5-item-modal__head"
 };
-var _hoisted_19 = {
+var _hoisted_20 = {
   "class": "flex gap-4 items-center"
 };
-var _hoisted_20 = ["src"];
-var _hoisted_21 = {
+var _hoisted_21 = ["src"];
+var _hoisted_22 = {
   "class": "flex-auto"
 };
-var _hoisted_22 = {
+var _hoisted_23 = {
   "class": "flex items-start gap-2 mb-1"
 };
-var _hoisted_23 = {
+var _hoisted_24 = {
   id: "item-variation-modal-title",
   "class": "text-base font-bold capitalize text-[var(--pos-v5-ink)]"
 };
-var _hoisted_24 = {
+var _hoisted_25 = {
   "class": "text-xs mb-2 text-[var(--pos-v5-ink-soft)]"
 };
-var _hoisted_25 = {
+var _hoisted_26 = {
   "class": "text-lg font-extrabold text-[var(--pos-v5-brand-red)] pos-v5-tabular"
 };
-var _hoisted_26 = {
+var _hoisted_27 = {
   "class": "modal-body pos-v4-item-wizard-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain"
 };
-var _hoisted_27 = {
+var _hoisted_28 = {
   "class": "flex items-center gap-2 mb-4"
 };
-var _hoisted_28 = {
+var _hoisted_29 = {
   "class": "text-sm leading-6 font-medium first-letter:uppercase text-heading"
 };
-var _hoisted_29 = {
+var _hoisted_30 = {
   "class": "flex items-center indec-group py-1 px-2 rounded-xl bg-[#F7F7FC]"
 };
-var _hoisted_30 = {
+var _hoisted_31 = {
   key: 0,
   "class": "mb-4"
 };
-var _hoisted_31 = {
+var _hoisted_32 = {
   "class": "space-y-4"
 };
-var _hoisted_32 = {
+var _hoisted_33 = {
   "class": "flex items-start justify-between gap-3 mb-2"
 };
-var _hoisted_33 = {
+var _hoisted_34 = {
   "class": "text-sm leading-6 font-medium capitalize text-heading"
 };
-var _hoisted_34 = {
+var _hoisted_35 = {
   "class": "text-[11px] text-[#6E7191]"
 };
-var _hoisted_35 = {
+var _hoisted_36 = {
   key: 0,
   "class": "mb-2 text-[11px] text-red-600"
 };
-var _hoisted_36 = {
+var _hoisted_37 = {
   "class": "space-y-2"
 };
-var _hoisted_37 = ["title", "aria-disabled"];
-var _hoisted_38 = {
+var _hoisted_38 = ["title", "aria-disabled"];
+var _hoisted_39 = {
   "class": "custom-radio sm flex-shrink-0"
 };
-var _hoisted_39 = ["checked", "disabled", "onChange", "id"];
-var _hoisted_40 = ["src", "alt"];
-var _hoisted_41 = {
-  "class": "flex-1 min-w-0"
-};
+var _hoisted_40 = ["checked", "disabled", "onChange", "id"];
+var _hoisted_41 = ["src", "alt"];
 var _hoisted_42 = {
-  "class": "block capitalize text-xs text-heading"
+  "class": "flex-1 min-w-0"
 };
 var _hoisted_43 = {
-  key: 0,
-  "class": "block text-xs font-medium text-heading"
-};
-var _hoisted_44 = {
-  key: 1,
-  "class": "block text-[10px] font-semibold text-danger"
-};
-var _hoisted_45 = ["title"];
-var _hoisted_46 = ["src", "alt"];
-var _hoisted_47 = {
-  "class": "flex-1 min-w-0"
-};
-var _hoisted_48 = {
   "class": "block capitalize text-xs text-heading"
 };
-var _hoisted_49 = {
+var _hoisted_44 = {
   key: 0,
   "class": "block text-xs font-medium text-heading"
 };
-var _hoisted_50 = {
+var _hoisted_45 = {
   key: 1,
   "class": "block text-[10px] font-semibold text-danger"
 };
+var _hoisted_46 = ["title"];
+var _hoisted_47 = ["src", "alt"];
+var _hoisted_48 = {
+  "class": "flex-1 min-w-0"
+};
+var _hoisted_49 = {
+  "class": "block capitalize text-xs text-heading"
+};
+var _hoisted_50 = {
+  key: 0,
+  "class": "block text-xs font-medium text-heading"
+};
 var _hoisted_51 = {
+  key: 1,
+  "class": "block text-[10px] font-semibold text-danger"
+};
+var _hoisted_52 = {
   "class": "flex items-center indec-group py-1 px-2 rounded-xl bg-white"
 };
-var _hoisted_52 = ["onClick", "disabled"];
-var _hoisted_53 = {
+var _hoisted_53 = ["onClick", "disabled"];
+var _hoisted_54 = {
   "class": "text-center w-7 text-xs font-semibold text-heading"
 };
-var _hoisted_54 = ["onClick", "disabled"];
-var _hoisted_55 = {
+var _hoisted_55 = ["onClick", "disabled"];
+var _hoisted_56 = {
   key: 1,
   "class": "mb-4"
 };
-var _hoisted_56 = {
+var _hoisted_57 = {
   "class": "text-sm leading-6 font-medium capitalize mb-2 text-heading"
 };
-var _hoisted_57 = {
+var _hoisted_58 = {
   "class": "space-y-2"
 };
-var _hoisted_58 = ["title"];
-var _hoisted_59 = ["src", "alt"];
-var _hoisted_60 = {
+var _hoisted_59 = ["title"];
+var _hoisted_60 = ["src", "alt"];
+var _hoisted_61 = {
   "class": "flex-1 min-w-0"
 };
-var _hoisted_61 = {
+var _hoisted_62 = {
   "class": "block capitalize mb-1 text-xs text-heading"
 };
-var _hoisted_62 = {
+var _hoisted_63 = {
   "class": "block text-xs font-medium text-heading"
 };
-var _hoisted_63 = {
+var _hoisted_64 = {
   key: 0,
   "class": "block text-[10px] font-semibold text-danger"
 };
-var _hoisted_64 = {
+var _hoisted_65 = {
   "class": "flex items-center indec-group py-1 px-2 rounded-xl bg-white"
 };
-var _hoisted_65 = ["onClick", "disabled"];
-var _hoisted_66 = {
+var _hoisted_66 = ["onClick", "disabled"];
+var _hoisted_67 = {
   "class": "text-center w-7 text-xs font-semibold text-heading"
 };
-var _hoisted_67 = ["onClick", "disabled"];
-var _hoisted_68 = {
+var _hoisted_68 = ["onClick", "disabled"];
+var _hoisted_69 = {
   key: 2,
   "class": "mb-5"
 };
-var _hoisted_69 = {
+var _hoisted_70 = {
   "class": "text-sm leading-6 font-medium capitalize mb-2 text-heading"
 };
-var _hoisted_70 = {
+var _hoisted_71 = {
   "class": "swiper addon-swiper"
 };
-var _hoisted_71 = {
+var _hoisted_72 = {
   "class": "!w-fit !relative"
 };
-var _hoisted_72 = ["onClick", "data-addon-id", "data-addon-name", "data-addon-active", "title"];
-var _hoisted_73 = ["src"];
-var _hoisted_74 = {
+var _hoisted_73 = ["onClick", "data-addon-id", "data-addon-name", "data-addon-active", "title"];
+var _hoisted_74 = ["src"];
+var _hoisted_75 = {
   "class": "ltr:rounded-r-lg rtl:rounded-l-lg w-full py-1 px-2"
 };
-var _hoisted_75 = {
+var _hoisted_76 = {
   "class": "block text-xs text-ellipsis whitespace-nowrap overflow-hidden w-fit max-w-[100px] capitalize text-heading"
 };
-var _hoisted_76 = {
+var _hoisted_77 = {
   key: 0,
   "class": "text-left text-[10px] leading-4 capitalize mb-1.5 cursor-pointer"
 };
-var _hoisted_77 = {
+var _hoisted_78 = {
   key: 0
 };
-var _hoisted_78 = {
+var _hoisted_79 = {
   "class": "block text-xs font-semibold text-heading ltr:text-left rtl:text-right"
 };
-var _hoisted_79 = {
+var _hoisted_80 = {
   key: 1,
   "class": "block text-[10px] font-semibold text-danger"
 };
-var _hoisted_80 = {
+var _hoisted_81 = {
   "class": "flex flex-col items-end justify-between h-full absolute top-0 ltr:right-0 rtl:left-0 z-10 p-2"
 };
-var _hoisted_81 = ["onClick"];
-var _hoisted_82 = {
+var _hoisted_82 = ["onClick"];
+var _hoisted_83 = {
   "class": "flex items-center indec-group"
 };
-var _hoisted_83 = ["onClick"];
-var _hoisted_84 = ["onKeyup", "onUpdate:modelValue", "disabled"];
-var _hoisted_85 = ["onClick", "disabled"];
-var _hoisted_86 = {
+var _hoisted_84 = ["onClick"];
+var _hoisted_85 = ["onKeyup", "onUpdate:modelValue", "disabled"];
+var _hoisted_86 = ["onClick", "disabled"];
+var _hoisted_87 = {
   "class": "mb-6"
 };
-var _hoisted_87 = {
+var _hoisted_88 = {
   "class": "text-xs leading-6 font-medium capitalize mb-2 text-heading"
 };
-var _hoisted_88 = ["placeholder"];
-var _hoisted_89 = {
+var _hoisted_89 = ["placeholder"];
+var _hoisted_90 = {
   key: 0,
   "class": "db-field-alert"
 };
-var _hoisted_90 = {
+var _hoisted_91 = {
   "class": "pos-v4-item-wizard-footer pos-add-to-cart-sticky pos-v5-item-modal__foot flex-shrink-0 border-t border-[var(--pos-v5-border)] bg-white px-4 pb-4 pt-3",
   "data-wiz-vue-footer": ""
 };
-var _hoisted_91 = ["disabled"];
-var _hoisted_92 = {
+var _hoisted_92 = ["disabled"];
+var _hoisted_93 = {
   "class": "pos-v5-tabular"
 };
-var _hoisted_93 = {
+var _hoisted_94 = {
   key: 0,
   "class": "alert alert-warning mt-2",
   role: "status"
@@ -11282,7 +11307,11 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       alt: item.name,
       loading: "lazy",
       "class": "pos-v5-tile__image"
-    }, null, 8 /* PROPS */, _hoisted_4)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_5, "🍴")), $options.isCatalogTileUnavailable(item) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Body "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_9, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.offer.length > 0 ? item.offer[0].currency_price : item.currency_price), 1 /* TEXT */), _cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, null, 8 /* PROPS */, _hoisted_4)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_5, "🍴")), $options.isCatalogTileUnavailable(item) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Body "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [CAISSE-INGREDIENTS 2026-06-04] Ingrédients lisibles sur la tuile (sans clic) :\n                     le caissier répond \"qu'y a-t-il dedans ?\" d'un coup d'œil. Texte muté, 2 lignes max. "), item.description ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", {
+      key: 0,
+      "class": "pos-v5-tile__desc",
+      title: item.description
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.description), 9 /* TEXT, PROPS */, _hoisted_9)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.offer.length > 0 ? item.offer[0].currency_price : item.currency_price), 1 /* TEXT */), _cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "aria-hidden": "true",
       "class": "pos-v5-tile__add"
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
@@ -11291,12 +11320,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         "font-size": "13px"
       }
     })], -1 /* CACHED */))])])], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_2);
-  }), 128 /* KEYED_FRAGMENT */))], 512 /* NEED_PATCH */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("========INFO PART START========="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [$data.itemInfo ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.itemInfo.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }), 128 /* KEYED_FRAGMENT */))], 512 /* NEED_PATCH */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("========INFO PART START========="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [$data.itemInfo ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.itemInfo.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-regular fa-circle-xmark",
     onClick: _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.infoModalHide && $options.infoModalHide.apply($options, arguments);
     }, ["prevent"]))
-  })]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.itemInfo.caution), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 512 /* NEED_PATCH */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("========INFO PART END==========="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("========VARIATION PART START=========\n       [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Refonte chrome modal + header V5.\n       L'image item devient ronde 88px (mirror wizard composition chips).\n       La logique du wizard reste FROZEN (utilisé pour produits sans wizard).\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  })]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.itemInfo.caution), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 512 /* NEED_PATCH */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("========INFO PART END==========="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("========VARIATION PART START=========\n       [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Refonte chrome modal + header V5.\n       L'image item devient ronde 88px (mirror wizard composition chips).\n       La logique du wizard reste FROZEN (utilisé pour produits sans wizard).\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     id: "item-variation-modal",
     ref: "itemVariationModal",
     "class": "modal ff-modal pos-v4-item-wizard-modal pos-v5-item-modal",
@@ -11305,11 +11334,11 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "aria-labelledby": "item-variation-modal-title",
     tabindex: "-1",
     "data-pos-drinks-catalog": $options.drinksCatalogJson
-  }, [$data.item ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+  }, [$data.item ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "flex-shrink-0 w-[88px] h-[88px] object-cover rounded-full ring-2 ring-[var(--pos-v5-brand-red-soft)] shadow-md",
     src: $data.item.thumb,
     alt: "thumbnail"
-  }, null, 8 /* PROPS */, _hoisted_20), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.item.name), 1 /* TEXT */), $data.item.caution ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+  }, null, 8 /* PROPS */, _hoisted_21), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_23, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.item.name), 1 /* TEXT */), $data.item.caution ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
     key: 0,
     type: "button",
     "class": "info-btn mt-0.5 flex items-start",
@@ -11319,12 +11348,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, ["prevent"]))
   }, _toConsumableArray(_cache[12] || (_cache[12] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-information font-fill-paragraph transition lab-font-size-16"
-  }, null, -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.item.description), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.item.offer.length > 0 ? $data.item.offer[0].currency_price : $data.item.currency_price), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.item.description), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.item.offer.length > 0 ? $data.item.offer[0].currency_price : $data.item.currency_price), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close lab-close-circle-line font-fill-danger lab-font-size-24",
     onClick: _cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.variationModalHide && $options.variationModalHide.apply($options, arguments);
     }, ["prevent"]))
-  })]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_27, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.quantity')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  })]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_27, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.quantity')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     onClick: _cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.quantityDecrement && $options.quantityDecrement.apply($options, arguments);
     }, ["prevent"])),
@@ -11346,14 +11375,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.quantityIncrement && $options.quantityIncrement.apply($options, arguments);
     }, ["prevent"])),
     "class": "fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"
-  })])]), $data.item.itemAttributes.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_30, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_31, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.item.itemAttributes, function (itemAttribute) {
+  })])]), $data.item.itemAttributes.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_31, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_32, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.item.itemAttributes, function (itemAttribute) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       key: itemAttribute.id,
       "class": "rounded-xl border border-[#EFF0F6] p-3 bg-white"
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(itemAttribute.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_34, " Min " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getAttributeConfig(itemAttribute).minSelect) + " / Max " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getAttributeConfig(itemAttribute).maxSelect), 1 /* TEXT */)]), $options.isMultiAttribute(itemAttribute) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_33, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(itemAttribute.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_35, " Min " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getAttributeConfig(itemAttribute).minSelect) + " / Max " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getAttributeConfig(itemAttribute).maxSelect), 1 /* TEXT */)]), $options.isMultiAttribute(itemAttribute) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
       key: 0,
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$options.hasAttributeSelectionError(itemAttribute) ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700', "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold"])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getAttributeTotalQuantity(itemAttribute.id)) + " / " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getAttributeConfig(itemAttribute).maxSelect), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $options.hasAttributeSelectionError(itemAttribute) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(itemAttribute.name) + ": minimum " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getAttributeConfig(itemAttribute).minSelect) + " requis. ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_36, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.getAttributeVariations(itemAttribute), function (variation) {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getAttributeTotalQuantity(itemAttribute.id)) + " / " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getAttributeConfig(itemAttribute).maxSelect), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $options.hasAttributeSelectionError(itemAttribute) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(itemAttribute.name) + ": minimum " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getAttributeConfig(itemAttribute).minSelect) + " requis. ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_37, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.getAttributeVariations(itemAttribute), function (variation) {
       return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
         key: variation.id
       }, [!$options.isMultiAttribute(itemAttribute) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("label", {
@@ -11362,7 +11391,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         "aria-disabled": $options.isModifierUnavailable(variation) ? 'true' : 'false',
         "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$options.getVariationQuantity(variation.id) > 0 ? 'border-primary bg-[#FFE8DD]' : 'border-[#F7F7FC] bg-[#F7F7FC]', "w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition"]),
         style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)($options.isModifierUnavailable(variation) ? 'opacity:.5;cursor:not-allowed;' : '')
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
         checked: $options.getVariationQuantity(variation.id) > 0,
         disabled: $options.isModifierUnavailable(variation),
         onChange: function onChange($event) {
@@ -11371,14 +11400,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         type: "radio",
         id: variation.item_attribute_id + '-' + variation.name,
         "class": "custom-radio-field"
-      }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_39), _cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_40), _cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
         "class": "custom-radio-span"
       }, null, -1 /* CACHED */))]), variation.thumb ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
         key: 0,
         "class": "w-10 h-10 object-cover rounded flex-shrink-0",
         src: variation.thumb,
         alt: variation.name
-      }, null, 8 /* PROPS */, _hoisted_40)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_41, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener(variation.name, 15)), 1 /* TEXT */), variation.price > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("h4", _hoisted_43, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.currency_price), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.isModifierUnavailable(variation) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_44, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 14 /* CLASS, STYLE, PROPS */, _hoisted_37)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+      }, null, 8 /* PROPS */, _hoisted_41)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_43, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener(variation.name, 15)), 1 /* TEXT */), variation.price > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("h4", _hoisted_44, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.currency_price), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.isModifierUnavailable(variation) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 14 /* CLASS, STYLE, PROPS */, _hoisted_38)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         key: 1,
         "class": "flex items-center gap-3 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC] py-2 px-3",
         title: $options.modifierUnavailableReason(variation),
@@ -11388,21 +11417,21 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         "class": "w-10 h-10 object-cover rounded flex-shrink-0",
         src: variation.thumb,
         alt: variation.name
-      }, null, 8 /* PROPS */, _hoisted_46)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_47, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_48, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener(variation.name, 18)), 1 /* TEXT */), variation.price > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("h4", _hoisted_49, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.currency_price), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.isModifierUnavailable(variation) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_50, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_51, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      }, null, 8 /* PROPS */, _hoisted_47)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_49, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener(variation.name, 18)), 1 /* TEXT */), variation.price > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("h4", _hoisted_50, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.currency_price), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.isModifierUnavailable(variation) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_51, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_52, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $options.decrementVariation(itemAttribute, variation);
         }, ["prevent"]),
         disabled: $options.getVariationQuantity(variation.id) === 0,
         "class": "fa-solid fa-minus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus disabled:opacity-40 disabled:cursor-not-allowed"
-      }, null, 8 /* PROPS */, _hoisted_52), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_53, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getVariationQuantity(variation.id)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      }, null, 8 /* PROPS */, _hoisted_53), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getVariationQuantity(variation.id)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $options.incrementVariation(itemAttribute, variation);
         }, ["prevent"]),
         disabled: $options.isAttributeAtMax(itemAttribute) || $options.isModifierUnavailable(variation),
         "class": "fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus disabled:opacity-40 disabled:cursor-not-allowed"
-      }, null, 8 /* PROPS */, _hoisted_54)])], 12 /* STYLE, PROPS */, _hoisted_45))], 64 /* STABLE_FRAGMENT */);
+      }, null, 8 /* PROPS */, _hoisted_55)])], 12 /* STYLE, PROPS */, _hoisted_46))], 64 /* STABLE_FRAGMENT */);
     }), 128 /* KEYED_FRAGMENT */))])]);
-  }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.item.extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_55, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_56, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_57, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.item.extras, function (extra) {
+  }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.item.extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_56, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_57, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_58, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.item.extras, function (extra) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       key: extra.id,
       "class": "flex items-center gap-3 rounded-lg border border-[#F7F7FC] bg-[#F7F7FC] py-2 px-3",
@@ -11413,20 +11442,20 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "class": "w-10 h-10 object-cover rounded flex-shrink-0",
       src: extra.thumb,
       alt: extra.name
-    }, null, 8 /* PROPS */, _hoisted_59)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_60, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_61, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener(extra.name, 18)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_62, "+" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.currency_price), 1 /* TEXT */), $options.isModifierUnavailable(extra) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_63, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_64, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, null, 8 /* PROPS */, _hoisted_60)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_61, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_62, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener(extra.name, 18)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_63, "+" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.currency_price), 1 /* TEXT */), $options.isModifierUnavailable(extra) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_64, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_65, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
         return $options.decrementExtra(extra);
       }, ["prevent"]),
       disabled: $options.getExtraQuantity(extra.id) === 0,
       "class": "fa-solid fa-minus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus disabled:opacity-40 disabled:cursor-not-allowed"
-    }, null, 8 /* PROPS */, _hoisted_65), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_66, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getExtraQuantity(extra.id)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, null, 8 /* PROPS */, _hoisted_66), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_67, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getExtraQuantity(extra.id)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
         return $options.incrementExtra(extra);
       }, ["prevent"]),
       disabled: $options.isModifierUnavailable(extra),
       "class": "fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"
-    }, null, 8 /* PROPS */, _hoisted_67)])], 12 /* STYLE, PROPS */, _hoisted_58);
-  }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.item.addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_68, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_69, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_70, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_Swiper, {
+    }, null, 8 /* PROPS */, _hoisted_68)])], 12 /* STYLE, PROPS */, _hoisted_59);
+  }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.item.addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_69, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_70, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_71, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_Swiper, {
     speed: 280,
     slidesPerView: "auto",
     spaceBetween: 16
@@ -11437,7 +11466,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           key: addon
         }, {
           "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-            return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_71, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+            return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_72, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
               onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
                 return $options.changeAddon(addon);
               }, ["prevent"]),
@@ -11451,9 +11480,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
               "class": "w-[68px] h-full object-cover ltr:rounded-l-lg rtl:rounded-r-lg flex-shrink-0",
               src: addon.thumb,
               alt: "thumbnail"
-            }, null, 8 /* PROPS */, _hoisted_73), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_74, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_75, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(addon.addon_item_name), 1 /* TEXT */), addon.variation_names.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_76, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(addon.variation_names, function (variation, index) {
-              return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener(variation.name, 8)) + " ", 1 /* TEXT */), index + 1 < addon.variation_names.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_77, ",  ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-            }), 256 /* UNKEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_78, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(addon.total_currency_price), 1 /* TEXT */), $options.isAddonUnavailable(addon) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_79, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 12 /* STYLE, PROPS */, _hoisted_72), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_80, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+            }, null, 8 /* PROPS */, _hoisted_74), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_75, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_76, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(addon.addon_item_name), 1 /* TEXT */), addon.variation_names.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_77, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(addon.variation_names, function (variation, index) {
+              return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener(variation.name, 8)) + " ", 1 /* TEXT */), index + 1 < addon.variation_names.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_78, ",  ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+            }), 256 /* UNKEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_79, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(addon.total_currency_price), 1 /* TEXT */), $options.isAddonUnavailable(addon) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_80, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 12 /* STYLE, PROPS */, _hoisted_73), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_81, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
               type: "button",
               "class": "info-btn",
               "data-modal": "#item-info-modal",
@@ -11462,12 +11491,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
               }, ["prevent"])
             }, _toConsumableArray(_cache[14] || (_cache[14] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
               "class": "lab lab-information font-fill-paragraph transition lab-font-size-16"
-            }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_81), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_82, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+            }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_82), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_83, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
               onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
                 return $options.addonQuantityDecrement(addon.id);
               }, ["prevent"]),
               "class": "fa-solid fa-minus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus"
-            }, null, 8 /* PROPS */, _hoisted_83), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+            }, null, 8 /* PROPS */, _hoisted_84), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
               onKeypress: _cache[8] || (_cache[8] = function ($event) {
                 return $options.onlyNumber($event);
               }),
@@ -11480,26 +11509,26 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
               disabled: $options.isAddonUnavailable(addon),
               type: "number",
               "class": "text-center w-5 text-xs font-semibold text-heading indec-value"
-            }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_84), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.addonQuantity[addon.id]]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+            }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_85), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.addonQuantity[addon.id]]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
               onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
                 return $options.addonQuantityIncrement(addon.id);
               }, ["prevent"]),
               disabled: $options.isAddonUnavailable(addon),
               "class": "fa-solid fa-plus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"
-            }, null, 8 /* PROPS */, _hoisted_85)])])])];
+            }, null, 8 /* PROPS */, _hoisted_86)])])])];
           }),
           _: 2 /* DYNAMIC */
         }, 1024 /* DYNAMIC_SLOTS */);
       }), 128 /* KEYED_FRAGMENT */))];
     }),
     _: 1 /* STABLE */
-  })])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_86, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_87, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.special_instructions')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("textarea", {
+  })])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_87, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_88, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.special_instructions')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("textarea", {
     "onUpdate:modelValue": _cache[9] || (_cache[9] = function ($event) {
       return $data.temp.instruction = $event;
     }),
     placeholder: _ctx.$t('message.add_note'),
     "class": "h-12 w-full rounded-lg border py-1.5 px-2 placeholder:text-[10px] placeholder:text-[#6E7191] border-[#D9DBE9]"
-  }, null, 8 /* PROPS */, _hoisted_88), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.temp.instruction]]), $data.instructionError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_89, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.instructionError), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_90, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, 8 /* PROPS */, _hoisted_89), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.temp.instruction]]), $data.instructionError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_90, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.instructionError), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_91, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     disabled: !$options.canAddToCart,
     onClick: _cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
@@ -11509,7 +11538,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   }, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "icon-bag-2",
     "aria-hidden": "true"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.add_to_cart')) + " · ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_92, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($data.temp.total_price, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])], 8 /* PROPS */, _hoisted_91), $options.itemUnavailabilityBannerVisible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_93, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_unavailable_during_edit')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_16), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("========VARIATION PART END===========")], 64 /* STABLE_FRAGMENT */);
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.add_to_cart')) + " · ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_93, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($data.temp.total_price, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)])], 8 /* PROPS */, _hoisted_92), $options.itemUnavailabilityBannerVisible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_94, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_unavailable_during_edit')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_17), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("========VARIATION PART END===========")], 64 /* STABLE_FRAGMENT */);
 }
 
 /***/ },

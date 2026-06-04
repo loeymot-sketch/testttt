@@ -17,7 +17,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-history-drawer[data-v-593d75f2] {\n  position: fixed;\n  inset: 0;\n  z-index: 9000;\n  display: flex;\n  justify-content: flex-end;\n  pointer-events: none;\n}\n.kds-history-drawer__backdrop[data-v-593d75f2] {\n  position: absolute;\n  inset: 0;\n  background: rgba(0, 0, 0, 0.45);\n  pointer-events: auto;\n}\n.kds-history-drawer__panel[data-v-593d75f2] {\n  position: relative;\n  width: min(440px, 90vw);\n  height: 100%;\n  background: #ffffff;\n  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);\n  pointer-events: auto;\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n}\n.kds-history-drawer__header[data-v-593d75f2] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 14px 18px;\n  border-bottom: 1px solid #eaeaea;\n  background: #111111;\n  color: #ffffff;\n  flex-shrink: 0;\n}\n.kds-history-drawer__title[data-v-593d75f2] {\n  margin: 0;\n  font-size: 1.05rem;\n  font-weight: 600;\n  display: flex;\n  gap: 8px;\n  align-items: baseline;\n}\n.kds-history-drawer__count[data-v-593d75f2] {\n  font-size: 0.85rem;\n  opacity: 0.85;\n  font-weight: 400;\n}\n.kds-history-drawer__close[data-v-593d75f2] {\n  background: transparent;\n  border: none;\n  color: inherit;\n  font-size: 1.25rem;\n  cursor: pointer;\n  padding: 6px 10px;\n  border-radius: 4px;\n}\n.kds-history-drawer__close[data-v-593d75f2]:hover,\n.kds-history-drawer__close[data-v-593d75f2]:focus {\n  background: rgba(255, 255, 255, 0.12);\n  outline: 2px solid #ffd400;\n  outline-offset: 1px;\n}\n.kds-history-drawer__loading[data-v-593d75f2],\n.kds-history-drawer__empty[data-v-593d75f2],\n.kds-history-drawer__error[data-v-593d75f2] {\n  padding: 22px 18px;\n  color: #555;\n  font-size: 0.95rem;\n}\n.kds-history-drawer__error[data-v-593d75f2] {\n  color: #b00020;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  align-items: flex-start;\n}\n.kds-history-drawer__retry[data-v-593d75f2] {\n  background: #111;\n  color: #fff;\n  border: none;\n  padding: 6px 14px;\n  border-radius: 4px;\n  cursor: pointer;\n  font-size: 0.85rem;\n}\n.kds-history-drawer__list[data-v-593d75f2] {\n  list-style: none;\n  margin: 0;\n  padding: 12px;\n  overflow-y: auto;\n  flex: 1;\n}\n.kds-history-drawer__item[data-v-593d75f2] {\n  border: 1px solid #e2e2e2;\n  border-left: 4px solid #888;\n  border-radius: 6px;\n  padding: 10px 12px;\n  margin-bottom: 10px;\n  background: #fafafa;\n}\n.kds-history-drawer__item.is-prepared[data-v-593d75f2]  { border-left-color: #1e88e5;\n}\n.kds-history-drawer__item.is-out[data-v-593d75f2]       { border-left-color: #fb8c00;\n}\n.kds-history-drawer__item.is-delivered[data-v-593d75f2] { border-left-color: #2e7d32;\n}\n.kds-history-drawer__head[data-v-593d75f2] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n.kds-history-drawer__queue[data-v-593d75f2] {\n  font-weight: 700;\n  font-size: 1rem;\n}\n.kds-history-drawer__status[data-v-593d75f2] {\n  background: #111;\n  color: #fff;\n  padding: 2px 8px;\n  border-radius: 999px;\n  font-size: 0.72rem;\n  text-transform: uppercase;\n  letter-spacing: 0.04em;\n}\n.kds-history-drawer__time[data-v-593d75f2] {\n  margin-left: auto;\n  font-variant-numeric: tabular-nums;\n  font-size: 0.85rem;\n  color: #444;\n}\n.kds-history-drawer__items[data-v-593d75f2] {\n  list-style: none;\n  margin: 8px 0 0;\n  padding: 0;\n}\n.kds-history-drawer__line[data-v-593d75f2] {\n  font-size: 0.9rem;\n  padding: 2px 0;\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n}\n.kds-history-drawer__qty[data-v-593d75f2] {\n  font-weight: 700;\n  min-width: 28px;\n}\n.kds-history-drawer__name[data-v-593d75f2] {\n  flex: 1;\n}\n.kds-history-drawer__variations[data-v-593d75f2] {\n  color: #555;\n  font-style: italic;\n  font-size: 0.85rem;\n  width: 100%;\n  margin-left: 32px;\n}\n\n/* [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] recall row.\n   - Visually grounded under the items list, separated by a thin top border\n     so the chef's eye lands on the orange CTA after reading the order content.\n   - The button uses Cayenne orange #F4501E (matches `.kds-overflow-chip` in\n     KdsV2Grid for brand cohesion) with high contrast white text.\n   - The TTL hint (e.g. \"12s\") is monospace so the countdown ticks visually\n     without layout shift.\n   - The RAPPELÉ badge variant inverts to a quiet success treatment after a\n     successful recall — the chef has the confirmation but the row no longer\n     screams for action. */\n.kds-history-drawer__recall-row[data-v-593d75f2] {\n  margin-top: 10px;\n  padding-top: 8px;\n  border-top: 1px dashed #e2e2e2;\n  display: flex;\n  align-items: center;\n  gap: 10px;\n}\n.kds-history-drawer__recall-btn[data-v-593d75f2] {\n  background: #F4501E;\n  color: #1A1A1A;\n  border: none;\n  padding: 8px 14px;\n  border-radius: 6px;\n  font-weight: 700;\n  font-size: 0.9rem;\n  cursor: pointer;\n  letter-spacing: 0.02em;\n  box-shadow: 0 2px 4px rgba(244, 80, 30, 0.18);\n}\n.kds-history-drawer__recall-btn[data-v-593d75f2]:hover:not(:disabled),\n.kds-history-drawer__recall-btn[data-v-593d75f2]:focus:not(:disabled) {\n  background: #DC4615;\n  outline: 2px solid #ffd400;\n  outline-offset: 1px;\n}\n.kds-history-drawer__recall-btn[data-v-593d75f2]:disabled {\n  opacity: 0.55;\n  cursor: not-allowed;\n}\n.kds-history-drawer__recall-hint[data-v-593d75f2] {\n  font-family: 'JetBrains Mono', ui-monospace, monospace;\n  font-size: 0.8rem;\n  font-weight: 600;\n  color: #6B7280;\n  font-variant-numeric: tabular-nums;\n}\n.kds-history-drawer__recall-row--done[data-v-593d75f2] {\n  border-top-style: solid;\n  border-top-color: #F4501E;\n}\n.kds-history-drawer__recall-badge[data-v-593d75f2] {\n  display: inline-flex;\n  align-items: center;\n  background: #F4501E;\n  color: #ffffff;\n  padding: 4px 10px;\n  border-radius: 999px;\n  font-size: 0.72rem;\n  font-weight: 800;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n/* RTL */\n.kds-history-drawer[dir=\"rtl\"] .kds-history-drawer__panel[data-v-593d75f2] {\n  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.25);\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kds-history-drawer[data-v-593d75f2] {\n  position: fixed;\n  inset: 0;\n  z-index: 9000;\n  display: flex;\n  justify-content: flex-end;\n  pointer-events: none;\n}\n.kds-history-drawer__backdrop[data-v-593d75f2] {\n  position: absolute;\n  inset: 0;\n  background: rgba(0, 0, 0, 0.45);\n  pointer-events: auto;\n}\n.kds-history-drawer__panel[data-v-593d75f2] {\n  position: relative;\n  width: min(440px, 90vw);\n  height: 100%;\n  background: #ffffff;\n  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);\n  pointer-events: auto;\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n}\n.kds-history-drawer__header[data-v-593d75f2] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 14px 18px;\n  border-bottom: 1px solid #eaeaea;\n  background: #111111;\n  color: #ffffff;\n  flex-shrink: 0;\n}\n.kds-history-drawer__title[data-v-593d75f2] {\n  margin: 0;\n  font-size: 1.05rem;\n  font-weight: 600;\n  display: flex;\n  gap: 8px;\n  align-items: baseline;\n}\n.kds-history-drawer__count[data-v-593d75f2] {\n  font-size: 0.85rem;\n  opacity: 0.85;\n  font-weight: 400;\n}\n.kds-history-drawer__close[data-v-593d75f2] {\n  background: transparent;\n  border: none;\n  color: inherit;\n  font-size: 1.25rem;\n  cursor: pointer;\n  padding: 6px 10px;\n  border-radius: 4px;\n}\n.kds-history-drawer__close[data-v-593d75f2]:hover,\n.kds-history-drawer__close[data-v-593d75f2]:focus {\n  background: rgba(255, 255, 255, 0.12);\n  outline: 2px solid #ffd400;\n  outline-offset: 1px;\n}\n.kds-history-drawer__loading[data-v-593d75f2],\n.kds-history-drawer__empty[data-v-593d75f2],\n.kds-history-drawer__error[data-v-593d75f2] {\n  padding: 22px 18px;\n  color: #555;\n  font-size: 0.95rem;\n}\n.kds-history-drawer__error[data-v-593d75f2] {\n  color: #b00020;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  align-items: flex-start;\n}\n.kds-history-drawer__retry[data-v-593d75f2] {\n  background: #111;\n  color: #fff;\n  border: none;\n  padding: 6px 14px;\n  border-radius: 4px;\n  cursor: pointer;\n  font-size: 0.85rem;\n}\n.kds-history-drawer__list[data-v-593d75f2] {\n  list-style: none;\n  margin: 0;\n  padding: 12px;\n  overflow-y: auto;\n  flex: 1;\n}\n.kds-history-drawer__item[data-v-593d75f2] {\n  border: 1px solid #e2e2e2;\n  border-left: 4px solid #888;\n  border-radius: 6px;\n  padding: 10px 12px;\n  margin-bottom: 10px;\n  background: #fafafa;\n}\n.kds-history-drawer__item.is-prepared[data-v-593d75f2]  { border-left-color: #1e88e5;\n}\n.kds-history-drawer__item.is-out[data-v-593d75f2]       { border-left-color: #fb8c00;\n}\n.kds-history-drawer__item.is-delivered[data-v-593d75f2] { border-left-color: #2e7d32;\n}\n.kds-history-drawer__head[data-v-593d75f2] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n.kds-history-drawer__queue[data-v-593d75f2] {\n  font-weight: 700;\n  font-size: 1rem;\n}\n.kds-history-drawer__status[data-v-593d75f2] {\n  background: #111;\n  color: #fff;\n  padding: 2px 8px;\n  border-radius: 999px;\n  font-size: 0.72rem;\n  text-transform: uppercase;\n  letter-spacing: 0.04em;\n}\n\n/* [KDS history full-detail 2026-06-04] Heure passée / terminée — two labeled\n   cells under the head row so the chef can read both times at a glance. */\n.kds-history-drawer__times[data-v-593d75f2] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px 16px;\n  margin-top: 6px;\n}\n.kds-history-drawer__time-cell[data-v-593d75f2] {\n  display: inline-flex;\n  align-items: baseline;\n  gap: 5px;\n}\n.kds-history-drawer__time-label[data-v-593d75f2] {\n  font-size: 0.72rem;\n  text-transform: uppercase;\n  letter-spacing: 0.04em;\n  color: #6B7280;\n  font-weight: 600;\n}\n.kds-history-drawer__time[data-v-593d75f2] {\n  font-variant-numeric: tabular-nums;\n  font-size: 0.9rem;\n  font-weight: 600;\n  color: #1F2937;\n}\n\n/* [KDS history full-detail 2026-06-04] Full-composition lines rendered by the\n   canonical <KdsOrderLine> (shared with the live board). The wrapper just adds\n   a thin top separator so the composition reads as a block under the header. */\n.kds-history-drawer__items[data-v-593d75f2] {\n  list-style: none;\n  margin: 8px 0 0;\n  padding: 8px 0 0;\n  border-top: 1px solid #ececec;\n}\n.kds-history-drawer__item-block + .kds-history-drawer__item-block[data-v-593d75f2] {\n  border-top: 1px dashed #ececec;\n  margin-top: 6px;\n  padding-top: 4px;\n}\n\n/* [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] recall row.\n   - Visually grounded under the items list, separated by a thin top border\n     so the chef's eye lands on the orange CTA after reading the order content.\n   - The button uses Cayenne orange #F4501E (matches `.kds-overflow-chip` in\n     KdsV2Grid for brand cohesion) with high contrast white text.\n   - The TTL hint (e.g. \"12s\") is monospace so the countdown ticks visually\n     without layout shift.\n   - The RAPPELÉ badge variant inverts to a quiet success treatment after a\n     successful recall — the chef has the confirmation but the row no longer\n     screams for action. */\n.kds-history-drawer__recall-row[data-v-593d75f2] {\n  margin-top: 10px;\n  padding-top: 8px;\n  border-top: 1px dashed #e2e2e2;\n  display: flex;\n  align-items: center;\n  gap: 10px;\n}\n.kds-history-drawer__recall-btn[data-v-593d75f2] {\n  background: #F4501E;\n  color: #1A1A1A;\n  border: none;\n  padding: 8px 14px;\n  border-radius: 6px;\n  font-weight: 700;\n  font-size: 0.9rem;\n  cursor: pointer;\n  letter-spacing: 0.02em;\n  box-shadow: 0 2px 4px rgba(244, 80, 30, 0.18);\n}\n.kds-history-drawer__recall-btn[data-v-593d75f2]:hover:not(:disabled),\n.kds-history-drawer__recall-btn[data-v-593d75f2]:focus:not(:disabled) {\n  background: #DC4615;\n  outline: 2px solid #ffd400;\n  outline-offset: 1px;\n}\n.kds-history-drawer__recall-btn[data-v-593d75f2]:disabled {\n  opacity: 0.55;\n  cursor: not-allowed;\n}\n.kds-history-drawer__recall-hint[data-v-593d75f2] {\n  font-family: 'JetBrains Mono', ui-monospace, monospace;\n  font-size: 0.8rem;\n  font-weight: 600;\n  color: #6B7280;\n  font-variant-numeric: tabular-nums;\n}\n.kds-history-drawer__recall-row--done[data-v-593d75f2] {\n  border-top-style: solid;\n  border-top-color: #F4501E;\n}\n.kds-history-drawer__recall-badge[data-v-593d75f2] {\n  display: inline-flex;\n  align-items: center;\n  background: #F4501E;\n  color: #ffffff;\n  padding: 4px 10px;\n  border-radius: 999px;\n  font-size: 0.72rem;\n  font-weight: 800;\n  letter-spacing: 0.06em;\n  text-transform: uppercase;\n}\n\n/* RTL */\n.kds-history-drawer[dir=\"rtl\"] .kds-history-drawer__panel[data-v-593d75f2] {\n  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.25);\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -150,6 +150,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "./node_modules/axios/lib/axios.js");
+/* harmony import */ var _KdsOrderLine_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KdsOrderLine.vue */ "./resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue");
+/* harmony import */ var _helpers_kdsCustomization_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../helpers/kdsCustomization.js */ "./resources/js/helpers/kdsCustomization.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
@@ -167,11 +169,18 @@ function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { 
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 
+// [KDS history full-detail 2026-06-04] Canonical live-board renderer + line
+// component (same as KdsOrderCard.vue) so history shows the FULL composition.
+
+
 var STATUS_PREPARED = 8;
 var STATUS_OUT_FOR_DELIVERY = 10;
 var STATUS_DELIVERED = 13;
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   name: 'KdsHistoryDrawer',
+  components: {
+    KdsOrderLine: _KdsOrderLine_vue__WEBPACK_IMPORTED_MODULE_1__["default"]
+  },
   props: {
     open: {
       type: Boolean,
@@ -290,9 +299,28 @@ var STATUS_DELIVERED = 13;
         }, _callee, null, [[1, 3, 4, 5]]);
       }))();
     },
-    itemName: function itemName(item) {
-      // KDSOrderDetailsResource exposes `item_name` directly; defensive fall-backs.
-      return item.item_name || item.item && item.item.name || item.name || '';
+    // [KDS history full-detail 2026-06-04] Delegate to the canonical renderer
+    // (single source of truth shared with the live KdsOrderCard) — yields the
+    // full typed line list: header, grouped variations, supplements, menu
+    // children, free-text instruction, allergens. No per-category branching here.
+    renderItemLines: function renderItemLines(item) {
+      return (0,_helpers_kdsCustomization_js__WEBPACK_IMPORTED_MODULE_2__.renderItem)(item).lines;
+    },
+    // [KDS history full-detail 2026-06-04] Heure de prise de commande. The
+    // resource already exposes a pre-formatted HH:MM string via
+    // AppLibrary::time(order_datetime) — it is NOT an ISO date, so it must be
+    // bound raw (NOT passed through formatTime, which would yield Invalid Date
+    // and render blank). `order_datetime` is the fuller formatted fallback.
+    placedTime: function placedTime(order) {
+      var raw = order === null || order === void 0 ? void 0 : order.order_time;
+      if (typeof raw === 'string' && raw.trim().length > 0) {
+        return raw.trim();
+      }
+      // Defensive fallback: derive HH:MM from order_datetime if order_time is
+      // absent. order_datetime is also pre-formatted, so we only reuse it as a
+      // last-resort display string.
+      var dt = order === null || order === void 0 ? void 0 : order.order_datetime;
+      return typeof dt === 'string' && dt.trim().length > 0 ? dt.trim() : '';
     },
     statusClass: function statusClass(status) {
       return {
@@ -1480,24 +1508,42 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         return true;
       }
     },
-    // [iter15-mega-fix C-008 run-3 2026-05-10] Supersedes the run-1/run-2
-    // decision to keep the KDS fallback banner in dev. Wave B/C run-3 evidence
-    // (states 01/07/09 in iter15-mega-kiosk + iter15-mega-lifecycle) showed it
-    // is permanently visible in local dev because Pusher/Soketi is not running
-    // — pure noise. We now gate on appEnv === 'local' only, mirroring the
-    // ConnectionStatusBanner.vue / PosOrdersTrackerComponent.vue gates. The
-    // gate intentionally excludes 'testing' so any CI suite using
-    // APP_ENV=testing still renders the banner. Existing Playwright specs that
-    // reference data-testid="kds-sync-mode-banner" all use OR-fallback locators
-    // (audit-kds-cycle1 D1-05 → stamp||banner, red-team-r4 R4-12 → soft record,
-    // 04-kds-status → kds-aria-live OR grid OR banner with .first()), so they
-    // keep passing in CI Playwright (.github/workflows/playwright.yml uses
-    // APP_ENV=local) via the alternative branches.
-    kdsHideFallbackBannerInLocalDev: function kdsHideFallbackBannerInLocalDev() {
+    // [PR-02 core-bulletproof 2026-06-04] Sync degradation must NEVER be silent
+    // (owner mandate "silencieux = grave"). The real Le Cayenne box runs
+    // APP_ENV=local, so the previous "hide whenever appEnv==='local'" gate left
+    // the kitchen with NO visual cue when soketi dropped to ~30-60s polling.
+    //
+    // FAIL-SAFE-TO-VISIBLE opt-out design (NOT opt-in): suppress the fallback
+    // banner ONLY when (a) we are in local dev AND (b) an explicit opt-out flag
+    // window.FK_KDS_SHOW_FALLBACK_BANNER === false is set. The box never sets
+    // the flag → it stays undefined → `=== false` is false → NOT suppressed →
+    // banner VISIBLE. A dev who wants silence (soketi intentionally off in dev)
+    // adds KDS_SHOW_FALLBACK_BANNER=false to .env. The dangerous state (silent
+    // degradation) is opt-out, never opt-in.
+    //
+    // Renamed from kdsHideFallbackBannerInLocalDev → kdsSuppressFallbackBanner:
+    // the old name implied "hide in local dev" which is no longer the contract.
+    //
+    // The `env === 'local'` check stays FIRST so && short-circuits before
+    // touching window.FK_* (SSR-safe). The catch falls back to `false`
+    // (fail-safe-to-visible). 'testing' is intentionally excluded (env !==
+    // 'local') so any CI suite using APP_ENV=testing always renders the banner.
+    //
+    // Config contract documented in config/kds.php ('show_fallback_banner',
+    // default true). NOTE: wiring the config through master.blade.php into
+    // window.FK_KDS_SHOW_FALLBACK_BANNER is deferred to avoid colliding with a
+    // parallel session editing master.blade.php — until then the box default
+    // (flag undefined → VISIBLE) already satisfies the mandate.
+    //
+    // Existing Playwright specs referencing data-testid="kds-sync-mode-banner"
+    // are unaffected: abuse-C-kds:369 toHaveCount(0) runs in V2 (legacy testid
+    // never mounts) AND with WS connected (v-if !wsConnected is false anyway);
+    // all other refs are OR-locators / soft .count() records.
+    kdsSuppressFallbackBanner: function kdsSuppressFallbackBanner() {
       try {
         var _window$foodkingConfi;
         var env = typeof window !== 'undefined' && ((_window$foodkingConfi = window.foodkingConfig) === null || _window$foodkingConfi === void 0 ? void 0 : _window$foodkingConfi.appEnv) || '';
-        return env === 'local';
+        return env === 'local' && window.FK_KDS_SHOW_FALLBACK_BANNER === false;
       } catch (_e) {
         return false;
       }
@@ -2816,37 +2862,45 @@ var _hoisted_12 = {
   "class": "kds-history-drawer__queue"
 };
 var _hoisted_13 = ["data-status"];
-var _hoisted_14 = ["datetime"];
+var _hoisted_14 = {
+  "class": "kds-history-drawer__times"
+};
 var _hoisted_15 = {
-  "class": "kds-history-drawer__items"
+  key: 0,
+  "class": "kds-history-drawer__time-cell"
 };
 var _hoisted_16 = {
-  "class": "kds-history-drawer__qty"
+  "class": "kds-history-drawer__time-label"
 };
 var _hoisted_17 = {
-  "class": "kds-history-drawer__name"
+  "class": "kds-history-drawer__time"
 };
 var _hoisted_18 = {
-  key: 0,
-  "class": "kds-history-drawer__variations"
+  key: 1,
+  "class": "kds-history-drawer__time-cell"
 };
 var _hoisted_19 = {
-  key: 0
+  "class": "kds-history-drawer__time-label"
 };
-var _hoisted_20 = {
+var _hoisted_20 = ["datetime"];
+var _hoisted_21 = {
+  "class": "kds-history-drawer__items"
+};
+var _hoisted_22 = {
   key: 0,
   "class": "kds-history-drawer__recall-row"
 };
-var _hoisted_21 = ["aria-label", "disabled", "data-testid", "onClick"];
-var _hoisted_22 = {
+var _hoisted_23 = ["aria-label", "disabled", "data-testid", "onClick"];
+var _hoisted_24 = {
   "class": "kds-history-drawer__recall-hint"
 };
-var _hoisted_23 = {
+var _hoisted_25 = {
   key: 1,
   "class": "kds-history-drawer__recall-row kds-history-drawer__recall-row--done"
 };
-var _hoisted_24 = ["aria-label"];
+var _hoisted_26 = ["aria-label"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
+  var _component_KdsOrderLine = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KdsOrderLine");
   return $props.open ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
     key: 0,
     "class": "kds-history-drawer",
@@ -2888,19 +2942,20 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, " N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number || order.order_serial_no || order.id), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": "kds-history-drawer__status",
       "data-status": order.status
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.statusLabel(order.status)), 9 /* TEXT, PROPS */, _hoisted_13), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("time", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.statusLabel(order.status)), 9 /* TEXT, PROPS */, _hoisted_13)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n            [KDS history full-detail 2026-06-04] Owner ask: each history order\n            must show heure PASSÉE (commande prise) + heure TERMINÉE (bump/livré)\n            so a customer remark can be looked up. `order_time` is already a\n            formatted HH:MM string (AppLibrary::time) — bind it RAW (NOT through\n            formatTime, which expects an ISO8601 date). `updated_at` is ISO8601\n            → formatTime(). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [$options.placedTime(order) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_history_placed_at')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("time", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.placedTime(order)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.formatTime(order.updated_at) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_history_completed_at')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("time", {
       "class": "kds-history-drawer__time",
       datetime: order.updated_at
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatTime(order.updated_at)), 9 /* TEXT, PROPS */, _hoisted_14)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_15, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(order.order_items || [], function (item, idx) {
-      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatTime(order.updated_at)), 9 /* TEXT, PROPS */, _hoisted_20)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n            [KDS history full-detail 2026-06-04] Reuse the canonical live-board\n            renderer (DRY): renderItem(item).lines + <KdsOrderLine> — identical\n            output to KdsOrderCard.vue (full composition / variations / extras /\n            menu children / instruction / allergens). Replaces the former bare\n            qty+name+variation loop. Data was already complete (history endpoint\n            returns the SAME KDSOrderDetailsResource as the live board). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(order.order_items || [], function (item, idx) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         key: (item.id || idx) + '-' + idx,
-        "class": "kds-history-drawer__line"
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "×", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.itemName(item)), 1 /* TEXT */), Array.isArray(item.item_variations) && item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_18, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, vIdx) {
-        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("em", {
-          key: vIdx
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("— " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), vIdx + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_19, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-      }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-    }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n            [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]\n            Chef \"Annuler bump\" surfaced ONLY when:\n              - order.status === PREPARED (statuses OUT/DELIVERED can no longer be recalled)\n              - order.updated_at within the last 60s (TTL window matches backend guard)\n              - order.recalled_by_id NOT already set in the local cache (cap N=1 — best-effort,\n                the backend remains the source of truth and returns 409 otherwise)\n\n            V1.0.2 backlog Path C (reverse transition PREPARED → PREPARING) remains\n            deferred — Path B is the V1 ship per owner mandate 2026-05-26.\n          "), $options.canRecall(order) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        "class": "kds-history-drawer__item-block"
+      }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.renderItemLines(item), function (line, li) {
+        return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_KdsOrderLine, {
+          key: li,
+          line: line
+        }, null, 8 /* PROPS */, ["line"]);
+      }), 128 /* KEYED_FRAGMENT */))]);
+    }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n            [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]\n            Chef \"Annuler bump\" surfaced ONLY when:\n              - order.status === PREPARED (statuses OUT/DELIVERED can no longer be recalled)\n              - order.updated_at within the last 60s (TTL window matches backend guard)\n              - order.recalled_by_id NOT already set in the local cache (cap N=1 — best-effort,\n                the backend remains the source of truth and returns 409 otherwise)\n\n            V1.0.2 backlog Path C (reverse transition PREPARED → PREPARING) remains\n            deferred — Path B is the V1 ship per owner mandate 2026-05-26.\n          "), $options.canRecall(order) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       "class": "kds-history-drawer__recall-btn",
       "aria-label": _ctx.$t('label.kds_recall_button_aria', {
@@ -2911,12 +2966,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onClick: function onClick($event) {
         return $options.recall(order);
       }
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_recall_button')), 9 /* TEXT, PROPS */, _hoisted_21), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.recallSecondsLeft(order)) + "s ", 1 /* TEXT */)])) : order.status === $data.STATUS_PREPARED && $options.wasRecentlyRecalled(order) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_23, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_recall_button')), 9 /* TEXT, PROPS */, _hoisted_23), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.recallSecondsLeft(order)) + "s ", 1 /* TEXT */)])) : order.status === $data.STATUS_PREPARED && $options.wasRecentlyRecalled(order) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": "kds-history-drawer__recall-badge",
       "aria-label": _ctx.$t('label.kds_recall_badge_aria', {
         queue: order.queue_number || order.id
       })
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_recall_badge')), 9 /* TEXT, PROPS */, _hoisted_24)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */);
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_recall_badge')), 9 /* TEXT, PROPS */, _hoisted_26)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */);
   }), 128 /* KEYED_FRAGMENT */))]))], 8 /* PROPS */, _hoisted_2)], 8 /* PROPS */, _hoisted_1)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true);
 }
 
@@ -4181,7 +4236,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     dir: $options.direction,
     "offline-since": $data.v2OfflineSince,
     "list-at-cap": $options.kdsOrderListAtCap,
-    "fallback-mode": !$data.wsConnected && !$options.kdsHideFallbackBannerInLocalDev,
+    "fallback-mode": !$data.wsConnected && !$options.kdsSuppressFallbackBanner,
     "admin-polling-hint": $options.kdsIsCentralAdmin,
     "bump-local-only-notice": !$data.kdsHideBumpInfo,
     "auto-transition-enabled": $data.v2AutoTransitionEnabled,
@@ -4194,7 +4249,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "suppress-transient": ""
   }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingComponent, {
     props: $data.loading
-  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [iter15-mega-fix C-008 run-3 2026-05-10] Hide the KDS \"Mode secours actif\"\n    fallback banner in local dev where Pusher/Soketi is not running — it was\n    permanently visible across every KDS view (states 01/07/09 in iter15 mega\n    Wave B + Wave C) and pure noise. Production keeps it: kitchen needs to\n    know they are in fallback polling. Gate strictly on appEnv === 'local'\n    (NOT 'testing') so any CI suite running with APP_ENV=testing still sees\n    the banner. Existing dependent specs (audit-kds-cycle1 D1-05,\n    red-team-r4 R4-12, 04-kds-status) all use OR-fallback locators so they\n    keep passing in CI Playwright (which runs APP_ENV=local) via the sync\n    stamp / aria-live / grid alternatives.\n  "), !$data.wsConnected && !$options.kdsHideFallbackBannerInLocalDev ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_fallback_banner')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [test-e2e round-2 cluster-1 C-001 2026-05-10] Persistent error banner.\n    Replaces (and augments) the previous ephemeral toast in\n    _refreshWithCurrentFilter / list() error paths. Visible until the next\n    successful /api/admin/kds-order poll resets it, or the operator dismisses\n    it manually with the ✕ button. data-testid lets E2E specs assert\n    visibility deterministically (no race with toast fade-out).\n  "), $data.kdsErrorBanner.visible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.kdsErrorBanner.message), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [iter15-mega-fix C-008 run-3 2026-05-10] Hide the KDS \"Mode secours actif\"\n    fallback banner in local dev where Pusher/Soketi is not running — it was\n    permanently visible across every KDS view (states 01/07/09 in iter15 mega\n    Wave B + Wave C) and pure noise. Production keeps it: kitchen needs to\n    know they are in fallback polling. Gate strictly on appEnv === 'local'\n    (NOT 'testing') so any CI suite running with APP_ENV=testing still sees\n    the banner. Existing dependent specs (audit-kds-cycle1 D1-05,\n    red-team-r4 R4-12, 04-kds-status) all use OR-fallback locators so they\n    keep passing in CI Playwright (which runs APP_ENV=local) via the sync\n    stamp / aria-live / grid alternatives.\n  "), !$data.wsConnected && !$options.kdsSuppressFallbackBanner ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_fallback_banner')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [test-e2e round-2 cluster-1 C-001 2026-05-10] Persistent error banner.\n    Replaces (and augments) the previous ephemeral toast in\n    _refreshWithCurrentFilter / list() error paths. Visible until the next\n    successful /api/admin/kds-order poll resets it, or the operator dismisses\n    it manually with the ✕ button. data-testid lets E2E specs assert\n    visibility deterministically (no race with toast fade-out).\n  "), $data.kdsErrorBanner.visible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.kdsErrorBanner.message), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kds-hint-link",
     "aria-label": _ctx.$t('label.kds_dismiss_hint'),

@@ -102,6 +102,11 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       transactions: [],
       summary: null,
       cashSession: null,
+      // [TRAP-3 2026-06-04] Cash-trail gap block — cash collected with no
+      // open drawer session (PAID order, NO cash_movement). Surfaces the
+      // discrepancy here, where the écart actually manifests, instead of
+      // only via the ephemeral collect-time toast.
+      unrecordedCash: null,
       meta: {
         capped: false,
         row_count: 0
@@ -201,6 +206,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _this2.transactions = Array.isArray(payload.data) ? payload.data : [];
               _this2.summary = payload.summary || null;
               _this2.cashSession = payload.cash_session || null;
+              _this2.unrecordedCash = payload.unrecorded_cash || null;
               _this2.meta = payload.meta || {
                 capped: false,
                 row_count: 0
@@ -215,6 +221,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _this2.transactions = [];
               _this2.summary = null;
               _this2.cashSession = null;
+              _this2.unrecordedCash = null;
             case 4:
               _context.p = 4;
               _this2.loading = false;
@@ -1754,89 +1761,112 @@ var _hoisted_41 = {
 var _hoisted_42 = {
   key: 2,
   "class": "px-4 sm:px-5 mb-4",
-  "data-testid": "cash-overview-mode-breakdown"
+  "data-testid": "cash-overview-unrecorded-cash"
 };
 var _hoisted_43 = {
-  "class": "text-sm font-semibold text-gray-700 mb-2"
+  "class": "border-l-4 border-red-500 bg-red-50 rounded p-3"
 };
 var _hoisted_44 = {
-  "class": "flex flex-wrap gap-2"
+  "class": "mt-1 text-sm text-red-700",
+  "data-testid": "cash-overview-unrecorded-cash-message"
 };
-var _hoisted_45 = ["data-testid"];
+var _hoisted_45 = {
+  "class": "mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm"
+};
 var _hoisted_46 = {
-  "class": "text-gray-500 ml-1"
+  "class": "ml-1 text-red-800",
+  "data-testid": "cash-overview-unrecorded-cash-count"
 };
 var _hoisted_47 = {
-  key: 3,
-  "class": "p-6 text-center text-gray-500"
+  "class": "ml-1 text-red-800",
+  "data-testid": "cash-overview-unrecorded-cash-total"
 };
 var _hoisted_48 = {
+  key: 3,
+  "class": "px-4 sm:px-5 mb-4",
+  "data-testid": "cash-overview-mode-breakdown"
+};
+var _hoisted_49 = {
+  "class": "text-sm font-semibold text-gray-700 mb-2"
+};
+var _hoisted_50 = {
+  "class": "flex flex-wrap gap-2"
+};
+var _hoisted_51 = ["data-testid"];
+var _hoisted_52 = {
+  "class": "text-gray-500 ml-1"
+};
+var _hoisted_53 = {
+  key: 4,
+  "class": "p-6 text-center text-gray-500"
+};
+var _hoisted_54 = {
   "class": "p-8 text-center",
   "data-testid": "cash-overview-empty"
 };
-var _hoisted_49 = {
+var _hoisted_55 = {
   "class": "text-base text-gray-700 max-w-md mx-auto mb-4",
   "data-testid": "cash-overview-empty-copy"
 };
-var _hoisted_50 = {
+var _hoisted_56 = {
   "class": "px-4 sm:px-5 pb-5"
 };
-var _hoisted_51 = {
+var _hoisted_57 = {
   "class": "overflow-x-auto border rounded-lg",
   "data-testid": "cash-overview-table-wrapper"
 };
-var _hoisted_52 = {
+var _hoisted_58 = {
   "class": "w-full text-sm",
   "data-testid": "cash-overview-table"
 };
-var _hoisted_53 = {
+var _hoisted_59 = {
   "class": "bg-gray-100 text-gray-700"
 };
-var _hoisted_54 = {
+var _hoisted_60 = {
   "class": "px-3 py-2 text-left"
 };
-var _hoisted_55 = {
-  "class": "px-3 py-2 text-left"
-};
-var _hoisted_56 = {
-  "class": "px-3 py-2 text-left"
-};
-var _hoisted_57 = {
-  "class": "px-3 py-2 text-left"
-};
-var _hoisted_58 = {
-  "class": "px-3 py-2 text-left"
-};
-var _hoisted_59 = {
-  "class": "px-3 py-2 text-right"
-};
-var _hoisted_60 = ["data-testid"];
 var _hoisted_61 = {
-  "class": "px-3 py-2 whitespace-nowrap"
+  "class": "px-3 py-2 text-left"
 };
 var _hoisted_62 = {
-  "class": "px-3 py-2"
+  "class": "px-3 py-2 text-left"
 };
 var _hoisted_63 = {
-  key: 0
+  "class": "px-3 py-2 text-left"
 };
 var _hoisted_64 = {
+  "class": "px-3 py-2 text-left"
+};
+var _hoisted_65 = {
+  "class": "px-3 py-2 text-right"
+};
+var _hoisted_66 = ["data-testid"];
+var _hoisted_67 = {
+  "class": "px-3 py-2 whitespace-nowrap"
+};
+var _hoisted_68 = {
+  "class": "px-3 py-2"
+};
+var _hoisted_69 = {
+  key: 0
+};
+var _hoisted_70 = {
   key: 1,
   "class": "text-gray-400"
 };
-var _hoisted_65 = {
+var _hoisted_71 = {
   "class": "px-3 py-2"
 };
-var _hoisted_66 = {
+var _hoisted_72 = {
   "class": "px-3 py-2"
 };
-var _hoisted_67 = {
+var _hoisted_73 = {
   "class": "px-3 py-2"
 };
-var _hoisted_68 = {
+var _hoisted_74 = {
   "class": "px-3 py-2 text-right font-semibold"
 };
-var _hoisted_69 = {
+var _hoisted_75 = {
   key: 0,
   "class": "text-xs text-amber-700 mt-2",
   "data-testid": "cash-overview-cap-notice"
@@ -1891,15 +1921,27 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "class": "border rounded-lg p-3 bg-white",
       "data-testid": "cash-overview-source-".concat(src.key)
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(src.label), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney(src.stat.total)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(src.stat.count) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.transactions_short')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_25);
-  }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Cash drawer reconciliation card "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                    [Wave X-C round-2 2026-05-21] Fix C-013 — the previous\n                    diff cell was algebraically locked to `-opening_amount`\n                    (cashDiff = collected - (opening + collected) = -opening),\n                    so it always displayed `-100 € (manquant)` even when the\n                    drawer was perfectly healthy. A real écart requires a\n                    `counted_physical_cash` input compared to `expected_cash`\n                    (= opening + collected). The cashier-count input is V1.0.2\n                    backlog; until then we show 3 HONEST values + an info\n                    note. No misleading diff cell.\n                    Source: GET /api/admin/cash-overview cash_session payload.\n                "), !$data.loading && $data.cashSession ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("section", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_drawer_reconciliation')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.drawer_opened_at')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatTime($data.cashSession.opened_at)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.opening_amount')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoneyEuro($data.cashSession.opening_amount)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_37, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_collected_today')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", _hoisted_38, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoneyEuro($data.cashSession.cash_collected)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.expected_in_drawer')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoneyEuro($data.cashSession.expected_cash)), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_drawer_count_pending_note')), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Mode breakdown "), !$data.loading && $data.summary && Object.keys($data.summary.by_mode || {}).length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("section", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_43, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.breakdown_by_method')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_44, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.summary.by_mode, function (stat, mode) {
+  }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Cash drawer reconciliation card "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                    [Wave X-C round-2 2026-05-21] Fix C-013 — the previous\n                    diff cell was algebraically locked to `-opening_amount`\n                    (cashDiff = collected - (opening + collected) = -opening),\n                    so it always displayed `-100 € (manquant)` even when the\n                    drawer was perfectly healthy. A real écart requires a\n                    `counted_physical_cash` input compared to `expected_cash`\n                    (= opening + collected). The cashier-count input is V1.0.2\n                    backlog; until then we show 3 HONEST values + an info\n                    note. No misleading diff cell.\n                    Source: GET /api/admin/cash-overview cash_session payload.\n                "), !$data.loading && $data.cashSession ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("section", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_drawer_reconciliation')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.drawer_opened_at')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatTime($data.cashSession.opened_at)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.opening_amount')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoneyEuro($data.cashSession.opening_amount)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_37, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_collected_today')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", _hoisted_38, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoneyEuro($data.cashSession.cash_collected)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.expected_in_drawer')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoneyEuro($data.cashSession.expected_cash)), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_drawer_count_pending_note')), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                    [TRAP-3 2026-06-04] Cash-trail discrepancy banner. Flags cash\n                    collected at the counter with NO open drawer session: the\n                    order is PAID + fiscal-seq allocated but NO cash_movement row\n                    exists, so end-of-day reconciliation silently under-counts.\n                    The sale was never blocked (NF525-safe) — this makes the gap\n                    VISIBLE where the écart manifests, not only via the ephemeral\n                    collect-time toast. Owner mandate « détecter écarts (cash\n                    manquant) ». Hidden when count === 0 (no false alarm).\n                "), !$data.loading && $data.unrecordedCash && $data.unrecordedCash.count > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("section", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_43, [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "flex items-center text-sm font-semibold text-red-800"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "mr-2"
+  }, "⚠️"), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "data-testid": "cash-overview-unrecorded-cash-title"
+  }, " Encaissements espèces sans session caisse ")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_44, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.unrecordedCash.message), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_45, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "text-gray-600"
+  }, "Commandes concernées:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.unrecordedCash.count), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "text-gray-600"
+  }, "Montant non rattaché:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", _hoisted_47, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.unrecordedCash.total_currency_price || $options.formatMoneyEuro($data.unrecordedCash.total)), 1 /* TEXT */)])]), _cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "mt-2 text-xs text-red-600"
+  }, " À régulariser : ouvrir une session caisse avant d'encaisser, ou rattacher ces montants au fond de caisse lors de la clôture. ", -1 /* CACHED */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Mode breakdown "), !$data.loading && $data.summary && Object.keys($data.summary.by_mode || {}).length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("section", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_49, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.breakdown_by_method')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_50, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.summary.by_mode, function (stat, mode) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       key: "mode-".concat(mode),
       "class": "border rounded-full px-3 py-1 text-xs bg-gray-50",
       "data-testid": "cash-overview-mode-".concat(mode)
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.modeLabel(mode)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(stat.count) + " · " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney(stat.total)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_45);
-  }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Loading state "), $data.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_47, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.loading')) + "… ", 1 /* TEXT */)) : !$data.transactions.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
-    key: 4
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                    [Wave Z Q6 2026-05-21] Empty-state polish — owner mandate :\n                    illustration (inline SVG, brand-tone, aria-hidden) + copy\n                    ≥20 chars + primary reset CTA. Replaces the previous bare\n                    `Aucune donnée` plain-text dead-end which left admins\n                    wondering whether the page had failed silently.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<svg class=\"mx-auto mb-4 text-gray-300\" xmlns=\"http://www.w3.org/2000/svg\" width=\"96\" height=\"96\" viewBox=\"0 0 96 96\" fill=\"none\" aria-hidden=\"true\" data-testid=\"cash-overview-empty-illustration\"><!-- Cayenne brand-tone: subtle cash-drawer outline + diagonal line through, no decorative noise --><rect x=\"14\" y=\"32\" width=\"68\" height=\"44\" rx=\"4\" stroke=\"currentColor\" stroke-width=\"3\"></rect><line x1=\"14\" y1=\"48\" x2=\"82\" y2=\"48\" stroke=\"currentColor\" stroke-width=\"3\"></line><circle cx=\"48\" cy=\"62\" r=\"6\" stroke=\"currentColor\" stroke-width=\"3\"></circle><line x1=\"20\" y1=\"20\" x2=\"76\" y2=\"84\" stroke=\"#d1d5db\" stroke-width=\"3\" stroke-linecap=\"round\"></line></svg>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_49, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_overview_empty_copy')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.modeLabel(mode)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_52, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(stat.count) + " · " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney(stat.total)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_51);
+  }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Loading state "), $data.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_53, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.loading')) + "… ", 1 /* TEXT */)) : !$data.transactions.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 5
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                    [Wave Z Q6 2026-05-21] Empty-state polish — owner mandate :\n                    illustration (inline SVG, brand-tone, aria-hidden) + copy\n                    ≥20 chars + primary reset CTA. Replaces the previous bare\n                    `Aucune donnée` plain-text dead-end which left admins\n                    wondering whether the page had failed silently.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_54, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<svg class=\"mx-auto mb-4 text-gray-300\" xmlns=\"http://www.w3.org/2000/svg\" width=\"96\" height=\"96\" viewBox=\"0 0 96 96\" fill=\"none\" aria-hidden=\"true\" data-testid=\"cash-overview-empty-illustration\"><!-- Cayenne brand-tone: subtle cash-drawer outline + diagonal line through, no decorative noise --><rect x=\"14\" y=\"32\" width=\"68\" height=\"44\" rx=\"4\" stroke=\"currentColor\" stroke-width=\"3\"></rect><line x1=\"14\" y1=\"48\" x2=\"82\" y2=\"48\" stroke=\"currentColor\" stroke-width=\"3\"></line><circle cx=\"48\" cy=\"62\" r=\"6\" stroke=\"currentColor\" stroke-width=\"3\"></circle><line x1=\"20\" y1=\"20\" x2=\"76\" y2=\"84\" stroke=\"#d1d5db\" stroke-width=\"3\" stroke-linecap=\"round\"></line></svg>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_55, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_overview_empty_copy')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "db-btn py-2 px-4 text-white bg-primary",
     "data-testid": "cash-overview-empty-reset",
@@ -1907,16 +1949,16 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.clearFilters && $options.clearFilters.apply($options, arguments);
     })
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.reset_filters')), 1 /* TEXT */)])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
-    key: 5
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Transactions table "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_50, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_51, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("table", _hoisted_52, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("thead", _hoisted_53, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.time')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_55, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_number')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_56, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.source')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_57, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_method')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_58, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_boy')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_59, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.amount')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tbody", null, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.transactions, function (tx) {
+    key: 6
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Transactions table "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_56, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_57, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("table", _hoisted_58, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("thead", _hoisted_59, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_60, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.time')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_61, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_number')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_62, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.source')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_63, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_method')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_64, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_boy')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_65, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.amount')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tbody", null, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.transactions, function (tx) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tr", {
       key: tx.id,
       "class": "border-t hover:bg-gray-50",
       "data-testid": "cash-overview-row-".concat(tx.id)
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_61, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatTime(tx.created_at)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_62, [tx.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_63, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(tx.queue_number), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_64, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(tx.order_id), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_65, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_67, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatTime(tx.created_at)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_68, [tx.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_69, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(tx.queue_number), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_70, "#" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(tx.order_id), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_71, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["inline-flex items-center px-2 py-0.5 rounded text-xs", $options.sourceClass(tx.source)])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sourceLabel(tx.source)), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_66, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.modeLabel(tx.mode_bucket)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_67, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(tx.delivery_boy_name || '—'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_68, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney(tx.amount)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_60);
-  }), 128 /* KEYED_FRAGMENT */))])])]), $data.meta.capped ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_69, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_overview_capped_notice')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */))])])])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.sourceLabel(tx.source)), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_72, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.modeLabel(tx.mode_bucket)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_73, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(tx.delivery_boy_name || '—'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_74, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatMoney(tx.amount)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_66);
+  }), 128 /* KEYED_FRAGMENT */))])])]), $data.meta.capped ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_75, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_overview_capped_notice')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */))])])])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);
 }
 
 /***/ },

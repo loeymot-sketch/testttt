@@ -15273,7 +15273,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     onConfirm: function onConfirm() {
       var _this2 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
-        var modeMap, modeInt, orderId, total, received, idempotencyKey, orderLabel, _err$response, _err$response2, _err$response4, _err$response3, fallbackMsg, msg, _t;
+        var modeMap, modeInt, orderId, total, received, _resp$data, _resp$data2, idempotencyKey, resp, orderLabel, cashMovementSkipped, _resp$data3, _resp$data4, skipMsg, _err$response, _err$response2, _err$response4, _err$response3, fallbackMsg, msg, _t;
         return _regenerator().w(function (_context) {
           while (1) switch (_context.p = _context.n) {
             case 0:
@@ -15314,9 +15314,33 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
                 }
               });
             case 4:
+              resp = _context.v;
               // Toast feedback per mode — mirror Wave W simulation copy so the
               // cashier perceives parity with the old picker.
-              orderLabel = _this2.order.queue_number || _this2.order.order_serial_no || orderId;
+              orderLabel = _this2.order.queue_number || _this2.order.order_serial_no || orderId; // [TRAP-3 2026-06-04] Cash-trail gap surfacing. When a CASH collection
+              // succeeds with NO open drawer session, the backend flags
+              // `cash_movement_skipped` on the response: the order is PAID but NO
+              // cash_movement row was recorded, so end-of-day reconciliation will
+              // under-count. The sale is NEVER blocked — we replace the plain success
+              // toast with an explicit WARNING so the cashier knows to open a session
+              // / reconcile manually, instead of the gap silently reaching the Z-close.
+              cashMovementSkipped = (resp === null || resp === void 0 || (_resp$data = resp.data) === null || _resp$data === void 0 || (_resp$data = _resp$data.data) === null || _resp$data === void 0 ? void 0 : _resp$data.cash_movement_skipped) === true || (resp === null || resp === void 0 || (_resp$data2 = resp.data) === null || _resp$data2 === void 0 ? void 0 : _resp$data2.cash_movement_skipped) === true;
+              if (!cashMovementSkipped) {
+                _context.n = 5;
+                break;
+              }
+              skipMsg = (resp === null || resp === void 0 || (_resp$data3 = resp.data) === null || _resp$data3 === void 0 || (_resp$data3 = _resp$data3.data) === null || _resp$data3 === void 0 ? void 0 : _resp$data3.cash_movement_skipped_message) || (resp === null || resp === void 0 || (_resp$data4 = resp.data) === null || _resp$data4 === void 0 ? void 0 : _resp$data4.cash_movement_skipped_message) || 'Aucune session caisse ouverte — mouvement non enregistré';
+              _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].warning("Commande ".concat(orderLabel, " encaiss\xE9e. ").concat(skipMsg, " (\xE0 r\xE9gulariser au fond de caisse)."));
+              _this2.$emit('confirmed', {
+                orderId: orderId,
+                mode: _this2.selectedMode,
+                modeInt: modeInt,
+                received: received,
+                total: total,
+                cashMovementSkipped: true
+              });
+              return _context.a(2);
+            case 5:
               if (_this2.selectedMode === 'CASH') {
                 _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].success(_this2.$t('label.cash_drawer_opened_simulation', {
                   order: orderLabel
@@ -15337,13 +15361,13 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
                 received: received,
                 total: total
               });
-              _context.n = 7;
+              _context.n = 8;
               break;
-            case 5:
-              _context.p = 5;
+            case 6:
+              _context.p = 6;
               _t = _context.v;
               if (!((_t === null || _t === void 0 || (_err$response = _t.response) === null || _err$response === void 0 ? void 0 : _err$response.status) === 409 && (_t === null || _t === void 0 || (_err$response2 = _t.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.error_code) === 'payment_already_collected')) {
-                _context.n = 6;
+                _context.n = 7;
                 break;
               }
               fallbackMsg = 'Cette commande a déjà été encaissée par un autre caissier.';
@@ -15351,14 +15375,14 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _this2.submitting = false;
               _this2.$emit('cancel');
               return _context.a(2);
-            case 6:
+            case 7:
               msg = (_t === null || _t === void 0 || (_err$response4 = _t.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || _this2.$t('label.encaisser_failed');
               _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(msg);
               _this2.submitting = false;
-            case 7:
+            case 8:
               return _context.a(2);
           }
-        }, _callee, null, [[3, 5]]);
+        }, _callee, null, [[3, 6]]);
       }))();
     }
   }
@@ -16593,6 +16617,12 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     orderUser: function orderUser() {
       return this.$store.getters['posOrder/orderUser'];
     },
+    // Walk-in client (no real profile) is the DB-seeded placeholder user
+    // keyed on this email. Detect it to display "Passager" without the
+    // fake seeded contact (email/phone). Precedent: PosComponent.vue:2588.
+    isWalkIn: function isWalkIn() {
+      return String(this.orderUser && this.orderUser.email || '').toLowerCase() === 'walkingcustomer@example.com';
+    },
     orderAddress: function orderAddress() {
       return this.$store.getters['posOrder/orderAddress'];
     },
@@ -16742,12 +16772,20 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     },
     onRefundCompleted: function onRefundCompleted(_payload) {
       var _this3 = this;
-      // Refresh the order so the new payment_status / REMBOURSEMENT
-      // marker / mirror reference materialize without page reload.
-      // `_payload` carries { mirrorOrder, parentOrderId,
-      // mirrorFiscalSequenceNo, alreadyRefunded? } — we just trigger
-      // a fresh fetch of the parent ; the mirror appears in the
-      // history list via its own routes.
+      // Refresh the order so the new status (RETURNED) / payment / mirror
+      // reference materialize without page reload.
+      //
+      // [WI-REFUND-PREZ 2026-06-04] The backend routes by Z-status behind
+      // ONE endpoint, so `_payload` may describe EITHER mode:
+      //   - mode='counter_entry' (post-Z) → mirrorOrder + mirrorFiscalSequenceNo
+      //     populated, REMBOURSEMENT mirror appears in the history list.
+      //   - mode='pre_z' (same-day, not-yet-Z-closed) → mirrorOrder=null,
+      //     mirrorFiscalSequenceNo=null. The parent itself flips to
+      //     RETURNED (Retourné) with cashBack + audit — NO mirror exists.
+      // This handler is tolerant of BOTH: we just re-fetch the parent and
+      // read its fresh status/payment_status; a null mirror is expected and
+      // never crashes. The success toast ("Commande remboursée") is raised
+      // by PosRefundModal before it emits.
       this.refundTarget = null;
       this.loading.isActive = true;
       this.$store.dispatch('posOrder/show', this.$route.params.id).then(function (res) {
@@ -48219,13 +48257,14 @@ var _hoisted_89 = {
   "class": "font-semibold text-sm capitalize text-[#374151]"
 };
 var _hoisted_90 = {
+  key: 0,
   "class": "flex items-center gap-2.5"
 };
 var _hoisted_91 = {
   "class": "text-xs"
 };
 var _hoisted_92 = {
-  key: 0,
+  key: 1,
   "class": "flex items-center gap-2.5"
 };
 var _hoisted_93 = {
@@ -48362,11 +48401,11 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "w-8 rounded-full",
     src: $options.orderUser.image,
     alt: "avatar"
-  }, null, 8 /* PROPS */, _hoisted_88), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_89, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener($options.orderUser.name, 20)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", {
+  }, null, 8 /* PROPS */, _hoisted_88), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_89, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.isWalkIn ? 'Passager' : $options.textShortener($options.orderUser.name, 20)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["flex flex-col gap-3 py-4 border-[#EFF0F6]", $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? 'mb-4 border-y' : 'border-t'])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_90, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, [!$options.isWalkIn ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_90, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-mail lab-font-size-14"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_91, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.email), 1 /* TEXT */)]), $options.orderUser.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_92, [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_91, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.email), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), !$options.isWalkIn && $options.orderUser.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_92, [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-call-calling-linear lab-font-size-14"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_93, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.country_code + '' + $options.orderUser.phone), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_94, [_cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-location lab-font-size-20 leading-6 font-fill-black"

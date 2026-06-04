@@ -37,7 +37,7 @@
     :dir="direction"
     :offline-since="v2OfflineSince"
     :list-at-cap="kdsOrderListAtCap"
-    :fallback-mode="!wsConnected && !kdsHideFallbackBannerInLocalDev"
+    :fallback-mode="!wsConnected && !kdsSuppressFallbackBanner"
     :admin-polling-hint="kdsIsCentralAdmin"
     :bump-local-only-notice="!kdsHideBumpInfo"
     :auto-transition-enabled="v2AutoTransitionEnabled"
@@ -67,7 +67,7 @@
     keep passing in CI Playwright (which runs APP_ENV=local) via the sync
     stamp / aria-live / grid alternatives.
   -->
-  <div v-if="!wsConnected && !kdsHideFallbackBannerInLocalDev" class="ws-reconnect-banner" data-testid="kds-sync-mode-banner">
+  <div v-if="!wsConnected && !kdsSuppressFallbackBanner" class="ws-reconnect-banner" data-testid="kds-sync-mode-banner">
     {{ $t('label.kds_fallback_banner') }}
   </div>
   <!--
@@ -1298,23 +1298,41 @@ export default {
         return true;
       }
     },
-    // [iter15-mega-fix C-008 run-3 2026-05-10] Supersedes the run-1/run-2
-    // decision to keep the KDS fallback banner in dev. Wave B/C run-3 evidence
-    // (states 01/07/09 in iter15-mega-kiosk + iter15-mega-lifecycle) showed it
-    // is permanently visible in local dev because Pusher/Soketi is not running
-    // — pure noise. We now gate on appEnv === 'local' only, mirroring the
-    // ConnectionStatusBanner.vue / PosOrdersTrackerComponent.vue gates. The
-    // gate intentionally excludes 'testing' so any CI suite using
-    // APP_ENV=testing still renders the banner. Existing Playwright specs that
-    // reference data-testid="kds-sync-mode-banner" all use OR-fallback locators
-    // (audit-kds-cycle1 D1-05 → stamp||banner, red-team-r4 R4-12 → soft record,
-    // 04-kds-status → kds-aria-live OR grid OR banner with .first()), so they
-    // keep passing in CI Playwright (.github/workflows/playwright.yml uses
-    // APP_ENV=local) via the alternative branches.
-    kdsHideFallbackBannerInLocalDev() {
+    // [PR-02 core-bulletproof 2026-06-04] Sync degradation must NEVER be silent
+    // (owner mandate "silencieux = grave"). The real Le Cayenne box runs
+    // APP_ENV=local, so the previous "hide whenever appEnv==='local'" gate left
+    // the kitchen with NO visual cue when soketi dropped to ~30-60s polling.
+    //
+    // FAIL-SAFE-TO-VISIBLE opt-out design (NOT opt-in): suppress the fallback
+    // banner ONLY when (a) we are in local dev AND (b) an explicit opt-out flag
+    // window.FK_KDS_SHOW_FALLBACK_BANNER === false is set. The box never sets
+    // the flag → it stays undefined → `=== false` is false → NOT suppressed →
+    // banner VISIBLE. A dev who wants silence (soketi intentionally off in dev)
+    // adds KDS_SHOW_FALLBACK_BANNER=false to .env. The dangerous state (silent
+    // degradation) is opt-out, never opt-in.
+    //
+    // Renamed from kdsHideFallbackBannerInLocalDev → kdsSuppressFallbackBanner:
+    // the old name implied "hide in local dev" which is no longer the contract.
+    //
+    // The `env === 'local'` check stays FIRST so && short-circuits before
+    // touching window.FK_* (SSR-safe). The catch falls back to `false`
+    // (fail-safe-to-visible). 'testing' is intentionally excluded (env !==
+    // 'local') so any CI suite using APP_ENV=testing always renders the banner.
+    //
+    // Config contract documented in config/kds.php ('show_fallback_banner',
+    // default true). NOTE: wiring the config through master.blade.php into
+    // window.FK_KDS_SHOW_FALLBACK_BANNER is deferred to avoid colliding with a
+    // parallel session editing master.blade.php — until then the box default
+    // (flag undefined → VISIBLE) already satisfies the mandate.
+    //
+    // Existing Playwright specs referencing data-testid="kds-sync-mode-banner"
+    // are unaffected: abuse-C-kds:369 toHaveCount(0) runs in V2 (legacy testid
+    // never mounts) AND with WS connected (v-if !wsConnected is false anyway);
+    // all other refs are OR-locators / soft .count() records.
+    kdsSuppressFallbackBanner() {
       try {
         const env = (typeof window !== 'undefined' && window.foodkingConfig?.appEnv) || '';
-        return env === 'local';
+        return env === 'local' && window.FK_KDS_SHOW_FALLBACK_BANNER === false;
       } catch (_e) {
         return false;
       }
