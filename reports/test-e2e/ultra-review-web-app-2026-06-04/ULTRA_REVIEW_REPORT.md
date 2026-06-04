@@ -13,7 +13,7 @@ file:line+evidence). 3 findings DROP par l'adversarial, 1 sous-claim réfuté.
 | Frontend | État | Note |
 |---|---|---|
 | **WEB** (standalone, port 8083) | ✅ **GO après heals** | Était NON-shippable (1 P0 + 5 P1). P0 + 3 P1 customer-facing **healed & live-vérifiés**. Reste : polish a11y + 2 gaps fonctionnels mock-only à arbitrer. |
-| **MOBILE** (standalone, port 8081) | ✅ **GO** | Flows OK, 1 P1 partagé (menu price) healed. Console clean. Aucun défaut bloquant trouvé live. |
+| **MOBILE** (standalone, port 8081) | ✅ **GO** | **Tout live-vérifié** : home, menu (Tacos M 6,90/Tacos L 8,90), wizard (menu price healed +3,00 display=charge 9,90), panier, paiement (Payer-en-caisse/CB), **confirmation commande (PRÊT À 05h18, 9,90€, tracking EN PRÉPARATION, +10pts)**, loyalty redeem (347→247, voucher). Console clean. 1 P1 partagé (menu price) healed. Aucun défaut bloquant. |
 
 **Périmètre** : 2 frontends STANDALONE (0 wireup API — attendu). Aucune exposition NF525/fiscal/
 sécurité/paiement (CLAUDE.md §3bis). Donc **0 blocker de conformité** ; tous les findings sont

@@ -40,3 +40,9 @@
 ## MOBILE loyalty REDEEM — ✅ FULLY WORKS (priority flow b)
 - Profil → Carte fidélité → rotating QR (#FK-12345, expire 4:59 security) → 347 pts = 3,47€ → rewards (Petite Frites 100pts UTILISER) → WizardRedeem 2-step: "Confirmer l'échange?" (Solde avant 347, Coût −100, Solde après 247 ✓) → "Quand utiliser? Appliquer maintenant / Garder 30j" → ÉCHANGÉ! voucher LCY-967568, Solde 247 pts (deducted ✓), next threshold updated (247/250 → 3pts pour −2,50€). Point math correct throughout. Apple/Google Wallet integration UI present.
 - MOBILE result: home, menu (Tacos M 6,90/Tacos L 8,90 ✓), wizard (F-LIVE-02 confirmed), loyalty+redeem all functional. Console clean. Palette noir/orange/jaune/blanc ✓.
+
+## POST-HEAL VERIFICATION (advisor gaps closed)
+- HEAL re-test WEB (live): P0 diet filter Épicé 41→3 ✓ · CTA "Commander Big Cayenne" opens modal ✓ · wizard "Menu complet" displays +3,00€ ✓ · console 0 error.
+- HEAL re-test MOBILE (live): wizard "Menu complet" displays +3,00€ ✓ AND selecting it → Suivant 9,90€ (display=charge) ✓.
+- MOBILE checkout→pay→confirm (now exercised live, was previously inferred): wizard 7 steps → cart "TA COMMANDE" 1 art Tacos M 9,90€ TVA incluse +10pts → "COMMENT TU PAIES?" (Payer à la caisse / Payer maintenant CB Stripe) → order placed "PRÊT À 05h18, TOTAL 9,90€, EN PRÉPARATION ~12min" tracking + "+10 POINTS GAGNÉS". Fully functional.
+- Minor (non-repro): mobile add-to-cart button briefly showed "·19,90€" then cart settled to correct 9,90€ (1 article) — possible transient/own-state-contamination, not confirmed reproducible.
