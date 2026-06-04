@@ -248,11 +248,31 @@ class CashOverviewController extends AdminController
             ];
         }
 
+        // [TRAP-3 2026-06-04] Durable cash-trail gap surfacing. The counter-collect
+        // CASH path is best-effort: when no drawer session was open at collection,
+        // the order goes PAID + a `payment` Transaction is written but NO
+        // cash_movement row → end-of-day reconciliation silently under-counts.
+        // The collect-time modal toast is ephemeral (a busy cashier misses it),
+        // so the discrepancy MUST also surface HERE, where the variance actually
+        // manifests. This is a pure read-side computation (no schema change): count
+        // + total of cash `payment` Transactions in the window whose order has no
+        // linked order_payment/in cash_movement. Owner mandate « détecter écarts
+        // (cash manquant) ».
+        $unrecordedCash = $this->summarizeUnrecordedCash(
+            $startBound,
+            $endBound,
+            $branchFilter,
+            $isGlobalAdmin
+        );
+
         return response()->json([
             'status' => true,
             'data'   => CashOverviewTransactionResource::collection($transactions),
             'summary'      => $summary,
             'cash_session' => $cashSessionPayload,
+            // Flagged discrepancy block — non-null `count` > 0 means cash was
+            // collected with no drawer session and is unaccounted in any session.
+            'unrecorded_cash' => $unrecordedCash,
             'meta'         => [
                 'from'      => $startBound->toIso8601String(),
                 'to'        => $endBound->toIso8601String(),
@@ -261,6 +281,82 @@ class CashOverviewController extends AdminController
                 'capped'    => $transactions->count() >= self::MAX_ROWS,
             ],
         ]);
+    }
+
+    /**
+     * [TRAP-3 2026-06-04] Read-side detection of cash collected with NO drawer
+     * session (the cash-trail hole on the primary counter-collect path).
+     *
+     * A counter-collect CASH sale writes a `payment` Transaction
+     * (payment_method LIKE %cash%) regardless of whether a drawer session was
+     * open. When none was open, PaymentService::recordCashOrderMovement skips
+     * the CashMovement → the order is PAID but its cash never lands in any
+     * session's reconciliation. We surface exactly those orders: cash `payment`
+     * Transactions in the window whose order has NO order_payment/in
+     * cash_movement row.
+     *
+     * Pure aggregation, no schema change. `count == 0` is the healthy case.
+     *
+     * @return array{count:int, total:float, total_currency_price:string, order_ids:array<int,int>, message:?string}
+     */
+    private function summarizeUnrecordedCash(
+        Carbon $startBound,
+        Carbon $endBound,
+        ?int $branchFilter,
+        bool $isGlobalAdmin
+    ): array {
+        $query = Transaction::query()
+            ->whereBetween('created_at', [$startBound, $endBound])
+            ->where('type', 'payment')
+            ->where('payment_method', 'like', '%cash%')
+            // No order_payment/in cash_movement linked to this transaction's order.
+            // Order has no `cashMovements` relation defined, so we correlate on
+            // the cash_movements table directly (indexed on ['order_id','type']).
+            ->whereNotNull('order_id')
+            ->whereNotExists(function ($sub) {
+                $sub->select(\Illuminate\Support\Facades\DB::raw(1))
+                    ->from('cash_movements')
+                    ->whereColumn('cash_movements.order_id', 'transactions.order_id')
+                    ->where('cash_movements.type', \App\Models\CashMovement::TYPE_ORDER_PAYMENT)
+                    ->where('cash_movements.direction', \App\Models\CashMovement::DIRECTION_IN);
+            })
+            ->whereHas('order', function ($q) use ($isGlobalAdmin, $branchFilter) {
+                if ($isGlobalAdmin) {
+                    $q->withoutGlobalScope(BranchScope::class);
+                }
+                if ($branchFilter !== null) {
+                    $q->where('branch_id', $branchFilter);
+                }
+                // [TRAP-3 2026-06-04] EXCLUDE delivery-boy cash. Livreur cash is
+                // reconciled through a SEPARATE system (delivery_boy_cash_movements
+                // + DeliveryBoyCashSession — OrderService.php:1964), never the
+                // drawer's cash_movements. Without this guard every livreur cash
+                // order would be falsely flagged as "cash manquant" (cry-wolf →
+                // cashier ignores the banner → defeats the surfacing). This
+                // detector is strictly about the DRAWER cash trail.
+                $q->whereNull('delivery_boy_id');
+            });
+
+        $rows = $query->with(['order' => function ($q) use ($isGlobalAdmin) {
+            if ($isGlobalAdmin) {
+                $q->withoutGlobalScope(BranchScope::class);
+            }
+            $q->select(['id', 'branch_id']);
+        }])->get(['id', 'order_id', 'amount']);
+
+        $count    = $rows->count();
+        $total    = round((float) $rows->sum(fn ($t) => (float) $t->amount), 2);
+        $orderIds = $rows->pluck('order_id')->filter()->map(fn ($id) => (int) $id)->values()->all();
+
+        return [
+            'count'                => $count,
+            'total'                => $total,
+            'total_currency_price' => \App\Libraries\AppLibrary::currencyAmountFormat($total),
+            'order_ids'            => $orderIds,
+            'message'              => $count > 0
+                ? "{$count} encaissement(s) espèces sans session caisse — montant non rattaché à un fond de caisse (à régulariser)"
+                : null,
+        ];
     }
 
     /**

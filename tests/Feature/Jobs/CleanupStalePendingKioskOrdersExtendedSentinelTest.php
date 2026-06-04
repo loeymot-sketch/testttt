@@ -43,6 +43,15 @@ class CleanupStalePendingKioskOrdersExtendedSentinelTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // [TRAP-2 2026-06-04] Pin the TTL to the historical 15 min so the
+        // 20-min stale fixtures stay deterministic under the new config-driven
+        // default (180 min). Sentinel assertions are unchanged.
+        config(['kiosk.stale_collect_ttl_minutes' => 15]);
+    }
+
     public function test_extended_cleanup_matrix_4_scenarios(): void
     {
         Event::fake([

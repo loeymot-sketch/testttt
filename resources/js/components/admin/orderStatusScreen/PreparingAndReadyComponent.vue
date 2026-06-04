@@ -245,9 +245,22 @@ export default {
           this.wsConnected = String(state || '').toLowerCase() === 'connected';
         })
       );
+      // [TRAP-4 2026-06-04] Public/unauth customer status wall: branchId<=0 so
+      // subscribeEcho() early-returns (line ~263) and we never join the private
+      // branch.{id} channel — zero push reaches this surface. But the WS
+      // *transport* still reports 'connected' (Echo/Pusher is up), so
+      // OssSyncService picks intervalMsWhenConnected (60_000ms) and the wall lags
+      // PRÉPARATION→PRÊT by up to ~1 min, blowing the SYNC-2 8s budget (POS pay →
+      // OSS visible). Since this surface is poll-only (no push subscription),
+      // override the connected cadence to a snappy 5s for it alone via ctx.options
+      // (highest precedence in start()/_runtimeConfig). Bus untouched — no
+      // channel/event/payload change, no new broadcast channel, no LOCK needed.
+      // Authed staff OSS (branchId>0) is unaffected and keeps 60_000ms.
+      const isPublicWall = this.authBranchId() <= 0;
       ossSyncService.start({
         store: this.$store,
         webSocketService: window._wsService,
+        ...(isPublicWall ? { options: { intervalMsWhenConnected: 5_000 } } : {}),
       });
     },
     stopOssSync() {

@@ -437,7 +437,7 @@ export default {
       this.submitting = true;
       try {
         const idempotencyKey = this.buildIdempotencyKey(orderId, modeInt);
-        await axios.post(
+        const resp = await axios.post(
           `admin/pos/counter-collect/${orderId}/confirm`,
           {
             mode: modeInt,
@@ -454,6 +454,34 @@ export default {
         // Toast feedback per mode — mirror Wave W simulation copy so the
         // cashier perceives parity with the old picker.
         const orderLabel = this.order.queue_number || this.order.order_serial_no || orderId;
+
+        // [TRAP-3 2026-06-04] Cash-trail gap surfacing. When a CASH collection
+        // succeeds with NO open drawer session, the backend flags
+        // `cash_movement_skipped` on the response: the order is PAID but NO
+        // cash_movement row was recorded, so end-of-day reconciliation will
+        // under-count. The sale is NEVER blocked — we replace the plain success
+        // toast with an explicit WARNING so the cashier knows to open a session
+        // / reconcile manually, instead of the gap silently reaching the Z-close.
+        const cashMovementSkipped = resp?.data?.data?.cash_movement_skipped === true
+          || resp?.data?.cash_movement_skipped === true;
+        if (cashMovementSkipped) {
+          const skipMsg = resp?.data?.data?.cash_movement_skipped_message
+            || resp?.data?.cash_movement_skipped_message
+            || 'Aucune session caisse ouverte — mouvement non enregistré';
+          alertService.warning(
+            `Commande ${orderLabel} encaissée. ${skipMsg} (à régulariser au fond de caisse).`
+          );
+          this.$emit('confirmed', {
+            orderId,
+            mode: this.selectedMode,
+            modeInt,
+            received,
+            total,
+            cashMovementSkipped: true,
+          });
+          return;
+        }
+
         if (this.selectedMode === 'CASH') {
           alertService.success(
             this.$t('label.cash_drawer_opened_simulation', { order: orderLabel })

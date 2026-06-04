@@ -54,6 +54,20 @@ $localeSwitchAllowed = filter_var(env('KIOSK_LOCALE_SWITCH_ALLOWED', false), FIL
 $paymentRouteAllToCounter = filter_var(env('KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER', true), FILTER_VALIDATE_BOOLEAN);
 
 /*
+| [TRAP-2 2026-06-04] Stale counter-collect TTL (minutes).
+|
+| A walk-away kiosk order auto-accepts to status=ACCEPT + PENDING_COUNTER and
+| otherwise sits in the cashier collect queue + KDS forever. CleanupStalePending
+| KioskOrders auto-cancels (ACCEPT→CANCELED, legal, non-fiscal) any kiosk order
+| with NO fiscal sequence allocated that is older than this TTL. Default 180 min
+| (3 h) — a safe envelope so a customer who genuinely takes their time queuing
+| at the counter is never auto-cancelled mid-service. Sealed (PAID + fiscal_
+| sequence_no) orders are excluded → NF525 chain untouched. Override via
+| KIOSK_STALE_COLLECT_TTL_MINUTES.
+*/
+$staleCollectTtlMinutes = max(1, (int) env('KIOSK_STALE_COLLECT_TTL_MINUTES', 180));
+
+/*
 | [MENU-RESET 2026-05-13] Sandwich-split DISABLED — new structure has 3 separate
 | sandwich categories (sandwich-cayenne, galette, sandwich-classique) so no need
 | for cold-vs-signature sidebar split anymore. Kept as empty array for backwards
@@ -145,6 +159,8 @@ if ($requireForm) {
         'confirmation_auto_return_seconds' => (int) env('KIOSK_CONFIRMATION_AUTO_RETURN_SECONDS', 30),
         // [SUPERVISOR WAVE C Z1 2026-05-28] Plan B: route ALL kiosk payments to counter (no TPE at kiosk).
         'payment_route_all_to_counter' => $paymentRouteAllToCounter,
+        // [TRAP-2 2026-06-04] Stale counter-collect cleanup TTL (minutes) — see top of file.
+        'stale_collect_ttl_minutes' => $staleCollectTtlMinutes,
         // [Sprint H1 K-003 2026-05-17] Externalized FRITES_INCLUDED_CATS — see top of file.
         'frites_included_category_ids' => $fritesIncludedCategoryIds,
         // [Sprint H1 K-004 2026-05-17] Wizard template aliases — see top of file.
@@ -239,4 +255,6 @@ return [
     // breaking env override on production code path (RED-08 P0 caught
     // by adversarial review during Wave C dispatch).
     'payment_route_all_to_counter' => $paymentRouteAllToCounter,
+    // [TRAP-2 2026-06-04] Stale counter-collect cleanup TTL (minutes) — see top of file.
+    'stale_collect_ttl_minutes' => $staleCollectTtlMinutes,
 ];

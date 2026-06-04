@@ -164,6 +164,53 @@
                     </div>
                 </section>
 
+                <!--
+                    [TRAP-3 2026-06-04] Cash-trail discrepancy banner. Flags cash
+                    collected at the counter with NO open drawer session: the
+                    order is PAID + fiscal-seq allocated but NO cash_movement row
+                    exists, so end-of-day reconciliation silently under-counts.
+                    The sale was never blocked (NF525-safe) — this makes the gap
+                    VISIBLE where the écart manifests, not only via the ephemeral
+                    collect-time toast. Owner mandate « détecter écarts (cash
+                    manquant) ». Hidden when count === 0 (no false alarm).
+                -->
+                <section
+                    v-if="!loading && unrecordedCash && unrecordedCash.count > 0"
+                    class="px-4 sm:px-5 mb-4"
+                    data-testid="cash-overview-unrecorded-cash"
+                >
+                    <div class="border-l-4 border-red-500 bg-red-50 rounded p-3">
+                        <div class="flex items-center text-sm font-semibold text-red-800">
+                            <span class="mr-2">⚠️</span>
+                            <span data-testid="cash-overview-unrecorded-cash-title">
+                                Encaissements espèces sans session caisse
+                            </span>
+                        </div>
+                        <div class="mt-1 text-sm text-red-700" data-testid="cash-overview-unrecorded-cash-message">
+                            {{ unrecordedCash.message }}
+                        </div>
+                        <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <span class="text-gray-600">Commandes concernées:</span>
+                                <strong
+                                    class="ml-1 text-red-800"
+                                    data-testid="cash-overview-unrecorded-cash-count"
+                                >{{ unrecordedCash.count }}</strong>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Montant non rattaché:</span>
+                                <strong
+                                    class="ml-1 text-red-800"
+                                    data-testid="cash-overview-unrecorded-cash-total"
+                                >{{ unrecordedCash.total_currency_price || formatMoneyEuro(unrecordedCash.total) }}</strong>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-xs text-red-600">
+                            À régulariser : ouvrir une session caisse avant d'encaisser, ou rattacher ces montants au fond de caisse lors de la clôture.
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Mode breakdown -->
                 <section
                     v-if="!loading && summary && Object.keys(summary.by_mode || {}).length"
@@ -300,6 +347,11 @@ export default {
             transactions: [],
             summary: null,
             cashSession: null,
+            // [TRAP-3 2026-06-04] Cash-trail gap block — cash collected with no
+            // open drawer session (PAID order, NO cash_movement). Surfaces the
+            // discrepancy here, where the écart actually manifests, instead of
+            // only via the ephemeral collect-time toast.
+            unrecordedCash: null,
             meta: { capped: false, row_count: 0 },
             filters: {
                 from: today,
@@ -383,6 +435,7 @@ export default {
                 this.transactions = Array.isArray(payload.data) ? payload.data : [];
                 this.summary = payload.summary || null;
                 this.cashSession = payload.cash_session || null;
+                this.unrecordedCash = payload.unrecorded_cash || null;
                 this.meta = payload.meta || { capped: false, row_count: 0 };
             } catch (e) {
                 // eslint-disable-next-line no-console
@@ -390,6 +443,7 @@ export default {
                 this.transactions = [];
                 this.summary = null;
                 this.cashSession = null;
+                this.unrecordedCash = null;
             } finally {
                 this.loading = false;
             }

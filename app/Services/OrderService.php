@@ -9,6 +9,7 @@ use App\Models\Item;
 use App\Models\User;
 use App\Models\Order;
 use App\Enums\TaxType;
+use App\Enums\Source;
 use App\Models\Address;
 use App\Enums\OrderType;
 use App\Models\OrderDiscountLog;
@@ -188,6 +189,27 @@ class OrderService
                             // (parity with salesReportOverview), NOT the generic LIKE which would
                             // over-match (e.g. '%5%' matching 5 and 15/50). source_surface stays LIKE.
                             $query->where('source', (int) $request);
+                        } else if ($key === 'source_surface' && (string) $request === 'web') {
+                            // [TRAP-1 HIST-04 heal 2026-06-04] source_surface=web is the online
+                            // sentinel the Historique "En ligne" filter emits — the ONLY value the
+                            // UI sends for that button (HistoriqueListComponent.vue:337; 'app'/'mobile'
+                            // are never sent by the UI, so they stay literal LIKE matches). Applied as
+                            // the generic LIKE '%web%', it SILENTLY DROPPED legacy online orders whose
+                            // source_surface is NULL (they predate the surface tag) — yet the badge
+                            // labels them "En ligne" via the legacy `source` fallback
+                            // (HistoriqueListComponent.vue:304-311: source WEB|APP → En ligne).
+                            // Mirror the badge EXACTLY so the filter returns the same online set: any
+                            // web/app/mobile surface, OR a NULL surface whose legacy source is WEB/APP.
+                            // The web/app/mobile surface set is kept in the predicate body so a future
+                            // real app/mobile-surface row is still included when the user clicks
+                            // En-ligne. kiosk/pos surfaces (non-NULL, not online tokens) are excluded.
+                            $query->where(function ($q) {
+                                $q->whereIn('source_surface', ['web', 'app', 'mobile'])
+                                  ->orWhere(function ($qq) {
+                                      $qq->whereNull('source_surface')
+                                         ->whereIn('source', [Source::WEB, Source::APP]);
+                                  });
+                            });
                         } else {
                             $this->applyOrderFilter($query, $key, $request);
                         }

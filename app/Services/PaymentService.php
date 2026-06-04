@@ -486,6 +486,7 @@ class PaymentService
                 if ($strict) {
                     throw new \App\Exceptions\CashDrawerSessionNotOpenException();
                 }
+                $this->flagCashMovementSkipped($order);
                 return;
             }
             $userId = (int) Auth::id();
@@ -494,6 +495,7 @@ class PaymentService
                 if ($strict) {
                     throw new \App\Exceptions\CashDrawerSessionNotOpenException();
                 }
+                $this->flagCashMovementSkipped($order);
                 return;
             }
 
@@ -514,6 +516,7 @@ class PaymentService
                     'branch_id' => $branchId,
                     'user_id'   => $userId,
                 ]);
+                $this->flagCashMovementSkipped($order);
                 return;
             }
 
@@ -542,6 +545,34 @@ class PaymentService
                 'error'    => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * [TRAP-3 2026-06-04] Surface the cash-trail gap to the cashier instead
+     * of swallowing it in a cron log.
+     *
+     * On the now-PRIMARY counter-collect CASH path (kiosk Plan-B + walk-in),
+     * the cash_movement is best-effort: if there is no open drawer session,
+     * the order still goes PAID + fiscal-seq allocated, but NO cash_movement
+     * row is written → end-of-day reconciliation silently under-counts.
+     *
+     * We DO NOT block the sale (NF525-safe: the fiscal trail is untouched).
+     * Instead we set a TRANSIENT (non-persisted) attribute on the in-memory
+     * order instance so:
+     *   - the HTTP layer (OrderDetailsResource) can return
+     *     `cash_movement_skipped: true` + a FR warning message, and
+     *   - the encaissement modal can show the cashier an explicit warning
+     *     toast ("Aucune session caisse ouverte — mouvement non enregistré")
+     *     rather than a plain success toast.
+     *
+     * The attribute is set via setAttribute on the runtime model only; it is
+     * never written to the DB (no `cash_movement_skipped` column exists), so
+     * no migration / schema change is required and the persisted fiscal state
+     * is unchanged.
+     */
+    private function flagCashMovementSkipped(Order $order): void
+    {
+        $order->cash_movement_skipped = true;
     }
 
     /**

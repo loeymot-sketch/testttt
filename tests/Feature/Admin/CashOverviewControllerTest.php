@@ -491,6 +491,103 @@ class CashOverviewControllerTest extends TestCase
         $this->assertNull($response->json('cash_session'));
     }
 
+    /**
+     * [TRAP-3 2026-06-04] The cash-trail hole must surface DURABLY at the
+     * cash-overview / reconciliation surface — not only via an ephemeral
+     * collect-time toast. A cash `payment` Transaction whose order has NO
+     * order_payment/in cash_movement (collected with no open drawer session)
+     * is flagged in the `unrecorded_cash` block with count + total + a FR
+     * message the cash-overview UI renders as a discrepancy.
+     */
+    public function test_unrecorded_cash_block_flags_cash_collected_without_session(): void
+    {
+        $today = Carbon::now('Europe/Paris')->startOfDay()->addHours(10);
+
+        // Order A — cash collected, NO cash_movement (the gap).
+        $orphan = $this->makeOrderTransaction($this->branchA, 'borne', 'counter_cash', 12.50, $today);
+
+        // Order B — cash collected WITH a proper order_payment/in movement.
+        $session = CashDrawerSession::create([
+            'branch_id'         => $this->branchA->id,
+            'opened_by_user_id' => $this->cashierA->id,
+            'opened_at'         => $today,
+            'opening_amount'    => 0.00,
+            'status'            => CashDrawerSession::STATUS_OPEN,
+        ]);
+        $linked = $this->makeOrderTransaction($this->branchA, 'caisse', 'cash', 30.00, $today);
+        \App\Models\CashMovement::create([
+            'cash_drawer_session_id' => $session->id,
+            'branch_id' => $this->branchA->id,
+            'order_id'  => $linked->order_id,
+            'type'      => \App\Models\CashMovement::TYPE_ORDER_PAYMENT,
+            'direction' => \App\Models\CashMovement::DIRECTION_IN,
+            'amount'    => 30.00,
+        ]);
+
+        // Order C — CARD payment, must never be flagged as missing cash.
+        $this->makeOrderTransaction($this->branchA, 'caisse', 'credit', 99.00, $today);
+
+        // Order D — LIVREUR cash, NO cash_movements row (its movement lands in
+        // the SEPARATE delivery_boy_cash_movements system). Must NOT be flagged
+        // as a drawer cash-trail gap (otherwise: cry-wolf false positive).
+        $livreur = $this->makeOrderTransaction($this->branchA, 'livreur', 'cash', 77.00, $today);
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+            ->getJson('/api/admin/cash-overview');
+
+        $response->assertOk();
+
+        // Only the orphan DRAWER cash order is flagged.
+        $this->assertSame(1, $response->json('unrecorded_cash.count'));
+        $this->assertEquals(12.50, (float) $response->json('unrecorded_cash.total'));
+        $this->assertContains($orphan->order_id, $response->json('unrecorded_cash.order_ids'));
+        $this->assertNotContains($linked->order_id, $response->json('unrecorded_cash.order_ids'));
+        $this->assertNotContains(
+            $livreur->order_id,
+            $response->json('unrecorded_cash.order_ids'),
+            'Livreur cash is reconciled via delivery_boy_cash_movements — must NOT be flagged as a drawer cash-trail gap.'
+        );
+        $this->assertNotNull($response->json('unrecorded_cash.message'));
+        $this->assertStringContainsString(
+            'sans session caisse',
+            $response->json('unrecorded_cash.message')
+        );
+    }
+
+    /**
+     * [TRAP-3 2026-06-04] Healthy case — every cash collection landed in a
+     * session → no false discrepancy (count 0, null message).
+     */
+    public function test_unrecorded_cash_block_clean_when_all_cash_recorded(): void
+    {
+        $today = Carbon::now('Europe/Paris')->startOfDay()->addHours(10);
+
+        $session = CashDrawerSession::create([
+            'branch_id'         => $this->branchA->id,
+            'opened_by_user_id' => $this->cashierA->id,
+            'opened_at'         => $today,
+            'opening_amount'    => 0.00,
+            'status'            => CashDrawerSession::STATUS_OPEN,
+        ]);
+        $linked = $this->makeOrderTransaction($this->branchA, 'caisse', 'cash', 40.00, $today);
+        \App\Models\CashMovement::create([
+            'cash_drawer_session_id' => $session->id,
+            'branch_id' => $this->branchA->id,
+            'order_id'  => $linked->order_id,
+            'type'      => \App\Models\CashMovement::TYPE_ORDER_PAYMENT,
+            'direction' => \App\Models\CashMovement::DIRECTION_IN,
+            'amount'    => 40.00,
+        ]);
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+            ->getJson('/api/admin/cash-overview');
+
+        $response->assertOk();
+        $this->assertSame(0, $response->json('unrecorded_cash.count'));
+        $this->assertEquals(0.0, (float) $response->json('unrecorded_cash.total'));
+        $this->assertNull($response->json('unrecorded_cash.message'));
+    }
+
     public function test_query_count_bounded_no_n_plus_1(): void
     {
         $today = Carbon::now('Europe/Paris')->startOfDay()->addHours(10);

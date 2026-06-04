@@ -106,6 +106,57 @@ class PaymentServiceCashHookTest extends TestCase
         $this->assertSame(PaymentStatus::PAID, (int) $result->payment_status);
     }
 
+    /**
+     * [TRAP-3 2026-06-04] I-B' — CASH sans session : la vente réussit (PAID,
+     * jamais bloquée) MAIS le trou de cash-trail est désormais VISIBLE au
+     * caissier via le flag transient `cash_movement_skipped` que
+     * OrderDetailsResource expose (au lieu d'un simple log cron silencieux).
+     */
+    public function test_confirm_counter_cash_without_session_flags_skipped_movement_for_cashier(): void
+    {
+        $order = $this->makeKioskCashOrder(20.00);
+
+        $result = $this->paymentService->confirmCounterPayment($order, PosPaymentMethod::CASH);
+
+        // Vente jamais bloquée + aucun movement écrit (le trou).
+        $this->assertSame(PaymentStatus::PAID, (int) $result->payment_status);
+        $this->assertSame(0, CashMovement::query()->count());
+
+        // Le flag transient est posé sur l'instance order…
+        $this->assertTrue((bool) $result->cash_movement_skipped);
+
+        // …et remonte dans la réponse API via OrderDetailsResource, avec le
+        // message FR exact attendu par le modal d'encaissement.
+        $payload = (new \App\Http\Resources\OrderDetailsResource($result))
+            ->toArray(request());
+
+        $this->assertTrue($payload['cash_movement_skipped']);
+        $this->assertSame(
+            'Aucune session caisse ouverte — mouvement non enregistré',
+            $payload['cash_movement_skipped_message']
+        );
+    }
+
+    /**
+     * [TRAP-3 2026-06-04] Contre-épreuve : quand une session EST ouverte, le
+     * flag reste false (pas de fausse alerte) — le mouvement a bien été écrit.
+     */
+    public function test_confirm_counter_cash_with_open_session_does_not_flag_skipped(): void
+    {
+        $this->cashService->openSession($this->branch->id, $this->cashier->id, 100.00);
+        $order = $this->makeKioskCashOrder(20.00);
+
+        $result = $this->paymentService->confirmCounterPayment($order, PosPaymentMethod::CASH);
+
+        $this->assertSame(1, CashMovement::query()->count());
+        $this->assertFalse((bool) ($result->cash_movement_skipped ?? false));
+
+        $payload = (new \App\Http\Resources\OrderDetailsResource($result))
+            ->toArray(request());
+        $this->assertFalse($payload['cash_movement_skipped']);
+        $this->assertNull($payload['cash_movement_skipped_message']);
+    }
+
     /** I-C — CARD → 0 movement */
     public function test_confirm_counter_card_does_not_record_cash_movement(): void
     {

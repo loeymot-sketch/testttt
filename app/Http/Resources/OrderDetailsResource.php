@@ -68,6 +68,19 @@ class OrderDetailsResource extends JsonResource
             'payment_method' => $this->payment_method,
             'payment_status' => $this->payment_status,
             'payment_pending_counter' => (int) $this->payment_status === \App\Enums\PaymentStatus::PENDING_COUNTER,
+            // [TRAP-3 2026-06-04] Cash-trail gap surfacing. When a counter-collect
+            // CASH payment succeeds but NO open drawer session existed, the order
+            // is PAID + fiscal-seq allocated yet NO cash_movement row was written
+            // → end-of-day reconciliation silently under-counts. PaymentService
+            // sets the TRANSIENT (never-persisted) `cash_movement_skipped` flag on
+            // the in-memory order so the encaissement modal can warn the cashier
+            // instead of toasting a plain success, and the gap is no longer
+            // confined to a cron log. Default false (flag absent on every other
+            // path: CARD, session-OPEN cash, kiosk-paid finalize, etc.).
+            'cash_movement_skipped' => (bool) ($this->resource->cash_movement_skipped ?? false),
+            'cash_movement_skipped_message' => ($this->resource->cash_movement_skipped ?? false)
+                ? 'Aucune session caisse ouverte — mouvement non enregistré'
+                : null,
             'is_advance_order' => $this->is_advance_order,
             'preparation_time' => $this->preparation_time,
             'status' => $this->status,
