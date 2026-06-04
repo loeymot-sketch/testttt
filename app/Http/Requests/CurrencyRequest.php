@@ -32,7 +32,10 @@ class CurrencyRequest extends FormRequest
                 'required',
                 'string',
                 'max:190',
-                Rule::unique("currencies", "name")->ignore($this->route('currency.id'))
+                // S6-01: ignore the CURRENT row on UPDATE. The route param is the
+                // route-model-bound `{currency}` (routes/api.php) — `currency.id` was
+                // never a param, so ignore(null) self-collided and every UPDATE 422'd.
+                Rule::unique("currencies", "name")->ignore($this->route('currency'))
             ],
             'symbol'            => ['required', 'string', 'max:190'],
             'code'              => ['required', 'string', 'max:20'],

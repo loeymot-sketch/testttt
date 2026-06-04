@@ -37,7 +37,10 @@ class TaxRequest extends FormRequest
                 'required',
                 'string',
                 'max:20',
-                Rule::unique("taxes", "code")->ignore($this->route('tax.id'))
+                // S6-01: ignore the CURRENT row on UPDATE. The route param is the
+                // route-model-bound `{tax}` (routes/api.php) — `tax.id` was never a
+                // param, so ignore(null) self-collided and every UPDATE returned 422.
+                Rule::unique("taxes", "code")->ignore($this->route('tax'))
             ],
             'tax_rate' => ['required', 'numeric', 'min:0', 'max:9999999999999'],
             'status'   => ['required', 'numeric', 'max:24'],
