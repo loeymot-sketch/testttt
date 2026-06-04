@@ -8,6 +8,20 @@ chaque écran + 2 flows critiques, visuel + console + réseau ; (3) heal scope-m
 clairs + escalade des décisions produit. Anti-hallucination strict (chaque finding rejoué live ou
 file:line+evidence). 3 findings DROP par l'adversarial, 1 sous-claim réfuté.
 
+> ## 🔄 MISE À JOUR WAVE 2 (2026-06-04, owner : « fais tout sauf les allergènes »)
+> **Tous les findings SURFACED ci-dessous ont été HEALED + live-vérifiés**, SAUF les 2 items allergènes
+> (laissés = décision sécurité/contenu owner) et les décisions produit pures (loyalty cross-frontend,
+> naming Tacos = déjà tranché). Commits web `3ca8d6f` (7 fichiers) + `40ce185` (CSS coupling titres).
+> **WAVE-2 heals live-vérifiés** : promo propagée cart→checkout→paiement→confirm→tracking (8,91€ ✓) ·
+> order# stable confirm=tracking (C-7710 ✓, était random vs C-1234) · recap wizard montre les étapes
+> cascade (Boisson/Style frites/Sauce frites ✓) · panier vide au démarrage ✓ · daily-special barré
+> 10,00€ ✓ · cœur favori = `<button>` aria-pressed+label ✓ · option wizard aria-pressed ✓ · WebModal
+> role=dialog+aria-modal+Échap-ferme ✓ · h1 sur Menu/Loyalty/About (+ coupling CSS pour garder le style
+> Anton — régression attrapée & corrigée) ✓ · recherche aria-label ✓ · nom compte affiché ✓ · footer
+> contact = spans + lien mailto ✓. 0 erreur console. Design « impeccable » préservé (titres vérifiés visuellement).
+> **RESTE non touché (owner)** : `screens-v3.jsx:199` "Allergènes : ." (array vide) + `:271` agrégation
+> allergènes cascade — décision sécurité owner. Décisions produit : cohérence seuils loyalty web↔app.
+
 ## VERDICT
 
 | Frontend | État | Note |
