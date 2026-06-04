@@ -110,6 +110,23 @@ class ItemCategory extends Model implements HasMedia
             $category = $this->getMedia('item-category')->last();
             return $category->getUrl('cover');
         }
+        // Fallback: image PAR CATÉGORIE depuis config/menu_images.php (même
+        // résolution slug-keyée que getThumbAttribute). Sans ce fallback, `cover`
+        // renvoyait UNE image générique unique (images/category/cover.png) pour
+        // TOUTES les catégories ; or les payloads (ItemCategoryResource,
+        // KioskMenuService) exposent `image_full_path = cover ?: thumb`, donc ce
+        // cover générique masquait le `thumb` correct → borne + POS affichaient
+        // la même photo pour chaque catégorie. (Owner report 2026-06-04.)
+        $images = Config::get('menu_images.categories', []);
+        $basePath = Config::get('menu_images.base_path', 'images/menu');
+        $defaultFile = Config::get('menu_images.default', 'item-default.svg');
+        $filename = $images[$this->slug] ?? $defaultFile;
+        $fullPath = public_path("{$basePath}/{$filename}");
+        if (file_exists($fullPath)) {
+            // Cache-bust: filemtime suffix forces browsers to refetch on change.
+            $hash = @filemtime($fullPath) ?: 0;
+            return asset("{$basePath}/{$filename}") . "?v={$hash}";
+        }
         return asset('images/category/cover.png');
     }
 

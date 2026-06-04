@@ -734,18 +734,26 @@ return [
     | Addons (Upsell Items)
     |--------------------------------------------------------------------------
     */
+    // [OWNER-FIX 2026-06-04] Chaque addon doit atterrir dans SA catégorie réelle
+    // (slug). Sans clé `category`, MenuSeeder::createAddons retombait sur la 1re
+    // catégorie (Sandwich Cayenne) car les clés legacy 'frites-accompagnements'
+    // / 'nos-boissons' n'existent pas dans le baseline 11 catégories → boisson,
+    // frites et menu apparaissaient à tort dans les sandwichs (borne + caisse).
     'addons' => [
         [
-            'name'  => 'Menu (Frites + Boisson)',
-            'price' => 3.00,
+            'name'     => 'Menu (Frites + Boisson)',
+            'price'    => 3.00,
+            'category' => 'supplements',
         ],
         [
-            'name'  => 'Frites Seules',
-            'price' => 2.00,
+            'name'     => 'Frites Seules',
+            'price'    => 2.00,
+            'category' => 'frites',
         ],
         [
-            'name'  => 'Boisson Seule',
-            'price' => 2.00,
+            'name'     => 'Boisson Seule',
+            'price'    => 2.00,
+            'category' => 'boissons',
         ],
     ],
 

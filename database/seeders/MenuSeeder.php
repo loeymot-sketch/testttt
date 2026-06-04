@@ -479,20 +479,28 @@ class MenuSeeder extends Seeder
     {
         echo "Creating addon items (upsell)...\n";
 
-        // Use Snacking category for addon items
-        $addonCategoryId = $this->categoryIds['frites-accompagnements']
+        // [OWNER-FIX 2026-06-04] Fallback historique = 1re catégorie (Sandwich
+        // Cayenne) car 'frites-accompagnements'/'nos-boissons' n'existent PAS
+        // dans le baseline 11 catégories → les addons (Menu/Frites/Boisson)
+        // s'affichaient à tort dans les sandwichs. Désormais chaque addon
+        // déclare sa catégorie réelle (slug) dans config('menu.addons').
+        $fallbackCategoryId = $this->categoryIds['frites-accompagnements']
             ?? $this->categoryIds['nos-boissons']
             ?? collect($this->categoryIds)->first();
 
-        if ($addonCategoryId === null) {
+        if ($fallbackCategoryId === null) {
             throw new \RuntimeException('MenuSeeder::createAddons: no category ids (createCategories did not run or failed).');
         }
 
         foreach ($this->config['addons'] as $addon) {
+            $categorySlug = $addon['category'] ?? null;
+            $itemCategoryId = ($categorySlug !== null ? ($this->categoryIds[$categorySlug] ?? null) : null)
+                ?? $fallbackCategoryId;
+
             $item = Item::create([
                 'name' => $addon['name'],
                 'slug' => Str::slug($addon['name']),
-                'item_category_id' => $addonCategoryId,
+                'item_category_id' => $itemCategoryId,
                 'price' => $addon['price'],
                 'description' => 'Upsell item',
                 'status' => Status::ACTIVE,
